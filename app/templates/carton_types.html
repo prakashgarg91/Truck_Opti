@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Carton Types</h1>
+    <a href="{{ url_for('main.add_carton_type') }}" class="btn btn-primary mb-3">Add New Carton Type</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Length</th>
+                <th>Width</th>
+                <th>Height</th>
+                <th>Weight</th>
+                <th>Can Rotate</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for carton in cartons %}
+            <tr>
+                <td>{{ carton.name }}</td>
+                <td>{{ carton.length }}</td>
+                <td>{{ carton.width }}</td>
+                <td>{{ carton.height }}</td>
+                <td>{{ carton.weight }}</td>
+                <td>{{ 'Yes' if carton.can_rotate else 'No' }}</td>
+                <td>
+                    <a href="#" class="btn btn-sm btn-info">Edit</a>
+                    <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

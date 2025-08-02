@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Truck Types</h1>
+    <a href="{{ url_for('main.add_truck_type') }}" class="btn btn-primary mb-3">Add New Truck Type</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Length</th>
+                <th>Width</th>
+                <th>Height</th>
+                <th>Max Weight</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for truck in trucks %}
+            <tr>
+                <td>{{ truck.name }}</td>
+                <td>{{ truck.length }}</td>
+                <td>{{ truck.width }}</td>
+                <td>{{ truck.height }}</td>
+                <td>{{ truck.max_weight }}</td>
+                <td>
+                    <a href="#" class="btn btn-sm btn-info">Edit</a>
+                    <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

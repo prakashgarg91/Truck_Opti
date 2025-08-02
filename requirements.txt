@@ -1,0 +1,6 @@
+py3dbp>=1.0.0
+flask>=2.0.0
+flask-sqlalchemy>=2.5.0
+flask-login>=0.5.0
+bootstrap-flask>=2.0.0
+pyinstaller>=4.0

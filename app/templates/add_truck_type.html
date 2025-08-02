@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Add New Truck Type</h1>
+    <form method="POST" action="{{ url_for('main.add_truck_type') }}">
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <div class="mb-3">
+            <label for="length" class="form-label">Length</label>
+            <input type="number" step="0.01" class="form-control" id="length" name="length" required>
+        </div>
+        <div class="mb-3">
+            <label for="width" class="form-label">Width</label>
+            <input type="number" step="0.01" class="form-control" id="width" name="width" required>
+        </div>
+        <div class="mb-3">
+            <label for="height" class="form-label">Height</label>
+            <input type="number" step="0.01" class="form-control" id="height" name="height" required>
+        </div>
+        <div class="mb-3">
+            <label for="max_weight" class="form-label">Max Weight</label>
+            <input type="number" step="0.01" class="form-control" id="max_weight" name="max_weight">
+        </div>
+        <button type="submit" class="btn btn-primary">Add Truck Type</button>
+    </form>
+</div>
+{% endblock %}

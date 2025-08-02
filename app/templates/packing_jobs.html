@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Packing Jobs</h1>
+    <a href="{{ url_for('main.add_packing_job') }}" class="btn btn-primary mb-3">Create New Packing Job</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Job Name</th>
+                <th>Date Created</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in jobs %}
+            <tr>
+                <td>{{ job.name }}</td>
+                <td>{{ job.date_created.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td><span class="badge bg-secondary">{{ job.status }}</span></td>
+                <td>
+                    <a href="{{ url_for('main.packing_result', job_id=job.id) }}" class="btn btn-sm btn-primary">View Details</a>
+                    <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

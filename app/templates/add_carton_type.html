@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Add New Carton Type</h1>
+    <form method="POST" action="{{ url_for('main.add_carton_type') }}">
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <div class="mb-3">
+            <label for="length" class="form-label">Length</label>
+            <input type="number" step="0.01" class="form-control" id="length" name="length" required>
+        </div>
+        <div class="mb-3">
+            <label for="width" class="form-label">Width</label>
+            <input type="number" step="0.01" class="form-control" id="width" name="width" required>
+        </div>
+        <div class="mb-3">
+            <label for="height" class="form-label">Height</label>
+            <input type="number" step="0.01" class="form-control" id="height" name="height" required>
+        </div>
+        <div class="mb-3">
+            <label for="weight" class="form-label">Weight</label>
+            <input type="number" step="0.01" class="form-_control" id="weight" name="weight">
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="can_rotate" name="can_rotate" value="1" checked>
+            <label class="form-check-label" for="can_rotate">Can Rotate</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Carton Type</button>
+    </form>
+</div>
+{% endblock %}

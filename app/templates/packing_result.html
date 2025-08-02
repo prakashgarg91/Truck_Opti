@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Packing Result for {{ job.name }}</h1>
+    <hr>
+    <h5>Truck Count: {{ result.truck_count }}</h5>
+    <h5>Space Utilization: {{ "%.2f"|format(result.space_utilization * 100) }}%</h5>
+    <hr>
+    <div id="visualization"></div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+    var data = {{ result.result_data|tojson }};
+    var traces = [];
+    var layout = {
+        title: 'Packing Visualization',
+        scene: {
+            xaxis:{title: 'Length'},
+            yaxis:{title: 'Width'},
+            zaxis:{title: 'Height'},
+        }
+    };
+
+    data.forEach(function(bin, index) {
+        bin.fitted_items.forEach(function(item) {
+            var trace = {
+                x: [item.position[0], item.position[0] + item.depth],
+                y: [item.position[1], item.position[1] + item.width],
+                z: [item.position[2], item.position[2] + item.height],
+                type: 'mesh3d',
+                name: item.name,
+                text: item.name,
+                hoverinfo: 'text'
+            };
+            traces.push(trace);
+        });
+    });
+
+    Plotly.newPlot('visualization', traces, layout);
+</script>
+{% endblock %}

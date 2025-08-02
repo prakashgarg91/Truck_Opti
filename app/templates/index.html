@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Welcome to TruckOpti</h1>
+    <p class="lead">A modern solution for optimizing truck loading with 3D bin packing.</p>
+    <hr>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Manage Truck Types</h5>
+                    <p class="card-text">Define and manage the specifications of your truck fleet.</p>
+                    <a href="{{ url_for('main.truck_types') }}" class="btn btn-primary">Go to Trucks</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Manage Carton Types</h5>
+                    <p class="card-text">Define and manage the dimensions and properties of your cartons.</p>
+                    <a href="{{ url_for('main.carton_types') }}" class="btn btn-primary">Go to Cartons</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Packing Jobs</h5>
+                    <p class="card-text">Create and manage packing jobs to optimize your truck loads.</p>
+                    <a href="{{ url_for('main.packing_jobs') }}" class="btn btn-primary">Go to Jobs</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

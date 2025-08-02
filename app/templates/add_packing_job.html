@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Create New Packing Job</h1>
+    <form method="POST" action="{{ url_for('main.add_packing_job') }}">
+        <div class="mb-3">
+            <label for="name" class="form-label">Job Name</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <div class="mb-3">
+            <label for="truck_type" class="form-label">Truck Type</label>
+            <select class="form-select" id="truck_type" name="truck_type" required>
+                {% for truck in truck_types %}
+                <option value="{{ truck.id }}">{{ truck.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <hr>
+        <h5>Cartons</h5>
+        <div id="carton-fields">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Carton Type</label>
+                    <select class="form-select" name="carton_type_1" required>
+                        {% for carton in carton_types %}
+                        <option value="{{ carton.id }}">{{ carton.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" class="form-control" name="quantity_1" required>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn btn-secondary" id="add-carton-field">Add Another Carton Type</button>
+        <hr>
+        <button type="submit" class="btn btn-primary">Create Job</button>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function() {
+        let cartonCount = 1;
+        $('#add-carton-field').click(function() {
+            cartonCount++;
+            let newField = `
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <select class="form-select" name="carton_type_${cartonCount}" required>
+                        {% for carton in carton_types %}
+                        <option value="{{ carton.id }}">{{ carton.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="number" class="form-control" name="quantity_${cartonCount}" required>
+                </div>
+            </div>`;
+            $('#carton-fields').append(newField);
+        });
+    });
+</script>
+{% endblock %}
