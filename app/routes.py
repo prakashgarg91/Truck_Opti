@@ -105,6 +105,19 @@ def add_packing_job():
         # Check if any cartons were provided
         if not carton_types_with_quantities:
             new_job.status = 'failed'
+            # Create a PackingResult record even for failed jobs
+            new_job.packing_result = PackingResult(
+                job_id=new_job.id,
+                truck_count=0,
+                space_utilization=0.0,
+                weight_utilization=0.0,
+                total_cost=0.0,
+                estimated_fuel_cost=0.0,
+                estimated_delivery_time=0.0,
+                co2_emissions=0.0,
+                result_data=[],
+                optimization_score=0.0
+            )
             db.session.commit()
             flash('Packing job failed - no cartons were specified!', 'warning')
             return redirect(url_for('main.packing_jobs'))

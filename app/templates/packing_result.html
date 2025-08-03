@@ -4,13 +4,20 @@
 <div class="container">
     <h1 class="mt-5">Packing Result for {{ job.name }}</h1>
     <hr>
-    <h5>Truck Count: {{ result.truck_count }}</h5>
-    <h5>Space Utilization: {{ "%.2f"|format(result.space_utilization * 100) }}%</h5>
-    <h5>Weight Utilization: {{ "%.2f"|format(result.weight_utilization * 100) }}%</h5>
-    <h5>Total Cost: ₹{{ "%.2f"|format(result.total_cost) }}</h5>
-    <h5>Estimated Delivery Time: {{ "%.2f"|format(result.estimated_delivery_time) }} hrs</h5>
-    <hr>
-    <div id="visualization" style="width:100%;height:600px;"></div>
+    {% if result.result_data|length == 0 %}
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">Packing Job Failed</h4>
+            <p>This packing job failed because no cartons were specified.</p>
+        </div>
+    {% else %}
+        <h5>Truck Count: {{ result.truck_count }}</h5>
+        <h5>Space Utilization: {{ "%.2f"|format(result.space_utilization * 100) }}%</h5>
+        <h5>Weight Utilization: {{ "%.2f"|format(result.weight_utilization * 100) }}%</h5>
+        <h5>Total Cost: ₹{{ "%.2f"|format(result.total_cost) }}</h5>
+        <h5>Estimated Delivery Time: {{ "%.2f"|format(result.estimated_delivery_time) }} hrs</h5>
+        <hr>
+        <div id="visualization" style="width:100%;height:600px;"></div>
+    {% endif %}
 </div>
 
 <script type="module">
