@@ -26,8 +26,10 @@
                 <td>{{ carton.weight }}</td>
                 <td>{{ 'Yes' if carton.can_rotate else 'No' }}</td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-info">Edit</a>
-                    <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                    <a href="{{ url_for('main.edit_carton_type', carton_id=carton.id) }}" class="btn btn-sm btn-info">Edit</a>
+                    <form method="POST" action="{{ url_for('main.delete_carton_type', carton_id=carton.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this carton?');">Delete</button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}

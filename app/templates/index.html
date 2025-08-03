@@ -1,38 +1,159 @@
 {% extends "base.html" %}
 
+{% block title %}Dashboard - TruckOpti{% endblock %}
+
 {% block content %}
-<div class="container">
-    <h1 class="mt-5">Welcome to TruckOpti</h1>
-    <p class="lead">A modern solution for optimizing truck loading with 3D bin packing.</p>
-    <hr>
+<div class="container-fluid">
+    <h1 class="mt-4">Logistics Dashboard</h1>
+    <p>Welcome to your logistics control center.</p>
+
     <div class="row">
-        <div class="col-md-4">
-            <div class="card">
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-primary text-white mb-4">
                 <div class="card-body">
-                    <h5 class="card-title">Manage Truck Types</h5>
-                    <p class="card-text">Define and manage the specifications of your truck fleet.</p>
-                    <a href="{{ url_for('main.truck_types') }}" class="btn btn-primary">Go to Trucks</a>
+                    <div class="d-flex justify-content-between">
+                        <i class="bi bi-truck fs-3"></i>
+                        <div class="text-end">
+                            <div class="fs-4">{{ stats.total_trucks }}</div>
+                            <div>Total Trucks</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-warning text-white mb-4">
                 <div class="card-body">
-                    <h5 class="card-title">Manage Carton Types</h5>
-                    <p class="card-text">Define and manage the dimensions and properties of your cartons.</p>
-                    <a href="{{ url_for('main.carton_types') }}" class="btn btn-primary">Go to Cartons</a>
+                    <div class="d-flex justify-content-between">
+                        <i class="bi bi-box-seam fs-3"></i>
+                        <div class="text-end">
+                            <div class="fs-4">{{ stats.total_shipments }}</div>
+                            <div>Total Shipments</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-success text-white mb-4">
                 <div class="card-body">
-                    <h5 class="card-title">Packing Jobs</h5>
-                    <p class="card-text">Create and manage packing jobs to optimize your truck loads.</p>
-                    <a href="{{ url_for('main.packing_jobs') }}" class="btn btn-primary">Go to Jobs</a>
+                    <div class="d-flex justify-content-between">
+                        <i class="bi bi-graph-up fs-3"></i>
+                        <div class="text-end">
+                            <div class="fs-4">{{ "%.2f"|format(stats.avg_utilization * 100) }}%</div>
+                            <div>Avg. Utilization</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <i class="bi bi-clock-history fs-3"></i>
+                        <div class="text-end">
+                            <div class="fs-4">{{ "%.2f"|format(stats.avg_delivery_time) }} hrs</div>
+                            <div>Avg. Delivery Time</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-secondary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <i class="bi bi-bar-chart fs-3"></i>
+                        <div class="text-end">
+                            <div class="fs-4">{{ "%.2f"|format(stats.avg_weight_utilization * 100) }}%</div>
+                            <div>Avg. Weight Utilization</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-danger text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <i class="bi bi-currency-dollar fs-3"></i>
+                        <div class="text-end">
+                            <div class="fs-4">${{ "%.2f"|format(stats.total_cost) }}</div>
+                            <div>Total Cost</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart-line-fill me-1"></i>
+                    Shipments per Month
+                </div>
+                <div class="card-body"><canvas id="shipmentsChart" width="100%" height="40"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-pie-chart-fill me-1"></i>
+                    Trucks by Category
+                </div>
+                <div class="card-body"><canvas id="trucksChart" width="100%" height="40"></canvas></div>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Shipments Chart
+    var ctxShipments = document.getElementById('shipmentsChart').getContext('2d');
+    var shipmentsChart = new Chart(ctxShipments, {
+        type: 'line',
+        data: {
+            labels: {{ charts.shipments.labels|tojson }},
+            datasets: [{
+                label: 'Shipments',
+                data: {{ charts.shipments.data|tojson }},
+                backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                borderColor: 'rgba(0, 123, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Trucks Chart
+    var ctxTrucks = document.getElementById('trucksChart').getContext('2d');
+    var trucksChart = new Chart(ctxTrucks, {
+        type: 'pie',
+        data: {
+            labels: {{ charts.trucks.labels|tojson }},
+            datasets: [{
+                label: 'Trucks',
+                data: {{ charts.trucks.data|tojson }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ]
+            }]
+        }
+    });
+</script>
 {% endblock %}

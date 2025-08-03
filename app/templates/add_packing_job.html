@@ -12,7 +12,7 @@
             <label for="truck_type" class="form-label">Truck Type</label>
             <select class="form-select" id="truck_type" name="truck_type" required>
                 {% for truck in truck_types %}
-                <option value="{{ truck.id }}">{{ truck.name }}</option>
+                <option value="{{ truck.id }}" data-volume="{{ truck.length * truck.width * truck.height }}">{{ truck.name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -22,17 +22,21 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label class="form-label">Carton Type</label>
-                    <select class="form-select" name="carton_type_1" required>
+                    <select class="form-select carton-type-select" name="carton_type_1" required>
                         {% for carton in carton_types %}
-                        <option value="{{ carton.id }}">{{ carton.name }}</option>
+                        <option value="{{ carton.id }}" data-volume="{{ carton.length * carton.width * carton.height }}">{{ carton.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Quantity</label>
-                    <input type="number" class="form-control" name="quantity_1" required>
+                    <input type="number" class="form-control carton-quantity" name="quantity_1" required>
                 </div>
             </div>
+        </div>
+        <div class="alert alert-info mt-3" id="truck-requirement" style="display:none;">
+            <strong>Truck Requirement:</strong>
+            <span id="truck-requirement-details"></span>
         </div>
         <button type="button" class="btn btn-secondary" id="add-carton-field">Add Another Carton Type</button>
         <hr>
@@ -42,24 +46,45 @@
 
 <script>
     $(document).ready(function() {
+        // Initialize truck requirement calculation
+        updateTruckRequirement();
+        
         let cartonCount = 1;
         $('#add-carton-field').click(function() {
             cartonCount++;
             let newField = `
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <select class="form-select" name="carton_type_${cartonCount}" required>
+                    <select class="form-select carton-type-select" name="carton_type_${cartonCount}" required>
                         {% for carton in carton_types %}
-                        <option value="{{ carton.id }}">{{ carton.name }}</option>
+                        <option value="{{ carton.id }}" data-volume="{{ carton.length * carton.width * carton.height }}">{{ carton.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <input type="number" class="form-control" name="quantity_${cartonCount}" required>
+                    <input type="number" class="form-control carton-quantity" name="quantity_${cartonCount}" required>
                 </div>
             </div>`;
             $('#carton-fields').append(newField);
         });
+
+        function updateTruckRequirement() {
+            let totalVolume = 0;
+            $('.carton-quantity').each(function() {
+                let qty = parseInt($(this).val()) || 0;
+                let cartonSelect = $(this).closest('.row').find('.carton-type-select');
+                let volume = parseFloat(cartonSelect.find('option:selected').data('volume')) || 0;
+                totalVolume += volume * qty;
+            });
+            let selectedTruck = $('#truck_type option:selected');
+            let truckVolume = selectedTruck.data('volume') || 100; // Fallback to 100 if no data
+            let trucksNeeded = Math.ceil(totalVolume / truckVolume);
+            $('#truck-requirement-details').text(trucksNeeded + " truck(s) required for selected cartons.");
+            $('#truck-requirement').show();
+        }
+
+        // Bind events to all current and future elements
+        $(document).on('input change', '.carton-quantity, .carton-type-select, #truck_type', updateTruckRequirement);
     });
 </script>
 {% endblock %}

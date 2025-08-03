@@ -1,4 +1,5 @@
 from . import db
+from datetime import datetime
 
 class TruckType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -7,7 +8,16 @@ class TruckType(db.Model):
     width = db.Column(db.Float, nullable=False)
     height = db.Column(db.Float, nullable=False)
     max_weight = db.Column(db.Float)
+    cost_per_km = db.Column(db.Float, default=0.0)
+    fuel_efficiency = db.Column(db.Float, default=0.0)  # km per liter
+    driver_cost_per_day = db.Column(db.Float, default=0.0)
+    maintenance_cost_per_km = db.Column(db.Float, default=0.0)
+    truck_category = db.Column(db.String(50), default='Standard')  # Light, Medium, Heavy
+    availability = db.Column(db.Boolean, default=True)
     description = db.Column(db.Text)
+    
+    # Relationships
+    packing_jobs = db.relationship('PackingJob', backref='truck_type', lazy=True)
 
 class CartonType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -17,18 +27,97 @@ class CartonType(db.Model):
     height = db.Column(db.Float, nullable=False)
     weight = db.Column(db.Float)
     can_rotate = db.Column(db.Boolean, default=True)
+    fragile = db.Column(db.Boolean, default=False)
+    stackable = db.Column(db.Boolean, default=True)
+    max_stack_height = db.Column(db.Integer, default=5)
+    priority = db.Column(db.Integer, default=1)  # 1-5, 5 being highest
+    value = db.Column(db.Float, default=0.0)
+    category = db.Column(db.String(50), default='General')
     description = db.Column(db.Text)
+
+class Customer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120))
+    phone = db.Column(db.String(20))
+    address = db.Column(db.Text)
+    city = db.Column(db.String(50))
+    postal_code = db.Column(db.String(10))
+    country = db.Column(db.String(50))
+    
+    # Relationships
+    shipments = db.relationship('Shipment', backref='customer', lazy=True)
+
+class Route(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    origin = db.Column(db.String(100), nullable=False)
+    destination = db.Column(db.String(100), nullable=False)
+    distance_km = db.Column(db.Float, nullable=False)
+    estimated_time_hours = db.Column(db.Float)
+    toll_cost = db.Column(db.Float, default=0.0)
+    fuel_cost = db.Column(db.Float, default=0.0)
+    
+    # Relationships
+    shipments = db.relationship('Shipment', backref='route', lazy=True)
+
+class Shipment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    shipment_number = db.Column(db.String(50), unique=True, nullable=False)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'))
+    route_id = db.Column(db.Integer, db.ForeignKey('route.id'))
+    priority = db.Column(db.Integer, default=1)  # 1-5
+    delivery_date = db.Column(db.Date)
+    status = db.Column(db.String(20), default='pending')  # pending, packed, shipped, delivered
+    total_value = db.Column(db.Float, default=0.0)
+    special_instructions = db.Column(db.Text)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    shipment_items = db.relationship('ShipmentItem', backref='shipment', lazy=True, cascade='all, delete-orphan')
+
+class ShipmentItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    shipment_id = db.Column(db.Integer, db.ForeignKey('shipment.id'))
+    carton_type_id = db.Column(db.Integer, db.ForeignKey('carton_type.id'))
+    quantity = db.Column(db.Integer, nullable=False)
+    
+    # Relationships
+    carton_type = db.relationship('CartonType', backref='shipment_items')
 
 class PackingJob(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
     truck_type_id = db.Column(db.Integer, db.ForeignKey('truck_type.id'))
+    shipment_id = db.Column(db.Integer, db.ForeignKey('shipment.id'), nullable=True)
     status = db.Column(db.String(20), default='pending')
+    optimization_goal = db.Column(db.String(20), default='space')  # space, cost, time
+    
+    # Relationships
+    shipment = db.relationship('Shipment', backref='packing_jobs')
+    packing_results = db.relationship('PackingResult', backref='packing_job', lazy=True)
 
 class PackingResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('packing_job.id'))
     truck_count = db.Column(db.Integer)
     space_utilization = db.Column(db.Float)
-    result_data = db.Column(db.JSON)  # Stores packing positions
+    weight_utilization = db.Column(db.Float)
+    total_cost = db.Column(db.Float, default=0.0)
+    estimated_fuel_cost = db.Column(db.Float, default=0.0)
+    estimated_delivery_time = db.Column(db.Float, default=0.0)
+    co2_emissions = db.Column(db.Float, default=0.0)
+    result_data = db.Column(db.JSON)  # Stores 3D packing positions
+    optimization_score = db.Column(db.Float, default=0.0)
+    date_calculated = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Analytics(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, default=datetime.utcnow().date())
+    total_shipments = db.Column(db.Integer, default=0)
+    total_trucks_used = db.Column(db.Integer, default=0)
+    average_space_utilization = db.Column(db.Float, default=0.0)
+    total_cost = db.Column(db.Float, default=0.0)
+    total_distance = db.Column(db.Float, default=0.0)
+    total_co2_emissions = db.Column(db.Float, default=0.0)

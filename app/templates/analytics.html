@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Analytics & Reports</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Shipments Over Time</div>
+                <div class="card-body">
+                    <canvas id="shipmentsOverTime"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Cost Breakdown</div>
+                <div class="card-body">
+                    <canvas id="costBreakdown"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Example chart data, replace with backend data
+    new Chart(document.getElementById('shipmentsOverTime').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Shipments',
+                data: [12, 19, 3, 5, 2, 3],
+                borderColor: 'rgba(33,150,243,1)',
+                backgroundColor: 'rgba(33,150,243,0.2)'
+            }]
+        }
+    });
+    new Chart(document.getElementById('costBreakdown').getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: ['Truck Cost', 'Carton Value', 'Other'],
+            datasets: [{
+                data: [3000, 1200, 800],
+                backgroundColor: [
+                    'rgba(33,150,243,0.7)',
+                    'rgba(76,175,80,0.7)',
+                    'rgba(255,193,7,0.7)'
+                ]
+            }]
+        }
+    });
+</script>
+{% endblock %}
