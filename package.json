@@ -1,6 +1,16 @@
 {
+  "name": "TruckOpti",
+  "version": "1.0.0",
+  "description": "Truck loading optimization app",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
   "dependencies": {
     "chai": "^5.2.1",
     "puppeteer": "^24.15.0"
+  },
+  "devDependencies": {
+    "jest": "^30.0.5"
   }
 }

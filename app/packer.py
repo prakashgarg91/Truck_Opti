@@ -1,4 +1,59 @@
 from py3dbp import Packer, Bin, Item
+import json
+
+# Common Indian Truck Types
+INDIAN_TRUCKS = [
+    # City/LCV
+    {"name": "Tata Ace (Chhota Hathi)", "length": 220, "width": 150, "height": 120, "max_weight": 750},
+    {"name": "Mahindra Jeeto", "length": 225, "width": 150, "height": 120, "max_weight": 700},
+    {"name": "Ashok Leyland Dost", "length": 250, "width": 160, "height": 120, "max_weight": 1250},
+    # MCV
+    {"name": "Eicher 14 ft", "length": 430, "width": 200, "height": 190, "max_weight": 10000},
+    {"name": "Tata 14 ft", "length": 430, "width": 200, "height": 190, "max_weight": 10000},
+    {"name": "Ashok Leyland 17 ft", "length": 515, "width": 208, "height": 215, "max_weight": 12000},
+    {"name": "Eicher 17 ft", "length": 515, "width": 208, "height": 215, "max_weight": 12000},
+    {"name": "BharatBenz 19 ft", "length": 575, "width": 208, "height": 215, "max_weight": 14000},
+    {"name": "Tata 19 ft", "length": 575, "width": 208, "height": 215, "max_weight": 14000},
+    {"name": "Ashok Leyland 20 ft", "length": 600, "width": 230, "height": 230, "max_weight": 16000},
+    # HCV/Long Haul
+    {"name": "Eicher 32 ft XL", "length": 960, "width": 240, "height": 240, "max_weight": 25000},
+    {"name": "Tata 32 ft XL", "length": 960, "width": 240, "height": 240, "max_weight": 25000},
+    {"name": "Ashok Leyland 32 ft XL", "length": 960, "width": 240, "height": 240, "max_weight": 25000},
+    {"name": "BharatBenz 32 ft XL", "length": 960, "width": 240, "height": 240, "max_weight": 25000},
+    # Container/Closed Body
+    {"name": "Tata 20 ft Container", "length": 600, "width": 230, "height": 230, "max_weight": 16000},
+    {"name": "Eicher 20 ft Container", "length": 600, "width": 230, "height": 230, "max_weight": 16000},
+    # Refrigerated/White Goods
+    {"name": "Eicher Reefer 20 ft", "length": 600, "width": 230, "height": 230, "max_weight": 16000},
+    # Add more as needed
+]
+
+# Sample Indian Carton Types
+INDIAN_CARTONS = [
+    # Electronics
+    {"type": "LED TV 32", "length": 80, "width": 15, "height": 55, "weight": 10, "qty": 100},
+    {"type": "LED TV 43", "length": 105, "width": 18, "height": 65, "weight": 15, "qty": 80},
+    {"type": "LED TV 55", "length": 135, "width": 20, "height": 85, "weight": 22, "qty": 40},
+    {"type": "Microwave", "length": 55, "width": 45, "height": 35, "weight": 12, "qty": 60},
+    {"type": "AC Split Indoor", "length": 95, "width": 30, "height": 35, "weight": 18, "qty": 50},
+    {"type": "AC Split Outdoor", "length": 85, "width": 40, "height": 55, "weight": 28, "qty": 50},
+    # White Goods
+    {"type": "Washing Machine Front Load", "length": 65, "width": 65, "height": 90, "weight": 60, "qty": 30},
+    {"type": "Washing Machine Top Load", "length": 60, "width": 60, "height": 95, "weight": 55, "qty": 30},
+    {"type": "Refrigerator Single Door", "length": 60, "width": 65, "height": 130, "weight": 45, "qty": 20},
+    {"type": "Refrigerator Double Door", "length": 70, "width": 75, "height": 175, "weight": 70, "qty": 20},
+    {"type": "Refrigerator Side by Side", "length": 90, "width": 80, "height": 180, "weight": 95, "qty": 10},
+    # Small Appliances
+    {"type": "Mixer Grinder", "length": 35, "width": 25, "height": 30, "weight": 5, "qty": 100},
+    {"type": "Toaster", "length": 30, "width": 20, "height": 20, "weight": 3, "qty": 100},
+    {"type": "Iron", "length": 30, "width": 15, "height": 15, "weight": 2, "qty": 100},
+    # General Cartons
+    {"type": "A", "length": 60, "width": 40, "height": 40, "weight": 5, "qty": 240},
+    {"type": "B", "length": 50, "width": 50, "height": 45, "weight": 6, "qty": 160},
+    {"type": "C", "length": 70, "width": 60, "height": 50, "weight": 8, "qty": 80},
+    {"type": "D", "length": 30, "width": 30, "height": 30, "weight": 2, "qty": 40},
+    {"type": "E", "length": 90, "width": 70, "height": 50, "weight": 10, "qty": 50}
+]
 
 def pack_cartons(truck_type, carton_types_with_quantities, optimization_goal='space'):
     """

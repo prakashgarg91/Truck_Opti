@@ -1,7 +1,73 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from .models import TruckType, CartonType, PackingJob, PackingResult, Shipment, db
-
+from flask import request, jsonify, Blueprint, flash, render_template, redirect, url_for
+from app.models import db, TruckType, CartonType, PackingJob, PackingResult, Shipment
+import json
+from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS, pack_cartons
 bp = Blueprint('main', __name__)
+api = Blueprint('api', __name__)
+@bp.route('/recommend-truck', methods=['GET', 'POST'])
+def recommend_truck():
+    cartons = CartonType.query.all()
+    recommended = None
+    if request.method == 'POST':
+        carton_quantities = {}
+        for carton in cartons:
+            qty = int(request.form.get(f'carton_{carton.id}', 0))
+            if qty > 0:
+                carton_quantities[carton] = qty
+        trucks = TruckType.query.order_by('max_weight').all()  # Smallest first
+        results = []
+        from . import packer
+        for truck in trucks:
+            fit = packer.pack_cartons(truck, carton_quantities, 'space')
+            total_fitted = sum(len(bin['fitted_items']) for bin in fit)
+            total_unfitted = sum(len(bin['unfitted_items']) for bin in fit)
+            utilization = fit[0]['utilization'] if fit else 0
+            results.append({
+                'truck': truck,
+                'total_fitted': total_fitted,
+                'total_unfitted': total_unfitted,
+                'utilization': utilization,
+                'bins': fit
+            })
+        # Prioritize trucks that fit all cartons with highest utilization, then smallest truck
+        recommended = sorted(results, key=lambda r: (r['total_unfitted'], -r['utilization'], r['truck'].max_weight))
+    return render_template('recommend_truck.html', cartons=cartons, recommended=recommended)
+@bp.route('/fit-cartons', methods=['GET', 'POST'])
+def fit_cartons():
+    trucks = TruckType.query.all()
+    cartons = CartonType.query.all()
+    fit_results = None
+    if request.method == 'POST':
+        selected_truck_ids = request.form.getlist('truck_ids')
+        carton_quantities = {}
+        # Parse dynamic carton rows
+        i = 1
+        while True:
+            carton_type_id = request.form.get(f'carton_type_{i}')
+            qty = request.form.get(f'carton_qty_{i}')
+            if not carton_type_id or not qty:
+                break
+            carton_type = CartonType.query.get(int(carton_type_id))
+            if carton_type and int(qty) > 0:
+                carton_quantities[carton_type] = int(qty)
+            i += 1
+        fit_results = []
+        from . import packer
+        for truck_id in selected_truck_ids:
+            truck = TruckType.query.get(int(truck_id))
+            fit = packer.pack_cartons(truck, carton_quantities, 'space')
+            total_fitted = sum(len(bin['fitted_items']) for bin in fit)
+            total_unfitted = sum(len(bin['unfitted_items']) for bin in fit)
+            utilization = fit[0]['utilization'] if fit else 0
+            fit_results.append({
+                'truck': truck,
+                'total_fitted': total_fitted,
+                'total_unfitted': total_unfitted,
+                'utilization': utilization,
+                'bins': fit
+            })
+    return render_template('fit_cartons.html', trucks=trucks, cartons=cartons, fit_results=fit_results)
+
 
 @bp.route('/')
 def index():
@@ -85,9 +151,10 @@ def add_packing_job():
     if request.method == 'POST':
         job_name = request.form['name']
         truck_type_id = request.form['truck_type']
-        
+        optimization_goal = request.form.get('optimization_goal', 'space')
+
         # Create a new packing job
-        new_job = PackingJob(name=job_name, truck_type_id=truck_type_id, status='in_progress')
+        new_job = PackingJob(name=job_name, truck_type_id=truck_type_id, status='in_progress', optimization_goal=optimization_goal)
         db.session.add(new_job)
         db.session.commit()
 
@@ -121,11 +188,11 @@ def add_packing_job():
             db.session.commit()
             flash('Packing job failed - no cartons were specified!', 'warning')
             return redirect(url_for('main.packing_jobs'))
-            
-        # Run the packing algorithm
+
+        # Run the advanced packing algorithm
         from . import packer
         truck_type = TruckType.query.get(truck_type_id)
-        results = packer.pack_cartons(truck_type, carton_types_with_quantities)
+        results = packer.pack_cartons(truck_type, carton_types_with_quantities, optimization_goal)
 
         # Save the results
         new_job.status = 'completed'
@@ -133,6 +200,8 @@ def add_packing_job():
             job_id=new_job.id,
             truck_count=len(results),
             space_utilization=results[0]['utilization'] if results else 0,
+            weight_utilization=results[0]['utilization'] if results else 0,
+            total_cost=results[0]['total_cost'] if results else 0,
             result_data=results
         )
         db.session.commit()
@@ -166,7 +235,7 @@ def edit_carton_type(carton_id):
         db.session.commit()
         flash('Carton type updated successfully!', 'success')
         return redirect(url_for('main.carton_types'))
-    return render_template('add_carton_type.html', carton=carton)
+    return render_template('add_carton_type.html', carton=carton, edit_mode=True)
 
 @bp.route('/delete-carton-type/<int:carton_id>', methods=['POST'])
 def delete_carton_type(carton_id):
@@ -187,7 +256,7 @@ def edit_truck_type(truck_id):
         db.session.commit()
         flash('Truck type updated successfully!', 'success')
         return redirect(url_for('main.truck_types'))
-    return render_template('add_truck_type.html', truck=truck)
+    return render_template('add_truck_type.html', truck=truck, edit_mode=True)
 
 @bp.route('/delete-truck-type/<int:truck_id>', methods=['POST'])
 def delete_truck_type(truck_id):
@@ -298,6 +367,12 @@ def api_packing_jobs():
         'status': j.status,
         'date_created': j.date_created.isoformat()
     } for j in jobs])
+
+
+# --- Analytics UI Page ---
+@bp.route('/analytics')
+def analytics():
+    return render_template('analytics.html')
 
 @bp.route('/api/analytics', methods=['GET'])
 def api_analytics():

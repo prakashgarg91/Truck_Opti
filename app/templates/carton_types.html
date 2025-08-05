@@ -1,39 +1,48 @@
+
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mt-5">Carton Types</h1>
-    <a href="{{ url_for('main.add_carton_type') }}" class="btn btn-primary mb-3">Add New Carton Type</a>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Length</th>
-                <th>Width</th>
-                <th>Height</th>
-                <th>Weight</th>
-                <th>Can Rotate</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for carton in cartons %}
-            <tr>
-                <td>{{ carton.name }}</td>
-                <td>{{ carton.length }}</td>
-                <td>{{ carton.width }}</td>
-                <td>{{ carton.height }}</td>
-                <td>{{ carton.weight }}</td>
-                <td>{{ 'Yes' if carton.can_rotate else 'No' }}</td>
-                <td>
-                    <a href="{{ url_for('main.edit_carton_type', carton_id=carton.id) }}" class="btn btn-sm btn-info">Edit</a>
-                    <form method="POST" action="{{ url_for('main.delete_carton_type', carton_id=carton.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this carton?');">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="container mt-4">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0"><i class="bi bi-box-seam"></i> Carton Types</h4>
+        </div>
+        <div class="card-body">
+            <a href="{{ url_for('main.add_carton_type') }}" class="btn btn-primary mb-3"><i class="bi bi-plus-lg"></i> Add New Carton Type</a>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Length</th>
+                            <th>Width</th>
+                            <th>Height</th>
+                            <th>Weight</th>
+                            <th>Can Rotate</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for carton in cartons %}
+                        <tr>
+                            <td>{{ carton.name }}</td>
+                            <td>{{ carton.length }}</td>
+                            <td>{{ carton.width }}</td>
+                            <td>{{ carton.height }}</td>
+                            <td>{{ carton.weight }}</td>
+                            <td>{{ 'Yes' if carton.can_rotate else 'No' }}</td>
+                            <td>
+                                <a href="{{ url_for('main.edit_carton_type', carton_id=carton.id) }}" class="btn btn-sm btn-info">Edit</a>
+                                <form method="POST" action="{{ url_for('main.delete_carton_type', carton_id=carton.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this carton?');">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

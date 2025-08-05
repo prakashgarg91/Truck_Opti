@@ -2,6 +2,8 @@ from . import db
 from datetime import datetime
 
 class TruckType(db.Model):
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     length = db.Column(db.Float, nullable=False)
@@ -20,12 +22,15 @@ class TruckType(db.Model):
     packing_jobs = db.relationship('PackingJob', backref='truck_type', lazy=True)
 
 class CartonType(db.Model):
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     length = db.Column(db.Float, nullable=False)
     width = db.Column(db.Float, nullable=False)
     height = db.Column(db.Float, nullable=False)
     weight = db.Column(db.Float)
+    qty = db.Column(db.Integer, default=0)
     can_rotate = db.Column(db.Boolean, default=True)
     fragile = db.Column(db.Boolean, default=False)
     stackable = db.Column(db.Boolean, default=True)
