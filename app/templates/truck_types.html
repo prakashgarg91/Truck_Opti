@@ -1,47 +1,56 @@
+
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mt-5">Fleet Management</h1>
-    <a href="{{ url_for('main.add_truck_type') }}" class="btn btn-primary mb-3"><i class="bi bi-plus-lg"></i> Add Truck</a>
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Length</th>
-                <th>Width</th>
-                <th>Height</th>
-                <th>Max Weight</th>
-                <th>Availability</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for truck in trucks %}
-            <tr>
-                <td>{{ truck.name }}</td>
-                <td>{{ truck.truck_category }}</td>
-                <td>{{ truck.length }}</td>
-                <td>{{ truck.width }}</td>
-                <td>{{ truck.height }}</td>
-                <td>{{ truck.max_weight }}</td>
-                <td>
-                    {% if truck.availability %}
-                        <span class="badge bg-success">Available</span>
-                    {% else %}
-                        <span class="badge bg-danger">Unavailable</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{{ url_for('main.edit_truck_type', truck_id=truck.id) }}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
-                    <form method="POST" action="{{ url_for('main.delete_truck_type', truck_id=truck.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this truck?');"><i class="bi bi-trash"></i></button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="container mt-4">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-truck"></i> Fleet Management</h4>
+        </div>
+        <div class="card-body">
+            <a href="{{ url_for('main.add_truck_type') }}" class="btn btn-primary mb-3"><i class="bi bi-plus-lg"></i> Add Truck</a>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Length</th>
+                            <th>Width</th>
+                            <th>Height</th>
+                            <th>Max Weight</th>
+                            <th>Availability</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for truck in trucks %}
+                        <tr>
+                            <td>{{ truck.name }}</td>
+                            <td>{{ truck.truck_category }}</td>
+                            <td>{{ truck.length }}</td>
+                            <td>{{ truck.width }}</td>
+                            <td>{{ truck.height }}</td>
+                            <td>{{ truck.max_weight }}</td>
+                            <td>
+                                {% if truck.availability %}
+                                    <span class="badge bg-success">Available</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Unavailable</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('main.edit_truck_type', truck_id=truck.id) }}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                                <form method="POST" action="{{ url_for('main.delete_truck_type', truck_id=truck.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this truck?');"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
