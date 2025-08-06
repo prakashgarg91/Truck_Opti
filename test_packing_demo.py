@@ -18,6 +18,6 @@ for carton in INDIAN_CARTONS:
             setattr(obj, k, v)
     carton_objs[obj] = carton['qty']
 
-result = pack_cartons(truck, carton_objs, 'space')
+result = pack_cartons({truck: 1}, carton_objs, 'space')
 import json
 print(json.dumps(result, indent=2))

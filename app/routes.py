@@ -1,7 +1,19 @@
 from flask import request, jsonify, Blueprint, flash, render_template, redirect, url_for
 from app.models import db, TruckType, CartonType, PackingJob, PackingResult, Shipment
 import json
+from decimal import Decimal
 from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS, pack_cartons
+
+def convert_decimals_to_floats(obj):
+    """Recursively convert Decimal objects to float for JSON serialization"""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    elif isinstance(obj, dict):
+        return {key: convert_decimals_to_floats(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_decimals_to_floats(item) for item in obj]
+    else:
+        return obj
 bp = Blueprint('main', __name__)
 api = Blueprint('api', __name__)
 @bp.route('/recommend-truck', methods=['GET', 'POST'])
@@ -176,14 +188,17 @@ def add_packing_job():
 
         from . import packer
         results = packer.pack_cartons(truck_quantities, carton_quantities, optimization_goal)
+        
+        # Convert all Decimal objects to floats for JSON serialization
+        results = convert_decimals_to_floats(results)
 
         total_trucks_used = len([r for r in results if r['fitted_items']])
         total_utilization = sum(r['utilization'] for r in results)
-        avg_utilization = total_utilization / total_trucks_used if total_trucks_used > 0 else 0
-        total_cost = sum(r['total_cost'] for r in results)
+        avg_utilization = float(total_utilization / total_trucks_used) if total_trucks_used > 0 else 0.0
+        total_cost = float(sum(r['total_cost'] for r in results))
 
         new_job.status = 'completed'
-        new_job.packing_result = PackingResult(
+        packing_result = PackingResult(
             job_id=new_job.id,
             truck_count=total_trucks_used,
             space_utilization=avg_utilization,
@@ -191,6 +206,7 @@ def add_packing_job():
             total_cost=total_cost,
             result_data=results
         )
+        db.session.add(packing_result)
         db.session.commit()
 
         flash('Packing job created and completed successfully!', 'success')
@@ -292,14 +308,17 @@ def batch_processing():
 
             from . import packer
             results = packer.pack_cartons(truck_quantities, carton_quantities, 'cost')
+            
+            # Convert all Decimal objects to floats for JSON serialization
+            results = convert_decimals_to_floats(results)
 
             total_trucks_used = len([r for r in results if r['fitted_items']])
             total_utilization = sum(r['utilization'] for r in results)
-            avg_utilization = total_utilization / total_trucks_used if total_trucks_used > 0 else 0
-            total_cost = sum(r['total_cost'] for r in results)
+            avg_utilization = float(total_utilization / total_trucks_used) if total_trucks_used > 0 else 0.0
+            total_cost = float(sum(r['total_cost'] for r in results))
 
             new_job.status = 'completed'
-            new_job.packing_result = PackingResult(
+            packing_result = PackingResult(
                 job_id=new_job.id,
                 truck_count=total_trucks_used,
                 space_utilization=avg_utilization,
@@ -307,6 +326,7 @@ def batch_processing():
                 total_cost=total_cost,
                 result_data=results
             )
+            db.session.add(packing_result)
             db.session.commit()
             flash('Batch job processed successfully!', 'success')
             return redirect(url_for('main.packing_result', job_id=new_job.id))

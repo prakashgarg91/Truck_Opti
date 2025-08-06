@@ -1,9 +1,20 @@
 {% extends "base.html" %}
 
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{{ url_for('main.packing_jobs') }}">Packing Jobs</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Create New Job</li>
+{% endblock %}
+
 {% block content %}
 <div class="container">
-    <h1 class="mt-5">Create New Packing Job</h1>
-    <form method="POST" action="{{ url_for('main.add_packing_job') }}">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Create New Packing Job</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('main.add_packing_job') }}" id="packingJobForm" novalidate>
         <div class="mb-3">
             <label for="name" class="form-label">Job Name</label>
             <input type="text" class="form-control" id="name" name="name" required>
@@ -46,8 +57,15 @@
         </div>
         <button type="button" class="btn btn-secondary" id="add-carton-field">Add Another Carton Type</button>
         <hr>
-        <button type="submit" class="btn btn-primary">Create Job</button>
-    </form>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Create Job</button>
+                            <a href="{{ url_for('main.packing_jobs') }}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>

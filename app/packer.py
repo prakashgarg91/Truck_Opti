@@ -126,9 +126,9 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
                 'name': item.name,
                 'position': item.position,
                 'rotation_type': item.rotation_type,
-                'width': item.width,
-                'height': item.height,
-                'depth': item.depth,
+                'width': float(item.width),
+                'height': float(item.height),
+                'depth': float(item.depth),
                 'color': '#%06x' % (hash(item.name) & 0xFFFFFF),
             })
         
@@ -152,10 +152,10 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
             'bin_name': truck_bin.name,
             'fitted_items': packed_items_details,
             'unfitted_items': unfitted_items_details,
-            'utilization': weight_utilization,
-            'total_cost': total_cost,
-            'truck_cost': truck_cost,
-            'carton_value': total_carton_value
+            'utilization': float(weight_utilization),
+            'total_cost': float(total_cost),
+            'truck_cost': float(truck_cost),
+            'carton_value': float(total_carton_value)
         })
         
         remaining_items = truck_bin.unfitted_items

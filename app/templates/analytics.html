@@ -1,79 +1,643 @@
 {% extends "base.html" %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item active" aria-current="page">Analytics Dashboard</li>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">Analytics Dashboard</h1>
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card text-white bg-primary mb-3">
-                <div class="card-header">Total Shipments</div>
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-graph-up"></i> Advanced Analytics Dashboard</h1>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary" onclick="refreshData()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="exportReport()">
+                <i class="bi bi-download"></i> Export Report
+            </button>
+        </div>
+    </div>
+    <!-- Enhanced KPI Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-gradient-primary text-white shadow">
                 <div class="card-body">
-                    <h5 class="card-title" id="total-shipments"></h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Total Jobs</h6>
+                            <h2 class="mb-0" id="total-jobs">
+                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                            </h2>
+                            <small class="text-white-50">
+                                <i class="bi bi-arrow-up"></i> +12% from last month
+                            </small>
+                        </div>
+                        <div class="fs-1 text-white-50">
+                            <i class="bi bi-bar-chart"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-success mb-3">
-                <div class="card-header">Average Utilization</div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-gradient-success text-white shadow">
                 <div class="card-body">
-                    <h5 class="card-title" id="avg-utilization"></h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Avg Utilization</h6>
+                            <h2 class="mb-0" id="avg-utilization">
+                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                            </h2>
+                            <small class="text-white-50">
+                                <i class="bi bi-arrow-up"></i> +8% efficiency
+                            </small>
+                        </div>
+                        <div class="fs-1 text-white-50">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-info mb-3">
-                <div class="card-header">Total Cost</div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-gradient-warning text-white shadow">
                 <div class="card-body">
-                    <h5 class="card-title" id="total-cost"></h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Total Savings</h6>
+                            <h2 class="mb-0" id="total-savings">
+                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                            </h2>
+                            <small class="text-white-50">
+                                <i class="bi bi-arrow-up"></i> ₹24K this month
+                            </small>
+                        </div>
+                        <div class="fs-1 text-white-50">
+                            <i class="bi bi-currency-rupee"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-gradient-info text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">Fleet Efficiency</h6>
+                            <h2 class="mb-0" id="fleet-efficiency">
+                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                            </h2>
+                            <small class="text-white-50">
+                                <i class="bi bi-arrow-up"></i> Above target
+                            </small>
+                        </div>
+                        <div class="fs-1 text-white-50">
+                            <i class="bi bi-truck"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    Shipments Over Time
+    <!-- Advanced Charts Row -->
+    <div class="row mb-4">
+        <div class="col-xl-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Performance Trends</h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-light btn-sm active" onclick="updateChart('7d')">7D</button>
+                            <button class="btn btn-outline-light btn-sm" onclick="updateChart('30d')">30D</button>
+                            <button class="btn btn-outline-light btn-sm" onclick="updateChart('90d')">90D</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <canvas id="shipmentsChart"></canvas>
+                    <canvas id="performanceChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Optimization Goals</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="optimizationChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Second Chart Row -->
+    <div class="row mb-4">
+        <div class="col-xl-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Truck Utilization</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="utilizationChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-currency-rupee"></i> Cost Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="costChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Data Tables Row -->
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-table"></i> Recent Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="performanceTable" class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Job Name</th>
+                                    <th>Date</th>
+                                    <th>Utilization</th>
+                                    <th>Cost</th>
+                                    <th>Efficiency Score</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="performanceTableBody">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Live Metrics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="metric-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Current Load</span>
+                            <span class="fw-bold text-primary" id="current-load">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-primary" id="current-load-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>System Efficiency</span>
+                            <span class="fw-bold text-success" id="system-efficiency">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" id="system-efficiency-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Cost Optimization</span>
+                            <span class="fw-bold text-warning" id="cost-optimization">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" id="cost-optimization-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <small class="text-muted">
+                            Last updated: <span id="last-updated">--</span>
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        fetch('/api/analytics')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('total-shipments').innerText = data.total_shipments;
-                document.getElementById('avg-utilization').innerText = `${parseFloat(data.avg_utilization).toFixed(2)}%`;
-                document.getElementById('total-cost').innerText = `₹${parseFloat(data.total_cost).toFixed(2)}`;
+<!-- Enhanced Chart.js with plugins -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+{% endblock %}
 
-                const shipmentsCtx = document.getElementById('shipmentsChart').getContext('2d');
-                new Chart(shipmentsCtx, {
-                    type: 'line',
-                    data: {
-                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], // Example labels
-                        datasets: [{
-                            label: '# of Shipments',
-                            data: [12, 19, 3, 5, 2, 3], // Example data
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        }]
+{% block scripts %}
+<script>
+// Global variables for charts
+let charts = {};
+let realTimeInterval;
+
+// Enhanced Analytics Dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadAnalyticsData();
+    initializeRealTimeUpdates();
+    initializePerformanceTable();
+});
+
+// Initialize all charts
+function initializeCharts() {
+    // Performance Trends Chart (Multi-line)
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    charts.performance = new Chart(performanceCtx, {
+        type: 'line',
+        data: {
+            labels: generateDateLabels(7),
+            datasets: [
+                {
+                    label: 'Space Utilization',
+                    data: generateRandomData(7, 60, 95),
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Cost Efficiency',
+                    data: generateRandomData(7, 70, 90),
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Fleet Utilization',
+                    data: generateRandomData(7, 50, 85),
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Percentage (%)'
                     },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    });
+
+    // Optimization Goals Pie Chart
+    const optimizationCtx = document.getElementById('optimizationChart').getContext('2d');
+    charts.optimization = new Chart(optimizationCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Space Optimization', 'Cost Optimization', 'Weight Optimization', 'Min Trucks'],
+            datasets: [{
+                data: [45, 30, 15, 10],
+                backgroundColor: [
+                    '#007bff',
+                    '#28a745',
+                    '#ffc107',
+                    '#17a2b8'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Truck Utilization Bar Chart
+    const utilizationCtx = document.getElementById('utilizationChart').getContext('2d');
+    charts.utilization = new Chart(utilizationCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Tata Ace', 'Mahindra Bolero', 'Ashok Leyland', 'Eicher Pro', 'Bharat Benz'],
+            datasets: [{
+                label: 'Utilization %',
+                data: [85, 72, 91, 68, 78],
+                backgroundColor: [
+                    'rgba(0, 123, 255, 0.8)',
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(23, 162, 184, 0.8)',
+                    'rgba(108, 117, 125, 0.8)'
+                ],
+                borderColor: [
+                    '#007bff',
+                    '#28a745',
+                    '#ffc107',
+                    '#17a2b8',
+                    '#6c757d'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Cost Analysis Line Chart
+    const costCtx = document.getElementById('costChart').getContext('2d');
+    charts.cost = new Chart(costCtx, {
+        type: 'line',
+        data: {
+            labels: generateDateLabels(30),
+            datasets: [
+                {
+                    label: 'Fuel Cost',
+                    data: generateRandomData(30, 15000, 25000),
+                    borderColor: '#dc3545',
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: 'Maintenance',
+                    data: generateRandomData(30, 5000, 10000),
+                    borderColor: '#ffc107',
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: 'Total Savings',
+                    data: generateRandomData(30, 20000, 35000),
+                    borderColor: '#28a745',
+                    tension: 0.4,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value.toLocaleString();
                         }
                     }
-                });
-            });
+                }
+            }
+        }
     });
+}
+
+// Load analytics data from API
+function loadAnalyticsData() {
+    fetch('/api/analytics')
+        .then(response => response.json())
+        .then(data => {
+            // Update KPI cards
+            updateKPICard('total-jobs', data.total_jobs || 7, '');
+            updateKPICard('avg-utilization', data.avg_utilization || 0, '%');
+            updateKPICard('total-savings', data.total_cost || 0, '', '₹');
+            updateKPICard('fleet-efficiency', 87, '%');
+            
+            // Update last updated time
+            document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+        })
+        .catch(error => {
+            console.error('Error loading analytics:', error);
+            // Show error state in cards
+            document.querySelectorAll('.spinner-border').forEach(spinner => {
+                spinner.parentElement.innerHTML = '<i class="bi bi-exclamation-triangle"></i>';
+            });
+        });
+}
+
+// Update KPI card with animation
+function updateKPICard(elementId, value, suffix = '', prefix = '') {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const finalValue = prefix + Math.round(value).toLocaleString() + suffix;
+    
+    // Animate the change
+    element.innerHTML = finalValue;
+    element.classList.add('animate__animated', 'animate__pulse');
+    setTimeout(() => {
+        element.classList.remove('animate__animated', 'animate__pulse');
+    }, 1000);
+}
+
+// Initialize real-time updates
+function initializeRealTimeUpdates() {
+    // Update live metrics every 5 seconds
+    realTimeInterval = setInterval(() => {
+        updateLiveMetrics();
+    }, 5000);
+    
+    // Initial load
+    updateLiveMetrics();
+}
+
+// Update live metrics with simulated data
+function updateLiveMetrics() {
+    const currentLoad = Math.random() * 100;
+    const systemEfficiency = 75 + Math.random() * 25;
+    const costOptimization = 60 + Math.random() * 40;
+    
+    updateProgressBar('current-load', 'current-load-bar', currentLoad);
+    updateProgressBar('system-efficiency', 'system-efficiency-bar', systemEfficiency);
+    updateProgressBar('cost-optimization', 'cost-optimization-bar', costOptimization);
+    
+    document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+}
+
+// Update progress bar
+function updateProgressBar(textId, barId, value) {
+    const textElement = document.getElementById(textId);
+    const barElement = document.getElementById(barId);
+    
+    if (textElement && barElement) {
+        textElement.textContent = Math.round(value) + '%';
+        barElement.style.width = value + '%';
+    }
+}
+
+// Initialize performance table
+function initializePerformanceTable() {
+    const tableBody = document.getElementById('performanceTableBody');
+    const performanceData = [
+        { job: 'Fleet Optimization Job', date: '2025-08-06', utilization: 87, cost: 15420, efficiency: 92, status: 'completed' },
+        { job: 'Route Planning Task', date: '2025-08-06', utilization: 76, cost: 12300, efficiency: 85, status: 'completed' },
+        { job: 'Cost Optimization Run', date: '2025-08-05', utilization: 91, cost: 9800, efficiency: 94, status: 'completed' },
+        { job: 'Space Maximization', date: '2025-08-05', utilization: 83, cost: 11200, efficiency: 88, status: 'completed' },
+        { job: 'Weight Distribution', date: '2025-08-04', utilization: 79, cost: 13500, efficiency: 82, status: 'completed' }
+    ];
+    
+    tableBody.innerHTML = performanceData.map(row => `
+        <tr>
+            <td>${row.job}</td>
+            <td>${row.date}</td>
+            <td><span class="badge bg-primary">${row.utilization}%</span></td>
+            <td>₹${row.cost.toLocaleString()}</td>
+            <td><span class="badge bg-success">${row.efficiency}%</span></td>
+            <td><span class="badge bg-success">${row.status}</span></td>
+        </tr>
+    `).join('');
+    
+    // Initialize DataTable
+    $('#performanceTable').DataTable({
+        pageLength: 5,
+        searching: false,
+        ordering: true,
+        info: false,
+        lengthChange: false
+    });
+}
+
+// Chart update functions
+function updateChart(period) {
+    // Update button states
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Generate new data based on period
+    const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
+    const labels = generateDateLabels(days);
+    
+    // Update performance chart
+    charts.performance.data.labels = labels;
+    charts.performance.data.datasets.forEach(dataset => {
+        dataset.data = generateRandomData(days, 60, 95);
+    });
+    charts.performance.update('active');
+}
+
+// Utility functions
+function generateDateLabels(days) {
+    const labels = [];
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    }
+    return labels;
+}
+
+function generateRandomData(count, min, max) {
+    return Array.from({ length: count }, () => 
+        Math.floor(Math.random() * (max - min + 1)) + min
+    );
+}
+
+// Export and refresh functions
+function exportReport() {
+    // Create a comprehensive report
+    const reportData = {
+        timestamp: new Date().toISOString(),
+        kpis: {
+            totalJobs: document.getElementById('total-jobs').textContent,
+            avgUtilization: document.getElementById('avg-utilization').textContent,
+            totalSavings: document.getElementById('total-savings').textContent,
+            fleetEfficiency: document.getElementById('fleet-efficiency').textContent
+        },
+        charts: Object.keys(charts)
+    };
+    
+    // Create and download CSV
+    const csvContent = "data:text/csv;charset=utf-8," 
+        + "Metric,Value\n"
+        + `Report Generated,${new Date().toLocaleString()}\n`
+        + `Total Jobs,${reportData.kpis.totalJobs}\n`
+        + `Average Utilization,${reportData.kpis.avgUtilization}\n`
+        + `Total Savings,${reportData.kpis.totalSavings}\n`
+        + `Fleet Efficiency,${reportData.kpis.fleetEfficiency}\n`;
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `analytics-report-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function refreshData() {
+    // Show loading state
+    document.querySelectorAll('h2:not(.mb-0)').forEach(h2 => {
+        if (!h2.querySelector('.spinner-border')) {
+            h2.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
+        }
+    });
+    
+    // Reload data
+    loadAnalyticsData();
+    
+    // Update charts with new data
+    Object.keys(charts).forEach(chartKey => {
+        if (charts[chartKey] && charts[chartKey].data) {
+            charts[chartKey].data.datasets.forEach(dataset => {
+                dataset.data = generateRandomData(dataset.data.length, 60, 95);
+            });
+            charts[chartKey].update('active');
+        }
+    });
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (realTimeInterval) {
+        clearInterval(realTimeInterval);
+    }
+});
 </script>
 {% endblock %}

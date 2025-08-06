@@ -10,16 +10,16 @@
         <div class="card-body">
             <a href="{{ url_for('main.add_carton_type') }}" class="btn btn-primary mb-3"><i class="bi bi-plus-lg"></i> Add New Carton Type</a>
             <div class="table-responsive">
-                <table class="table table-striped">
+                <table id="cartonsTable" class="table table-striped table-hover">
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Length</th>
-                            <th>Width</th>
-                            <th>Height</th>
-                            <th>Weight</th>
+                            <th>Length (cm)</th>
+                            <th>Width (cm)</th>
+                            <th>Height (cm)</th>
+                            <th>Weight (kg)</th>
                             <th>Can Rotate</th>
-                            <th>Actions</th>
+                            <th class="no-sort">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -45,4 +45,50 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#cartonsTable').DataTable({
+        dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+             "<'row'<'col-sm-12'B>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        buttons: [
+            {
+                extend: 'copy',
+                className: 'btn btn-secondary btn-sm'
+            },
+            {
+                extend: 'csv',
+                className: 'btn btn-secondary btn-sm'
+            },
+            {
+                extend: 'excel', 
+                className: 'btn btn-secondary btn-sm'
+            },
+            {
+                extend: 'pdf',
+                className: 'btn btn-secondary btn-sm'
+            },
+            {
+                extend: 'print',
+                className: 'btn btn-secondary btn-sm'
+            }
+        ],
+        pageLength: 25,
+        responsive: true,
+        order: [[0, 'asc']],
+        columnDefs: [
+            { targets: 'no-sort', orderable: false }
+        ],
+        language: {
+            search: "Search cartons:",
+            lengthMenu: "Show _MENU_ cartons per page", 
+            info: "Showing _START_ to _END_ of _TOTAL_ cartons"
+        }
+    });
+});
+</script>
 {% endblock %}
