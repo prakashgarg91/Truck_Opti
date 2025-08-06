@@ -1,5 +1,9 @@
 // TruckOpti Main JS
 
+function navigateTo(url) {
+    window.location.href = url;
+}
+
 // SPA-like navigation (basic, for Flask templates)
 document.addEventListener('DOMContentLoaded', function() {
     // Wizard step logic for packing job creation
