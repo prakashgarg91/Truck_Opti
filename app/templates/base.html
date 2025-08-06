@@ -144,13 +144,22 @@
                 <a class="nav-link" href="{{ url_for('main.fit_cartons') }}"><i class="bi bi-boxes"></i> Fit Cartons in Selected Trucks</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('main.calculate_truck_requirements') }}"><i class="bi bi-calculator"></i> Truck Requirement Calculator</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('main.fleet_optimization') }}"><i class="bi bi-truck"></i> Fleet Optimization</a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="#"><i class="bi bi-people"></i> Customers</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#"><i class="bi bi-geo-alt"></i> Routes</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#"><i class="bi bi-graph-up"></i> Analytics</a>
+                <a class="nav-link" href="{{ url_for('main.analytics') }}"><i class="bi bi-graph-up"></i> Analytics</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('main.batch_processing') }}"><i class="bi bi-file-earmark-spreadsheet"></i> Batch Processing</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#"><i class="bi bi-gear"></i> Settings</a>

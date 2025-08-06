@@ -30,7 +30,6 @@ class CartonType(db.Model):
     width = db.Column(db.Float, nullable=False)
     height = db.Column(db.Float, nullable=False)
     weight = db.Column(db.Float)
-    qty = db.Column(db.Integer, default=0)
     can_rotate = db.Column(db.Boolean, default=True)
     fragile = db.Column(db.Boolean, default=False)
     stackable = db.Column(db.Boolean, default=True)

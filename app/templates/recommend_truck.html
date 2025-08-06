@@ -45,17 +45,22 @@
     <div class="card-body">
       <table class="table table-bordered table-hover">
         <thead class="table-light">
-          <tr><th>Truck</th><th>Utilization</th><th>Cartons Fitted</th><th>Unfitted</th></tr>
+          <tr>
+            <th>Truck</th>
+            <th>Utilization</th>
+            <th>Total Cost</th>
+            <th>Fitted Items</th>
+          </tr>
         </thead>
         <tbody>
-        {% for r in recommended %}
-        <tr>
-          <td>{{ r.truck.name }}</td>
-          <td>{{ (r.utilization*100)|round(2) }}%</td>
-          <td>{{ r.total_fitted }}</td>
-          <td>{{ r.total_unfitted }}</td>
-        </tr>
-        {% endfor %}
+          {% for r in recommended %}
+          <tr>
+            <td>{{ r.bin_name }}</td>
+            <td>{{ (r.utilization * 100)|round(2) }}%</td>
+            <td>₹{{ r.total_cost|round(2) }}</td>
+            <td>{{ r.fitted_items|length }}</td>
+          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>

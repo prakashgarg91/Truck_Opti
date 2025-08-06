@@ -2,27 +2,55 @@
 
 {% block content %}
 <div class="container">
-    <h1 class="mt-5">Packing Result for {{ job.name }}</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="mt-5">Packing Result for {{ job.name }}</h1>
+        <a href="{{ url_for('main.export_packing_result', job_id=job.id) }}" class="btn btn-secondary">Export to CSV</a>
+    </div>
     <hr>
-    {% if result.result_data|length == 0 %}
+    {% if not result.result_data %}
         <div class="alert alert-warning" role="alert">
-            <h4 class="alert-heading">Packing Job Failed</h4>
-            <p>This packing job failed because no cartons were specified.</p>
+            <h4 class="alert-heading">No Packing Results</h4>
+            <p>Could not pack any items with the given constraints.</p>
         </div>
     {% else %}
-        <h5>Truck Count: {{ result.truck_count }}</h5>
-        <h5>Space Utilization: {{ "%.2f"|format(result.space_utilization * 100) }}%</h5>
-        <h5>Weight Utilization: {{ "%.2f"|format(result.weight_utilization * 100) }}%</h5>
-        <h5>Total Cost: ₹{{ "%.2f"|format(result.total_cost) }}</h5>
-        <h5>Estimated Delivery Time: {{ "%.2f"|format(result.estimated_delivery_time) }} hrs</h5>
-        <hr>
-        <div id="visualization" style="width:100%;height:600px;"></div>
+        {% for bin_result in result.result_data %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>{{ bin_result.bin_name }}</h4>
+            </div>
+            <div class="card-body">
+                <p><strong>Utilization:</strong> {{ "%.2f"|format(bin_result.utilization * 100) }}%</p>
+                <p><strong>Total Cost:</strong> ₹{{ "%.2f"|format(bin_result.total_cost) }}</p>
+                <p><strong>Truck Cost:</strong> ₹{{ "%.2f"|format(bin_result.truck_cost) }}</p>
+                <p><strong>Value of Cartons:</strong> ₹{{ "%.2f"|format(bin_result.carton_value) }}</p>
+                <h5>Fitted Items ({{ bin_result.fitted_items|length }})</h5>
+                <ul>
+                    {% for item in bin_result.fitted_items %}
+                    <li>{{ item.name }}</li>
+                    {% endfor %}
+                </ul>
+                <h5>Unfitted Items ({{ bin_result.unfitted_items|length }})</h5>
+                {% if bin_result.unfitted_items %}
+                <ul>
+                    {% for item in bin_result.unfitted_items %}
+                    <li>{{ item.name }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>All items for this truck were fitted.</p>
+                {% endif %}
+                <div id="visualization-{{ loop.index }}" style="width:100%;height:400px;"></div>
+            </div>
+        </div>
+        {% endfor %}
     {% endif %}
 </div>
 
 <script type="module">
     import { renderTruckVisualization } from "/static/js/truck_3d.js";
     const resultData = {{ result.result_data|tojson }};
-    renderTruckVisualization('visualization', resultData);
+    resultData.forEach((bin_result, index) => {
+        renderTruckVisualization(`visualization-${index + 1}`, [bin_result]);
+    });
 </script>
 {% endblock %}

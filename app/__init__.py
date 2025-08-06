@@ -23,25 +23,25 @@ def create_app():
     with app.app_context():
         db.create_all()
         # Seed trucks and cartons if not present
-        from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS
-        if models.TruckType.query.count() == 0:
-            for t in INDIAN_TRUCKS:
-                truck = models.TruckType(
-                    name=t['name'], length=t['length'], width=t['width'], height=t['height'], max_weight=t['max_weight']
-                )
-                db.session.add(truck)
-            db.session.commit()
-        if models.CartonType.query.count() == 0:
-            for c in INDIAN_CARTONS:
-                carton = models.CartonType(
-                    name=c['type'], length=c['length'], width=c['width'], height=c['height'], weight=c['weight'], qty=c['qty']
-                )
-                db.session.add(carton)
-            db.session.commit()
+        if not app.config.get('TESTING', False):
+            from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS
+            if models.TruckType.query.count() == 0:
+                for t in INDIAN_TRUCKS:
+                    truck = models.TruckType(
+                        name=t['name'], length=t['length'], width=t['width'], height=t['height'], max_weight=t['max_weight']
+                    )
+                    db.session.add(truck)
+                db.session.commit()
+            if models.CartonType.query.count() == 0:
+                for c in INDIAN_CARTONS:
+                    carton = models.CartonType(
+                        name=c['type'], length=c['length'], width=c['width'], height=c['height'], weight=c['weight']
+                    )
+                    db.session.add(carton)
+                db.session.commit()
 
     from . import routes
     app.register_blueprint(routes.bp)
-    if hasattr(routes, 'register_blueprints'):
-        routes.register_blueprints(app)
+    app.register_blueprint(routes.api, url_prefix='/api')
 
     return app

@@ -3,10 +3,10 @@
 <div class="container mt-4">
   <div class="card shadow mb-4">
     <div class="card-header bg-primary text-white">
-      <h4 class="mb-0"><i class="bi bi-boxes"></i> Fit Cartons in Selected Trucks</h4>
+      <h4 class="mb-0"><i class="bi bi-truck"></i> Multi-Truck Fleet Optimization</h4>
     </div>
     <div class="card-body">
-      <form method="post" id="fitCartonForm">
+      <form method="post" id="fleetOptimizationForm">
         <div class="mb-3">
             <label class="form-label">Specify Quantity for Each Truck Type</label>
             {% for truck in trucks %}
@@ -16,7 +16,7 @@
             </div>
             {% endfor %}
         </div>
-        <div id="fitCartonRows">
+        <div id="fleetCartonRows">
           <div class="row mb-2 carton-row align-items-end">
             <div class="col-md-6">
               <label class="form-label">Carton Type</label>
@@ -39,8 +39,8 @@
           </div>
         </div>
         <div class="d-flex gap-2 mb-3">
-          <button type="button" class="btn btn-outline-secondary" id="addFitRow"><i class="bi bi-plus-lg"></i> Add Carton</button>
-          <button type="submit" class="btn btn-success"><i class="bi bi-search"></i> Fit Cartons</button>
+          <button type="button" class="btn btn-outline-secondary" id="addFleetRow"><i class="bi bi-plus-lg"></i> Add Carton</button>
+          <button type="submit" class="btn btn-success"><i class="bi bi-search"></i> Optimize Fleet</button>
         </div>
       </form>
     </div>
@@ -49,7 +49,7 @@
   {% if fit_results %}
   <div class="card shadow">
     <div class="card-header bg-info text-white">
-      <h5 class="mb-0"><i class="bi bi-truck"></i> Fit Results</h5>
+      <h5 class="mb-0"><i class="bi bi-truck"></i> Optimization Results</h5>
     </div>
     <div class="card-body">
       <table class="table table-bordered table-hover">
@@ -59,10 +59,10 @@
         <tbody>
         {% for r in fit_results %}
         <tr>
-          <td>{{ r.truck.name }}</td>
-          <td>{{ (r.utilization*100)|round(2) }}%</td>
-          <td>{{ r.total_fitted }}</td>
-          <td>{{ r.total_unfitted }}</td>
+          <td>{{ r.bin_name }}</td>
+          <td>{{ "%.2f"|format(r.utilization * 100) }}%</td>
+          <td>{{ r.fitted_items|length }}</td>
+          <td>{{ r.unfitted_items|length }}</td>
         </tr>
         {% endfor %}
         </tbody>
@@ -71,48 +71,39 @@
   </div>
   {% endif %}
 </div>
-<!-- Results now shown in card above -->
-{% endblock %}
-{% block scripts %}
-<script>
-let fitRowCount = 1;
-document.getElementById('addFitRow').onclick = function() {
-  fitRowCount++;
-  const row = document.createElement('div');
-  row.className = 'row mb-2 carton-row';
-  row.innerHTML = `
-    <div class="col-md-6">
-      <select name="carton_type_${fitRowCount}" class="form-select carton-type-select" required>
-        <option value="" disabled selected>Select Carton Type</option>
-        {% for carton in cartons %}
-        <option value="{{ carton.id }}" data-size="{{ carton.length }}x{{ carton.width }}x{{ carton.height }}">
-          {{ carton.name }} ({{ carton.length }}x{{ carton.width }}x{{ carton.height }} cm)
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3">
-      <input type="number" name="carton_qty_${fitRowCount}" class="form-control" min="1" placeholder="Quantity" required>
-    </div>
-    <div class="col-md-3">
-      <button type="button" class="btn btn-danger remove-row">Remove</button>
-    </div>
-  `;
-  document.getElementById('fitCartonRows').appendChild(row);
-  updateFitRemoveButtons();
-};
 
-function updateFitRemoveButtons() {
-  const rows = document.querySelectorAll('#fitCartonRows .carton-row');
-  rows.forEach((row, idx) => {
-    const btn = row.querySelector('.remove-row');
-    btn.style.display = rows.length > 1 ? '' : 'none';
-    btn.onclick = function() {
-      row.remove();
-      updateFitRemoveButtons();
-    };
-  });
-}
-updateFitRemoveButtons();
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let cartonCount = 1;
+    document.getElementById('addFleetRow').addEventListener('click', function() {
+        cartonCount++;
+        let newField = `
+        <div class="row mb-2 carton-row align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Carton Type</label>
+                <select name="carton_type_${cartonCount}" class="form-select carton-type-select" required>
+                    <option value="" disabled selected>Select Carton Type</option>
+                    {% for carton in cartons %}
+                    <option value="{{ carton.id }}">{{ carton.name }} ({{ carton.length }}x{{ carton.width }}x{{ carton.height }} cm)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Quantity</label>
+                <input type="number" name="carton_qty_${cartonCount}" class="form-control" min="1" placeholder="Quantity" required>
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-danger remove-row">Remove</button>
+            </div>
+        </div>`;
+        document.getElementById('fleetCartonRows').insertAdjacentHTML('beforeend', newField);
+    });
+
+    document.getElementById('fleetCartonRows').addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('remove-row')) {
+            e.target.closest('.carton-row').remove();
+        }
+    });
+});
 </script>
 {% endblock %}

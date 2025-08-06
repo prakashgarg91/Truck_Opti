@@ -14,23 +14,21 @@ def recommend_truck():
             qty = int(request.form.get(f'carton_{carton.id}', 0))
             if qty > 0:
                 carton_quantities[carton] = qty
-        trucks = TruckType.query.order_by('max_weight').all()  # Smallest first
-        results = []
+
+        if not carton_quantities:
+            flash('Please add at least one carton type.', 'warning')
+            return redirect(url_for('main.recommend_truck'))
+
+        # Use all available trucks with a large quantity to find the optimal fleet
+        trucks = TruckType.query.all()
+        truck_quantities = {truck: 100 for truck in trucks}  # Simulate a large fleet
+
         from . import packer
-        for truck in trucks:
-            fit = packer.pack_cartons(truck, carton_quantities, 'space')
-            total_fitted = sum(len(bin['fitted_items']) for bin in fit)
-            total_unfitted = sum(len(bin['unfitted_items']) for bin in fit)
-            utilization = fit[0]['utilization'] if fit else 0
-            results.append({
-                'truck': truck,
-                'total_fitted': total_fitted,
-                'total_unfitted': total_unfitted,
-                'utilization': utilization,
-                'bins': fit
-            })
-        # Prioritize trucks that fit all cartons with highest utilization, then smallest truck
-        recommended = sorted(results, key=lambda r: (r['total_unfitted'], -r['utilization'], r['truck'].max_weight))
+        results = packer.pack_cartons(truck_quantities, carton_quantities, 'cost') # Optimize for cost
+
+        # Filter out unused trucks and format for display
+        recommended = [r for r in results if r['fitted_items']]
+        
     return render_template('recommend_truck.html', cartons=cartons, recommended=recommended)
 @bp.route('/fit-cartons', methods=['GET', 'POST'])
 def fit_cartons():
@@ -38,9 +36,13 @@ def fit_cartons():
     cartons = CartonType.query.all()
     fit_results = None
     if request.method == 'POST':
-        selected_truck_ids = request.form.getlist('truck_ids')
+        truck_quantities = {}
+        for truck in trucks:
+            qty = int(request.form.get(f'truck_{truck.id}', 0))
+            if qty > 0:
+                truck_quantities[truck] = qty
+
         carton_quantities = {}
-        # Parse dynamic carton rows
         i = 1
         while True:
             carton_type_id = request.form.get(f'carton_type_{i}')
@@ -51,21 +53,10 @@ def fit_cartons():
             if carton_type and int(qty) > 0:
                 carton_quantities[carton_type] = int(qty)
             i += 1
-        fit_results = []
+
         from . import packer
-        for truck_id in selected_truck_ids:
-            truck = TruckType.query.get(int(truck_id))
-            fit = packer.pack_cartons(truck, carton_quantities, 'space')
-            total_fitted = sum(len(bin['fitted_items']) for bin in fit)
-            total_unfitted = sum(len(bin['unfitted_items']) for bin in fit)
-            utilization = fit[0]['utilization'] if fit else 0
-            fit_results.append({
-                'truck': truck,
-                'total_fitted': total_fitted,
-                'total_unfitted': total_unfitted,
-                'utilization': utilization,
-                'bins': fit
-            })
+        fit_results = packer.pack_cartons(truck_quantities, carton_quantities, 'space')
+
     return render_template('fit_cartons.html', trucks=trucks, cartons=cartons, fit_results=fit_results)
 
 
@@ -150,68 +141,219 @@ def packing_jobs():
 def add_packing_job():
     if request.method == 'POST':
         job_name = request.form['name']
-        truck_type_id = request.form['truck_type']
         optimization_goal = request.form.get('optimization_goal', 'space')
 
-        # Create a new packing job
-        new_job = PackingJob(name=job_name, truck_type_id=truck_type_id, status='in_progress', optimization_goal=optimization_goal)
+        truck_quantities = {}
+        trucks = TruckType.query.all()
+        for truck in trucks:
+            qty = int(request.form.get(f'truck_{truck.id}', 0))
+            if qty > 0:
+                truck_quantities[truck] = qty
+
+        carton_quantities = {}
+        i = 1
+        while True:
+            carton_type_id = request.form.get(f'carton_type_{i}')
+            qty = request.form.get(f'quantity_{i}')
+            if not carton_type_id or not qty:
+                break
+            carton_type = CartonType.query.get(int(carton_type_id))
+            if carton_type and int(qty) > 0:
+                carton_quantities[carton_type] = int(qty)
+            i += 1
+        
+        if not truck_quantities:
+            flash('Please select at least one truck.', 'warning')
+            return redirect(url_for('main.add_packing_job'))
+        
+        if not carton_quantities:
+            flash('Please add at least one carton type.', 'warning')
+            return redirect(url_for('main.add_packing_job'))
+
+        new_job = PackingJob(name=job_name, status='in_progress', optimization_goal=optimization_goal)
         db.session.add(new_job)
         db.session.commit()
 
-        # Get carton types and quantities from the form
-        carton_types_with_quantities = {}
-        i = 1
-        while f'carton_type_{i}' in request.form:
-            carton_type_id = request.form[f'carton_type_{i}']
-            quantity = int(request.form[f'quantity_{i}'])
-            carton_type = CartonType.query.get(carton_type_id)
-            if carton_type:
-                carton_types_with_quantities[carton_type] = quantity
-            i += 1
-
-        # Check if any cartons were provided
-        if not carton_types_with_quantities:
-            new_job.status = 'failed'
-            # Create a PackingResult record even for failed jobs
-            new_job.packing_result = PackingResult(
-                job_id=new_job.id,
-                truck_count=0,
-                space_utilization=0.0,
-                weight_utilization=0.0,
-                total_cost=0.0,
-                estimated_fuel_cost=0.0,
-                estimated_delivery_time=0.0,
-                co2_emissions=0.0,
-                result_data=[],
-                optimization_score=0.0
-            )
-            db.session.commit()
-            flash('Packing job failed - no cartons were specified!', 'warning')
-            return redirect(url_for('main.packing_jobs'))
-
-        # Run the advanced packing algorithm
         from . import packer
-        truck_type = TruckType.query.get(truck_type_id)
-        results = packer.pack_cartons(truck_type, carton_types_with_quantities, optimization_goal)
+        results = packer.pack_cartons(truck_quantities, carton_quantities, optimization_goal)
 
-        # Save the results
+        total_trucks_used = len([r for r in results if r['fitted_items']])
+        total_utilization = sum(r['utilization'] for r in results)
+        avg_utilization = total_utilization / total_trucks_used if total_trucks_used > 0 else 0
+        total_cost = sum(r['total_cost'] for r in results)
+
         new_job.status = 'completed'
         new_job.packing_result = PackingResult(
             job_id=new_job.id,
-            truck_count=len(results),
-            space_utilization=results[0]['utilization'] if results else 0,
-            weight_utilization=results[0]['utilization'] if results else 0,
-            total_cost=results[0]['total_cost'] if results else 0,
+            truck_count=total_trucks_used,
+            space_utilization=avg_utilization,
+            weight_utilization=avg_utilization, # Assuming space and weight utilization are the same for now
+            total_cost=total_cost,
             result_data=results
         )
         db.session.commit()
 
         flash('Packing job created and completed successfully!', 'success')
-        return redirect(url_for('main.packing_jobs'))
+        return redirect(url_for('main.packing_result', job_id=new_job.id))
 
     truck_types = TruckType.query.all()
     carton_types = CartonType.query.all()
     return render_template('add_packing_job.html', truck_types=truck_types, carton_types=carton_types)
+
+@bp.route('/calculate-truck-requirements', methods=['GET', 'POST'])
+def calculate_truck_requirements():
+    cartons = CartonType.query.all()
+    results = None
+    if request.method == 'POST':
+        carton_quantities = {}
+        i = 1
+        while True:
+            carton_type_id = request.form.get(f'carton_type_{i}')
+            qty = request.form.get(f'carton_qty_{i}')
+            if not carton_type_id or not qty:
+                break
+            carton_type = CartonType.query.get(int(carton_type_id))
+            if carton_type and int(qty) > 0:
+                carton_quantities[carton_type] = int(qty)
+            i += 1
+
+        if not carton_quantities:
+            flash('Please add at least one carton type.', 'warning')
+            return redirect(url_for('main.calculate_truck_requirements'))
+
+        # For truck requirement calculation, we assume an "infinite" supply of all truck types
+        trucks = TruckType.query.all()
+        truck_quantities = {truck: 100 for truck in trucks} # A large number to simulate infinite supply
+
+        from . import packer
+        results = packer.pack_cartons(truck_quantities, carton_quantities, 'min_trucks')
+
+    return render_template('calculate_truck_requirements.html', cartons=cartons, results=results)
+
+@bp.route('/fleet-optimization', methods=['GET', 'POST'])
+def fleet_optimization():
+    trucks = TruckType.query.all()
+    cartons = CartonType.query.all()
+    fit_results = None
+    if request.method == 'POST':
+        truck_quantities = {}
+        for truck in trucks:
+            qty = int(request.form.get(f'truck_{truck.id}', 0))
+            if qty > 0:
+                truck_quantities[truck] = qty
+
+        carton_quantities = {}
+        i = 1
+        while True:
+            carton_type_id = request.form.get(f'carton_type_{i}')
+            qty = request.form.get(f'carton_qty_{i}')
+            if not carton_type_id or not qty:
+                break
+            carton_type = CartonType.query.get(int(carton_type_id))
+            if carton_type and int(qty) > 0:
+                carton_quantities[carton_type] = int(qty)
+            i += 1
+
+        from . import packer
+        fit_results = packer.pack_cartons(truck_quantities, carton_quantities, 'space')
+
+    return render_template('fleet_optimization.html', trucks=trucks, cartons=cartons, fit_results=fit_results)
+
+@bp.route('/batch-processing', methods=['GET', 'POST'])
+def batch_processing():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part', 'warning')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('No selected file', 'warning')
+            return redirect(request.url)
+        if file and file.filename.endswith('.csv'):
+            # Process the CSV file
+            import csv
+            import io
+            stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+            csv_input = csv.reader(stream)
+            carton_quantities = {}
+            for row in csv_input:
+                carton_name, qty = row
+                carton_type = CartonType.query.filter_by(name=carton_name).first()
+                if carton_type:
+                    carton_quantities[carton_type] = int(qty)
+            
+            # For simplicity, using all trucks with a large quantity
+            trucks = TruckType.query.all()
+            truck_quantities = {truck: 100 for truck in trucks}
+
+            new_job = PackingJob(name="Batch Job", status='in_progress', optimization_goal='cost')
+            db.session.add(new_job)
+            db.session.commit()
+
+            from . import packer
+            results = packer.pack_cartons(truck_quantities, carton_quantities, 'cost')
+
+            total_trucks_used = len([r for r in results if r['fitted_items']])
+            total_utilization = sum(r['utilization'] for r in results)
+            avg_utilization = total_utilization / total_trucks_used if total_trucks_used > 0 else 0
+            total_cost = sum(r['total_cost'] for r in results)
+
+            new_job.status = 'completed'
+            new_job.packing_result = PackingResult(
+                job_id=new_job.id,
+                truck_count=total_trucks_used,
+                space_utilization=avg_utilization,
+                weight_utilization=avg_utilization,
+                total_cost=total_cost,
+                result_data=results
+            )
+            db.session.commit()
+            flash('Batch job processed successfully!', 'success')
+            return redirect(url_for('main.packing_result', job_id=new_job.id))
+        else:
+            flash('Invalid file type. Please upload a CSV file.', 'warning')
+            return redirect(request.url)
+
+    return render_template('batch_processing.html')
+
+@bp.route('/export-packing-result/<int:job_id>')
+def export_packing_result(job_id):
+    job = PackingJob.query.get_or_404(job_id)
+    result = PackingResult.query.filter_by(job_id=job.id).first()
+    if not result:
+        flash('No result to export.', 'warning')
+        return redirect(url_for('main.packing_jobs'))
+
+    import csv
+    import io
+    from flask import Response
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(['Truck Name', 'Item Name', 'Position X', 'Position Y', 'Position Z', 'Rotation Type', 'Width', 'Height', 'Depth'])
+    
+    for bin_result in result.result_data:
+        for item in bin_result['fitted_items']:
+            writer.writerow([
+                bin_result['bin_name'],
+                item['name'],
+                item['position'][0],
+                item['position'][1],
+                item['position'][2],
+                item['rotation_type'],
+                item['width'],
+                item['height'],
+                item['depth']
+            ])
+
+    output.seek(0)
+    
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment;filename=packing_result_{job_id}.csv"}
+    )
 
 @bp.route('/packing-job/<int:job_id>')
 def packing_result(job_id):
@@ -383,3 +525,51 @@ def api_analytics():
         'total_cost': db.session.query(db.func.sum(PackingResult.total_cost)).scalar() or 0
     }
     return jsonify(stats)
+
+@api.route('/calculate-truck-requirements', methods=['POST'])
+def api_calculate_truck_requirements():
+    data = request.get_json()
+    carton_data = data.get('cartons', [])
+    
+    carton_quantities = {}
+    for item in carton_data:
+        carton_type = CartonType.query.get(item['id'])
+        if carton_type:
+            carton_quantities[carton_type] = item['quantity']
+
+    if not carton_quantities:
+        return jsonify({'error': 'No cartons provided'}), 400
+
+    trucks = TruckType.query.all()
+    truck_quantities = {truck: 100 for truck in trucks}
+
+    from . import packer
+    results = packer.pack_cartons(truck_quantities, carton_quantities, 'min_trucks')
+    
+    return jsonify(results)
+
+@api.route('/fleet-optimization', methods=['POST'])
+def api_fleet_optimization():
+    data = request.get_json()
+    truck_data = data.get('trucks', [])
+    carton_data = data.get('cartons', [])
+
+    truck_quantities = {}
+    for item in truck_data:
+        truck_type = TruckType.query.get(item['id'])
+        if truck_type:
+            truck_quantities[truck_type] = item['quantity']
+
+    carton_quantities = {}
+    for item in carton_data:
+        carton_type = CartonType.query.get(item['id'])
+        if carton_type:
+            carton_quantities[carton_type] = item['quantity']
+
+    if not truck_quantities or not carton_quantities:
+        return jsonify({'error': 'Trucks and cartons must be provided'}), 400
+
+    from . import packer
+    results = packer.pack_cartons(truck_quantities, carton_quantities, 'space')
+
+    return jsonify(results)

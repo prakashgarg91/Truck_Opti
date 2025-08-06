@@ -3,18 +3,19 @@
 {% block content %}
 <div class="container">
     <h1 class="mt-5">Create New Packing Job</h1>
-    <form id="packing-job-form">
+    <form method="POST" action="{{ url_for('main.add_packing_job') }}">
         <div class="mb-3">
             <label for="name" class="form-label">Job Name</label>
             <input type="text" class="form-control" id="name" name="name" required>
         </div>
         <div class="mb-3">
-            <label for="truck_type" class="form-label">Truck Type</label>
-            <select class="form-select" id="truck_type" name="truck_type" required>
-                {% for truck in truck_types %}
-                <option value="{{ truck.id }}" data-volume="{{ truck.length * truck.width * truck.height }}">{{ truck.name }}</option>
-                {% endfor %}
-            </select>
+            <label class="form-label">Specify Quantity for Each Truck Type</label>
+            {% for truck in truck_types %}
+            <div class="input-group mb-2">
+                <span class="input-group-text" style="width: 300px;">{{ truck.name }} ({{ truck.length }}x{{ truck.width }}x{{ truck.height }})</span>
+                <input type="number" class="form-control" name="truck_{{ truck.id }}" value="0" min="0">
+            </div>
+            {% endfor %}
         </div>
         <div class="mb-3">
             <label for="optimization_goal" class="form-label">Optimization Goal</label>
@@ -43,150 +44,43 @@
                 </div>
             </div>
         </div>
-        <div class="alert alert-info mt-3" id="truck-requirement" style="display:none;">
-            <strong>Truck Requirement:</strong>
-            <span id="truck-requirement-details"></span>
-        </div>
         <button type="button" class="btn btn-secondary" id="add-carton-field">Add Another Carton Type</button>
         <hr>
-        <button type="button" class="btn btn-primary" id="run-packing">Run Packing</button>
+        <button type="submit" class="btn btn-primary">Create Job</button>
     </form>
-
-<div id="packing-result-container" style="display:none;">
-    <h3>Packing Results</h3>
-    <pre id="packing-result-json"></pre>
-    <div id="visualization" style="width:100%;height:600px;"></div>
 </div>
 
 <script>
-    $(document).ready(function() {
-        // Initialize truck requirement calculation
-        updateTruckRequirement();
-        
+    document.addEventListener('DOMContentLoaded', function() {
         let cartonCount = 1;
-        $('#add-carton-field').click(function() {
+        document.getElementById('add-carton-field').addEventListener('click', function() {
             cartonCount++;
             let newField = `
-            <div class="row mb-3">
+            <div class="row mb-3 carton-row">
                 <div class="col-md-6">
-                    <select class="form-select carton-type-select" name="carton_type_${cartonCount}" required>
+                    <label class="form-label">Carton Type</label>
+                    <select class="form-select" name="carton_type_${cartonCount}" required>
                         {% for carton in carton_types %}
-                        <option value="{{ carton.id }}" data-volume="{{ carton.length * carton.width * carton.height }}">{{ carton.name }}</option>
+                        <option value="{{ carton.id }}">{{ carton.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <input type="number" class="form-control carton-quantity" name="quantity_${cartonCount}" required>
+                    <label class="form-label">Quantity</label>
+                    <input type="number" class="form-control" name="quantity_${cartonCount}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-danger remove-carton-row w-100">Remove</button>
                 </div>
             </div>`;
-            $('#carton-fields').append(newField);
+            document.getElementById('carton-fields').insertAdjacentHTML('beforeend', newField);
         });
 
-        function updateTruckRequirement() {
-            let totalVolume = 0;
-            $('.carton-quantity').each(function() {
-                let qty = parseInt($(this).val()) || 0;
-                let cartonSelect = $(this).closest('.row').find('.carton-type-select');
-                let volume = parseFloat(cartonSelect.find('option:selected').data('volume')) || 0;
-                totalVolume += volume * qty;
-            });
-            let selectedTruck = $('#truck_type option:selected');
-            let truckVolume = selectedTruck.data('volume') || 100; // Fallback to 100 if no data
-            let trucksNeeded = Math.ceil(totalVolume / truckVolume);
-            $('#truck-requirement-details').text(trucksNeeded + " truck(s) required for selected cartons.");
-            $('#truck-requirement').show();
-        }
-
-        // Bind events to all current and future elements
-        $(document).on('input change', '.carton-quantity, .carton-type-select, #truck_type', updateTruckRequirement);
-    });
-</script>
-<script type="module">
-import { renderTruckVisualization } from "/static/js/truck_3d.js";
-
-$(document).ready(function() {
-    // ...existing code for dynamic fields and truck requirement...
-    updateTruckRequirement();
-    let cartonCount = 1;
-    $('#add-carton-field').click(function() {
-        cartonCount++;
-        let newField = `
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <select class="form-select carton-type-select" name="carton_type_${cartonCount}" required>
-                    {% for carton in carton_types %}
-                    <option value="{{ carton.id }}" data-volume="{{ carton.length * carton.width * carton.height }}">{{ carton.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4">
-                <input type="number" class="form-control carton-quantity" name="quantity_${cartonCount}" required>
-            </div>
-        </div>`;
-        $('#carton-fields').append(newField);
-    });
-    function updateTruckRequirement() {
-        let totalVolume = 0;
-        $('.carton-quantity').each(function() {
-            let qty = parseInt($(this).val()) || 0;
-            let cartonSelect = $(this).closest('.row').find('.carton-type-select');
-            let volume = parseFloat(cartonSelect.find('option:selected').data('volume')) || 0;
-            totalVolume += volume * qty;
-        });
-        let selectedTruck = $('#truck_type option:selected');
-        let truckVolume = selectedTruck.data('volume') || 100; // Fallback to 100 if no data
-        let trucksNeeded = Math.ceil(totalVolume / truckVolume);
-        $('#truck-requirement-details').text(trucksNeeded + " truck(s) required for selected cartons.");
-        $('#truck-requirement').show();
-    }
-    $(document).on('input change', '.carton-quantity, .carton-type-select, #truck_type', updateTruckRequirement);
-
-    // Real-time packing logic
-    $('#run-packing').click(async function() {
-        // Gather form data
-        const cartons = [];
-        $('.carton-type-select').each(function(i) {
-            const cartonId = $(this).val();
-            const qty = parseInt($(this).closest('.row').find('.carton-quantity').val()) || 0;
-            if (qty > 0) {
-                cartons.push({ carton_id: cartonId, quantity: qty });
+        document.getElementById('carton-fields').addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('remove-carton-row')) {
+                e.target.closest('.carton-row').remove();
             }
         });
-        const truckId = $('#truck_type').val();
-        const optimizationGoal = $('#optimization_goal').val();
-        if (cartons.length === 0) {
-            alert('Please enter at least one carton type with quantity.');
-            return;
-        }
-        // Fetch carton/truck details from backend
-        const [truckRes, cartonRes] = await Promise.all([
-            fetch(`/api/truck-types`),
-            fetch(`/api/carton-types`)
-        ]);
-        const trucks = await truckRes.json();
-        const cartonTypes = await cartonRes.json();
-        const truck = trucks.find(t => t.id == truckId);
-        // Build carton_types_with_quantities
-        const carton_types_with_quantities = {};
-        cartons.forEach(c => {
-            const cartonType = cartonTypes.find(ct => ct.id == c.carton_id);
-            if (cartonType) carton_types_with_quantities[cartonType] = c.quantity;
-        });
-        // Call packing API
-        const resp = await fetch('/api/pack', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                truck_type: truck,
-                carton_types_with_quantities,
-                optimization_goal: optimizationGoal
-            })
-        });
-        const result = await resp.json();
-        // Show results
-        $('#packing-result-json').text(JSON.stringify(result, null, 2));
-        $('#packing-result-container').show();
-        renderTruckVisualization('visualization', result);
     });
-});
 </script>

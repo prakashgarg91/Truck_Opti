@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0"><i class="bi bi-calculator"></i> Truck Requirement Calculator</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" id="truckCalcForm">
+                <div id="calc-carton-rows">
+                    <div class="row mb-2 carton-row align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label">Carton Type</label>
+                            <select name="carton_type_1" class="form-select carton-type-select" required>
+                                <option value="" disabled selected>Select Carton Type</option>
+                                {% for carton in cartons %}
+                                <option value="{{ carton.id }}">{{ carton.name }} ({{ carton.length }}x{{ carton.width }}x{{ carton.height }} cm)</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" name="carton_qty_1" class="form-control" min="1" placeholder="Quantity" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-danger remove-row" style="display:none">Remove</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-secondary" id="addCalcRow"><i class="bi bi-plus-lg"></i> Add Carton</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Calculate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if results %}
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-truck"></i> Recommended Fleet</h5>
+        </div>
+        <div class="card-body">
+            {% for r in results %}
+                {% if r.fitted_items %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>{{ r.bin_name }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Utilization:</strong> {{ "%.2f"|format(r.utilization * 100) }}%</p>
+                        <p><strong>Fitted Items:</strong> {{ r.fitted_items|length }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let cartonCount = 1;
+    document.getElementById('addCalcRow').addEventListener('click', function() {
+        cartonCount++;
+        let newField = `
+        <div class="row mb-2 carton-row align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Carton Type</label>
+                <select name="carton_type_${cartonCount}" class="form-select carton-type-select" required>
+                    <option value="" disabled selected>Select Carton Type</option>
+                    {% for carton in cartons %}
+                    <option value="{{ carton.id }}">{{ carton.name }} ({{ carton.length }}x{{ carton.width }}x{{ carton.height }} cm)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Quantity</label>
+                <input type="number" name="carton_qty_${cartonCount}" class="form-control" min="1" placeholder="Quantity" required>
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-danger remove-row">Remove</button>
+            </div>
+        </div>`;
+        document.getElementById('calc-carton-rows').insertAdjacentHTML('beforeend', newField);
+    });
+
+    document.getElementById('calc-carton-rows').addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('remove-row')) {
+            e.target.closest('.carton-row').remove();
+        }
+    });
+});
+</script>
+{% endblock %}
