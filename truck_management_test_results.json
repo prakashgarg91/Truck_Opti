@@ -1,0 +1,100 @@
+{
+  "summary": {
+    "passed": 7,
+    "failed": 2,
+    "skipped": 1
+  },
+  "results": [
+    {
+      "test": "Truck Types Page Access",
+      "status": "PASS",
+      "message": "Page loads successfully with correct content",
+      "timestamp": "2025-08-07T04:53:42.683560",
+      "details": null
+    },
+    {
+      "test": "Truck Listing API",
+      "status": "PASS",
+      "message": "Retrieved 18 trucks with correct structure",
+      "timestamp": "2025-08-07T04:53:43.189282",
+      "details": null
+    },
+    {
+      "test": "Add Truck Type (Valid)",
+      "status": "PASS",
+      "message": "Created truck with ID 19",
+      "timestamp": "2025-08-07T04:53:43.699456",
+      "details": null
+    },
+    {
+      "test": "Edit Truck Type",
+      "status": "PASS",
+      "message": "Truck updated successfully",
+      "timestamp": "2025-08-07T04:53:44.212480",
+      "details": null
+    },
+    {
+      "test": "Delete Truck Type",
+      "status": "PASS",
+      "message": "Truck deleted successfully",
+      "timestamp": "2025-08-07T04:53:44.724476",
+      "details": null
+    },
+    {
+      "test": "Form Validation - Invalid Length Test",
+      "status": "FAIL",
+      "message": "Expected error but got HTTP 201",
+      "timestamp": "2025-08-07T04:53:45.231752",
+      "details": null
+    },
+    {
+      "test": "Form Validation - Missing Name Test",
+      "status": "FAIL",
+      "message": "Expected error but got HTTP 500",
+      "timestamp": "2025-08-07T04:53:45.554772",
+      "details": null
+    },
+    {
+      "test": "Form Validation - Invalid Weight Test",
+      "status": "FAIL",
+      "message": "Expected error but got HTTP 201",
+      "timestamp": "2025-08-07T04:53:45.561658",
+      "details": null
+    },
+    {
+      "test": "DataTable Functionality",
+      "status": "FAIL",
+      "message": "Only found 3/5 DataTable features",
+      "timestamp": "2025-08-07T04:53:46.065826",
+      "details": null
+    },
+    {
+      "test": "JavaScript API Support",
+      "status": "PASS",
+      "message": "All JS-dependent API endpoints working",
+      "timestamp": "2025-08-07T04:53:46.583385",
+      "details": null
+    },
+    {
+      "test": "Export Functionality",
+      "status": "PASS",
+      "message": "Found export formats: copy, csv, excel, pdf, print",
+      "timestamp": "2025-08-07T04:53:47.091110",
+      "details": null
+    },
+    {
+      "test": "UI Responsiveness",
+      "status": "PASS",
+      "message": "10/10 requests successful in 0.03s",
+      "timestamp": "2025-08-07T04:53:47.619059",
+      "details": null
+    },
+    {
+      "test": "Truck Listing API",
+      "status": "PASS",
+      "message": "Retrieved 20 trucks with correct structure",
+      "timestamp": "2025-08-07T04:53:48.123562",
+      "details": null
+    }
+  ]
+}
