@@ -2,7 +2,8 @@ from flask import request, jsonify, Blueprint, flash, render_template, redirect,
 from app.models import db, TruckType, CartonType, PackingJob, PackingResult, Shipment
 import json
 from decimal import Decimal
-from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS, pack_cartons
+from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS, pack_cartons, pack_cartons_optimized, calculate_optimal_truck_combination
+from app.cost_engine import cost_engine
 
 def convert_decimals_to_floats(obj):
     """Recursively convert Decimal objects to float for JSON serialization"""
@@ -36,7 +37,16 @@ def recommend_truck():
         truck_quantities = {truck: 100 for truck in trucks}  # Simulate a large fleet
 
         from . import packer
-        results = packer.pack_cartons(truck_quantities, carton_quantities, 'cost') # Optimize for cost
+        # Use optimized algorithm for better performance
+        results = packer.pack_cartons_optimized(truck_quantities, carton_quantities, 'cost')
+        
+        # Get cost analysis for each result
+        route_info = {'distance_km': 100, 'route_type': 'highway'}
+        for result in results:
+            truck_type = next((t for t in trucks if t.name in result['bin_name']), None)
+            if truck_type:
+                cost_breakdown = cost_engine.calculate_comprehensive_cost(truck_type, route_info)
+                result['detailed_cost'] = cost_breakdown
 
         # Filter out unused trucks and format for display
         recommended = [r for r in results if r['fitted_items']]
@@ -67,7 +77,17 @@ def fit_cartons():
             i += 1
 
         from . import packer
-        fit_results = packer.pack_cartons(truck_quantities, carton_quantities, 'space')
+        # Use optimized algorithm
+        fit_results = packer.pack_cartons_optimized(truck_quantities, carton_quantities, 'space')
+        
+        # Add cost analysis for fitted results
+        route_info = {'distance_km': 100, 'route_type': 'highway'}
+        if fit_results:
+            for result in fit_results:
+                truck_type = next((t for t in trucks if t.name in result['bin_name']), None)
+                if truck_type:
+                    cost_breakdown = cost_engine.calculate_comprehensive_cost(truck_type, route_info)
+                    result['cost_analysis'] = cost_breakdown
 
     return render_template('fit_cartons.html', trucks=trucks, cartons=cartons, fit_results=fit_results)
 
@@ -593,3 +613,823 @@ def api_fleet_optimization():
     results = packer.pack_cartons(truck_quantities, carton_quantities, 'space')
 
     return jsonify(results)
+
+# --- Enhanced Cost Calculation APIs ---
+@api.route('/cost-analysis', methods=['POST'])
+def api_cost_analysis():
+    """API endpoint for comprehensive cost analysis"""
+    data = request.get_json()
+    truck_ids = data.get('truck_ids', [])
+    route_info = data.get('route_info', {'distance_km': 100, 'route_type': 'highway'})
+    
+    if not truck_ids:
+        return jsonify({'error': 'No trucks provided for analysis'}), 400
+    
+    trucks = TruckType.query.filter(TruckType.id.in_(truck_ids)).all()
+    
+    cost_optimization = cost_engine.optimize_cost_strategy(trucks, route_info)
+    
+    return jsonify({
+        'analysis': cost_optimization,
+        'fuel_prices': cost_engine.get_fuel_prices().__dict__,
+        'route_info': route_info
+    })
+
+@api.route('/fleet-cost-optimization', methods=['POST'])
+def api_fleet_cost_optimization():
+    """Advanced fleet cost optimization with multiple objectives"""
+    data = request.get_json()
+    truck_data = data.get('trucks', [])
+    carton_data = data.get('cartons', [])
+    route_info = data.get('route_info', {'distance_km': 100, 'route_type': 'highway'})
+    optimization_goals = data.get('optimization_goals', ['cost', 'space'])
+    
+    # Process truck quantities
+    truck_quantities = {}
+    fleet_allocation = []
+    for item in truck_data:
+        truck_type = TruckType.query.get(item['id'])
+        if truck_type:
+            quantity = item.get('quantity', 1)
+            truck_quantities[truck_type] = quantity
+            fleet_allocation.append({'truck_type': truck_type, 'quantity': quantity})
+    
+    # Process carton quantities
+    carton_quantities = {}
+    for item in carton_data:
+        carton_type = CartonType.query.get(item['id'])
+        if carton_type:
+            carton_quantities[carton_type] = item.get('quantity', 1)
+    
+    if not truck_quantities or not carton_quantities:
+        return jsonify({'error': 'Both trucks and cartons must be provided'}), 400
+    
+    # Get optimized packing results
+    from app.packer import optimize_fleet_distribution
+    optimization_results = optimize_fleet_distribution(
+        carton_quantities, truck_quantities, optimization_goals
+    )
+    
+    # Calculate comprehensive fleet costs
+    fleet_costs = cost_engine.calculate_multi_truck_fleet_cost(fleet_allocation, route_info)
+    
+    return jsonify({
+        'optimization_results': optimization_results,
+        'fleet_costs': fleet_costs,
+        'recommendations': {
+            'best_strategy': optimization_results['recommended_strategy'],
+            'cost_savings_potential': fleet_costs['total_costs']['total_cost'] * 0.15,  # Estimated 15% savings
+            'efficiency_improvements': optimization_results['results']
+        }
+    })
+
+@api.route('/truck-recommendation-ai', methods=['POST'])
+def api_truck_recommendation_ai():
+    """AI-powered truck recommendation based on carton requirements"""
+    from datetime import datetime
+    data = request.get_json()
+    carton_data = data.get('cartons', [])
+    max_trucks = data.get('max_trucks', 10)
+    
+    # Process carton quantities
+    carton_quantities = {}
+    for item in carton_data:
+        carton_type = CartonType.query.get(item['id'])
+        if carton_type:
+            carton_quantities[carton_type] = item.get('quantity', 1)
+    
+    if not carton_quantities:
+        return jsonify({'error': 'No cartons provided'}), 400
+    
+    # Get all available truck types
+    available_trucks = TruckType.query.filter_by(availability=True).all()
+    
+    # Use AI-powered recommendation
+    from app.packer import calculate_optimal_truck_combination
+    recommendations = calculate_optimal_truck_combination(
+        carton_quantities, available_trucks, max_trucks
+    )
+    
+    return jsonify({
+        'recommendations': recommendations,
+        'total_cartons': sum(carton_quantities.values()),
+        'analysis_timestamp': datetime.now().isoformat()
+    })
+
+@api.route('/fuel-prices', methods=['GET'])
+def api_get_fuel_prices():
+    """Get current fuel prices"""
+    location = request.args.get('location', 'India')
+    
+    fuel_prices = cost_engine.get_fuel_prices(location)
+    
+    return jsonify({
+        'prices': fuel_prices.__dict__,
+        'location': location,
+        'last_updated': fuel_prices.last_updated.isoformat() if fuel_prices.last_updated else None
+    })
+
+@api.route('/performance-metrics', methods=['GET'])
+def api_performance_metrics():
+    """Get system performance metrics"""
+    from app.packer import estimate_packing_time
+    
+    # Get sample metrics
+    total_trucks = TruckType.query.count()
+    total_cartons = CartonType.query.count()
+    
+    estimated_time = estimate_packing_time(1000, 10)  # For 1000 cartons and 10 trucks
+    
+    return jsonify({
+        'system_stats': {
+            'total_truck_types': total_trucks,
+            'total_carton_types': total_cartons,
+            'estimated_packing_time_1000_cartons': f"{estimated_time:.2f} seconds"
+        },
+        'performance_tips': [
+            "Use optimized algorithms for datasets > 500 cartons",
+            "Enable parallel processing for better performance",
+            "Cache frequently used truck combinations",
+            "Consider batch processing for large operations"
+        ]
+    })
+
+# --- Complete RESTful API Extensions ---
+@api.route('/truck-types/<int:truck_id>', methods=['GET'])
+def api_get_truck_type(truck_id):
+    """Get specific truck type by ID"""
+    truck = TruckType.query.get_or_404(truck_id)
+    return jsonify(truck.as_dict())
+
+@api.route('/truck-types/<int:truck_id>', methods=['PUT'])
+def api_update_truck_type(truck_id):
+    """Update existing truck type"""
+    truck = TruckType.query.get_or_404(truck_id)
+    data = request.get_json()
+    
+    # Update truck attributes
+    for key, value in data.items():
+        if hasattr(truck, key) and key != 'id':
+            setattr(truck, key, value)
+    
+    db.session.commit()
+    return jsonify({
+        'message': 'Truck type updated successfully',
+        'truck': truck.as_dict()
+    })
+
+@api.route('/truck-types/<int:truck_id>', methods=['DELETE'])
+def api_delete_truck_type(truck_id):
+    """Delete truck type"""
+    truck = TruckType.query.get_or_404(truck_id)
+    truck_name = truck.name
+    
+    db.session.delete(truck)
+    db.session.commit()
+    
+    return jsonify({
+        'message': f'Truck type "{truck_name}" deleted successfully'
+    })
+
+@api.route('/carton-types/<int:carton_id>', methods=['GET'])
+def api_get_carton_type(carton_id):
+    """Get specific carton type by ID"""
+    carton = CartonType.query.get_or_404(carton_id)
+    return jsonify(carton.as_dict())
+
+@api.route('/carton-types/<int:carton_id>', methods=['PUT'])
+def api_update_carton_type(carton_id):
+    """Update existing carton type"""
+    carton = CartonType.query.get_or_404(carton_id)
+    data = request.get_json()
+    
+    # Update carton attributes
+    for key, value in data.items():
+        if hasattr(carton, key) and key != 'id':
+            setattr(carton, key, value)
+    
+    db.session.commit()
+    return jsonify({
+        'message': 'Carton type updated successfully',
+        'carton': carton.as_dict()
+    })
+
+@api.route('/carton-types/<int:carton_id>', methods=['DELETE'])
+def api_delete_carton_type(carton_id):
+    """Delete carton type"""
+    carton = CartonType.query.get_or_404(carton_id)
+    carton_name = carton.name
+    
+    db.session.delete(carton)
+    db.session.commit()
+    
+    return jsonify({
+        'message': f'Carton type "{carton_name}" deleted successfully'
+    })
+
+# Packing Jobs API
+@api.route('/packing-jobs', methods=['POST'])
+def api_create_packing_job():
+    """Create new packing job"""
+    data = request.get_json()
+    
+    job = PackingJob(
+        name=data.get('name', f'Job_{int(time.time())}'),
+        truck_type_id=data.get('truck_type_id'),
+        shipment_id=data.get('shipment_id'),
+        optimization_goal=data.get('optimization_goal', 'space')
+    )
+    
+    db.session.add(job)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Packing job created successfully',
+        'job_id': job.id,
+        'job': {
+            'id': job.id,
+            'name': job.name,
+            'status': job.status,
+            'optimization_goal': job.optimization_goal,
+            'date_created': job.date_created.isoformat()
+        }
+    }), 201
+
+@api.route('/packing-jobs/<int:job_id>', methods=['GET'])
+def api_get_packing_job(job_id):
+    """Get specific packing job with results"""
+    job = PackingJob.query.get_or_404(job_id)
+    results = PackingResult.query.filter_by(job_id=job.id).all()
+    
+    return jsonify({
+        'job': {
+            'id': job.id,
+            'name': job.name,
+            'status': job.status,
+            'optimization_goal': job.optimization_goal,
+            'date_created': job.date_created.isoformat(),
+            'truck_type_id': job.truck_type_id,
+            'shipment_id': job.shipment_id
+        },
+        'results': [
+            {
+                'id': result.id,
+                'truck_count': result.truck_count,
+                'space_utilization': result.space_utilization,
+                'weight_utilization': result.weight_utilization,
+                'total_cost': result.total_cost,
+                'result_data': result.result_data,
+                'date_calculated': result.date_calculated.isoformat()
+            }
+            for result in results
+        ]
+    })
+
+@api.route('/packing-jobs/<int:job_id>', methods=['PUT'])
+def api_update_packing_job(job_id):
+    """Update packing job"""
+    job = PackingJob.query.get_or_404(job_id)
+    data = request.get_json()
+    
+    # Update job attributes
+    for key, value in data.items():
+        if hasattr(job, key) and key not in ['id', 'date_created']:
+            setattr(job, key, value)
+    
+    db.session.commit()
+    return jsonify({
+        'message': 'Packing job updated successfully',
+        'job_id': job.id
+    })
+
+@api.route('/packing-jobs/<int:job_id>', methods=['DELETE'])
+def api_delete_packing_job(job_id):
+    """Delete packing job and its results"""
+    job = PackingJob.query.get_or_404(job_id)
+    job_name = job.name
+    
+    # Delete associated results first
+    PackingResult.query.filter_by(job_id=job.id).delete()
+    
+    db.session.delete(job)
+    db.session.commit()
+    
+    return jsonify({
+        'message': f'Packing job "{job_name}" deleted successfully'
+    })
+
+# Shipments API
+@api.route('/shipments', methods=['GET'])
+def api_get_shipments():
+    """Get all shipments"""
+    shipments = Shipment.query.all()
+    return jsonify([
+        {
+            'id': s.id,
+            'shipment_number': s.shipment_number,
+            'customer_id': s.customer_id,
+            'route_id': s.route_id,
+            'priority': s.priority,
+            'delivery_date': s.delivery_date.isoformat() if s.delivery_date else None,
+            'status': s.status,
+            'total_value': s.total_value,
+            'date_created': s.date_created.isoformat()
+        }
+        for s in shipments
+    ])
+
+@api.route('/shipments', methods=['POST'])
+def api_create_shipment():
+    """Create new shipment"""
+    from app.models import Shipment
+    data = request.get_json()
+    
+    shipment = Shipment(
+        shipment_number=data.get('shipment_number', f'SH_{int(time.time())}'),
+        customer_id=data.get('customer_id'),
+        route_id=data.get('route_id'),
+        priority=data.get('priority', 1),
+        delivery_date=datetime.fromisoformat(data['delivery_date']) if data.get('delivery_date') else None,
+        status=data.get('status', 'pending'),
+        total_value=data.get('total_value', 0.0),
+        special_instructions=data.get('special_instructions', '')
+    )
+    
+    db.session.add(shipment)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Shipment created successfully',
+        'shipment_id': shipment.id
+    }), 201
+
+@api.route('/shipments/<int:shipment_id>', methods=['GET'])
+def api_get_shipment(shipment_id):
+    """Get specific shipment with items"""
+    from app.models import ShipmentItem
+    shipment = Shipment.query.get_or_404(shipment_id)
+    items = ShipmentItem.query.filter_by(shipment_id=shipment.id).all()
+    
+    return jsonify({
+        'shipment': {
+            'id': shipment.id,
+            'shipment_number': shipment.shipment_number,
+            'customer_id': shipment.customer_id,
+            'route_id': shipment.route_id,
+            'priority': shipment.priority,
+            'delivery_date': shipment.delivery_date.isoformat() if shipment.delivery_date else None,
+            'status': shipment.status,
+            'total_value': shipment.total_value,
+            'special_instructions': shipment.special_instructions,
+            'date_created': shipment.date_created.isoformat()
+        },
+        'items': [
+            {
+                'id': item.id,
+                'carton_type_id': item.carton_type_id,
+                'quantity': item.quantity,
+                'carton_name': item.carton_type.name if item.carton_type else None
+            }
+            for item in items
+        ]
+    })
+
+# Customers API
+@api.route('/customers', methods=['GET'])
+def api_get_customers():
+    """Get all customers"""
+    from app.models import Customer
+    customers = Customer.query.all()
+    return jsonify([
+        {
+            'id': c.id,
+            'name': c.name,
+            'email': c.email,
+            'phone': c.phone,
+            'address': c.address,
+            'city': c.city,
+            'postal_code': c.postal_code,
+            'country': c.country
+        }
+        for c in customers
+    ])
+
+@api.route('/customers', methods=['POST'])
+def api_create_customer():
+    """Create new customer"""
+    from app.models import Customer
+    data = request.get_json()
+    
+    customer = Customer(
+        name=data.get('name'),
+        email=data.get('email'),
+        phone=data.get('phone'),
+        address=data.get('address'),
+        city=data.get('city'),
+        postal_code=data.get('postal_code'),
+        country=data.get('country', 'India')
+    )
+    
+    db.session.add(customer)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Customer created successfully',
+        'customer_id': customer.id
+    }), 201
+
+# Routes API
+@api.route('/routes', methods=['GET'])
+def api_get_routes():
+    """Get all routes"""
+    from app.models import Route
+    routes = Route.query.all()
+    return jsonify([
+        {
+            'id': r.id,
+            'name': r.name,
+            'origin': r.origin,
+            'destination': r.destination,
+            'distance_km': r.distance_km,
+            'estimated_time_hours': r.estimated_time_hours,
+            'toll_cost': r.toll_cost,
+            'fuel_cost': r.fuel_cost
+        }
+        for r in routes
+    ])
+
+@api.route('/routes', methods=['POST'])
+def api_create_route():
+    """Create new route"""
+    from app.models import Route
+    data = request.get_json()
+    
+    route = Route(
+        name=data.get('name'),
+        origin=data.get('origin'),
+        destination=data.get('destination'),
+        distance_km=data.get('distance_km', 0),
+        estimated_time_hours=data.get('estimated_time_hours'),
+        toll_cost=data.get('toll_cost', 0.0),
+        fuel_cost=data.get('fuel_cost', 0.0)
+    )
+    
+    db.session.add(route)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Route created successfully',
+        'route_id': route.id
+    }), 201
+
+# Bulk operations
+@api.route('/bulk/truck-types', methods=['POST'])
+def api_bulk_create_truck_types():
+    """Bulk create truck types"""
+    data = request.get_json()
+    truck_types = data.get('truck_types', [])
+    
+    created_trucks = []
+    for truck_data in truck_types:
+        truck = TruckType(
+            name=truck_data.get('name'),
+            length=truck_data.get('length'),
+            width=truck_data.get('width'),
+            height=truck_data.get('height'),
+            max_weight=truck_data.get('max_weight'),
+            cost_per_km=truck_data.get('cost_per_km', 0.0),
+            fuel_efficiency=truck_data.get('fuel_efficiency', 0.0),
+            driver_cost_per_day=truck_data.get('driver_cost_per_day', 0.0),
+            maintenance_cost_per_km=truck_data.get('maintenance_cost_per_km', 0.0),
+            truck_category=truck_data.get('truck_category', 'Standard'),
+            availability=truck_data.get('availability', True),
+            description=truck_data.get('description', '')
+        )
+        db.session.add(truck)
+        created_trucks.append(truck)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': f'{len(created_trucks)} truck types created successfully',
+        'created_ids': [truck.id for truck in created_trucks]
+    }), 201
+
+@api.route('/bulk/carton-types', methods=['POST'])
+def api_bulk_create_carton_types():
+    """Bulk create carton types"""
+    data = request.get_json()
+    carton_types = data.get('carton_types', [])
+    
+    created_cartons = []
+    for carton_data in carton_types:
+        carton = CartonType(
+            name=carton_data.get('name'),
+            length=carton_data.get('length'),
+            width=carton_data.get('width'),
+            height=carton_data.get('height'),
+            weight=carton_data.get('weight'),
+            can_rotate=carton_data.get('can_rotate', True),
+            fragile=carton_data.get('fragile', False),
+            stackable=carton_data.get('stackable', True),
+            max_stack_height=carton_data.get('max_stack_height', 5),
+            priority=carton_data.get('priority', 1),
+            value=carton_data.get('value', 0.0),
+            category=carton_data.get('category', 'General'),
+            description=carton_data.get('description', '')
+        )
+        db.session.add(carton)
+        created_cartons.append(carton)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': f'{len(created_cartons)} carton types created successfully',
+        'created_ids': [carton.id for carton in created_cartons]
+    }), 201
+
+# Search API
+@api.route('/search', methods=['GET'])
+def api_search():
+    """Global search across all entities"""
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify({'error': 'Search query is required'}), 400
+    
+    results = {
+        'trucks': [],
+        'cartons': [],
+        'jobs': [],
+        'shipments': []
+    }
+    
+    # Search trucks
+    trucks = TruckType.query.filter(
+        TruckType.name.contains(query) | 
+        TruckType.description.contains(query)
+    ).limit(10).all()
+    results['trucks'] = [{'id': t.id, 'name': t.name, 'type': 'truck'} for t in trucks]
+    
+    # Search cartons
+    cartons = CartonType.query.filter(
+        CartonType.name.contains(query) | 
+        CartonType.description.contains(query)
+    ).limit(10).all()
+    results['cartons'] = [{'id': c.id, 'name': c.name, 'type': 'carton'} for c in cartons]
+    
+    # Search jobs
+    jobs = PackingJob.query.filter(PackingJob.name.contains(query)).limit(10).all()
+    results['jobs'] = [{'id': j.id, 'name': j.name, 'type': 'job'} for j in jobs]
+    
+    return jsonify({
+        'query': query,
+        'results': results,
+        'total_results': sum(len(r) for r in results.values())
+    })
+
+import time
+from app.route_optimizer import route_optimizer, Location
+
+# --- Route Optimization APIs ---
+@api.route('/optimize-route', methods=['POST'])
+def api_optimize_route():
+    """Optimize route for multiple destinations"""
+    data = request.get_json()
+    
+    start_address = data.get('start_location')
+    destinations = data.get('destinations', [])
+    optimization_goal = data.get('optimization_goal', 'distance')
+    return_to_start = data.get('return_to_start', True)
+    
+    if not start_address or not destinations:
+        return jsonify({'error': 'Start location and destinations are required'}), 400
+    
+    # Geocode locations
+    start_location = route_optimizer.geocode_address(start_address)
+    destination_locations = [
+        route_optimizer.geocode_address(dest) for dest in destinations
+    ]
+    
+    # Optimize route
+    optimized_route = route_optimizer.optimize_multi_destination_route(
+        start_location, destination_locations, return_to_start, optimization_goal
+    )
+    
+    # Get time windows
+    time_windows = route_optimizer.calculate_delivery_time_windows(optimized_route)
+    
+    return jsonify({
+        'optimized_route': {
+            'waypoints': [
+                {
+                    'name': wp.name,
+                    'address': wp.address,
+                    'latitude': wp.latitude,
+                    'longitude': wp.longitude
+                }
+                for wp in optimized_route.waypoints
+            ],
+            'segments': [
+                {
+                    'from': seg.from_location.name,
+                    'to': seg.to_location.name,
+                    'distance_km': seg.distance_km,
+                    'duration_minutes': seg.duration_minutes,
+                    'traffic_factor': seg.traffic_factor,
+                    'road_type': seg.road_type,
+                    'toll_cost': seg.toll_cost
+                }
+                for seg in optimized_route.segments
+            ],
+            'summary': {
+                'total_distance_km': optimized_route.total_distance_km,
+                'total_duration_minutes': optimized_route.total_duration_minutes,
+                'total_cost': optimized_route.total_cost,
+                'optimization_score': optimized_route.optimization_score
+            }
+        },
+        'time_windows': time_windows,
+        'optimization_goal': optimization_goal
+    })
+
+@api.route('/traffic-updates', methods=['POST'])
+def api_get_traffic_updates():
+    """Get real-time traffic updates for a route"""
+    data = request.get_json()
+    
+    # This is a simplified implementation
+    # In reality, you'd reconstruct the route from the data
+    mock_route_data = {
+        'waypoints': data.get('waypoints', []),
+        'segments': data.get('segments', []),
+        'total_distance_km': data.get('total_distance_km', 0),
+        'total_duration_minutes': data.get('total_duration_minutes', 0),
+        'total_cost': data.get('total_cost', 0),
+        'optimization_score': data.get('optimization_score', 0)
+    }
+    
+    # Create mock OptimizedRoute object
+    from app.route_optimizer import OptimizedRoute
+    route = OptimizedRoute([], [], 0, 0, 0, 0)
+    route.total_duration_minutes = mock_route_data['total_duration_minutes']
+    
+    traffic_updates = route_optimizer.get_real_time_traffic_updates(route)
+    
+    return jsonify(traffic_updates)
+
+@api.route('/alternative-routes', methods=['POST'])
+def api_get_alternative_routes():
+    """Get alternative routes between two locations"""
+    data = request.get_json()
+    
+    origin_address = data.get('origin')
+    destination_address = data.get('destination')
+    
+    if not origin_address or not destination_address:
+        return jsonify({'error': 'Origin and destination are required'}), 400
+    
+    origin = route_optimizer.geocode_address(origin_address)
+    destination = route_optimizer.geocode_address(destination_address)
+    
+    # Create main route
+    main_route = route_optimizer.optimize_multi_destination_route(
+        origin, [destination], False
+    )
+    
+    # Get alternatives
+    alternatives = route_optimizer.suggest_alternative_routes(origin, destination, main_route)
+    
+    def route_to_dict(route):
+        return {
+            'total_distance_km': route.total_distance_km,
+            'total_duration_minutes': route.total_duration_minutes,
+            'total_cost': route.total_cost,
+            'optimization_score': route.optimization_score,
+            'waypoints': [
+                {
+                    'name': wp.name,
+                    'latitude': wp.latitude,
+                    'longitude': wp.longitude
+                }
+                for wp in route.waypoints
+            ]
+        }
+    
+    return jsonify({
+        'main_route': route_to_dict(main_route),
+        'alternative_routes': [route_to_dict(alt) for alt in alternatives],
+        'comparison': {
+            'fastest': min([main_route] + alternatives, key=lambda r: r.total_duration_minutes),
+            'shortest': min([main_route] + alternatives, key=lambda r: r.total_distance_km),
+            'cheapest': min([main_route] + alternatives, key=lambda r: r.total_cost)
+        }
+    })
+
+@api.route('/fleet-route-optimization', methods=['POST'])
+def api_optimize_fleet_routes():
+    """Optimize routes for multiple vehicles and orders"""
+    data = request.get_json()
+    
+    vehicles = data.get('vehicles', [])
+    orders = data.get('orders', [])
+    
+    if not vehicles or not orders:
+        return jsonify({'error': 'Vehicles and orders are required'}), 400
+    
+    optimization_result = route_optimizer.optimize_fleet_routes(vehicles, orders)
+    
+    # Convert routes to JSON-serializable format
+    serialized_routes = {}
+    for vehicle_id, route_info in optimization_result['optimized_routes'].items():
+        route = route_info['route']
+        serialized_routes[vehicle_id] = {
+            'vehicle': route_info['vehicle'],
+            'route_summary': {
+                'total_distance_km': route.total_distance_km,
+                'total_duration_minutes': route.total_duration_minutes,
+                'total_cost': route.total_cost,
+                'optimization_score': route.optimization_score
+            },
+            'waypoints': [
+                {
+                    'name': wp.name,
+                    'latitude': wp.latitude,
+                    'longitude': wp.longitude
+                }
+                for wp in route.waypoints
+            ],
+            'assigned_orders': route_info['assigned_orders'],
+            'time_windows': route_info['time_windows'],
+            'total_orders': route_info['total_orders'],
+            'vehicle_utilization': route_info['vehicle_utilization']
+        }
+    
+    return jsonify({
+        'optimized_routes': serialized_routes,
+        'unassigned_orders': optimization_result['unassigned_orders'],
+        'summary': {
+            'total_vehicles_used': optimization_result['total_vehicles_used'],
+            'total_distance': optimization_result['total_distance'],
+            'total_cost': optimization_result['total_cost'],
+            'optimization_timestamp': optimization_result['optimization_timestamp']
+        }
+    })
+
+@api.route('/geocode', methods=['POST'])
+def api_geocode_address():
+    """Convert address to coordinates"""
+    data = request.get_json()
+    address = data.get('address')
+    
+    if not address:
+        return jsonify({'error': 'Address is required'}), 400
+    
+    location = route_optimizer.geocode_address(address)
+    
+    if location:
+        return jsonify({
+            'latitude': location.latitude,
+            'longitude': location.longitude,
+            'name': location.name,
+            'address': location.address
+        })
+    else:
+        return jsonify({'error': 'Address not found'}), 404
+
+@api.route('/distance-matrix', methods=['POST'])
+def api_distance_matrix():
+    """Calculate distance matrix between multiple locations"""
+    data = request.get_json()
+    locations = data.get('locations', [])
+    
+    if len(locations) < 2:
+        return jsonify({'error': 'At least 2 locations are required'}), 400
+    
+    # Geocode all locations
+    geo_locations = [route_optimizer.geocode_address(addr) for addr in locations]
+    
+    # Calculate distance matrix
+    matrix = []
+    for i, loc1 in enumerate(geo_locations):
+        row = []
+        for j, loc2 in enumerate(geo_locations):
+            if i == j:
+                row.append(0)
+            else:
+                distance = route_optimizer.calculate_distance(loc1, loc2)
+                row.append(round(distance, 2))
+        matrix.append(row)
+    
+    return jsonify({
+        'locations': [
+            {
+                'address': loc.address,
+                'name': loc.name,
+                'latitude': loc.latitude,
+                'longitude': loc.longitude
+            }
+            for loc in geo_locations
+        ],
+        'distance_matrix': matrix,
+        'units': 'kilometers'
+    })
