@@ -49,8 +49,36 @@
 <script type="module">
     import { renderTruckVisualization } from "/static/js/truck_3d.js";
     const resultData = {{ result.result_data|tojson }};
-    resultData.forEach((bin_result, index) => {
-        renderTruckVisualization(`visualization-${index + 1}`, [bin_result]);
-    });
+    
+    if (resultData && resultData.length > 0) {
+        showProgress('Loading Packing Results', 'Rendering 3D packing visualizations...', true);
+        
+        let loadedCount = 0;
+        const totalVisualizations = resultData.length;
+        
+        resultData.forEach((bin_result, index) => {
+            setTimeout(() => {
+                try {
+                    renderTruckVisualization(`visualization-${index + 1}`, [bin_result]);
+                    loadedCount++;
+                    
+                    const percentage = Math.round((loadedCount / totalVisualizations) * 100);
+                    updateProgress(percentage);
+                    
+                    if (loadedCount === totalVisualizations) {
+                        setTimeout(() => {
+                            hideProgress();
+                        }, 300);
+                    }
+                } catch (error) {
+                    console.error('Error loading visualization:', error);
+                    loadedCount++;
+                    if (loadedCount === totalVisualizations) {
+                        hideProgress();
+                    }
+                }
+            }, index * 200);
+        });
+    }
 </script>
 {% endblock %}

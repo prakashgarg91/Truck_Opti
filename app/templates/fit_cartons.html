@@ -40,7 +40,7 @@
         </div>
         <div class="d-flex gap-2 mb-3">
           <button type="button" class="btn btn-outline-secondary" id="addFitRow"><i class="bi bi-plus-lg"></i> Add Carton</button>
-          <button type="submit" class="btn btn-success"><i class="bi bi-search"></i> Fit Cartons</button>
+          <button type="submit" class="btn btn-success" id="fitCartonBtn"><i class="bi bi-search"></i> Fit Cartons</button>
         </div>
       </form>
     </div>
@@ -52,21 +52,31 @@
       <h5 class="mb-0"><i class="bi bi-truck"></i> Fit Results</h5>
     </div>
     <div class="card-body">
-      <table class="table table-bordered table-hover">
+      <table id="fitTable" class="table table-bordered table-hover">
         <thead class="table-light">
           <tr><th>Truck</th><th>Utilization</th><th>Cartons Fitted</th><th>Unfitted</th></tr>
         </thead>
         <tbody>
         {% for r in fit_results %}
         <tr>
-          <td>{{ r.truck.name }}</td>
+          <td>{{ r.bin_name }}</td>
           <td>{{ (r.utilization*100)|round(2) }}%</td>
-          <td>{{ r.total_fitted }}</td>
-          <td>{{ r.total_unfitted }}</td>
+          <td>{{ r.fitted_items|length }}</td>
+          <td>{{ r.unfitted_items|length }}</td>
         </tr>
         {% endfor %}
         </tbody>
       </table>
+      
+      <!-- 3D Visualizations -->
+      {% for r in fit_results %}
+        {% if r.fitted_items %}
+        <div class="mt-4">
+          <h6>3D Visualization - {{ r.bin_name }}</h6>
+          <div id="fit-visualization-{{ loop.index }}" style="width:100%;height:400px;border:1px solid #ddd;position:relative;"></div>
+        </div>
+        {% endif %}
+      {% endfor %}
     </div>
   </div>
   {% endif %}
@@ -76,6 +86,21 @@
 {% block scripts %}
 <script>
 let fitRowCount = 1;
+
+// Add progress bar to fit cartons form submission
+document.getElementById('fitCartonForm').addEventListener('submit', function(e) {
+    const steps = [
+        'Validating truck and carton data...',
+        'Initializing 3D packing algorithm...',
+        'Fitting cartons into selected trucks...',
+        'Calculating space utilization...',
+        'Generating 3D visualization...',
+        'Preparing results...'
+    ];
+    
+    showProgressWithSteps('Fitting Cartons into Trucks', steps);
+});
+
 document.getElementById('addFitRow').onclick = function() {
   fitRowCount++;
   const row = document.createElement('div');
@@ -115,4 +140,92 @@ function updateFitRemoveButtons() {
 }
 updateFitRemoveButtons();
 </script>
+
+{% if fit_results %}
+<script>
+$(document).ready(function() {
+    $('#fitTable').DataTable({
+        dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+             "<'row'<'col-sm-12'B>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        buttons: [
+            {
+                extend: 'copy',
+                className: 'btn btn-secondary btn-sm',
+                text: 'Copy'
+            },
+            {
+                extend: 'csv',
+                className: 'btn btn-secondary btn-sm',
+                text: 'CSV'
+            },
+            {
+                extend: 'excel',
+                className: 'btn btn-secondary btn-sm',
+                text: 'Excel'
+            },
+            {
+                extend: 'pdf',
+                className: 'btn btn-secondary btn-sm',
+                text: 'PDF'
+            },
+            {
+                extend: 'print',
+                className: 'btn btn-secondary btn-sm',
+                text: 'Print'
+            }
+        ],
+        pageLength: 10,
+        responsive: true,
+        order: [[1, 'desc']], // Sort by utilization (highest first)
+        language: {
+            search: "Search results:",
+            lengthMenu: "Show _MENU_ results per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ results"
+        }
+    });
+});
+</script>
+
+<script type="module">
+    import { renderTruckVisualizationEnhanced } from "/static/js/truck_3d_enhanced.js";
+    const fitResults = {{ fit_results|tojson }};
+    
+    if (fitResults && fitResults.length > 0) {
+        showProgress('Loading 3D Visualizations', 'Preparing interactive 3D views...', true);
+        
+        let loadedCount = 0;
+        const totalVisualizations = fitResults.filter(r => r.fitted_items && r.fitted_items.length > 0).length;
+        
+        fitResults.forEach((result, index) => {
+            if (result.fitted_items && result.fitted_items.length > 0) {
+                const containerId = `fit-visualization-${index + 1}`;
+                
+                setTimeout(() => {
+                    try {
+                        renderTruckVisualizationEnhanced(containerId, [result]);
+                        loadedCount++;
+                        
+                        const percentage = Math.round((loadedCount / totalVisualizations) * 100);
+                        updateProgress(percentage);
+                        
+                        if (loadedCount === totalVisualizations) {
+                            setTimeout(() => {
+                                hideProgress();
+                            }, 500);
+                        }
+                    } catch (error) {
+                        console.error('Error loading 3D visualization:', error);
+                        loadedCount++;
+                        if (loadedCount === totalVisualizations) {
+                            hideProgress();
+                        }
+                    }
+                }, index * 300); // Stagger loading
+            }
+        });
+    }
+</script>
+{% endif %}
 {% endblock %}

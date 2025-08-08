@@ -70,6 +70,24 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Add progress bar to packing job form
+        $('#packingJobForm').on('submit', function(e) {
+            const steps = [
+                'Validating job parameters...',
+                'Loading truck fleet data...',
+                'Processing carton specifications...',
+                'Initializing optimization engine...',
+                'Running 3D bin packing algorithm...',
+                'Calculating optimal arrangements...',
+                'Performing cost analysis...',
+                'Generating detailed reports...',
+                'Creating 3D visualizations...',
+                'Finalizing packing job...'
+            ];
+            
+            showProgressWithSteps('Creating Packing Job', steps);
+        });
+        
         let cartonCount = 1;
         document.getElementById('add-carton-field').addEventListener('click', function() {
             cartonCount++;
@@ -102,3 +120,4 @@
         });
     });
 </script>
+{% endblock %}

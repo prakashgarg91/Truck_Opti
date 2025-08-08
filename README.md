@@ -1,126 +1,250 @@
-# TruckOpti: 3D Loading Optimizer
+# 🚛 TruckOpti: 3D Truck Loading Optimization Platform
 
-TruckOpti is a web-based application designed to optimize truck loading by efficiently packing cartons into trucks using a 3D packing algorithm. It helps businesses minimize shipping costs by maximizing space utilization and reducing the number of trucks required for shipments.
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-2.0%2B-green.svg)](https://flask.palletsprojects.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)]()
 
-## Key Features
+**TruckOpti** is a comprehensive 3D truck loading optimization platform that uses advanced bin packing algorithms to maximize space utilization, reduce transportation costs, and optimize fleet operations. Built with Flask, Python, and modern web technologies, it provides an intuitive interface for logistics professionals.
 
-### Core Packing & Optimization Functions
-- **3D Packing Algorithm:** Advanced 3D bin packing using `py3dbp` library with support for multiple optimization goals (space, cost, weight, minimum trucks)
-- **Multi-Truck Fleet Optimization:** Efficiently distributes cartons across multiple trucks of different types and quantities
-- **Truck Requirement Calculator:** Determines the minimum number and type of trucks needed for a given set of cartons
-- **Truck Recommendation Engine:** Recommends optimal truck types based on carton requirements and cost optimization
-- **Carton Fitting Analysis:** Tests how specific carton combinations fit into available truck configurations
+---
 
-### Management & Configuration
-- **Truck Type Management:** Add, edit, delete, and configure truck types with dimensions, weight limits, costs, and operational parameters
-- **Carton Type Management:** Manage carton types with properties like dimensions, weight, rotation capability, fragility, stackability, priority, and value
-- **Packing Job Lifecycle:** Create, track, and manage packing jobs with different optimization strategies
-- **Fleet Configuration:** Configure available truck fleets with quantities and operational costs
+## 📋 Table of Contents
 
-### Advanced Features
-- **Batch Processing:** Upload CSV files to process multiple packing requirements simultaneously
-- **Multi-Optimization Goals:** Support for space utilization, cost minimization, weight distribution, and truck count minimization
-- **Cost Analysis:** Comprehensive cost calculations including fuel, maintenance, driver costs, and cargo value
-- **Export Functionality:** Export packing results to CSV format with detailed positioning data
-- **Analytics Dashboard:** Real-time metrics including space utilization, costs, shipment statistics, and fleet analysis
+- [🚀 Quick Start](#-quick-start)
+- [✨ Key Features](#-key-features)
+- [🏗️ Architecture](#️-architecture)
+- [📁 Project Structure](#-project-structure)
+- [⚙️ Installation](#️-installation)
+- [🎯 Usage Guide](#-usage-guide)
+- [🔧 API Reference](#-api-reference)
+- [🧪 Testing](#-testing)
+- [📊 Development](#-development)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
-### Data Management & APIs
-- **RESTful API:** Complete REST API for truck types, carton types, and packing operations
-- **Database Management:** SQLite database with models for trucks, cartons, customers, routes, shipments, and analytics
-- **3D Visualization:** Interactive 3D visualization of packed cartons with positioning and rotation data
-- **Result Tracking:** Persistent storage of packing results with utilization metrics and cost analysis
+---
 
-## Application Functions
+## 🚀 Quick Start
 
-### Web Interface Pages
-1. **Dashboard (/)** - Overview with statistics, charts, and key metrics
-2. **Truck Types Management (/truck-types)** - View, add, edit, and delete truck configurations
-3. **Carton Types Management (/carton-types)** - Manage carton specifications and properties
-4. **Packing Jobs (/packing-jobs)** - Create and track packing operations
-5. **Truck Recommendation (/recommend-truck)** - Get optimal truck suggestions for specific carton loads
-6. **Carton Fitting Tool (/fit-cartons)** - Test carton compatibility with available trucks
-7. **Fleet Optimization (/fleet-optimization)** - Optimize entire fleet utilization
-8. **Truck Requirements Calculator (/calculate-truck-requirements)** - Determine minimum truck needs
-9. **Batch Processing (/batch-processing)** - Upload CSV files for bulk operations
-10. **Analytics Dashboard (/analytics)** - Advanced metrics and performance analysis
-11. **Packing Results (/packing-job/<id>)** - Detailed 3D visualization and results
+```bash
+# Clone the repository
+git clone https://github.com/your-username/TruckOpti.git
+cd TruckOpti
 
-### API Endpoints
-- **GET/POST /api/truck-types** - Truck type CRUD operations
-- **GET/POST /api/carton-types** - Carton type CRUD operations  
-- **GET /api/packing_jobs** - Retrieve packing job data
-- **POST /api/calculate-truck-requirements** - API for truck requirement calculation
-- **POST /api/fleet-optimization** - API for fleet optimization
-- **GET /api/analytics** - Retrieve analytics data
+# Install dependencies
+pip install -r requirements.txt
+npm install
 
-### Core Business Functions
-- **Load Optimization:** Maximize space and weight utilization across truck fleets
-- **Cost Minimization:** Reduce transportation costs through optimal truck selection and loading
-- **Route Planning Support:** Integration with customer and route management
-- **Shipment Tracking:** End-to-end shipment lifecycle management
-- **Performance Analytics:** Track KPIs like utilization rates, costs, and efficiency metrics
-- **Data Export:** Generate reports and export results in CSV format
+# Run the application
+python run.py
+```
 
-## User Interface Buttons
+🌐 **Access the application at:** `http://127.0.0.1:5000`
 
-### Navigation Buttons (Available on all pages)
-- **Dashboard** - Navigate to main dashboard with statistics and charts
-- **Packing Jobs** - Access packing job management and creation
-- **Truck Types** - Manage truck type configurations
-- **Carton Types** - Manage carton type specifications
-- **Recommend Truck for Cartons** - Access truck recommendation engine
-- **Fit Cartons in Selected Trucks** - Test carton fitting capabilities
-- **Truck Requirement Calculator** - Calculate minimum truck requirements
-- **Fleet Optimization** - Optimize entire fleet utilization
-- **Analytics** - View advanced metrics and performance data
-- **Batch Processing** - Process multiple jobs via CSV upload
-- **Customers** - Customer management (placeholder)
-- **Routes** - Route management (placeholder)
-- **Settings** - Application settings (placeholder)
+---
 
-### Action Buttons by Page
+## ✨ Key Features
 
-#### Truck Types Management
-- **Add Truck** (`btn-primary`) - Create new truck type
-- **Edit** (`btn-warning`) - Modify existing truck specifications  
-- **Delete** (`btn-danger`) - Remove truck type (with confirmation dialog)
+### 🎯 Core Optimization Engine
+- **3D Bin Packing Algorithm**: Advanced py3dbp integration with multiple optimization strategies
+- **Smart Truck Recommendations**: Algorithm-based suggestions for optimal truck selection
+- **Fleet Packing Optimization**: Pack cartons into your available fleet with remaining item recommendations
+- **Multi-Objective Optimization**: Space, cost, weight, and truck count minimization
 
-#### Carton Types Management  
-- **Add New Carton Type** (`btn-primary`) - Create new carton specification
-- **Edit** (`btn-info`) - Modify existing carton properties
-- **Delete** (`btn-danger`) - Remove carton type (with confirmation dialog)
+### 📊 Management & Analytics
+- **Truck Type Management**: Complete CRUD operations with dimensional and cost specifications
+- **Carton Type Management**: Detailed carton properties including fragility, priority, and stackability
+- **Real-time Analytics Dashboard**: KPIs, utilization metrics, and performance tracking
+- **Professional UI**: Bootstrap 5 + DataTables.js with export capabilities (CSV, Excel, PDF)
 
-#### Packing Jobs
-- **Create New Packing Job** (`btn-primary`) - Start new packing operation
-- **View Details** (`btn-primary`) - View 3D packing results and metrics
-- **Delete** (`btn-danger`) - Remove packing job (with confirmation dialog)
+### 🚀 Advanced Features
+- **Batch Processing**: CSV upload for bulk operations
+- **3D Visualization**: Three.js integration for interactive packing results
+- **Cost Analysis**: Comprehensive operational cost calculations (when data available)
+- **RESTful API**: Complete API for integration with external systems
+- **Responsive Design**: Mobile-friendly interface for field operations
 
-#### Form Management Buttons
-- **Add Carton** (`btn-outline-secondary`) - Add new carton row to forms
-- **Remove** (`btn-danger`) - Remove carton row from forms
-- **Add Another Carton Type** (`btn-secondary`) - Add carton row in packing jobs
+---
 
-#### Submit Buttons
-- **Add Truck Type** (`btn-primary`) - Submit truck type creation form
-- **Add Carton Type** (`btn-primary`) - Submit carton type creation form  
-- **Create Job** (`btn-primary`) - Submit packing job creation form
-- **Process Batch** (`btn-primary`) - Submit CSV file for batch processing
-- **Calculate** (`btn-primary`) - Submit truck requirement calculation
-- **Fit Cartons** (`btn-success`) - Submit carton fitting analysis
-- **Optimize Fleet** (`btn-success`) - Submit fleet optimization request
-- **Recommend Truck** (`btn-success`) - Submit truck recommendation request
+## 🏗️ Architecture
 
-#### Utility Buttons
-- **Export to CSV** (`btn-secondary`) - Export packing results to CSV file
-- **Close Alert** (`btn-close`) - Dismiss notification messages
-- **Wizard Next/Previous** - Navigate through multi-step forms
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │    Backend      │    │   Database      │
+│  (Bootstrap 5)  │◄──►│    (Flask)      │◄──►│   (SQLite)      │
+│   Three.js      │    │   py3dbp        │    │  SQLAlchemy     │
+│   DataTables    │    │   Algorithms    │    │   Models        │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-### Button Features
-- **Confirmation Dialogs:** All delete operations require user confirmation
-- **Dynamic Management:** Add/Remove buttons automatically manage form rows
-- **Responsive Design:** Buttons adapt to different screen sizes
-- **Icon Integration:** Many buttons include Bootstrap icons for better UX
-- **Consistent Styling:** Uses Bootstrap color classes (primary, danger, success, etc.)
+### Technology Stack
+- **Backend**: Flask + Python 3.8+ + SQLAlchemy
+- **Frontend**: Bootstrap 5 + Three.js + DataTables.js
+- **Database**: SQLite with comprehensive data models
+- **Testing**: Puppeteer + Jest + Python unittest
+- **Build**: PyInstaller for standalone executables
+
+---
+
+## 📁 Project Structure
+
+```
+TruckOpti/
+├── 📁 app/                          # Main application package
+│   ├── 🐍 __init__.py               # Flask app initialization
+│   ├── 🐍 models.py                 # Database models
+│   ├── 🐍 routes.py                 # Web routes & API endpoints
+│   ├── 🐍 packer.py                 # 3D packing algorithms
+│   ├── 🐍 cost_engine.py            # Cost calculation engine
+│   ├── 🐍 route_optimizer.py        # Route optimization (future)
+│   ├── 📁 static/                   # Static assets
+│   │   ├── 🎨 style.css             # Main stylesheet
+│   │   ├── ⚡ main.js               # Core JavaScript
+│   │   └── 📁 js/                   # Additional JS modules
+│   ├── 📁 templates/                # Jinja2 HTML templates
+│   │   ├── 🏠 base.html             # Base template
+│   │   ├── 📊 index.html            # Dashboard
+│   │   ├── 🚛 truck_types.html      # Truck management
+│   │   ├── 📦 carton_types.html     # Carton management
+│   │   ├── 💡 recommend_truck.html  # Smart recommendations
+│   │   ├── 🔧 fleet_optimization.html # Fleet packing
+│   │   └── 📈 analytics.html        # Analytics dashboard
+│   └── 🗄️ truck_opti.db            # SQLite database
+├── 📁 tests/                       # Test suite
+├── 📁 docs/                        # Documentation (cleaned)
+├── 🐍 run.py                       # Application entry point
+├── 📋 requirements.txt             # Python dependencies
+├── 📋 package.json                 # Node.js dependencies
+└── 📋 README.md                    # This file
+```
+
+---
+
+## ⚙️ Installation
+
+### Prerequisites
+- Python 3.8 or higher
+- Node.js 14+ (optional, for development)
+- Git
+
+### Step-by-Step Setup
+
+1. **Clone Repository**
+   ```bash
+   git clone https://github.com/your-username/TruckOpti.git
+   cd TruckOpti
+   ```
+
+2. **Create Virtual Environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Initialize Database**
+   ```bash
+   python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
+   ```
+
+5. **Run Application**
+   ```bash
+   python run.py
+   ```
+   🌐 Access at: `http://127.0.0.1:5000`
+
+---
+
+## 🎯 Usage Guide
+
+### 🏠 Dashboard Overview
+The main dashboard provides:
+- **KPI Widgets**: Space utilization, cost savings, active jobs
+- **Quick Actions**: Direct access to core features
+- **Recent Activity**: Latest packing operations
+- **Analytics Charts**: Performance trends and metrics
+
+### 🚛 Managing Trucks
+1. **Navigate**: Dashboard → Truck Types
+2. **Add Truck**: Click "Add Truck Type"
+3. **Configure**: Set dimensions, weight limits, costs
+4. **Export Data**: Use DataTables export (CSV/Excel/PDF)
+
+### 📦 Managing Cartons
+1. **Navigate**: Dashboard → Carton Types
+2. **Add Carton**: Click "Add New Carton Type"
+3. **Properties**: Set dimensions, weight, fragility, priority
+4. **Bulk Operations**: Use CSV import for multiple items
+
+### 💡 Smart Truck Recommendations
+1. **Navigate**: Dashboard → Smart Truck Recommendations
+2. **Input Cartons**: Add carton types and quantities
+3. **Get Recommendations**: Algorithm suggests optimal trucks
+4. **Review Results**: Compare efficiency scores and utilization
+
+### 🔧 Fleet Packing Optimization
+1. **Navigate**: Dashboard → Fleet Packing Optimization
+2. **Select Fleet**: Choose available trucks
+3. **Add Cartons**: Specify items to pack
+4. **Optimize**: Get packing plan + remaining item recommendations
+5. **3D Visualization**: View interactive packing results
+
+### 📊 Batch Processing
+1. **Navigate**: Dashboard → Batch Processing
+2. **Upload CSV**: Use provided template format
+3. **Process**: Bulk optimization of multiple shipments
+4. **Download Results**: Export all results to CSV
+
+---
+
+## 🔧 API Reference
+
+### Core Endpoints
+
+#### Truck Management
+```http
+GET    /api/truck-types          # List all truck types
+POST   /api/truck-types          # Create new truck type
+PUT    /api/truck-types/{id}     # Update truck type
+DELETE /api/truck-types/{id}     # Delete truck type
+```
+
+#### Carton Management
+```http
+GET    /api/carton-types         # List all carton types
+POST   /api/carton-types         # Create new carton type
+PUT    /api/carton-types/{id}    # Update carton type
+DELETE /api/carton-types/{id}    # Delete carton type
+```
+
+#### Optimization Services
+```http
+POST   /api/recommend-truck      # Get truck recommendations
+POST   /api/fleet-optimization   # Optimize fleet packing
+POST   /api/batch-process        # Process multiple jobs
+GET    /api/analytics           # Retrieve analytics data
+```
+
+### Example API Usage
+
+```python
+import requests
+
+# Get truck recommendations
+response = requests.post('http://localhost:5000/api/recommend-truck', json={
+    'cartons': [
+        {'carton_type_id': 1, 'quantity': 10},
+        {'carton_type_id': 2, 'quantity': 5}
+    ],
+    'optimization_goal': 'space'
+})
+recommendations = response.json()
+```
 
 ## Technology Stack
 

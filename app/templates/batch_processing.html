@@ -7,14 +7,117 @@
         </div>
         <div class="card-body">
             <p>Upload a CSV file with two columns: <strong>Carton Name</strong> and <strong>Quantity</strong>.</p>
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" id="batchForm">
                 <div class="mb-3">
                     <label for="file" class="form-label">CSV File</label>
                     <input class="form-control" type="file" id="file" name="file" accept=".csv" required>
                 </div>
-                <button type="submit" class="btn btn-primary">Process Batch</button>
+                <button type="submit" class="btn btn-primary" id="processBatchBtn">
+                    <i class="bi bi-upload"></i> Process Batch
+                </button>
             </form>
+            
+            <!-- File Preview Area -->
+            <div id="filePreview" class="mt-3" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">File Preview</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Carton Name</th>
+                                        <th>Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previewTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="fileStats" class="small text-muted"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // File preview functionality
+    $('#file').on('change', function(e) {
+        const file = e.target.files[0];
+        if (file && file.type === 'text/csv') {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                const lines = csv.split('\n');
+                const tbody = $('#previewTableBody');
+                tbody.empty();
+                
+                let validRows = 0;
+                for (let i = 0; i < Math.min(lines.length, 6); i++) { // Show first 5 rows + header
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 2 && cols[0].trim() && cols[1].trim()) {
+                        const row = $('<tr>');
+                        row.append($('<td>').text(cols[0].trim()));
+                        row.append($('<td>').text(cols[1].trim()));
+                        tbody.append(row);
+                        validRows++;
+                    }
+                }
+                
+                $('#fileStats').text(`File contains ${lines.length - 1} rows, showing first ${Math.min(validRows, 5)} entries`);
+                $('#filePreview').show();
+            };
+            reader.readAsText(file);
+        }
+    });
+    
+    // Add progress bar to batch processing form
+    $('#batchForm').on('submit', function(e) {
+        const steps = [
+            'Reading CSV file...',
+            'Validating carton data...',
+            'Matching with existing carton types...',
+            'Setting up truck fleet...',
+            'Running batch optimization...',
+            'Calculating costs for all scenarios...',
+            'Generating comprehensive report...',
+            'Creating 3D visualizations...',
+            'Finalizing batch results...'
+        ];
+        
+        showProgressWithSteps('Processing Batch Job', steps);
+        
+        // Add a small delay to show the progress bar before form submits
+        e.preventDefault();
+        setTimeout(() => {
+            e.target.submit();
+        }, 1000);
+    });
+    
+    // Enhanced file validation
+    $('#file').on('change', function() {
+        const file = this.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                alert('File size too large. Please upload a file smaller than 5MB.');
+                this.value = '';
+                return;
+            }
+            
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('Please upload a CSV file.');
+                this.value = '';
+                return;
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

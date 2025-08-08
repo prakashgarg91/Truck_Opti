@@ -23,22 +23,40 @@ def recommend_truck():
     recommended = None
     if request.method == 'POST':
         carton_quantities = {}
-        for carton in cartons:
-            qty = int(request.form.get(f'carton_{carton.id}', 0))
-            if qty > 0:
-                carton_quantities[carton] = qty
+        i = 1
+        while True:
+            carton_type_id = request.form.get(f'carton_type_{i}')
+            qty = request.form.get(f'carton_qty_{i}')
+            if not carton_type_id or not qty:
+                break
+            carton_type = CartonType.query.get(int(carton_type_id))
+            if carton_type and int(qty) > 0:
+                carton_quantities[carton_type] = int(qty)
+            i += 1
 
         if not carton_quantities:
             flash('Please add at least one carton type.', 'warning')
             return redirect(url_for('main.recommend_truck'))
 
-        # Use all available trucks with a large quantity to find the optimal fleet
+        # Use improved recommendation algorithm
         trucks = TruckType.query.all()
-        truck_quantities = {truck: 100 for truck in trucks}  # Simulate a large fleet
-
+        
         from . import packer
-        # Use optimized algorithm for better performance
-        results = packer.pack_cartons_optimized(truck_quantities, carton_quantities, 'cost')
+        # Use the improved recommendation algorithm instead of simple packing
+        recommendations = packer.calculate_optimal_truck_combination(
+            carton_quantities, trucks, max_trucks=5
+        )
+        
+        # Convert recommendations to the expected format for display
+        results = []
+        for rec in recommendations:
+            # Find the truck type
+            truck_type = next((t for t in trucks if t.name == rec['truck_type']), None)
+            if truck_type:
+                truck_combo = {truck_type: rec['quantity']}
+                pack_result = packer.pack_cartons_optimized(truck_combo, carton_quantities, 'cost')
+                if pack_result:
+                    results.extend(pack_result)
         
         # Get cost analysis for each result
         route_info = {'distance_km': 100, 'route_type': 'highway'}
@@ -52,44 +70,11 @@ def recommend_truck():
         recommended = [r for r in results if r['fitted_items']]
         
     return render_template('recommend_truck.html', cartons=cartons, recommended=recommended)
+# Redirect deprecated route to fleet optimization
 @bp.route('/fit-cartons', methods=['GET', 'POST'])
 def fit_cartons():
-    trucks = TruckType.query.all()
-    cartons = CartonType.query.all()
-    fit_results = None
-    if request.method == 'POST':
-        truck_quantities = {}
-        for truck in trucks:
-            qty = int(request.form.get(f'truck_{truck.id}', 0))
-            if qty > 0:
-                truck_quantities[truck] = qty
-
-        carton_quantities = {}
-        i = 1
-        while True:
-            carton_type_id = request.form.get(f'carton_type_{i}')
-            qty = request.form.get(f'carton_qty_{i}')
-            if not carton_type_id or not qty:
-                break
-            carton_type = CartonType.query.get(int(carton_type_id))
-            if carton_type and int(qty) > 0:
-                carton_quantities[carton_type] = int(qty)
-            i += 1
-
-        from . import packer
-        # Use optimized algorithm
-        fit_results = packer.pack_cartons_optimized(truck_quantities, carton_quantities, 'space')
-        
-        # Add cost analysis for fitted results
-        route_info = {'distance_km': 100, 'route_type': 'highway'}
-        if fit_results:
-            for result in fit_results:
-                truck_type = next((t for t in trucks if t.name in result['bin_name']), None)
-                if truck_type:
-                    cost_breakdown = cost_engine.calculate_comprehensive_cost(truck_type, route_info)
-                    result['cost_analysis'] = cost_breakdown
-
-    return render_template('fit_cartons.html', trucks=trucks, cartons=cartons, fit_results=fit_results)
+    """Deprecated: Redirect to fleet packing optimization"""
+    return redirect(url_for('main.fleet_optimization'))
 
 
 @bp.route('/')
@@ -236,35 +221,11 @@ def add_packing_job():
     carton_types = CartonType.query.all()
     return render_template('add_packing_job.html', truck_types=truck_types, carton_types=carton_types)
 
+# Redirect deprecated route to main recommendation system
 @bp.route('/calculate-truck-requirements', methods=['GET', 'POST'])
 def calculate_truck_requirements():
-    cartons = CartonType.query.all()
-    results = None
-    if request.method == 'POST':
-        carton_quantities = {}
-        i = 1
-        while True:
-            carton_type_id = request.form.get(f'carton_type_{i}')
-            qty = request.form.get(f'carton_qty_{i}')
-            if not carton_type_id or not qty:
-                break
-            carton_type = CartonType.query.get(int(carton_type_id))
-            if carton_type and int(qty) > 0:
-                carton_quantities[carton_type] = int(qty)
-            i += 1
-
-        if not carton_quantities:
-            flash('Please add at least one carton type.', 'warning')
-            return redirect(url_for('main.calculate_truck_requirements'))
-
-        # For truck requirement calculation, we assume an "infinite" supply of all truck types
-        trucks = TruckType.query.all()
-        truck_quantities = {truck: 100 for truck in trucks} # A large number to simulate infinite supply
-
-        from . import packer
-        results = packer.pack_cartons(truck_quantities, carton_quantities, 'min_trucks')
-
-    return render_template('calculate_truck_requirements.html', cartons=cartons, results=results)
+    """Deprecated: Redirect to smart truck recommendations"""
+    return redirect(url_for('main.recommend_truck'))
 
 @bp.route('/fleet-optimization', methods=['GET', 'POST'])
 def fleet_optimization():
@@ -292,8 +253,35 @@ def fleet_optimization():
 
         from . import packer
         fit_results = packer.pack_cartons(truck_quantities, carton_quantities, 'space')
+        
+        # Check for remaining items and recommend additional trucks
+        additional_recommendations = None
+        if fit_results:
+            total_unfitted = []
+            for result in fit_results:
+                total_unfitted.extend(result.get('unfitted_items', []))
+            
+            if total_unfitted:
+                # Create carton quantities for unfitted items
+                unfitted_quantities = {}
+                for item in total_unfitted:
+                    carton_name = item['name'].rsplit('_', 1)[0]  # Remove the _0, _1 suffix
+                    carton_type = CartonType.query.filter_by(name=carton_name).first()
+                    if carton_type:
+                        unfitted_quantities[carton_type] = unfitted_quantities.get(carton_type, 0) + 1
+                
+                if unfitted_quantities:
+                    # Get recommendations for remaining items
+                    all_trucks = TruckType.query.all()
+                    additional_recommendations = packer.calculate_optimal_truck_combination(
+                        unfitted_quantities, all_trucks, max_trucks=3
+                    )
 
-    return render_template('fleet_optimization.html', trucks=trucks, cartons=cartons, fit_results=fit_results)
+    return render_template('fleet_optimization.html', 
+                         trucks=trucks, 
+                         cartons=cartons, 
+                         fit_results=fit_results,
+                         additional_recommendations=additional_recommendations)
 
 @bp.route('/batch-processing', methods=['GET', 'POST'])
 def batch_processing():

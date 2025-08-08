@@ -3,7 +3,8 @@
 <div class="container mt-4">
   <div class="card shadow mb-4">
     <div class="card-header bg-primary text-white">
-      <h4 class="mb-0"><i class="bi bi-truck"></i> Multi-Truck Fleet Optimization</h4>
+      <h4 class="mb-0"><i class="bi bi-truck"></i> Fleet Packing Optimization</h4>
+      <p class="mb-0 mt-2"><small class="text-light">📦 Pack cartons into your available trucks - Select your fleet and optimize packing</small></p>
     </div>
     <div class="card-body">
       <form method="post" id="fleetOptimizationForm">
@@ -63,6 +64,61 @@
           <td>{{ "%.2f"|format(r.utilization * 100) }}%</td>
           <td>{{ r.fitted_items|length }}</td>
           <td>{{ r.unfitted_items|length }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if additional_recommendations %}
+  <div class="card shadow mt-4">
+    <div class="card-header bg-warning text-dark">
+      <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Additional Trucks Needed for Remaining Items</h5>
+      <p class="mb-0 mt-2"><small>Your selected fleet couldn't fit all items. Here are recommendations for additional trucks:</small></p>
+    </div>
+    <div class="card-body">
+      <table class="table table-bordered table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Recommended Truck</th>
+            <th>Dimensions</th>
+            <th>Expected Utilization</th>
+            <th>Efficiency Score</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for rec in additional_recommendations %}
+        <tr>
+          <td>
+            <strong>{{ rec.truck_type }}</strong>
+            <br><small class="text-muted">{{ rec.quantity }} truck(s) needed</small>
+          </td>
+          <td>
+            <small>{{ rec.truck_dimensions }}</small>
+          </td>
+          <td>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-info" role="progressbar" 
+                   style="width: {{ (rec.avg_utilization * 100)|round(1) }}%"
+                   aria-valuenow="{{ (rec.avg_utilization * 100)|round(1) }}" 
+                   aria-valuemin="0" aria-valuemax="100">
+                {{ (rec.avg_utilization * 100)|round(1) }}%
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-{{ 'success' if rec.efficiency_score > 0.7 else 'warning' if rec.efficiency_score > 0.4 else 'secondary' }}">
+              {{ (rec.efficiency_score * 100)|round(1) }}%
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-outline-success btn-sm" onclick="alert('Add to fleet or contact supplier')">
+              <i class="bi bi-plus"></i> Consider
+            </button>
+          </td>
         </tr>
         {% endfor %}
         </tbody>

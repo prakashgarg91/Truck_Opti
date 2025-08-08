@@ -138,9 +138,19 @@ def pack_cartons_optimized(truck_types_with_quantities, carton_types_with_quanti
         x.fragile, x.stackable, optimization_goal
     ))
 
-    # Pre-allocate truck bins
+    # Pre-allocate truck bins with better ordering
     available_trucks = []
-    for truck_type, quantity in truck_types_with_quantities.items():
+    truck_list = list(truck_types_with_quantities.items())
+    
+    # Sort trucks by volume (largest first) for better space optimization
+    if optimization_goal in ['space', 'min_trucks']:
+        truck_list.sort(key=lambda x: x[0].length * x[0].width * x[0].height, reverse=True)
+    elif optimization_goal == 'cost':
+        truck_list.sort(key=lambda x: getattr(x[0], 'cost_per_km', 0))
+    elif optimization_goal == 'weight':
+        truck_list.sort(key=lambda x: getattr(x[0], 'max_weight', 1000), reverse=True)
+    
+    for truck_type, quantity in truck_list:
         for i in range(quantity):
             available_trucks.append(create_bin_optimized(truck_type, i))
 
@@ -237,16 +247,29 @@ def _pack_single_truck(truck_bin, items_to_pack):
     
     unfitted_items_details = [{'name': item.name} for item in truck_bin.unfitted_items]
     
-    # Enhanced Cost Calculation
+    # Realistic Cost Calculation - only show if cost data available
     truck_type = truck_bin.truck_type
-    distance_km = 100  # Default distance, should be parameter
+    has_cost_data = (
+        getattr(truck_type, 'cost_per_km', 0) > 0 or
+        getattr(truck_type, 'fuel_efficiency', 0) > 0 or  
+        getattr(truck_type, 'driver_cost_per_day', 0) > 0 or
+        getattr(truck_type, 'maintenance_cost_per_km', 0) > 0
+    )
     
-    fuel_cost = (distance_km / truck_type.fuel_efficiency) * 100 if truck_type.fuel_efficiency > 0 else 0
-    maintenance_cost = distance_km * truck_type.maintenance_cost_per_km
-    driver_cost = truck_type.driver_cost_per_day
-    truck_cost = fuel_cost + maintenance_cost + driver_cost + (truck_type.cost_per_km * distance_km)
-    total_carton_value = sum(getattr(item, 'value', 0) for item in truck_bin.items)
-    total_cost = truck_cost + total_carton_value
+    if has_cost_data:
+        # Only calculate if we have actual cost data
+        distance_km = 100  # Default distance - should be user input
+        fuel_cost = (distance_km / truck_type.fuel_efficiency) * 100 if truck_type.fuel_efficiency > 0 else 0
+        maintenance_cost = distance_km * truck_type.maintenance_cost_per_km if truck_type.maintenance_cost_per_km else 0
+        driver_cost = truck_type.driver_cost_per_day if truck_type.driver_cost_per_day else 0
+        truck_cost = fuel_cost + maintenance_cost + driver_cost + (truck_type.cost_per_km * distance_km if truck_type.cost_per_km else 0)
+        total_carton_value = sum(getattr(item, 'value', 0) for item in truck_bin.items)
+        total_cost = truck_cost + total_carton_value
+    else:
+        # No cost data available - don't show misleading costs
+        truck_cost = 0
+        total_carton_value = 0
+        total_cost = 0
     
     return {
         'bin_name': truck_bin.name,
@@ -341,16 +364,27 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
         
         unfitted_items_details = [{'name': item.name} for item in truck_bin.unfitted_items]
 
-        # Enhanced Cost Calculation
+        # Realistic Cost Calculation - only show if cost data available
         truck_type = truck_bin.truck_type
-        # Assuming a fixed distance for now, this can be an input later
-        distance_km = 100
-        fuel_cost = (distance_km / truck_type.fuel_efficiency) * 100 if truck_type.fuel_efficiency > 0 else 0 # Assuming fuel price of 100
-        maintenance_cost = distance_km * truck_type.maintenance_cost_per_km
-        driver_cost = truck_type.driver_cost_per_day # Assuming a single day trip
-        truck_cost = fuel_cost + maintenance_cost + driver_cost + (truck_type.cost_per_km * distance_km)
-        total_carton_value = sum(item.value for item in truck_bin.items)
-        total_cost = truck_cost + total_carton_value
+        has_cost_data = (
+            getattr(truck_type, 'cost_per_km', 0) > 0 or
+            getattr(truck_type, 'fuel_efficiency', 0) > 0 or  
+            getattr(truck_type, 'driver_cost_per_day', 0) > 0 or
+            getattr(truck_type, 'maintenance_cost_per_km', 0) > 0
+        )
+        
+        if has_cost_data:
+            distance_km = 100  # Should be user input
+            fuel_cost = (distance_km / truck_type.fuel_efficiency) * 100 if truck_type.fuel_efficiency > 0 else 0
+            maintenance_cost = distance_km * truck_type.maintenance_cost_per_km if truck_type.maintenance_cost_per_km else 0
+            driver_cost = truck_type.driver_cost_per_day if truck_type.driver_cost_per_day else 0
+            truck_cost = fuel_cost + maintenance_cost + driver_cost + (truck_type.cost_per_km * distance_km if truck_type.cost_per_km else 0)
+            total_carton_value = sum(getattr(item, 'value', 0) for item in truck_bin.items)
+            total_cost = truck_cost + total_carton_value
+        else:
+            truck_cost = 0
+            total_carton_value = 0
+            total_cost = 0
 
         results.append({
             'bin_name': truck_bin.name,
@@ -368,33 +402,97 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
 
 def calculate_optimal_truck_combination(carton_types_with_quantities, available_truck_types, max_trucks=10):
     """
-    AI-powered truck combination recommendation
-    Returns the most cost-effective and efficient truck combination
+    Improved AI-powered truck combination recommendation
+    Returns the most cost-effective and efficient truck combination with better variety
     """
     best_combinations = []
     
-    # Try different truck combinations
-    for truck_type in available_truck_types:
-        for quantity in range(1, max_trucks + 1):
+    # Calculate total carton volume and weight to guide truck selection
+    total_volume = sum(
+        (carton.length * carton.width * carton.height) * qty 
+        for carton, qty in carton_types_with_quantities.items()
+    )
+    total_weight = sum(
+        (carton.weight if carton.weight else 5) * qty 
+        for carton, qty in carton_types_with_quantities.items()
+    )
+    
+    # Sort trucks by size to try different sizes first
+    sorted_trucks = sorted(available_truck_types, key=lambda t: t.length * t.width * t.height)
+    
+    # Try different truck combinations with smarter logic
+    for truck_type in sorted_trucks:
+        truck_volume = truck_type.length * truck_type.width * truck_type.height
+        truck_capacity = truck_type.max_weight if truck_type.max_weight else 10000
+        
+        # Estimate reasonable quantity range based on cargo size
+        min_trucks_needed = max(1, min(
+            int(total_volume / truck_volume) + 1,
+            int(total_weight / truck_capacity) + 1
+        ))
+        max_reasonable = min(max_trucks, min_trucks_needed + 3)
+        
+        for quantity in range(1, max_reasonable + 1):
             truck_combo = {truck_type: quantity}
             
             # Test packing with this combination
             result = pack_cartons_optimized(truck_combo, carton_types_with_quantities, 'cost')
             
-            total_cost = sum(r['total_cost'] for r in result)
-            total_utilization = sum(r['utilization'] for r in result) / len(result) if result else 0
+            if not result:  # Skip if no results
+                continue
+                
+            # Filter only trucks that were actually used
+            used_trucks = [r for r in result if r['fitted_items']]
+            
+            if not used_trucks:  # Skip if no trucks were used
+                continue
+            
+            total_cost = sum(r['total_cost'] for r in used_trucks)
+            total_utilization = sum(r['utilization'] for r in used_trucks) / len(used_trucks)
+            trucks_actually_used = len(used_trucks)
+            total_fitted_items = sum(len(r['fitted_items']) for r in used_trucks)
+            total_cartons = sum(carton_types_with_quantities.values())
+            
+            # Calculate comprehensive efficiency score
+            space_efficiency = total_utilization
+            cost_efficiency = 1000 / total_cost if total_cost > 0 else 0
+            truck_efficiency = 1 / trucks_actually_used  # Prefer fewer trucks
+            packing_success = total_fitted_items / total_cartons if total_cartons > 0 else 0
+            
+            # Weighted composite score
+            efficiency_score = (
+                space_efficiency * 0.3 + 
+                cost_efficiency * 0.3 + 
+                truck_efficiency * 0.2 + 
+                packing_success * 0.2
+            )
             
             best_combinations.append({
                 'truck_type': truck_type.name,
-                'quantity': quantity,
+                'truck_dimensions': f"{truck_type.length}×{truck_type.width}×{truck_type.height}",
+                'quantity': trucks_actually_used,
                 'total_cost': total_cost,
                 'avg_utilization': total_utilization,
-                'efficiency_score': total_utilization / total_cost if total_cost > 0 else 0
+                'packing_success_rate': packing_success,
+                'efficiency_score': efficiency_score,
+                'space_efficiency': space_efficiency,
+                'cost_per_item': total_cost / total_fitted_items if total_fitted_items > 0 else float('inf')
             })
     
-    # Sort by efficiency score (higher is better)
+    # Sort by composite efficiency score (higher is better)
     best_combinations.sort(key=lambda x: x['efficiency_score'], reverse=True)
-    return best_combinations[:5]  # Return top 5 recommendations
+    
+    # Remove duplicates and ensure variety in recommendations
+    seen_trucks = set()
+    diverse_combinations = []
+    
+    for combo in best_combinations:
+        truck_key = (combo['truck_type'], combo['quantity'])
+        if truck_key not in seen_trucks and len(diverse_combinations) < 5:
+            seen_trucks.add(truck_key)
+            diverse_combinations.append(combo)
+    
+    return diverse_combinations
 
 def estimate_packing_time(num_cartons, num_trucks):
     """

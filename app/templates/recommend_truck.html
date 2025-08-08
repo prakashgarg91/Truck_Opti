@@ -3,7 +3,8 @@
 <div class="container mt-4">
   <div class="card shadow mb-4">
     <div class="card-header bg-primary text-white">
-      <h4 class="mb-0"><i class="bi bi-lightbulb"></i> Recommend Truck for Cartons</h4>
+      <h4 class="mb-0"><i class="bi bi-lightbulb"></i> Smart Truck Recommendations</h4>
+      <p class="mb-0 mt-2"><small class="text-light">🔍 Algorithm-based recommendations - Input your cartons and get optimal truck suggestions</small></p>
     </div>
     <div class="card-body">
       <form method="post" id="cartonForm">
@@ -31,7 +32,7 @@
         </div>
         <div class="d-flex gap-2 mb-3">
           <button type="button" class="btn btn-outline-secondary" id="addRow"><i class="bi bi-plus-lg"></i> Add Carton</button>
-          <button type="submit" class="btn btn-success"><i class="bi bi-search"></i> Recommend Truck</button>
+          <button type="submit" class="btn btn-success" id="recommendBtn"><i class="bi bi-search"></i> Recommend Truck</button>
         </div>
       </form>
     </div>
@@ -43,26 +44,73 @@
       <h5 class="mb-0"><i class="bi bi-truck"></i> Recommended Trucks</h5>
     </div>
     <div class="card-body">
-      <table class="table table-bordered table-hover">
+      <table id="recommendTable" class="table table-bordered table-hover">
         <thead class="table-light">
           <tr>
-            <th>Truck</th>
+            <th>Truck Type</th>
+            <th>Dimensions (L×W×H)</th>
             <th>Utilization</th>
+            {% if recommended and recommended[0].total_cost > 0 %}
             <th>Total Cost</th>
+            {% endif %}
             <th>Fitted Items</th>
+            {% if recommended and recommended[0].total_cost > 0 %}
+            <th>Cost per Item</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
           {% for r in recommended %}
           <tr>
-            <td>{{ r.bin_name }}</td>
-            <td>{{ (r.utilization * 100)|round(2) }}%</td>
-            <td>₹{{ r.total_cost|round(2) }}</td>
-            <td>{{ r.fitted_items|length }}</td>
+            <td>
+              <strong>{{ r.bin_name.split('_')[0] }}</strong>
+              <br><small class="text-muted">{{ r.bin_name }}</small>
+            </td>
+            <td>
+              <small>{{ r.truck_dimensions if r.truck_dimensions else 'N/A' }}</small>
+            </td>
+            <td>
+              <div class="progress" style="height: 20px;">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: {{ (r.utilization * 100)|round(1) }}%"
+                     aria-valuenow="{{ (r.utilization * 100)|round(1) }}" 
+                     aria-valuemin="0" aria-valuemax="100">
+                  {{ (r.utilization * 100)|round(1) }}%
+                </div>
+              </div>
+            </td>
+            {% if r.total_cost > 0 %}
+            <td>
+              <span class="badge bg-{{ 'success' if r.total_cost < 5000 else 'warning' if r.total_cost < 10000 else 'danger' }}">
+                ₹{{ r.total_cost|round(0) }}
+              </span>
+            </td>
+            {% endif %}
+            <td>
+              <span class="badge bg-info">{{ r.fitted_items|length }}</span>
+              {% if r.unfitted_items|length > 0 %}
+                <br><small class="text-danger">{{ r.unfitted_items|length }} not fitted</small>
+              {% endif %}
+            </td>
+            {% if r.total_cost > 0 %}
+            <td>
+              <small>₹{{ (r.total_cost / r.fitted_items|length)|round(0) if r.fitted_items|length > 0 else 'N/A' }}</small>
+            </td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>
       </table>
+      
+      <!-- 3D Visualizations -->
+      {% for r in recommended %}
+        {% if r.fitted_items %}
+        <div class="mt-4">
+          <h6>3D Visualization - {{ r.bin_name }}</h6>
+          <div id="recommend-visualization-{{ loop.index }}" style="width:100%;height:400px;border:1px solid #ddd;position:relative;"></div>
+        </div>
+        {% endif %}
+      {% endfor %}
     </div>
   </div>
   {% endif %}
@@ -72,6 +120,26 @@
 {% block scripts %}
 <script>
 let rowCount = 1;
+
+// Add progress bar to form submission
+document.getElementById('cartonForm').addEventListener('submit', function(e) {
+    const steps = [
+        'Validating carton data...',
+        'Loading truck specifications...',
+        'Running optimization algorithm...',
+        'Calculating cost analysis...',
+        'Generating 3D visualization...',
+        'Finalizing recommendations...'
+    ];
+    
+    showProgressWithSteps('Finding Optimal Trucks', steps);
+    
+    // Simulate processing time for demonstration
+    setTimeout(() => {
+        // Let the form submit naturally after showing progress
+    }, 500);
+});
+
 document.getElementById('addRow').onclick = function() {
   rowCount++;
   const row = document.createElement('div');
@@ -111,4 +179,92 @@ function updateRemoveButtons() {
 }
 updateRemoveButtons();
 </script>
+
+{% if recommended %}
+<script>
+$(document).ready(function() {
+    $('#recommendTable').DataTable({
+        dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+             "<'row'<'col-sm-12'B>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        buttons: [
+            {
+                extend: 'copy',
+                className: 'btn btn-secondary btn-sm',
+                text: 'Copy'
+            },
+            {
+                extend: 'csv',
+                className: 'btn btn-secondary btn-sm',
+                text: 'CSV'
+            },
+            {
+                extend: 'excel',
+                className: 'btn btn-secondary btn-sm',
+                text: 'Excel'
+            },
+            {
+                extend: 'pdf',
+                className: 'btn btn-secondary btn-sm',
+                text: 'PDF'
+            },
+            {
+                extend: 'print',
+                className: 'btn btn-secondary btn-sm',
+                text: 'Print'
+            }
+        ],
+        pageLength: 10,
+        responsive: true,
+        order: [[2, 'asc']], // Sort by cost (lowest first)
+        language: {
+            search: "Search recommendations:",
+            lengthMenu: "Show _MENU_ recommendations per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ recommendations"
+        }
+    });
+});
+</script>
+
+<script type="module">
+    import { renderTruckVisualizationEnhanced } from "/static/js/truck_3d_enhanced.js";
+    const recommended = {{ recommended|tojson }};
+    
+    if (recommended && recommended.length > 0) {
+        showProgress('Loading 3D Truck Views', 'Generating interactive visualizations...', true);
+        
+        let loadedCount = 0;
+        const totalVisualizations = recommended.filter(r => r.fitted_items && r.fitted_items.length > 0).length;
+        
+        recommended.forEach((result, index) => {
+            if (result.fitted_items && result.fitted_items.length > 0) {
+                const containerId = `recommend-visualization-${index + 1}`;
+                
+                setTimeout(() => {
+                    try {
+                        renderTruckVisualizationEnhanced(containerId, [result]);
+                        loadedCount++;
+                        
+                        const percentage = Math.round((loadedCount / totalVisualizations) * 100);
+                        updateProgress(percentage);
+                        
+                        if (loadedCount === totalVisualizations) {
+                            setTimeout(() => {
+                                hideProgress();
+                            }, 500);
+                        }
+                    } catch (error) {
+                        console.error('Error loading 3D visualization:', error);
+                        loadedCount++;
+                        if (loadedCount === totalVisualizations) {
+                            hideProgress();
+                        }
+                    }
+                }, index * 400); // Stagger loading slightly more for recommendations
+            }
+        });
+    }
+</script>
+{% endif %}
 {% endblock %}
