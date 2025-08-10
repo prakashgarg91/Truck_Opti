@@ -1,0 +1,229 @@
+{
+  "timestamp": "2025-08-10T11:58:04.379010",
+  "total_tests": 29,
+  "passed_tests": 8,
+  "failed_tests": 21,
+  "errors": [
+    "Truck Data Diversity: Only 0 truck types found",
+    "Truck List API: Error: HTTP 404",
+    "Carton List API: Error: HTTP 404",
+    "Optimization API: Error: HTTP 404",
+    "Dashboard API: Error: HTTP 404",
+    "Truck Management Page: Error: HTTP 404",
+    "Carton Management Page: Error: HTTP 404",
+    "Optimization Page: Error: HTTP 404",
+    "Dashboard Page: Error: HTTP 404",
+    "Add Truck Form: Truck creation failed: Unknown error",
+    "Add Carton Form: Carton creation failed: Unknown error",
+    "Optimization - Small Items Scenario: Optimization failed: Unknown",
+    "Optimization - Large Items Scenario: Optimization failed: Unknown",
+    "Optimization - Mixed Items Scenario: Optimization failed: Unknown",
+    "Recommendation Diversity: Could not determine diversity",
+    "Trucks CSV Export: Export not available: Unknown error",
+    "Cartons CSV Export: Export not available: Unknown error",
+    "Results CSV Export: Export not available: Unknown error",
+    "Trucks Excel Export: Export not available: Unknown error",
+    "Results PDF Export: Export not available: Unknown error",
+    "Three.js Library: Three.js not detected"
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "description": "Add more truck types to provide better recommendations"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing endpoint: /api/trucks"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing endpoint: /api/cartons"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing endpoint: /api/optimize"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing endpoint: /api/dashboard"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing endpoint: /trucks"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing endpoint: /cartons"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing endpoint: /optimize"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing endpoint: /dashboard"
+    },
+    {
+      "priority": "HIGH",
+      "description": "Truck creation form not working properly"
+    },
+    {
+      "priority": "HIGH",
+      "description": "Carton creation form not working properly"
+    },
+    {
+      "priority": "HIGH",
+      "description": "Optimization failing for Small Items Scenario"
+    },
+    {
+      "priority": "HIGH",
+      "description": "Optimization failing for Large Items Scenario"
+    },
+    {
+      "priority": "HIGH",
+      "description": "Optimization failing for Mixed Items Scenario"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing export functionality: Trucks CSV Export"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing export functionality: Cartons CSV Export"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing export functionality: Results CSV Export"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing export functionality: Trucks Excel Export"
+    },
+    {
+      "priority": "MEDIUM",
+      "description": "Missing export functionality: Results PDF Export"
+    },
+    {
+      "priority": "HIGH",
+      "description": "Three.js library missing - required for 3D visualization"
+    }
+  ],
+  "detailed_results": {
+    "Database Schema": {
+      "status": "PASS",
+      "details": "All required tables exist: ['truck_type', 'carton_type', 'packing_job', 'packing_result']"
+    },
+    "Truck Data Diversity": {
+      "status": "FAIL",
+      "details": "Only 0 truck types found"
+    },
+    "Homepage Loading": {
+      "status": "PASS",
+      "details": "Status: 200"
+    },
+    "Homepage - Navigation": {
+      "status": "PASS",
+      "details": "Found"
+    },
+    "Homepage - Truck Section": {
+      "status": "PASS",
+      "details": "Found"
+    },
+    "Homepage - Carton Section": {
+      "status": "PASS",
+      "details": "Found"
+    },
+    "Homepage - Optimize Button": {
+      "status": "PASS",
+      "details": "Found"
+    },
+    "Homepage - Dashboard": {
+      "status": "PASS",
+      "details": "Found"
+    },
+    "Truck List API": {
+      "status": "FAIL",
+      "details": "Error: HTTP 404"
+    },
+    "Carton List API": {
+      "status": "FAIL",
+      "details": "Error: HTTP 404"
+    },
+    "Optimization API": {
+      "status": "FAIL",
+      "details": "Error: HTTP 404"
+    },
+    "Dashboard API": {
+      "status": "FAIL",
+      "details": "Error: HTTP 404"
+    },
+    "Truck Management Page": {
+      "status": "FAIL",
+      "details": "Error: HTTP 404"
+    },
+    "Carton Management Page": {
+      "status": "FAIL",
+      "details": "Error: HTTP 404"
+    },
+    "Optimization Page": {
+      "status": "FAIL",
+      "details": "Error: HTTP 404"
+    },
+    "Dashboard Page": {
+      "status": "FAIL",
+      "details": "Error: HTTP 404"
+    },
+    "Add Truck Form": {
+      "status": "FAIL",
+      "details": "Truck creation failed: Unknown error"
+    },
+    "Add Carton Form": {
+      "status": "FAIL",
+      "details": "Carton creation failed: Unknown error"
+    },
+    "Optimization - Small Items Scenario": {
+      "status": "FAIL",
+      "details": "Optimization failed: Unknown"
+    },
+    "Optimization - Large Items Scenario": {
+      "status": "FAIL",
+      "details": "Optimization failed: Unknown"
+    },
+    "Optimization - Mixed Items Scenario": {
+      "status": "FAIL",
+      "details": "Optimization failed: Unknown"
+    },
+    "Recommendation Diversity": {
+      "status": "UNKNOWN",
+      "details": "Could not determine diversity"
+    },
+    "Trucks CSV Export": {
+      "status": "FAIL",
+      "details": "Export not available: Unknown error"
+    },
+    "Cartons CSV Export": {
+      "status": "FAIL",
+      "details": "Export not available: Unknown error"
+    },
+    "Results CSV Export": {
+      "status": "FAIL",
+      "details": "Export not available: Unknown error"
+    },
+    "Trucks Excel Export": {
+      "status": "FAIL",
+      "details": "Export not available: Unknown error"
+    },
+    "Results PDF Export": {
+      "status": "FAIL",
+      "details": "Export not available: Unknown error"
+    },
+    "3D Visualization Elements": {
+      "status": "PASS",
+      "details": "3D visualization components detected"
+    },
+    "Three.js Library": {
+      "status": "FAIL",
+      "details": "Three.js not detected"
+    }
+  }
+}

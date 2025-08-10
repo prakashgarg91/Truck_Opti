@@ -7,10 +7,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "chai": "^5.2.1",
-    "puppeteer": "^24.16.0"
+    "chai": "^5.2.1"
   },
   "devDependencies": {
-    "jest": "^30.0.5"
+    "jest": "^30.0.5",
+    "puppeteer": "^24.16.0"
   }
 }

@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow mb-4">
+    <div class="card-header bg-success text-white">
+      <h4 class="mb-0"><i class="fas fa-file-upload me-2"></i>Sale Order Truck Selection</h4>
+      <p class="mb-0 mt-2"><small class="text-light">📋 Upload Excel/CSV file with sale orders to get best truck recommendations for each order</small></p>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <h5>Upload Sale Orders</h5>
+          <form method="post" enctype="multipart/form-data" id="saleOrderUploadForm">
+            <div class="mb-3">
+              <label for="batch_name" class="form-label">Batch Name</label>
+              <input type="text" class="form-control" id="batch_name" name="batch_name" 
+                     placeholder="Enter batch name (optional)" 
+                     value="Sale_Orders_{{ current_time.strftime('%Y-%m-%d_%H-%M') }}">
+            </div>
+            
+            <div class="mb-3">
+              <label for="file" class="form-label">Select File</label>
+              <input type="file" class="form-control" id="file" name="file" 
+                     accept=".xlsx,.csv" required>
+              <div class="form-text">
+                <i class="fas fa-info-circle text-info"></i>
+                Supported formats: Excel (.xlsx) or CSV (.csv)
+              </div>
+            </div>
+            
+            <button type="submit" class="btn btn-success" id="uploadBtn">
+              <i class="fas fa-upload me-1"></i>Upload and Process
+            </button>
+          </form>
+        </div>
+        
+        <div class="col-md-6">
+          <h5>File Format Requirements</h5>
+          <div class="alert alert-info">
+            <strong>Required Columns:</strong>
+            <ul class="mb-2">
+              <li><code>sale_order_number</code> - Unique order identifier</li>
+              <li><code>carton_name</code> - Carton type name (must match existing cartons)</li>
+              <li><code>carton_code</code> - Carton type code</li>
+              <li><code>quantity</code> - Number of cartons</li>
+            </ul>
+            
+            <strong>Optional Columns:</strong>
+            <ul class="mb-0">
+              <li><code>customer_name</code> - Customer name</li>
+              <li><code>delivery_address</code> - Delivery location</li>
+              <li><code>order_date</code> - Order date</li>
+            </ul>
+          </div>
+          
+          <div class="mt-3">
+            <a href="#" class="btn btn-outline-primary btn-sm" onclick="downloadSampleFile()">
+              <i class="fas fa-download me-1"></i>Download Sample File
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Batches -->
+  {% if recent_batches %}
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Processing Batches</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Batch Name</th>
+              <th>File</th>
+              <th>Orders</th>
+              <th>Status</th>
+              <th>Processing Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for batch in recent_batches %}
+            <tr>
+              <td>
+                <strong>{{ batch.batch_name }}</strong>
+              </td>
+              <td>
+                <small class="text-muted">{{ batch.filename }}</small>
+              </td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <span class="badge bg-secondary me-2">{{ batch.total_orders }}</span>
+                  {% if batch.processed_orders %}
+                    <small class="text-success">✓ {{ batch.processed_orders }} processed</small>
+                  {% endif %}
+                  {% if batch.failed_orders > 0 %}
+                    <small class="text-danger">✗ {{ batch.failed_orders }} failed</small>
+                  {% endif %}
+                </div>
+              </td>
+              <td>
+                {% if batch.status == 'completed' %}
+                  <span class="badge bg-success">Completed</span>
+                {% elif batch.status == 'processing' %}
+                  <span class="badge bg-warning">Processing</span>
+                {% elif batch.status == 'completed_with_errors' %}
+                  <span class="badge bg-warning">Completed with Errors</span>
+                {% else %}
+                  <span class="badge bg-danger">Failed</span>
+                {% endif %}
+              </td>
+              <td>
+                <small>{{ batch.date_created.strftime('%Y-%m-%d %H:%M') }}</small>
+              </td>
+              <td>
+                <a href="{{ url_for('main.sale_order_results', batch_id=batch.id) }}" 
+                   class="btn btn-outline-primary btn-sm">
+                  <i class="fas fa-eye me-1"></i>View Results
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('saleOrderUploadForm');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('file');
+    
+    form.addEventListener('submit', function(e) {
+        if (!fileInput.files[0]) {
+            e.preventDefault();
+            alert('Please select a file to upload');
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const validTypes = ['.xlsx', '.csv'];
+        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+        
+        if (!validTypes.includes(fileExtension)) {
+            e.preventDefault();
+            alert('Please upload a valid Excel (.xlsx) or CSV (.csv) file');
+            return;
+        }
+        
+        // Show processing state
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+        
+        showProgress('Processing Sale Orders', 
+                    'Uploading and analyzing your sale order file...', 
+                    false);
+    });
+});
+
+function downloadSampleFile() {
+    // Create sample CSV data with carton types
+    const sampleData = `sale_order_number,carton_name,carton_code,quantity,customer_name,delivery_address,order_date
+SO001,Small Box,SB001,5,ABC Electronics,123 Business St Mumbai,2025-08-10
+SO001,Medium Box,MB001,3,ABC Electronics,123 Business St Mumbai,2025-08-10
+SO002,Large Box,LB001,8,XYZ Corporation,456 Corporate Ave Delhi,2025-08-10
+SO002,Heavy Box,HB001,4,XYZ Corporation,456 Corporate Ave Delhi,2025-08-10
+SO003,Small Box,SB001,15,Tech Solutions Ltd,789 Technology Park Bangalore,2025-08-10
+SO003,Medium Box,MB001,10,Tech Solutions Ltd,789 Technology Park Bangalore,2025-08-10`;
+    
+    const blob = new Blob([sampleData], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'sale_orders_sample.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+╭───────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                         │
+│                                                   │
+│   /help for help, /status for your current setup  │
+│                                                   │
+│   cwd: /workspaces/Truck_Opti                     │
+╰───────────────────────────────────────────────────╯
+● Compact summary (ctrl+r to expand)
+  ⎿  Todo list read (5 items)
+
+> /compact 
+  ⎿  Compacted. ctrl+r to see full summary
+

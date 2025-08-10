@@ -1,7 +1,9 @@
 from flask import request, jsonify, Blueprint, flash, render_template, redirect, url_for
-from app.models import db, TruckType, CartonType, PackingJob, PackingResult, Shipment
+from app.models import db, TruckType, CartonType, PackingJob, PackingResult, Shipment, SaleOrder, SaleOrderItem, SaleOrderBatch, TruckRecommendation
 import json
+import time
 from decimal import Decimal
+from datetime import datetime
 from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS, pack_cartons, pack_cartons_optimized, calculate_optimal_truck_combination
 from app.cost_engine import cost_engine
 
@@ -232,6 +234,7 @@ def fleet_optimization():
     trucks = TruckType.query.all()
     cartons = CartonType.query.all()
     fit_results = None
+    additional_recommendations = None
     if request.method == 'POST':
         truck_quantities = {}
         for truck in trucks:
@@ -255,7 +258,6 @@ def fleet_optimization():
         fit_results = packer.pack_cartons(truck_quantities, carton_quantities, 'space')
         
         # Check for remaining items and recommend additional trucks
-        additional_recommendations = None
         if fit_results:
             total_unfitted = []
             for result in fit_results:
@@ -1421,3 +1423,420 @@ def api_distance_matrix():
         'distance_matrix': matrix,
         'units': 'kilometers'
     })
+
+# --- Sale Order Processing Routes ---
+@bp.route('/sale-orders', methods=['GET', 'POST'])
+def sale_orders():
+    """Sale Order upload and truck recommendation page"""
+    from app.models import SaleOrder, SaleOrderBatch
+    
+    if request.method == 'POST':
+        # Handle file upload and processing
+        if 'file' not in request.files:
+            flash('No file selected', 'error')
+            return redirect(request.url)
+        
+        file = request.files['file']
+        if file.filename == '':
+            flash('No file selected', 'error')
+            return redirect(request.url)
+        
+        if file and (file.filename.endswith('.xlsx') or file.filename.endswith('.csv')):
+            # Process the uploaded file
+            batch_name = request.form.get('batch_name', f'Batch_{int(time.time())}')
+            processing_result = process_sale_order_file(file, batch_name)
+            
+            if processing_result['success']:
+                flash(f'Successfully processed {processing_result["processed_orders"]} sale orders', 'success')
+                return redirect(url_for('main.sale_order_results', batch_id=processing_result['batch_id']))
+            else:
+                flash(f'Error processing file: {processing_result["error"]}', 'error')
+        else:
+            flash('Please upload a valid Excel (.xlsx) or CSV (.csv) file', 'error')
+    
+    # Get recent batches for display
+    recent_batches = SaleOrderBatch.query.order_by(SaleOrderBatch.date_created.desc()).limit(10).all()
+    
+    return render_template('sale_orders.html', recent_batches=recent_batches, current_time=datetime.now())
+
+@bp.route('/sale-order-results/<int:batch_id>')
+def sale_order_results(batch_id):
+    """Display sale order processing results and truck recommendations"""
+    from app.models import SaleOrderBatch, SaleOrder, TruckRecommendation
+    
+    batch = SaleOrderBatch.query.get_or_404(batch_id)
+    sale_orders = SaleOrder.query.filter_by(batch_id=batch_id).all()
+    
+    # Get truck recommendations for each order
+    order_recommendations = {}
+    for order in sale_orders:
+        recommendations = TruckRecommendation.query.filter_by(
+            sale_order_id=order.id
+        ).order_by(TruckRecommendation.ranking).limit(3).all()
+        order_recommendations[order.id] = recommendations
+    
+    return render_template('sale_order_results.html', 
+                         batch=batch, 
+                         sale_orders=sale_orders,
+                         order_recommendations=order_recommendations)
+
+def process_sale_order_file(file, batch_name):
+    """Process uploaded Excel/CSV file and generate truck recommendations"""
+    import pandas as pd
+    from app.models import SaleOrder, SaleOrderItem, SaleOrderBatch, TruckRecommendation, TruckType, CartonType
+    from datetime import datetime, date
+    import io
+    
+    try:
+        # Read the file
+        if file.filename.endswith('.xlsx'):
+            df = pd.read_excel(io.BytesIO(file.read()))
+        else:
+            df = pd.read_csv(io.StringIO(file.read().decode('utf-8')))
+        
+        # Create batch record
+        batch = SaleOrderBatch(
+            batch_name=batch_name,
+            filename=file.filename,
+            total_orders=0,
+            status='processing'
+        )
+        db.session.add(batch)
+        db.session.flush()  # Get batch ID
+        
+        processed_orders = 0
+        failed_orders = 0
+        
+        # Expected columns: sale_order_number, carton_name, carton_code, quantity, customer_name, delivery_address
+        required_columns = ['sale_order_number', 'carton_name', 'carton_code', 'quantity']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        
+        if missing_columns:
+            return {'success': False, 'error': f'Missing required columns: {missing_columns}'}
+        
+        # Group by sale order number
+        orders_dict = {}
+        for _, row in df.iterrows():
+            order_num = str(row['sale_order_number']).strip()
+            if order_num not in orders_dict:
+                orders_dict[order_num] = {
+                    'customer_name': row.get('customer_name', ''),
+                    'delivery_address': row.get('delivery_address', ''),
+                    'order_date': row.get('order_date', date.today()),
+                    'items': []
+                }
+            
+            # Add carton to order
+            orders_dict[order_num]['items'].append({
+                'carton_code': str(row['carton_code']).strip(),
+                'carton_name': str(row['carton_name']).strip(),
+                'quantity': int(row['quantity'])
+            })
+        
+        # Process each sale order
+        for order_num, order_data in orders_dict.items():
+            try:
+                # Create sale order
+                sale_order = SaleOrder(
+                    sale_order_number=order_num,
+                    batch_id=batch.id,
+                    customer_name=order_data['customer_name'],
+                    delivery_address=order_data['delivery_address'],
+                    order_date=order_data['order_date'] if isinstance(order_data['order_date'], date) else date.today(),
+                    total_items=len(order_data['items'])
+                )
+                db.session.add(sale_order)
+                db.session.flush()  # Get sale order ID
+                
+                total_volume = 0
+                total_weight = 0
+                
+                # Create sale order items with actual carton mapping
+                for carton_data in order_data['items']:
+                    # Find matching carton type by name or code
+                    carton_type = CartonType.query.filter(
+                        db.or_(
+                            CartonType.name.ilike(f"%{carton_data['carton_name']}%"),
+                            CartonType.name.ilike(f"%{carton_data['carton_code']}%")
+                        )
+                    ).first()
+                    
+                    # If no exact match, try partial matching
+                    if not carton_type:
+                        carton_type = CartonType.query.filter(
+                            db.or_(
+                                CartonType.name.contains(carton_data['carton_name'].split()[0]),
+                                CartonType.description.ilike(f"%{carton_data['carton_name']}%")
+                            )
+                        ).first()
+                    
+                    # Create sale order item with carton dimensions
+                    sale_order_item = SaleOrderItem(
+                        sale_order_id=sale_order.id,
+                        item_code=carton_data['carton_code'],
+                        item_name=carton_data['carton_name'],
+                        quantity=carton_data['quantity'],
+                        unit_length=carton_type.length if carton_type else 30.0,
+                        unit_width=carton_type.width if carton_type else 20.0,
+                        unit_height=carton_type.height if carton_type else 15.0,
+                        unit_weight=carton_type.weight if carton_type else 2.0,
+                        fragile=carton_type.fragile if carton_type else False,
+                        stackable=carton_type.stackable if carton_type else True,
+                        notes=f"Mapped to carton: {carton_type.name}" if carton_type else "No matching carton found - using defaults"
+                    )
+                    
+                    # Calculate totals
+                    item_volume = (sale_order_item.unit_length * sale_order_item.unit_width * 
+                                 sale_order_item.unit_height * carton_data['quantity']) / 1000000  # Convert to cubic meters
+                    item_weight = sale_order_item.unit_weight * carton_data['quantity']
+                    
+                    sale_order_item.total_volume = item_volume
+                    sale_order_item.total_weight = item_weight
+                    
+                    total_volume += item_volume
+                    total_weight += item_weight
+                    
+                    db.session.add(sale_order_item)
+                
+                # Update sale order totals
+                sale_order.total_volume = total_volume
+                sale_order.total_weight = total_weight
+                
+                # Generate truck recommendations for this sale order
+                generate_truck_recommendations(sale_order)
+                
+                processed_orders += 1
+                
+            except Exception as e:
+                failed_orders += 1
+                print(f"Error processing order {order_num}: {str(e)}")
+                continue
+        
+        # Update batch statistics
+        batch.total_orders = len(orders_dict)
+        batch.processed_orders = processed_orders
+        batch.failed_orders = failed_orders
+        batch.status = 'completed' if failed_orders == 0 else 'completed_with_errors'
+        batch.date_completed = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return {
+            'success': True,
+            'batch_id': batch.id,
+            'processed_orders': processed_orders,
+            'failed_orders': failed_orders
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}
+
+def generate_truck_recommendations(sale_order):
+    """Generate single truck recommendations prioritizing maximum space utilization"""
+    from app.models import TruckType, TruckRecommendation, CartonType
+    from app.packer import pack_cartons_optimized
+    
+    # Get all available trucks sorted by volume (smallest first for cost efficiency)
+    trucks = TruckType.query.filter_by(availability=True).order_by(
+        (TruckType.length * TruckType.width * TruckType.height).asc()
+    ).all()
+    
+    recommendations = []
+    
+    # Convert sale order items to actual carton types for packing algorithm
+    carton_quantities = {}
+    for item in sale_order.sale_order_items:
+        # Try to find matching carton type from database
+        carton_type = CartonType.query.filter(
+            db.or_(
+                CartonType.name.ilike(f"%{item.item_name}%"),
+                CartonType.name.ilike(f"%{item.item_code}%")
+            )
+        ).first()
+        
+        if carton_type:
+            # Use existing carton type
+            if carton_type in carton_quantities:
+                carton_quantities[carton_type] += item.quantity
+            else:
+                carton_quantities[carton_type] = item.quantity
+        else:
+            # Create temporary carton with actual dimensions
+            temp_carton = type('TempCarton', (), {
+                'length': item.unit_length,
+                'width': item.unit_width, 
+                'height': item.unit_height,
+                'weight': item.unit_weight,
+                'name': item.item_name,
+                'can_rotate': not item.fragile,
+                'stackable': item.stackable
+            })()
+            carton_quantities[temp_carton] = item.quantity
+    
+    # Find the most space-efficient single truck solution
+    best_utilization = 0
+    best_truck_result = None
+    
+    for truck in trucks:
+        try:
+            truck_combo = {truck: 1}  # Single truck only
+            pack_results = pack_cartons_optimized(truck_combo, carton_quantities, 'space')
+            
+            if pack_results:
+                result = pack_results[0]
+                space_utilization = result.get('utilization', 0)
+                fits_completely = len(result.get('unfitted_items', [])) == 0
+                overflow_items = len(result.get('unfitted_items', []))
+                
+                # Only consider trucks that can fit everything
+                if fits_completely and space_utilization > best_utilization:
+                    best_utilization = space_utilization
+                    best_truck_result = (truck, result, space_utilization, overflow_items)
+                
+                # Still save all results for comparison, but prioritize complete fits
+                cost_calculation = truck.cost_per_km * 100  # 100km default route
+                if truck.driver_cost_per_day:
+                    cost_calculation += truck.driver_cost_per_day
+                
+                # Heavy penalty for incomplete fits to prioritize single-truck solutions
+                utilization_score = space_utilization * 100
+                completeness_bonus = 50 if fits_completely else -100  # Heavy penalty for multi-truck needs
+                space_priority_score = utilization_score + completeness_bonus
+                
+                recommendation = TruckRecommendation(
+                    sale_order_id=sale_order.id,
+                    truck_type_id=truck.id,
+                    utilization_score=utilization_score,
+                    cost_score=100 - (cost_calculation / 1000) * 10,  # Lower cost = higher score
+                    efficiency_score=space_priority_score,
+                    overall_score=space_priority_score,
+                    space_utilization=space_utilization,
+                    weight_utilization=min(1.0, sum(getattr(item, 'weight', 2.0) * item.quantity for item in sale_order.sale_order_items) / truck.max_weight if truck.max_weight else 0.8),
+                    estimated_cost=cost_calculation,
+                    fits_completely=fits_completely,
+                    overflow_items=overflow_items,
+                    recommendation_reason=f"{'✅ BEST CHOICE: ' if fits_completely and space_utilization == best_utilization else ''}Space utilization: {space_utilization:.1%}{'• Single truck solution' if fits_completely else '• Requires multiple trucks (not recommended)'}"
+                )
+                recommendations.append(recommendation)
+                
+        except Exception as e:
+            print(f"Error testing truck {truck.name}: {str(e)}")
+            continue
+    
+    # Sort by overall score (prioritizing complete fits and high utilization)
+    recommendations.sort(key=lambda x: (x.fits_completely, x.overall_score), reverse=True)
+    
+    # Assign rankings with emphasis on complete single-truck solutions
+    complete_fits = [r for r in recommendations if r.fits_completely]
+    incomplete_fits = [r for r in recommendations if not r.fits_completely]
+    
+    # Rank complete fits first (by utilization), then incomplete fits
+    ranking = 1
+    for rec in complete_fits:
+        rec.ranking = ranking
+        db.session.add(rec)
+        ranking += 1
+    
+    for rec in incomplete_fits:
+        rec.ranking = ranking
+        db.session.add(rec)
+        ranking += 1
+    
+    # Update sale order with best recommendation (prioritizing complete fits)
+    if recommendations:
+        best_recommendation = recommendations[0]
+        sale_order.recommended_truck_id = best_recommendation.truck_type_id
+        sale_order.optimization_score = best_recommendation.overall_score
+        sale_order.estimated_utilization = best_recommendation.space_utilization
+        sale_order.estimated_cost = best_recommendation.estimated_cost
+        sale_order.status = 'optimized'
+        sale_order.date_processed = datetime.utcnow()
+        
+        # Add processing note about optimization strategy
+        if best_recommendation.fits_completely:
+            sale_order.processing_notes = f"Single truck solution found with {best_recommendation.space_utilization:.1%} space utilization - COST OPTIMAL"
+        else:
+            sale_order.processing_notes = f"Warning: No single truck can fit all cartons. Best option has {best_recommendation.overflow_items} overflow items."
+
+# API Routes for Sale Orders
+@api.route('/sale-orders', methods=['GET'])
+def api_get_sale_orders():
+    """Get all sale orders with optional filtering"""
+    from app.models import SaleOrder
+    
+    batch_id = request.args.get('batch_id')
+    status = request.args.get('status')
+    
+    query = SaleOrder.query
+    if batch_id:
+        query = query.filter_by(batch_id=batch_id)
+    if status:
+        query = query.filter_by(status=status)
+    
+    sale_orders = query.order_by(SaleOrder.date_created.desc()).all()
+    
+    return jsonify([
+        {
+            'id': order.id,
+            'sale_order_number': order.sale_order_number,
+            'customer_name': order.customer_name,
+            'total_items': order.total_items,
+            'total_volume': order.total_volume,
+            'total_weight': order.total_weight,
+            'status': order.status,
+            'recommended_truck_id': order.recommended_truck_id,
+            'estimated_utilization': order.estimated_utilization,
+            'estimated_cost': order.estimated_cost,
+            'date_created': order.date_created.isoformat(),
+            'date_processed': order.date_processed.isoformat() if order.date_processed else None
+        }
+        for order in sale_orders
+    ])
+
+@api.route('/sale-orders/<int:order_id>/recommendations', methods=['GET'])
+def api_get_order_recommendations(order_id):
+    """Get truck recommendations for a specific sale order"""
+    from app.models import TruckRecommendation
+    
+    recommendations = TruckRecommendation.query.filter_by(
+        sale_order_id=order_id
+    ).order_by(TruckRecommendation.ranking).all()
+    
+    return jsonify([
+        {
+            'id': rec.id,
+            'truck_type_id': rec.truck_type_id,
+            'truck_name': rec.truck_type.name,
+            'ranking': rec.ranking,
+            'overall_score': rec.overall_score,
+            'space_utilization': rec.space_utilization,
+            'estimated_cost': rec.estimated_cost,
+            'fits_completely': rec.fits_completely,
+            'overflow_items': rec.overflow_items,
+            'recommendation_reason': rec.recommendation_reason
+        }
+        for rec in recommendations
+    ])
+
+@api.route('/sale-order-batches', methods=['GET'])
+def api_get_sale_order_batches():
+    """Get all sale order processing batches"""
+    from app.models import SaleOrderBatch
+    
+    batches = SaleOrderBatch.query.order_by(SaleOrderBatch.date_created.desc()).all()
+    
+    return jsonify([
+        {
+            'id': batch.id,
+            'batch_name': batch.batch_name,
+            'filename': batch.filename,
+            'total_orders': batch.total_orders,
+            'processed_orders': batch.processed_orders,
+            'failed_orders': batch.failed_orders,
+            'status': batch.status,
+            'date_created': batch.date_created.isoformat(),
+            'date_completed': batch.date_completed.isoformat() if batch.date_completed else None
+        }
+        for batch in batches
+    ])

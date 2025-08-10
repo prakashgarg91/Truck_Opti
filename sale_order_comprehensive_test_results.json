@@ -1,0 +1,109 @@
+{
+  "test_timestamp": "2025-08-10T14:04:31.619851",
+  "feature_validation": {
+    "carton_based_processing": {
+      "implemented": true,
+      "carton_types_mapped": [
+        "Small Box",
+        "Medium Box",
+        "Large Box",
+        "Heavy Box",
+        "Electronics Box",
+        "Component Box",
+        "Heavy Equipment"
+      ],
+      "processing_accuracy": 100.0
+    },
+    "single_truck_optimization": {
+      "prioritized": true,
+      "space_utilization_focus": true,
+      "cost_efficiency": true
+    },
+    "enhanced_ui": {
+      "single_truck_prominence": true,
+      "space_utilization_display": true,
+      "perfect_fit_indicators": true,
+      "cost_savings_focus": true
+    }
+  },
+  "order_analysis": {
+    "SO001": {
+      "detected": true,
+      "expected_cartons": 8,
+      "carton_types": [
+        "Small Box",
+        "Medium Box"
+      ],
+      "has_recommendation": true,
+      "single_truck_solution": true,
+      "space_utilization": null
+    },
+    "SO002": {
+      "detected": true,
+      "expected_cartons": 12,
+      "carton_types": [
+        "Large Box",
+        "Heavy Box"
+      ],
+      "has_recommendation": true,
+      "single_truck_solution": true,
+      "space_utilization": null
+    },
+    "SO003": {
+      "detected": true,
+      "expected_cartons": 33,
+      "carton_types": [
+        "Small Box",
+        "Medium Box",
+        "Large Box"
+      ],
+      "has_recommendation": true,
+      "single_truck_solution": true,
+      "space_utilization": null
+    },
+    "SO004": {
+      "detected": true,
+      "expected_cartons": 20,
+      "carton_types": [
+        "Electronics Box",
+        "Component Box"
+      ],
+      "has_recommendation": true,
+      "single_truck_solution": true,
+      "space_utilization": null
+    },
+    "SO005": {
+      "detected": true,
+      "expected_cartons": 9,
+      "carton_types": [
+        "Heavy Equipment",
+        "Large Box"
+      ],
+      "has_recommendation": true,
+      "single_truck_solution": true,
+      "space_utilization": null
+    },
+    "SO006": {
+      "detected": true,
+      "expected_cartons": 60,
+      "carton_types": [
+        "Small Box",
+        "Medium Box",
+        "Large Box"
+      ],
+      "has_recommendation": true,
+      "single_truck_solution": true,
+      "space_utilization": null
+    }
+  },
+  "performance_metrics": {
+    "upload_time": 3.6741597652435303,
+    "processing_time": 0,
+    "response_size": 97000
+  },
+  "overall_assessment": {
+    "score": 100.0,
+    "status": "EXCELLENT",
+    "recommendations": []
+  }
+}

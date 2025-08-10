@@ -1,0 +1,342 @@
+{
+  "server_accessible": true,
+  "upload_success": true,
+  "orders_processed": 6,
+  "expected_orders": 6,
+  "recommendations": [
+    {
+      "order": "SO001",
+      "recommendation": "<!-- Single Truck Recommendation (Prioritizing Space Utilization) -->",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO001",
+      "recommendation": "<div class=\"truck-recommendations\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO001",
+      "recommendation": "<i class=\"fas fa-truck me-2\"></i>Optimal Single Truck Solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO001",
+      "recommendation": "<div class=\"truck-specs\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO001",
+      "recommendation": "<small class=\"text-muted\">Truck Dimensions:</small>",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO001",
+      "recommendation": "<button class=\"btn btn-success w-100\" onclick=\"selectTruck(10, 2)\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO001",
+      "recommendation": "<i class=\"fas fa-check-circle me-1\"></i>Select This Truck (Cost Optimal)",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO001",
+      "recommendation": "<strong>Recommendation:</strong> \u2705 BEST CHOICE: Space utilization: 2.3%\u2022 Single truck solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO002",
+      "recommendation": "<!-- Single Truck Recommendation (Prioritizing Space Utilization) -->",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO002",
+      "recommendation": "<div class=\"truck-recommendations\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO002",
+      "recommendation": "<i class=\"fas fa-truck me-2\"></i>Optimal Single Truck Solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO002",
+      "recommendation": "<div class=\"truck-specs\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO002",
+      "recommendation": "<small class=\"text-muted\">Truck Dimensions:</small>",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO002",
+      "recommendation": "<button class=\"btn btn-success w-100\" onclick=\"selectTruck(11, 2)\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO002",
+      "recommendation": "<i class=\"fas fa-check-circle me-1\"></i>Select This Truck (Cost Optimal)",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO002",
+      "recommendation": "<strong>Recommendation:</strong> \u2705 BEST CHOICE: Space utilization: 3.4%\u2022 Single truck solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO003",
+      "recommendation": "<!-- Single Truck Recommendation (Prioritizing Space Utilization) -->",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO003",
+      "recommendation": "<div class=\"truck-recommendations\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO003",
+      "recommendation": "<i class=\"fas fa-truck me-2\"></i>Optimal Single Truck Solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO003",
+      "recommendation": "<div class=\"truck-specs\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO003",
+      "recommendation": "<small class=\"text-muted\">Truck Dimensions:</small>",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO003",
+      "recommendation": "<button class=\"btn btn-success w-100\" onclick=\"selectTruck(12, 2)\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO003",
+      "recommendation": "<i class=\"fas fa-check-circle me-1\"></i>Select This Truck (Cost Optimal)",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO003",
+      "recommendation": "<strong>Recommendation:</strong> \u2705 BEST CHOICE: Space utilization: 9.4%\u2022 Single truck solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO004",
+      "recommendation": "<!-- Single Truck Recommendation (Prioritizing Space Utilization) -->",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO004",
+      "recommendation": "<div class=\"truck-recommendations\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO004",
+      "recommendation": "<i class=\"fas fa-truck me-2\"></i>Optimal Single Truck Solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO004",
+      "recommendation": "<div class=\"truck-specs\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO004",
+      "recommendation": "<small class=\"text-muted\">Truck Dimensions:</small>",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO004",
+      "recommendation": "<button class=\"btn btn-success w-100\" onclick=\"selectTruck(13, 2)\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO004",
+      "recommendation": "<i class=\"fas fa-check-circle me-1\"></i>Select This Truck (Cost Optimal)",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO004",
+      "recommendation": "<strong>Recommendation:</strong> \u2705 BEST CHOICE: Space utilization: 5.7%\u2022 Single truck solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO005",
+      "recommendation": "<!-- Single Truck Recommendation (Prioritizing Space Utilization) -->",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO005",
+      "recommendation": "<div class=\"truck-recommendations\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO005",
+      "recommendation": "<i class=\"fas fa-truck me-2\"></i>Optimal Single Truck Solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO005",
+      "recommendation": "<div class=\"truck-specs\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO005",
+      "recommendation": "<small class=\"text-muted\">Truck Dimensions:</small>",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO005",
+      "recommendation": "<button class=\"btn btn-success w-100\" onclick=\"selectTruck(14, 2)\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO005",
+      "recommendation": "<i class=\"fas fa-check-circle me-1\"></i>Select This Truck (Cost Optimal)",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO005",
+      "recommendation": "<strong>Recommendation:</strong> \u2705 BEST CHOICE: Space utilization: 2.6%\u2022 Single truck solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO006",
+      "recommendation": "<!-- Single Truck Recommendation (Prioritizing Space Utilization) -->",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO006",
+      "recommendation": "<div class=\"truck-recommendations\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO006",
+      "recommendation": "<i class=\"fas fa-truck me-2\"></i>Optimal Single Truck Solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO006",
+      "recommendation": "<div class=\"truck-specs\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO006",
+      "recommendation": "<small class=\"text-muted\">Truck Dimensions:</small>",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO006",
+      "recommendation": "<button class=\"btn btn-success w-100\" onclick=\"selectTruck(15, 2)\">",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO006",
+      "recommendation": "<i class=\"fas fa-check-circle me-1\"></i>Select This Truck (Cost Optimal)",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO006",
+      "recommendation": "<strong>Recommendation:</strong> \u2705 BEST CHOICE: Space utilization: 17.1%\u2022 Single truck solution",
+      "is_single_truck": true
+    },
+    {
+      "order": "SO006",
+      "recommendation": "function selectTruck(orderId, truckTypeId) {",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO006",
+      "recommendation": "if (confirm('Confirm truck selection for this sale order?')) {",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO006",
+      "recommendation": "alert('Truck selected successfully! This would typically update the order status and notify logistics team.');",
+      "is_single_truck": false
+    },
+    {
+      "order": "SO006",
+      "recommendation": "alert('This would show a detailed modal with all truck recommendations for this order.');",
+      "is_single_truck": false
+    }
+  ],
+  "single_truck_optimization": {
+    "total_recommendations": 1,
+    "single_truck_solutions": 0,
+    "space_utilization_data": [
+      "0",
+      "100",
+      "0",
+      "100",
+      "50",
+      "100",
+      "100",
+      "100",
+      "200",
+      "100",
+      "0",
+      "200",
+      "100",
+      "200",
+      "50",
+      "0",
+      "100",
+      "0",
+      "2.3",
+      "2.2857142857142856",
+      "2.3",
+      "2.3",
+      "2.1",
+      "1.3",
+      "3.4",
+      "3.428571428571429",
+      "3.4",
+      "3.4",
+      "3.2",
+      "1.9",
+      "9.4",
+      "9.428571428571429",
+      "9.4",
+      "9.4",
+      "8.8",
+      "5.3",
+      "5.7",
+      "5.714285714285714",
+      "5.7",
+      "5.7",
+      "5.3",
+      "3.2",
+      "2.6",
+      "2.571428571428571",
+      "2.6",
+      "2.6",
+      "2.4",
+      "1.4",
+      "17.1",
+      "17.142857142857142",
+      "17.1",
+      "17.1",
+      "16.0",
+      "9.6",
+      "0",
+      "0"
+    ]
+  },
+  "carton_processing": {
+    "carton_types_detected": [
+      "small box",
+      "medium box",
+      "large box",
+      "heavy box",
+      "electronics box",
+      "component box",
+      "heavy equipment"
+    ],
+    "mapping_success": true
+  }
+}

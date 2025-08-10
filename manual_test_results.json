@@ -1,0 +1,165 @@
+{
+  "structure": {
+    "links": [
+      {
+        "href": "/",
+        "text": "Dashboard"
+      },
+      {
+        "href": "/packing-jobs",
+        "text": "Packing Jobs"
+      },
+      {
+        "href": "/truck-types",
+        "text": "Truck Types"
+      },
+      {
+        "href": "/carton-types",
+        "text": "Carton Types"
+      },
+      {
+        "href": "/recommend-truck",
+        "text": "Smart Truck Recommendations"
+      },
+      {
+        "href": "/fleet-optimization",
+        "text": "Fleet Packing Optimization"
+      },
+      {
+        "href": "#",
+        "text": "Customers"
+      },
+      {
+        "href": "#",
+        "text": "Routes"
+      },
+      {
+        "href": "/analytics",
+        "text": "Analytics"
+      },
+      {
+        "href": "/batch-processing",
+        "text": "Batch Processing"
+      },
+      {
+        "href": "#",
+        "text": "Settings"
+      },
+      {
+        "href": "/",
+        "text": "Home"
+      },
+      {
+        "href": "/add-packing-job",
+        "text": "New Packing Job"
+      },
+      {
+        "href": "/recommend-truck",
+        "text": "Smart Recommendations"
+      },
+      {
+        "href": "/fleet-optimization",
+        "text": "Fleet Packing"
+      },
+      {
+        "href": "/truck-types",
+        "text": "Manage Trucks"
+      },
+      {
+        "href": "/carton-types",
+        "text": "Manage Cartons"
+      },
+      {
+        "href": "/analytics",
+        "text": "Analytics"
+      },
+      {
+        "href": "/packing-jobs",
+        "text": "View All Jobs"
+      }
+    ],
+    "forms": []
+  },
+  "routes": {
+    "working": [
+      {
+        "text": "Dashboard",
+        "href": "/"
+      },
+      {
+        "text": "Packing Jobs",
+        "href": "/packing-jobs"
+      },
+      {
+        "text": "Truck Types",
+        "href": "/truck-types"
+      },
+      {
+        "text": "Carton Types",
+        "href": "/carton-types"
+      },
+      {
+        "text": "Smart Truck Recommendations",
+        "href": "/recommend-truck"
+      },
+      {
+        "text": "Fleet Packing Optimization",
+        "href": "/fleet-optimization"
+      },
+      {
+        "text": "Analytics",
+        "href": "/analytics"
+      },
+      {
+        "text": "Batch Processing",
+        "href": "/batch-processing"
+      },
+      {
+        "text": "Home",
+        "href": "/"
+      },
+      {
+        "text": "New Packing Job",
+        "href": "/add-packing-job"
+      },
+      {
+        "text": "Smart Recommendations",
+        "href": "/recommend-truck"
+      },
+      {
+        "text": "Fleet Packing",
+        "href": "/fleet-optimization"
+      },
+      {
+        "text": "Manage Trucks",
+        "href": "/truck-types"
+      },
+      {
+        "text": "Manage Cartons",
+        "href": "/carton-types"
+      },
+      {
+        "text": "Analytics",
+        "href": "/analytics"
+      },
+      {
+        "text": "View All Jobs",
+        "href": "/packing-jobs"
+      }
+    ],
+    "broken": []
+  },
+  "truck_route": "/truck-types",
+  "carton_route": "/carton-types",
+  "opt_routes": [
+    "/recommend-truck",
+    "/fit-cartons"
+  ],
+  "db_stats": {
+    "trucks": 0,
+    "cartons": 0,
+    "packing_results": 0
+  },
+  "issues": [],
+  "recommendations": []
+}

@@ -13,10 +13,40 @@
             <p>Could not pack any items with the given constraints.</p>
         </div>
     {% else %}
+        <!-- Multi-Truck Navigation Header -->
+        {% if result.result_data|length > 1 %}
+        <div class="alert alert-info mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Multi-Truck Packing Solution:</strong> {{ result.result_data|length }} trucks required
+                </div>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="showAllTrucks()">View All</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="previousTruck()">← Previous</button>
+                    <span class="btn btn-primary btn-sm" id="truckCounter">Truck 1 of {{ result.result_data|length }}</span>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="nextTruck()">Next →</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         {% for bin_result in result.result_data %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>{{ bin_result.bin_name }}</h4>
+        <div class="card mb-4 truck-card" id="truck-{{ loop.index }}" style="{% if loop.index > 1 %}display: none;{% endif %}">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-truck me-2"></i>
+                        {{ bin_result.bin_name }}
+                        {% if result.result_data|length > 1 %}
+                        <span class="badge bg-light text-primary ms-2">Truck {{ loop.index }} of {{ result.result_data|length }}</span>
+                        {% endif %}
+                    </h4>
+                    <div class="truck-status">
+                        <span class="badge bg-success">
+                            {{ "%.1f"|format(bin_result.utilization * 100) }}% Utilized
+                        </span>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <p><strong>Utilization:</strong> {{ "%.2f"|format(bin_result.utilization * 100) }}%</p>
@@ -50,6 +80,81 @@
     import { renderTruckVisualization } from "/static/js/truck_3d.js";
     const resultData = {{ result.result_data|tojson }};
     
+    // Multi-truck navigation variables
+    let currentTruckIndex = 0;
+    const totalTrucks = resultData ? resultData.length : 0;
+    let viewingAll = false;
+    
+    // Multi-truck navigation functions
+    window.nextTruck = function() {
+        if (currentTruckIndex < totalTrucks - 1) {
+            currentTruckIndex++;
+            showTruck(currentTruckIndex);
+        }
+    };
+    
+    window.previousTruck = function() {
+        if (currentTruckIndex > 0) {
+            currentTruckIndex--;
+            showTruck(currentTruckIndex);
+        }
+    };
+    
+    window.showAllTrucks = function() {
+        viewingAll = !viewingAll;
+        const button = document.querySelector('button[onclick="showAllTrucks()"]');
+        
+        if (viewingAll) {
+            // Show all trucks
+            document.querySelectorAll('.truck-card').forEach(card => {
+                card.style.display = 'block';
+            });
+            document.getElementById('truckCounter').textContent = `All ${totalTrucks} Trucks`;
+            button.textContent = 'View One';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-outline-primary');
+        } else {
+            // Show only current truck
+            showTruck(currentTruckIndex);
+            button.textContent = 'View All';
+            button.classList.add('btn-outline-primary');
+            button.classList.remove('btn-success');
+        }
+    };
+    
+    function showTruck(index) {
+        viewingAll = false;
+        // Hide all trucks
+        document.querySelectorAll('.truck-card').forEach(card => {
+            card.style.display = 'none';
+        });
+        
+        // Show selected truck
+        const truckCard = document.getElementById(`truck-${index + 1}`);
+        if (truckCard) {
+            truckCard.style.display = 'block';
+        }
+        
+        // Update counter
+        document.getElementById('truckCounter').textContent = `Truck ${index + 1} of ${totalTrucks}`;
+        
+        // Update button states
+        const prevBtn = document.querySelector('button[onclick="previousTruck()"]');
+        const nextBtn = document.querySelector('button[onclick="nextTruck()"]');
+        
+        if (prevBtn) prevBtn.disabled = (index === 0);
+        if (nextBtn) nextBtn.disabled = (index === totalTrucks - 1);
+        
+        // Reset View All button
+        const viewAllBtn = document.querySelector('button[onclick="showAllTrucks()"]');
+        if (viewAllBtn) {
+            viewAllBtn.textContent = 'View All';
+            viewAllBtn.classList.add('btn-outline-primary');
+            viewAllBtn.classList.remove('btn-success');
+        }
+    }
+    
+    // 3D Visualization Loading
     if (resultData && resultData.length > 0) {
         showProgress('Loading Packing Results', 'Rendering 3D packing visualizations...', true);
         
@@ -68,6 +173,10 @@
                     if (loadedCount === totalVisualizations) {
                         setTimeout(() => {
                             hideProgress();
+                            // Initialize navigation after all visualizations load
+                            if (totalTrucks > 1) {
+                                showTruck(0);
+                            }
                         }, 300);
                     }
                 } catch (error) {
@@ -75,10 +184,26 @@
                     loadedCount++;
                     if (loadedCount === totalVisualizations) {
                         hideProgress();
+                        if (totalTrucks > 1) {
+                            showTruck(0);
+                        }
                     }
                 }
             }, index * 200);
         });
     }
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', function(event) {
+        if (totalTrucks > 1 && !viewingAll) {
+            if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                nextTruck();
+            } else if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                previousTruck();
+            }
+        }
+    });
 </script>
 {% endblock %}

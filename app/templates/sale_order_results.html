@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <!-- Batch Summary Header -->
+  <div class="card shadow mb-4">
+    <div class="card-header bg-success text-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="mb-0"><i class="fas fa-truck me-2"></i>Sale Order Truck Recommendations</h4>
+          <small class="opacity-75">Batch: {{ batch.batch_name }}</small>
+        </div>
+        <div class="text-end">
+          <div class="badge bg-light text-success fs-6 me-2">
+            {{ batch.processed_orders }}/{{ batch.total_orders }} Orders Processed
+          </div>
+          {% if batch.failed_orders > 0 %}
+          <div class="badge bg-warning text-dark fs-6">
+            {{ batch.failed_orders }} Failed
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value text-primary">{{ batch.total_orders }}</div>
+            <div class="stat-label">Total Orders</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value text-success">{{ batch.processed_orders }}</div>
+            <div class="stat-label">Successfully Processed</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value text-info">
+              {{ sale_orders|selectattr('recommended_truck_id')|list|length }}
+            </div>
+            <div class="stat-label">With Recommendations</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value text-warning">
+              {% if batch.failed_orders > 0 %}{{ batch.failed_orders }}{% else %}0{% endif %}
+            </div>
+            <div class="stat-label">Failed Orders</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sale Orders with Recommendations -->
+  <div class="row">
+    {% for order in sale_orders %}
+    <div class="col-12 mb-4">
+      <div class="card shadow">
+        <div class="card-header bg-light">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <h5 class="mb-0">
+                <i class="fas fa-shopping-cart text-primary me-2"></i>
+                Order #{{ order.sale_order_number }}
+              </h5>
+              <small class="text-muted">
+                {% if order.customer_name %}{{ order.customer_name }}{% endif %}
+                {% if order.total_items %} • {{ order.total_items }} items{% endif %}
+              </small>
+            </div>
+            <div class="col-md-6 text-end">
+              {% if order.recommended_truck_id %}
+                <span class="badge bg-success mb-1">
+                  <i class="fas fa-check-circle me-1"></i>Optimized
+                </span>
+                <br>
+                <small class="text-muted">
+                  Utilization: {{ "%.1f"|format(order.estimated_utilization * 100) }}% • 
+                  Cost: ₹{{ "%.0f"|format(order.estimated_cost) }}
+                </small>
+              {% else %}
+                <span class="badge bg-warning">
+                  <i class="fas fa-exclamation-triangle me-1"></i>Pending
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <!-- Order Details -->
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="order-details">
+                <h6 class="text-primary">Order Details</h6>
+                <div class="row">
+                  <div class="col-6">
+                    <small class="text-muted">Items:</small>
+                    <div class="fw-bold">{{ order.total_items }}</div>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Volume:</small>
+                    <div class="fw-bold">{{ "%.2f"|format(order.total_volume) }} m³</div>
+                  </div>
+                </div>
+                <div class="row mt-2">
+                  <div class="col-6">
+                    <small class="text-muted">Weight:</small>
+                    <div class="fw-bold">{{ "%.1f"|format(order.total_weight) }} kg</div>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Status:</small>
+                    <div>
+                      {% if order.status == 'optimized' %}
+                        <span class="badge bg-success">Optimized</span>
+                      {% elif order.status == 'processed' %}
+                        <span class="badge bg-info">Processed</span>
+                      {% else %}
+                        <span class="badge bg-secondary">{{ order.status|title }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              {% if order.delivery_address %}
+              <div class="delivery-info">
+                <h6 class="text-primary">Delivery Information</h6>
+                <small class="text-muted">Address:</small>
+                <div class="fw-bold">{{ order.delivery_address }}</div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Single Truck Recommendation (Prioritizing Space Utilization) -->
+          {% set recommendations = order_recommendations.get(order.id, []) %}
+          {% if recommendations %}
+          <div class="truck-recommendations">
+            <h6 class="text-success">
+              <i class="fas fa-truck me-2"></i>Optimal Single Truck Solution
+              <small class="text-muted">(Prioritizing Maximum Space Utilization for Cost Savings)</small>
+            </h6>
+            
+            {% set best_rec = recommendations[0] %}
+            <!-- Best Recommendation (Large Display) -->
+            <div class="row">
+              <div class="col-md-8 mb-3">
+                <div class="card border-success bg-light-success">
+                  <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <h5 class="mb-0">
+                        <i class="fas fa-trophy me-2"></i>{{ best_rec.truck_type.name }}
+                      </h5>
+                      <div>
+                        {% if best_rec.fits_completely %}
+                          <span class="badge bg-light text-success">✅ PERFECT FIT</span>
+                        {% else %}
+                          <span class="badge bg-warning text-dark">⚠️ OVERFLOW</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <h6 class="text-success">Space Utilization</h6>
+                        <div class="progress mb-3" style="height: 25px;">
+                          <div class="progress-bar bg-{% if best_rec.space_utilization > 0.8 %}success{% elif best_rec.space_utilization > 0.6 %}info{% elif best_rec.space_utilization > 0.4 %}warning{% else %}danger{% endif %}"
+                               style="width: {{ best_rec.space_utilization * 100 }}%">
+                            <strong>{{ "%.1f"|format(best_rec.space_utilization * 100) }}%</strong>
+                          </div>
+                        </div>
+                        
+                        <div class="truck-specs">
+                          <small class="text-muted">Truck Dimensions:</small>
+                          <div><strong>{{ "%.1f"|format(best_rec.truck_type.length) }} × {{ "%.1f"|format(best_rec.truck_type.width) }} × {{ "%.1f"|format(best_rec.truck_type.height) }} cm</strong></div>
+                          
+                          {% if best_rec.truck_type.max_weight %}
+                          <small class="text-muted mt-2 d-block">Max Weight:</small>
+                          <div><strong>{{ "%.0f"|format(best_rec.truck_type.max_weight) }} kg</strong></div>
+                          {% endif %}
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-6">
+                        <h6 class="text-primary">Cost Analysis</h6>
+                        <div class="cost-breakdown">
+                          <div class="d-flex justify-content-between">
+                            <span>Estimated Cost:</span>
+                            <strong class="text-primary">₹{{ "%.0f"|format(best_rec.estimated_cost) }}</strong>
+                          </div>
+                          
+                          <div class="d-flex justify-content-between">
+                            <span>Fit Status:</span>
+                            {% if best_rec.fits_completely %}
+                              <strong class="text-success">✅ Complete ({{ best_rec.overflow_items }} overflow)</strong>
+                            {% else %}
+                              <strong class="text-danger">❌ {{ best_rec.overflow_items }} items overflow</strong>
+                            {% endif %}
+                          </div>
+                          
+                          <div class="d-flex justify-content-between">
+                            <span>Cost Efficiency:</span>
+                            <strong class="text-{% if best_rec.space_utilization > 0.7 %}success{% elif best_rec.space_utilization > 0.5 %}warning{% else %}danger{% endif %}">
+                              {{ "Good" if best_rec.space_utilization > 0.7 else "Fair" if best_rec.space_utilization > 0.5 else "Poor" }}
+                            </strong>
+                          </div>
+                        </div>
+                        
+                        {% if best_rec.fits_completely %}
+                        <div class="mt-3">
+                          <button class="btn btn-success w-100" onclick="selectTruck({{ order.id }}, {{ best_rec.truck_type_id }})">
+                            <i class="fas fa-check-circle me-1"></i>Select This Truck (Cost Optimal)
+                          </button>
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    
+                    <!-- Recommendation Reason -->
+                    <div class="mt-3 p-3 bg-info bg-opacity-10 rounded">
+                      <small class="text-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Recommendation:</strong> {{ best_rec.recommendation_reason }}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Alternative Options (Compact) -->
+              <div class="col-md-4">
+                <h6 class="text-muted">Alternative Options</h6>
+                {% for rec in recommendations[1:4] %}
+                <div class="card mb-2 {% if not rec.fits_completely %}border-warning{% endif %}">
+                  <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <strong class="small">{{ rec.truck_type.name }}</strong>
+                        <br><small class="text-muted">{{ "%.1f"|format(rec.space_utilization * 100) }}% util</small>
+                      </div>
+                      <div class="text-end">
+                        <small class="text-primary">₹{{ "%.0f"|format(rec.estimated_cost) }}</small>
+                        {% if not rec.fits_completely %}
+                          <br><small class="text-warning">{{ rec.overflow_items }} overflow</small>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+            </div>
+            
+            {% if recommendations|length > 3 %}
+            <div class="text-center">
+              <button class="btn btn-outline-primary btn-sm" onclick="showAllRecommendations({{ order.id }})">
+                <i class="fas fa-eye me-1"></i>Show All {{ recommendations|length }} Recommendations
+              </button>
+            </div>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>No truck recommendations available for this order.</strong>
+            This might be due to oversized items or processing errors.
+          </div>
+          {% endif %}
+
+          <!-- Order Cartons (Collapsible) -->
+          <div class="mt-3">
+            <button class="btn btn-outline-secondary btn-sm" type="button" 
+                    data-bs-toggle="collapse" data-bs-target="#cartons-{{ order.id }}">
+              <i class="fas fa-boxes me-1"></i>View Order Cartons ({{ order.sale_order_items|length }})
+            </button>
+            
+            <div class="collapse mt-2" id="cartons-{{ order.id }}">
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Carton Code</th>
+                      <th>Carton Name</th>
+                      <th>Quantity</th>
+                      <th>Dimensions (LxWxH)</th>
+                      <th>Unit Weight</th>
+                      <th>Total Volume</th>
+                      <th>Mapping Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for carton in order.sale_order_items %}
+                    <tr>
+                      <td><small class="font-monospace">{{ carton.item_code }}</small></td>
+                      <td>{{ carton.item_name }}</td>
+                      <td class="text-center"><span class="badge bg-primary">{{ carton.quantity }}</span></td>
+                      <td class="text-center">
+                        <small>{{ "%.0f"|format(carton.unit_length) }} × {{ "%.0f"|format(carton.unit_width) }} × {{ "%.0f"|format(carton.unit_height) }} cm</small>
+                      </td>
+                      <td class="text-center"><small>{{ "%.1f"|format(carton.unit_weight) }} kg</small></td>
+                      <td class="text-center"><small>{{ "%.3f"|format(carton.total_volume) }} m³</small></td>
+                      <td class="text-center">
+                        {% if carton.notes and 'Mapped to carton:' in carton.notes %}
+                          <span class="badge bg-success" title="{{ carton.notes }}">
+                            <i class="fas fa-check"></i> Mapped
+                          </span>
+                        {% else %}
+                          <span class="badge bg-warning text-dark" title="Using default dimensions">
+                            <i class="fas fa-exclamation-triangle"></i> Default
+                          </span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div class="mt-2 p-2 bg-light rounded">
+                <small class="text-muted">
+                  <i class="fas fa-info-circle me-1"></i>
+                  <strong>Carton Mapping:</strong> System attempts to match your carton names with existing carton types in the database. 
+                  "Mapped" indicates successful match with accurate dimensions, "Default" uses estimated dimensions.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="text-center mb-4">
+    <a href="{{ url_for('main.sale_orders') }}" class="btn btn-primary">
+      <i class="fas fa-upload me-1"></i>Process Another Batch
+    </a>
+    <button class="btn btn-success" onclick="exportResults()">
+      <i class="fas fa-download me-1"></i>Export Results
+    </button>
+  </div>
+</div>
+
+<style>
+.stat-item {
+  text-align: center;
+  padding: 10px;
+}
+.stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  line-height: 1;
+}
+.stat-label {
+  font-size: 0.875rem;
+  color: #666;
+}
+.order-details .row {
+  margin-bottom: 5px;
+}
+</style>
+
+<script>
+function selectTruck(orderId, truckTypeId) {
+    if (confirm('Confirm truck selection for this sale order?')) {
+        // In a real implementation, you would make an API call to confirm the selection
+        alert('Truck selected successfully! This would typically update the order status and notify logistics team.');
+    }
+}
+
+function showAllRecommendations(orderId) {
+    // In a real implementation, this would show a modal with all recommendations
+    alert('This would show a detailed modal with all truck recommendations for this order.');
+}
+
+function exportResults() {
+    // In a real implementation, this would export the results to Excel/CSV
+    const batchId = {{ batch.id }};
+    window.open(`/api/sale-order-batches/${batchId}/export`, '_blank');
+}
+</script>
+{% endblock %}

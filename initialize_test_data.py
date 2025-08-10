@@ -8,7 +8,7 @@ import os
 sys.path.append('/workspaces/Truck_Opti')
 
 from app import create_app, db
-from app.models import TruckType, CartonType
+from app.models import TruckType, CartonType, SaleOrder, SaleOrderItem, SaleOrderBatch, TruckRecommendation
 from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS
 
 def initialize_database():

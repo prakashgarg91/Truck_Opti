@@ -125,3 +125,85 @@ class Analytics(db.Model):
     total_cost = db.Column(db.Float, default=0.0)
     total_distance = db.Column(db.Float, default=0.0)
     total_co2_emissions = db.Column(db.Float, default=0.0)
+
+class SaleOrder(db.Model):
+    """Sale Order model for Excel/CSV upload processing"""
+    id = db.Column(db.Integer, primary_key=True)
+    sale_order_number = db.Column(db.String(100), nullable=False)
+    batch_id = db.Column(db.Integer, db.ForeignKey('sale_order_batch.id'))
+    customer_name = db.Column(db.String(200))
+    order_date = db.Column(db.Date)
+    delivery_address = db.Column(db.Text)
+    priority = db.Column(db.Integer, default=1)  # 1-5, 5 being highest
+    status = db.Column(db.String(20), default='pending')  # pending, processed, optimized
+    total_items = db.Column(db.Integer, default=0)
+    total_volume = db.Column(db.Float, default=0.0)
+    total_weight = db.Column(db.Float, default=0.0)
+    recommended_truck_id = db.Column(db.Integer, db.ForeignKey('truck_type.id'))
+    optimization_score = db.Column(db.Float, default=0.0)
+    estimated_utilization = db.Column(db.Float, default=0.0)
+    estimated_cost = db.Column(db.Float, default=0.0)
+    processing_notes = db.Column(db.Text)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    date_processed = db.Column(db.DateTime)
+    
+    # Relationships
+    recommended_truck = db.relationship('TruckType', backref='recommended_orders')
+    sale_order_items = db.relationship('SaleOrderItem', backref='sale_order', lazy=True, cascade='all, delete-orphan')
+
+class SaleOrderItem(db.Model):
+    """Individual items within a sale order"""
+    id = db.Column(db.Integer, primary_key=True)
+    sale_order_id = db.Column(db.Integer, db.ForeignKey('sale_order.id'), nullable=False)
+    item_code = db.Column(db.String(100), nullable=False)
+    item_name = db.Column(db.String(200), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    unit_length = db.Column(db.Float, default=0.0)
+    unit_width = db.Column(db.Float, default=0.0)
+    unit_height = db.Column(db.Float, default=0.0)
+    unit_weight = db.Column(db.Float, default=0.0)
+    unit_value = db.Column(db.Float, default=0.0)
+    category = db.Column(db.String(100), default='General')
+    fragile = db.Column(db.Boolean, default=False)
+    stackable = db.Column(db.Boolean, default=True)
+    total_volume = db.Column(db.Float, default=0.0)
+    total_weight = db.Column(db.Float, default=0.0)
+    notes = db.Column(db.Text)
+
+class SaleOrderBatch(db.Model):
+    """Batch processing for multiple sale orders from Excel/CSV"""
+    id = db.Column(db.Integer, primary_key=True)
+    batch_name = db.Column(db.String(200), nullable=False)
+    filename = db.Column(db.String(200), nullable=False)
+    total_orders = db.Column(db.Integer, default=0)
+    processed_orders = db.Column(db.Integer, default=0)
+    failed_orders = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='pending')  # pending, processing, completed, failed
+    processing_notes = db.Column(db.Text)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    date_completed = db.Column(db.DateTime)
+    
+    # Relationships
+    sale_orders = db.relationship('SaleOrder', backref='batch', lazy=True)
+
+class TruckRecommendation(db.Model):
+    """Store truck recommendations for sale orders with detailed analysis"""
+    id = db.Column(db.Integer, primary_key=True)
+    sale_order_id = db.Column(db.Integer, db.ForeignKey('sale_order.id'), nullable=False)
+    truck_type_id = db.Column(db.Integer, db.ForeignKey('truck_type.id'), nullable=False)
+    ranking = db.Column(db.Integer, default=1)  # 1 = best recommendation
+    utilization_score = db.Column(db.Float, default=0.0)
+    cost_score = db.Column(db.Float, default=0.0)
+    efficiency_score = db.Column(db.Float, default=0.0)
+    overall_score = db.Column(db.Float, default=0.0)
+    space_utilization = db.Column(db.Float, default=0.0)
+    weight_utilization = db.Column(db.Float, default=0.0)
+    estimated_cost = db.Column(db.Float, default=0.0)
+    fits_completely = db.Column(db.Boolean, default=True)
+    overflow_items = db.Column(db.Integer, default=0)
+    recommendation_reason = db.Column(db.Text)
+    date_calculated = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    sale_order = db.relationship('SaleOrder', backref='truck_recommendations')
+    truck_type = db.relationship('TruckType', backref='recommendations')

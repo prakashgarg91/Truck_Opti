@@ -1,0 +1,15 @@
+sale_order_number,carton_name,carton_code,quantity,customer_name,delivery_address,order_date
+SO001,Small Box,SB001,5,ABC Electronics,123 Business Street Mumbai Maharashtra,2025-08-10
+SO001,Medium Box,MB001,3,ABC Electronics,123 Business Street Mumbai Maharashtra,2025-08-10
+SO002,Large Box,LB001,8,XYZ Corporation,456 Industrial Avenue Delhi NCR,2025-08-10
+SO002,Heavy Box,HB001,4,XYZ Corporation,456 Industrial Avenue Delhi NCR,2025-08-10
+SO003,Small Box,SB001,15,Tech Solutions Ltd,789 Technology Park Bangalore Karnataka,2025-08-10
+SO003,Medium Box,MB001,10,Tech Solutions Ltd,789 Technology Park Bangalore Karnataka,2025-08-10
+SO003,Large Box,LB001,8,Tech Solutions Ltd,789 Technology Park Bangalore Karnataka,2025-08-10
+SO004,Electronics Box,EB001,12,Smart Devices Inc,101 Electronics Hub Chennai Tamil Nadu,2025-08-10
+SO004,Component Box,CB002,8,Smart Devices Inc,101 Electronics Hub Chennai Tamil Nadu,2025-08-10
+SO005,Heavy Equipment,HE001,3,Industrial Supply Co,202 Machinery Lane Pune Maharashtra,2025-08-10
+SO005,Large Box,LB001,6,Industrial Supply Co,202 Machinery Lane Pune Maharashtra,2025-08-10
+SO006,Small Box,SB001,25,Retail Chain Ltd,303 Retail Complex Kolkata West Bengal,2025-08-10
+SO006,Medium Box,MB001,20,Retail Chain Ltd,303 Retail Complex Kolkata West Bengal,2025-08-10
+SO006,Large Box,LB001,15,Retail Chain Ltd,303 Retail Complex Kolkata West Bengal,2025-08-10
