@@ -6,7 +6,18 @@ import sys
 db = SQLAlchemy()
 
 def create_app():
-    app = Flask(__name__, template_folder='templates', static_folder='static')
+    # Handle PyInstaller executable paths
+    if getattr(sys, 'frozen', False):
+        # Running in a PyInstaller bundle
+        application_path = sys._MEIPASS
+        template_folder = os.path.join(application_path, 'templates')
+        static_folder = os.path.join(application_path, 'static')
+    else:
+        # Running in normal Python environment
+        template_folder = 'templates'
+        static_folder = 'static'
+    
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
     app.config['SECRET_KEY'] = 'dev-secret-key'
 
     # Database config
