@@ -561,12 +561,21 @@ def export_packing_result(job_id):
 
 @bp.route('/packing-job/<int:job_id>')
 def packing_result(job_id):
-    job = PackingJob.query.get_or_404(job_id)
-    result = PackingResult.query.filter_by(job_id=job.id).first()
-    if result is None:
-        flash('No result found for this packing job.', 'warning')
+    try:
+        job = PackingJob.query.get_or_404(job_id)
+        result = PackingResult.query.filter_by(job_id=job.id).first()
+        if result is None:
+            flash('No result found for this packing job.', 'warning')
+            return redirect(url_for('main.packing_jobs'))
+        
+        return render_template('packing_result.html', 
+                             job=job, 
+                             result=result)
+    except Exception as e:
+        import logging
+        logging.error(f"Error in packing_result for job_id {job_id}: {str(e)}")
+        flash(f'Error loading packing job: {str(e)}', 'error')
         return redirect(url_for('main.packing_jobs'))
-    return render_template('packing_result.html', job=job, result=result)
 
 @bp.route('/edit-carton-type/<int:carton_id>', methods=['GET', 'POST'])
 def edit_carton_type(carton_id):

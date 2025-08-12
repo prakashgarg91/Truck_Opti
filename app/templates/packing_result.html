@@ -197,21 +197,17 @@
                                             </div>
                                         </td>
                                         <td>
-                                            {% for item in bin_result.fitted_items %}
-                                                {% if item.name == item_name %}
-                                                <small class="text-muted">{{ item.length }}×{{ item.width }}×{{ item.height }} cm</small>
-                                                {% break %}
-                                                {% endif %}
-                                            {% endfor %}
+                                            {% set found_item = bin_result.fitted_items | selectattr('name', 'equalto', item_name) | first %}
+                                            {% if found_item %}
+                                            <small class="text-muted">{{ found_item.width }}×{{ found_item.depth }}×{{ found_item.height }} cm</small>
+                                            {% endif %}
                                         </td>
                                         <td>
                                             {% set item_volume = bin_result.fitted_items | selectattr('name', 'equalto', item_name) | list | first %}
                                             {% if item_volume %}
-                                            {% set single_item_volume = item_volume.length * item_volume.width * item_volume.height %}
+                                            {% set single_item_volume = item_volume.width * item_volume.depth * item_volume.height %}
                                             {% set total_item_volume = single_item_volume * fitted_count %}
-                                            {% set truck_volume = bin_result.bin_dimensions.length * bin_result.bin_dimensions.width * bin_result.bin_dimensions.height %}
-                                            {% set item_space_usage = (total_item_volume / truck_volume * 100) if truck_volume > 0 else 0 %}
-                                            <span class="badge bg-info">{{ "%.1f"|format(item_space_usage) }}%</span>
+                                            <span class="badge bg-info">{{ "%.1f"|format(bin_result.utilization * 100) }}%</span>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -246,13 +242,8 @@
                         <div class="truck-specs">
                             <h6 class="text-muted">Truck Specifications</h6>
                             <small class="text-muted">
-                                {% if bin_result.bin_dimensions %}
-                                    <div>Dimensions: {{ bin_result.bin_dimensions.length }}×{{ bin_result.bin_dimensions.width }}×{{ bin_result.bin_dimensions.height }} cm</div>
-                                    <div>Volume: {{ "%.2f"|format(bin_result.bin_dimensions.volume / 1000000) }} m³</div>
-                                {% else %}
-                                    <div>Truck: {{ bin_result.bin_name }}</div>
-                                    <div>Specifications available in truck types</div>
-                                {% endif %}
+                                <div>Truck: {{ bin_result.bin_name }}</div>
+                                <div>Utilization: {{ "%.1f"|format(bin_result.utilization * 100) }}%</div>
                             </small>
                         </div>
                     </div>
@@ -291,12 +282,10 @@
                                                 <td><strong>{{ item_name }}</strong></td>
                                                 <td><span class="badge bg-warning text-dark">{{ count }} units</span></td>
                                                 <td>
-                                                    {% for item in bin_result.unfitted_items %}
-                                                        {% if item.name == item_name %}
-                                                        <small class="text-muted">{{ item.length }}×{{ item.width }}×{{ item.height }} cm</small>
-                                                        {% break %}
-                                                        {% endif %}
-                                                    {% endfor %}
+                                                    {% set unfitted_item = bin_result.unfitted_items | selectattr('name', 'equalto', item_name) | first %}
+                                                    {% if unfitted_item %}
+                                                    <small class="text-muted">{{ unfitted_item.width }}×{{ unfitted_item.depth }}×{{ unfitted_item.height }} cm</small>
+                                                    {% endif %}
                                                 </td>
                                             </tr>
                                             {% endfor %}

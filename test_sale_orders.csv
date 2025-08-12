@@ -1,0 +1,3 @@
+sale_order_number,carton_name,carton_code,quantity,customer_name,delivery_address,order_date
+SO001,LED TV 32,TV32,25,Customer A,Mumbai Maharashtra,2025-08-12
+SO002,LED TV 32,TV32,75,Customer B,Mumbai Maharashtra,2025-08-12
