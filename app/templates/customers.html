@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Management - TruckOpti{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Customers</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-1">Customer Management</h1>
+                    <p class="text-muted mb-0">Manage your customer database and contact information</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.add_customer') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Customer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Customer Directory</h5>
+                </div>
+                <div class="card-body">
+                    {% if customers %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="customersTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>City</th>
+                                    <th>Country</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for customer in customers %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">#{{ customer.id }}</span></td>
+                                    <td>
+                                        <div class="fw-bold">{{ customer.name }}</div>
+                                        {% if customer.address %}
+                                        <small class="text-muted">{{ customer.address[:50] }}{% if customer.address|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if customer.email %}
+                                        <a href="mailto:{{ customer.email }}" class="text-decoration-none">
+                                            <i class="bi bi-envelope me-1"></i>{{ customer.email }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">No email</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if customer.phone %}
+                                        <a href="tel:{{ customer.phone }}" class="text-decoration-none">
+                                            <i class="bi bi-telephone me-1"></i>{{ customer.phone }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">No phone</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if customer.city %}
+                                        <i class="bi bi-geo-alt me-1"></i>{{ customer.city }}
+                                        {% if customer.postal_code %}
+                                        <br><small class="text-muted">{{ customer.postal_code }}</small>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ customer.country or 'India' }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    onclick="viewCustomer({{ customer.id }})" 
+                                                    title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning" 
+                                                    onclick="editCustomer({{ customer.id }})" 
+                                                    title="Edit Customer">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="deleteCustomer({{ customer.id }}, '{{ customer.name }}')" 
+                                                    title="Delete Customer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-people" style="font-size: 4rem; color: #dee2e6;"></i>
+                        </div>
+                        <h5 class="text-muted mb-3">No Customers Found</h5>
+                        <p class="text-muted mb-4">Start building your customer database by adding your first customer.</p>
+                        <a href="{{ url_for('main.add_customer') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Add First Customer
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Customers</h5>
+                            <h2 class="mb-0">{{ customers|length }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-people" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">With Email</h5>
+                            <h2 class="mb-0">{{ customers|selectattr('email')|list|length }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-envelope" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">With Phone</h5>
+                            <h2 class="mb-0">{{ customers|selectattr('phone')|list|length }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-telephone" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Cities</h5>
+                            <h2 class="mb-0">{{ customers|map(attribute='city')|unique|list|length }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-geo-alt" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Details Modal -->
+<div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="customerModalLabel">Customer Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="customerModalBody">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editCustomerFromModal()">Edit Customer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    {% if customers %}
+    $('#customersTable').DataTable({
+        dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+             "<'row'<'col-sm-12'B>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        buttons: [
+            {
+                extend: 'copy',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-files me-1"></i>Copy'
+            },
+            {
+                extend: 'csv',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-file-earmark-csv me-1"></i>CSV'
+            },
+            {
+                extend: 'excel',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-file-earmark-excel me-1"></i>Excel'
+            },
+            {
+                extend: 'pdf',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-file-earmark-pdf me-1"></i>PDF'
+            },
+            {
+                extend: 'print',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-printer me-1"></i>Print'
+            }
+        ],
+        pageLength: 10,
+        responsive: true,
+        order: [[0, 'desc']], // Sort by ID (newest first)
+        language: {
+            search: "Search customers:",
+            lengthMenu: "Show _MENU_ customers per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ customers"
+        }
+    });
+    {% endif %}
+});
+
+let currentCustomerId = null;
+
+function viewCustomer(customerId) {
+    // Fetch customer details via API
+    fetch(`/api/customers`)
+        .then(response => response.json())
+        .then(customers => {
+            const customer = customers.find(c => c.id === customerId);
+            if (customer) {
+                displayCustomerDetails(customer);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching customer details:', error);
+            alert('Error loading customer details');
+        });
+}
+
+function displayCustomerDetails(customer) {
+    currentCustomerId = customer.id;
+    
+    const modalBody = document.getElementById('customerModalBody');
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary">Basic Information</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Name:</strong></td>
+                        <td>${customer.name}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Email:</strong></td>
+                        <td>${customer.email || 'Not provided'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phone:</strong></td>
+                        <td>${customer.phone || 'Not provided'}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-primary">Address Information</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Address:</strong></td>
+                        <td>${customer.address || 'Not provided'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>City:</strong></td>
+                        <td>${customer.city || 'Not provided'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Postal Code:</strong></td>
+                        <td>${customer.postal_code || 'Not provided'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Country:</strong></td>
+                        <td>${customer.country || 'India'}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('customerModal'));
+    modal.show();
+}
+
+function editCustomer(customerId) {
+    // For now, redirect to add customer page with edit mode
+    // In a real implementation, you'd create an edit_customer route
+    alert(`Edit functionality for customer ${customerId} would redirect to edit form`);
+}
+
+function editCustomerFromModal() {
+    if (currentCustomerId) {
+        editCustomer(currentCustomerId);
+    }
+}
+
+function deleteCustomer(customerId, customerName) {
+    if (confirm(`Are you sure you want to delete customer "${customerName}"? This action cannot be undone.`)) {
+        // In a real implementation, you'd make an API call to delete the customer
+        alert(`Delete functionality for customer ${customerId} would be implemented here`);
+    }
+}
+</script>
+{% endblock %}

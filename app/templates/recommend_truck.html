@@ -101,16 +101,6 @@
           {% endfor %}
         </tbody>
       </table>
-      
-      <!-- 3D Visualizations -->
-      {% for r in recommended %}
-        {% if r.fitted_items %}
-        <div class="mt-4">
-          <h6>3D Visualization - {{ r.bin_name }}</h6>
-          <div id="recommend-visualization-{{ loop.index }}" style="width:100%;height:400px;border:1px solid #ddd;position:relative;"></div>
-        </div>
-        {% endif %}
-      {% endfor %}
     </div>
   </div>
   {% endif %}
@@ -128,7 +118,6 @@ document.getElementById('cartonForm').addEventListener('submit', function(e) {
         'Loading truck specifications...',
         'Running optimization algorithm...',
         'Calculating cost analysis...',
-        'Generating 3D visualization...',
         'Finalizing recommendations...'
     ];
     
@@ -227,44 +216,6 @@ $(document).ready(function() {
 });
 </script>
 
-<script type="module">
-    import { renderTruckVisualizationEnhanced } from "/static/js/truck_3d_enhanced.js";
-    const recommended = {{ recommended|tojson }};
-    
-    if (recommended && recommended.length > 0) {
-        showProgress('Loading 3D Truck Views', 'Generating interactive visualizations...', true);
-        
-        let loadedCount = 0;
-        const totalVisualizations = recommended.filter(r => r.fitted_items && r.fitted_items.length > 0).length;
-        
-        recommended.forEach((result, index) => {
-            if (result.fitted_items && result.fitted_items.length > 0) {
-                const containerId = `recommend-visualization-${index + 1}`;
-                
-                setTimeout(() => {
-                    try {
-                        renderTruckVisualizationEnhanced(containerId, [result]);
-                        loadedCount++;
-                        
-                        const percentage = Math.round((loadedCount / totalVisualizations) * 100);
-                        updateProgress(percentage);
-                        
-                        if (loadedCount === totalVisualizations) {
-                            setTimeout(() => {
-                                hideProgress();
-                            }, 500);
-                        }
-                    } catch (error) {
-                        console.error('Error loading 3D visualization:', error);
-                        loadedCount++;
-                        if (loadedCount === totalVisualizations) {
-                            hideProgress();
-                        }
-                    }
-                }, index * 400); // Stagger loading slightly more for recommendations
-            }
-        });
-    }
-</script>
+<!-- 3D Visualization removed as per user requirements -->
 {% endif %}
 {% endblock %}

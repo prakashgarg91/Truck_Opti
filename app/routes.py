@@ -396,6 +396,76 @@ def batch_processing():
 
     return render_template('batch_processing.html')
 
+# Customer Management Routes
+@bp.route('/customers')
+def customers():
+    """Display customers management page"""
+    from app.models import Customer
+    customers = Customer.query.all()
+    return render_template('customers.html', customers=customers)
+
+@bp.route('/add-customer', methods=['GET', 'POST'])
+def add_customer():
+    """Add new customer"""
+    if request.method == 'POST':
+        from app.models import Customer
+        
+        customer = Customer(
+            name=request.form['name'],
+            email=request.form.get('email'),
+            phone=request.form.get('phone'),
+            address=request.form.get('address'),
+            city=request.form.get('city'),
+            postal_code=request.form.get('postal_code'),
+            country=request.form.get('country', 'India')
+        )
+        
+        try:
+            db.session.add(customer)
+            db.session.commit()
+            flash('Customer added successfully!', 'success')
+            return redirect(url_for('main.customers'))
+        except Exception as e:
+            flash(f'Error adding customer: {str(e)}', 'danger')
+            db.session.rollback()
+    
+    return render_template('add_customer.html')
+
+# Routes Management Routes
+@bp.route('/routes')
+def routes():
+    """Display routes management page"""
+    from app.models import Route
+    routes = Route.query.all()
+    return render_template('routes.html', routes=routes)
+
+@bp.route('/add-route', methods=['GET', 'POST'])
+def add_route():
+    """Add new route"""
+    if request.method == 'POST':
+        from app.models import Route
+        
+        route = Route(
+            name=request.form['name'],
+            origin=request.form['origin'],
+            destination=request.form['destination'],
+            distance_km=float(request.form.get('distance_km', 0)),
+            estimated_time_hours=float(request.form.get('estimated_time_hours', 0)),
+            toll_cost=float(request.form.get('toll_cost', 0)),
+            fuel_cost=float(request.form.get('fuel_cost', 0))
+        )
+        
+        try:
+            db.session.add(route)
+            db.session.commit()
+            flash('Route added successfully!', 'success')
+            return redirect(url_for('main.routes'))
+        except Exception as e:
+            flash(f'Error adding route: {str(e)}', 'danger')
+            db.session.rollback()
+    
+    return render_template('add_route.html')
+
 @bp.route('/export-packing-result/<int:job_id>')
 def export_packing_result(job_id):
     job = PackingJob.query.get_or_404(job_id)
