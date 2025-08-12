@@ -1,0 +1,176 @@
+# Enterprise TruckOpti Dependencies
+# Production-ready packages with version pinning for security and stability
+
+# Core Framework
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# Database
+SQLAlchemy==2.0.21
+Flask-SQLAlchemy==3.0.5
+Alembic==1.12.0
+
+# Authentication & Security
+Flask-JWT-Extended==4.5.2
+bcrypt==4.0.1
+cryptography==41.0.4
+PyJWT==2.8.0
+
+# API & Serialization
+marshmallow==3.20.1
+Flask-CORS==4.0.0
+jsonschema==4.19.0
+
+# Caching & Session Management
+Redis==4.6.0
+Flask-Session==0.5.0
+
+# Background Tasks
+Celery==5.3.1
+kombu==5.3.2
+
+# Monitoring & Logging
+prometheus-client==0.17.1
+structlog==23.1.0
+python-json-logger==2.0.7
+sentry-sdk[flask]==1.32.0
+
+# Configuration Management
+python-decouple==3.8
+PyYAML==6.0.1
+
+# HTTP Client & External APIs
+requests==2.31.0
+httpx==0.24.1
+
+# Data Processing & Analytics
+pandas==2.1.0
+numpy==1.25.2
+scipy==1.11.2
+
+# 3D Packing Algorithm
+py3dbp>=1.0.0
+
+# Data Validation
+pydantic==2.3.0
+email-validator==2.0.0
+
+# File Processing
+openpyxl==3.1.2
+xlsxwriter==3.1.9
+
+# Testing Framework
+pytest==7.4.2
+pytest-flask==1.2.0
+pytest-cov==4.1.0
+pytest-mock==3.11.1
+pytest-xdist==3.3.1
+pytest-benchmark==4.0.0
+factory-boy==3.3.0
+
+# Code Quality
+flake8==6.0.0
+black==23.7.0
+isort==5.12.0
+mypy==1.5.1
+pylint==2.17.5
+bandit==1.7.5
+
+# Documentation
+Sphinx==7.1.2
+sphinx-rtd-theme==1.3.0
+sphinx-autodoc-typehints==1.24.0
+
+# Development Tools
+pre-commit==3.4.0
+tox==4.11.1
+
+# Performance & Profiling
+py-spy==0.3.14
+memory-profiler==0.60.0
+
+# Deployment
+gunicorn==21.2.0
+gevent==23.7.0
+
+# Environment Management
+python-dotenv==1.0.0
+
+# Date/Time Utilities
+python-dateutil==2.8.2
+pytz==2023.3
+
+# UUID Generation
+uuid==1.30
+
+# Regex
+regex==2023.8.8
+
+# System Information
+psutil==5.9.5
+
+# CLI Tools
+click==8.1.7
+rich==13.5.2
+
+# Image Processing (for 3D visualization exports)
+Pillow==10.0.0
+
+# Mathematical Operations
+sympy==1.12
+
+# Graph/Network Analysis (for route optimization)
+networkx==3.1
+
+# Machine Learning (for optimization algorithms)
+scikit-learn==1.3.0
+
+# Web Scraping (for external data)
+beautifulsoup4==4.12.2
+
+# Data Compression
+lz4==4.3.2
+zstandard==0.21.0
+
+# Enterprise Integrations
+azure-storage-blob==12.17.0  # Azure integration
+boto3==1.28.57  # AWS integration
+google-cloud-storage==2.10.0  # GCP integration
+
+# Message Queues
+pika==1.3.2  # RabbitMQ
+
+# Time Series Data
+influxdb-client==1.37.0
+
+# Enterprise Authentication
+python-ldap==3.4.3
+authlib==1.2.1
+
+# Rate Limiting
+Flask-Limiter==3.5.0
+
+# API Documentation
+flasgger==0.9.7.1
+apispec==6.3.0
+
+# Health Checks
+py-healthcheck==1.10.1
+
+# Kubernetes Support
+kubernetes==27.2.0
+
+# Observability
+opentelemetry-api==1.19.0
+opentelemetry-sdk==1.19.0
+opentelemetry-instrumentation-flask==0.40b0
+
+# Data Migration
+alembic==1.12.0
+
+# Backup & Recovery
+boto3==1.28.57  # For S3 backups
+
+# Enterprise Security Scanning
+safety==2.3.5
+pip-audit==2.6.1

@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container">
-    <h1 class="mt-5">{{ "Edit Truck Type" if edit_mode else "Add New Truck Type" }}</h1>
+    <h1 class="mt-5">{{ "Edit Vehicle Type" if edit_mode else "Add New Vehicle Type" }}</h1>
     <form method="POST" action="{{ url_for('main.edit_truck_type', truck_id=truck.id) if edit_mode else url_for('main.add_truck_type') }}">
         <div class="mb-3">
             <label for="name" class="form-label">Name</label>
@@ -21,10 +21,39 @@
             <input type="number" step="0.01" class="form-control" id="height" name="height" value="{{ truck.height if edit_mode else '' }}" required>
         </div>
         <div class="mb-3">
-            <label for="max_weight" class="form-label">Max Weight</label>
+            <label for="max_weight" class="form-label">Max Weight (kg)</label>
             <input type="number" step="0.01" class="form-control" id="max_weight" name="max_weight" value="{{ truck.max_weight if edit_mode and truck.max_weight else '' }}">
         </div>
-        <button type="submit" class="btn btn-primary">{{ "Update Truck Type" if edit_mode else "Add Truck Type" }}</button>
+        <div class="mb-3">
+            <label for="truck_category" class="form-label">Vehicle Category</label>
+            <select class="form-control" id="truck_category" name="truck_category" required>
+                <option value="">Select Category</option>
+                <option value="Light" {{ 'selected' if edit_mode and truck.truck_category == 'Light' else '' }}>Light Commercial Vehicle (LCV) - Up to 7.5 tons</option>
+                <option value="Medium" {{ 'selected' if edit_mode and truck.truck_category == 'Medium' else '' }}>Medium Commercial Vehicle (MCV) - 7.5 to 16 tons</option>
+                <option value="Heavy" {{ 'selected' if edit_mode and truck.truck_category == 'Heavy' else '' }}>Heavy Commercial Vehicle (HCV) - Above 16 tons</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="cost_per_km" class="form-label">Cost per Kilometer (₹)</label>
+            <input type="number" step="0.01" class="form-control" id="cost_per_km" name="cost_per_km" value="{{ truck.cost_per_km if edit_mode and truck.cost_per_km else '' }}" placeholder="e.g., 25.50">
+        </div>
+        <div class="mb-3">
+            <label for="fuel_efficiency" class="form-label">Fuel Efficiency (km/liter)</label>
+            <input type="number" step="0.01" class="form-control" id="fuel_efficiency" name="fuel_efficiency" value="{{ truck.fuel_efficiency if edit_mode and truck.fuel_efficiency else '' }}" placeholder="e.g., 8.5">
+        </div>
+        <div class="mb-3">
+            <label for="driver_cost_per_day" class="form-label">Driver Cost per Day (₹)</label>
+            <input type="number" step="0.01" class="form-control" id="driver_cost_per_day" name="driver_cost_per_day" value="{{ truck.driver_cost_per_day if edit_mode and truck.driver_cost_per_day else '' }}" placeholder="e.g., 800">
+        </div>
+        <div class="mb-3">
+            <label for="maintenance_cost_per_km" class="form-label">Maintenance Cost per Km (₹)</label>
+            <input type="number" step="0.01" class="form-control" id="maintenance_cost_per_km" name="maintenance_cost_per_km" value="{{ truck.maintenance_cost_per_km if edit_mode and truck.maintenance_cost_per_km else '' }}" placeholder="e.g., 2.5">
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Additional details about this vehicle type">{{ truck.description if edit_mode else '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">{{ "Update Vehicle Type" if edit_mode else "Add Vehicle Type" }}</button>
         {% if edit_mode %}
             <a href="{{ url_for('main.truck_types') }}" class="btn btn-secondary">Cancel</a>
         {% endif %}

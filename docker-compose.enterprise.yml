@@ -1,0 +1,258 @@
+version: '3.8'
+
+# Enterprise TruckOpti Docker Compose Configuration
+# Production-ready multi-service deployment with monitoring and security
+
+services:
+  # Main Application
+  truckopti-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.enterprise
+    container_name: truckopti-enterprise
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://truckopti:${POSTGRES_PASSWORD}@postgres:5432/truckopti_prod
+      - REDIS_HOST=redis
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - SENTRY_DSN=${SENTRY_DSN}
+      - MONITORING_ENABLED=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./backups:/app/backups
+    networks:
+      - truckopti-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: truckopti-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=truckopti_prod
+      - POSTGRES_USER=truckopti
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - truckopti-network
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U truckopti -d truckopti_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: truckopti-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - truckopti-network
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Celery Worker
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.enterprise
+    container_name: truckopti-celery-worker
+    restart: unless-stopped
+    command: celery -A app.celery worker --loglevel=info --concurrency=4
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://truckopti:${POSTGRES_PASSWORD}@postgres:5432/truckopti_prod
+      - REDIS_HOST=redis
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - truckopti-network
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.celery", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: truckopti-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./static:/var/www/static:ro
+    depends_on:
+      - truckopti-app
+    networks:
+      - truckopti-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: truckopti-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - truckopti-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: truckopti-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - truckopti-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ELK Stack for Log Management
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    container_name: truckopti-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - truckopti-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.0
+    container_name: truckopti-kibana
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - truckopti-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backup Service
+  backup:
+    image: postgres:15-alpine
+    container_name: truckopti-backup
+    restart: "no"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=truckopti_prod
+      - POSTGRES_USER=truckopti
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    depends_on:
+      - postgres
+    networks:
+      - truckopti-network
+    entrypoint: ["/backup.sh"]
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+networks:
+  truckopti-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

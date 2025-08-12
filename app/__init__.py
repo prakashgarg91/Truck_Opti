@@ -10,8 +10,8 @@ def create_app():
     if getattr(sys, 'frozen', False):
         # Running in a PyInstaller bundle
         application_path = sys._MEIPASS
-        template_folder = os.path.join(application_path, 'templates')
-        static_folder = os.path.join(application_path, 'static')
+        template_folder = os.path.join(application_path, 'app', 'templates')
+        static_folder = os.path.join(application_path, 'app', 'static')
     else:
         # Running in normal Python environment
         template_folder = 'templates'

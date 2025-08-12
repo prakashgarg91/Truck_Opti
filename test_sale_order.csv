@@ -1,0 +1,4 @@
+sale_order_number,carton_name,carton_code,quantity,customer_name,delivery_address,order_date
+SO-2025-001,Large Carton,LC001,15,ABC Company,Mumbai,2025-08-11
+SO-2025-002,Medium Carton,MC001,25,XYZ Corp,Delhi,2025-08-11
+SO-2025-003,Small Carton,SC001,50,DEF Ltd,Bangalore,2025-08-11

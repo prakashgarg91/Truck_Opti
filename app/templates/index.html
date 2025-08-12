@@ -6,8 +6,8 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h1 class="mt-4 mb-3">Logistics Dashboard</h1>
-            <p class="lead">Welcome to your logistics control center.</p>
+            <h1 class="mt-4 mb-3">Logistics Agency Dashboard</h1>
+            <p class="lead">Manage your logistics operations and partner vehicles from one central hub.</p>
         </div>
     </div>
     <div class="row mb-4">
@@ -18,7 +18,7 @@
                         <i class="bi bi-truck fs-2"></i>
                         <div class="text-end">
                             <div class="fs-3">{{ stats.total_trucks }}</div>
-                            <div>Total Trucks</div>
+                            <div>Available Vehicles</div>
                         </div>
                     </div>
                 </div>
@@ -31,7 +31,7 @@
                         <i class="bi bi-box-seam fs-2"></i>
                         <div class="text-end">
                             <div class="fs-3">{{ stats.total_shipments }}</div>
-                            <div>Total Shipments</div>
+                            <div>Active Bookings</div>
                         </div>
                     </div>
                 </div>
@@ -44,7 +44,7 @@
                         <i class="bi bi-bar-chart fs-2"></i>
                         <div class="text-end">
                             <div class="fs-3">{{ stats.total_jobs }}</div>
-                            <div>Packing Jobs</div>
+                            <div>Optimization Jobs</div>
                         </div>
                     </div>
                 </div>
@@ -57,7 +57,7 @@
                         <i class="bi bi-truck-flatbed fs-2"></i>
                         <div class="text-end">
                             <div class="fs-3">{{ stats.total_cartons }}</div>
-                            <div>Carton Types</div>
+                            <div>Item Categories</div>
                         </div>
                     </div>
                 </div>
@@ -85,7 +85,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <div class="fs-6 fw-bold">₹{{ stats.total_cost|round(0) }}</div>
-                            <div class="small">Total Savings</div>
+                            <div class="small">Cost Optimized</div>
                         </div>
                         <i class="bi bi-currency-rupee fs-4"></i>
                     </div>
@@ -119,31 +119,31 @@
                         <div class="col-md-4">
                             <a href="{{ url_for('main.add_packing_job') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
                                 <i class="bi bi-plus-circle fs-2 mb-2"></i>
-                                <span>New Packing Job</span>
+                                <span>New Booking</span>
                             </a>
                         </div>
                         <div class="col-md-4">
                             <a href="{{ url_for('main.recommend_truck') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
                                 <i class="bi bi-lightbulb fs-2 mb-2"></i>
-                                <span>Smart Recommendations</span>
+                                <span>Vehicle Matching</span>
                             </a>
                         </div>
                         <div class="col-md-4">
                             <a href="{{ url_for('main.fleet_optimization') }}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
                                 <i class="bi bi-gear-wide-connected fs-2 mb-2"></i>
-                                <span>Fleet Packing</span>
+                                <span>Multi-Order Planning</span>
                             </a>
                         </div>
                         <div class="col-md-4">
                             <a href="{{ url_for('main.truck_types') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
                                 <i class="bi bi-truck fs-2 mb-2"></i>
-                                <span>Manage Trucks</span>
+                                <span>Partner Vehicles</span>
                             </a>
                         </div>
                         <div class="col-md-4">
                             <a href="{{ url_for('main.carton_types') }}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column justify-content-center align-items-center p-3">
                                 <i class="bi bi-box fs-2 mb-2"></i>
-                                <span>Manage Cartons</span>
+                                <span>Item Types</span>
                             </a>
                         </div>
                         <div class="col-md-4">
@@ -166,26 +166,26 @@
                         <div class="timeline-item mb-3">
                             <div class="timeline-marker bg-success"></div>
                             <div class="timeline-content">
-                                <h6 class="mb-1">New packing job completed</h6>
-                                <p class="text-muted small mb-0">2 minutes ago</p>
+                                <h6 class="mb-1">Booking optimization completed</h6>
+                                <p class="text-muted small mb-0">15 minutes ago</p>
                             </div>
                         </div>
                         <div class="timeline-item mb-3">
                             <div class="timeline-marker bg-primary"></div>
                             <div class="timeline-content">
-                                <h6 class="mb-1">Truck type updated</h6>
-                                <p class="text-muted small mb-0">1 hour ago</p>
+                                <h6 class="mb-1">New partner vehicle registered</h6>
+                                <p class="text-muted small mb-0">2 hours ago</p>
                             </div>
                         </div>
                         <div class="timeline-item mb-3">
                             <div class="timeline-marker bg-warning"></div>
                             <div class="timeline-content">
-                                <h6 class="mb-1">Fleet optimization ran</h6>
-                                <p class="text-muted small mb-0">3 hours ago</p>
+                                <h6 class="mb-1">Multi-order consolidation processed</h6>
+                                <p class="text-muted small mb-0">4 hours ago</p>
                             </div>
                         </div>
                     </div>
-                    <a href="{{ url_for('main.packing_jobs') }}" class="btn btn-outline-primary btn-sm w-100 mt-2">View All Jobs</a>
+                    <a href="{{ url_for('main.packing_jobs') }}" class="btn btn-outline-primary btn-sm w-100 mt-2">View All Bookings</a>
                 </div>
             </div>
         </div>
@@ -196,7 +196,17 @@
         <div class="col-lg-6">
             <div class="card dashboard-card mb-4 shadow">
                 <div class="card-header bg-gradient-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-bar-chart-line-fill me-2"></i>Shipments per Month</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart-line-fill me-2"></i>Monthly Bookings Trend</h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-light" onclick="exportChart('shipments', 'excel')" title="Export to Excel">
+                                <i class="bi bi-file-earmark-spreadsheet"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-light" onclick="exportChart('shipments', 'pdf')" title="Export to PDF">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="dashboard-chart-container">
@@ -208,7 +218,17 @@
         <div class="col-lg-6">
             <div class="card dashboard-card mb-4 shadow">
                 <div class="card-header bg-gradient-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-pie-chart-fill me-2"></i>Trucks by Category</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-pie-chart-fill me-2"></i>Partner Vehicle Categories</h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-light" onclick="exportChart('trucks', 'excel')" title="Export to Excel">
+                                <i class="bi bi-file-earmark-spreadsheet"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-light" onclick="exportChart('trucks', 'pdf')" title="Export to PDF">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="dashboard-chart-container">
@@ -222,7 +242,158 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Export Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <script>
+// Export functionality
+function exportChart(chartType, format) {
+    const chartData = (chartType === 'shipments') ? {
+        labels: {{ charts.shipments.labels|tojson }},
+        data: {{ charts.shipments.data|tojson }},
+        title: 'Monthly Bookings Trend'
+    } : {
+        labels: {{ charts.trucks.labels|tojson }},
+        data: {{ charts.trucks.data|tojson }},
+        title: 'Partner Vehicle Categories'
+    };
+    
+    if (format === 'excel') {
+        exportToExcel(chartData);
+    } else if (format === 'pdf') {
+        exportToPDF(chartData);
+    }
+}
+
+function exportToExcel(data) {
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    
+    // Create data array for Excel
+    const wsData = [
+        [data.title],
+        [],
+        ['Category', 'Value']
+    ];
+    
+    for (let i = 0; i < data.labels.length; i++) {
+        wsData.push([data.labels[i], data.data[i]]);
+    }
+    
+    // Add summary statistics
+    wsData.push([]);
+    wsData.push(['Summary Statistics:']);
+    wsData.push(['Total:', data.data.reduce((a, b) => a + b, 0)]);
+    wsData.push(['Average:', Math.round(data.data.reduce((a, b) => a + b, 0) / data.data.length * 100) / 100]);
+    wsData.push(['Maximum:', Math.max(...data.data)]);
+    wsData.push(['Minimum:', Math.min(...data.data)]);
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Style the header
+    if (!ws['!merges']) ws['!merges'] = [];
+    ws['!merges'].push({s: {r: 0, c: 0}, e: {r: 0, c: 1}});
+    
+    // Add the worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, data.title.replace(/[^a-zA-Z0-9]/g, '_'));
+    
+    // Save the file
+    const filename = `TruckOpti_${data.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    
+    // Show success message
+    showToast('Excel Export', `Data exported successfully as ${filename}`, 'success');
+}
+
+function exportToPDF(data) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TruckOpti Logistics Dashboard', 20, 20);
+    
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.title, 20, 35);
+    
+    // Add export date
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN')}`, 20, 45);
+    
+    // Add table header
+    let y = 60;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Category', 20, y);
+    doc.text('Value', 80, y);
+    
+    // Add data rows
+    doc.setFont('helvetica', 'normal');
+    y += 10;
+    for (let i = 0; i < data.labels.length; i++) {
+        doc.text(data.labels[i], 20, y);
+        doc.text(data.data[i].toString(), 80, y);
+        y += 8;
+    }
+    
+    // Add summary statistics
+    y += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Summary Statistics:', 20, y);
+    y += 8;
+    
+    doc.setFont('helvetica', 'normal');
+    const total = data.data.reduce((a, b) => a + b, 0);
+    const average = Math.round(total / data.data.length * 100) / 100;
+    const maximum = Math.max(...data.data);
+    const minimum = Math.min(...data.data);
+    
+    doc.text(`Total: ${total}`, 20, y);
+    y += 6;
+    doc.text(`Average: ${average}`, 20, y);
+    y += 6;
+    doc.text(`Maximum: ${maximum}`, 20, y);
+    y += 6;
+    doc.text(`Minimum: ${minimum}`, 20, y);
+    
+    // Save the PDF
+    const filename = `TruckOpti_${data.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+    doc.save(filename);
+    
+    // Show success message
+    showToast('PDF Export', `Report exported successfully as ${filename}`, 'success');
+}
+
+function showToast(title, message, type = 'info') {
+    // Create toast element
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'primary'} border-0" 
+             role="alert" aria-live="assertive" aria-atomic="true" id="${toastId}"
+             style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong><br>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" 
+                        data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    $('body').append(toastHtml);
+    const toastElement = new bootstrap.Toast(document.getElementById(toastId));
+    toastElement.show();
+    
+    // Remove toast after it's hidden
+    document.getElementById(toastId).addEventListener('hidden.bs.toast', () => {
+        document.getElementById(toastId).remove();
+    });
+}
+
 $(document).ready(function() {
     // Wait for sidebar toggle to be ready
     setTimeout(function() {

@@ -46,7 +46,45 @@ python initialize_test_data.py   # Initialize test data
 sqlite3 app/truck_opti.db       # Direct database access
 
 # Build Commands  
-pyinstaller TruckOpti_v8.spec   # Create executable build
+pyinstaller TruckOpti_Enterprise.spec --clean --noconfirm   # Create executable build
+```
+
+### **🚨 CRITICAL EXECUTABLE BUILD FIX**
+**Issue**: Background process continues running after window close
+**Solution**: Fixed in run.py - Production mode disables debug mode
+
+```python
+# CRITICAL FIX: Proper executable shutdown handling
+if hasattr(sys, 'frozen') and hasattr(sys, '_MEIPASS'):
+    # Production mode for executable (NO DEBUG MODE)
+    app.run(
+        debug=False,           # CRITICAL: No debug mode in production
+        port=port,
+        use_reloader=False,    # No reloader in production  
+        threaded=True,         # Enable threading for better performance
+        host='127.0.0.1'       # Only localhost access
+    )
+else:
+    # Development mode
+    app.run(debug=True, port=port)
+```
+
+### **🛡️ Pre-Build Checklist**
+```bash
+# 1. Kill any running processes
+powershell "Get-Process TruckOpti_Enterprise -ErrorAction SilentlyContinue | Stop-Process -Force"
+
+# 2. Clean previous builds
+del /F "D:\Github\Truck_Opti\dist\TruckOpti_Enterprise.exe" 2>nul
+
+# 3. Build with proper spec file
+pyinstaller TruckOpti_Enterprise.spec --clean --noconfirm
+
+# 4. Test executable (should NOT leave background processes)
+powershell "Start-Process 'D:\Github\Truck_Opti\dist\TruckOpti_Enterprise.exe'"
+
+# 5. Verify clean shutdown (no background processes after closing browser)
+tasklist | findstr TruckOpti
 ```
 
 ### **🏗️ Project Architecture**
@@ -57,6 +95,7 @@ Truck_Opti/
 │   ├── routes.py              # API endpoints & web routes
 │   ├── packer.py              # 3D bin packing algorithms
 │   ├── ml_optimizer.py        # ML-based optimization
+│   ├── multi_order_optimizer.py  # NEW: Multi-order consolidation engine
 │   ├── cost_engine.py         # Cost calculation engine
 │   ├── route_optimizer.py     # Route optimization
 │   ├── websocket_manager.py   # Real-time updates
@@ -72,11 +111,19 @@ Truck_Opti/
 1. **3D Truck Loading Optimization** - Advanced bin packing algorithms
 2. **Multi-Truck Fleet Management** - Handle multiple truck types and sizes  
 3. **Real-time 3D Visualization** - Interactive 3D truck loading preview
-4. **Cost Optimization Engine** - ML-powered cost analysis
+4. **Cost Optimization Engine** - ML-powered cost analysis with realistic Indian truck costs
 5. **Batch Processing** - Handle large batches of packing jobs
 6. **Analytics Dashboard** - Performance metrics and insights
 7. **WebSocket Real-time Updates** - Live status updates
 8. **Export/Import** - CSV batch processing capabilities
+
+### **🚀 NEW ENHANCED FEATURES (v3.1)**
+9. **Multi-Order Consolidation** - Combine multiple orders into single trucks for cost savings
+10. **Advanced Progress Loading** - Professional progress tracking with percentage and ETA
+11. **Stress Testing Capability** - Handle datasets with lakhs of cartons efficiently
+12. **Smart Optimization Strategies** - Cost saving, space utilization, or balanced approaches
+13. **Enhanced Progress Visualization** - Phase-by-phase progress with animations
+14. **Regional Order Grouping** - Automatic grouping by delivery regions for optimization
 
 ### **🔧 MCP Server Auto-Installation**
 ```bash

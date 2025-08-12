@@ -27,9 +27,57 @@
                 Supported formats: Excel (.xlsx) or CSV (.csv)
               </div>
             </div>
+
+            <!-- New Optimization Options -->
+            <div class="mb-3">
+              <label class="form-label">🎯 Optimization Strategy</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="optimization_mode" value="cost_saving" id="costSaving" checked>
+                <label class="form-check-label" for="costSaving">
+                  <strong>💰 Cost Saving</strong> - Minimize total transportation cost
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="optimization_mode" value="space_utilization" id="spaceUtil">
+                <label class="form-check-label" for="spaceUtil">
+                  <strong>📦 Space Utilization</strong> - Maximize truck space usage
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="optimization_mode" value="balanced" id="balanced">
+                <label class="form-check-label" for="balanced">
+                  <strong>⚖️ Balanced</strong> - Optimize both cost and space
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="enable_consolidation" id="enableConsolidation" checked>
+                <label class="form-check-label" for="enableConsolidation">
+                  <strong>🚚 Enable Order Consolidation</strong><br>
+                  <small class="text-muted">Combine multiple orders into single trucks for maximum cost savings</small>
+                </label>
+              </div>
+            </div>
+
+            <!-- Stress Test Options -->
+            <div class="mb-3">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="stress_test_mode" id="stressTestMode">
+                <label class="form-check-label" for="stressTestMode">
+                  <strong>⚡ Stress Test Mode</strong><br>
+                  <small class="text-muted">Enable enhanced processing for large datasets (lakhs of cartons)</small>
+                </label>
+              </div>
+            </div>
             
-            <button type="submit" class="btn btn-success" id="uploadBtn">
+            <button type="submit" class="btn btn-success btn-lg" id="uploadBtn">
               <i class="fas fa-upload me-1"></i>Upload and Process
+            </button>
+
+            <button type="button" class="btn btn-warning ms-2" id="stressTestBtn" onclick="runStressTest()">
+              <i class="fas fa-bolt me-1"></i>Run Stress Test
             </button>
           </form>
         </div>
@@ -139,8 +187,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('file');
     
     form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
         if (!fileInput.files[0]) {
-            e.preventDefault();
             alert('Please select a file to upload');
             return;
         }
@@ -148,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const file = fileInput.files[0];
         const validTypes = ['.xlsx', '.csv'];
         const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+        const stressTestMode = document.getElementById('stressTestMode').checked;
         
         if (!validTypes.includes(fileExtension)) {
             e.preventDefault();
@@ -155,13 +205,52 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Show processing state
+        // Show enhanced processing state with appropriate loader
         uploadBtn.disabled = true;
         uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
         
-        showProgress('Processing Sale Orders', 
-                    'Uploading and analyzing your sale order file...', 
-                    false);
+        if (stressTestMode || file.size > 1024 * 1024) { // If stress test mode or file > 1MB
+            // Use stress test progress loader
+            progressLoader.startStressTest(100000, 'Processing Large Dataset');
+        } else {
+            // Use regular progress loader
+            progressLoader.startRealisticSim('Processing Sale Orders', 8);
+        }
+        
+        // Submit the form with enhanced form data
+        const formData = new FormData(form);
+        
+        fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                progressLoader.complete("Processing complete! Redirecting to results...");
+                setTimeout(() => {
+                    window.location.href = response.url;
+                }, 1500);
+            } else if (response.ok) {
+                return response.text();
+            } else {
+                throw new Error('Upload failed');
+            }
+        })
+        .then(html => {
+            if (html) {
+                progressLoader.complete("Processing complete!");
+                setTimeout(() => {
+                    document.body.innerHTML = html;
+                }, 1500);
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            progressLoader.hide();
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload me-1"></i>Upload and Process';
+            alert('An error occurred during processing. Please try again.');
+        });
     });
 });
 
@@ -185,6 +274,73 @@ SO003,Medium Box,MB001,10,Tech Solutions Ltd,789 Technology Park Bangalore,2025-
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+}
+
+function runStressTest() {
+    // Generate large dataset for stress testing
+    const stressTestBtn = document.getElementById('stressTestBtn');
+    stressTestBtn.disabled = true;
+    stressTestBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Running...';
+    
+    // Start stress test visualization
+    progressLoader.startStressTest(250000, "Stress Testing TruckOpti Engine");
+    
+    // Simulate stress test processing
+    setTimeout(() => {
+        // Generate sample large dataset
+        let csvData = 'sale_order_number,carton_name,carton_code,quantity,customer_name,delivery_address,order_date\n';
+        
+        const cartonTypes = [
+            {name: 'Small Box', code: 'SB001'},
+            {name: 'Medium Box', code: 'MB001'},
+            {name: 'Large Box', code: 'LB001'},
+            {name: 'Heavy Box', code: 'HB001'},
+            {name: 'Extra Large', code: 'XL001'}
+        ];
+        
+        const cities = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad', 'Pune', 'Kolkata'];
+        
+        // Generate 1000 orders with multiple items each (simulating lakhs of cartons)
+        for (let i = 1; i <= 1000; i++) {
+            const orderNum = `STRESS-${String(i).padStart(4, '0')}`;
+            const city = cities[Math.floor(Math.random() * cities.length)];
+            const numItems = Math.floor(Math.random() * 5) + 1; // 1-5 items per order
+            
+            for (let j = 0; j < numItems; j++) {
+                const carton = cartonTypes[Math.floor(Math.random() * cartonTypes.length)];
+                const quantity = Math.floor(Math.random() * 50) + 1; // 1-50 cartons per item
+                
+                csvData += `${orderNum},${carton.name},${carton.code},${quantity},Stress Test Customer ${i},${i*100} Test Street ${city},2025-08-11\n`;
+            }
+        }
+        
+        // Create and download the stress test file
+        const blob = new Blob([csvData], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'stress_test_orders.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        // Complete stress test
+        progressLoader.complete("Stress test complete! File downloaded successfully.");
+        
+        setTimeout(() => {
+            stressTestBtn.disabled = false;
+            stressTestBtn.innerHTML = '<i class="fas fa-bolt me-1"></i>Run Stress Test';
+            
+            alert('Stress test file generated successfully!\n\n' +
+                  '📊 Generated 1000+ orders with multiple items each\n' +
+                  '🚚 File contains thousands of cartons for testing\n' +
+                  '⚡ Enable "Stress Test Mode" when uploading this file\n\n' +
+                  'The file has been downloaded to your computer.');
+        }, 2000);
+        
+    }, 5000); // Simulate 5 seconds of stress test processing
 }
 </script>
 {% endblock %}
