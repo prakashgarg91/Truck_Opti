@@ -4,6 +4,8 @@ import json
 import time
 from decimal import Decimal
 from datetime import datetime
+from functools import lru_cache
+import hashlib
 from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS, pack_cartons, pack_cartons_optimized, calculate_optimal_truck_combination
 from app.cost_engine import cost_engine
 from sqlalchemy import func
@@ -45,32 +47,71 @@ def recommend_truck():
         trucks = TruckType.query.all()
         
         from . import packer
-        # Use the improved recommendation algorithm instead of simple packing
+        # Use the improved recommendation algorithm for better recommendations
         recommendations = packer.calculate_optimal_truck_combination(
             carton_quantities, trucks, max_trucks=5, optimization_strategy='space_utilization'
         )
         
-        # Convert recommendations to the expected format for display
-        results = []
+        # Convert recommendations to format expected by template
+        recommended = []
+        route_info = {'distance_km': 100, 'route_type': 'highway'}
+        
         for rec in recommendations:
             # Find the truck type
             truck_type = next((t for t in trucks if t.name == rec['truck_type']), None)
             if truck_type:
+                # Get detailed packing results
                 truck_combo = {truck_type: rec['quantity']}
-                pack_result = packer.pack_cartons_optimized(truck_combo, carton_quantities, 'cost')
-                if pack_result:
-                    results.extend(pack_result)
+                pack_results = packer.pack_cartons_optimized(truck_combo, carton_quantities, 'space_utilization')
+                
+                if pack_results:
+                    for pack_result in pack_results:
+                        if pack_result['fitted_items']:  # Only include trucks that fit items
+                            # Add truck dimensions
+                            pack_result['truck_dimensions'] = f"{truck_type.length}×{truck_type.width}×{truck_type.height}"
+                            
+                            # Add comprehensive cost analysis
+                            try:
+                                from app.cost_engine import CostEngine
+                                cost_engine = CostEngine()
+                                cost_breakdown = cost_engine.calculate_comprehensive_cost(truck_type, route_info)
+                                pack_result['detailed_cost'] = cost_breakdown
+                                pack_result['total_cost'] = cost_breakdown.get('total_cost', 0)
+                            except Exception as e:
+                                pack_result['total_cost'] = 0
+                                pack_result['detailed_cost'] = None
+                            
+                            recommended.append(pack_result)
         
-        # Get cost analysis for each result
-        route_info = {'distance_km': 100, 'route_type': 'highway'}
-        for result in results:
-            truck_type = next((t for t in trucks if t.name in result['bin_name']), None)
-            if truck_type:
-                cost_breakdown = cost_engine.calculate_comprehensive_cost(truck_type, route_info)
-                result['detailed_cost'] = cost_breakdown
-
-        # Filter out unused trucks and format for display
-        recommended = [r for r in results if r['fitted_items']]
+        # Sort by utilization (highest first) for better recommendations
+        recommended.sort(key=lambda x: x.get('utilization', 0), reverse=True)
+        
+        # Prepare data for original requirements display
+        if recommended:
+            original_requirements = []
+            total_items = 0
+            total_volume = 0.0
+            
+            for carton_type, quantity in carton_quantities.items():
+                original_requirements.append({
+                    'name': carton_type.name,
+                    'length': carton_type.length,
+                    'width': carton_type.width, 
+                    'height': carton_type.height,
+                    'quantity': quantity
+                })
+                total_items += quantity
+                volume = (carton_type.length * carton_type.width * carton_type.height * quantity) / 1000000  # Convert to m³
+                total_volume += volume
+            
+            # Pass data to template with original requirements
+            return render_template('recommend_truck.html', 
+                                 cartons=cartons, 
+                                 recommended=recommended,
+                                 original_requirements=original_requirements,
+                                 total_items=total_items,
+                                 total_volume=f"{total_volume:.2f}",
+                                 optimization_strategy='space_utilization')
         
     return render_template('recommend_truck.html', cartons=cartons, recommended=recommended)
 # Redirect deprecated route to fleet optimization
@@ -407,37 +448,50 @@ def customers():
 @bp.route('/add-customer', methods=['GET', 'POST'])
 def add_customer():
     """Add new customer"""
-    if request.method == 'POST':
-        from app.models import Customer
+    try:
+        if request.method == 'POST':
+            from app.models import Customer
+            
+            customer = Customer(
+                name=request.form['name'],
+                email=request.form.get('email'),
+                phone=request.form.get('phone'),
+                address=request.form.get('address'),
+                city=request.form.get('city'),
+                postal_code=request.form.get('postal_code'),
+                country=request.form.get('country', 'India')
+            )
+            
+            try:
+                db.session.add(customer)
+                db.session.commit()
+                flash('Customer added successfully!', 'success')
+                return redirect(url_for('main.customers'))
+            except Exception as e:
+                flash(f'Error adding customer: {str(e)}', 'danger')
+                db.session.rollback()
         
-        customer = Customer(
-            name=request.form['name'],
-            email=request.form.get('email'),
-            phone=request.form.get('phone'),
-            address=request.form.get('address'),
-            city=request.form.get('city'),
-            postal_code=request.form.get('postal_code'),
-            country=request.form.get('country', 'India')
-        )
-        
-        try:
-            db.session.add(customer)
-            db.session.commit()
-            flash('Customer added successfully!', 'success')
-            return redirect(url_for('main.customers'))
-        except Exception as e:
-            flash(f'Error adding customer: {str(e)}', 'danger')
-            db.session.rollback()
-    
-    return render_template('add_customer.html')
+        return render_template('add_customer.html')
+    except Exception as e:
+        import logging
+        logging.error(f"Error in add_customer route: {str(e)}")
+        flash('Error loading customer form. Please try again.', 'danger')
+        return redirect(url_for('main.customers'))
 
 # Routes Management Routes
 @bp.route('/routes')
 def routes():
     """Display routes management page"""
-    from app.models import Route
-    routes = Route.query.all()
-    return render_template('routes.html', routes=routes)
+    try:
+        from app.models import Route
+        routes_list = Route.query.all()
+        return render_template('routes.html', routes=routes_list)
+    except Exception as e:
+        # Handle database errors gracefully
+        import logging
+        logging.error(f"Error loading routes: {str(e)}")
+        # If routes table doesn't exist, return empty list
+        return render_template('routes.html', routes=[])
 
 @bp.route('/add-route', methods=['GET', 'POST'])
 def add_route():
@@ -1609,23 +1663,41 @@ def process_sale_order_file(file, batch_name, optimization_mode='cost_saving', e
     from app.models import SaleOrder, SaleOrderItem, SaleOrderBatch, TruckRecommendation, TruckType, CartonType
     from datetime import datetime, date
     import io
+    import logging
+    
+    # Set up logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Starting sale order processing for batch: {batch_name}")
     
     try:
         # Read the file
-        if file.filename.endswith('.xlsx'):
-            df = pd.read_excel(io.BytesIO(file.read()))
-        else:
-            df = pd.read_csv(io.StringIO(file.read().decode('utf-8')))
+        logger.info(f"Reading file: {file.filename}")
+        try:
+            if file.filename.endswith('.xlsx'):
+                df = pd.read_excel(io.BytesIO(file.read()))
+            else:
+                df = pd.read_csv(io.StringIO(file.read().decode('utf-8')))
+            logger.info(f"Successfully read file with {len(df)} rows")
+        except Exception as e:
+            logger.error(f"Error reading file {file.filename}: {str(e)}")
+            return {'success': False, 'error': f'Error reading file: {str(e)}'}
         
         # Create batch record
-        batch = SaleOrderBatch(
-            batch_name=batch_name,
-            filename=file.filename,
-            total_orders=0,
-            status='processing'
-        )
-        db.session.add(batch)
-        db.session.flush()  # Get batch ID
+        logger.info(f"Creating batch record for: {batch_name}")
+        try:
+            batch = SaleOrderBatch(
+                batch_name=batch_name,
+                filename=file.filename,
+                total_orders=0,
+                status='processing'
+            )
+            db.session.add(batch)
+            db.session.flush()  # Get batch ID
+            logger.info(f"Created batch with ID: {batch.id}")
+        except Exception as e:
+            logger.error(f"Error creating batch record: {str(e)}")
+            db.session.rollback()
+            return {'success': False, 'error': f'Database error creating batch: {str(e)}'}
         
         processed_orders = 0
         failed_orders = 0
@@ -1657,8 +1729,10 @@ def process_sale_order_file(file, batch_name, optimization_mode='cost_saving', e
             })
         
         # Process each sale order
+        logger.info(f"Processing {len(orders_dict)} sale orders")
         for order_num, order_data in orders_dict.items():
             try:
+                logger.info(f"Processing sale order: {order_num}")
                 # Create sale order
                 sale_order = SaleOrder(
                     sale_order_number=order_num,
@@ -1670,28 +1744,39 @@ def process_sale_order_file(file, batch_name, optimization_mode='cost_saving', e
                 )
                 db.session.add(sale_order)
                 db.session.flush()  # Get sale order ID
+                logger.info(f"Created sale order {order_num} with ID: {sale_order.id}")
                 
                 total_volume = 0
                 total_weight = 0
                 
                 # Create sale order items with actual carton mapping
+                logger.info(f"Processing {len(order_data['items'])} carton types for order {order_num}")
                 for carton_data in order_data['items']:
-                    # Find matching carton type by name or code
-                    carton_type = CartonType.query.filter(
-                        db.or_(
-                            CartonType.name.ilike(f"%{carton_data['carton_name']}%"),
-                            CartonType.name.ilike(f"%{carton_data['carton_code']}%")
-                        )
-                    ).first()
-                    
-                    # If no exact match, try partial matching
-                    if not carton_type:
+                    try:
+                        # Find matching carton type by name or code
                         carton_type = CartonType.query.filter(
                             db.or_(
-                                CartonType.name.contains(carton_data['carton_name'].split()[0]),
-                                CartonType.description.ilike(f"%{carton_data['carton_name']}%")
+                                CartonType.name.ilike(f"%{carton_data['carton_name']}%"),
+                                CartonType.name.ilike(f"%{carton_data['carton_code']}%")
                             )
                         ).first()
+                        
+                        # If no exact match, try partial matching
+                        if not carton_type:
+                            carton_type = CartonType.query.filter(
+                                db.or_(
+                                    CartonType.name.contains(carton_data['carton_name'].split()[0]),
+                                    CartonType.description.ilike(f"%{carton_data['carton_name']}%")
+                                )
+                            ).first()
+                        
+                        if carton_type:
+                            logger.debug(f"Found matching carton type: {carton_type.name} for {carton_data['carton_name']}")
+                        else:
+                            logger.warning(f"No matching carton type found for: {carton_data['carton_name']}, using default dimensions")
+                    except Exception as e:
+                        logger.error(f"Error finding carton type for {carton_data['carton_name']}: {str(e)}")
+                        carton_type = None
                     
                     # Create sale order item with carton dimensions
                     sale_order_item = SaleOrderItem(
@@ -1797,11 +1882,18 @@ def process_sale_order_file(file, batch_name, optimization_mode='cost_saving', e
                 pass
         
         # Generate individual truck recommendations for all orders
+        logger.info(f"Generating truck recommendations for {len(all_sale_orders)} orders")
         for sale_order in all_sale_orders:
             try:
+                logger.info(f"Generating recommendations for order: {sale_order.sale_order_number}")
                 generate_truck_recommendations(sale_order, optimization_mode)
+                logger.info(f"Successfully generated recommendations for order: {sale_order.sale_order_number}")
             except Exception as e:
-                print(f"Error generating recommendations for order {sale_order.sale_order_number}: {str(e)}")
+                failed_orders += 1
+                logger.error(f"Error generating recommendations for order {sale_order.sale_order_number}: {str(e)}")
+                # Mark order as failed but continue processing other orders
+                sale_order.status = 'failed'
+                sale_order.processing_notes = f"Failed to generate recommendations: {str(e)}"
         
         # Update batch statistics
         batch.total_orders = len(orders_dict)
@@ -1820,8 +1912,39 @@ def process_sale_order_file(file, batch_name, optimization_mode='cost_saving', e
         }
         
     except Exception as e:
+        logger.error(f"Critical error in sale order processing: {str(e)}", exc_info=True)
         db.session.rollback()
-        return {'success': False, 'error': str(e)}
+        return {'success': False, 'error': f'Processing failed: {str(e)}'}
+
+# Simple cache for truck recommendations to improve performance
+_recommendation_cache = {}
+_cache_max_size = 1000  # Maximum cache entries
+
+def _get_carton_hash(sale_order):
+    """Generate a hash key for carton configuration"""
+    carton_info = []
+    for item in sale_order.sale_order_items:
+        carton_info.append(f"{item.item_name}_{item.unit_length}_{item.unit_width}_{item.unit_height}_{item.unit_weight}_{item.quantity}")
+    carton_string = "|".join(sorted(carton_info))
+    return hashlib.md5(carton_string.encode()).hexdigest()
+
+def _get_cached_recommendation(sale_order, optimization_strategy):
+    """Check cache for existing recommendation"""
+    cache_key = f"{_get_carton_hash(sale_order)}_{optimization_strategy}"
+    return _recommendation_cache.get(cache_key)
+
+def _cache_recommendation(sale_order, optimization_strategy, recommendations):
+    """Store recommendation in cache"""
+    cache_key = f"{_get_carton_hash(sale_order)}_{optimization_strategy}"
+    
+    # Simple cache size management
+    if len(_recommendation_cache) >= _cache_max_size:
+        # Remove oldest 20% of entries
+        keys_to_remove = list(_recommendation_cache.keys())[:int(_cache_max_size * 0.2)]
+        for key in keys_to_remove:
+            del _recommendation_cache[key]
+    
+    _recommendation_cache[cache_key] = recommendations
 
 def generate_truck_recommendations(sale_order, optimization_strategy='space_first'):
     """
@@ -1832,187 +1955,277 @@ def generate_truck_recommendations(sale_order, optimization_strategy='space_firs
     """
     from app.models import TruckType, TruckRecommendation, CartonType
     from app.packer import pack_cartons_optimized
+    import logging
     
-    # Get all available trucks sorted by volume (smallest first for cost efficiency)
-    trucks = TruckType.query.filter_by(availability=True).order_by(
-        (TruckType.length * TruckType.width * TruckType.height).asc()
-    ).all()
+    logger = logging.getLogger(__name__)
+    logger.info(f"Starting truck recommendations for sale order: {sale_order.sale_order_number}")
     
-    recommendations = []
-    
-    # Convert sale order items to actual carton types for packing algorithm
-    carton_quantities = {}
-    for item in sale_order.sale_order_items:
-        # Try to find matching carton type from database
-        carton_type = CartonType.query.filter(
-            db.or_(
-                CartonType.name.ilike(f"%{item.item_name}%"),
-                CartonType.name.ilike(f"%{item.item_code}%")
+    # Check cache first for performance improvement
+    cached_recommendations = _get_cached_recommendation(sale_order, optimization_strategy)
+    if cached_recommendations:
+        logger.info(f"Using cached recommendations for order: {sale_order.sale_order_number}")
+        # Apply cached recommendations to database
+        for cached_rec in cached_recommendations:
+            recommendation = TruckRecommendation(
+                sale_order_id=sale_order.id,
+                truck_type_id=cached_rec['truck_type_id'],
+                utilization_score=cached_rec['utilization_score'],
+                cost_score=cached_rec['cost_score'],
+                efficiency_score=cached_rec['efficiency_score'],
+                overall_score=cached_rec['overall_score'],
+                space_utilization=cached_rec['space_utilization'],
+                weight_utilization=cached_rec['weight_utilization'],
+                estimated_cost=cached_rec['estimated_cost'],
+                fits_completely=cached_rec['fits_completely'],
+                overflow_items=cached_rec['overflow_items'],
+                recommendation_reason=cached_rec['recommendation_reason'],
+                ranking=cached_rec['ranking']
             )
-        ).first()
+            db.session.add(recommendation)
         
-        if carton_type:
-            # Use existing carton type
-            if carton_type in carton_quantities:
-                carton_quantities[carton_type] += item.quantity
-            else:
-                carton_quantities[carton_type] = item.quantity
-        else:
-            # Create temporary carton with actual dimensions
-            temp_carton = type('TempCarton', (), {
-                'length': item.unit_length,
-                'width': item.unit_width,
-                'height': item.unit_height,
-                'weight': item.unit_weight,
-                'name': item.item_name,
-                'can_rotate': not item.fragile,
-                'stackable': item.stackable
-            })()
-            carton_quantities[temp_carton] = item.quantity
+        # Update sale order with best recommendation
+        if cached_recommendations:
+            best_rec = cached_recommendations[0]
+            sale_order.recommended_truck_id = best_rec['truck_type_id']
+            sale_order.optimization_score = best_rec['overall_score']
+            sale_order.estimated_utilization = best_rec['space_utilization']
+            sale_order.estimated_cost = best_rec['estimated_cost']
+            sale_order.status = 'optimized'
+            sale_order.date_processed = datetime.utcnow()
+            sale_order.processing_notes = best_rec['recommendation_reason']
+        
+        return
     
-    # IMPROVED ALGORITHM: Find smallest truck that can fit all cartons
-    smallest_fitting_truck = None
-    best_single_truck_result = None
+    try:
+        # Get all available trucks sorted by volume (smallest first for cost efficiency)
+        trucks = TruckType.query.filter_by(availability=True).order_by(
+            (TruckType.length * TruckType.width * TruckType.height).asc()
+        ).all()
+        logger.info(f"Found {len(trucks)} available truck types")
+        
+        if not trucks:
+            logger.error("No available trucks found in database")
+            raise Exception("No available trucks found. Please add truck types first.")
+        
+        recommendations = []
     
-    # Phase 1: Find the smallest truck that can fit everything
-    for truck in trucks:  # Already sorted smallest to largest
-        try:
-            truck_combo = {truck: 1}  # Single truck only
-            pack_results = pack_cartons_optimized(truck_combo, carton_quantities, optimization_strategy)
-            
-            if pack_results:
-                result = pack_results[0]
-                fits_completely = len(result.get('unfitted_items', [])) == 0
-                
-                # If this truck fits everything, it's our optimal choice (smallest that works)
-                if fits_completely:
-                    smallest_fitting_truck = truck
-                    best_single_truck_result = result
-                    break  # Stop at first (smallest) truck that fits everything
-                    
-        except Exception as e:
-            print(f"Error testing truck {truck.name}: {str(e)}")
-            continue
-    
-    # Phase 2: Generate all recommendations for comparison
-    for truck in trucks:
-        try:
-            truck_combo = {truck: 1}  # Single truck only
-            pack_results = pack_cartons_optimized(truck_combo, carton_quantities, optimization_strategy)
-            
-            if pack_results:
-                result = pack_results[0]
-                space_utilization = result.get('utilization', 0)
-                fits_completely = len(result.get('unfitted_items', [])) == 0
-                overflow_items = len(result.get('unfitted_items', []))
-                
-                # Calculate comprehensive cost using the cost engine
-                from app.cost_engine import cost_engine
-                route_info = {
-                    'distance_km': 100,  # Default 100km route
-                    'route_type': 'highway',
-                    'location': 'India'
-                }
-                
-                try:
-                    cost_breakdown = cost_engine.calculate_comprehensive_cost(truck, route_info)
-                    base_cost = cost_breakdown.total_cost
-                    fuel_cost = cost_breakdown.fuel_cost
-                    driver_cost = cost_breakdown.driver_cost
-                    maintenance_cost = cost_breakdown.maintenance_cost
-                    toll_cost = cost_breakdown.toll_cost
-                except Exception as e:
-                    # Fallback to basic cost calculation
-                    print(f"Cost engine error: {e}")
-                    base_cost = getattr(truck, 'cost_per_km', 25) * 100  # 100km default route
-                    if hasattr(truck, 'driver_cost_per_day') and truck.driver_cost_per_day:
-                        base_cost += truck.driver_cost_per_day
-                    else:
-                        base_cost += 500  # Default driver cost
-                    fuel_cost = base_cost * 0.4  # 40% fuel
-                    driver_cost = base_cost * 0.3  # 30% driver
-                    maintenance_cost = base_cost * 0.2  # 20% maintenance
-                    toll_cost = base_cost * 0.1  # 10% toll
-                
-                # Scoring system that prioritizes:
-                # 1. Complete fits (no overflow)
-                # 2. Smallest truck size (cost efficiency)
-                # 3. High space utilization
-                
-                truck_volume = truck.length * truck.width * truck.height
-                size_efficiency_score = 1 / (truck_volume / 1000000)  # Smaller trucks get higher scores
-                
-                if fits_completely:
-                    # Perfect fit: prioritize smallest truck
-                    if truck == smallest_fitting_truck:
-                        overall_score = 1000 + (space_utilization * 100)  # Highest priority
-                        reason = f"✅ OPTIMAL CHOICE: Smallest truck that fits all cartons • {space_utilization:.1%} utilization • MAXIMUM COST SAVINGS"
-                    else:
-                        overall_score = 800 + (space_utilization * 100) - (size_efficiency_score * 10)
-                        reason = f"✅ COMPLETE FIT: All cartons fit • {space_utilization:.1%} utilization • Single truck solution"
-                else:
-                    # Incomplete fit: much lower priority
-                    overall_score = space_utilization * 100 - 200  # Heavy penalty
-                    reason = f"⚠️ OVERFLOW: {overflow_items} cartons don't fit • {space_utilization:.1%} utilization • Requires multiple trucks"
-                
-                # Weight utilization calculation
-                total_weight = sum(getattr(item, 'weight', 2.0) * item.quantity for item in sale_order.sale_order_items)
-                weight_utilization = min(1.0, total_weight / truck.max_weight if truck.max_weight else 0.8)
-                
-                recommendation = TruckRecommendation(
-                    sale_order_id=sale_order.id,
-                    truck_type_id=truck.id,
-                    utilization_score=space_utilization * 100,
-                    cost_score=100 - min(100, base_cost / 50),  # Lower cost = higher score
-                    efficiency_score=overall_score,
-                    overall_score=overall_score,
-                    space_utilization=space_utilization,
-                    weight_utilization=weight_utilization,
-                    estimated_cost=base_cost,
-                    fits_completely=fits_completely,
-                    overflow_items=overflow_items,
-                    recommendation_reason=reason
+        # Convert sale order items to actual carton types for packing algorithm
+        carton_quantities = {}
+        logger.info(f"Converting {len(sale_order.sale_order_items)} sale order items to carton quantities")
+        for item in sale_order.sale_order_items:
+            # Try to find matching carton type from database
+            carton_type = CartonType.query.filter(
+                db.or_(
+                    CartonType.name.ilike(f"%{item.item_name}%"),
+                    CartonType.name.ilike(f"%{item.item_code}%")
                 )
-                recommendations.append(recommendation)
-                
-        except Exception as e:
-            print(f"Error testing truck {truck.name}: {str(e)}")
-            continue
-    
-    # Sort by overall score (prioritizing complete fits and high utilization)
-    recommendations.sort(key=lambda x: (x.fits_completely, x.overall_score), reverse=True)
-    
-    # Assign rankings with emphasis on complete single-truck solutions
-    complete_fits = [r for r in recommendations if r.fits_completely]
-    incomplete_fits = [r for r in recommendations if not r.fits_completely]
-    
-    # Rank complete fits first (by utilization), then incomplete fits
-    ranking = 1
-    for rec in complete_fits:
-        rec.ranking = ranking
-        db.session.add(rec)
-        ranking += 1
-    
-    for rec in incomplete_fits:
-        rec.ranking = ranking
-        db.session.add(rec)
-        ranking += 1
-    
-    # Update sale order with best recommendation (prioritizing complete fits)
-    if recommendations:
-        best_recommendation = recommendations[0]
-        sale_order.recommended_truck_id = best_recommendation.truck_type_id
-        sale_order.optimization_score = best_recommendation.overall_score
-        sale_order.estimated_utilization = best_recommendation.space_utilization
-        sale_order.estimated_cost = best_recommendation.estimated_cost
-        sale_order.status = 'optimized'
-        sale_order.date_processed = datetime.utcnow()
+            ).first()
+            
+            if carton_type:
+                # Use existing carton type
+                if carton_type in carton_quantities:
+                    carton_quantities[carton_type] += item.quantity
+                else:
+                    carton_quantities[carton_type] = item.quantity
+            else:
+                # Create temporary carton with actual dimensions
+                temp_carton = type('TempCarton', (), {
+                    'length': item.unit_length,
+                    'width': item.unit_width,
+                    'height': item.unit_height,
+                    'weight': item.unit_weight,
+                    'name': item.item_name,
+                    'can_rotate': not item.fragile,
+                    'stackable': item.stackable
+                })()
+                carton_quantities[temp_carton] = item.quantity
         
-        # Add processing note about optimization strategy
-        if best_recommendation.fits_completely:
-            sale_order.processing_notes = f"Single truck solution found with {best_recommendation.space_utilization:.1%} space utilization - COST OPTIMAL"
-        else:
-            sale_order.processing_notes = f"Warning: No single truck can fit all cartons. Best option has {best_recommendation.overflow_items} overflow items."
+        # IMPROVED ALGORITHM: Find smallest truck that can fit all cartons
+        smallest_fitting_truck = None
+        best_single_truck_result = None
+        
+        # Phase 1: Find the smallest truck that can fit everything (Early termination for performance)
+        logger.info("Phase 1: Finding smallest truck that fits all cartons")
+        for truck in trucks[:5]:  # Limit to first 5 trucks for performance (smallest ones)
+            try:
+                truck_combo = {truck: 1}  # Single truck only
+                pack_results = pack_cartons_optimized(truck_combo, carton_quantities, optimization_strategy)
+                
+                if pack_results:
+                    result = pack_results[0]
+                    fits_completely = len(result.get('unfitted_items', [])) == 0
+                    space_utilization = result.get('utilization', 0)
+                    
+                    # If this truck fits everything, it's our optimal choice (smallest that works)
+                    if fits_completely:
+                        smallest_fitting_truck = truck
+                        best_single_truck_result = result
+                        logger.info(f"Found perfect fit with {truck.name} - {space_utilization:.1%} utilization")
+                        
+                        # If utilization is very high (>85%), this is likely the best choice - early termination
+                        if space_utilization > 0.85:
+                            logger.info("High utilization achieved - using early termination for performance")
+                            break
+                        
+                        break  # Stop at first (smallest) truck that fits everything
+                        
+            except Exception as e:
+                logger.error(f"Error testing truck {truck.name}: {str(e)}")
+                continue
+    
+        # Phase 2: Generate recommendations for comparison (Limited set for performance)
+        logger.info("Phase 2: Generating recommendations for comparison")
+        # If we found a perfect fit with high utilization, only test a few more trucks for comparison
+        trucks_to_test = trucks[:8] if smallest_fitting_truck and best_single_truck_result.get('utilization', 0) > 0.8 else trucks[:12]
+        logger.info(f"Testing {len(trucks_to_test)} trucks for recommendations")
+        
+        for truck in trucks_to_test:
+            try:
+                truck_combo = {truck: 1}  # Single truck only
+                pack_results = pack_cartons_optimized(truck_combo, carton_quantities, optimization_strategy)
+                
+                if pack_results:
+                    result = pack_results[0]
+                    space_utilization = result.get('utilization', 0)
+                    fits_completely = len(result.get('unfitted_items', [])) == 0
+                    overflow_items = len(result.get('unfitted_items', []))
+                    
+                    # Calculate comprehensive cost using the cost engine
+                    from app.cost_engine import cost_engine
+                    route_info = {
+                        'distance_km': 100,  # Default 100km route
+                        'route_type': 'highway',
+                        'location': 'India'
+                    }
+                    
+                    try:
+                        cost_breakdown = cost_engine.calculate_comprehensive_cost(truck, route_info)
+                        base_cost = cost_breakdown.total_cost
+                        fuel_cost = cost_breakdown.fuel_cost
+                        driver_cost = cost_breakdown.driver_cost
+                        maintenance_cost = cost_breakdown.maintenance_cost
+                        toll_cost = cost_breakdown.toll_cost
+                    except Exception as e:
+                        # Fallback to basic cost calculation
+                        print(f"Cost engine error: {e}")
+                        base_cost = getattr(truck, 'cost_per_km', 25) * 100  # 100km default route
+                        if hasattr(truck, 'driver_cost_per_day') and truck.driver_cost_per_day:
+                            base_cost += truck.driver_cost_per_day
+                        else:
+                            base_cost += 500  # Default driver cost
+                        fuel_cost = base_cost * 0.4  # 40% fuel
+                        driver_cost = base_cost * 0.3  # 30% driver
+                        maintenance_cost = base_cost * 0.2  # 20% maintenance
+                        toll_cost = base_cost * 0.1  # 10% toll
+                    
+                    # Scoring system that prioritizes:
+                    # 1. Complete fits (no overflow)
+                    # 2. Smallest truck size (cost efficiency)
+                    # 3. High space utilization
+                    
+                    truck_volume = truck.length * truck.width * truck.height
+                    size_efficiency_score = 1 / (truck_volume / 1000000)  # Smaller trucks get higher scores
+                    
+                    if fits_completely:
+                        # Perfect fit: prioritize smallest truck
+                        if truck == smallest_fitting_truck:
+                            overall_score = 1000 + (space_utilization * 100)  # Highest priority
+                            reason = f"✅ OPTIMAL CHOICE: Smallest truck that fits all cartons • {space_utilization:.1%} utilization • MAXIMUM COST SAVINGS"
+                        else:
+                            overall_score = 800 + (space_utilization * 100) - (size_efficiency_score * 10)
+                            reason = f"✅ COMPLETE FIT: All cartons fit • {space_utilization:.1%} utilization • Single truck solution"
+                    else:
+                        # Incomplete fit: much lower priority
+                        overall_score = space_utilization * 100 - 200  # Heavy penalty
+                        reason = f"⚠️ OVERFLOW: {overflow_items} cartons don't fit • {space_utilization:.1%} utilization • Requires multiple trucks"
+                    
+                    # Weight utilization calculation
+                    total_weight = sum(getattr(item, 'weight', 2.0) * item.quantity for item in sale_order.sale_order_items)
+                    weight_utilization = min(1.0, total_weight / truck.max_weight if truck.max_weight else 0.8)
+                    
+                    recommendation = TruckRecommendation(
+                        sale_order_id=sale_order.id,
+                        truck_type_id=truck.id,
+                        utilization_score=space_utilization * 100,
+                        cost_score=100 - min(100, base_cost / 50),  # Lower cost = higher score
+                        efficiency_score=overall_score,
+                        overall_score=overall_score,
+                        space_utilization=space_utilization,
+                        weight_utilization=weight_utilization,
+                        estimated_cost=base_cost,
+                        fits_completely=fits_completely,
+                        overflow_items=overflow_items,
+                        recommendation_reason=reason
+                        )
+                    recommendations.append(recommendation)
+                    
+            except Exception as e:
+                print(f"Error testing truck {truck.name}: {str(e)}")
+                continue
+        
+        # Sort by overall score (prioritizing complete fits and high utilization)
+        recommendations.sort(key=lambda x: (x.fits_completely, x.overall_score), reverse=True)
+        
+        # Assign rankings with emphasis on complete single-truck solutions
+        complete_fits = [r for r in recommendations if r.fits_completely]
+        incomplete_fits = [r for r in recommendations if not r.fits_completely]
+        
+        # Rank complete fits first (by utilization), then incomplete fits
+        ranking = 1
+        for rec in complete_fits:
+            rec.ranking = ranking
+            db.session.add(rec)
+            ranking += 1
+        
+        for rec in incomplete_fits:
+            rec.ranking = ranking
+            db.session.add(rec)
+            ranking += 1
+        
+        # Update sale order with best recommendation (prioritizing complete fits)
+        if recommendations:
+            best_recommendation = recommendations[0]
+            sale_order.recommended_truck_id = best_recommendation.truck_type_id
+            sale_order.optimization_score = best_recommendation.overall_score
+            sale_order.estimated_utilization = best_recommendation.space_utilization
+            sale_order.estimated_cost = best_recommendation.estimated_cost
+            sale_order.status = 'optimized'
+            sale_order.date_processed = datetime.utcnow()
+            
+            # Add processing note about optimization strategy
+            if best_recommendation.fits_completely:
+                sale_order.processing_notes = f"Single truck solution found with {best_recommendation.space_utilization:.1%} space utilization - COST OPTIMAL"
+            else:
+                sale_order.processing_notes = f"Warning: No single truck can fit all cartons. Best option has {best_recommendation.overflow_items} overflow items."
+            
+            logger.info(f"Successfully generated {len(recommendations)} recommendations for order {sale_order.sale_order_number}")
+            
+            # Cache the recommendations for future use
+            cache_data = []
+            for rec in recommendations:
+                cache_data.append({
+                    'truck_type_id': rec.truck_type_id,
+                    'utilization_score': rec.utilization_score,
+                    'cost_score': rec.cost_score,
+                    'efficiency_score': rec.efficiency_score,
+                    'overall_score': rec.overall_score,
+                    'space_utilization': rec.space_utilization,
+                    'weight_utilization': rec.weight_utilization,
+                    'estimated_cost': rec.estimated_cost,
+                    'fits_completely': rec.fits_completely,
+                    'overflow_items': rec.overflow_items,
+                    'recommendation_reason': rec.recommendation_reason,
+                    'ranking': rec.ranking
+                })
+            _cache_recommendation(sale_order, optimization_strategy, cache_data)
+            logger.info(f"Cached {len(cache_data)} recommendations for future use")
+    
+    except Exception as e:
+        logger.error(f"Error generating truck recommendations for order {sale_order.sale_order_number}: {str(e)}", exc_info=True)
+        # Mark the sale order as failed
+        sale_order.status = 'failed'
+        sale_order.processing_notes = f"Failed to generate recommendations: {str(e)}"
+        raise  # Re-raise to be handled by caller
 
 # API Routes for Sale Orders
 @api.route('/sale-orders', methods=['GET'])

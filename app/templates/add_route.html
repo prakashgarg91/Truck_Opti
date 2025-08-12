@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Add Route - TruckOpti{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.routes') }}">Routes</a></li>
+<li class="breadcrumb-item active">Add Route</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-1">Add New Route</h1>
+                    <p class="text-muted mb-0">Create a new delivery route with distance and cost information</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.routes') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Routes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Route Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="addRouteForm">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="name" class="form-label">
+                                    <i class="bi bi-signpost me-1"></i>Route Name *
+                                </label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="e.g., Delhi to Mumbai Express" required>
+                                <div class="form-text">Enter a descriptive name for this route</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="origin" class="form-label">
+                                    <i class="bi bi-geo-alt me-1 text-success"></i>Origin *
+                                </label>
+                                <input type="text" class="form-control" id="origin" name="origin" 
+                                       placeholder="e.g., Delhi" required>
+                                <div class="form-text">Starting point of the route</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="destination" class="form-label">
+                                    <i class="bi bi-geo-alt-fill me-1 text-danger"></i>Destination *
+                                </label>
+                                <input type="text" class="form-control" id="destination" name="destination" 
+                                       placeholder="e.g., Mumbai" required>
+                                <div class="form-text">End point of the route</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="distance_km" class="form-label">
+                                    <i class="bi bi-speedometer2 me-1"></i>Distance (km) *
+                                </label>
+                                <input type="number" class="form-control" id="distance_km" name="distance_km" 
+                                       step="0.1" min="0" placeholder="e.g., 1400" required>
+                                <div class="form-text">Total distance in kilometers</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="estimated_time_hours" class="form-label">
+                                    <i class="bi bi-clock me-1"></i>Estimated Time (hours)
+                                </label>
+                                <input type="number" class="form-control" id="estimated_time_hours" name="estimated_time_hours" 
+                                       step="0.5" min="0" placeholder="e.g., 22">
+                                <div class="form-text">Expected travel time in hours</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="toll_cost" class="form-label">
+                                    <i class="bi bi-cash-coin me-1"></i>Toll Cost (₹)
+                                </label>
+                                <input type="number" class="form-control" id="toll_cost" name="toll_cost" 
+                                       step="0.01" min="0" placeholder="e.g., 2500">
+                                <div class="form-text">Total toll charges for the route</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="fuel_cost" class="form-label">
+                                    <i class="bi bi-fuel-pump me-1"></i>Fuel Cost (₹)
+                                </label>
+                                <input type="number" class="form-control" id="fuel_cost" name="fuel_cost" 
+                                       step="0.01" min="0" placeholder="e.g., 8400">
+                                <div class="form-text">Estimated fuel cost for the route</div>
+                            </div>
+                        </div>
+
+                        <!-- Route Summary -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="alert alert-light border">
+                                    <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Route Summary</h6>
+                                    <div class="row">
+                                        <div class="col-md-3 text-center">
+                                            <div class="border-end">
+                                                <h5 class="text-primary mb-1" id="summaryDistance">-- km</h5>
+                                                <small class="text-muted">Distance</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <div class="border-end">
+                                                <h5 class="text-warning mb-1" id="summaryTime">-- hrs</h5>
+                                                <small class="text-muted">Est. Time</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <div class="border-end">
+                                                <h5 class="text-success mb-1" id="summaryToll">₹--</h5>
+                                                <small class="text-muted">Toll Cost</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <h5 class="text-danger mb-1" id="summaryTotal">₹--</h5>
+                                            <small class="text-muted">Total Cost</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                        <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Form
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-2"></i>Add Route
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Update summary when form fields change
+    updateRouteSummary();
+    
+    $('#distance_km, #estimated_time_hours, #toll_cost, #fuel_cost').on('input', function() {
+        updateRouteSummary();
+    });
+
+    // Form validation
+    $('#addRouteForm').on('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Auto-calculate estimated time based on distance
+    $('#distance_km').on('input', function() {
+        const distance = parseFloat($(this).val()) || 0;
+        if (distance > 0 && $('#estimated_time_hours').val() === '') {
+            // Assume average speed of 50 km/hr for highways
+            const estimatedTime = Math.round((distance / 50) * 2) / 2; // Round to nearest 0.5 hours
+            $('#estimated_time_hours').val(estimatedTime);
+            updateRouteSummary();
+        }
+    });
+
+    // Auto-calculate fuel cost based on distance
+    $('#distance_km').on('input', function() {
+        const distance = parseFloat($(this).val()) || 0;
+        if (distance > 0 && $('#fuel_cost').val() === '') {
+            // Assume average fuel cost of ₹6 per km
+            const estimatedFuelCost = Math.round(distance * 6);
+            $('#fuel_cost').val(estimatedFuelCost);
+            updateRouteSummary();
+        }
+    });
+});
+
+function updateRouteSummary() {
+    const distance = parseFloat($('#distance_km').val()) || 0;
+    const time = parseFloat($('#estimated_time_hours').val()) || 0;
+    const tollCost = parseFloat($('#toll_cost').val()) || 0;
+    const fuelCost = parseFloat($('#fuel_cost').val()) || 0;
+    const totalCost = tollCost + fuelCost;
+
+    $('#summaryDistance').text(distance > 0 ? distance + ' km' : '-- km');
+    $('#summaryTime').text(time > 0 ? time + ' hrs' : '-- hrs');
+    $('#summaryToll').text(tollCost > 0 ? '₹' + tollCost.toFixed(2) : '₹--');
+    $('#summaryTotal').text(totalCost > 0 ? '₹' + totalCost.toFixed(2) : '₹--');
+}
+
+function validateForm() {
+    const name = $('#name').val().trim();
+    const origin = $('#origin').val().trim();
+    const destination = $('#destination').val().trim();
+    const distance = parseFloat($('#distance_km').val()) || 0;
+
+    if (!name) {
+        showError('Route name is required');
+        $('#name').focus();
+        return false;
+    }
+
+    if (!origin) {
+        showError('Origin is required');
+        $('#origin').focus();
+        return false;
+    }
+
+    if (!destination) {
+        showError('Destination is required');
+        $('#destination').focus();
+        return false;
+    }
+
+    if (distance <= 0) {
+        showError('Distance must be greater than 0');
+        $('#distance_km').focus();
+        return false;
+    }
+
+    if (origin.toLowerCase() === destination.toLowerCase()) {
+        showError('Origin and destination cannot be the same');
+        $('#destination').focus();
+        return false;
+    }
+
+    return true;
+}
+
+function showError(message) {
+    // Create or update error alert
+    let errorAlert = $('#error-alert');
+    if (errorAlert.length === 0) {
+        errorAlert = $('<div id="error-alert" class="alert alert-danger alert-dismissible fade show" role="alert">' +
+            '<i class="bi bi-exclamation-triangle me-2"></i>' +
+            '<span id="error-message"></span>' +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+            '</div>');
+        $('#addRouteForm').prepend(errorAlert);
+    }
+    
+    $('#error-message').text(message);
+    errorAlert.show();
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        errorAlert.fadeOut();
+    }, 5000);
+}
+
+function resetForm() {
+    if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+        $('#addRouteForm')[0].reset();
+        $('#error-alert').remove();
+        updateRouteSummary();
+    }
+}
+</script>
+{% endblock %}

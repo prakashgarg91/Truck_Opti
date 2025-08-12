@@ -8,14 +8,63 @@
     </div>
     <div class="card-body">
       <form method="post" id="fleetOptimizationForm">
-        <div class="mb-3">
-            <label class="form-label">Specify Quantity for Each Truck Type</label>
-            {% for truck in trucks %}
-            <div class="input-group mb-2">
-                <span class="input-group-text" style="width: 300px;">{{ truck.name }} ({{ truck.length }}x{{ truck.width }}x{{ truck.height }})</span>
-                <input type="number" class="form-control" name="truck_{{ truck.id }}" value="0" min="0">
+        <!-- Professional Truck Fleet Configuration -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Fleet Configuration</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Select Primary Truck Type</label>
+                  <select class="form-select" id="primaryTruckType" name="primary_truck" required>
+                    <option value="" disabled selected>Choose your preferred truck type</option>
+                    {% for truck in trucks %}
+                    <option value="{{ truck.id }}" data-length="{{ truck.length }}" data-width="{{ truck.width }}" data-height="{{ truck.height }}">
+                      {{ truck.name }} - {{ truck.length }}×{{ truck.width }}×{{ truck.height }} cm
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Number of Trucks Available</label>
+                  <input type="number" class="form-control" name="truck_quantity" min="1" value="1" required>
+                </div>
+                <div id="truckDetails" class="mt-3" style="display: none;">
+                  <div class="alert alert-info">
+                    <small><strong>Truck Specifications:</strong></small>
+                    <div id="truckSpecs" class="mt-1"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            {% endfor %}
+          </div>
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Additional Fleet (Optional)</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Add Secondary Truck Type</label>
+                  <select class="form-select" id="secondaryTruckType" name="secondary_truck">
+                    <option value="" selected>No additional trucks</option>
+                    {% for truck in trucks %}
+                    <option value="{{ truck.id }}">{{ truck.name }} - {{ truck.length }}×{{ truck.width }}×{{ truck.height }} cm</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Quantity</label>
+                  <input type="number" class="form-control" name="secondary_truck_quantity" min="0" value="0">
+                </div>
+                <div class="form-text">
+                  <small><i class="bi bi-info-circle me-1"></i>Add different truck types for mixed fleet optimization</small>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div id="fleetCartonRows">
           <div class="row mb-2 carton-row align-items-end">
@@ -131,6 +180,34 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let cartonCount = 1;
+    
+    // Professional truck selection handling
+    const primaryTruckSelect = document.getElementById('primaryTruckType');
+    const truckDetails = document.getElementById('truckDetails');
+    const truckSpecs = document.getElementById('truckSpecs');
+    
+    primaryTruckSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+            const length = selectedOption.dataset.length;
+            const width = selectedOption.dataset.width;
+            const height = selectedOption.dataset.height;
+            const volume = ((length * width * height) / 1000000).toFixed(2);
+            
+            truckSpecs.innerHTML = `
+                <small>
+                    <div><strong>Dimensions:</strong> ${length} × ${width} × ${height} cm</div>
+                    <div><strong>Volume:</strong> ${volume} m³</div>
+                    <div><strong>Type:</strong> ${selectedOption.textContent.split(' - ')[0]}</div>
+                </small>
+            `;
+            truckDetails.style.display = 'block';
+        } else {
+            truckDetails.style.display = 'none';
+        }
+    });
+    
+    // Enhanced carton row management
     document.getElementById('addFleetRow').addEventListener('click', function() {
         cartonCount++;
         let newField = `
@@ -140,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <select name="carton_type_${cartonCount}" class="form-select carton-type-select" required>
                     <option value="" disabled selected>Select Carton Type</option>
                     {% for carton in cartons %}
-                    <option value="{{ carton.id }}">{{ carton.name }} ({{ carton.length }}x{{ carton.width }}x{{ carton.height }} cm)</option>
+                    <option value="{{ carton.id }}">{{ carton.name }} ({{ carton.length }}×{{ carton.width }}×{{ carton.height }} cm)</option>
                     {% endfor %}
                 </select>
             </div>
@@ -149,16 +226,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 <input type="number" name="carton_qty_${cartonCount}" class="form-control" min="1" placeholder="Quantity" required>
             </div>
             <div class="col-md-3">
-                <button type="button" class="btn btn-danger remove-row">Remove</button>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-row">
+                    <i class="bi bi-trash"></i> Remove
+                </button>
             </div>
         </div>`;
         document.getElementById('fleetCartonRows').insertAdjacentHTML('beforeend', newField);
     });
 
     document.getElementById('fleetCartonRows').addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('remove-row')) {
+        if (e.target && (e.target.classList.contains('remove-row') || e.target.closest('.remove-row'))) {
             e.target.closest('.carton-row').remove();
         }
+    });
+    
+    // Form validation enhancement
+    document.getElementById('fleetOptimizationForm').addEventListener('submit', function(e) {
+        const primaryTruck = document.getElementById('primaryTruckType').value;
+        const truckQuantity = document.querySelector('input[name="truck_quantity"]').value;
+        
+        if (!primaryTruck || !truckQuantity || truckQuantity < 1) {
+            e.preventDefault();
+            alert('Please select a primary truck type and specify at least 1 truck.');
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div>Optimizing Fleet...';
+        submitBtn.disabled = true;
+        
+        // Re-enable after 30 seconds (fallback)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 30000);
     });
 });
 </script>

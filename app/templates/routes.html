@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Route Management - TruckOpti{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Routes</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-1">Route Management</h1>
+                    <p class="text-muted mb-0">Manage delivery routes, distances, and transportation costs</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.add_route') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Route
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-map me-2"></i>Route Directory</h5>
+                </div>
+                <div class="card-body">
+                    {% if routes %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="routesTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Route Name</th>
+                                    <th>Origin</th>
+                                    <th>Destination</th>
+                                    <th>Distance (km)</th>
+                                    <th>Est. Time (hrs)</th>
+                                    <th>Toll Cost (₹)</th>
+                                    <th>Fuel Cost (₹)</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for route in routes %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">#{{ route.id }}</span></td>
+                                    <td>
+                                        <div class="fw-bold">{{ route.name }}</div>
+                                        <small class="text-muted">{{ route.origin }} → {{ route.destination }}</small>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-geo-alt me-1 text-success"></i>{{ route.origin }}
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-geo-alt-fill me-1 text-danger"></i>{{ route.destination }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ "%.1f"|format(route.distance_km) }} km</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning text-dark">{{ "%.1f"|format(route.estimated_time_hours) }}h</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-success fw-bold">₹{{ "%.2f"|format(route.toll_cost) }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-primary fw-bold">₹{{ "%.2f"|format(route.fuel_cost) }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    onclick="viewRoute({{ route.id }})" 
+                                                    title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning" 
+                                                    onclick="editRoute({{ route.id }})" 
+                                                    title="Edit Route">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="deleteRoute({{ route.id }}, '{{ route.name }}')" 
+                                                    title="Delete Route">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-map" style="font-size: 4rem; color: #dee2e6;"></i>
+                        </div>
+                        <h5 class="text-muted mb-3">No Routes Found</h5>
+                        <p class="text-muted mb-4">Start building your route database by adding your first route.</p>
+                        <a href="{{ url_for('main.add_route') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Add First Route
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Routes</h5>
+                            <h2 class="mb-0">{{ routes|length }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-map" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Distance</h5>
+                            <h2 class="mb-0">{{ "%.0f"|format(routes|sum(attribute='distance_km')) }} km</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-speedometer2" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Avg Distance</h5>
+                            <h2 class="mb-0">
+                                {% if routes %}
+                                {{ "%.0f"|format((routes|sum(attribute='distance_km')) / (routes|length)) }} km
+                                {% else %}
+                                0 km
+                                {% endif %}
+                            </h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-bar-chart" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Toll Cost</h5>
+                            <h2 class="mb-0">₹{{ "%.0f"|format(routes|sum(attribute='toll_cost')) }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-cash-stack" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Route Details Modal -->
+<div class="modal fade" id="routeModal" tabindex="-1" aria-labelledby="routeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="routeModalLabel">Route Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="routeModalBody">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editRouteFromModal()">Edit Route</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    {% if routes %}
+    $('#routesTable').DataTable({
+        dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+             "<'row'<'col-sm-12'B>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        buttons: [
+            {
+                extend: 'copy',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-files me-1"></i>Copy'
+            },
+            {
+                extend: 'csv',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-file-earmark-csv me-1"></i>CSV'
+            },
+            {
+                extend: 'excel',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-file-earmark-excel me-1"></i>Excel'
+            },
+            {
+                extend: 'pdf',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-file-earmark-pdf me-1"></i>PDF'
+            },
+            {
+                extend: 'print',
+                className: 'btn btn-secondary btn-sm',
+                text: '<i class="bi bi-printer me-1"></i>Print'
+            }
+        ],
+        pageLength: 10,
+        responsive: true,
+        order: [[0, 'desc']], // Sort by ID (newest first)
+        language: {
+            search: "Search routes:",
+            lengthMenu: "Show _MENU_ routes per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ routes"
+        }
+    });
+    {% endif %}
+});
+
+let currentRouteId = null;
+
+function viewRoute(routeId) {
+    // Fetch route details via API
+    fetch(`/api/routes`)
+        .then(response => response.json())
+        .then(routes => {
+            const route = routes.find(r => r.id === routeId);
+            if (route) {
+                displayRouteDetails(route);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching route details:', error);
+            alert('Error loading route details');
+        });
+}
+
+function displayRouteDetails(route) {
+    currentRouteId = route.id;
+    
+    const modalBody = document.getElementById('routeModalBody');
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary">Route Information</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Route Name:</strong></td>
+                        <td>${route.name}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Origin:</strong></td>
+                        <td><i class="bi bi-geo-alt me-1 text-success"></i>${route.origin}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Destination:</strong></td>
+                        <td><i class="bi bi-geo-alt-fill me-1 text-danger"></i>${route.destination}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Distance:</strong></td>
+                        <td>${route.distance_km} km</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-primary">Cost Information</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Estimated Time:</strong></td>
+                        <td>${route.estimated_time_hours} hours</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Toll Cost:</strong></td>
+                        <td class="text-success fw-bold">₹${route.toll_cost}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fuel Cost:</strong></td>
+                        <td class="text-primary fw-bold">₹${route.fuel_cost}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Cost:</strong></td>
+                        <td class="text-danger fw-bold">₹${(route.toll_cost + route.fuel_cost).toFixed(2)}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle me-2"></i>Route Summary</h6>
+                    <p class="mb-0">
+                        This route covers <strong>${route.distance_km} km</strong> from 
+                        <strong>${route.origin}</strong> to <strong>${route.destination}</strong>, 
+                        with an estimated travel time of <strong>${route.estimated_time_hours} hours</strong>.
+                        Total transportation cost: <strong>₹${(route.toll_cost + route.fuel_cost).toFixed(2)}</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('routeModal'));
+    modal.show();
+}
+
+function editRoute(routeId) {
+    // For now, redirect to add route page with edit mode
+    // In a real implementation, you'd create an edit_route route
+    alert(`Edit functionality for route ${routeId} would redirect to edit form`);
+}
+
+function editRouteFromModal() {
+    if (currentRouteId) {
+        editRoute(currentRouteId);
+    }
+}
+
+function deleteRoute(routeId, routeName) {
+    if (confirm(`Are you sure you want to delete route "${routeName}"? This action cannot be undone.`)) {
+        // In a real implementation, you'd make an API call to delete the route
+        alert(`Delete functionality for route ${routeId} would be implemented here`);
+    }
+}
+</script>
+{% endblock %}

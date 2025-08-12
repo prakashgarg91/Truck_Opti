@@ -7,6 +7,61 @@
         <a href="{{ url_for('main.export_packing_result', job_id=job.id) }}" class="btn btn-secondary">Export to CSV</a>
     </div>
     <hr>
+    
+    <!-- Original User Requirements Section -->
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Original Requirements</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-primary"><i class="fas fa-tasks me-2"></i>Packing Job Details</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Job Name:</th>
+                            <td><strong>{{ job.name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Created Date:</th>
+                            <td>{{ job.created_date.strftime('%Y-%m-%d %H:%M') if job.created_date else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td><span class="badge bg-success">Optimized</span></td>
+                        </tr>
+                        <tr>
+                            <th>Total Items:</th>
+                            <td><strong>{{ (result.result_data[0].fitted_items|length + result.result_data[0].unfitted_items|length) if result.result_data else 0 }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-primary"><i class="fas fa-bullseye me-2"></i>Optimization Goals</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-cube text-primary fs-4"></i>
+                                <div class="mt-2"><strong>Space Optimization</strong></div>
+                                <small class="text-muted">Maximize truck utilization</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <i class="fas fa-rupee-sign text-success fs-4"></i>
+                                <div class="mt-2"><strong>Cost Efficiency</strong></div>
+                                <small class="text-muted">Minimize transportation cost</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <small><i class="fas fa-info-circle me-1"></i>
+                        <strong>Optimization Strategy:</strong> Prioritized space utilization while maintaining structural integrity and weight distribution.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     {% if not result.result_data %}
         <div class="alert alert-warning" role="alert">
             <h4 class="alert-heading">No Packing Results</h4>
@@ -92,15 +147,100 @@
                     <strong>Cost Calculation:</strong> Comprehensive cost analysis including distance, fuel, tolls, driver costs, and other factors will be available when all route parameters are provided.
                 </div>
 
-                <!-- Fitted Items Section -->
+                <!-- Professional Packing Summary Table -->
                 <div class="row">
                     <div class="col-md-8">
-                        <h5><i class="fas fa-check-circle text-success me-2"></i>Fitted Items ({{ bin_result.fitted_items|length }})</h5>
-                        <div class="fitted-items-list">
-                            {% for item in bin_result.fitted_items %}
-                            <span class="badge bg-success me-2 mb-2">{{ item.name }}</span>
-                            {% endfor %}
+                        <h5><i class="fas fa-table text-primary me-2"></i>Packing Summary</h5>
+                        {% set item_summary = {} %}
+                        {% for item in bin_result.fitted_items %}
+                            {% if item.name in item_summary %}
+                                {% set _ = item_summary.update({item.name: item_summary[item.name] + 1}) %}
+                            {% else %}
+                                {% set _ = item_summary.update({item.name: 1}) %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th><i class="fas fa-cube me-1"></i>Carton Type</th>
+                                        <th><i class="fas fa-sort-numeric-up me-1"></i>Quantity Fitted</th>
+                                        <th><i class="fas fa-percentage me-1"></i>Fit Rate</th>
+                                        <th><i class="fas fa-ruler-combined me-1"></i>Dimensions</th>
+                                        <th><i class="fas fa-chart-pie me-1"></i>Space Usage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item_name, fitted_count in item_summary.items() %}
+                                    {% set total_requested = fitted_count + (bin_result.unfitted_items | selectattr('name', 'equalto', item_name) | list | length) %}
+                                    {% set fit_rate = (fitted_count / total_requested * 100) if total_requested > 0 else 0 %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ item_name }}</strong>
+                                            {% if fitted_count == total_requested %}
+                                            <span class="badge bg-success ms-2">Complete</span>
+                                            {% elif fitted_count > 0 %}
+                                            <span class="badge bg-warning ms-2">Partial</span>
+                                            {% else %}
+                                            <span class="badge bg-danger ms-2">None</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-success">{{ fitted_count }}</span>
+                                            <small class="text-muted">/ {{ total_requested }} requested</small>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-{{ 'success' if fit_rate == 100 else 'warning' if fit_rate > 0 else 'danger' }}" 
+                                                     style="width: {{ fit_rate }}%">{{ "%.1f"|format(fit_rate) }}%</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% for item in bin_result.fitted_items %}
+                                                {% if item.name == item_name %}
+                                                <small class="text-muted">{{ item.length }}×{{ item.width }}×{{ item.height }} cm</small>
+                                                {% break %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% set item_volume = bin_result.fitted_items | selectattr('name', 'equalto', item_name) | list | first %}
+                                            {% if item_volume %}
+                                            {% set single_item_volume = item_volume.length * item_volume.width * item_volume.height %}
+                                            {% set total_item_volume = single_item_volume * fitted_count %}
+                                            {% set truck_volume = bin_result.bin_dimensions.length * bin_result.bin_dimensions.width * bin_result.bin_dimensions.height %}
+                                            {% set item_space_usage = (total_item_volume / truck_volume * 100) if truck_volume > 0 else 0 %}
+                                            <span class="badge bg-info">{{ "%.1f"|format(item_space_usage) }}%</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
+                        
+                        {% if bin_result.unfitted_items %}
+                        <div class="alert alert-warning mt-3">
+                            <h6><i class="fas fa-exclamation-triangle me-2"></i>Items Not Fitted</h6>
+                            {% set unfitted_summary = {} %}
+                            {% for item in bin_result.unfitted_items %}
+                                {% if item.name in unfitted_summary %}
+                                    {% set _ = unfitted_summary.update({item.name: unfitted_summary[item.name] + 1}) %}
+                                {% else %}
+                                    {% set _ = unfitted_summary.update({item.name: 1}) %}
+                                {% endif %}
+                            {% endfor %}
+                            <div class="row">
+                                {% for item_name, count in unfitted_summary.items() %}
+                                <div class="col-md-6 mb-2">
+                                    <span class="badge bg-warning text-dark me-2">{{ item_name }}</span>
+                                    <small>{{ count }} units</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="col-md-4">
                         <div class="truck-specs">
@@ -126,44 +266,87 @@
                     
                     <div class="row">
                         <div class="col-md-6">
-                            <div class="unfitted-items-list mb-3">
+                            <div class="unfitted-items-summary mb-3">
+                                <h6 class="text-warning mb-3"><i class="fas fa-list me-2"></i>Items Summary</h6>
+                                {% set unfitted_summary = {} %}
                                 {% for item in bin_result.unfitted_items %}
-                                <span class="badge bg-warning text-dark me-2 mb-2">{{ item.name }}</span>
+                                    {% if item.name in unfitted_summary %}
+                                        {% set _ = unfitted_summary.update({item.name: unfitted_summary[item.name] + 1}) %}
+                                    {% else %}
+                                        {% set _ = unfitted_summary.update({item.name: 1}) %}
+                                    {% endif %}
                                 {% endfor %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-warning">
+                                            <tr>
+                                                <th>Item Type</th>
+                                                <th>Quantity</th>
+                                                <th>Dimensions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item_name, count in unfitted_summary.items() %}
+                                            <tr>
+                                                <td><strong>{{ item_name }}</strong></td>
+                                                <td><span class="badge bg-warning text-dark">{{ count }} units</span></td>
+                                                <td>
+                                                    {% for item in bin_result.unfitted_items %}
+                                                        {% if item.name == item_name %}
+                                                        <small class="text-muted">{{ item.length }}×{{ item.width }}×{{ item.height }} cm</small>
+                                                        {% break %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <!-- Additional Truck Recommendations -->
+                            <!-- Smart Truck Recommendations (No 3D Visualization) -->
                             <div class="additional-recommendations">
-                                <h6 class="text-primary"><i class="fas fa-lightbulb me-2"></i>Additional Truck Recommendations</h6>
-                                <div class="recommendation-card recommended">
-                                    <div class="recommendation-header">
-                                        <strong>🎯 Recommended: Compact Solution</strong>
-                                        <span class="badge bg-success">Space Optimized</span>
-                                    </div>
-                                    <div class="recommendation-body">
-                                        <div><strong>Tata Ace (Chhota Hathi)</strong></div>
-                                        <small class="text-muted">Perfect for remaining {{ bin_result.unfitted_items|length }} items</small>
-                                        <div class="mt-2">
-                                            <span class="badge bg-light text-dark">Utilization: ~75%</span>
-                                            <span class="badge bg-light text-dark">Cost Effective</span>
-                                        </div>
-                                    </div>
+                                <h6 class="text-primary"><i class="fas fa-truck me-2"></i>Smart Truck Recommendations</h6>
+                                <p class="text-muted mb-3">Based on remaining {{ bin_result.unfitted_items|length }} items analysis</p>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Truck Option</th>
+                                                <th>Expected Fit</th>
+                                                <th>Utilization</th>
+                                                <th>Cost Impact</th>
+                                                <th>Recommendation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="table-success">
+                                                <td><strong>Tata Ace (Chhota Hathi)</strong><br><small class="text-muted">220×150×120 cm</small></td>
+                                                <td><span class="badge bg-success">{{ bin_result.unfitted_items|length }} items</span></td>
+                                                <td><div class="progress" style="height:20px"><div class="progress-bar bg-success" style="width:75%">75%</div></div></td>
+                                                <td><span class="text-success"><i class="fas fa-arrow-down"></i> Low Cost</span></td>
+                                                <td><span class="badge bg-success">Recommended</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Mahindra Jeeto</strong><br><small class="text-muted">225×150×120 cm</small></td>
+                                                <td><span class="badge bg-info">{{ bin_result.unfitted_items|length }} items</span></td>
+                                                <td><div class="progress" style="height:20px"><div class="progress-bar bg-info" style="width:60%">60%</div></div></td>
+                                                <td><span class="text-info"><i class="fas fa-arrow-right"></i> Medium Cost</span></td>
+                                                <td><span class="badge bg-info">Alternative</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                                 
-                                <div class="recommendation-card alternative">
-                                    <div class="recommendation-header">
-                                        <strong>Alternative: Medium Capacity</strong>
-                                        <span class="badge bg-info">Balanced</span>
-                                    </div>
-                                    <div class="recommendation-body">
-                                        <div><strong>Mahindra Jeeto</strong></div>
-                                        <small class="text-muted">Higher capacity for future scalability</small>
-                                        <div class="mt-2">
-                                            <span class="badge bg-light text-dark">Utilization: ~60%</span>
-                                            <span class="badge bg-light text-dark">Future Ready</span>
-                                        </div>
-                                    </div>
+                                <div class="alert alert-light border mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calculator me-1"></i>
+                                        <strong>Cost Analysis:</strong> Tata Ace recommended for optimal cost-per-item ratio. 
+                                        Detailed route costing available when pickup/delivery locations are specified.
+                                    </small>
                                 </div>
                             </div>
                         </div>

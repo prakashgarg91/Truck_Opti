@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Add Customer - TruckOpti{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.customers') }}">Customers</a></li>
+<li class="breadcrumb-item active">Add Customer</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-1">Add New Customer</h1>
+                    <p class="text-muted mb-0">Create a new customer record with contact and address information</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.customers') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Customers
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i>Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="addCustomerForm">
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-12 mb-4">
+                                <h6 class="text-primary border-bottom pb-2">
+                                    <i class="bi bi-person me-2"></i>Basic Information
+                                </h6>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">
+                                    <i class="bi bi-person me-1"></i>Full Name *
+                                </label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="e.g., John Doe" required>
+                                <div class="form-text">Enter the customer's full name</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="bi bi-envelope me-1"></i>Email Address
+                                </label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       placeholder="e.g., john.doe@email.com">
+                                <div class="form-text">Customer's email address (optional)</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">
+                                    <i class="bi bi-telephone me-1"></i>Phone Number
+                                </label>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       placeholder="e.g., +91 9876543210">
+                                <div class="form-text">Customer's contact number (optional)</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="country" class="form-label">
+                                    <i class="bi bi-flag me-1"></i>Country
+                                </label>
+                                <select class="form-control" id="country" name="country">
+                                    <option value="India" selected>India</option>
+                                    <option value="USA">United States</option>
+                                    <option value="Canada">Canada</option>
+                                    <option value="UK">United Kingdom</option>
+                                    <option value="Australia">Australia</option>
+                                    <option value="Germany">Germany</option>
+                                    <option value="France">France</option>
+                                    <option value="Japan">Japan</option>
+                                    <option value="Singapore">Singapore</option>
+                                    <option value="UAE">United Arab Emirates</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <div class="form-text">Customer's country</div>
+                            </div>
+                        </div>
+
+                        <!-- Address Information -->
+                        <div class="row mt-4">
+                            <div class="col-12 mb-4">
+                                <h6 class="text-primary border-bottom pb-2">
+                                    <i class="bi bi-geo-alt me-2"></i>Address Information
+                                </h6>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="address" class="form-label">
+                                    <i class="bi bi-house me-1"></i>Street Address
+                                </label>
+                                <textarea class="form-control" id="address" name="address" rows="3" 
+                                          placeholder="e.g., 123 Main Street, Building A, Floor 2"></textarea>
+                                <div class="form-text">Full street address including building and floor details</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="city" class="form-label">
+                                    <i class="bi bi-building me-1"></i>City
+                                </label>
+                                <input type="text" class="form-control" id="city" name="city" 
+                                       placeholder="e.g., Mumbai">
+                                <div class="form-text">Customer's city</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="postal_code" class="form-label">
+                                    <i class="bi bi-mailbox me-1"></i>Postal Code
+                                </label>
+                                <input type="text" class="form-control" id="postal_code" name="postal_code" 
+                                       placeholder="e.g., 400001">
+                                <div class="form-text">ZIP or postal code</div>
+                            </div>
+                        </div>
+
+                        <!-- Customer Summary -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="alert alert-light border">
+                                    <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Customer Summary</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>Contact Info:</strong>
+                                            <div id="summaryContact" class="text-muted">
+                                                <small>Enter customer details to see summary</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Address:</strong>
+                                            <div id="summaryAddress" class="text-muted">
+                                                <small>Enter address details to see summary</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                        <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Form
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-2"></i>Add Customer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Update summary when form fields change
+    updateCustomerSummary();
+    
+    $('#name, #email, #phone, #address, #city, #postal_code, #country').on('input', function() {
+        updateCustomerSummary();
+    });
+
+    // Form validation
+    $('#addCustomerForm').on('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Phone number formatting (basic Indian number formatting)
+    $('#phone').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.startsWith('91') && value.length > 2) {
+            value = '+91 ' + value.substring(2);
+        } else if (value.length === 10) {
+            value = '+91 ' + value;
+        }
+        if (value !== $(this).val()) {
+            $(this).val(value);
+        }
+    });
+});
+
+function updateCustomerSummary() {
+    const name = $('#name').val().trim();
+    const email = $('#email').val().trim();
+    const phone = $('#phone').val().trim();
+    const address = $('#address').val().trim();
+    const city = $('#city').val().trim();
+    const postalCode = $('#postal_code').val().trim();
+    const country = $('#country').val();
+
+    // Contact summary
+    let contactSummary = '';
+    if (name) contactSummary += name + '<br>';
+    if (email) contactSummary += '<i class="bi bi-envelope me-1"></i>' + email + '<br>';
+    if (phone) contactSummary += '<i class="bi bi-telephone me-1"></i>' + phone;
+    
+    if (!contactSummary) {
+        contactSummary = '<small class="text-muted">Enter customer details to see summary</small>';
+    }
+
+    // Address summary
+    let addressSummary = '';
+    if (address) addressSummary += address;
+    if (city || postalCode) {
+        if (addressSummary) addressSummary += '<br>';
+        if (city) addressSummary += city;
+        if (postalCode) addressSummary += ' - ' + postalCode;
+    }
+    if (country && country !== 'India') {
+        if (addressSummary) addressSummary += '<br>';
+        addressSummary += '<span class="badge bg-info">' + country + '</span>';
+    }
+
+    if (!addressSummary) {
+        addressSummary = '<small class="text-muted">Enter address details to see summary</small>';
+    }
+
+    $('#summaryContact').html(contactSummary);
+    $('#summaryAddress').html(addressSummary);
+}
+
+function validateForm() {
+    const name = $('#name').val().trim();
+    const email = $('#email').val().trim();
+    const phone = $('#phone').val().trim();
+
+    if (!name) {
+        showError('Customer name is required');
+        $('#name').focus();
+        return false;
+    }
+
+    if (name.length < 2) {
+        showError('Customer name must be at least 2 characters long');
+        $('#name').focus();
+        return false;
+    }
+
+    // Email validation (if provided)
+    if (email && !isValidEmail(email)) {
+        showError('Please enter a valid email address');
+        $('#email').focus();
+        return false;
+    }
+
+    // Phone validation (if provided)
+    if (phone && !isValidPhone(phone)) {
+        showError('Please enter a valid phone number');
+        $('#phone').focus();
+        return false;
+    }
+
+    return true;
+}
+
+function isValidEmail(email) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailPattern.test(email);
+}
+
+function isValidPhone(phone) {
+    // Basic phone validation - accepts various formats
+    const phonePattern = /^[\+]?[\d\s\-\(\)]{10,15}$/;
+    return phonePattern.test(phone);
+}
+
+function showError(message) {
+    // Create or update error alert
+    let errorAlert = $('#error-alert');
+    if (errorAlert.length === 0) {
+        errorAlert = $('<div id="error-alert" class="alert alert-danger alert-dismissible fade show" role="alert">' +
+            '<i class="bi bi-exclamation-triangle me-2"></i>' +
+            '<span id="error-message"></span>' +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+            '</div>');
+        $('#addCustomerForm').prepend(errorAlert);
+    }
+    
+    $('#error-message').text(message);
+    errorAlert.show();
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        errorAlert.fadeOut();
+    }, 5000);
+}
+
+function resetForm() {
+    if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+        $('#addCustomerForm')[0].reset();
+        $('#error-alert').remove();
+        $('#country').val('India'); // Reset to default
+        updateCustomerSummary();
+    }
+}
+</script>
+{% endblock %}

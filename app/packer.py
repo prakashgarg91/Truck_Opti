@@ -242,6 +242,12 @@ def _pack_single_truck(truck_bin, items_to_pack):
             'color': '#%06x' % (hash(item.name) & 0xFFFFFF),
         })
     
+    # Calculate space utilization (volume-based)
+    total_volume_used = sum(item.width * item.height * item.depth for item in truck_bin.items)
+    total_truck_volume = truck_bin.width * truck_bin.height * truck_bin.depth
+    space_utilization = total_volume_used / total_truck_volume if total_truck_volume > 0 else 0
+    
+    # Calculate weight utilization separately
     total_weight = sum(item.weight for item in truck_bin.items)
     weight_utilization = total_weight / truck_bin.max_weight if truck_bin.max_weight > 0 else 0
     
@@ -275,7 +281,8 @@ def _pack_single_truck(truck_bin, items_to_pack):
         'bin_name': truck_bin.name,
         'fitted_items': packed_items_details,
         'unfitted_items': unfitted_items_details,
-        'utilization': float(weight_utilization),
+        'utilization': float(space_utilization),  # Use space utilization instead of weight
+        'weight_utilization': float(weight_utilization),  # Keep weight utilization separately
         'total_cost': float(total_cost),
         'truck_cost': float(truck_cost),
         'carton_value': float(total_carton_value)
@@ -359,6 +366,12 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
                 'color': '#%06x' % (hash(item.name) & 0xFFFFFF),
             })
         
+        # Calculate space utilization (volume-based)
+        total_volume_used = sum(item.width * item.height * item.depth for item in truck_bin.items)
+        total_truck_volume = truck_bin.width * truck_bin.height * truck_bin.depth
+        space_utilization = total_volume_used / total_truck_volume if total_truck_volume > 0 else 0
+        
+        # Calculate weight utilization separately
         total_weight = sum(item.weight for item in truck_bin.items)
         weight_utilization = total_weight / truck_bin.max_weight if truck_bin.max_weight > 0 else 0
         
@@ -390,7 +403,8 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
             'bin_name': truck_bin.name,
             'fitted_items': packed_items_details,
             'unfitted_items': unfitted_items_details,
-            'utilization': float(weight_utilization),
+            'utilization': float(space_utilization),  # Use space utilization instead of weight
+            'weight_utilization': float(weight_utilization),  # Keep weight utilization separately
             'total_cost': float(total_cost),
             'truck_cost': float(truck_cost),
             'carton_value': float(total_carton_value)
@@ -400,15 +414,21 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
 
     return results
 
+@lru_cache(maxsize=128)
+def _calculate_cargo_metrics(carton_hash):
+    """Cache cargo metrics calculation"""
+    return carton_hash
+
 def calculate_optimal_truck_combination(carton_types_with_quantities, available_truck_types, max_trucks=10, optimization_strategy='space_utilization'):
     """
     Enhanced truck combination recommendation with max space utilization priority
     - Prioritizes smallest truck first for maximum space utilization
     - Supports multiple optimization strategies: 'space_utilization', 'cost_saving', 'balanced'
+    - Optimized for faster performance with early termination
     """
     best_combinations = []
     
-    # Calculate total carton volume and weight to guide truck selection
+    # Quick pre-filter: Calculate total carton volume and weight
     total_volume = sum(
         (carton.length * carton.width * carton.height) * qty 
         for carton, qty in carton_types_with_quantities.items()
@@ -418,20 +438,34 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
         for carton, qty in carton_types_with_quantities.items()
     )
     
+    # Pre-filter trucks that are obviously too small
+    viable_trucks = []
+    for truck in available_truck_types:
+        truck_volume = truck.length * truck.width * truck.height
+        truck_capacity = truck.max_weight if truck.max_weight else 10000
+        
+        # Skip trucks that are clearly too small (less than 20% of total requirements)
+        if truck_volume < total_volume * 0.2 and truck_capacity < total_weight * 0.2:
+            continue
+        viable_trucks.append(truck)
+    
     # Sort trucks based on optimization strategy
     if optimization_strategy == 'space_utilization':
-        # Smallest truck first for maximum space utilization
-        sorted_trucks = sorted(available_truck_types, key=lambda t: t.length * t.width * t.height)
+        # Smallest viable truck first for maximum space utilization
+        sorted_trucks = sorted(viable_trucks, key=lambda t: t.length * t.width * t.height)
     elif optimization_strategy == 'cost_saving':
         # Sort by cost efficiency (if cost data available)
-        sorted_trucks = sorted(available_truck_types, key=lambda t: getattr(t, 'cost_per_km', 999999))
+        sorted_trucks = sorted(viable_trucks, key=lambda t: getattr(t, 'cost_per_km', 999999))
     else:  # balanced
         # Balance between size and efficiency
-        sorted_trucks = sorted(available_truck_types, 
+        sorted_trucks = sorted(viable_trucks, 
                               key=lambda t: (t.length * t.width * t.height, getattr(t, 'cost_per_km', 999999)))
     
-    # Try different truck combinations with smarter logic
-    for truck_type in sorted_trucks:
+    # Limit testing to top 5 most promising trucks for speed
+    top_trucks = sorted_trucks[:5]
+    
+    # Try different truck combinations with smarter logic and early termination
+    for truck_type in top_trucks:
         truck_volume = truck_type.length * truck_type.width * truck_type.height
         truck_capacity = truck_type.max_weight if truck_type.max_weight else 10000
         
@@ -440,7 +474,8 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
             int(total_volume / truck_volume) + 1,
             int(total_weight / truck_capacity) + 1
         ))
-        max_reasonable = min(max_trucks, min_trucks_needed + 3)
+        # Limit max trucks for performance
+        max_reasonable = min(3, min_trucks_needed + 1)  # Reduced from max_trucks
         
         for quantity in range(1, max_reasonable + 1):
             truck_combo = {truck_type: quantity}
@@ -488,15 +523,19 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
                 'space_efficiency': space_efficiency,
                 'cost_per_item': total_cost / total_fitted_items if total_fitted_items > 0 else float('inf')
             })
+            
+            # Early termination: if we found a perfect solution, stop
+            if packing_success >= 0.99 and space_efficiency >= 0.8:
+                break
     
     # Sort by composite efficiency score (higher is better)
     best_combinations.sort(key=lambda x: x['efficiency_score'], reverse=True)
     
-    # Remove duplicates and ensure variety in recommendations
+    # Remove duplicates and ensure variety in recommendations (limit to top 3 for speed)
     seen_trucks = set()
     diverse_combinations = []
     
-    for combo in best_combinations:
+    for combo in best_combinations[:3]:  # Limit to top 3 for performance
         truck_key = (combo['truck_type'], combo['quantity'])
         if truck_key not in seen_trucks and len(diverse_combinations) < 5:
             seen_trucks.add(truck_key)

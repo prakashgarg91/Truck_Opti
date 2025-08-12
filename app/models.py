@@ -15,11 +15,17 @@ class TruckType(db.Model):
     driver_cost_per_day = db.Column(db.Float, default=0.0)
     maintenance_cost_per_km = db.Column(db.Float, default=0.0)
     truck_category = db.Column(db.String(50), default='Standard')  # Light, Medium, Heavy
-    availability = db.Column(db.Boolean, default=True)
+    availability = db.Column(db.Boolean, default=True, index=True)  # Index for filtering available trucks
     description = db.Column(db.Text)
     
     # Relationships
     packing_jobs = db.relationship('PackingJob', backref='truck_type', lazy=True)
+    
+    # Indexes for performance optimization
+    __table_args__ = (
+        db.Index('idx_truck_volume', length, width, height),  # For volume-based sorting
+        db.Index('idx_truck_availability_category', availability, truck_category),
+    )
 
 class CartonType(db.Model):
     def as_dict(self):
@@ -36,8 +42,14 @@ class CartonType(db.Model):
     max_stack_height = db.Column(db.Integer, default=5)
     priority = db.Column(db.Integer, default=1)  # 1-5, 5 being highest
     value = db.Column(db.Float, default=0.0)
-    category = db.Column(db.String(50), default='General')
+    category = db.Column(db.String(50), default='General', index=True)
     description = db.Column(db.Text)
+    
+    # Indexes for carton type searches
+    __table_args__ = (
+        db.Index('idx_carton_name', name),  # For name-based searches
+        db.Index('idx_carton_dimensions', length, width, height),  # For dimension-based searches
+    )
 
 class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -150,6 +162,14 @@ class SaleOrder(db.Model):
     # Relationships
     recommended_truck = db.relationship('TruckType', backref='recommended_orders')
     sale_order_items = db.relationship('SaleOrderItem', backref='sale_order', lazy=True, cascade='all, delete-orphan')
+    
+    # Indexes for sale order queries
+    __table_args__ = (
+        db.Index('idx_sale_order_batch', batch_id),  # For batch filtering
+        db.Index('idx_sale_order_status', status),  # For status filtering
+        db.Index('idx_sale_order_date', date_created),  # For date sorting
+        db.Index('idx_sale_order_number', sale_order_number),  # For order number searches
+    )
 
 class SaleOrderItem(db.Model):
     """Individual items within a sale order"""

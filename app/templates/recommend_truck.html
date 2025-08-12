@@ -39,9 +39,71 @@
   </div>
 
   {% if recommended %}
+  <!-- Original Requirements Section -->
+  <div class="card shadow mb-4">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0"><i class="bi bi-list-check"></i> Original Requirements</h5>
+      <p class="mb-0 mt-2"><small>Your packing requirements processed for optimization</small></p>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-8">
+          <h6 class="text-primary mb-3"><i class="bi bi-box"></i> Carton Requirements:</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead class="table-light">
+                <tr>
+                  <th>Carton Type</th>
+                  <th>Dimensions (L×W×H)</th>
+                  <th>Quantity</th>
+                  <th>Total Volume</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in original_requirements %}
+                <tr>
+                  <td><strong>{{ item.name }}</strong></td>
+                  <td><code>{{ item.length }}×{{ item.width }}×{{ item.height }} cm</code></td>
+                  <td><span class="badge bg-info">{{ item.quantity }}</span></td>
+                  <td><span class="text-muted">{{ (item.length * item.width * item.height * item.quantity / 1000000)|round(2) }} m³</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <h6 class="text-primary mb-3"><i class="bi bi-graph-up"></i> Summary:</h6>
+          <div class="card border-0 bg-light">
+            <div class="card-body p-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Total Items:</span>
+                <strong class="text-primary">{{ total_items }}</strong>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Total Volume:</span>
+                <strong class="text-info">{{ total_volume }} m³</strong>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Optimization Goal:</span>
+                <span class="badge bg-success">{{ optimization_strategy|title }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted">Generated:</span>
+                <small class="text-muted">Just now</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recommended Trucks Section -->
   <div class="card shadow">
     <div class="card-header bg-info text-white">
       <h5 class="mb-0"><i class="bi bi-truck"></i> Recommended Trucks</h5>
+      <p class="mb-0 mt-2"><small>Optimized truck selections based on your requirements</small></p>
     </div>
     <div class="card-body">
       <table id="recommendTable" class="table table-bordered table-hover">
