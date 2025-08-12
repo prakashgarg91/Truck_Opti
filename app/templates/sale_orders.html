@@ -61,13 +61,24 @@
               </div>
             </div>
 
-            <!-- Stress Test Options -->
-            <div class="mb-3">
+            <!-- Stress Test Options (Admin Only) -->
+            <div class="mb-3" id="stressTestSection" style="display: none;">
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" name="stress_test_mode" id="stressTestMode">
                 <label class="form-check-label" for="stressTestMode">
-                  <strong>⚡ Stress Test Mode</strong><br>
+                  <strong>⚡ Stress Test Mode</strong> <span class="badge bg-warning text-dark">Admin Only</span><br>
                   <small class="text-muted">Enable enhanced processing for large datasets (lakhs of cartons)</small>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Admin Login for Stress Test -->
+            <div class="mb-3" id="adminLoginSection">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="enableAdvancedMode" onchange="toggleAdvancedMode()">
+                <label class="form-check-label" for="enableAdvancedMode">
+                  <strong>🔧 Enable Advanced Features</strong><br>
+                  <small class="text-muted">Access stress testing and advanced optimization tools</small>
                 </label>
               </div>
             </div>
@@ -76,7 +87,7 @@
               <i class="fas fa-upload me-1"></i>Upload and Process
             </button>
 
-            <button type="button" class="btn btn-warning ms-2" id="stressTestBtn" onclick="runStressTest()">
+            <button type="button" class="btn btn-warning ms-2" id="stressTestBtn" onclick="runStressTest()" style="display: none;">
               <i class="fas fa-bolt me-1"></i>Run Stress Test
             </button>
           </form>
@@ -253,6 +264,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+function toggleAdvancedMode() {
+    const enableAdvanced = document.getElementById('enableAdvancedMode').checked;
+    const stressTestSection = document.getElementById('stressTestSection');
+    const stressTestBtn = document.getElementById('stressTestBtn');
+    const adminLoginSection = document.getElementById('adminLoginSection');
+    
+    if (enableAdvanced) {
+        // Simple admin verification (in production, this would be proper authentication)
+        const adminCode = prompt('Enter admin code to access advanced features:');
+        
+        if (adminCode === 'TruckOpti2025' || adminCode === 'admin123') {
+            stressTestSection.style.display = 'block';
+            stressTestBtn.style.display = 'inline-block';
+            adminLoginSection.style.display = 'none';
+            
+            // Show success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Advanced features enabled!</strong> Stress testing and advanced optimization tools are now available.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            adminLoginSection.parentNode.insertBefore(successDiv, adminLoginSection.nextSibling);
+        } else {
+            document.getElementById('enableAdvancedMode').checked = false;
+            alert('❌ Invalid admin code. Advanced features remain locked.');
+        }
+    } else {
+        stressTestSection.style.display = 'none';
+        stressTestBtn.style.display = 'none';
+        adminLoginSection.style.display = 'block';
+    }
+}
 
 function downloadSampleFile() {
     // Create sample CSV data with carton types

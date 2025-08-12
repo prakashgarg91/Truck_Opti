@@ -32,7 +32,11 @@
       "Bash(claude --mcp-url http://127.0.0.1:8000/sse)",
       "mcp__puppeteer__puppeteer_fill",
       "Bash(claude --mcp-url http://127.0.0.1:8000/sse/)",
-      "Bash(\"D:\\Github\\Truck_Opti\\dist\\TruckOpti_Enterprise.exe\")"
+      "Bash(\"D:\\Github\\Truck_Opti\\dist\\TruckOpti_Enterprise.exe\")",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(del nul)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

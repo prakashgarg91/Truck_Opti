@@ -56,7 +56,10 @@ class ProgressLoader {
                             <circle class="progress-ring-background" cx="60" cy="60" r="54"></circle>
                             <circle class="progress-ring-fill" cx="60" cy="60" r="54"></circle>
                         </svg>
-                        <div class="progress-percentage">0%</div>
+                        <div class="progress-status">
+                            <div class="status-icon">⚙️</div>
+                            <div class="status-text">Processing</div>
+                        </div>
                     </div>
                 </div>
 
@@ -65,13 +68,20 @@ class ProgressLoader {
                         <div class="progress-bar-fill" style="width: 0%"></div>
                         <div class="progress-bar-glow"></div>
                     </div>
+                    <div class="progress-steps">
+                        <span class="step active">●</span>
+                        <span class="step">●</span>
+                        <span class="step">●</span>
+                        <span class="step">●</span>
+                        <span class="step">●</span>
+                    </div>
                 </div>
 
                 <div class="progress-details">
-                    <div class="progress-message">Initializing...</div>
+                    <div class="progress-message">Initializing optimization engine...</div>
                     <div class="progress-stats">
                         <span class="progress-time">Elapsed: <span id="elapsed-time">0s</span></span>
-                        <span class="progress-eta">ETA: <span id="eta-time">--</span></span>
+                        <span class="progress-eta">Status: <span id="eta-time">In Progress</span></span>
                     </div>
                 </div>
 
@@ -106,6 +116,44 @@ class ProgressLoader {
                 messageEl.textContent = message;
             }
         }
+
+        // Update status indicators instead of percentages
+        const statusEl = document.querySelector('.status-text');
+        const iconEl = document.querySelector('.status-icon');
+        const etaEl = document.getElementById('eta-time');
+        
+        if (progress < 20) {
+            if (statusEl) statusEl.textContent = 'Initializing';
+            if (iconEl) iconEl.textContent = '🔄';
+            if (etaEl) etaEl.textContent = 'Preparing';
+        } else if (progress < 40) {
+            if (statusEl) statusEl.textContent = 'Processing';
+            if (iconEl) iconEl.textContent = '⚙️';
+            if (etaEl) etaEl.textContent = 'Computing';
+        } else if (progress < 60) {
+            if (statusEl) statusEl.textContent = 'Optimizing';
+            if (iconEl) iconEl.textContent = '🎯';
+            if (etaEl) etaEl.textContent = 'Analyzing';
+        } else if (progress < 80) {
+            if (statusEl) statusEl.textContent = 'Finalizing';
+            if (iconEl) iconEl.textContent = '✨';
+            if (etaEl) etaEl.textContent = 'Almost Ready';
+        } else {
+            if (statusEl) statusEl.textContent = 'Complete';
+            if (iconEl) iconEl.textContent = '✅';
+            if (etaEl) etaEl.textContent = 'Done';
+        }
+
+        // Update step indicators
+        const steps = document.querySelectorAll('.step');
+        const currentStep = Math.floor((progress / 100) * steps.length);
+        steps.forEach((step, index) => {
+            if (index <= currentStep) {
+                step.classList.add('active');
+            } else {
+                step.classList.remove('active');
+            }
+        });
 
         // Update phase indicators
         const messages = this.isStressTest ? this.stressTestMessages : this.loadingMessages;
@@ -154,10 +202,10 @@ class ProgressLoader {
     renderProgress() {
         const percentage = Math.round(this.currentProgress);
         
-        // Update percentage display
-        const percentageEl = document.querySelector('.progress-percentage');
-        if (percentageEl) {
-            percentageEl.textContent = `${percentage}%`;
+        // Update progress bar (visual indicator only, no percentage text)
+        const progressBarFill = document.querySelector('.progress-bar-fill');
+        if (progressBarFill) {
+            progressBarFill.style.width = `${percentage}%`;
         }
 
         // Update circular progress

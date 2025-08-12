@@ -6,6 +6,7 @@ from decimal import Decimal
 from datetime import datetime
 from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS, pack_cartons, pack_cartons_optimized, calculate_optimal_truck_combination
 from app.cost_engine import cost_engine
+from sqlalchemy import func
 
 def convert_decimals_to_floats(obj):
     """Recursively convert Decimal objects to float for JSON serialization"""
@@ -46,7 +47,7 @@ def recommend_truck():
         from . import packer
         # Use the improved recommendation algorithm instead of simple packing
         recommendations = packer.calculate_optimal_truck_combination(
-            carton_quantities, trucks, max_trucks=5
+            carton_quantities, trucks, max_trucks=5, optimization_strategy='space_utilization'
         )
         
         # Convert recommendations to the expected format for display
@@ -746,7 +747,7 @@ def api_truck_recommendation_ai():
     # Use AI-powered recommendation
     from app.packer import calculate_optimal_truck_combination
     recommendations = calculate_optimal_truck_combination(
-        carton_quantities, available_trucks, max_trucks
+        carton_quantities, available_trucks, max_trucks, optimization_strategy='space_utilization'
     )
     
     return jsonify({
@@ -1728,7 +1729,7 @@ def process_sale_order_file(file, batch_name, optimization_mode='cost_saving', e
         # Generate individual truck recommendations for all orders
         for sale_order in all_sale_orders:
             try:
-                generate_truck_recommendations(sale_order)
+                generate_truck_recommendations(sale_order, optimization_mode)
             except Exception as e:
                 print(f"Error generating recommendations for order {sale_order.sale_order_number}: {str(e)}")
         
@@ -2024,3 +2025,158 @@ def api_get_sale_order_batches():
         }
         for batch in batches
     ])
+
+# Dashboard Drill-Down API Endpoints
+@api.route('/drill-down/<data_type>', methods=['GET'])
+def api_drill_down_data(data_type):
+    """Get base data for dashboard drill-down functionality"""
+    
+    try:
+        if data_type == 'trucks':
+            # Get detailed truck data
+            trucks = TruckType.query.all()
+            data = []
+            for truck in trucks:
+                data.append({
+                    'id': truck.id,
+                    'name': truck.name,
+                    'category': truck.category,
+                    'length': truck.length,
+                    'width': truck.width,  
+                    'height': truck.height,
+                    'max_weight': truck.max_weight,
+                    'volume': truck.length * truck.width * truck.height / 1000000,  # m³
+                    'availability': truck.availability,
+                    'cost_per_km': getattr(truck, 'cost_per_km', 0),
+                    'fuel_efficiency': getattr(truck, 'fuel_efficiency', 0),
+                    'created_date': truck.date_created.strftime('%Y-%m-%d') if truck.date_created else 'N/A'
+                })
+            
+            return jsonify({
+                'data': data,
+                'total_count': len(data),
+                'data_type': 'Available Vehicles',
+                'columns': ['Name', 'Category', 'Dimensions (cm)', 'Max Weight (kg)', 'Volume (m³)', 'Availability', 'Cost/km', 'Created Date']
+            })
+            
+        elif data_type == 'bookings':
+            # Get packing jobs data
+            jobs = PackingJob.query.order_by(PackingJob.date_created.desc()).all()
+            data = []
+            for job in jobs:
+                data.append({
+                    'id': job.id,
+                    'name': job.name,
+                    'optimization_goal': job.optimization_goal,
+                    'status': job.status,
+                    'date_created': job.date_created.strftime('%Y-%m-%d %H:%M'),
+                    'carton_count': len(job.carton_quantities) if job.carton_quantities else 0,
+                    'estimated_duration': f"{getattr(job, 'estimated_duration', 0)} minutes"
+                })
+            
+            return jsonify({
+                'data': data,
+                'total_count': len(data),
+                'data_type': 'Active Bookings',
+                'columns': ['Job Name', 'Optimization Goal', 'Status', 'Created Date', 'Carton Count', 'Duration']
+            })
+            
+        elif data_type == 'jobs':
+            # Get optimization jobs with results
+            jobs = PackingJob.query.all()
+            results = PackingResult.query.all()
+            
+            data = []
+            for job in jobs:
+                job_results = [r for r in results if r.job_id == job.id]
+                avg_utilization = sum(r.space_utilization for r in job_results) / len(job_results) if job_results else 0
+                
+                # Only show cost if all factors are available
+                has_route_data = any(getattr(r, 'distance_km', 0) > 0 for r in job_results)
+                cost_display = "Complete route data required" if not has_route_data else f"₹{sum(r.total_cost for r in job_results):.0f}"
+                
+                data.append({
+                    'id': job.id,
+                    'name': job.name,
+                    'optimization_goal': job.optimization_goal,
+                    'status': job.status,
+                    'avg_utilization': f"{avg_utilization:.1f}%",
+                    'cost_status': cost_display,
+                    'results_count': len(job_results),
+                    'route_data_available': has_route_data,
+                    'date_created': job.date_created.strftime('%Y-%m-%d %H:%M')
+                })
+            
+            return jsonify({
+                'data': data,
+                'total_count': len(data),
+                'data_type': 'Optimization Jobs',
+                'columns': ['Job Name', 'Optimization Goal', 'Status', 'Avg Utilization', 'Total Cost', 'Results', 'Created Date']
+            })
+            
+        elif data_type == 'items':
+            # Get carton types data
+            cartons = CartonType.query.all()
+            data = []
+            for carton in cartons:
+                data.append({
+                    'id': carton.id,
+                    'name': carton.name,
+                    'category': getattr(carton, 'category', 'General'),
+                    'length': carton.length,
+                    'width': carton.width,
+                    'height': carton.height,
+                    'weight': carton.weight,
+                    'volume': carton.length * carton.width * carton.height / 1000000,  # m³
+                    'fragile': getattr(carton, 'fragile', False),
+                    'stackable': getattr(carton, 'stackable', True),
+                    'created_date': carton.date_created.strftime('%Y-%m-%d') if carton.date_created else 'N/A'
+                })
+            
+            return jsonify({
+                'data': data,
+                'total_count': len(data),
+                'data_type': 'Item Categories',
+                'columns': ['Name', 'Category', 'Dimensions (cm)', 'Weight (kg)', 'Volume (m³)', 'Fragile', 'Stackable', 'Created Date']
+            })
+            
+        elif data_type == 'shipments':
+            # Get monthly shipment data with actual base records
+            shipments = Shipment.query.order_by(Shipment.date_created.desc()).limit(100).all()
+            
+            # Group by month for the chart data
+            monthly_data = {}
+            for shipment in shipments:
+                month_key = shipment.date_created.strftime('%Y-%m')
+                if month_key not in monthly_data:
+                    monthly_data[month_key] = []
+                monthly_data[month_key].append(shipment)
+            
+            data = []
+            for month, month_shipments in monthly_data.items():
+                data.append({
+                    'month': month,
+                    'shipment_count': len(month_shipments),
+                    'total_weight': sum(getattr(s, 'total_weight', 0) for s in month_shipments),
+                    'total_volume': sum(getattr(s, 'total_volume', 0) for s in month_shipments),
+                    'avg_utilization': sum(getattr(s, 'utilization', 0) for s in month_shipments) / len(month_shipments) if month_shipments else 0,
+                    'routes_covered': len(set(getattr(s, 'route', 'Unknown') for s in month_shipments))
+                })
+            
+            return jsonify({
+                'data': sorted(data, key=lambda x: x['month'], reverse=True),
+                'total_count': len(data),
+                'data_type': 'Monthly Bookings Trend',
+                'columns': ['Month', 'Shipment Count', 'Total Weight (kg)', 'Total Volume (m³)', 'Avg Utilization (%)', 'Routes Covered']
+            })
+            
+        else:
+            return jsonify({'error': 'Invalid data type'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/dashboard/drill-down/<data_type>')
+def dashboard_drill_down(data_type):
+    """Render drill-down page for dashboard data"""
+    return api_drill_down_data(data_type)

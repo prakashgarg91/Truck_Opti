@@ -1,0 +1,9 @@
+order_id,item_name,length,width,height,weight,quantity,delivery_address
+ORD001,Small Box A,30,20,15,5,10,Mumbai Maharashtra
+ORD001,Medium Box B,50,40,25,12,5,Mumbai Maharashtra
+ORD002,Large Box C,80,60,40,25,3,Mumbai Maharashtra
+ORD002,Small Box D,25,25,20,8,15,Mumbai Maharashtra
+ORD003,XL Box E,100,80,60,35,2,Delhi NCR
+ORD003,Medium Box F,45,35,30,15,8,Delhi NCR
+ORD004,Compact Box G,20,15,10,3,25,Delhi NCR
+ORD005,Heavy Box H,70,50,45,40,4,Bangalore Karnataka

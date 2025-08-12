@@ -12,7 +12,11 @@
     </div>
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white mb-4 shadow">
+            <div class="card bg-primary text-white mb-4 shadow drill-down-card" 
+                 onclick="showDrillDown('trucks', 'Available Vehicles')" 
+                 style="cursor: pointer;" 
+                 data-bs-toggle="tooltip" 
+                 title="Click to view detailed truck data">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <i class="bi bi-truck fs-2"></i>
@@ -21,11 +25,19 @@
                             <div>Available Vehicles</div>
                         </div>
                     </div>
+                    <div class="drill-down-indicator">
+                        <i class="bi bi-arrow-down-circle-fill opacity-75"></i>
+                        <small>Click to drill down</small>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-warning text-white mb-4 shadow">
+            <div class="card bg-warning text-white mb-4 shadow drill-down-card" 
+                 onclick="showDrillDown('bookings', 'Active Bookings')" 
+                 style="cursor: pointer;" 
+                 data-bs-toggle="tooltip" 
+                 title="Click to view detailed booking data">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <i class="bi bi-box-seam fs-2"></i>
@@ -34,11 +46,19 @@
                             <div>Active Bookings</div>
                         </div>
                     </div>
+                    <div class="drill-down-indicator">
+                        <i class="bi bi-arrow-down-circle-fill opacity-75"></i>
+                        <small>Click to drill down</small>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-success text-white mb-4 shadow">
+            <div class="card bg-success text-white mb-4 shadow drill-down-card" 
+                 onclick="showDrillDown('jobs', 'Optimization Jobs')" 
+                 style="cursor: pointer;" 
+                 data-bs-toggle="tooltip" 
+                 title="Click to view detailed job data">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <i class="bi bi-bar-chart fs-2"></i>
@@ -47,11 +67,19 @@
                             <div>Optimization Jobs</div>
                         </div>
                     </div>
+                    <div class="drill-down-indicator">
+                        <i class="bi bi-arrow-down-circle-fill opacity-75"></i>
+                        <small>Click to drill down</small>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-info text-white mb-4 shadow">
+            <div class="card bg-info text-white mb-4 shadow drill-down-card" 
+                 onclick="showDrillDown('items', 'Item Categories')" 
+                 style="cursor: pointer;" 
+                 data-bs-toggle="tooltip" 
+                 title="Click to view detailed item data">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <i class="bi bi-truck-flatbed fs-2"></i>
@@ -59,6 +87,10 @@
                             <div class="fs-3">{{ stats.total_cartons }}</div>
                             <div>Item Categories</div>
                         </div>
+                    </div>
+                    <div class="drill-down-indicator">
+                        <i class="bi bi-arrow-down-circle-fill opacity-75"></i>
+                        <small>Click to drill down</small>
                     </div>
                 </div>
             </div>
@@ -209,8 +241,13 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="dashboard-chart-container">
+                    <div class="dashboard-chart-container" onclick="showChartDrillDown('shipments', 'Monthly Bookings Trend')" style="cursor: pointer;">
                         <canvas id="shipmentsChart" width="100%" height="300"></canvas>
+                        <div class="chart-drill-down-overlay">
+                            <div class="drill-down-hint">
+                                <i class="bi bi-search"></i> Click to view base data
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -231,10 +268,69 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="dashboard-chart-container">
+                    <div class="dashboard-chart-container" onclick="showChartDrillDown('trucks', 'Partner Vehicle Categories')" style="cursor: pointer;">
                         <canvas id="trucksChart" width="100%" height="300"></canvas>
+                        <div class="chart-drill-down-overlay">
+                            <div class="drill-down-hint">
+                                <i class="bi bi-search"></i> Click to view base data
+                            </div>
+                        </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Drill-Down Modal -->
+<div class="modal fade" id="drillDownModal" tabindex="-1" aria-labelledby="drillDownModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="drillDownModalLabel">
+                    <i class="bi bi-table me-2"></i>Base Data Analysis
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Data Source: <span id="dataSource"></span></h6>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportDrillDownData('excel')">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Excel
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportDrillDownData('csv')">
+                                <i class="bi bi-file-earmark-text"></i> CSV
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportDrillDownData('pdf')">
+                                <i class="bi bi-file-earmark-pdf"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Data Verification:</strong> This table shows the actual base data used to calculate the dashboard metrics. 
+                            You can verify the accuracy of any chart or KPI by examining the underlying records.
+                        </div>
+                    </div>
+                </div>
+
+                <div id="drillDownContent">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="refreshDrillDownData()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Data
+                </button>
             </div>
         </div>
     </div>
@@ -483,6 +579,284 @@ $(document).ready(function() {
         });
         
     }, 100); // Small delay to ensure DOM is ready
+});
+
+// Global variables for drill-down functionality
+let currentDrillDownData = null;
+let currentDataType = null;
+
+// Drill-down functionality for dashboard widgets
+function showDrillDown(dataType, title) {
+    currentDataType = dataType;
+    document.getElementById('dataSource').textContent = title;
+    document.getElementById('drillDownModalLabel').innerHTML = 
+        `<i class="bi bi-table me-2"></i>${title} - Base Data Analysis`;
+    
+    // Show loading state
+    document.getElementById('drillDownContent').innerHTML = `
+        <div class="text-center p-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading base data...</p>
+        </div>
+    `;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
+    modal.show();
+    
+    // Fetch data
+    fetch(`/api/drill-down/${dataType}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            currentDrillDownData = data;
+            renderDrillDownTable(data);
+        })
+        .catch(error => {
+            console.error('Error fetching drill-down data:', error);
+            document.getElementById('drillDownContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Error loading data: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// Chart drill-down functionality
+function showChartDrillDown(chartType, title) {
+    const dataTypeMap = {
+        'shipments': 'shipments',
+        'trucks': 'trucks'
+    };
+    
+    showDrillDown(dataTypeMap[chartType], title);
+}
+
+// Render drill-down data table
+function renderDrillDownTable(data) {
+    const content = document.getElementById('drillDownContent');
+    
+    if (!data.data || data.data.length === 0) {
+        content.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="bi bi-info-circle me-2"></i>
+                No data available for this category.
+            </div>
+        `;
+        return;
+    }
+    
+    // Create summary stats
+    const statsHtml = `
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body p-3">
+                        <h6 class="card-title mb-1">Total Records</h6>
+                        <h4 class="text-primary mb-0">${data.total_count}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body p-3">
+                        <h6 class="card-title mb-1">Data Source</h6>
+                        <h6 class="text-muted mb-0">${data.data_type}</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Create searchable, sortable table
+    const tableHtml = `
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="drillDownSearch" 
+                       placeholder="🔍 Search in data..." onkeyup="filterDrillDownTable()">
+            </div>
+            <div class="col-md-6">
+                <select class="form-select" id="drillDownSort" onchange="sortDrillDownTable()">
+                    <option value="">Sort by...</option>
+                    ${data.columns.map((col, index) => `<option value="${index}">${col}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="drillDownTable">
+                <thead class="table-dark">
+                    <tr>
+                        ${data.columns.map(col => `<th>${col}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${renderTableRows(data.data)}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    content.innerHTML = statsHtml + tableHtml;
+}
+
+// Render table rows
+function renderTableRows(data) {
+    return data.map(row => {
+        const values = Object.values(row).slice(1); // Skip ID
+        return `
+            <tr>
+                ${values.map(value => `<td>${formatCellValue(value)}</td>`).join('')}
+            </tr>
+        `;
+    }).join('');
+}
+
+// Format cell values for display
+function formatCellValue(value) {
+    if (typeof value === 'boolean') {
+        return value ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>';
+    }
+    if (typeof value === 'number' && value > 1000000) {
+        return (value / 1000000).toFixed(2) + 'M';
+    }
+    if (typeof value === 'string' && value.includes('%')) {
+        const num = parseFloat(value);
+        if (num >= 80) return `<span class="text-success fw-bold">${value}</span>`;
+        if (num >= 60) return `<span class="text-warning fw-bold">${value}</span>`;
+        if (num < 60) return `<span class="text-danger fw-bold">${value}</span>`;
+    }
+    return value || 'N/A';
+}
+
+// Filter table based on search
+function filterDrillDownTable() {
+    const searchTerm = document.getElementById('drillDownSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#drillDownTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+// Sort table by column
+function sortDrillDownTable() {
+    const sortSelect = document.getElementById('drillDownSort');
+    const columnIndex = parseInt(sortSelect.value);
+    
+    if (isNaN(columnIndex)) return;
+    
+    const tbody = document.querySelector('#drillDownTable tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        const aVal = a.cells[columnIndex]?.textContent || '';
+        const bVal = b.cells[columnIndex]?.textContent || '';
+        
+        // Try numeric sort first
+        const aNum = parseFloat(aVal.replace(/[^0-9.-]/g, ''));
+        const bNum = parseFloat(bVal.replace(/[^0-9.-]/g, ''));
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            return bNum - aNum; // Descending numeric
+        }
+        
+        // Alphabetic sort
+        return aVal.localeCompare(bVal);
+    });
+    
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Export drill-down data
+function exportDrillDownData(format) {
+    if (!currentDrillDownData) {
+        showToast('Export Error', 'No data available to export', 'danger');
+        return;
+    }
+    
+    const data = currentDrillDownData;
+    const filename = `${currentDataType}_base_data_${new Date().toISOString().split('T')[0]}`;
+    
+    if (format === 'excel') {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(data.data);
+        XLSX.utils.book_append_sheet(wb, ws, data.data_type);
+        XLSX.writeFile(wb, `${filename}.xlsx`);
+        showToast('Excel Export', 'Base data exported successfully', 'success');
+    } 
+    else if (format === 'csv') {
+        const ws = XLSX.utils.json_to_sheet(data.data);
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showToast('CSV Export', 'Base data exported successfully', 'success');
+    }
+    else if (format === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add title
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${data.data_type} - Base Data Report`, 20, 20);
+        
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 20, 30);
+        doc.text(`Total Records: ${data.total_count}`, 20, 40);
+        
+        // Add summary table (first few records)
+        let y = 60;
+        const maxRecords = Math.min(20, data.data.length);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.text('Sample Data (First 20 Records):', 20, 50);
+        
+        for (let i = 0; i < maxRecords; i++) {
+            const record = data.data[i];
+            const values = Object.values(record);
+            const displayText = `${i + 1}. ${values.slice(1, 3).join(' - ')}`;
+            
+            if (y > 280) { // New page
+                doc.addPage();
+                y = 20;
+            }
+            
+            doc.setFont('helvetica', 'normal');
+            doc.text(displayText, 20, y);
+            y += 8;
+        }
+        
+        doc.save(`${filename}.pdf`);
+        showToast('PDF Export', 'Base data report exported successfully', 'success');
+    }
+}
+
+// Refresh drill-down data
+function refreshDrillDownData() {
+    if (currentDataType) {
+        showDrillDown(currentDataType, document.getElementById('dataSource').textContent);
+    }
+}
+
+// Initialize tooltips for drill-down indicators
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 </script>
 {% endblock %}

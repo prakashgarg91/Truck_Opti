@@ -400,10 +400,11 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
 
     return results
 
-def calculate_optimal_truck_combination(carton_types_with_quantities, available_truck_types, max_trucks=10):
+def calculate_optimal_truck_combination(carton_types_with_quantities, available_truck_types, max_trucks=10, optimization_strategy='space_utilization'):
     """
-    Improved AI-powered truck combination recommendation
-    Returns the most cost-effective and efficient truck combination with better variety
+    Enhanced truck combination recommendation with max space utilization priority
+    - Prioritizes smallest truck first for maximum space utilization
+    - Supports multiple optimization strategies: 'space_utilization', 'cost_saving', 'balanced'
     """
     best_combinations = []
     
@@ -417,8 +418,17 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
         for carton, qty in carton_types_with_quantities.items()
     )
     
-    # Sort trucks by size to try different sizes first
-    sorted_trucks = sorted(available_truck_types, key=lambda t: t.length * t.width * t.height)
+    # Sort trucks based on optimization strategy
+    if optimization_strategy == 'space_utilization':
+        # Smallest truck first for maximum space utilization
+        sorted_trucks = sorted(available_truck_types, key=lambda t: t.length * t.width * t.height)
+    elif optimization_strategy == 'cost_saving':
+        # Sort by cost efficiency (if cost data available)
+        sorted_trucks = sorted(available_truck_types, key=lambda t: getattr(t, 'cost_per_km', 999999))
+    else:  # balanced
+        # Balance between size and efficiency
+        sorted_trucks = sorted(available_truck_types, 
+                              key=lambda t: (t.length * t.width * t.height, getattr(t, 'cost_per_km', 999999)))
     
     # Try different truck combinations with smarter logic
     for truck_type in sorted_trucks:
@@ -436,7 +446,7 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
             truck_combo = {truck_type: quantity}
             
             # Test packing with this combination
-            result = pack_cartons_optimized(truck_combo, carton_types_with_quantities, 'cost')
+            result = pack_cartons_optimized(truck_combo, carton_types_with_quantities, optimization_strategy)
             
             if not result:  # Skip if no results
                 continue

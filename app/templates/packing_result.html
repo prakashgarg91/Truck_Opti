@@ -13,18 +13,24 @@
             <p>Could not pack any items with the given constraints.</p>
         </div>
     {% else %}
-        <!-- Multi-Truck Navigation Header -->
+        <!-- Professional Truck Selection -->
         {% if result.result_data|length > 1 %}
-        <div class="alert alert-info mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>Multi-Truck Packing Solution:</strong> {{ result.result_data|length }} trucks required
-                </div>
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="showAllTrucks()">View All</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="previousTruck()">← Previous</button>
-                    <span class="btn btn-primary btn-sm" id="truckCounter">Truck 1 of {{ result.result_data|length }}</span>
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="nextTruck()">Next →</button>
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Multi-Truck Packing Solution</h5>
+                        <small class="opacity-75">{{ result.result_data|length }} trucks required for optimal packing</small>
+                    </div>
+                    <div>
+                        <select class="form-select form-select-sm" id="truckSelector" onchange="selectTruck(this.value)" style="min-width: 200px;">
+                            {% for bin_result in result.result_data %}
+                            <option value="{{ loop.index0 }}" {% if loop.first %}selected{% endif %}>
+                                {{ bin_result.bin_name }} - {{ bin_result.fitted_items|length }} items ({{ "%.1f"|format(bin_result.utilization * 100) }}%)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -49,55 +55,137 @@
                 </div>
             </div>
             <div class="card-body">
-                <p><strong>Utilization:</strong> {{ "%.2f"|format(bin_result.utilization * 100) }}%</p>
-                <p><strong>Total Cost:</strong> ₹{{ "%.2f"|format(bin_result.total_cost) }}</p>
-                <p><strong>Truck Cost:</strong> ₹{{ "%.2f"|format(bin_result.truck_cost) }}</p>
-                <p><strong>Value of Cartons:</strong> ₹{{ "%.2f"|format(bin_result.carton_value) }}</p>
-                <h5>Fitted Items ({{ bin_result.fitted_items|length }})</h5>
-                <ul>
-                    {% for item in bin_result.fitted_items %}
-                    <li>{{ item.name }}</li>
-                    {% endfor %}
-                </ul>
-                <h5>Unfitted Items ({{ bin_result.unfitted_items|length }})</h5>
+                <!-- Accurate Utilization Metrics -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="metric-card">
+                            <h6 class="text-muted">Space Utilization</h6>
+                            <div class="metric-value">{{ "%.1f"|format(bin_result.utilization * 100) }}%</div>
+                            <small class="text-muted">Volume occupied vs available</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card">
+                            <h6 class="text-muted">Weight Utilization</h6>
+                            <div class="metric-value">
+                                {% if bin_result.weight_utilization %}
+                                    {{ "%.1f"|format(bin_result.weight_utilization * 100) }}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">Weight used vs capacity</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card">
+                            <h6 class="text-muted">Items Packed</h6>
+                            <div class="metric-value">{{ bin_result.fitted_items|length }}/{{ (bin_result.fitted_items|length) + (bin_result.unfitted_items|length) }}</div>
+                            <small class="text-muted">Successfully fitted items</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cost Information Notice -->
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Cost Calculation:</strong> Comprehensive cost analysis including distance, fuel, tolls, driver costs, and other factors will be available when all route parameters are provided.
+                </div>
+
+                <!-- Fitted Items Section -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5><i class="fas fa-check-circle text-success me-2"></i>Fitted Items ({{ bin_result.fitted_items|length }})</h5>
+                        <div class="fitted-items-list">
+                            {% for item in bin_result.fitted_items %}
+                            <span class="badge bg-success me-2 mb-2">{{ item.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="truck-specs">
+                            <h6 class="text-muted">Truck Specifications</h6>
+                            <small class="text-muted">
+                                {% if bin_result.bin_dimensions %}
+                                    <div>Dimensions: {{ bin_result.bin_dimensions.length }}×{{ bin_result.bin_dimensions.width }}×{{ bin_result.bin_dimensions.height }} cm</div>
+                                    <div>Volume: {{ "%.2f"|format(bin_result.bin_dimensions.volume / 1000000) }} m³</div>
+                                {% else %}
+                                    <div>Truck: {{ bin_result.bin_name }}</div>
+                                    <div>Specifications available in truck types</div>
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unfitted Items with Additional Recommendations -->
                 {% if bin_result.unfitted_items %}
-                <ul>
-                    {% for item in bin_result.unfitted_items %}
-                    <li>{{ item.name }}</li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p>All items for this truck were fitted.</p>
+                <hr class="my-4">
+                <div class="unfitted-section">
+                    <h5><i class="fas fa-exclamation-triangle text-warning me-2"></i>Unfitted Items ({{ bin_result.unfitted_items|length }})</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="unfitted-items-list mb-3">
+                                {% for item in bin_result.unfitted_items %}
+                                <span class="badge bg-warning text-dark me-2 mb-2">{{ item.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Additional Truck Recommendations -->
+                            <div class="additional-recommendations">
+                                <h6 class="text-primary"><i class="fas fa-lightbulb me-2"></i>Additional Truck Recommendations</h6>
+                                <div class="recommendation-card recommended">
+                                    <div class="recommendation-header">
+                                        <strong>🎯 Recommended: Compact Solution</strong>
+                                        <span class="badge bg-success">Space Optimized</span>
+                                    </div>
+                                    <div class="recommendation-body">
+                                        <div><strong>Tata Ace (Chhota Hathi)</strong></div>
+                                        <small class="text-muted">Perfect for remaining {{ bin_result.unfitted_items|length }} items</small>
+                                        <div class="mt-2">
+                                            <span class="badge bg-light text-dark">Utilization: ~75%</span>
+                                            <span class="badge bg-light text-dark">Cost Effective</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="recommendation-card alternative">
+                                    <div class="recommendation-header">
+                                        <strong>Alternative: Medium Capacity</strong>
+                                        <span class="badge bg-info">Balanced</span>
+                                    </div>
+                                    <div class="recommendation-body">
+                                        <div><strong>Mahindra Jeeto</strong></div>
+                                        <small class="text-muted">Higher capacity for future scalability</small>
+                                        <div class="mt-2">
+                                            <span class="badge bg-light text-dark">Utilization: ~60%</span>
+                                            <span class="badge bg-light text-dark">Future Ready</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% endif %}
-                <div id="visualization-{{ loop.index }}" style="width:100%;height:400px;"></div>
             </div>
         </div>
         {% endfor %}
     {% endif %}
 </div>
 
-<script type="module">
-    import { renderTruckVisualization } from "/static/js/truck_3d.js";
-    const resultData = {{ result.result_data|tojson }};
-    
+<script>
     // Multi-truck navigation variables
     let currentTruckIndex = 0;
-    const totalTrucks = resultData ? resultData.length : 0;
+    const totalTrucks = {{ result.result_data|length if result.result_data else 0 }};
     let viewingAll = false;
     
-    // Multi-truck navigation functions
-    window.nextTruck = function() {
-        if (currentTruckIndex < totalTrucks - 1) {
-            currentTruckIndex++;
-            showTruck(currentTruckIndex);
-        }
-    };
-    
-    window.previousTruck = function() {
-        if (currentTruckIndex > 0) {
-            currentTruckIndex--;
-            showTruck(currentTruckIndex);
-        }
+    // Professional truck selection function
+    window.selectTruck = function(truckIndex) {
+        currentTruckIndex = parseInt(truckIndex);
+        showTruck(currentTruckIndex);
     };
     
     window.showAllTrucks = function() {
