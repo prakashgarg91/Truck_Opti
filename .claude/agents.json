@@ -1,0 +1,617 @@
+{
+  "agents": [
+    {
+      "id": "chief_architect",
+      "model": "opus-4.1",
+      "role": "Chief Architect",
+      "reports_to": null,
+      "priority": 1,
+      "cost_level": "high",
+      "tasks": [
+        "Define overall system architecture and technical strategy",
+        "Make final architectural decisions and approve major changes",
+        "Review and approve all technical plans from leads",
+        "Ensure technical consistency across all components",
+        "Final delivery approval and system sign-off"
+      ],
+      "specializations": [
+        "System architecture design",
+        "Technology stack decisions",
+        "Scalability planning",
+        "Technical risk assessment"
+      ],
+      "triggers": [
+        "New project initiation",
+        "Major architectural changes",
+        "Technology stack decisions",
+        "Final system approval"
+      ]
+    },
+    {
+      "id": "product_strategist",
+      "model": "opus-4.1",
+      "role": "Product Strategist & Requirements Analyst",
+      "reports_to": "chief_architect",
+      "priority": 2,
+      "cost_level": "high",
+      "tasks": [
+        "Analyze and refine product requirements",
+        "Ensure market-fit and feature alignment",
+        "Define user stories and acceptance criteria",
+        "Prioritize feature development roadmap",
+        "Coordinate with stakeholders on requirements"
+      ],
+      "specializations": [
+        "Requirements analysis",
+        "User experience strategy",
+        "Feature prioritization",
+        "Stakeholder management"
+      ],
+      "triggers": [
+        "New feature requests",
+        "Requirements clarification needed",
+        "User story definition",
+        "Product roadmap planning"
+      ]
+    },
+    {
+      "id": "technical_lead",
+      "model": "sonnet-4",
+      "role": "Technical Lead & System Integrator",
+      "reports_to": "chief_architect",
+      "priority": 3,
+      "cost_level": "medium-high",
+      "tasks": [
+        "Oversee all technical implementation decisions",
+        "Coordinate integration between frontend, backend, and infrastructure",
+        "Review and approve technical designs from specialists",
+        "Ensure code quality and architectural compliance",
+        "Manage technical debt and refactoring decisions"
+      ],
+      "specializations": [
+        "Full-stack architecture",
+        "System integration",
+        "Code review and quality",
+        "Technical decision making"
+      ],
+      "triggers": [
+        "Cross-system integration needs",
+        "Technical design reviews",
+        "Architecture compliance issues",
+        "Major refactoring decisions"
+      ]
+    },
+    {
+      "id": "project_orchestrator",
+      "model": "sonnet-4",
+      "role": "Project Orchestrator & Scrum Master",
+      "reports_to": "technical_lead",
+      "priority": 4,
+      "cost_level": "medium-high",
+      "tasks": [
+        "Break complex features into actionable development tasks",
+        "Coordinate sprint planning and task assignments",
+        "Track progress across all development streams",
+        "Manage dependencies and blockers",
+        "Facilitate agile ceremonies and reporting"
+      ],
+      "specializations": [
+        "Project management",
+        "Task decomposition",
+        "Agile methodologies",
+        "Team coordination"
+      ],
+      "triggers": [
+        "Complex feature implementation",
+        "Sprint planning sessions",
+        "Cross-team coordination needs",
+        "Project timeline management"
+      ]
+    },
+    {
+      "id": "backend_architect",
+      "model": "sonnet-4",
+      "role": "Backend Architect & Database Lead",
+      "reports_to": "technical_lead",
+      "priority": 5,
+      "cost_level": "medium-high",
+      "tasks": [
+        "Design backend system architecture and API specifications",
+        "Define database schemas and optimization strategies",
+        "Implement core backend services and business logic",
+        "Ensure backend security and performance standards",
+        "Coordinate with frontend for API integration"
+      ],
+      "specializations": [
+        "Backend architecture",
+        "Database design",
+        "API development",
+        "Server-side optimization",
+        "Security implementation"
+      ],
+      "triggers": [
+        "Backend system design",
+        "Database schema changes",
+        "API endpoint creation",
+        "Backend performance issues"
+      ]
+    },
+    {
+      "id": "frontend_architect",
+      "model": "sonnet-4",
+      "role": "Frontend Architect & UI Lead",
+      "reports_to": "technical_lead",
+      "priority": 6,
+      "cost_level": "medium-high",
+      "tasks": [
+        "Design frontend architecture and component structure",
+        "Implement complex UI components and user interactions",
+        "Ensure responsive design and accessibility compliance",
+        "Optimize frontend performance and user experience",
+        "Coordinate with backend for data integration"
+      ],
+      "specializations": [
+        "Frontend architecture",
+        "React/Vue/Angular expertise",
+        "UI/UX implementation",
+        "Performance optimization",
+        "Accessibility standards"
+      ],
+      "triggers": [
+        "Frontend architecture decisions",
+        "Complex UI component needs",
+        "User experience improvements",
+        "Frontend performance optimization"
+      ]
+    },
+    {
+      "id": "devops_security_specialist",
+      "model": "sonnet-4",
+      "role": "DevOps & Security Specialist",
+      "reports_to": "technical_lead",
+      "priority": 7,
+      "cost_level": "medium-high",
+      "tasks": [
+        "Design and implement CI/CD pipelines",
+        "Configure cloud infrastructure and deployment strategies",
+        "Implement security best practices and compliance",
+        "Set up monitoring, logging, and alerting systems",
+        "Manage infrastructure scaling and optimization"
+      ],
+      "specializations": [
+        "DevOps automation",
+        "Cloud infrastructure",
+        "Security implementation",
+        "CI/CD pipelines",
+        "Monitoring systems"
+      ],
+      "triggers": [
+        "Deployment pipeline setup",
+        "Infrastructure configuration",
+        "Security implementation",
+        "Performance monitoring needs"
+      ]
+    },
+    {
+      "id": "qa_automation_lead",
+      "model": "sonnet-4",
+      "role": "QA & Testing Automation Lead",
+      "reports_to": "technical_lead",
+      "priority": 8,
+      "cost_level": "medium-high",
+      "tasks": [
+        "Design comprehensive testing strategies",
+        "Implement automated testing frameworks",
+        "Coordinate all testing activities across teams",
+        "Ensure quality standards and bug prevention",
+        "Performance and security testing oversight"
+      ],
+      "specializations": [
+        "Test automation",
+        "Quality assurance",
+        "Testing frameworks",
+        "Performance testing",
+        "Security testing"
+      ],
+      "triggers": [
+        "Testing strategy definition",
+        "Test automation setup",
+        "Quality assurance reviews",
+        "Performance testing needs"
+      ]
+    },
+    {
+      "id": "fullstack_developer",
+      "model": "haiku-3.5",
+      "role": "Full-Stack Developer",
+      "reports_to": "backend_architect",
+      "priority": 9,
+      "cost_level": "medium",
+      "tasks": [
+        "Implement backend APIs and database operations",
+        "Develop frontend components and user interfaces",
+        "Handle end-to-end feature implementation",
+        "Integrate frontend and backend systems",
+        "Write unit and integration tests"
+      ],
+      "specializations": [
+        "Full-stack development",
+        "API implementation",
+        "Database operations",
+        "Frontend components",
+        "System integration"
+      ],
+      "triggers": [
+        "Feature implementation",
+        "API development",
+        "Database operations",
+        "Frontend development",
+        "System integration"
+      ]
+    },
+    {
+      "id": "auth_security_developer",
+      "model": "haiku-3.5",
+      "role": "Authentication & Security Developer",
+      "reports_to": "backend_architect",
+      "priority": 10,
+      "cost_level": "medium",
+      "tasks": [
+        "Implement authentication and authorization systems",
+        "Develop security middleware and validation",
+        "Handle user management and role-based access",
+        "Implement secure data handling practices",
+        "Security testing and vulnerability assessment"
+      ],
+      "specializations": [
+        "Authentication systems",
+        "Security implementation",
+        "Access control",
+        "Data protection",
+        "Security testing"
+      ],
+      "triggers": [
+        "Authentication needs",
+        "Security implementation",
+        "User management",
+        "Access control requirements"
+      ]
+    },
+    {
+      "id": "api_integration_specialist",
+      "model": "haiku-3.5",
+      "role": "API & Integration Specialist",
+      "reports_to": "backend_architect",
+      "priority": 11,
+      "cost_level": "medium",
+      "tasks": [
+        "Design and implement RESTful APIs",
+        "Handle third-party service integrations",
+        "Implement data validation and transformation",
+        "API documentation and testing",
+        "Handle webhook and event-driven architectures"
+      ],
+      "specializations": [
+        "API design",
+        "Third-party integrations",
+        "Data validation",
+        "API documentation",
+        "Event-driven systems"
+      ],
+      "triggers": [
+        "API endpoint creation",
+        "Third-party integrations",
+        "Data transformation needs",
+        "Webhook implementations"
+      ]
+    },
+    {
+      "id": "database_developer",
+      "model": "haiku-3.5",
+      "role": "Database Developer & Data Specialist",
+      "reports_to": "backend_architect",
+      "priority": 12,
+      "cost_level": "medium",
+      "tasks": [
+        "Implement database schemas and migrations",
+        "Optimize database queries and performance",
+        "Handle data modeling and relationships",
+        "Implement caching strategies",
+        "Database backup and recovery procedures"
+      ],
+      "specializations": [
+        "Database design",
+        "Query optimization",
+        "Data modeling",
+        "Caching systems",
+        "Database administration"
+      ],
+      "triggers": [
+        "Database schema changes",
+        "Query optimization needs",
+        "Data modeling requirements",
+        "Performance improvements"
+      ]
+    },
+    {
+      "id": "ui_component_developer",
+      "model": "haiku-3.5",
+      "role": "UI Component Developer",
+      "reports_to": "frontend_architect",
+      "priority": 13,
+      "cost_level": "medium",
+      "tasks": [
+        "Build reusable UI components and design systems",
+        "Implement responsive layouts and mobile optimization",
+        "Handle user interactions and form management",
+        "Ensure accessibility and usability standards",
+        "Component testing and documentation"
+      ],
+      "specializations": [
+        "UI component development",
+        "Responsive design",
+        "Accessibility",
+        "Design systems",
+        "User interactions"
+      ],
+      "triggers": [
+        "UI component needs",
+        "Design system implementation",
+        "Responsive design requirements",
+        "Accessibility improvements"
+      ]
+    },
+    {
+      "id": "state_performance_specialist",
+      "model": "haiku-3.5",
+      "role": "State Management & Performance Specialist",
+      "reports_to": "frontend_architect",
+      "priority": 14,
+      "cost_level": "medium",
+      "tasks": [
+        "Implement state management solutions",
+        "Optimize frontend performance and bundle size",
+        "Handle routing and navigation systems",
+        "Implement data fetching and caching strategies",
+        "Performance monitoring and optimization"
+      ],
+      "specializations": [
+        "State management",
+        "Performance optimization",
+        "Routing systems",
+        "Data fetching",
+        "Bundle optimization"
+      ],
+      "triggers": [
+        "State management needs",
+        "Performance optimization",
+        "Routing implementation",
+        "Data flow optimization"
+      ]
+    },
+    {
+      "id": "data_visualization_specialist",
+      "model": "haiku-3.5",
+      "role": "Data Visualization & Analytics Specialist",
+      "reports_to": "frontend_architect",
+      "priority": 15,
+      "cost_level": "medium",
+      "tasks": [
+        "Implement charts, graphs, and data visualizations",
+        "Build analytics dashboards and reporting interfaces",
+        "Handle real-time data display and updates",
+        "Optimize data presentation for user insights",
+        "Interactive data exploration features"
+      ],
+      "specializations": [
+        "Data visualization",
+        "Analytics dashboards",
+        "Chart libraries",
+        "Real-time data",
+        "Interactive interfaces"
+      ],
+      "triggers": [
+        "Dashboard requirements",
+        "Data visualization needs",
+        "Analytics features",
+        "Reporting interfaces"
+      ]
+    },
+    {
+      "id": "automation_testing_engineer",
+      "model": "haiku-3.5",
+      "role": "Automation Testing Engineer",
+      "reports_to": "qa_automation_lead",
+      "priority": 16,
+      "cost_level": "medium",
+      "tasks": [
+        "Write and maintain automated test suites",
+        "Implement unit, integration, and e2e testing",
+        "Set up continuous testing in CI/CD pipelines",
+        "Performance and load testing implementation",
+        "Test data management and test environment setup"
+      ],
+      "specializations": [
+        "Test automation",
+        "Testing frameworks",
+        "CI/CD testing",
+        "Performance testing",
+        "Test management"
+      ],
+      "triggers": [
+        "Test automation needs",
+        "Testing framework setup",
+        "CI/CD integration",
+        "Performance testing"
+      ]
+    },
+    {
+      "id": "infrastructure_engineer",
+      "model": "haiku-3.5",
+      "role": "Infrastructure Engineer",
+      "reports_to": "devops_security_specialist",
+      "priority": 17,
+      "cost_level": "medium",
+      "tasks": [
+        "Configure cloud infrastructure and services",
+        "Implement container orchestration and scaling",
+        "Set up monitoring and logging systems",
+        "Handle infrastructure automation and IaC",
+        "Manage backup and disaster recovery"
+      ],
+      "specializations": [
+        "Cloud infrastructure",
+        "Container orchestration",
+        "Infrastructure automation",
+        "Monitoring systems",
+        "Disaster recovery"
+      ],
+      "triggers": [
+        "Infrastructure setup",
+        "Scaling requirements",
+        "Monitoring implementation",
+        "Automation needs"
+      ]
+    },
+    {
+      "id": "documentation_specialist",
+      "model": "haiku-3",
+      "role": "Documentation & Knowledge Management Specialist",
+      "reports_to": "project_orchestrator",
+      "priority": 18,
+      "cost_level": "low",
+      "tasks": [
+        "Create and maintain technical documentation",
+        "Generate API documentation and user guides",
+        "Maintain project knowledge base and wikis",
+        "Create deployment and operational guides",
+        "Document best practices and coding standards"
+      ],
+      "specializations": [
+        "Technical writing",
+        "API documentation",
+        "Knowledge management",
+        "Process documentation",
+        "Standards documentation"
+      ],
+      "triggers": [
+        "Documentation needs",
+        "API documentation",
+        "Process documentation",
+        "Knowledge sharing"
+      ]
+    },
+    {
+      "id": "code_reviewer",
+      "model": "haiku-3",
+      "role": "Code Review & Quality Assurance Specialist",
+      "reports_to": "qa_automation_lead",
+      "priority": 19,
+      "cost_level": "low",
+      "tasks": [
+        "Conduct code reviews for quality and standards compliance",
+        "Identify bugs, security issues, and performance problems",
+        "Ensure coding standards and best practices adherence",
+        "Provide constructive feedback and improvement suggestions",
+        "Maintain code quality metrics and reporting"
+      ],
+      "specializations": [
+        "Code review",
+        "Quality standards",
+        "Security analysis",
+        "Performance review",
+        "Best practices"
+      ],
+      "triggers": [
+        "Code review requests",
+        "Quality assurance needs",
+        "Security reviews",
+        "Standards compliance"
+      ]
+    },
+    {
+      "id": "optimization_specialist",
+      "model": "haiku-3",
+      "role": "Performance & Optimization Specialist",
+      "reports_to": "technical_lead",
+      "priority": 20,
+      "cost_level": "low",
+      "tasks": [
+        "Analyze and optimize application performance",
+        "Identify bottlenecks and resource usage issues",
+        "Implement caching and optimization strategies",
+        "Monitor system performance and resource utilization",
+        "Recommend infrastructure and code optimizations"
+      ],
+      "specializations": [
+        "Performance analysis",
+        "Optimization techniques",
+        "Resource management",
+        "Caching strategies",
+        "Monitoring systems"
+      ],
+      "triggers": [
+        "Performance issues",
+        "Optimization requests",
+        "Resource monitoring",
+        "Scalability concerns"
+      ]
+    },
+    {
+      "id": "budget_risk_analyst",
+      "model": "haiku-3",
+      "role": "Budget & Risk Management Analyst",
+      "reports_to": "project_orchestrator",
+      "priority": 21,
+      "cost_level": "low",
+      "tasks": [
+        "Monitor development costs and resource utilization",
+        "Identify project risks and mitigation strategies",
+        "Track timeline adherence and deadline management",
+        "Analyze cost-benefit of technical decisions",
+        "Provide risk assessment and contingency planning"
+      ],
+      "specializations": [
+        "Cost analysis",
+        "Risk assessment",
+        "Timeline management",
+        "Resource planning",
+        "Contingency planning"
+      ],
+      "triggers": [
+        "Budget monitoring",
+        "Risk assessment needs",
+        "Timeline concerns",
+        "Resource optimization"
+      ]
+    }
+  ],
+  "cost_optimization": {
+    "model_usage_strategy": {
+      "opus-4.1": "Reserved for strategic decisions, architecture planning, and complex problem-solving",
+      "sonnet-4": "Used for technical leadership, design decisions, and complex implementation tasks",
+      "haiku-3.5": "Efficient for focused development tasks, specific implementations, and medium complexity work",
+      "haiku-3": "Cost-effective for reviews, documentation, analysis, and routine tasks"
+    },
+    "escalation_rules": {
+      "complexity_threshold": "Escalate to higher-tier model when task complexity exceeds agent capability",
+      "cost_awareness": "Prefer lower-cost models when task requirements allow",
+      "quality_gates": "Use higher-tier models for critical decision points and quality assurance"
+    }
+  },
+  "workflow_patterns": {
+    "feature_development": [
+      "product_strategist -> project_orchestrator -> technical_lead -> specialist_agents",
+      "Continuous coordination between frontend_architect and backend_architect",
+      "qa_automation_lead provides ongoing testing oversight"
+    ],
+    "bug_fixing": [
+      "code_reviewer -> optimization_specialist -> appropriate_specialist",
+      "Escalate to technical_lead for complex issues"
+    ],
+    "architecture_changes": [
+      "chief_architect -> technical_lead -> all_relevant_specialists",
+      "Full coordination required across all teams"
+    ]
+  }
+}
