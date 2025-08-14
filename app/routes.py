@@ -47,45 +47,40 @@ def recommend_truck():
             flash('Please add at least one carton type.', 'warning')
             return redirect(url_for('main.recommend_truck'))
 
-        # Use improved recommendation algorithm
+        # Use enhanced smart recommendation algorithm
         trucks = TruckType.query.all()
         
-        from . import packer
-        # Use the improved recommendation algorithm for better recommendations
-        recommendations = packer.calculate_optimal_truck_combination(
-            carton_quantities, trucks, max_trucks=5, optimization_strategy='space_utilization'
+        # Get optimization goal from form (default to balanced)
+        optimization_goal = request.form.get('optimization_goal', 'balanced')
+        
+        # Use enhanced smart recommender for better analysis
+        from app.smart_recommender import get_enhanced_truck_recommendations
+        recommendations = get_enhanced_truck_recommendations(
+            carton_quantities, trucks, optimization_goal
         )
         
-        # Convert recommendations to format expected by template
+        # Enhanced recommendations are already in the right format
         recommended = []
         route_info = {'distance_km': 100, 'route_type': 'highway'}
         
         for rec in recommendations:
-            # Find the truck type
-            truck_type = next((t for t in trucks if t.name == rec['truck_type']), None)
-            if truck_type:
-                # Get detailed packing results
-                truck_combo = {truck_type: rec['quantity']}
-                pack_results = packer.pack_cartons_optimized(truck_combo, carton_quantities, 'space_utilization')
-                
-                if pack_results:
-                    for pack_result in pack_results:
-                        if pack_result['fitted_items']:  # Only include trucks that fit items
-                            # Add truck dimensions
-                            pack_result['truck_dimensions'] = f"{truck_type.length}×{truck_type.width}×{truck_type.height}"
-                            
-                            # Add comprehensive cost analysis
-                            try:
-                                from app.cost_engine import CostEngine
-                                cost_engine = CostEngine()
-                                cost_breakdown = cost_engine.calculate_comprehensive_cost(truck_type, route_info)
-                                pack_result['detailed_cost'] = cost_breakdown
-                                pack_result['total_cost'] = cost_breakdown.get('total_cost', 0)
-                            except Exception as e:
-                                pack_result['total_cost'] = 0
-                                pack_result['detailed_cost'] = None
-                            
-                            recommended.append(pack_result)
+            # Create enhanced recommendation format for template
+            enhanced_recommendation = {
+                'truck_type': rec['truck_type'],
+                'truck_dimensions': rec['truck_dimensions'],
+                'quantity_needed': rec['quantity'],
+                'utilization': rec['utilization'],
+                'total_cost': rec['total_cost'],
+                'efficiency_score': rec['efficiency_score'],
+                'recommendation_reason': rec['recommendation_reason'],
+                'benefits': rec['benefits'],
+                'risks': rec['risks'],
+                'confidence': rec['confidence'],
+                'fitted_items': f"Estimated {sum(carton_quantities.values())} items",
+                'space_efficiency': f"{rec['utilization']:.1%}",
+                'cost_per_item': rec['total_cost'] / sum(carton_quantities.values()) if sum(carton_quantities.values()) > 0 else 0
+            }
+            recommended.append(enhanced_recommendation)
         
         # Sort by utilization (highest first) for better recommendations
         recommended.sort(key=lambda x: x.get('utilization', 0), reverse=True)

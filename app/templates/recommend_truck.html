@@ -10,29 +10,47 @@
       <form method="post" id="cartonForm">
         <div id="cartonRows">
           <div class="row mb-2 carton-row align-items-end">
-            <div class="col-md-6">
+            <div class="col-md-5">
               <label class="form-label">Carton Type <i class="bi bi-info-circle" title="Select the type of carton"></i></label>
               <select name="carton_type_1" class="form-select carton-type-select" required>
                 <option value="" disabled selected>Select Carton Type</option>
                 {% for carton in cartons %}
-                <option value="{{ carton.id }}" data-size="{{ carton.length }}x{{ carton.width }}x{{ carton.height }}">
+                <option value="{{ carton.id }}" data-size="{{ carton.length }}x{{ carton.width }}x{{ carton.height }}" data-value="{{ carton.value }}">
                   {{ carton.name }} ({{ carton.length }}x{{ carton.width }}x{{ carton.height }} cm)
                 </option>
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label">Quantity</label>
               <input type="number" name="carton_qty_1" class="form-control" min="1" placeholder="Quantity" required>
             </div>
             <div class="col-md-3">
+              <label class="form-label">Value (₹) <span class="text-muted">(Optional)</span></label>
+              <input type="number" name="carton_value_1" class="form-control" min="0" step="0.01" placeholder="Per unit value">
+            </div>
+            <div class="col-md-2">
               <button type="button" class="btn btn-danger remove-row" style="display:none">Remove</button>
             </div>
           </div>
         </div>
+        
+        <!-- Optimization Goal Selection -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Optimization Goal <i class="bi bi-info-circle" title="Choose your primary optimization objective"></i></label>
+            <select name="optimization_goal" class="form-select">
+              <option value="balanced">🎯 Balanced (Space + Cost)</option>
+              <option value="space_utilization">📦 Maximum Space Utilization</option>
+              <option value="cost_saving">💰 Minimum Cost</option>
+              <option value="value_protected">🛡️ Value Protection (High-value cargo)</option>
+            </select>
+          </div>
+        </div>
+        
         <div class="d-flex gap-2 mb-3">
           <button type="button" class="btn btn-outline-secondary" id="addRow"><i class="bi bi-plus-lg"></i> Add Carton</button>
-          <button type="submit" class="btn btn-success" id="recommendBtn"><i class="bi bi-search"></i> Recommend Truck</button>
+          <button type="submit" class="btn btn-success" id="recommendBtn"><i class="bi bi-search"></i> Get Smart Recommendations</button>
         </div>
       </form>
     </div>
@@ -99,72 +117,214 @@
     </div>
   </div>
 
-  <!-- Recommended Trucks Section -->
-  <div class="card shadow">
-    <div class="card-header bg-info text-white">
-      <h5 class="mb-0"><i class="bi bi-truck"></i> Recommended Trucks</h5>
-      <p class="mb-0 mt-2"><small>Optimized truck selections based on your requirements</small></p>
+  <!-- Enhanced Recommended Trucks Section with Detailed Calculations -->
+  <div class="row">
+    <!-- Main Recommendations Table -->
+    <div class="col-lg-8">
+      <div class="card shadow">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0"><i class="bi bi-truck"></i> Recommended Trucks</h5>
+          <p class="mb-0 mt-2"><small>Algorithm-based selections with detailed calculations</small></p>
+        </div>
+        <div class="card-body">
+          <table id="recommendTable" class="table table-bordered table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Truck Recommendation</th>
+                <th>Space Utilization</th>
+                <th>Cost Analysis</th>
+                <th>AI Analysis</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in recommended %}
+              <tr>
+                <!-- Truck Recommendation -->
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="truck-icon me-2">
+                      <i class="bi bi-truck text-primary" style="font-size: 1.5rem;"></i>
+                    </div>
+                    <div>
+                      <strong class="text-primary">{{ r.truck_type }}</strong>
+                      <br><small class="text-muted">{{ r.truck_dimensions }}</small>
+                      <br><span class="badge bg-secondary">Rank #{{ loop.index }}</span>
+                      {% if r.quantity_needed > 1 %}
+                      <br><span class="badge bg-warning">{{ r.quantity_needed }} trucks needed</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                
+                <!-- Space Utilization -->
+                <td>
+                  <div class="progress mb-2" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped 
+                         bg-{{ 'success' if r.utilization > 0.8 else 'warning' if r.utilization > 0.6 else 'danger' }}" 
+                         role="progressbar" 
+                         style="width: {{ (r.utilization * 100)|round(1) }}%">
+                      {{ (r.utilization * 100)|round(1) }}%
+                    </div>
+                  </div>
+                  <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> 
+                    {{ 'Excellent' if r.utilization > 0.8 else 'Good' if r.utilization > 0.6 else 'Fair' }} efficiency
+                  </small>
+                </td>
+                
+                <!-- Cost Analysis -->
+                <td>
+                  <div class="cost-breakdown">
+                    <h6 class="mb-1">
+                      <span class="badge bg-{{ 'success' if r.total_cost < 5000 else 'warning' if r.total_cost < 10000 else 'danger' }} fs-6">
+                        ₹{{ r.total_cost|round(0) }}
+                      </span>
+                    </h6>
+                    <small class="text-muted d-block">
+                      Per item: ₹{{ r.cost_per_item|round(0) }}
+                    </small>
+                    {% if r.confidence > 0.8 %}
+                    <small class="text-success">
+                      <i class="bi bi-arrow-down"></i> Cost efficient
+                    </small>
+                    {% endif %}
+                  </div>
+                </td>
+                
+                <!-- AI Analysis -->
+                <td>
+                  <div class="ai-analysis">
+                    <div class="mb-2">
+                      <div class="confidence-score">
+                        <small class="text-muted">AI Confidence:</small>
+                        <div class="progress" style="height: 8px;">
+                          <div class="progress-bar bg-{{ 'success' if r.confidence > 0.8 else 'warning' if r.confidence > 0.6 else 'danger' }}" 
+                               style="width: {{ (r.confidence * 100)|round(1) }}%"></div>
+                        </div>
+                        <small class="text-muted">{{ (r.confidence * 100)|round(1) }}%</small>
+                      </div>
+                    </div>
+                    <small class="text-primary">{{ r.recommendation_reason[:80] }}{{ '...' if r.recommendation_reason|length > 80 else '' }}</small>
+                  </div>
+                </td>
+                
+                <!-- Details -->
+                <td>
+                  <button class="btn btn-outline-primary btn-sm" 
+                          onclick="showEnhancedDetails({{ loop.index0 }})" 
+                          data-bs-toggle="modal" 
+                          data-bs-target="#enhancedDetailsModal">
+                    <i class="bi bi-info-circle"></i> View Details
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
-      <table id="recommendTable" class="table table-bordered table-hover">
-        <thead class="table-light">
-          <tr>
-            <th>Truck Type</th>
-            <th>Dimensions (L×W×H)</th>
-            <th>Utilization</th>
-            {% if recommended and recommended[0].total_cost > 0 %}
-            <th>Total Cost</th>
-            {% endif %}
-            <th>Fitted Items</th>
-            {% if recommended and recommended[0].total_cost > 0 %}
-            <th>Cost per Item</th>
-            {% endif %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in recommended %}
-          <tr>
-            <td>
-              <strong>{{ r.bin_name.split('_')[0] }}</strong>
-              <br><small class="text-muted">{{ r.bin_name }}</small>
-            </td>
-            <td>
-              <small>{{ r.truck_dimensions if r.truck_dimensions else 'N/A' }}</small>
-            </td>
-            <td>
-              <div class="progress" style="height: 20px;">
-                <div class="progress-bar" role="progressbar" 
-                     style="width: {{ (r.utilization * 100)|round(1) }}%"
-                     aria-valuenow="{{ (r.utilization * 100)|round(1) }}" 
-                     aria-valuemin="0" aria-valuemax="100">
-                  {{ (r.utilization * 100)|round(1) }}%
+
+    <!-- Calculation Summary Sidebar -->
+    <div class="col-lg-4">
+      <div class="card shadow">
+        <div class="card-header bg-success text-white">
+          <h6 class="mb-0"><i class="bi bi-calculator"></i> Calculation Summary</h6>
+        </div>
+        <div class="card-body">
+          {% if recommended %}
+          {% set total_cartons = original_requirements.total_quantity %}
+          {% set total_volume = original_requirements.total_volume %}
+          {% set best_recommendation = recommended[0] %}
+          
+          <div class="calculation-summary">
+            <div class="metric-box mb-3">
+              <h6 class="text-primary">Input Analysis</h6>
+              <div class="row text-center">
+                <div class="col-6">
+                  <div class="bg-light p-2 rounded">
+                    <strong>{{ total_cartons }}</strong>
+                    <br><small>Total Cartons</small>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="bg-light p-2 rounded">
+                    <strong>{{ "%.2f"|format(total_volume|float) }} m³</strong>
+                    <br><small>Total Volume</small>
+                  </div>
                 </div>
               </div>
-            </td>
-            {% if r.total_cost > 0 %}
-            <td>
-              <span class="badge bg-{{ 'success' if r.total_cost < 5000 else 'warning' if r.total_cost < 10000 else 'danger' }}">
-                ₹{{ r.total_cost|round(0) }}
-              </span>
-            </td>
-            {% endif %}
-            <td>
-              <span class="badge bg-info">{{ r.fitted_items|length }}</span>
-              {% if r.unfitted_items|length > 0 %}
-                <br><small class="text-danger">{{ r.unfitted_items|length }} not fitted</small>
-              {% endif %}
-            </td>
-            {% if r.total_cost > 0 %}
-            <td>
-              <small>₹{{ (r.total_cost / r.fitted_items|length)|round(0) if r.fitted_items|length > 0 else 'N/A' }}</small>
-            </td>
-            {% endif %}
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            </div>
+
+            <div class="metric-box mb-3">
+              <h6 class="text-success">Best Solution</h6>
+              <div class="alert alert-success p-2">
+                <strong>{{ best_recommendation.bin_name.split('_')[0] }}</strong>
+                <br><small>{{ (best_recommendation.utilization * 100)|round(1) }}% space utilization</small>
+                {% if best_recommendation.total_cost > 0 %}
+                <br><small>₹{{ best_recommendation.total_cost|round(0) }} estimated cost</small>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="metric-box mb-3">
+              <h6 class="text-info">Algorithm Steps</h6>
+              <ol class="small">
+                <li>Calculate total volume requirements</li>
+                <li>Pre-filter viable truck sizes</li>
+                <li>Test packing combinations</li>
+                <li>Calculate efficiency scores</li>
+                <li>Rank by optimal utilization</li>
+              </ol>
+            </div>
+
+            <div class="optimization-note">
+              <div class="alert alert-info p-2">
+                <i class="bi bi-lightbulb"></i>
+                <strong>Optimization Focus:</strong><br>
+                <small>Space utilization priority with cost efficiency analysis</small>
+              </div>
+            </div>
+
+          </div>
+          {% endif %}
+        </div>
+      </div>
     </div>
   </div>
+  
+  <!-- Detailed Calculation Breakdown Modal -->
+  <div class="modal fade" id="calculationModal" tabindex="-1" aria-labelledby="calculationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="calculationModalLabel">
+            <i class="bi bi-calculator"></i> Detailed Calculation Breakdown
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="calculationContent">
+            <!-- Dynamic content will be loaded here -->
+            <div class="text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading calculations...</span>
+              </div>
+              <p class="mt-2">Generating detailed calculation breakdown...</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="exportCalculations()">
+            <i class="bi bi-download"></i> Export Report
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
   {% endif %}
 </div>
 <!-- Results now shown in card above -->
@@ -196,26 +356,45 @@ document.getElementById('addRow').onclick = function() {
   const row = document.createElement('div');
   row.className = 'row mb-2 carton-row';
   row.innerHTML = `
-    <div class="col-md-6">
+    <div class="col-md-5">
       <select name="carton_type_${rowCount}" class="form-select carton-type-select" required>
         <option value="" disabled selected>Select Carton Type</option>
         {% for carton in cartons %}
-        <option value="{{ carton.id }}" data-size="{{ carton.length }}x{{ carton.width }}x{{ carton.height }}">
+        <option value="{{ carton.id }}" data-size="{{ carton.length }}x{{ carton.width }}x{{ carton.height }}" data-value="{{ carton.value }}">
           {{ carton.name }} ({{ carton.length }}x{{ carton.width }}x{{ carton.height }} cm)
         </option>
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
       <input type="number" name="carton_qty_${rowCount}" class="form-control" min="1" placeholder="Quantity" required>
     </div>
     <div class="col-md-3">
+      <input type="number" name="carton_value_${rowCount}" class="form-control" min="0" step="0.01" placeholder="Per unit value">
+    </div>
+    <div class="col-md-2">
       <button type="button" class="btn btn-danger remove-row">Remove</button>
     </div>
   `;
   document.getElementById('cartonRows').appendChild(row);
   updateRemoveButtons();
 };
+
+// Auto-populate value field when carton type is selected
+document.addEventListener('change', function(e) {
+  if (e.target.classList.contains('carton-type-select')) {
+    const selectedOption = e.target.options[e.target.selectedIndex];
+    const cartonValue = selectedOption.getAttribute('data-value') || '';
+    
+    // Find the corresponding value input field
+    const rowIndex = e.target.name.split('_')[2] || '1';
+    const valueInput = document.querySelector(`input[name="carton_value_${rowIndex}"]`);
+    
+    if (valueInput && cartonValue) {
+      valueInput.value = cartonValue;
+    }
+  }
+});
 
 function updateRemoveButtons() {
   const rows = document.querySelectorAll('.carton-row');
@@ -276,6 +455,337 @@ $(document).ready(function() {
         }
     });
 });
+</script>
+
+<!-- Enhanced Calculation Breakdown Functions -->
+<script>
+// Store recommendation data for detailed calculations
+let recommendationData = [];
+{% if recommended %}
+{% for r in recommended %}
+recommendationData.push({
+    index: {{ loop.index0 }},
+    truck_name: '{{ r.bin_name.split('_')[0] }}',
+    truck_dimensions: '{{ r.truck_dimensions if r.truck_dimensions else 'N/A' }}',
+    utilization: {{ r.utilization }},
+    total_cost: {{ r.total_cost if r.total_cost else 0 }},
+    fitted_items: {{ r.fitted_items|length }},
+    unfitted_items: {{ r.unfitted_items|length }},
+    truck_volume: {{ r.bin_length * r.bin_width * r.bin_height if r.bin_length and r.bin_width and r.bin_height else 0 }},
+    rank: {{ loop.index }}
+});
+{% endfor %}
+{% endif %}
+
+function showCalculationBreakdown(index) {
+    const recommendation = recommendationData[index];
+    if (!recommendation) {
+        document.getElementById('calculationContent').innerHTML = '<div class="alert alert-danger">Calculation data not available.</div>';
+        return;
+    }
+
+    // Calculate detailed metrics
+    const totalCartons = {{ original_requirements.total_quantity if original_requirements else 0 }};
+    const totalVolume = {{ original_requirements.total_volume|float if original_requirements else 0 }};
+    const truckVolume = recommendation.truck_volume / 1000000; // Convert to m³
+    const volumeEfficiency = recommendation.utilization;
+    const packingSuccess = recommendation.fitted_items / totalCartons;
+    const costPerItem = recommendation.total_cost / recommendation.fitted_items;
+
+    // Generate detailed breakdown HTML
+    const breakdownHTML = `
+        <div class="row">
+            <!-- Left Column: Calculation Steps -->
+            <div class="col-lg-8">
+                <div class="card border-0">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0 text-primary">
+                            <i class="bi bi-gear"></i> Algorithm Calculation Steps for ${recommendation.truck_name}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        
+                        <!-- Step 1: Input Analysis -->
+                        <div class="calculation-step mb-4">
+                            <h6 class="text-success">
+                                <span class="badge bg-success rounded-pill me-2">1</span>
+                                Input Requirements Analysis
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Total Cartons:</strong><br>
+                                        <span class="text-primary">${totalCartons} units</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Total Volume Required:</strong><br>
+                                        <span class="text-primary">${totalVolume.toFixed(2)} m³</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Optimization Goal:</strong><br>
+                                        <span class="text-primary">Space Utilization</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Truck Compatibility -->
+                        <div class="calculation-step mb-4">
+                            <h6 class="text-info">
+                                <span class="badge bg-info rounded-pill me-2">2</span>
+                                Truck Compatibility Check
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Truck Dimensions:</strong><br>
+                                        <span class="text-info">${recommendation.truck_dimensions}</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Truck Volume:</strong><br>
+                                        <span class="text-info">${truckVolume.toFixed(2)} m³</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <strong>Volume Ratio:</strong>
+                                    <div class="progress mt-1" style="height: 20px;">
+                                        <div class="progress-bar bg-info" role="progressbar" 
+                                             style="width: ${Math.min(100, (totalVolume / truckVolume) * 100)}%">
+                                            ${(totalVolume / truckVolume * 100).toFixed(1)}%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Required volume vs truck capacity</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: 3D Packing Simulation -->
+                        <div class="calculation-step mb-4">
+                            <h6 class="text-warning">
+                                <span class="badge bg-warning rounded-pill me-2">3</span>
+                                3D Packing Algorithm Simulation
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Packing Strategy:</strong><br>
+                                        <span class="text-warning">Best-Fit-Decreasing</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Rotation Allowed:</strong><br>
+                                        <span class="text-warning">Yes (if supported)</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Constraints:</strong><br>
+                                        <span class="text-warning">Weight + Volume</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <strong>Packing Results:</strong>
+                                    <div class="row mt-2">
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                                <span>Successfully fitted: <strong>${recommendation.fitted_items}</strong></span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            ${recommendation.unfitted_items > 0 ? 
+                                                `<div class="d-flex align-items-center">
+                                                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                                                    <span>Overflow items: <strong>${recommendation.unfitted_items}</strong></span>
+                                                </div>` : 
+                                                `<div class="d-flex align-items-center">
+                                                    <i class="bi bi-check-all text-success me-2"></i>
+                                                    <span><strong>Complete fit achieved!</strong></span>
+                                                </div>`
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Efficiency Calculation -->
+                        <div class="calculation-step mb-4">
+                            <h6 class="text-primary">
+                                <span class="badge bg-primary rounded-pill me-2">4</span>
+                                Efficiency Score Calculation
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Space Utilization:</strong><br>
+                                        <div class="progress mt-1" style="height: 20px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: ${volumeEfficiency * 100}%">
+                                                ${(volumeEfficiency * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Actual space used</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Packing Success:</strong><br>
+                                        <div class="progress mt-1" style="height: 20px;">
+                                            <div class="progress-bar bg-info" role="progressbar" 
+                                                 style="width: ${packingSuccess * 100}%">
+                                                ${(packingSuccess * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Items successfully packed</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Overall Rank:</strong><br>
+                                        <span class="badge bg-secondary fs-6">#${recommendation.rank}</span>
+                                        <br><small class="text-muted">Among all options</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${recommendation.total_cost > 0 ? `
+                        <!-- Step 5: Cost Analysis -->
+                        <div class="calculation-step mb-4">
+                            <h6 class="text-danger">
+                                <span class="badge bg-danger rounded-pill me-2">5</span>
+                                Cost Analysis Breakdown
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Total Estimated Cost:</strong><br>
+                                        <span class="fs-5 text-danger">₹${recommendation.total_cost.toFixed(0)}</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Cost per Item:</strong><br>
+                                        <span class="text-danger">₹${costPerItem.toFixed(0)}</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Cost Efficiency:</strong><br>
+                                        <span class="badge bg-${recommendation.total_cost < 5000 ? 'success' : 'warning'}">
+                                            ${recommendation.total_cost < 5000 ? 'Excellent' : 'Good'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i>
+                                        Cost includes fuel, driver, maintenance, and operational expenses for typical routes
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Summary & Recommendations -->
+            <div class="col-lg-4">
+                <div class="card border-0">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-lightbulb"></i> Algorithm Decision Summary
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        
+                        <!-- Decision Factors -->
+                        <div class="mb-3">
+                            <h6 class="text-success">Why This Truck?</h6>
+                            <ul class="list-unstyled">
+                                ${volumeEfficiency > 0.8 ? 
+                                    '<li><i class="bi bi-check-circle text-success"></i> Excellent space utilization</li>' : 
+                                    volumeEfficiency > 0.6 ? 
+                                    '<li><i class="bi bi-info-circle text-warning"></i> Good space utilization</li>' :
+                                    '<li><i class="bi bi-exclamation-circle text-danger"></i> Acceptable space usage</li>'
+                                }
+                                ${packingSuccess >= 1.0 ? 
+                                    '<li><i class="bi bi-check-circle text-success"></i> Fits all items completely</li>' :
+                                    '<li><i class="bi bi-exclamation-triangle text-warning"></i> Some items may need second truck</li>'
+                                }
+                                ${recommendation.rank === 1 ? 
+                                    '<li><i class="bi bi-star-fill text-warning"></i> Best overall solution found</li>' :
+                                    '<li><i class="bi bi-arrow-up-circle text-info"></i> Top alternative option</li>'
+                                }
+                            </ul>
+                        </div>
+
+                        <!-- Optimization Factors -->
+                        <div class="mb-3">
+                            <h6 class="text-info">Optimization Factors</h6>
+                            <div class="small">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Space Efficiency:</span>
+                                    <strong>${(volumeEfficiency * 100).toFixed(1)}%</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Packing Success:</span>
+                                    <strong>${(packingSuccess * 100).toFixed(1)}%</strong>
+                                </div>
+                                ${recommendation.total_cost > 0 ? `
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Cost per Item:</span>
+                                    <strong>₹${costPerItem.toFixed(0)}</strong>
+                                </div>
+                                ` : ''}
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Overall Rank:</span>
+                                    <strong>#${recommendation.rank}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="alert alert-info p-2">
+                            <strong><i class="bi bi-lightbulb"></i> Recommendation:</strong><br>
+                            <small>
+                                ${packingSuccess >= 1.0 && volumeEfficiency > 0.7 ? 
+                                    'This truck provides an optimal solution for your requirements with good space utilization and complete packing.' :
+                                    packingSuccess >= 1.0 ? 
+                                    'This truck can fit all items but consider optimizing load arrangement for better efficiency.' :
+                                    'This truck requires additional capacity. Consider a larger truck or multiple trips.'
+                                }
+                            </small>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('calculationContent').innerHTML = breakdownHTML;
+}
+
+function exportCalculations() {
+    // Implement calculation export functionality
+    const content = document.getElementById('calculationContent').innerHTML;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>TruckOpti Calculation Report</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                body { padding: 20px; }
+                .no-print { display: none; }
+            </style>
+        </head>
+        <body>
+            <h2>TruckOpti Calculation Report</h2>
+            <p>Generated on: ${new Date().toLocaleString()}</p>
+            <hr>
+            ${content}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
 </script>
 
 <!-- 3D Visualization removed as per user requirements -->
