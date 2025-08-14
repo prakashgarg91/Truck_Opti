@@ -227,3 +227,69 @@ class TruckRecommendation(db.Model):
     # Relationships
     sale_order = db.relationship('SaleOrder', backref='truck_recommendations')
     truck_type = db.relationship('TruckType', backref='recommendations')
+
+class UserSettings(db.Model):
+    """Store user configuration and preferences for logistics operations"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(50), default='default_user')  # For future multi-user support
+    
+    # Default truck preferences
+    default_truck_category = db.Column(db.String(50), default='Standard')
+    preferred_truck_types = db.Column(db.Text)  # JSON string of preferred truck IDs
+    
+    # Cost calculation parameters
+    fuel_cost_per_liter = db.Column(db.Float, default=100.0)  # INR per liter
+    driver_daily_allowance = db.Column(db.Float, default=800.0)  # INR per day
+    insurance_cost_percentage = db.Column(db.Float, default=2.0)  # % of trip cost
+    loading_unloading_cost = db.Column(db.Float, default=500.0)  # INR per truck
+    
+    # Optimization strategy defaults
+    default_optimization_goal = db.Column(db.String(20), default='space')  # space, cost, balanced
+    space_utilization_target = db.Column(db.Float, default=85.0)  # Target utilization %
+    weight_safety_margin = db.Column(db.Float, default=10.0)  # Safety margin %
+    
+    # Packing preferences
+    allow_carton_rotation = db.Column(db.Boolean, default=True)
+    fragile_items_on_top = db.Column(db.Boolean, default=True)
+    max_stack_height = db.Column(db.Integer, default=5)
+    load_balance_priority = db.Column(db.Boolean, default=True)
+    
+    # UI/UX preferences
+    dashboard_refresh_interval = db.Column(db.Integer, default=30)  # seconds
+    show_detailed_metrics = db.Column(db.Boolean, default=True)
+    enable_3d_visualization = db.Column(db.Boolean, default=True)
+    charts_animation_enabled = db.Column(db.Boolean, default=True)
+    
+    # Notification preferences
+    email_notifications = db.Column(db.Boolean, default=False)
+    job_completion_alerts = db.Column(db.Boolean, default=True)
+    cost_threshold_alerts = db.Column(db.Boolean, default=True)
+    cost_alert_threshold = db.Column(db.Float, default=10000.0)  # INR
+    
+    # Company/Organization settings
+    company_name = db.Column(db.String(200), default='TruckOpti User')
+    default_origin_city = db.Column(db.String(100), default='Mumbai')
+    working_hours_start = db.Column(db.String(5), default='09:00')
+    working_hours_end = db.Column(db.String(5), default='18:00')
+    
+    # Data management
+    auto_cleanup_old_jobs = db.Column(db.Boolean, default=False)
+    data_retention_days = db.Column(db.Integer, default=90)
+    
+    # Timestamps
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @staticmethod
+    def get_user_settings(user_id='default_user'):
+        """Get user settings, create default if doesn't exist"""
+        settings = UserSettings.query.filter_by(user_id=user_id).first()
+        if not settings:
+            settings = UserSettings(user_id=user_id)
+            db.session.add(settings)
+            db.session.commit()
+        return settings
+    
+    def as_dict(self):
+        """Convert to dictionary for JSON serialization"""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

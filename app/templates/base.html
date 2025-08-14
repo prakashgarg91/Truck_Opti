@@ -28,10 +28,10 @@
             background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
             color: #fff;
             border-right: 2px solid #1565c0;
-            box-shadow: 2px 0 16px rgba(33,150,243,0.12);
-            z-index: 1050;
             display: flex;
             flex-direction: column;
+            box-shadow: 2px 0 16px rgba(33,150,243,0.12);
+            z-index: 1050;
             transition: transform 0.3s ease-in-out;
             overflow-y: auto;
         }
@@ -530,7 +530,7 @@
     <div class="sidebar" id="sidebar">
         <h4 class="text-center">TruckOpti</h4>
         <hr>
-        <ul class="nav flex-column">
+        <ul class="nav flex-column flex-grow-1">
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('main.index') }}"><i class="bi bi-house-door"></i> <span>Dashboard</span></a>
             </li>
@@ -562,9 +562,16 @@
                 <a class="nav-link" href="{{ url_for('main.analytics') }}"><i class="bi bi-graph-up"></i> <span>Analytics</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#"><i class="bi bi-gear"></i> <span>Settings</span></a>
+                <a class="nav-link" href="{{ url_for('main.settings') }}"><i class="bi bi-gear"></i> <span>Settings</span></a>
             </li>
         </ul>
+        
+        <!-- Version Information -->
+        <div class="mt-auto text-center" style="padding: 10px; font-size: 0.75rem; opacity: 0.8;">
+            <div style="color: #fff;">{{ version_info.VERSION }}</div>
+            <div style="color: rgba(255,255,255,0.7);">{{ version_info.BUILD_NAME }}</div>
+            <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem;">{{ version_info.BUILD_DATE }}</div>
+        </div>
     </div>
 
     <div class="content-wrapper" id="contentWrapper">

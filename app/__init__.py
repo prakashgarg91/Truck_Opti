@@ -54,5 +54,14 @@ def create_app():
     from . import routes
     app.register_blueprint(routes.bp)
     app.register_blueprint(routes.api, url_prefix='/api')
+    
+    # Add version info to all template contexts
+    @app.context_processor
+    def inject_version_info():
+        try:
+            from version import VERSION, BUILD_DATE, BUILD_NAME
+            return dict(version_info={'VERSION': VERSION, 'BUILD_DATE': BUILD_DATE, 'BUILD_NAME': BUILD_NAME})
+        except ImportError:
+            return dict(version_info={'VERSION': 'v3.2', 'BUILD_DATE': '2025-08-14', 'BUILD_NAME': 'Stability & UI Enhancement'})
 
     return app

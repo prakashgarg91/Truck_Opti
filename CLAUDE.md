@@ -3,8 +3,189 @@
 
 ---
 
-you must check for problems raised by user
-fodler: screenshots_problems_in_exe
+## 📸 **CRITICAL: SCREENSHOT-BASED ISSUE TRACKING SYSTEM**
+
+**MANDATORY WORKFLOW**: Always check folder `screenshots_problems_in_exe` for user-reported issues via screenshots.
+
+### **🎯 SCREENSHOT ANALYSIS METHODOLOGY**
+
+#### **Step 1: Image Reading & Analysis**
+1. **Read EVERY image** in `screenshots_problems_in_exe/` folder
+2. **Extract issue description** from filename and visual content
+3. **Document actual problem** shown in the screenshot
+4. **Never assume** - verify by testing the actual functionality
+
+#### **Step 2: Issue Classification System**
+```
+🔴 CRITICAL: Application crashes, complete feature failure
+🟠 HIGH: Major functionality broken, user workflow blocked  
+🟡 MEDIUM: UI/UX issues, minor feature problems
+🟢 LOW: Cosmetic issues, enhancement requests
+```
+
+#### **Step 3: Issue Tracking Format**
+For each screenshot, create entry:
+```markdown
+**Image**: filename.png
+**Issue Type**: [CRITICAL/HIGH/MEDIUM/LOW]
+**Filename Description**: [What filename says issue is]
+**Actual Issue Observed**: [What you see in the screenshot]
+**Technical Root Cause**: [Database/Frontend/Backend/Algorithm issue]
+**Verification Method**: [How to test if fixed]
+**Status**: [VERIFIED_BROKEN/IN_PROGRESS/VERIFIED_FIXED]
+```
+
+#### **Step 4: Verification Requirements**
+- **NEVER mark as resolved** without actual testing
+- **Test in both dev and exe modes** 
+- **Screenshot proof** of fix working
+- **Rename files only AFTER verification**
+
+### **🚨 CRITICAL RULES FOR SCREENSHOT ISSUES**
+
+#### **Image Naming Convention**
+- `UNRESOLVED_[description].png` = Issue exists, needs fixing
+- `RESOLVED_[ID].[description].png` = Issue verified as fixed
+- **Never rename to RESOLVED without proof of fix**
+
+#### **Verification Process**
+1. **Start development server**: `python run.py`
+2. **Navigate to affected feature**: Test actual functionality
+3. **Reproduce the issue**: Confirm it exists
+4. **Implement fix**: Write/modify code
+5. **Test fix thoroughly**: Both dev and exe modes
+6. **Document fix**: What was changed and why
+7. **Only then rename**: Add RESOLVED_ prefix with ID
+
+### **📋 MASTER ISSUE TRACKING TEMPLATE**
+
+```markdown
+# TruckOpti Screenshot Issues - Master List
+
+## 🔴 CRITICAL ISSUES
+| Image | Issue | Root Cause | Status | Notes |
+|-------|-------|------------|--------|-------|
+| [filename] | [description] | [cause] | [status] | [notes] |
+
+## 🟠 HIGH PRIORITY ISSUES  
+| Image | Issue | Root Cause | Status | Notes |
+|-------|-------|------------|--------|-------|
+| [filename] | [description] | [cause] | [status] | [notes] |
+
+## 🟡 MEDIUM PRIORITY ISSUES
+| Image | Issue | Root Cause | Status | Notes |
+|-------|-------|------------|--------|-------|
+| [filename] | [description] | [cause] | [status] | [notes] |
+
+## 🟢 LOW PRIORITY ISSUES
+| Image | Issue | Root Cause | Status | Notes |
+|-------|-------|------------|--------|-------|
+| [filename] | [description] | [cause] | [status] | [notes] |
+```
+
+### **🔧 COMMON ISSUE PATTERNS IN TRUCKOPTI**
+
+#### **Database Schema Issues**
+- Missing columns in models
+- Attribute errors in API calls
+- Migration failures
+
+#### **Frontend-Backend Mismatches** 
+- Form field name conflicts
+- API endpoint errors
+- Data format misalignments
+
+#### **UI/UX Problems**
+- Text cutoff in tooltips
+- Unprofessional styling
+- Broken responsive design
+
+#### **Executable Issues**
+- Multiple browser windows
+- Port conflicts
+- Production vs dev differences
+
+### **⚡ RAPID ISSUE RESOLUTION WORKFLOW**
+
+1. **Batch Image Analysis**: Read all screenshots at once
+2. **Priority Triage**: Sort by severity (Critical → Low)
+3. **Root Cause Analysis**: Group by technical area
+4. **Fix Implementation**: Address root causes, not symptoms  
+5. **Comprehensive Testing**: Verify each fix works
+6. **Documentation**: Update issue list with status
+
+### **🎯 SUCCESS CRITERIA**
+
+**Issue is RESOLVED only when:**
+- ✅ Original problem no longer reproduces
+- ✅ Fix works in both development and executable modes
+- ✅ No regression in other functionality
+- ✅ Professional quality maintained
+- ✅ Screenshot proof of working functionality
+
+**NEVER mark resolved based on:**
+- ❌ "Looks like it should work" 
+- ❌ "Similar issue was fixed elsewhere"
+- ❌ "Quick test seemed fine"
+- ❌ "Code change looks correct"
+
+### **📊 CURRENT TRUCKOPTI ISSUE STATUS**
+
+**CRITICAL DISCOVERY**: Previously marked "RESOLVED" issues were not properly verified. All screenshots need re-evaluation.
+
+#### **Confirmed Broken Issues (Examples)**
+1. **still not working.png** → Database schema error: carton_type.code column missing
+2. **settings not worksing.png** → Settings page link not functional  
+3. **still no table2.png** → Base data API returns "Failed to fetch" errors
+4. **always two windows get open.png** → .exe opens multiple browser instances
+
+#### **"Resolved" Issues That Need Re-Verification**
+- ALL 80+ "RESOLVED_" prefixed images need actual testing
+- Many claimed fixes may not work in practice
+- Database schema issues were only partially addressed
+
+#### **Action Required**
+1. **Revert all "RESOLVED" designations** until verified
+2. **Create comprehensive issue list** from ALL screenshots
+3. **Test each fix systematically** in both dev and exe modes
+4. **Re-build .exe** after each verified fix
+
+### **📖 EXAMPLE: PROPER SCREENSHOT ISSUE ANALYSIS**
+
+#### **Screenshot Analysis Example**
+```
+**Image**: still no table2.png
+**Issue Type**: 🔴 CRITICAL
+**Filename Description**: "Table not visible/working"
+**Actual Issue Observed**: Red error message "Error loading data: Failed to fetch" in base data drill-down modal
+**Technical Root Cause**: API endpoint /api/drill-down/trucks returns database error "TruckType object has no attribute 'date_created'"
+**Verification Method**: 
+  1. Start dev server: python run.py
+  2. Navigate to Analytics page
+  3. Click on any chart to trigger drill-down
+  4. Observe error in browser console and modal
+**Status**: VERIFIED_BROKEN
+**Fix Required**: Add proper error handling in API or fix database model
+```
+
+#### **WRONG Way (Previous Approach)**
+```
+❌ "Looks like base data tables, probably need to fix drill-down"
+❌ Mark as RESOLVED without testing
+❌ Assume fix works because code was changed
+```
+
+#### **RIGHT Way (New Approach)**
+```
+✅ Read image and see exact error message
+✅ Test actual functionality to reproduce issue
+✅ Identify specific technical root cause
+✅ Implement fix and verify it works
+✅ Test in both dev and exe modes
+✅ Only then mark as RESOLVED with proof
+```
+
+---
 
 ## 🎯 **CORE PHILOSOPHY: VIBE CODING MASTERY**
 

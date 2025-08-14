@@ -142,7 +142,7 @@ class IndianLogisticsCostCalculator:
         
         # 2. DRIVER COSTS
         travel_days = math.ceil(route.estimated_travel_time_hours / truck.max_daily_driving_hours)
-        cost_breakdown.driver_wages = self.DRIVER_WAGE_PER_DAY[truck.category] * travel_days
+        cost_breakdown.driver_wages = self.DRIVER_WAGE_PER_DAY[truck.truck_category] * travel_days
         
         # Driver allowances (food, accommodation)
         cost_breakdown.driver_allowances = travel_days * 400  # ₹400 per day DA
@@ -150,7 +150,7 @@ class IndianLogisticsCostCalculator:
         # Night halt charges if journey > 1 day
         if travel_days > 1:
             night_halts = travel_days - 1
-            cost_breakdown.night_halt_charges = night_halts * self.NIGHT_HALT_CHARGES[truck.category]
+            cost_breakdown.night_halt_charges = night_halts * self.NIGHT_HALT_CHARGES[truck.truck_category]
         
         # Overtime charges for urgent deliveries
         if urgency_factor > 1.2:
@@ -158,7 +158,7 @@ class IndianLogisticsCostCalculator:
         
         # 3. ROUTE COSTS
         if route.toll_roads:
-            cost_breakdown.toll_charges = route.distance_km * self.TOLL_RATE_PER_KM[truck.category]
+            cost_breakdown.toll_charges = route.distance_km * self.TOLL_RATE_PER_KM[truck.truck_category]
         
         # State border taxes (estimate based on route)
         if route.distance_km > 300:  # Likely inter-state
@@ -176,7 +176,7 @@ class IndianLogisticsCostCalculator:
             'MCV': 4.0,
             'HCV': 6.0
         }
-        cost_breakdown.vehicle_maintenance = route.distance_km * maintenance_rate_per_km[truck.category]
+        cost_breakdown.vehicle_maintenance = route.distance_km * maintenance_rate_per_km[truck.truck_category]
         
         # Tire wear cost
         tire_cost_per_km = {
@@ -184,7 +184,7 @@ class IndianLogisticsCostCalculator:
             'MCV': 2.0,
             'HCV': 3.5
         }
-        cost_breakdown.tire_wear = route.distance_km * tire_cost_per_km[truck.category]
+        cost_breakdown.tire_wear = route.distance_km * tire_cost_per_km[truck.truck_category]
         
         # Insurance per trip (based on cargo value)
         if cargo_value > 0:
@@ -261,7 +261,7 @@ class IndianLogisticsCostCalculator:
                 "likely_interstate": "Yes" if route.distance_km > 300 else "No"
             },
             "truck_factors": {
-                "category": truck.category,
+                "category": truck.truck_category,
                 "fuel_efficiency": f"{truck.mileage_kmpl} km/l",
                 "driver_requirement": f"{truck.driver_capacity} driver(s)",
                 "sleeper_cabin": "Yes" if truck.sleeper_cabin else "No",
@@ -276,9 +276,9 @@ class IndianLogisticsCostCalculator:
             },
             "market_factors": {
                 "fuel_price_per_liter": f"₹{self.FUEL_PRICE_DIESEL}",
-                "driver_wage_per_day": f"₹{self.DRIVER_WAGE_PER_DAY[truck.category]}",
-                "toll_rate_per_km": f"₹{self.TOLL_RATE_PER_KM[truck.category]}",
-                "night_halt_charges": f"₹{self.NIGHT_HALT_CHARGES[truck.category]}/night"
+                "driver_wage_per_day": f"₹{self.DRIVER_WAGE_PER_DAY[truck.truck_category]}",
+                "toll_rate_per_km": f"₹{self.TOLL_RATE_PER_KM[truck.truck_category]}",
+                "night_halt_charges": f"₹{self.NIGHT_HALT_CHARGES[truck.truck_category]}/night"
             }
         }
         
@@ -299,7 +299,7 @@ class IndianLogisticsCostCalculator:
         if not truck.mileage_kmpl or truck.mileage_kmpl <= 0:
             missing_factors.append("Truck fuel efficiency (km/l)")
         
-        if not truck.category or truck.category not in ['LCV', 'MCV', 'HCV']:
+        if not truck.truck_category or truck.truck_category not in ['LCV', 'MCV', 'HCV']:
             missing_factors.append("Valid truck category (LCV/MCV/HCV)")
         
         if route.estimated_travel_time_hours <= 0:

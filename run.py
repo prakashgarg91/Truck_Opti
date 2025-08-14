@@ -4,6 +4,7 @@ import signal
 import sys
 import os
 import atexit
+import time
 from threading import Timer
 from app import create_app
 
@@ -20,8 +21,25 @@ def find_available_port(start_port=5000):
 app = create_app()
 port = find_available_port()
 
+browser_opened = False
+
 def open_browser():
-    webbrowser.open_new(f"http://127.0.0.1:{port}/")
+    global browser_opened
+    if not browser_opened:
+        try:
+            # Wait for server to be ready
+            time.sleep(2)
+            # Check if port is actually serving before opening browser
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(1)
+                if s.connect_ex(('127.0.0.1', port)) == 0:
+                    webbrowser.open_new(f"http://127.0.0.1:{port}/")
+                    browser_opened = True
+                    print(f"Browser opened to http://127.0.0.1:{port}/")
+                else:
+                    print(f"Server not ready yet on port {port}")
+        except Exception as e:
+            print(f"Failed to open browser: {e}")
 
 def signal_handler(sig, frame):
     """Handle shutdown signals to properly close the application"""

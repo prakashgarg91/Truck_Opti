@@ -1,0 +1,630 @@
+{% extends "base.html" %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item active" aria-current="page">Settings & Configuration</li>
+{% endblock %}
+
+{% block head %}
+<style>
+/* Settings page specific styling */
+.settings-section {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(33,150,243,0.08);
+    border: 1px solid rgba(33,150,243,0.1);
+    transition: all 0.3s ease;
+}
+
+.settings-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(33,150,243,0.12);
+}
+
+.section-header {
+    color: #1976d2;
+    font-weight: 600;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-header i {
+    font-size: 1.3rem;
+    color: #2196f3;
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    transition: all 0.3s ease;
+    background: rgba(255,255,255,0.9);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 0.2rem rgba(33,150,243,0.25);
+    background: #fff;
+}
+
+.form-check-input:checked {
+    background-color: #2196f3;
+    border-color: #2196f3;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #1976d2, #2196f3);
+    border: none;
+    border-radius: 10px;
+    padding: 12px 30px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(33,150,243,0.3);
+}
+
+.btn-outline-secondary {
+    border-radius: 10px;
+    padding: 12px 30px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.input-group-text {
+    background: #f8f9fa;
+    border-color: #ddd;
+    color: #666;
+    font-weight: 500;
+}
+
+.settings-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-left: 4px solid #2196f3;
+}
+
+.settings-tabs {
+    margin-bottom: 30px;
+}
+
+.nav-tabs .nav-link {
+    border-radius: 10px 10px 0 0;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link.active {
+    background: linear-gradient(135deg, #2196f3, #1976d2);
+    color: white;
+    border-color: #2196f3;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.form-text {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.settings-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+    border: 1px solid #ffc107;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    color: #856404;
+}
+
+.settings-success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #28a745;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    color: #155724;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-gear"></i> Settings & Configuration</h2>
+        <div class="text-muted">
+            <small>Last updated: {{ settings.date_updated.strftime('%Y-%m-%d %H:%M') if settings.date_updated else 'Never' }}</small>
+        </div>
+    </div>
+
+    <div class="settings-info">
+        <h5><i class="bi bi-info-circle"></i> Logistics Coordinator Settings</h5>
+        <p>Configure your TruckOpti preferences to optimize logistics operations for your organization. These settings affect default values across all packing and optimization tasks.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('main.settings') }}">
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs settings-tabs" id="settingsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="truck-tab" data-bs-toggle="tab" data-bs-target="#truck-settings" type="button" role="tab">
+                    <i class="bi bi-truck"></i> Truck Preferences
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cost-tab" data-bs-toggle="tab" data-bs-target="#cost-settings" type="button" role="tab">
+                    <i class="bi bi-currency-rupee"></i> Cost Parameters
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="optimization-tab" data-bs-toggle="tab" data-bs-target="#optimization-settings" type="button" role="tab">
+                    <i class="bi bi-cpu"></i> Optimization
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="packing-tab" data-bs-toggle="tab" data-bs-target="#packing-settings" type="button" role="tab">
+                    <i class="bi bi-box-seam"></i> Packing Rules
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="interface-tab" data-bs-toggle="tab" data-bs-target="#interface-settings" type="button" role="tab">
+                    <i class="bi bi-display"></i> Interface
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="company-tab" data-bs-toggle="tab" data-bs-target="#company-settings" type="button" role="tab">
+                    <i class="bi bi-building"></i> Organization
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="settingsTabsContent">
+            <!-- Truck Preferences Tab -->
+            <div class="tab-pane fade show active" id="truck-settings" role="tabpanel">
+                <div class="settings-section">
+                    <div class="section-header">
+                        <i class="bi bi-truck"></i>
+                        Default Truck Preferences
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_truck_category" class="form-label">Default Truck Category</label>
+                                <select class="form-select" id="default_truck_category" name="default_truck_category">
+                                    <option value="Light" {{ 'selected' if settings.default_truck_category == 'Light' else '' }}>Light Commercial Vehicle</option>
+                                    <option value="Standard" {{ 'selected' if settings.default_truck_category == 'Standard' else '' }}>Standard Truck</option>
+                                    <option value="Medium" {{ 'selected' if settings.default_truck_category == 'Medium' else '' }}>Medium Truck</option>
+                                    <option value="Heavy" {{ 'selected' if settings.default_truck_category == 'Heavy' else '' }}>Heavy Commercial Vehicle</option>
+                                </select>
+                                <div class="form-text">Preferred truck category for recommendations</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Parameters Tab -->
+            <div class="tab-pane fade" id="cost-settings" role="tabpanel">
+                <div class="settings-section">
+                    <div class="section-header">
+                        <i class="bi bi-currency-rupee"></i>
+                        Cost Calculation Parameters
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="fuel_cost_per_liter" class="form-label">Fuel Cost per Liter</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="fuel_cost_per_liter" name="fuel_cost_per_liter" 
+                                           value="{{ settings.fuel_cost_per_liter }}" step="0.01" min="0">
+                                </div>
+                                <div class="form-text">Current fuel price for cost calculations</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="driver_daily_allowance" class="form-label">Driver Daily Allowance</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="driver_daily_allowance" name="driver_daily_allowance" 
+                                           value="{{ settings.driver_daily_allowance }}" step="0.01" min="0">
+                                </div>
+                                <div class="form-text">Daily allowance for driver expenses</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="insurance_cost_percentage" class="form-label">Insurance Cost Percentage</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="insurance_cost_percentage" name="insurance_cost_percentage" 
+                                           value="{{ settings.insurance_cost_percentage }}" step="0.1" min="0" max="100">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Insurance cost as percentage of trip cost</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="loading_unloading_cost" class="form-label">Loading/Unloading Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="loading_unloading_cost" name="loading_unloading_cost" 
+                                           value="{{ settings.loading_unloading_cost }}" step="0.01" min="0">
+                                </div>
+                                <div class="form-text">Fixed cost for loading and unloading per truck</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimization Settings Tab -->
+            <div class="tab-pane fade" id="optimization-settings" role="tabpanel">
+                <div class="settings-section">
+                    <div class="section-header">
+                        <i class="bi bi-cpu"></i>
+                        Optimization Strategy
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_optimization_goal" class="form-label">Default Optimization Goal</label>
+                                <select class="form-select" id="default_optimization_goal" name="default_optimization_goal">
+                                    <option value="space" {{ 'selected' if settings.default_optimization_goal == 'space' else '' }}>Space Utilization</option>
+                                    <option value="cost" {{ 'selected' if settings.default_optimization_goal == 'cost' else '' }}>Cost Optimization</option>
+                                    <option value="balanced" {{ 'selected' if settings.default_optimization_goal == 'balanced' else '' }}>Balanced Approach</option>
+                                </select>
+                                <div class="form-text">Primary optimization strategy for packing jobs</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="space_utilization_target" class="form-label">Space Utilization Target</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="space_utilization_target" name="space_utilization_target" 
+                                           value="{{ settings.space_utilization_target }}" step="0.1" min="50" max="95">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Target space utilization percentage</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="weight_safety_margin" class="form-label">Weight Safety Margin</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="weight_safety_margin" name="weight_safety_margin" 
+                                           value="{{ settings.weight_safety_margin }}" step="0.1" min="0" max="50">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Safety margin for weight calculations</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Packing Rules Tab -->
+            <div class="tab-pane fade" id="packing-settings" role="tabpanel">
+                <div class="settings-section">
+                    <div class="section-header">
+                        <i class="bi bi-box-seam"></i>
+                        Packing Rules & Preferences
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="allow_carton_rotation" name="allow_carton_rotation" 
+                                           {{ 'checked' if settings.allow_carton_rotation else '' }}>
+                                    <label class="form-check-label" for="allow_carton_rotation">
+                                        Allow Carton Rotation
+                                    </label>
+                                </div>
+                                <div class="form-text">Allow cartons to be rotated for better packing</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="fragile_items_on_top" name="fragile_items_on_top" 
+                                           {{ 'checked' if settings.fragile_items_on_top else '' }}>
+                                    <label class="form-check-label" for="fragile_items_on_top">
+                                        Fragile Items on Top
+                                    </label>
+                                </div>
+                                <div class="form-text">Place fragile items on top of the load</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="max_stack_height" class="form-label">Maximum Stack Height</label>
+                                <input type="number" class="form-control" id="max_stack_height" name="max_stack_height" 
+                                       value="{{ settings.max_stack_height }}" min="1" max="20">
+                                <div class="form-text">Maximum number of cartons to stack vertically</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="load_balance_priority" name="load_balance_priority" 
+                                           {{ 'checked' if settings.load_balance_priority else '' }}>
+                                    <label class="form-check-label" for="load_balance_priority">
+                                        Load Balance Priority
+                                    </label>
+                                </div>
+                                <div class="form-text">Prioritize balanced weight distribution</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interface Settings Tab -->
+            <div class="tab-pane fade" id="interface-settings" role="tabpanel">
+                <div class="settings-section">
+                    <div class="section-header">
+                        <i class="bi bi-display"></i>
+                        User Interface Preferences
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dashboard_refresh_interval" class="form-label">Dashboard Refresh Interval</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="dashboard_refresh_interval" name="dashboard_refresh_interval" 
+                                           value="{{ settings.dashboard_refresh_interval }}" min="10" max="300">
+                                    <span class="input-group-text">seconds</span>
+                                </div>
+                                <div class="form-text">Auto-refresh interval for dashboard data</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="show_detailed_metrics" name="show_detailed_metrics" 
+                                           {{ 'checked' if settings.show_detailed_metrics else '' }}>
+                                    <label class="form-check-label" for="show_detailed_metrics">
+                                        Show Detailed Metrics
+                                    </label>
+                                </div>
+                                <div class="form-text">Display detailed performance metrics on dashboard</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enable_3d_visualization" name="enable_3d_visualization" 
+                                           {{ 'checked' if settings.enable_3d_visualization else '' }}>
+                                    <label class="form-check-label" for="enable_3d_visualization">
+                                        Enable 3D Visualization
+                                    </label>
+                                </div>
+                                <div class="form-text">Enable 3D truck loading visualizations</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="charts_animation_enabled" name="charts_animation_enabled" 
+                                           {{ 'checked' if settings.charts_animation_enabled else '' }}>
+                                    <label class="form-check-label" for="charts_animation_enabled">
+                                        Chart Animations
+                                    </label>
+                                </div>
+                                <div class="form-text">Enable animations for charts and graphs</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="section-header">
+                        <i class="bi bi-bell"></i>
+                        Notification Preferences
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="job_completion_alerts" name="job_completion_alerts" 
+                                           {{ 'checked' if settings.job_completion_alerts else '' }}>
+                                    <label class="form-check-label" for="job_completion_alerts">
+                                        Job Completion Alerts
+                                    </label>
+                                </div>
+                                <div class="form-text">Get notified when packing jobs complete</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="cost_threshold_alerts" name="cost_threshold_alerts" 
+                                           {{ 'checked' if settings.cost_threshold_alerts else '' }}>
+                                    <label class="form-check-label" for="cost_threshold_alerts">
+                                        Cost Threshold Alerts
+                                    </label>
+                                </div>
+                                <div class="form-text">Alert when costs exceed threshold</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="cost_alert_threshold" class="form-label">Cost Alert Threshold</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="cost_alert_threshold" name="cost_alert_threshold" 
+                                           value="{{ settings.cost_alert_threshold }}" step="100" min="0">
+                                </div>
+                                <div class="form-text">Alert when total cost exceeds this amount</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organization Settings Tab -->
+            <div class="tab-pane fade" id="company-settings" role="tabpanel">
+                <div class="settings-section">
+                    <div class="section-header">
+                        <i class="bi bi-building"></i>
+                        Organization Details
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="company_name" class="form-label">Company Name</label>
+                                <input type="text" class="form-control" id="company_name" name="company_name" 
+                                       value="{{ settings.company_name }}" maxlength="200">
+                                <div class="form-text">Your organization name</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_origin_city" class="form-label">Default Origin City</label>
+                                <input type="text" class="form-control" id="default_origin_city" name="default_origin_city" 
+                                       value="{{ settings.default_origin_city }}" maxlength="100">
+                                <div class="form-text">Primary shipping origin city</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="working_hours_start" class="form-label">Working Hours Start</label>
+                                <input type="time" class="form-control" id="working_hours_start" name="working_hours_start" 
+                                       value="{{ settings.working_hours_start }}">
+                                <div class="form-text">Daily operations start time</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="working_hours_end" class="form-label">Working Hours End</label>
+                                <input type="time" class="form-control" id="working_hours_end" name="working_hours_end" 
+                                       value="{{ settings.working_hours_end }}">
+                                <div class="form-text">Daily operations end time</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="section-header">
+                        <i class="bi bi-database"></i>
+                        Data Management
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="auto_cleanup_old_jobs" name="auto_cleanup_old_jobs" 
+                                           {{ 'checked' if settings.auto_cleanup_old_jobs else '' }}>
+                                    <label class="form-check-label" for="auto_cleanup_old_jobs">
+                                        Auto-cleanup Old Jobs
+                                    </label>
+                                </div>
+                                <div class="form-text">Automatically remove old packing jobs</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="data_retention_days" class="form-label">Data Retention Period</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="data_retention_days" name="data_retention_days" 
+                                           value="{{ settings.data_retention_days }}" min="1" max="365">
+                                    <span class="input-group-text">days</span>
+                                </div>
+                                <div class="form-text">How long to keep completed jobs</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div>
+                <div class="settings-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Note:</strong> Changes will affect future optimization jobs and may impact current calculations.
+                </div>
+            </div>
+            <div>
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary me-3">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Save Settings
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Form validation
+    $('form').on('submit', function(e) {
+        let isValid = true;
+        
+        // Validate numeric fields
+        $('input[type="number"]').each(function() {
+            const min = parseFloat($(this).attr('min'));
+            const max = parseFloat($(this).attr('max'));
+            const value = parseFloat($(this).val());
+            
+            if (!isNaN(min) && value < min) {
+                isValid = false;
+                $(this).addClass('is-invalid');
+            } else if (!isNaN(max) && value > max) {
+                isValid = false;
+                $(this).addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please check the values in highlighted fields.');
+        }
+    });
+    
+    // Clear validation on input
+    $('input[type="number"]').on('input', function() {
+        $(this).removeClass('is-invalid');
+    });
+    
+    // Auto-save indication
+    let hasChanges = false;
+    $('input, select, textarea').on('change', function() {
+        hasChanges = true;
+        if (!$('.settings-success').length) {
+            $('.settings-info').after('<div class="settings-success"><i class="bi bi-info-circle"></i> You have unsaved changes. Please save your settings.</div>');
+        }
+    });
+    
+    // Tab persistence
+    const activeTab = localStorage.getItem('activeSettingsTab');
+    if (activeTab) {
+        $('.nav-tabs button[data-bs-target="' + activeTab + '"]').click();
+    }
+    
+    $('.nav-tabs button').on('shown.bs.tab', function(e) {
+        localStorage.setItem('activeSettingsTab', $(e.target).data('bs-target'));
+    });
+});
+</script>
+{% endblock %}

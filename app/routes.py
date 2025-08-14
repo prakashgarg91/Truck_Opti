@@ -1,12 +1,16 @@
-from flask import request, jsonify, Blueprint, flash, render_template, redirect, url_for
-from app.models import db, TruckType, CartonType, PackingJob, PackingResult, Shipment, SaleOrder, SaleOrderItem, SaleOrderBatch, TruckRecommendation
-import json
+from flask import (request, jsonify, Blueprint, flash, render_template, 
+                   redirect, url_for)
+from app.models import (db, TruckType, CartonType, PackingJob, PackingResult, 
+                        Shipment, UserSettings)
+import json  # noqa: F401
+from version import VERSION, BUILD_DATE, BUILD_NAME  # noqa: F401
 import time
 from decimal import Decimal
 from datetime import datetime
 from functools import lru_cache
 import hashlib
-from app.packer import INDIAN_TRUCKS, INDIAN_CARTONS, pack_cartons, pack_cartons_optimized, calculate_optimal_truck_combination
+from app.packer import (INDIAN_TRUCKS, INDIAN_CARTONS, pack_cartons, 
+                        pack_cartons_optimized, calculate_optimal_truck_combination)
 from app.cost_engine import cost_engine
 from sqlalchemy import func
 
@@ -22,59 +26,6 @@ def convert_decimals_to_floats(obj):
         return obj
 bp = Blueprint('main', __name__)
 api = Blueprint('api', __name__)
-
-# AGENT 4: API Endpoints for Enhanced Backend Functionality
-@api.route('/truck/<int:truck_id>/dimensions', methods=['GET'])
-def get_truck_dimensions(truck_id):
-    """AGENT 4: Get detailed truck dimensions"""
-    truck = TruckType.query.get_or_404(truck_id)
-    return jsonify({
-        'length_cm': truck.length,
-        'width_cm': truck.width,
-        'height_cm': truck.height,
-        'volume_m3': round((truck.length * truck.width * truck.height) / 1000000, 2),
-        'max_weight_kg': truck.max_weight,
-        'display_text': f"{truck.length} × {truck.width} × {truck.height} cm"
-    })
-
-@api.route('/truck-by-name/<truck_name>/dimensions', methods=['GET'])
-def get_truck_dimensions_by_name(truck_name):
-    """AGENT 4: Get truck dimensions by name"""
-    truck = TruckType.query.filter_by(name=truck_name).first()
-    if not truck:
-        return jsonify({'error': 'Truck not found'}), 404
-    
-    return jsonify({
-        'length_cm': truck.length,
-        'width_cm': truck.width,
-        'height_cm': truck.height,
-        'volume_m3': round((truck.length * truck.width * truck.height) / 1000000, 2),
-        'max_weight_kg': truck.max_weight,
-        'display_text': f"{truck.length} × {truck.width} × {truck.height} cm"
-    })
-
-@api.route('/validate-recommendation', methods=['POST'])
-def validate_recommendation_api():
-    """AGENT 5: Validate truck recommendation via API"""
-    try:
-        from app.validation.recommendation_validator import validate_recommendation
-        
-        data = request.get_json()
-        truck_data = data.get('truck_data', {})
-        carton_data = data.get('carton_data', [])
-        packing_result = data.get('packing_result', {})
-        
-        validation_result = validate_recommendation(truck_data, carton_data, packing_result)
-        
-        return jsonify({
-            'is_valid': validation_result.is_valid,
-            'warnings': validation_result.warnings,
-            'errors': validation_result.errors,
-            'recommendations': validation_result.recommendations,
-            'metadata': validation_result.metadata
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 @bp.route('/recommend-truck', methods=['GET', 'POST'])
 def recommend_truck():
     cartons = CartonType.query.all()
@@ -120,20 +71,12 @@ def recommend_truck():
                 if pack_results:
                     for pack_result in pack_results:
                         if pack_result['fitted_items']:  # Only include trucks that fit items
-                            # AGENT 4: Enhanced truck dimensions with detailed specs
-                            pack_result['truck_dimensions'] = {
-                                'length_cm': truck_type.length,
-                                'width_cm': truck_type.width, 
-                                'height_cm': truck_type.height,
-                                'volume_m3': round((truck_type.length * truck_type.width * truck_type.height) / 1000000, 2),
-                                'max_weight_kg': truck_type.max_weight,
-                                'display_text': f"{truck_type.length} × {truck_type.width} × {truck_type.height} cm"
-                            }
+                            # Add truck dimensions
+                            pack_result['truck_dimensions'] = f"{truck_type.length}×{truck_type.width}×{truck_type.height}"
                             
-                            # AGENT 5: Add comprehensive validation and cost analysis
+                            # Add comprehensive cost analysis
                             try:
                                 from app.cost_engine import CostEngine
-                                from app.validation.recommendation_validator import validate_recommendation
                                 cost_engine = CostEngine()
                                 cost_breakdown = cost_engine.calculate_comprehensive_cost(truck_type, route_info)
                                 pack_result['detailed_cost'] = cost_breakdown
@@ -1691,7 +1634,15 @@ def sale_orders():
             optimization_mode = request.form.get('optimization_mode', 'cost_saving')  # 'cost_saving', 'space_utilization', 'balanced'
             enable_consolidation = request.form.get('enable_consolidation', 'true') == 'true'
             
-            processing_result = process_sale_order_file(file, batch_name, optimization_mode, enable_consolidation)
+            # Map frontend optimization modes to backend optimization goals
+            optimization_goal_map = {
+                'cost_saving': 'cost',
+                'space_utilization': 'space', 
+                'balanced': 'balanced'  # Implement proper balanced optimization
+            }
+            optimization_goal = optimization_goal_map.get(optimization_mode, 'cost')
+            
+            processing_result = process_sale_order_file(file, batch_name, optimization_goal, enable_consolidation)
             
             if processing_result['success']:
                 flash(f'Successfully processed {processing_result["processed_orders"]} sale orders', 'success')
@@ -1727,7 +1678,7 @@ def sale_order_results(batch_id):
                          sale_orders=sale_orders,
                          order_recommendations=order_recommendations)
 
-def process_sale_order_file(file, batch_name, optimization_mode='cost_saving', enable_consolidation=True):
+def process_sale_order_file(file, batch_name, optimization_goal='cost', enable_consolidation=True):
     """Process uploaded Excel/CSV file and generate truck recommendations"""
     import pandas as pd
     from app.models import SaleOrder, SaleOrderItem, SaleOrderBatch, TruckRecommendation, TruckType, CartonType
@@ -1897,7 +1848,7 @@ def process_sale_order_file(file, batch_name, optimization_mode='cost_saving', e
                 
                 # Generate consolidated recommendations
                 consolidated_recommendations = multi_order_optimizer.optimize_multi_order_consolidation(
-                    all_sale_orders, trucks, optimization_mode
+                    all_sale_orders, trucks, optimization_goal
                 )
                 
                 # Store consolidation results as additional recommendations
@@ -1956,7 +1907,7 @@ def process_sale_order_file(file, batch_name, optimization_mode='cost_saving', e
         for sale_order in all_sale_orders:
             try:
                 logger.info(f"Generating recommendations for order: {sale_order.sale_order_number}")
-                generate_truck_recommendations(sale_order, optimization_mode)
+                generate_truck_recommendations(sale_order, optimization_goal)
                 logger.info(f"Successfully generated recommendations for order: {sale_order.sale_order_number}")
             except Exception as e:
                 failed_orders += 1
@@ -1998,14 +1949,14 @@ def _get_carton_hash(sale_order):
     carton_string = "|".join(sorted(carton_info))
     return hashlib.md5(carton_string.encode()).hexdigest()
 
-def _get_cached_recommendation(sale_order, optimization_strategy):
+def _get_cached_recommendation(sale_order, optimization_goal):
     """Check cache for existing recommendation"""
-    cache_key = f"{_get_carton_hash(sale_order)}_{optimization_strategy}"
+    cache_key = f"{_get_carton_hash(sale_order)}_{optimization_goal}"
     return _recommendation_cache.get(cache_key)
 
-def _cache_recommendation(sale_order, optimization_strategy, recommendations):
+def _cache_recommendation(sale_order, optimization_goal, recommendations):
     """Store recommendation in cache"""
-    cache_key = f"{_get_carton_hash(sale_order)}_{optimization_strategy}"
+    cache_key = f"{_get_carton_hash(sale_order)}_{optimization_goal}"
     
     # Simple cache size management
     if len(_recommendation_cache) >= _cache_max_size:
@@ -2016,7 +1967,7 @@ def _cache_recommendation(sale_order, optimization_strategy, recommendations):
     
     _recommendation_cache[cache_key] = recommendations
 
-def generate_truck_recommendations(sale_order, optimization_strategy='space_first'):
+def generate_truck_recommendations(sale_order, optimization_goal='cost'):
     """
     Generate truck recommendations with improved algorithm:
     1. Start with smallest truck that can fit all cartons
@@ -2031,7 +1982,7 @@ def generate_truck_recommendations(sale_order, optimization_strategy='space_firs
     logger.info(f"Starting truck recommendations for sale order: {sale_order.sale_order_number}")
     
     # Check cache first for performance improvement
-    cached_recommendations = _get_cached_recommendation(sale_order, optimization_strategy)
+    cached_recommendations = _get_cached_recommendation(sale_order, optimization_goal)
     if cached_recommendations:
         logger.info(f"Using cached recommendations for order: {sale_order.sale_order_number}")
         # Apply cached recommendations to database
@@ -2119,7 +2070,7 @@ def generate_truck_recommendations(sale_order, optimization_strategy='space_firs
         for truck in trucks[:5]:  # Limit to first 5 trucks for performance (smallest ones)
             try:
                 truck_combo = {truck: 1}  # Single truck only
-                pack_results = pack_cartons_optimized(truck_combo, carton_quantities, optimization_strategy)
+                pack_results = pack_cartons_optimized(truck_combo, carton_quantities, optimization_goal)
                 
                 if pack_results:
                     result = pack_results[0]
@@ -2152,7 +2103,7 @@ def generate_truck_recommendations(sale_order, optimization_strategy='space_firs
         for truck in trucks_to_test:
             try:
                 truck_combo = {truck: 1}  # Single truck only
-                pack_results = pack_cartons_optimized(truck_combo, carton_quantities, optimization_strategy)
+                pack_results = pack_cartons_optimized(truck_combo, carton_quantities, optimization_goal)
                 
                 if pack_results:
                     result = pack_results[0]
@@ -2287,7 +2238,7 @@ def generate_truck_recommendations(sale_order, optimization_strategy='space_firs
                     'recommendation_reason': rec.recommendation_reason,
                     'ranking': rec.ranking
                 })
-            _cache_recommendation(sale_order, optimization_strategy, cache_data)
+            _cache_recommendation(sale_order, optimization_goal, cache_data)
             logger.info(f"Cached {len(cache_data)} recommendations for future use")
     
     except Exception as e:
@@ -2393,7 +2344,7 @@ def api_drill_down_data(data_type):
                 data.append({
                     'id': truck.id,
                     'name': truck.name,
-                    'category': truck.category,
+                    'category': truck.truck_category,
                     'length': truck.length,
                     'width': truck.width,  
                     'height': truck.height,
@@ -2402,7 +2353,7 @@ def api_drill_down_data(data_type):
                     'availability': truck.availability,
                     'cost_per_km': getattr(truck, 'cost_per_km', 0),
                     'fuel_efficiency': getattr(truck, 'fuel_efficiency', 0),
-                    'created_date': truck.date_created.strftime('%Y-%m-%d') if truck.date_created else 'N/A'
+                    'created_date': getattr(truck, 'date_created', datetime.now()).strftime('%Y-%m-%d') if hasattr(truck, 'date_created') and truck.date_created else 'N/A'
                 })
             
             return jsonify({
@@ -2533,3 +2484,75 @@ def api_drill_down_data(data_type):
 def dashboard_drill_down(data_type):
     """Render drill-down page for dashboard data"""
     return api_drill_down_data(data_type)
+
+@bp.route('/settings', methods=['GET', 'POST'])
+def settings():
+    """Settings page for logistics coordinator preferences and configuration"""
+    if request.method == 'POST':
+        try:
+            # Get or create user settings
+            user_settings = UserSettings.get_user_settings()
+            
+            # Update truck preferences
+            user_settings.default_truck_category = request.form.get('default_truck_category', 'Standard')
+            
+            # Update cost calculation parameters
+            user_settings.fuel_cost_per_liter = float(request.form.get('fuel_cost_per_liter', 100.0))
+            user_settings.driver_daily_allowance = float(request.form.get('driver_daily_allowance', 800.0))
+            user_settings.insurance_cost_percentage = float(request.form.get('insurance_cost_percentage', 2.0))
+            user_settings.loading_unloading_cost = float(request.form.get('loading_unloading_cost', 500.0))
+            
+            # Update optimization strategy defaults
+            user_settings.default_optimization_goal = request.form.get('default_optimization_goal', 'space')
+            user_settings.space_utilization_target = float(request.form.get('space_utilization_target', 85.0))
+            user_settings.weight_safety_margin = float(request.form.get('weight_safety_margin', 10.0))
+            
+            # Update packing preferences
+            user_settings.allow_carton_rotation = request.form.get('allow_carton_rotation') == 'on'
+            user_settings.fragile_items_on_top = request.form.get('fragile_items_on_top') == 'on'
+            user_settings.max_stack_height = int(request.form.get('max_stack_height', 5))
+            user_settings.load_balance_priority = request.form.get('load_balance_priority') == 'on'
+            
+            # Update UI/UX preferences
+            user_settings.dashboard_refresh_interval = int(request.form.get('dashboard_refresh_interval', 30))
+            user_settings.show_detailed_metrics = request.form.get('show_detailed_metrics') == 'on'
+            user_settings.enable_3d_visualization = request.form.get('enable_3d_visualization') == 'on'
+            user_settings.charts_animation_enabled = request.form.get('charts_animation_enabled') == 'on'
+            
+            # Update notification preferences
+            user_settings.email_notifications = request.form.get('email_notifications') == 'on'
+            user_settings.job_completion_alerts = request.form.get('job_completion_alerts') == 'on'
+            user_settings.cost_threshold_alerts = request.form.get('cost_threshold_alerts') == 'on'
+            user_settings.cost_alert_threshold = float(request.form.get('cost_alert_threshold', 10000.0))
+            
+            # Update company/organization settings
+            user_settings.company_name = request.form.get('company_name', 'TruckOpti User')
+            user_settings.default_origin_city = request.form.get('default_origin_city', 'Mumbai')
+            user_settings.working_hours_start = request.form.get('working_hours_start', '09:00')
+            user_settings.working_hours_end = request.form.get('working_hours_end', '18:00')
+            
+            # Update data management
+            user_settings.auto_cleanup_old_jobs = request.form.get('auto_cleanup_old_jobs') == 'on'
+            user_settings.data_retention_days = int(request.form.get('data_retention_days', 90))
+            
+            # Update timestamp
+            user_settings.date_updated = datetime.utcnow()
+            
+            # Save to database
+            db.session.commit()
+            
+            flash('Settings updated successfully!', 'success')
+            return redirect(url_for('main.settings'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating settings: {str(e)}', 'danger')
+            return redirect(url_for('main.settings'))
+    
+    # GET request - load current settings
+    user_settings = UserSettings.get_user_settings()
+    truck_types = TruckType.query.filter_by(availability=True).all()
+    
+    return render_template('settings.html', 
+                         settings=user_settings, 
+                         truck_types=truck_types)
