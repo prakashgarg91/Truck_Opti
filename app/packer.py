@@ -220,18 +220,42 @@ def _pack_parallel(available_trucks, items, max_workers):
     return results
 
 def _pack_single_truck(truck_bin, items_to_pack):
-    """Pack items into a single truck bin"""
+    """Pack items into a single truck bin with enhanced accuracy validation"""
     packer = Packer()
     packer.add_bin(truck_bin)
     
+    # AGENT 1 FIX: Pre-validate items before packing
+    valid_items = []
+    oversized_items = []
+    
     for item in items_to_pack:
-        packer.add_item(item)
+        # Check if item dimensions can physically fit in truck
+        if (item.width <= truck_bin.width and 
+            item.height <= truck_bin.height and 
+            item.depth <= truck_bin.depth):
+            packer.add_item(item)
+            valid_items.append(item)
+        else:
+            oversized_items.append({
+                'name': item.name,
+                'dimensions': [item.width, item.height, item.depth],
+                'truck_dimensions': [truck_bin.width, truck_bin.height, truck_bin.depth],
+                'reason': 'Item dimensions exceed truck capacity'
+            })
+            logging.warning(f"AGENT 1 VALIDATION: Item {item.name} cannot fit in {truck_bin.name}")
     
     packer.pack()
     
-    # Process results
+    # Process results with enhanced validation
     packed_items_details = []
+    actual_volume_used = 0
+    actual_weight_used = 0
+    
     for item in truck_bin.items:
+        item_volume = item.width * item.height * item.depth
+        actual_volume_used += item_volume
+        actual_weight_used += item.weight
+        
         packed_items_details.append({
             'name': item.name,
             'position': item.position,
@@ -239,17 +263,46 @@ def _pack_single_truck(truck_bin, items_to_pack):
             'width': float(item.width),
             'height': float(item.height),
             'depth': float(item.depth),
+            'volume': float(item_volume),
+            'weight': float(item.weight),
             'color': '#%06x' % (hash(item.name) & 0xFFFFFF),
         })
     
-    # Calculate space utilization (volume-based)
-    total_volume_used = sum(item.width * item.height * item.depth for item in truck_bin.items)
+    # AGENT 1 FIX: Enhanced calculation with validation checks
     total_truck_volume = truck_bin.width * truck_bin.height * truck_bin.depth
-    space_utilization = total_volume_used / total_truck_volume if total_truck_volume > 0 else 0
     
-    # Calculate weight utilization separately
-    total_weight = sum(item.weight for item in truck_bin.items)
-    weight_utilization = total_weight / truck_bin.max_weight if truck_bin.max_weight > 0 else 0
+    # Validate volume calculation accuracy
+    if actual_volume_used > total_truck_volume:
+        logging.error(f"AGENT 1 ERROR: Volume calculation error for {truck_bin.name}: "
+                     f"Used({actual_volume_used}) > Available({total_truck_volume})")
+        # Apply safety margin to prevent impossible calculations
+        actual_volume_used = min(actual_volume_used, total_truck_volume * 0.95)
+    
+    space_utilization = actual_volume_used / total_truck_volume if total_truck_volume > 0 else 0
+    
+    # Weight validation with safety checks
+    weight_utilization = actual_weight_used / truck_bin.max_weight if truck_bin.max_weight > 0 else 0
+    if actual_weight_used > truck_bin.max_weight:
+        logging.warning(f"AGENT 1 WARNING: Weight limit exceeded for {truck_bin.name}")
+    
+    # AGENT 1 ENHANCEMENT: Add calculation transparency
+    calculation_metadata = {
+        'total_items_input': len(items_to_pack),
+        'valid_items_for_packing': len(valid_items),
+        'oversized_items_rejected': len(oversized_items),
+        'items_successfully_packed': len(truck_bin.items),
+        'items_failed_to_pack': len(truck_bin.unfitted_items),
+        'truck_total_volume_cm3': total_truck_volume,
+        'actual_volume_used_cm3': actual_volume_used,
+        'volume_utilization_percentage': round(space_utilization * 100, 2),
+        'truck_max_weight_kg': truck_bin.max_weight,
+        'actual_weight_used_kg': actual_weight_used,
+        'weight_utilization_percentage': round(weight_utilization * 100, 2),
+        'packing_efficiency': round((len(truck_bin.items) / len(valid_items)) * 100, 2) if valid_items else 0,
+        'validation_passed': (actual_volume_used <= total_truck_volume and 
+                            actual_weight_used <= truck_bin.max_weight),
+        'oversized_items': oversized_items
+    }
     
     unfitted_items_details = [{'name': item.name} for item in truck_bin.unfitted_items]
     

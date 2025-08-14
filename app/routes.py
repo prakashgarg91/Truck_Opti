@@ -22,6 +22,59 @@ def convert_decimals_to_floats(obj):
         return obj
 bp = Blueprint('main', __name__)
 api = Blueprint('api', __name__)
+
+# AGENT 4: API Endpoints for Enhanced Backend Functionality
+@api.route('/truck/<int:truck_id>/dimensions', methods=['GET'])
+def get_truck_dimensions(truck_id):
+    """AGENT 4: Get detailed truck dimensions"""
+    truck = TruckType.query.get_or_404(truck_id)
+    return jsonify({
+        'length_cm': truck.length,
+        'width_cm': truck.width,
+        'height_cm': truck.height,
+        'volume_m3': round((truck.length * truck.width * truck.height) / 1000000, 2),
+        'max_weight_kg': truck.max_weight,
+        'display_text': f"{truck.length} × {truck.width} × {truck.height} cm"
+    })
+
+@api.route('/truck-by-name/<truck_name>/dimensions', methods=['GET'])
+def get_truck_dimensions_by_name(truck_name):
+    """AGENT 4: Get truck dimensions by name"""
+    truck = TruckType.query.filter_by(name=truck_name).first()
+    if not truck:
+        return jsonify({'error': 'Truck not found'}), 404
+    
+    return jsonify({
+        'length_cm': truck.length,
+        'width_cm': truck.width,
+        'height_cm': truck.height,
+        'volume_m3': round((truck.length * truck.width * truck.height) / 1000000, 2),
+        'max_weight_kg': truck.max_weight,
+        'display_text': f"{truck.length} × {truck.width} × {truck.height} cm"
+    })
+
+@api.route('/validate-recommendation', methods=['POST'])
+def validate_recommendation_api():
+    """AGENT 5: Validate truck recommendation via API"""
+    try:
+        from app.validation.recommendation_validator import validate_recommendation
+        
+        data = request.get_json()
+        truck_data = data.get('truck_data', {})
+        carton_data = data.get('carton_data', [])
+        packing_result = data.get('packing_result', {})
+        
+        validation_result = validate_recommendation(truck_data, carton_data, packing_result)
+        
+        return jsonify({
+            'is_valid': validation_result.is_valid,
+            'warnings': validation_result.warnings,
+            'errors': validation_result.errors,
+            'recommendations': validation_result.recommendations,
+            'metadata': validation_result.metadata
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 @bp.route('/recommend-truck', methods=['GET', 'POST'])
 def recommend_truck():
     cartons = CartonType.query.all()
@@ -67,12 +120,20 @@ def recommend_truck():
                 if pack_results:
                     for pack_result in pack_results:
                         if pack_result['fitted_items']:  # Only include trucks that fit items
-                            # Add truck dimensions
-                            pack_result['truck_dimensions'] = f"{truck_type.length}×{truck_type.width}×{truck_type.height}"
+                            # AGENT 4: Enhanced truck dimensions with detailed specs
+                            pack_result['truck_dimensions'] = {
+                                'length_cm': truck_type.length,
+                                'width_cm': truck_type.width, 
+                                'height_cm': truck_type.height,
+                                'volume_m3': round((truck_type.length * truck_type.width * truck_type.height) / 1000000, 2),
+                                'max_weight_kg': truck_type.max_weight,
+                                'display_text': f"{truck_type.length} × {truck_type.width} × {truck_type.height} cm"
+                            }
                             
-                            # Add comprehensive cost analysis
+                            # AGENT 5: Add comprehensive validation and cost analysis
                             try:
                                 from app.cost_engine import CostEngine
+                                from app.validation.recommendation_validator import validate_recommendation
                                 cost_engine = CostEngine()
                                 cost_breakdown = cost_engine.calculate_comprehensive_cost(truck_type, route_info)
                                 pack_result['detailed_cost'] = cost_breakdown

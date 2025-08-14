@@ -1,0 +1,6 @@
+Order_ID,Customer_Name,Carton_Length,Carton_Width,Carton_Height,Carton_Weight,Delivery_Region
+ORD001,Acme Logistics,50,30,40,25,North
+ORD002,Global Traders,45,35,35,20,West
+ORD003,Transport Solutions,55,40,45,30,South
+ORD004,Freight Masters,40,25,35,15,East
+ORD005,Quick Delivery,60,45,50,35,Central

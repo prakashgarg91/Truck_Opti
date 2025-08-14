@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container mt-4">
+  <!-- Status Messages Area -->
+  <div id="statusMessages" class="mb-3" style="display: none;">
+    <div class="alert alert-dismissible fade show" role="alert">
+      <span id="statusText"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  </div>
+
   <div class="card shadow mb-4">
     <div class="card-header bg-primary text-white">
       <h4 class="mb-0"><i class="bi bi-truck"></i> Fleet Packing Optimization</h4>
@@ -181,6 +189,39 @@
 document.addEventListener('DOMContentLoaded', function() {
     let cartonCount = 1;
     
+    // Status message functions
+    function showStatusMessage(message, type = 'info') {
+        const statusMessages = document.getElementById('statusMessages');
+        const statusText = document.getElementById('statusText');
+        const alertDiv = statusMessages.querySelector('.alert');
+        
+        // Remove existing classes
+        alertDiv.className = 'alert alert-dismissible fade show';
+        
+        // Add appropriate class based on type
+        const typeClass = {
+            'success': 'alert-success',
+            'error': 'alert-danger',
+            'warning': 'alert-warning',
+            'info': 'alert-info'
+        };
+        
+        alertDiv.classList.add(typeClass[type] || 'alert-info');
+        statusText.innerHTML = message;
+        statusMessages.style.display = 'block';
+        
+        // Auto-hide success messages after 5 seconds
+        if (type === 'success') {
+            setTimeout(() => {
+                statusMessages.style.display = 'none';
+            }, 5000);
+        }
+    }
+    
+    function hideStatusMessage() {
+        document.getElementById('statusMessages').style.display = 'none';
+    }
+    
     // Professional truck selection handling
     const primaryTruckSelect = document.getElementById('primaryTruckType');
     const truckDetails = document.getElementById('truckDetails');
@@ -211,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addFleetRow').addEventListener('click', function() {
         cartonCount++;
         let newField = `
-        <div class="row mb-2 carton-row align-items-end">
+        <div class="row mb-2 carton-row align-items-end" style="opacity: 0; transform: translateY(-10px);">
             <div class="col-md-6">
                 <label class="form-label">Carton Type</label>
                 <select name="carton_type_${cartonCount}" class="form-select carton-type-select" required>
@@ -231,37 +272,147 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </div>
         </div>`;
-        document.getElementById('fleetCartonRows').insertAdjacentHTML('beforeend', newField);
+        
+        const cartonContainer = document.getElementById('fleetCartonRows');
+        cartonContainer.insertAdjacentHTML('beforeend', newField);
+        
+        // Animate the new row in
+        const newRow = cartonContainer.lastElementChild;
+        setTimeout(() => {
+            newRow.style.transition = 'all 0.3s ease';
+            newRow.style.opacity = '1';
+            newRow.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Show remove buttons for all rows if there's more than one
+        updateRemoveButtonVisibility();
     });
+
+    // Remove button visibility management
+    function updateRemoveButtonVisibility() {
+        const cartonRows = document.querySelectorAll('.carton-row');
+        cartonRows.forEach((row, index) => {
+            const removeBtn = row.querySelector('.remove-row');
+            if (removeBtn) {
+                removeBtn.style.display = cartonRows.length > 1 ? 'inline-block' : 'none';
+            }
+        });
+    }
 
     document.getElementById('fleetCartonRows').addEventListener('click', function(e) {
         if (e.target && (e.target.classList.contains('remove-row') || e.target.closest('.remove-row'))) {
-            e.target.closest('.carton-row').remove();
+            const rowToRemove = e.target.closest('.carton-row');
+            
+            // Animate out
+            rowToRemove.style.transition = 'all 0.3s ease';
+            rowToRemove.style.opacity = '0';
+            rowToRemove.style.transform = 'translateX(-100%)';
+            
+            setTimeout(() => {
+                rowToRemove.remove();
+                updateRemoveButtonVisibility();
+            }, 300);
         }
     });
     
-    // Form validation enhancement
+    // Initialize remove button visibility
+    updateRemoveButtonVisibility();
+    
+    // Form validation and field transformation for backend compatibility
     document.getElementById('fleetOptimizationForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Always prevent default to handle transformation
+        
         const primaryTruck = document.getElementById('primaryTruckType').value;
         const truckQuantity = document.querySelector('input[name="truck_quantity"]').value;
+        const secondaryTruck = document.querySelector('select[name="secondary_truck"]').value;
+        const secondaryQuantity = document.querySelector('input[name="secondary_truck_quantity"]').value;
         
+        // Clear previous messages
+        hideStatusMessage();
+        
+        // Validation
         if (!primaryTruck || !truckQuantity || truckQuantity < 1) {
-            e.preventDefault();
-            alert('Please select a primary truck type and specify at least 1 truck.');
+            showStatusMessage('<i class="bi bi-exclamation-triangle me-2"></i>Please select a primary truck type and specify at least 1 truck.', 'warning');
             return false;
         }
         
-        // Show loading state
+        // Check if at least one carton is selected
+        const cartonSelects = document.querySelectorAll('.carton-type-select');
+        let hasValidCarton = false;
+        for (let select of cartonSelects) {
+            if (select.value) {
+                hasValidCarton = true;
+                break;
+            }
+        }
+        
+        if (!hasValidCarton) {
+            showStatusMessage('<i class="bi bi-exclamation-triangle me-2"></i>Please select at least one carton type to optimize.', 'warning');
+            return false;
+        }
+        
+        // Show loading state and progress message
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div>Optimizing Fleet...';
         submitBtn.disabled = true;
         
-        // Re-enable after 30 seconds (fallback)
-        setTimeout(() => {
+        showStatusMessage('<i class="bi bi-hourglass-split me-2"></i>Processing fleet optimization... This may take a few moments.', 'info');
+        
+        // Create form data in the format backend expects
+        const formData = new FormData();
+        
+        // Transform truck data to backend format: truck_{truck.id} = quantity
+        if (primaryTruck && truckQuantity > 0) {
+            formData.append(`truck_${primaryTruck}`, truckQuantity);
+        }
+        
+        if (secondaryTruck && secondaryQuantity > 0) {
+            formData.append(`truck_${secondaryTruck}`, secondaryQuantity);
+        }
+        
+        // Copy carton data (already in correct format)
+        const cartonRows = document.querySelectorAll('.carton-row');
+        cartonRows.forEach((row, index) => {
+            const cartonSelect = row.querySelector('.carton-type-select');
+            const qtyInput = row.querySelector('input[type="number"]');
+            
+            if (cartonSelect && cartonSelect.value && qtyInput && qtyInput.value) {
+                formData.append(`carton_type_${index + 1}`, cartonSelect.value);
+                formData.append(`carton_qty_${index + 1}`, qtyInput.value);
+            }
+        });
+        
+        // Submit with fetch to handle errors properly
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.text();
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        })
+        .then(html => {
+            // Success - replace page content with response
+            document.open();
+            document.write(html);
+            document.close();
+        })
+        .catch(error => {
+            console.error('Fleet optimization error:', error);
+            showStatusMessage(
+                `<i class="bi bi-exclamation-circle me-2"></i><strong>Optimization Failed:</strong> ${error.message}. Please check your inputs and try again.`, 
+                'error'
+            );
+        })
+        .finally(() => {
+            // Re-enable button
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
-        }, 30000);
+        });
     });
 });
 </script>

@@ -1,4 +1,159 @@
-/* TruckOpti Main Stylesheet */
+/* TruckOpti Main Stylesheet - AGENT 2 ENHANCED */
+
+/* AGENT 2: Professional Color Scheme and Enterprise Styling */
+:root {
+    /* Primary Brand Colors - Professional Logistics Theme */
+    --primary-blue: #2563eb;
+    --primary-blue-dark: #1d4ed8;
+    --primary-blue-light: #3b82f6;
+    
+    /* Secondary Colors - Professional Palette */
+    --secondary-green: #059669;
+    --secondary-orange: #ea580c;
+    --secondary-purple: #7c3aed;
+    --secondary-teal: #0d9488;
+    
+    /* Neutral Professional Colors */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    
+    /* Success/Warning/Error States */
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+    
+    /* Professional Shadows and Effects */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    
+    /* Professional Transitions */
+    --transition-fast: all 0.15s ease-in-out;
+    --transition-medium: all 0.3s ease-in-out;
+    --transition-slow: all 0.5s ease-in-out;
+}
+
+/* AGENT 2: Professional Chart and Table Styling */
+.chart-container {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid var(--gray-200);
+    transition: var(--transition-medium);
+}
+
+.chart-container:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-blue-light);
+}
+
+/* AGENT 2: Professional Table Styling */
+.table-professional {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    background: #ffffff;
+}
+
+.table-professional thead th {
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
+    color: #ffffff;
+    font-weight: 600;
+    padding: 16px 20px;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+}
+
+.table-professional tbody tr {
+    transition: var(--transition-fast);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.table-professional tbody tr:hover {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.table-professional tbody td {
+    padding: 16px 20px;
+    vertical-align: middle;
+    border: none;
+    color: var(--gray-700);
+    font-weight: 500;
+}
+
+/* AGENT 2: Professional Recommendation Cards */
+.recommendation-card {
+    background: #ffffff;
+    border: 2px solid var(--gray-200);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    transition: var(--transition-medium);
+    position: relative;
+    overflow: hidden;
+}
+
+.recommendation-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-blue), var(--secondary-teal));
+    transition: var(--transition-medium);
+}
+
+.recommendation-card:hover {
+    border-color: var(--primary-blue);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.recommendation-card:hover::before {
+    height: 6px;
+}
+
+/* AGENT 2: Professional Button Styling */
+.btn-professional {
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 12px 24px;
+    transition: var(--transition-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-professional:hover {
+    background: linear-gradient(135deg, var(--primary-blue-dark), var(--primary-blue));
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    color: #ffffff;
+}
 
 /* Enhanced Progress Loading System */
 .progress-loading-overlay {

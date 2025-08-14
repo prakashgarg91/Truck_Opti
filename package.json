@@ -1,16 +1,38 @@
 {
-  "name": "TruckOpti",
+  "name": "truckopti",
   "version": "1.0.0",
   "description": "Truck loading optimization app",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "jest tests/e2e",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "chai": "^5.2.1"
+    "@types/jest": "^30.0.0",
+    "chai": "^5.2.1",
+    "ts-jest": "^29.4.1",
+    "typescript": "^5.9.2"
   },
   "devDependencies": {
     "jest": "^30.0.5",
-    "puppeteer": "^24.16.0"
-  }
+    "puppeteer": "^24.16.1"
+  },
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prakashgarg91/Truck_Opti.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/prakashgarg91/Truck_Opti/issues"
+  },
+  "homepage": "https://github.com/prakashgarg91/Truck_Opti#readme"
 }
