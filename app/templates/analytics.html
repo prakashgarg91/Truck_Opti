@@ -4,6 +4,150 @@
     <li class="breadcrumb-item active" aria-current="page">Analytics Dashboard</li>
 {% endblock %}
 
+{% block head %}
+<style>
+/* Professional Chart Hover and Interaction Enhancements */
+.chart-container.chart-hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.drill-down-hint {
+    transition: all 0.3s ease;
+    opacity: 0.7;
+}
+
+.drill-down-hint-active {
+    opacity: 1;
+    transform: scale(1.05);
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.15) 0%, rgba(13, 110, 253, 0.1) 100%);
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.2);
+}
+
+/* Responsive Typography and Sizing Adjustments */
+@media (max-width: 768px) {
+    .chart-container {
+        margin-bottom: 15px;
+        padding: 10px;
+    }
+    
+    .chart-container .card-title {
+        font-size: 0.95rem;
+    }
+    
+    .drill-down-hint {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+}
+/* Professional Chart Container Styling */
+.chart-container {
+    position: relative;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chart-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.chart-container .card-header {
+    background: transparent;
+    border: none;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.chart-container .card-title {
+    color: #495057;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-container .card-title i {
+    color: #0d6efd;
+    font-size: 1.2rem;
+}
+
+/* Enhanced chart canvas styling */
+.chart-canvas {
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+/* KPI Cards Gradient Enhancement */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%) !important;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #198754 0%, #0f5132 100%) !important;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e09900 100%) !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #087990 100%) !important;
+}
+
+/* Professional card styling */
+.analytics-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.analytics-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Loading animation enhancement */
+.chart-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    flex-direction: column;
+    color: #6c757d;
+}
+
+.chart-loading .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* Responsive chart adjustments */
+@media (max-width: 768px) {
+    .chart-container {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .chart-container .card-title {
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -103,7 +247,7 @@
     <!-- Enhanced Logistics Charts Row -->
     <div class="row mb-4">
         <div class="col-xl-8">
-            <div class="card shadow dashboard-chart-container drill-down-card" onclick="showPerformanceDrillDown()">
+            <div class="card shadow analytics-card chart-container drill-down-card" onclick="showPerformanceDrillDown()">
                 <div class="card-header bg-primary text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -119,7 +263,7 @@
                 </div>
                 <div class="card-body">
                     <div class="chart-container">
-                        <canvas id="performanceChart"></canvas>
+                        <canvas id="performanceChart" class="chart-canvas"></canvas>
                     </div>
                     <div class="chart-drill-down-overlay">
                         <div class="drill-down-hint">
@@ -134,7 +278,7 @@
             </div>
         </div>
         <div class="col-xl-4">
-            <div class="card shadow dashboard-chart-container drill-down-card" onclick="showOptimizationDrillDown()">
+            <div class="card shadow analytics-card chart-container drill-down-card" onclick="showOptimizationDrillDown()">
                 <div class="card-header bg-success text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -145,7 +289,7 @@
                 </div>
                 <div class="card-body">
                     <div class="chart-container" style="height: 280px;">
-                        <canvas id="optimizationChart"></canvas>
+                        <canvas id="optimizationChart" class="chart-canvas"></canvas>
                     </div>
                     <div class="chart-drill-down-overlay">
                         <div class="drill-down-hint">
@@ -163,7 +307,7 @@
     <!-- Enhanced Logistics Metrics Row -->
     <div class="row mb-4">
         <div class="col-xl-6">
-            <div class="card shadow dashboard-chart-container drill-down-card" onclick="showTruckUtilizationDrillDown()">
+            <div class="card shadow analytics-card chart-container drill-down-card" onclick="showTruckUtilizationDrillDown()">
                 <div class="card-header bg-warning text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -174,7 +318,7 @@
                 </div>
                 <div class="card-body">
                     <div class="chart-container" style="height: 300px;">
-                        <canvas id="utilizationChart"></canvas>
+                        <canvas id="utilizationChart" class="chart-canvas"></canvas>
                     </div>
                     <div class="chart-drill-down-overlay">
                         <div class="drill-down-hint">
@@ -189,7 +333,7 @@
             </div>
         </div>
         <div class="col-xl-6">
-            <div class="card shadow dashboard-chart-container drill-down-card" onclick="showCostAnalysisDrillDown()">
+            <div class="card shadow analytics-card chart-container drill-down-card" onclick="showCostAnalysisDrillDown()">
                 <div class="card-header bg-info text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -200,7 +344,7 @@
                 </div>
                 <div class="card-body">
                     <div class="chart-container" style="height: 300px;">
-                        <canvas id="costChart"></canvas>
+                        <canvas id="costChart" class="chart-canvas"></canvas>
                     </div>
                     <div class="chart-drill-down-overlay">
                         <div class="drill-down-hint">
@@ -221,7 +365,8 @@
         <div class="col-xl-8">
             <div class="card shadow">
                 <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="bi bi-table"></i> Recent Performance</h5>
+                    <h5 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Optimization Impact Analysis</h5>
+                    <small class="opacity-75">Track ROI and cost savings from optimization decisions to justify logistics investments</small>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -245,42 +390,44 @@
             </div>
         </div>
         <div class="col-xl-4">
-            <div class="card shadow">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Live Metrics</h5>
+            <div class="card shadow border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Demo Mode</h5>
                 </div>
                 <div class="card-body">
-                    <div class="metric-item mb-3">
-                        <div class="d-flex justify-content-between">
-                            <span>Current Load</span>
-                            <span class="fw-bold text-primary" id="current-load">0%</span>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar bg-primary" id="current-load-bar" style="width: 0%"></div>
+                    <div class="alert alert-info border-0 mb-3">
+                        <h6 class="alert-heading"><i class="bi bi-lightbulb"></i> Business Decision Support</h6>
+                        <p class="mb-2">This analytics dashboard helps logistics coordinators:</p>
+                        <ul class="small mb-0">
+                            <li><strong>Track Cost Savings:</strong> Monitor ₹ saved through optimization</li>
+                            <li><strong>Space Utilization:</strong> Maximize truck capacity usage</li>
+                            <li><strong>Fleet Efficiency:</strong> Compare truck performance</li>
+                            <li><strong>ROI Analysis:</strong> Justify optimization investments</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-light p-3 rounded">
+                        <h6 class="text-primary mb-2"><i class="bi bi-trophy"></i> Optimization Benefits</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <div class="h5 text-success mb-0">15-30%</div>
+                                    <small class="text-muted">Cost Reduction</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <div class="h5 text-info mb-0">20-40%</div>
+                                    <small class="text-muted">Space Efficiency</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="metric-item mb-3">
-                        <div class="d-flex justify-content-between">
-                            <span>System Efficiency</span>
-                            <span class="fw-bold text-success" id="system-efficiency">0%</span>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar bg-success" id="system-efficiency-bar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div class="metric-item mb-3">
-                        <div class="d-flex justify-content-between">
-                            <span>Cost Optimization</span>
-                            <span class="fw-bold text-warning" id="cost-optimization">0%</span>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar bg-warning" id="cost-optimization-bar" style="width: 0%"></div>
-                        </div>
-                    </div>
+                    
                     <hr>
                     <div class="text-center">
                         <small class="text-muted">
-                            Last updated: <span id="last-updated">--</span>
+                            <i class="bi bi-database"></i> Real metrics available after processing actual orders
                         </small>
                     </div>
                 </div>
@@ -371,8 +518,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize all charts
 function initializeCharts() {
-    // Performance Trends Chart (Multi-line)
+    // Enhanced chart interaction setup
+    const chartContainers = document.querySelectorAll('.chart-container');
+    chartContainers.forEach(container => {
+        container.addEventListener('mouseenter', function() {
+            this.classList.add('chart-hover');
+            const drillDownHint = this.querySelector('.drill-down-hint');
+            if (drillDownHint) {
+                drillDownHint.classList.add('drill-down-hint-active');
+            }
+        });
+        container.addEventListener('mouseleave', function() {
+            this.classList.remove('chart-hover');
+            const drillDownHint = this.querySelector('.drill-down-hint');
+            if (drillDownHint) {
+                drillDownHint.classList.remove('drill-down-hint-active');
+            }
+        });
+    });
+    // Create gradient backgrounds for professional look
+    function createGradient(ctx, color1, color2) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(1, color2);
+        return gradient;
+    }
+
+    // Performance Trends Chart (Multi-line) - Enhanced Professional Style
     const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    const spaceGradient = createGradient(performanceCtx, 'rgba(13, 110, 253, 0.8)', 'rgba(13, 110, 253, 0.1)');
+    const costGradient = createGradient(performanceCtx, 'rgba(25, 135, 84, 0.8)', 'rgba(25, 135, 84, 0.1)');
+    const fleetGradient = createGradient(performanceCtx, 'rgba(255, 193, 7, 0.8)', 'rgba(255, 193, 7, 0.1)');
+    
     charts.performance = new Chart(performanceCtx, {
         type: 'line',
         data: {
@@ -381,68 +558,187 @@ function initializeCharts() {
                 {
                     label: 'Space Utilization',
                     data: generateRandomData(7, 60, 95),
-                    borderColor: '#007bff',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderColor: '#0d6efd',
+                    backgroundColor: spaceGradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#0d6efd',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    shadowOffsetX: 3,
+                    shadowOffsetY: 3,
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(13, 110, 253, 0.3)'
                 },
                 {
                     label: 'Cost Efficiency',
                     data: generateRandomData(7, 70, 90),
-                    borderColor: '#28a745',
-                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderColor: '#198754',
+                    backgroundColor: costGradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#198754',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    shadowOffsetX: 3,
+                    shadowOffsetY: 3,
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(25, 135, 84, 0.3)'
                 },
                 {
                     label: 'Fleet Utilization',
                     data: generateRandomData(7, 50, 85),
                     borderColor: '#ffc107',
-                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    backgroundColor: fleetGradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffc107',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    shadowOffsetX: 3,
+                    shadowOffsetY: 3,
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(255, 193, 7, 0.3)'
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            animation: {
+                duration: 2000,
+                easing: 'easeInOutQuart'
+            },
             plugins: {
                 legend: {
-                    position: 'top'
+                    position: 'top',
+                    align: 'center',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        font: {
+                            size: 13,
+                            weight: '600'
+                        },
+                        color: '#495057',
+                        padding: 20
+                    }
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(33, 37, 41, 0.95)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#dee2e6',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 12,
+                    caretPadding: 8,
                     mode: 'index',
-                    intersect: false
+                    intersect: false,
+                    callbacks: {
+                        title: function(context) {
+                            return 'Performance on ' + context[0].label;
+                        },
+                        label: function(context) {
+                            const label = context.dataset.label;
+                            const value = context.parsed.y.toFixed(1);
+                            const descriptions = {
+                                'Space Utilization': 'Indicates how efficiently truck space is used',
+                                'Cost Efficiency': 'Measures cost savings per optimization job',
+                                'Fleet Utilization': 'Shows overall truck fleet performance'
+                            };
+                            const description = descriptions[label] || 'Performance metric';
+                            return [
+                                ` ${label}: ${value}%`,
+                                ` Insight: ${description}`
+                            ];
+                        },
+                        footer: function(context) {
+                            return 'Optimization Goal: Maximize efficiency';
+                        }
+                    }
                 }
             },
             scales: {
                 x: {
                     display: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.08)',
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        color: '#6c757d',
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        }
+                    },
                     title: {
                         display: true,
-                        text: 'Date'
+                        text: 'Timeline',
+                        color: '#495057',
+                        font: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        padding: {top: 10, bottom: 0}
                     }
                 },
                 y: {
                     display: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.08)',
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        color: '#6c757d',
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    },
                     title: {
                         display: true,
-                        text: 'Percentage (%)'
+                        text: 'Performance (%)',
+                        color: '#495057',
+                        font: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        padding: {left: 0, right: 10}
                     },
                     beginAtZero: true,
                     max: 100
                 }
-            },
-            interaction: {
-                mode: 'nearest',
-                axis: 'x',
-                intersect: false
             }
         }
     });
 
-    // Optimization Goals Pie Chart
+    // Optimization Goals Doughnut Chart - Enhanced Professional Style
     const optimizationCtx = document.getElementById('optimizationChart').getContext('2d');
     charts.optimization = new Chart(optimizationCtx, {
         type: 'doughnut',
@@ -451,70 +747,273 @@ function initializeCharts() {
             datasets: [{
                 data: [45, 30, 15, 10],
                 backgroundColor: [
-                    '#007bff',
-                    '#28a745',
-                    '#ffc107',
-                    '#17a2b8'
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
                 ],
-                borderWidth: 2,
-                borderColor: '#fff'
+                borderWidth: 3,
+                borderColor: '#ffffff',
+                hoverBackgroundColor: [
+                    '#667eea',
+                    '#f5576c', 
+                    '#4facfe',
+                    '#43e97b'
+                ],
+                hoverBorderWidth: 4,
+                hoverBorderColor: '#ffffff',
+                cutout: '65%',
+                radius: '90%',
+                borderRadius: 8,
+                borderSkipped: false
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 2000,
+                easing: 'easeInOutQuart'
+            },
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    align: 'center',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        font: {
+                            size: 12,
+                            weight: '600'
+                        },
+                        color: '#495057',
+                        padding: 15,
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map(function(label, i) {
+                                    const value = data.datasets[0].data[i];
+                                    const percentage = ((value / data.datasets[0].data.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].borderColor,
+                                        lineWidth: data.datasets[0].borderWidth,
+                                        pointStyle: 'circle',
+                                        hidden: isNaN(value),
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(33, 37, 41, 0.95)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#dee2e6',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 12,
+                    caretPadding: 8,
+                    callbacks: {
+                        title: function(context) {
+                            return 'Optimization Strategy';
+                        },
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return ` ${label}: ${value}% (${percentage}% of total)`;
+                        }
+                    }
+                }
+            },
+            layout: {
+                padding: 20
+            },
+            elements: {
+                arc: {
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
                 }
             }
         }
     });
 
-    // Truck Utilization Bar Chart
+    // Truck Utilization Bar Chart - Enhanced Professional Style
     const utilizationCtx = document.getElementById('utilizationChart').getContext('2d');
+    const barGradients = [
+        createGradient(utilizationCtx, 'rgba(13, 110, 253, 0.9)', 'rgba(13, 110, 253, 0.6)'),
+        createGradient(utilizationCtx, 'rgba(25, 135, 84, 0.9)', 'rgba(25, 135, 84, 0.6)'),
+        createGradient(utilizationCtx, 'rgba(255, 193, 7, 0.9)', 'rgba(255, 193, 7, 0.6)'),
+        createGradient(utilizationCtx, 'rgba(220, 53, 69, 0.9)', 'rgba(220, 53, 69, 0.6)'),
+        createGradient(utilizationCtx, 'rgba(108, 117, 125, 0.9)', 'rgba(108, 117, 125, 0.6)')
+    ];
+    
     charts.utilization = new Chart(utilizationCtx, {
         type: 'bar',
         data: {
             labels: ['Tata Ace', 'Mahindra Bolero', 'Ashok Leyland', 'Eicher Pro', 'Bharat Benz'],
             datasets: [{
-                label: 'Utilization %',
+                label: 'Fleet Utilization',
                 data: [85, 72, 91, 68, 78],
-                backgroundColor: [
-                    'rgba(0, 123, 255, 0.8)',
-                    'rgba(40, 167, 69, 0.8)',
-                    'rgba(255, 193, 7, 0.8)',
-                    'rgba(23, 162, 184, 0.8)',
-                    'rgba(108, 117, 125, 0.8)'
-                ],
+                backgroundColor: barGradients,
                 borderColor: [
-                    '#007bff',
-                    '#28a745',
+                    '#0d6efd',
+                    '#198754',
                     '#ffc107',
-                    '#17a2b8',
+                    '#dc3545',
                     '#6c757d'
                 ],
-                borderWidth: 1
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+                maxBarThickness: 60,
+                minBarLength: 5,
+                hoverBackgroundColor: [
+                    'rgba(13, 110, 253, 1)',
+                    'rgba(25, 135, 84, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(108, 117, 125, 1)'
+                ],
+                hoverBorderWidth: 3
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 2000,
+                easing: 'easeInOutQuart'
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
             scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#6c757d',
+                        font: {
+                            size: 11,
+                            weight: '600'
+                        },
+                        maxRotation: 45,
+                        minRotation: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Truck Models',
+                        color: '#495057',
+                        font: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        padding: {top: 10, bottom: 0}
+                    }
+                },
                 y: {
                     beginAtZero: true,
-                    max: 100
+                    max: 100,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.08)',
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        color: '#6c757d',
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Utilization Rate (%)',
+                        color: '#495057',
+                        font: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        padding: {left: 0, right: 10}
+                    }
                 }
             },
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(33, 37, 41, 0.95)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#dee2e6',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 12,
+                    caretPadding: 8,
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label + ' Performance';
+                        },
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            let performance = '';
+                            if (value >= 90) performance = ' (Excellent)';
+                            else if (value >= 80) performance = ' (Good)';
+                            else if (value >= 70) performance = ' (Average)';
+                            else performance = ' (Needs Improvement)';
+                            
+                            return ` Utilization: ${value}%${performance}`;
+                        }
+                    }
+                }
+            },
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10
                 }
             }
         }
     });
 
-    // Cost Analysis Line Chart
+    // Cost Analysis Line Chart - Enhanced Professional Style
     const costCtx = document.getElementById('costChart').getContext('2d');
+    const fuelGradient = createGradient(costCtx, 'rgba(220, 53, 69, 0.7)', 'rgba(220, 53, 69, 0.1)');
+    const maintenanceGradient = createGradient(costCtx, 'rgba(255, 193, 7, 0.7)', 'rgba(255, 193, 7, 0.1)');
+    const savingsGradient = createGradient(costCtx, 'rgba(25, 135, 84, 0.7)', 'rgba(25, 135, 84, 0.1)');
+    
     charts.cost = new Chart(costCtx, {
         type: 'line',
         data: {
@@ -524,35 +1023,185 @@ function initializeCharts() {
                     label: 'Fuel Cost',
                     data: generateRandomData(30, 15000, 25000),
                     borderColor: '#dc3545',
+                    backgroundColor: fuelGradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#dc3545',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
                     tension: 0.4,
-                    fill: false
+                    fill: true,
+                    shadowOffsetX: 2,
+                    shadowOffsetY: 2,
+                    shadowBlur: 8,
+                    shadowColor: 'rgba(220, 53, 69, 0.3)'
                 },
                 {
-                    label: 'Maintenance',
+                    label: 'Maintenance Cost',
                     data: generateRandomData(30, 5000, 10000),
                     borderColor: '#ffc107',
+                    backgroundColor: maintenanceGradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffc107',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
                     tension: 0.4,
-                    fill: false
+                    fill: true,
+                    shadowOffsetX: 2,
+                    shadowOffsetY: 2,
+                    shadowBlur: 8,
+                    shadowColor: 'rgba(255, 193, 7, 0.3)'
                 },
                 {
                     label: 'Total Savings',
                     data: generateRandomData(30, 20000, 35000),
-                    borderColor: '#28a745',
+                    borderColor: '#198754',
+                    backgroundColor: savingsGradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#198754',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
                     tension: 0.4,
-                    fill: false
+                    fill: true,
+                    shadowOffsetX: 2,
+                    shadowOffsetY: 2,
+                    shadowBlur: 8,
+                    shadowColor: 'rgba(25, 135, 84, 0.3)'
                 }
             ]
         },
         options: {
             responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '₹' + value.toLocaleString();
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            animation: {
+                duration: 2000,
+                easing: 'easeInOutQuart'
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    align: 'center',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        font: {
+                            size: 13,
+                            weight: '600'
+                        },
+                        color: '#495057',
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(33, 37, 41, 0.95)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#dee2e6',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 12,
+                    caretPadding: 8,
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        title: function(context) {
+                            return 'Date: ' + context[0].label;
+                        },
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            const formattedValue = '₹' + value.toLocaleString('en-IN');
+                            return ' ' + context.dataset.label + ': ' + formattedValue;
+                        },
+                        footer: function(tooltipItems) {
+                            let total = 0;
+                            tooltipItems.forEach(function(tooltipItem) {
+                                if (tooltipItem.dataset.label !== 'Total Savings') {
+                                    total += tooltipItem.parsed.y;
+                                }
+                            });
+                            return 'Total Cost: ₹' + total.toLocaleString('en-IN');
                         }
                     }
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.08)',
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        color: '#6c757d',
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        maxTicksLimit: 10
+                    },
+                    title: {
+                        display: true,
+                        text: 'Timeline (30 Days)',
+                        color: '#495057',
+                        font: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        padding: {top: 10, bottom: 0}
+                    }
+                },
+                y: {
+                    display: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.08)',
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        color: '#6c757d',
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        callback: function(value) {
+                            return '₹' + (value / 1000) + 'K';
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Cost (INR)',
+                        color: '#495057',
+                        font: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        padding: {left: 0, right: 10}
+                    },
+                    beginAtZero: true
+                }
+            },
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10
                 }
             }
         }
@@ -608,17 +1257,10 @@ function initializeRealTimeUpdates() {
     updateLiveMetrics();
 }
 
-// Update live metrics with simulated data
+// Live metrics removed - using demo mode instead
 function updateLiveMetrics() {
-    const currentLoad = Math.random() * 100;
-    const systemEfficiency = 75 + Math.random() * 25;
-    const costOptimization = 60 + Math.random() * 40;
-    
-    updateProgressBar('current-load', 'current-load-bar', currentLoad);
-    updateProgressBar('system-efficiency', 'system-efficiency-bar', systemEfficiency);
-    updateProgressBar('cost-optimization', 'cost-optimization-bar', costOptimization);
-    
-    document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+    // No longer needed - replaced with demo mode guidance
+    console.log('Live metrics replaced with demo mode guidance');
 }
 
 // Update progress bar
@@ -770,38 +1412,70 @@ function showPerformanceDrillDown() {
             <th>Job Name</th>
             <th>Truck Type</th>
             <th>Space Utilization (%)</th>
-            <th>Cost Efficiency (₹/m³)</th>
-            <th>Fleet Utilization (%)</th>
+            <th>Cost Efficiency (₹)</th>
+            <th>Weight Utilization (%)</th>
             <th>Items Packed</th>
             <th>Optimization Strategy</th>
             <th>Status</th>
         </tr>
     `;
     
-    // Generate sample detailed data
-    const performanceData = [
-        ['2025-08-12', 'Electronics Shipment A', 'Tata Ace', '87.5', '450', '92.0', '144/160', 'Space Optimization', 'Completed'],
-        ['2025-08-12', 'Household Goods B', 'Mahindra Bolero', '76.2', '380', '88.5', '89/120', 'Cost Optimization', 'Completed'],
-        ['2025-08-11', 'Mixed Cargo C', 'Ashok Leyland', '91.3', '420', '94.2', '203/220', 'Balanced Strategy', 'Completed'],
-        ['2025-08-11', 'Heavy Items D', 'Eicher Pro', '68.4', '520', '75.8', '56/85', 'Weight Distribution', 'Completed'],
-        ['2025-08-10', 'Fragile Goods E', 'Bharat Benz', '78.9', '395', '82.3', '167/195', 'Space Optimization', 'Completed'],
-        ['2025-08-10', 'Bulk Orders F', 'Tata Ace', '85.7', '435', '89.1', '125/140', 'Cost Optimization', 'Completed'],
-        ['2025-08-09', 'Express Delivery G', 'Mahindra Bolero', '73.6', '465', '81.4', '78/105', 'Time Optimization', 'Completed']
-    ];
-    
-    tableBody.innerHTML = performanceData.map(row => `
+    // Show loading indicator
+    tableBody.innerHTML = `
         <tr>
-            <td>${row[0]}</td>
-            <td><strong>${row[1]}</strong></td>
-            <td><span class="badge bg-info">${row[2]}</span></td>
-            <td><div class="progress" style="width:80px;height:20px;"><div class="progress-bar bg-success" style="width:${row[3]}%">${row[3]}%</div></div></td>
-            <td>₹${row[4]}</td>
-            <td><span class="badge bg-${parseFloat(row[5]) > 85 ? 'success' : parseFloat(row[5]) > 70 ? 'warning' : 'danger'}">${row[5]}%</span></td>
-            <td>${row[6]}</td>
-            <td><span class="badge bg-primary">${row[7]}</span></td>
-            <td><span class="badge bg-success">${row[8]}</span></td>
+            <td colspan="9" class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Fetching real-time performance data...</p>
+            </td>
         </tr>
-    `).join('');
+    `;
+    
+    // Fetch real data from API
+    fetch('/api/analytics/performance-drill-down')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            if (data.data && data.data.length > 0) {
+                tableBody.innerHTML = data.data.map(row => `
+                    <tr>
+                        <td>${row.date}</td>
+                        <td><strong>${row.job_name}</strong></td>
+                        <td><span class="badge bg-info">${row.truck_type}</span></td>
+                        <td><div class="progress" style="width:80px;height:20px;"><div class="progress-bar bg-success" style="width:${row.space_utilization}%">${row.space_utilization}%</div></div></td>
+                        <td>₹${row.cost_efficiency}</td>
+                        <td><span class="badge bg-${row.weight_utilization > 85 ? 'success' : row.weight_utilization > 70 ? 'warning' : 'danger'}">${row.weight_utilization}%</span></td>
+                        <td>${row.items_packed}</td>
+                        <td><span class="badge bg-primary">${row.optimization_strategy}</span></td>
+                        <td><span class="badge bg-success">${row.status}</span></td>
+                    </tr>
+                `).join('');
+            } else {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">
+                            <i class="bi bi-info-circle"></i>
+                            No performance data available. Create some packing jobs to see detailed analytics.
+                        </td>
+                    </tr>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching performance data:', error);
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Error loading data: ${error.message}
+                    </td>
+                </tr>
+            `;
+        });
     
     updateDataTimestamp();
     new bootstrap.Modal(document.getElementById('drillDownModal')).show();

@@ -32,7 +32,7 @@
                         </tr>
                         <tr>
                             <th>Total Items:</th>
-                            <td><strong>{{ (result.result_data[0].fitted_items|length + result.result_data[0].unfitted_items|length) if result.result_data else 0 }}</strong></td>
+                            <td><strong>{{ (packing_results[0].get('fitted_items', [])|length + packing_results[0].get('unfitted_items', [])|length) if packing_results else 0 }}</strong></td>
                         </tr>
                     </table>
                 </div>
@@ -62,24 +62,107 @@
             </div>
         </div>
     </div>
-    {% if not result.result_data %}
+    
+    <!-- Performance Score Section -->
+    {% if result.result_data and result.result_data.get('performance_score') %}
+    <div class="card mb-4 border-success">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Performance Score & Analysis</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <div class="performance-score-display" 
+                             style="width: 120px; height: 120px; border-radius: 50%; 
+                                    background: linear-gradient(45deg, #28a745, #20c997); 
+                                    display: flex; align-items: center; justify-content: center; 
+                                    margin: 0 auto 15px; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
+                            <div class="text-white">
+                                <h2 class="mb-0">{{ result.result_data.get('performance_score', {}).get('grade', 'N/A') }}</h2>
+                                <small>{{ "%.1f"|format(result.result_data.get('performance_score', {}).get('score', 0)) }}/100</small>
+                            </div>
+                        </div>
+                        <h6 class="text-success">{{ result.result_data.get('performance_score', {}).get('description', 'No analysis available') }}</h6>
+                        <small class="text-muted">{{ result.result_data.get('performance_score', {}).get('optimization_goal', 'Unknown')|title }} Optimization</small>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <h6 class="text-success mb-3"><i class="fas fa-calculator me-2"></i>Calculation Breakdown</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <div class="d-flex justify-content-between">
+                                    <span><i class="fas fa-cube text-primary me-1"></i>Space Utilization</span>
+                                    <strong>{{ "%.1f"|format(result.result_data.get('performance_score', {}).get('breakdown', {}).get('space_utilization_pct', 0)) }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <div class="d-flex justify-content-between">
+                                    <span><i class="fas fa-weight-hanging text-warning me-1"></i>Weight Utilization</span>
+                                    <strong>{{ "%.1f"|format(result.result_data.get('performance_score', {}).get('breakdown', {}).get('weight_utilization_pct', 0)) }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <div class="d-flex justify-content-between">
+                                    <span><i class="fas fa-cogs text-info me-1"></i>Packing Efficiency</span>
+                                    <strong>{{ "%.1f"|format(result.result_data.get('performance_score', {}).get('breakdown', {}).get('packing_efficiency_pct', 0)) }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6 class="text-success"><i class="fas fa-lightbulb me-2"></i>Improvement Suggestions</h6>
+                        <ul class="list-unstyled">
+                            {% for suggestion in result.result_data.get('performance_score', {}).get('improvement_suggestions', []) %}
+                            <li class="mb-1"><i class="fas fa-arrow-right text-success me-2"></i>{{ suggestion }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-outline-success btn-sm" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#calculationFormula" aria-expanded="false" aria-controls="calculationFormula">
+                            <i class="fas fa-formula me-1"></i>Show Calculation Formula
+                        </button>
+                        <div class="collapse mt-2" id="calculationFormula">
+                            <div class="card card-body bg-light">
+                                <small><code>{{ result.result_data.get('performance_score', {}).get('calculation_formula', 'No formula available') }}</code></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Data structure compatibility layer -->
+    {% set packing_results = result.result_data.get('packing_results', result.result_data) if result.result_data else [] %}
+    
+    {% if not packing_results %}
         <div class="alert alert-warning" role="alert">
             <h4 class="alert-heading">No Packing Results</h4>
             <p>Could not pack any items with the given constraints.</p>
         </div>
     {% else %}
         <!-- Professional Truck Selection -->
-        {% if result.result_data|length > 1 %}
+        {% if packing_results|length > 1 %}
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Multi-Truck Packing Solution</h5>
-                        <small class="opacity-75">{{ result.result_data|length }} trucks required for optimal packing</small>
+                        <small class="opacity-75">{{ packing_results|length }} trucks required for optimal packing</small>
                     </div>
                     <div>
                         <select class="form-select form-select-sm" id="truckSelector" onchange="selectTruck(this.value)" style="min-width: 200px;">
-                            {% for bin_result in result.result_data %}
+                            {% for bin_result in packing_results %}
                             <option value="{{ loop.index0 }}" {% if loop.first %}selected{% endif %}>
                                 {{ bin_result.bin_name }} - {{ bin_result.fitted_items|length }} items ({{ "%.1f"|format(bin_result.utilization * 100) }}%)
                             </option>
@@ -91,15 +174,15 @@
         </div>
         {% endif %}
 
-        {% for bin_result in result.result_data %}
+        {% for bin_result in packing_results %}
         <div class="card mb-4 truck-card" id="truck-{{ loop.index }}" style="{% if loop.index > 1 %}display: none;{% endif %}">
             <div class="card-header bg-primary text-white">
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">
                         <i class="fas fa-truck me-2"></i>
                         {{ bin_result.bin_name }}
-                        {% if result.result_data|length > 1 %}
-                        <span class="badge bg-light text-primary ms-2">Truck {{ loop.index }} of {{ result.result_data|length }}</span>
+                        {% if packing_results|length > 1 %}
+                        <span class="badge bg-light text-primary ms-2">Truck {{ loop.index }} of {{ packing_results|length }}</span>
                         {% endif %}
                     </h4>
                     <div class="truck-status">
@@ -351,7 +434,7 @@
 <script>
     // Multi-truck navigation variables
     let currentTruckIndex = 0;
-    const totalTrucks = {{ result.result_data|length if result.result_data else 0 }};
+    const totalTrucks = {{ packing_results|length if packing_results else 0 }};
     let viewingAll = false;
     
     // Professional truck selection function

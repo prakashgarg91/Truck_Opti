@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Add Customer - TruckOpti{% endblock %}
+{% block title %}{% if edit_mode %}Edit Customer{% else %}Add Customer{% endif %} - TruckOpti{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{{ url_for('main.customers') }}">Customers</a></li>
-<li class="breadcrumb-item active">Add Customer</li>
+<li class="breadcrumb-item active">{% if edit_mode %}Edit Customer{% else %}Add Customer{% endif %}</li>
 {% endblock %}
 
 {% block content %}
@@ -13,8 +13,8 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 class="mb-1">Add New Customer</h1>
-                    <p class="text-muted mb-0">Create a new customer record with contact and address information</p>
+                    <h1 class="mb-1">{% if edit_mode %}Edit Customer{% else %}Add New Customer{% endif %}</h1>
+                    <p class="text-muted mb-0">{% if edit_mode %}Update customer information{% else %}Create a new customer record with contact and address information{% endif %}</p>
                 </div>
                 <div>
                     <a href="{{ url_for('main.customers') }}" class="btn btn-outline-secondary">
@@ -48,7 +48,7 @@
                                     <i class="bi bi-person me-1"></i>Full Name *
                                 </label>
                                 <input type="text" class="form-control" id="name" name="name" 
-                                       placeholder="e.g., John Doe" required>
+                                       placeholder="e.g., John Doe" value="{{ customer.name if customer else '' }}" required>
                                 <div class="form-text">Enter the customer's full name</div>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -56,7 +56,7 @@
                                     <i class="bi bi-envelope me-1"></i>Email Address
                                 </label>
                                 <input type="email" class="form-control" id="email" name="email" 
-                                       placeholder="e.g., john.doe@email.com">
+                                       placeholder="e.g., john.doe@email.com" value="{{ customer.email if customer else '' }}">
                                 <div class="form-text">Customer's email address (optional)</div>
                             </div>
                         </div>
@@ -67,7 +67,7 @@
                                     <i class="bi bi-telephone me-1"></i>Phone Number
                                 </label>
                                 <input type="tel" class="form-control" id="phone" name="phone" 
-                                       placeholder="e.g., +91 9876543210">
+                                       placeholder="e.g., +91 9876543210" value="{{ customer.phone if customer else '' }}">
                                 <div class="form-text">Customer's contact number (optional)</div>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -75,17 +75,18 @@
                                     <i class="bi bi-flag me-1"></i>Country
                                 </label>
                                 <select class="form-control" id="country" name="country">
-                                    <option value="India" selected>India</option>
-                                    <option value="USA">United States</option>
-                                    <option value="Canada">Canada</option>
-                                    <option value="UK">United Kingdom</option>
-                                    <option value="Australia">Australia</option>
-                                    <option value="Germany">Germany</option>
-                                    <option value="France">France</option>
-                                    <option value="Japan">Japan</option>
-                                    <option value="Singapore">Singapore</option>
-                                    <option value="UAE">United Arab Emirates</option>
-                                    <option value="Other">Other</option>
+                                    {% set current_country = customer.country if customer else 'India' %}
+                                    <option value="India" {{ 'selected' if current_country == 'India' else '' }}>India</option>
+                                    <option value="USA" {{ 'selected' if current_country == 'USA' else '' }}>United States</option>
+                                    <option value="Canada" {{ 'selected' if current_country == 'Canada' else '' }}>Canada</option>
+                                    <option value="UK" {{ 'selected' if current_country == 'UK' else '' }}>United Kingdom</option>
+                                    <option value="Australia" {{ 'selected' if current_country == 'Australia' else '' }}>Australia</option>
+                                    <option value="Germany" {{ 'selected' if current_country == 'Germany' else '' }}>Germany</option>
+                                    <option value="France" {{ 'selected' if current_country == 'France' else '' }}>France</option>
+                                    <option value="Japan" {{ 'selected' if current_country == 'Japan' else '' }}>Japan</option>
+                                    <option value="Singapore" {{ 'selected' if current_country == 'Singapore' else '' }}>Singapore</option>
+                                    <option value="UAE" {{ 'selected' if current_country == 'UAE' else '' }}>United Arab Emirates</option>
+                                    <option value="Other" {{ 'selected' if current_country == 'Other' else '' }}>Other</option>
                                 </select>
                                 <div class="form-text">Customer's country</div>
                             </div>
@@ -106,7 +107,7 @@
                                     <i class="bi bi-house me-1"></i>Street Address
                                 </label>
                                 <textarea class="form-control" id="address" name="address" rows="3" 
-                                          placeholder="e.g., 123 Main Street, Building A, Floor 2"></textarea>
+                                          placeholder="e.g., 123 Main Street, Building A, Floor 2">{{ customer.address if customer else '' }}</textarea>
                                 <div class="form-text">Full street address including building and floor details</div>
                             </div>
                         </div>
@@ -117,7 +118,7 @@
                                     <i class="bi bi-building me-1"></i>City
                                 </label>
                                 <input type="text" class="form-control" id="city" name="city" 
-                                       placeholder="e.g., Mumbai">
+                                       placeholder="e.g., Mumbai" value="{{ customer.city if customer else '' }}">
                                 <div class="form-text">Customer's city</div>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -125,7 +126,7 @@
                                     <i class="bi bi-mailbox me-1"></i>Postal Code
                                 </label>
                                 <input type="text" class="form-control" id="postal_code" name="postal_code" 
-                                       placeholder="e.g., 400001">
+                                       placeholder="e.g., 400001" value="{{ customer.postal_code if customer else '' }}">
                                 <div class="form-text">ZIP or postal code</div>
                             </div>
                         </div>

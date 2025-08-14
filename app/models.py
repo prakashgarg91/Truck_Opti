@@ -2,8 +2,31 @@ from . import db
 from datetime import datetime
 
 class TruckType(db.Model):
-    def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    def as_dict(self, include_columns=None, exclude_columns=None):
+        """Enhanced dictionary serialization with optional column filtering"""
+        columns = include_columns or [c.name for c in self.__table__.columns]
+        exclude_columns = exclude_columns or []
+        
+        def safe_serialize(column_name):
+            """Safely convert complex types to JSON-serializable formats"""
+            value = getattr(self, column_name, None)
+            if value is None:
+                return None
+            if isinstance(value, datetime):
+                return value.isoformat()
+            if hasattr(value, 'as_dict'):
+                return value.as_dict()
+            try:
+                json.dumps(value)
+                return value
+            except TypeError:
+                return str(value)
+        
+        result = {}
+        for column in columns:
+            if column not in exclude_columns:
+                result[column] = safe_serialize(column)
+        return result
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     length = db.Column(db.Float, nullable=False)
@@ -21,6 +44,30 @@ class TruckType(db.Model):
     # Relationships
     packing_jobs = db.relationship('PackingJob', backref='truck_type', lazy=True)
     
+    def calculate_max_cartons(self, avg_carton_weight=50, safety_factor=0.7):
+        """Estimate maximum number of standard cartons this truck can carry"""
+        if not self.max_weight:
+            return None
+        return int((self.max_weight * safety_factor) / avg_carton_weight)
+    
+    def get_performance_metrics(self):
+        """Generate detailed performance metrics for truck type"""
+        return {
+            'volume_m3': round(self.length * self.width * self.height / 1_000_000, 2) if self.length and self.width and self.height else None,
+            'has_valid_dimensions': all([self.length > 0, self.width > 0, self.height > 0]),
+            'estimated_max_cartons': self.calculate_max_cartons(),
+            'category_details': {
+                'category': self.truck_category,
+                'is_available': self.availability
+            },
+            'cost_metrics': {
+                'cost_per_km': self.cost_per_km,
+                'fuel_efficiency': self.fuel_efficiency,
+                'driver_daily_cost': self.driver_cost_per_day,
+                'maintenance_cost_per_km': self.maintenance_cost_per_km
+            }
+        }
+    
     # Indexes for performance optimization
     __table_args__ = (
         db.Index('idx_truck_volume', length, width, height),  # For volume-based sorting
@@ -28,8 +75,31 @@ class TruckType(db.Model):
     )
 
 class CartonType(db.Model):
-    def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    def as_dict(self, include_columns=None, exclude_columns=None):
+        """Enhanced dictionary serialization with optional column filtering"""
+        columns = include_columns or [c.name for c in self.__table__.columns]
+        exclude_columns = exclude_columns or []
+        
+        def safe_serialize(column_name):
+            """Safely convert complex types to JSON-serializable formats"""
+            value = getattr(self, column_name, None)
+            if value is None:
+                return None
+            if isinstance(value, datetime):
+                return value.isoformat()
+            if hasattr(value, 'as_dict'):
+                return value.as_dict()
+            try:
+                json.dumps(value)
+                return value
+            except TypeError:
+                return str(value)
+        
+        result = {}
+        for column in columns:
+            if column not in exclude_columns:
+                result[column] = safe_serialize(column)
+        return result
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     length = db.Column(db.Float, nullable=False)
@@ -44,6 +114,24 @@ class CartonType(db.Model):
     value = db.Column(db.Float, default=0.0)
     category = db.Column(db.String(50), default='General', index=True)
     description = db.Column(db.Text)
+    
+    def get_packaging_metrics(self):
+        """Compute detailed packaging and handling metrics"""
+        return {
+            'volume_m3': round(self.length * self.width * self.height / 1_000_000, 4) if self.length and self.width and self.height else None,
+            'has_valid_dimensions': all([self.length > 0, self.width > 0, self.height > 0]),
+            'density_kg_m3': round(self.weight / (self.length * self.width * self.height / 1_000_000), 2) if self.weight and self.length and self.width and self.height else None,
+            'handling_requirements': {
+                'fragile': self.fragile,
+                'stackable': self.stackable,
+                'max_stack_height': self.max_stack_height,
+                'priority': self.priority
+            },
+            'value_metrics': {
+                'carton_value': self.value,
+                'category': self.category
+            }
+        }
     
     # Indexes for carton type searches
     __table_args__ = (

@@ -112,7 +112,12 @@ def recommend_truck():
                                  total_volume=f"{total_volume:.2f}",
                                  optimization_strategy='space_utilization')
         
-    return render_template('recommend_truck.html', cartons=cartons, recommended=recommended)
+    return render_template('recommend_truck.html', 
+                         cartons=cartons, 
+                         recommended=recommended,
+                         total_items=0,
+                         total_volume="0.00",
+                         optimization_strategy='balanced')
 # Redirect deprecated route to fleet optimization
 @bp.route('/fit-cartons', methods=['GET', 'POST'])
 def fit_cartons():
@@ -737,6 +742,51 @@ def api_analytics():
         'total_cost': db.session.query(db.func.sum(PackingResult.total_cost)).scalar() or 0
     }
     return jsonify(stats)
+
+@bp.route('/api/analytics/performance-drill-down', methods=['GET'])
+def api_analytics_performance_drill_down():
+    """API endpoint for performance drill-down data"""
+    try:
+        # Get recent packing jobs with results for drill-down table
+        results = db.session.query(
+            PackingJob.date_created.label('date'),
+            PackingJob.name.label('job_name'),
+            TruckType.name.label('truck_type'),
+            PackingResult.space_utilization.label('space_utilization'),
+            PackingResult.total_cost.label('cost_efficiency'),
+            PackingResult.weight_utilization.label('weight_utilization'),
+            PackingResult.truck_count.label('items_packed')  # Using truck_count as items for now
+        ).join(PackingResult, PackingJob.id == PackingResult.job_id)\
+         .join(TruckType, PackingJob.truck_type_id == TruckType.id)\
+         .order_by(PackingJob.date_created.desc())\
+         .limit(50).all()
+
+        # Convert to list of dictionaries for JSON response
+        drill_down_data = []
+        for result in results:
+            drill_down_data.append({
+                'date': result.date.strftime('%Y-%m-%d') if result.date else 'N/A',
+                'job_name': result.job_name or 'N/A',
+                'truck_type': result.truck_type or 'N/A',
+                'space_utilization': f"{(result.space_utilization or 0)*100:.1f}%" if result.space_utilization else "0.0%",
+                'cost_efficiency': f"₹{result.cost_efficiency or 0:,.0f}" if result.cost_efficiency else "₹0",
+                'weight_utilization': f"{(result.weight_utilization or 0)*100:.1f}%" if result.weight_utilization else "0.0%",
+                'items_packed': int(result.items_packed or 0)
+            })
+
+        return jsonify({
+            'data': drill_down_data,
+            'total_records': len(drill_down_data),
+            'status': 'success'
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'error': f'Failed to fetch drill-down data: {str(e)}',
+            'data': [],
+            'total_records': 0,
+            'status': 'error'
+        }), 500
 
 @api.route('/calculate-truck-requirements', methods=['POST'])
 def api_calculate_truck_requirements():
@@ -2485,53 +2535,129 @@ def settings():
     """Settings page for logistics coordinator preferences and configuration"""
     if request.method == 'POST':
         try:
+            # Validate form data
+            validation_errors = []
+            
+            # Validate truck preferences
+            default_truck_category = request.form.get('default_truck_category', 'Standard')
+            if default_truck_category not in ['Light', 'Standard', 'Medium', 'Heavy']:
+                validation_errors.append('Invalid truck category')
+            
+            # Validate cost parameters
+            try:
+                fuel_cost = max(0, float(request.form.get('fuel_cost_per_liter', 100.0)))
+                driver_allowance = max(0, float(request.form.get('driver_daily_allowance', 800.0)))
+                insurance_percentage = max(0, min(100, float(request.form.get('insurance_cost_percentage', 2.0))))
+                loading_unloading_cost = max(0, float(request.form.get('loading_unloading_cost', 500.0)))
+            except ValueError:
+                validation_errors.append('Invalid cost parameters')
+            
+            # Validate optimization settings
+            default_optimization_goal = request.form.get('default_optimization_goal', 'space')
+            if default_optimization_goal not in ['space', 'cost', 'balanced']:
+                validation_errors.append('Invalid optimization goal')
+            
+            try:
+                space_utilization_target = max(50, min(95, float(request.form.get('space_utilization_target', 85.0))))
+                weight_safety_margin = max(0, min(50, float(request.form.get('weight_safety_margin', 10.0))))
+            except ValueError:
+                validation_errors.append('Invalid space or weight targets')
+            
+            # Validate packing settings
+            try:
+                max_stack_height = max(1, min(20, int(request.form.get('max_stack_height', 5))))
+            except ValueError:
+                validation_errors.append('Invalid stack height')
+            
+            # Validate UI settings
+            try:
+                dashboard_refresh_interval = max(10, min(300, int(request.form.get('dashboard_refresh_interval', 30))))
+            except ValueError:
+                validation_errors.append('Invalid dashboard refresh interval')
+            
+            # Validate notification settings
+            try:
+                cost_alert_threshold = max(0, float(request.form.get('cost_alert_threshold', 10000.0)))
+            except ValueError:
+                validation_errors.append('Invalid cost alert threshold')
+            
+            # Validate working hours
+            working_hours_start = request.form.get('working_hours_start', '09:00')[:5]
+            working_hours_end = request.form.get('working_hours_end', '18:00')[:5]
+            
+            # Validate data retention
+            try:
+                data_retention_days = max(1, min(365, int(request.form.get('data_retention_days', 90))))
+            except ValueError:
+                validation_errors.append('Invalid data retention period')
+            
+            # If any validation errors, return to settings page
+            if validation_errors:
+                for error in validation_errors:
+                    flash(error, 'danger')
+                return redirect(url_for('main.settings'))
+            
             # Get or create user settings
             user_settings = UserSettings.get_user_settings()
             
-            # Update truck preferences
-            user_settings.default_truck_category = request.form.get('default_truck_category', 'Standard')
+            # Update validated settings
+            user_settings.default_truck_category = default_truck_category
+            user_settings.fuel_cost_per_liter = fuel_cost
+            user_settings.driver_daily_allowance = driver_allowance
+            user_settings.insurance_cost_percentage = insurance_percentage
+            user_settings.loading_unloading_cost = loading_unloading_cost
+            user_settings.default_optimization_goal = default_optimization_goal
+            user_settings.space_utilization_target = space_utilization_target
+            user_settings.weight_safety_margin = weight_safety_margin
             
-            # Update cost calculation parameters
-            user_settings.fuel_cost_per_liter = float(request.form.get('fuel_cost_per_liter', 100.0))
-            user_settings.driver_daily_allowance = float(request.form.get('driver_daily_allowance', 800.0))
-            user_settings.insurance_cost_percentage = float(request.form.get('insurance_cost_percentage', 2.0))
-            user_settings.loading_unloading_cost = float(request.form.get('loading_unloading_cost', 500.0))
-            
-            # Update optimization strategy defaults
-            user_settings.default_optimization_goal = request.form.get('default_optimization_goal', 'space')
-            user_settings.space_utilization_target = float(request.form.get('space_utilization_target', 85.0))
-            user_settings.weight_safety_margin = float(request.form.get('weight_safety_margin', 10.0))
-            
-            # Update packing preferences
+            # Packing preferences
             user_settings.allow_carton_rotation = request.form.get('allow_carton_rotation') == 'on'
             user_settings.fragile_items_on_top = request.form.get('fragile_items_on_top') == 'on'
-            user_settings.max_stack_height = int(request.form.get('max_stack_height', 5))
+            user_settings.max_stack_height = max_stack_height
             user_settings.load_balance_priority = request.form.get('load_balance_priority') == 'on'
             
-            # Update UI/UX preferences
-            user_settings.dashboard_refresh_interval = int(request.form.get('dashboard_refresh_interval', 30))
+            # UI/UX preferences
+            user_settings.dashboard_refresh_interval = dashboard_refresh_interval
             user_settings.show_detailed_metrics = request.form.get('show_detailed_metrics') == 'on'
             user_settings.enable_3d_visualization = request.form.get('enable_3d_visualization') == 'on'
             user_settings.charts_animation_enabled = request.form.get('charts_animation_enabled') == 'on'
             
-            # Update notification preferences
+            # Notification preferences
             user_settings.email_notifications = request.form.get('email_notifications') == 'on'
             user_settings.job_completion_alerts = request.form.get('job_completion_alerts') == 'on'
             user_settings.cost_threshold_alerts = request.form.get('cost_threshold_alerts') == 'on'
-            user_settings.cost_alert_threshold = float(request.form.get('cost_alert_threshold', 10000.0))
+            user_settings.cost_alert_threshold = cost_alert_threshold
             
-            # Update company/organization settings
-            user_settings.company_name = request.form.get('company_name', 'TruckOpti User')
-            user_settings.default_origin_city = request.form.get('default_origin_city', 'Mumbai')
-            user_settings.working_hours_start = request.form.get('working_hours_start', '09:00')
-            user_settings.working_hours_end = request.form.get('working_hours_end', '18:00')
+            # Company/Organization settings
+            user_settings.company_name = request.form.get('company_name', 'TruckOpti User')[:200]
+            user_settings.default_origin_city = request.form.get('default_origin_city', 'Mumbai')[:100]
+            user_settings.working_hours_start = working_hours_start
+            user_settings.working_hours_end = working_hours_end
             
-            # Update data management
+            # Data management
             user_settings.auto_cleanup_old_jobs = request.form.get('auto_cleanup_old_jobs') == 'on'
-            user_settings.data_retention_days = int(request.form.get('data_retention_days', 90))
+            user_settings.data_retention_days = data_retention_days
             
             # Update timestamp
             user_settings.date_updated = datetime.utcnow()
+            
+            # Commit changes and save settings
+            db.session.commit()
+            
+            # Success flash message
+            flash('Settings updated successfully!', 'success')
+            return redirect(url_for('main.settings'))
+        
+        except Exception as e:
+            # Rollback any database transaction
+            db.session.rollback()
+            
+            # Log the error (use proper logging in production)
+            print(f'Unexpected error in settings update: {str(e)}')
+            
+            # User-friendly error message
+            flash('An unexpected error occurred. Please try again.', 'danger')
+            return redirect(url_for('main.settings'))
             
             # Save to database
             db.session.commit()

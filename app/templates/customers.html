@@ -330,9 +330,8 @@ function displayCustomerDetails(customer) {
 }
 
 function editCustomer(customerId) {
-    // For now, redirect to add customer page with edit mode
-    // In a real implementation, you'd create an edit_customer route
-    alert(`Edit functionality for customer ${customerId} would redirect to edit form`);
+    // Redirect to the edit customer route
+    window.location.href = `/edit-customer/${customerId}`;
 }
 
 function editCustomerFromModal() {
@@ -343,8 +342,23 @@ function editCustomerFromModal() {
 
 function deleteCustomer(customerId, customerName) {
     if (confirm(`Are you sure you want to delete customer "${customerName}"? This action cannot be undone.`)) {
-        // In a real implementation, you'd make an API call to delete the customer
-        alert(`Delete functionality for customer ${customerId} would be implemented here`);
+        // Create a form to submit the DELETE request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/delete-customer/${customerId}`;
+        
+        // Add CSRF token if needed (Flask-WTF)
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 </script>

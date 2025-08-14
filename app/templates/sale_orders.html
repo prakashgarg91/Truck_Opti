@@ -388,5 +388,99 @@ function runStressTest() {
         
     }, 5000); // Simulate 5 seconds of stress test processing
 }
+
+// Handle focus functionality from results page
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we should focus on batch upload section
+    const focusSection = sessionStorage.getItem('focusSection');
+    
+    if (focusSection === 'batch-upload') {
+        // Clear the session storage
+        sessionStorage.removeItem('focusSection');
+        
+        // Add visual highlighting and smooth scroll to upload section
+        const uploadCard = document.querySelector('.card.shadow');
+        if (uploadCard) {
+            // Add highlight animation
+            uploadCard.style.border = '3px solid #28a745';
+            uploadCard.style.boxShadow = '0 0 20px rgba(40, 167, 69, 0.3)';
+            
+            // Smooth scroll to the upload section
+            uploadCard.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+            
+            // Add pulsing animation
+            uploadCard.style.animation = 'pulseHighlight 2s ease-in-out 3';
+            
+            // Show welcome message
+            setTimeout(() => {
+                const welcomeAlert = document.createElement('div');
+                welcomeAlert.className = 'alert alert-success alert-dismissible fade show';
+                welcomeAlert.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-upload fa-2x text-success me-3"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1">Welcome back! Ready to process more orders?</h5>
+                            <p class="mb-0">Upload your next batch file below to continue optimizing your logistics operations.</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                
+                const cardBody = uploadCard.querySelector('.card-body');
+                cardBody.insertBefore(welcomeAlert, cardBody.firstChild);
+                
+                // Auto-dismiss after 8 seconds
+                setTimeout(() => {
+                    if (welcomeAlert && welcomeAlert.parentNode) {
+                        welcomeAlert.classList.remove('show');
+                        setTimeout(() => {
+                            if (welcomeAlert.parentNode) {
+                                welcomeAlert.parentNode.removeChild(welcomeAlert);
+                            }
+                        }, 150);
+                    }
+                }, 8000);
+                
+            }, 1000);
+            
+            // Remove highlight after animation
+            setTimeout(() => {
+                uploadCard.style.border = '';
+                uploadCard.style.boxShadow = '';
+                uploadCard.style.animation = '';
+            }, 6000);
+        }
+    }
+});
+
+// Add CSS animation for highlight effect
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulseHighlight {
+        0%, 100% { 
+            transform: scale(1); 
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.3); 
+        }
+        50% { 
+            transform: scale(1.02); 
+            box-shadow: 0 0 30px rgba(40, 167, 69, 0.5); 
+        }
+    }
+    
+    .workflow-navigation-highlight {
+        border: 3px solid #28a745 !important;
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.3) !important;
+        transition: all 0.3s ease;
+    }
+    
+    .workflow-welcome {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-left: 5px solid #28a745;
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}

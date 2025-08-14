@@ -8,12 +8,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='ui_enhancements.css') }}">
     <style>
         body {
             display: flex;
             min-height: 100vh;
             flex-direction: column;
-            background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+            background: linear-gradient(135deg, #f5f7fa 0%, #f8f9fa 100%);
+            font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            letter-spacing: -0.02em;
+            color: #333;
         }
         .main-content {
             flex: 1;
@@ -164,9 +168,17 @@
             box-shadow: 0 1px 4px rgba(33,150,243,0.04);
         }
         .btn {
-            border-radius: 10px;
-            box-shadow: 0 1px 4px rgba(33,150,243,0.04);
-            font-weight: 500;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: -0.02em;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         .badge {
             border-radius: 8px;
@@ -571,6 +583,7 @@
             <div style="color: #fff;">{{ version_info.VERSION }}</div>
             <div style="color: rgba(255,255,255,0.7);">{{ version_info.BUILD_NAME }}</div>
             <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem;">{{ version_info.BUILD_DATE }}</div>
+            <div class="system-timestamp" style="color: rgba(255,255,255,0.5); font-size: 0.6rem; margin-top: 5px;">Loading...</div>
         </div>
     </div>
 
@@ -617,10 +630,12 @@
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
     <script src="{{ url_for('static', filename='main.js') }}"></script>
     <script src="{{ url_for('static', filename='progress_loader.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/timestamp_handler.js') }}"></script>
     
     <!-- MULTI-AGENT SYSTEM INTEGRATION -->
     <script src="{{ url_for('static', filename='js/performance_explainer.js') }}"></script>
     <script src="{{ url_for('static', filename='js/multi_agent_integration.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/form_validation.js') }}"></script>
     
     <!-- Sidebar Toggle Script -->
     <script>
@@ -709,7 +724,7 @@
         $('#progressBar').css('width', '0%').removeClass('indeterminate');
     }
     
-    function showProgressWithSteps(title, steps) {
+    function showProgressWithSteps(title, steps, intervalTime = 1000) {
         showProgress(title, steps[0], true);
         let currentStep = 0;
         const totalSteps = steps.length;
@@ -721,10 +736,25 @@
             
             if (currentStep < totalSteps) {
                 $('#progressDescription').text(steps[currentStep]);
+                
+                // Enhanced Feedback: Add subtle animations
+                $('#progressDescription').css({
+                    'opacity': 0,
+                    'transform': 'translateY(10px)'
+                }).animate({
+                    'opacity': 1,
+                    'transform': 'translateY(0)'
+                }, 300);
             } else {
                 clearInterval(stepInterval);
+                
+                // Final State Feedback
+                setTimeout(() => {
+                    $('#progressDescription').text('Completed Successfully');
+                    $('#progressBar').css('background', 'linear-gradient(90deg, #28a745, #2dcc70)');
+                }, 500);
             }
-        }, 1000);
+        }, intervalTime);
         
         return stepInterval;
     }
