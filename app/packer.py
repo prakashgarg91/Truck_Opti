@@ -402,16 +402,22 @@ def _pack_single_truck(truck_bin, items_to_pack):
                 
                 # Check fit with tolerance for measurement precision
                 tolerance = 0.1  # 1mm tolerance for measurement precision
-                if (w <= truck_bin.width + tolerance and 
-                    h <= truck_bin.height + tolerance and 
-                    d <= truck_bin.depth + tolerance):
+                # Convert truck bin dimensions to float to handle Decimal type
+                truck_width = float(truck_bin.width or 0)
+                truck_height = float(truck_bin.height or 0)
+                truck_depth = float(truck_bin.depth or 0)
+
+                if (w <= truck_width + tolerance and 
+                    h <= truck_height + tolerance and 
+                    d <= truck_depth + tolerance):
                     valid_rotations.append((w, h, d))
                     can_fit_physically = True
                     logging.debug(f"DIMENSION OK: {item.name} fits as {w}x{h}x{d} in truck {truck_bin.name}")
             
             # If no valid rotations found, log detailed reason
             if not can_fit_physically:
-                min_truck_dims = [truck_bin.width, truck_bin.height, truck_bin.depth]
+                # Convert truck bin dimensions to float to handle Decimal type
+                min_truck_dims = [float(truck_bin.width), float(truck_bin.height), float(truck_bin.depth)]
                 max_item_dims = [item.width, item.height, item.depth]
                 min_truck_dims.sort()
                 max_item_dims.sort()
@@ -595,14 +601,20 @@ def _pack_single_truck(truck_bin, items_to_pack):
     for item in truck_bin.items:
         # Check if item position + dimensions exceed truck bounds
         if hasattr(item, 'position') and item.position:
-            end_x = item.position[0] + item.width
-            end_y = item.position[1] + item.height  
-            end_z = item.position[2] + item.depth
+            # Ensure all dimensions are converted to float to prevent Decimal mixing
+            end_x = float(item.position[0]) + float(item.width)
+            end_y = float(item.position[1]) + float(item.height)  
+            end_z = float(item.position[2]) + float(item.depth)
             
             tolerance = 0.1  # 1mm tolerance
-            if (end_x > truck_bin.width + tolerance or 
-                end_y > truck_bin.height + tolerance or 
-                end_z > truck_bin.depth + tolerance):
+            # Convert all dimensions to float explicitly
+            truck_width = float(truck_bin.width or 0)
+            truck_height = float(truck_bin.height or 0)
+            truck_depth = float(truck_bin.depth or 0)
+            
+            if (end_x > truck_width + tolerance or 
+                end_y > truck_height + tolerance or 
+                end_z > truck_depth + tolerance):
                 violation = {
                     'item_name': item.name,
                     'position': item.position,
@@ -612,12 +624,12 @@ def _pack_single_truck(truck_bin, items_to_pack):
                     'violations': []
                 }
                 
-                if end_x > truck_bin.width + tolerance:
-                    violation['violations'].append(f"X-axis: {end_x:.1f} > {truck_bin.width}")
-                if end_y > truck_bin.height + tolerance:
-                    violation['violations'].append(f"Y-axis: {end_y:.1f} > {truck_bin.height}")
-                if end_z > truck_bin.depth + tolerance:
-                    violation['violations'].append(f"Z-axis: {end_z:.1f} > {truck_bin.depth}")
+                if end_x > float(truck_bin.width) + tolerance:
+                    violation['violations'].append(f"X-axis: {end_x:.1f} > {truck_width}")
+                if end_y > float(truck_bin.height) + tolerance:
+                    violation['violations'].append(f"Y-axis: {end_y:.1f} > {truck_height}")
+                if end_z > float(truck_bin.depth) + tolerance:
+                    violation['violations'].append(f"Z-axis: {end_z:.1f} > {truck_depth}")
                 
                 dimensional_violations.append(violation)
                 logging.error(f"POSITION ERROR: {item.name} exceeds truck bounds: {violation['violations']}")

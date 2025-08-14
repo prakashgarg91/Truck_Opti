@@ -48,8 +48,9 @@
           </div>
         </div>
         
-        <div class="d-flex gap-2 mb-3">
+        <div class="d-flex gap-2 mb-3 flex-wrap">
           <button type="button" class="btn btn-outline-secondary" id="addRow"><i class="bi bi-plus-lg"></i> Add Carton</button>
+          <button type="button" class="btn btn-outline-info" onclick="showBulkUpload()"><i class="bi bi-upload"></i> Bulk Upload CSV</button>
           <button type="submit" class="btn btn-success" id="recommendBtn"><i class="bi bi-search"></i> Get Smart Recommendations</button>
         </div>
       </form>
@@ -100,7 +101,7 @@
               </div>
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="text-muted">Total Volume:</span>
-                <strong class="text-info">{{ total_volume }} m³</strong>
+                <strong class="text-info">{{ total_vol }} m³</strong>
               </div>
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="text-muted">Optimization Goal:</span>
@@ -147,10 +148,10 @@
                       <i class="bi bi-truck text-primary" style="font-size: 1.5rem;"></i>
                     </div>
                     <div>
-                      <strong class="text-primary">{{ r.truck_type }}</strong>
-                      <br><small class="text-muted">{{ r.truck_dimensions }}</small>
+                      <strong class="text-primary">{{ r.truck_type if r.truck_type else 'N/A' }}</strong>
+                      <br><small class="text-muted">{{ r.truck_dimensions if r.truck_dimensions else 'N/A' }}</small>
                       <br><span class="badge bg-secondary">Rank #{{ loop.index }}</span>
-                      {% if r.quantity_needed > 1 %}
+                      {% if r.quantity_needed and r.quantity_needed > 1 %}
                       <br><span class="badge bg-warning">{{ r.quantity_needed }} trucks needed</span>
                       {% endif %}
                     </div>
@@ -161,15 +162,15 @@
                 <td>
                   <div class="progress mb-2" style="height: 25px;">
                     <div class="progress-bar progress-bar-striped 
-                         bg-{{ 'success' if r.utilization > 0.8 else 'warning' if r.utilization > 0.6 else 'danger' }}" 
+                         bg-{{ 'success' if (r.utilization and r.utilization > 0.8) else 'warning' if (r.utilization and r.utilization > 0.6) else 'danger' }}" 
                          role="progressbar" 
-                         style="width: {{ (r.utilization * 100)|round(1) }}%">
-                      {{ (r.utilization * 100)|round(1) }}%
+                         style="width: {{ ((r.utilization * 100)|round(1) if r.utilization else 0) }}%">
+                      {{ ((r.utilization * 100)|round(1) if r.utilization else 0) }}%
                     </div>
                   </div>
                   <small class="text-muted">
                     <i class="bi bi-info-circle"></i> 
-                    {{ 'Excellent' if r.utilization > 0.8 else 'Good' if r.utilization > 0.6 else 'Fair' }} efficiency
+                    {{ 'Excellent' if (r.utilization and r.utilization > 0.8) else 'Good' if (r.utilization and r.utilization > 0.6) else 'Fair' }} efficiency
                   </small>
                 </td>
                 
@@ -177,14 +178,14 @@
                 <td>
                   <div class="cost-breakdown">
                     <h6 class="mb-1">
-                      <span class="badge bg-{{ 'success' if r.total_cost < 5000 else 'warning' if r.total_cost < 10000 else 'danger' }} fs-6">
-                        ₹{{ r.total_cost|round(0) }}
+                      <span class="badge bg-{{ 'success' if (r.total_cost and r.total_cost < 5000) else 'warning' if (r.total_cost and r.total_cost < 10000) else 'danger' }} fs-6">
+                        ₹{{ (r.total_cost|round(0) if r.total_cost else 0) }}
                       </span>
                     </h6>
                     <small class="text-muted d-block">
-                      Per item: ₹{{ r.cost_per_item|round(0) }}
+                      Per item: ₹{{ (r.cost_per_item|round(0) if r.cost_per_item else 0) }}
                     </small>
-                    {% if r.confidence > 0.8 %}
+                    {% if r.confidence and r.confidence > 0.8 %}
                     <small class="text-success">
                       <i class="bi bi-arrow-down"></i> Cost efficient
                     </small>
@@ -199,13 +200,13 @@
                       <div class="confidence-score">
                         <small class="text-muted">AI Confidence:</small>
                         <div class="progress" style="height: 8px;">
-                          <div class="progress-bar bg-{{ 'success' if r.confidence > 0.8 else 'warning' if r.confidence > 0.6 else 'danger' }}" 
-                               style="width: {{ (r.confidence * 100)|round(1) }}%"></div>
+                          <div class="progress-bar bg-{{ 'success' if (r.confidence and r.confidence > 0.8) else 'warning' if (r.confidence and r.confidence > 0.6) else 'danger' }}" 
+                               style="width: {{ ((r.confidence * 100)|round(1) if r.confidence else 0) }}%"></div>
                         </div>
-                        <small class="text-muted">{{ (r.confidence * 100)|round(1) }}%</small>
+                        <small class="text-muted">{{ ((r.confidence * 100)|round(1) if r.confidence else 0) }}%</small>
                       </div>
                     </div>
-                    <small class="text-primary">{{ r.recommendation_reason[:80] }}{{ '...' if r.recommendation_reason|length > 80 else '' }}</small>
+                    <small class="text-primary">{{ (r.recommendation_reason[:80] if r.recommendation_reason else 'No reason provided') }}{{ ('...' if (r.recommendation_reason and r.recommendation_reason|length > 80) else '') }}</small>
                   </div>
                 </td>
                 
@@ -234,8 +235,8 @@
         </div>
         <div class="card-body">
           {% if recommended %}
-          {% set total_cartons = original_requirements.total_quantity %}
-          {% set total_volume = original_requirements.total_volume %}
+          {% set total_cartons = total_items %}
+          {% set total_vol = total_volume %}
           {% set best_recommendation = recommended[0] %}
           
           <div class="calculation-summary">
@@ -250,7 +251,7 @@
                 </div>
                 <div class="col-6">
                   <div class="bg-light p-2 rounded">
-                    <strong>{{ "%.2f"|format(total_volume|float) }} m³</strong>
+                    <strong>{{ "%.2f"|format(total_vol|float) }} m³</strong>
                     <br><small>Total Volume</small>
                   </div>
                 </div>
@@ -260,9 +261,9 @@
             <div class="metric-box mb-3">
               <h6 class="text-success">Best Solution</h6>
               <div class="alert alert-success p-2">
-                <strong>{{ best_recommendation.bin_name.split('_')[0] }}</strong>
-                <br><small>{{ (best_recommendation.utilization * 100)|round(1) }}% space utilization</small>
-                {% if best_recommendation.total_cost > 0 %}
+                <strong>{{ (best_recommendation.bin_name.split('_')[0] if best_recommendation.bin_name else 'N/A') if best_recommendation else 'N/A' }}</strong>
+                <br><small>{{ ((best_recommendation.utilization * 100)|round(1) if best_recommendation.utilization else 0) if best_recommendation else 0 }}% space utilization</small>
+                {% if best_recommendation and best_recommendation.total_cost and best_recommendation.total_cost > 0 %}
                 <br><small>₹{{ best_recommendation.total_cost|round(0) }} estimated cost</small>
                 {% endif %}
               </div>
@@ -326,10 +327,95 @@
   </div>
   
   {% endif %}
+
+  <!-- Bulk Upload Modal -->
+  <div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-labelledby="bulkUploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title" id="bulkUploadModalLabel">
+            <i class="bi bi-upload"></i> Bulk Upload Cartons from CSV
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-8">
+              <h6>Upload CSV File</h6>
+              <div class="mb-3">
+                <label for="bulkFileInput" class="form-label">Select CSV File</label>
+                <input type="file" class="form-control" id="bulkFileInput" accept=".csv" onchange="previewCSV()">
+                <div class="form-text">
+                  <i class="bi bi-info-circle text-info"></i>
+                  Upload a CSV file with carton types and quantities
+                </div>
+              </div>
+              
+              <!-- CSV Preview Table -->
+              <div id="csvPreview" style="display: none;">
+                <h6 class="mt-3">CSV Preview</h6>
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                  <table class="table table-sm table-striped" id="previewTable">
+                    <thead class="table-light sticky-top">
+                      <tr id="previewHeaders"></tr>
+                    </thead>
+                    <tbody id="previewBody"></tbody>
+                  </table>
+                </div>
+                
+                <div class="d-flex gap-2 mt-3">
+                  <button type="button" class="btn btn-success" onclick="processBulkUpload()">
+                    <i class="bi bi-check-circle"></i> Import Data
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="clearCSVPreview()">
+                    <i class="bi bi-x-circle"></i> Clear
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <h6>CSV Format Requirements</h6>
+              <div class="alert alert-info p-3">
+                <strong>Required Columns:</strong>
+                <ul class="mb-2 small">
+                  <li><code>carton_name</code> - Carton type name</li>
+                  <li><code>quantity</code> - Number of cartons</li>
+                </ul>
+                
+                <strong>Optional Columns:</strong>
+                <ul class="mb-2 small">
+                  <li><code>carton_code</code> - Carton code</li>
+                  <li><code>value</code> - Value per unit</li>
+                </ul>
+                
+                <div class="mt-2">
+                  <button class="btn btn-outline-primary btn-sm" onclick="downloadSampleCSV()">
+                    <i class="bi bi-download"></i> Download Sample
+                  </button>
+                </div>
+              </div>
+              
+              <div class="alert alert-warning p-2">
+                <small>
+                  <i class="bi bi-exclamation-triangle"></i>
+                  <strong>Note:</strong> Carton names must match existing carton types in the system.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 <!-- Results now shown in card above -->
 {% endblock %}
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/recommend_truck.js') }}"></script>
 <script>
 let rowCount = 1;
 
@@ -408,6 +494,227 @@ function updateRemoveButtons() {
   });
 }
 updateRemoveButtons();
+
+// Bulk Upload Functions
+function showBulkUpload() {
+  const modal = new bootstrap.Modal(document.getElementById('bulkUploadModal'));
+  modal.show();
+}
+
+function downloadSampleCSV() {
+  // Create sample CSV data for truck recommendations
+  const sampleData = `carton_name,quantity,value
+Small Box,10,500
+Medium Box,5,800
+Large Box,3,1200
+Heavy Box,2,2000`;
+  
+  const blob = new Blob([sampleData], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = 'bulk_cartons_sample.csv';
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
+
+function previewCSV() {
+  const fileInput = document.getElementById('bulkFileInput');
+  const file = fileInput.files[0];
+  
+  if (!file) return;
+  
+  if (file.type !== 'text/csv' && !file.name.toLowerCase().endsWith('.csv')) {
+    alert('Please select a valid CSV file.');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const csv = e.target.result;
+    const lines = csv.split('\n').filter(line => line.trim() !== '');
+    
+    if (lines.length < 2) {
+      alert('CSV file must contain at least a header row and one data row.');
+      return;
+    }
+    
+    // Parse CSV headers
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const headerRow = document.getElementById('previewHeaders');
+    headerRow.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+    
+    // Parse CSV data (show max 10 rows for preview)
+    const tbody = document.getElementById('previewBody');
+    tbody.innerHTML = '';
+    
+    for (let i = 1; i < Math.min(lines.length, 11); i++) {
+      const values = lines[i].split(',').map(v => v.trim());
+      const row = document.createElement('tr');
+      row.innerHTML = values.map(v => `<td>${v}</td>`).join('');
+      tbody.appendChild(row);
+    }
+    
+    if (lines.length > 11) {
+      const moreRow = document.createElement('tr');
+      moreRow.innerHTML = `<td colspan="${headers.length}" class="text-center text-muted"><em>... and ${lines.length - 11} more rows</em></td>`;
+      tbody.appendChild(moreRow);
+    }
+    
+    // Validate required columns
+    const requiredColumns = ['carton_name', 'quantity'];
+    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+    
+    if (missingColumns.length > 0) {
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-danger mt-2';
+      alert.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Missing required columns: ${missingColumns.join(', ')}`;
+      document.getElementById('csvPreview').appendChild(alert);
+    }
+    
+    document.getElementById('csvPreview').style.display = 'block';
+  };
+  
+  reader.readAsText(file);
+}
+
+function processBulkUpload() {
+  const fileInput = document.getElementById('bulkFileInput');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    alert('Please select a CSV file first.');
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const csv = e.target.result;
+    const lines = csv.split('\n').filter(line => line.trim() !== '');
+    
+    if (lines.length < 2) return;
+    
+    // Parse headers and find column indices
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const cartonNameIndex = headers.indexOf('carton_name');
+    const quantityIndex = headers.indexOf('quantity');
+    const valueIndex = headers.indexOf('value');
+    
+    if (cartonNameIndex === -1 || quantityIndex === -1) {
+      alert('CSV must contain carton_name and quantity columns.');
+      return;
+    }
+    
+    // Clear existing rows (keep first row)
+    const cartonRows = document.getElementById('cartonRows');
+    const firstRow = cartonRows.querySelector('.carton-row');
+    cartonRows.innerHTML = '';
+    cartonRows.appendChild(firstRow);
+    rowCount = 1;
+    
+    // Get available carton options from the first select
+    const firstSelect = firstRow.querySelector('select');
+    const availableCartons = Array.from(firstSelect.options).map(option => ({
+      value: option.value,
+      text: option.textContent,
+      name: option.textContent.split('(')[0].trim()
+    }));
+    
+    // Process CSV data
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim());
+      
+      if (values.length < Math.max(cartonNameIndex, quantityIndex) + 1) continue;
+      
+      const cartonName = values[cartonNameIndex];
+      const quantity = parseInt(values[quantityIndex]);
+      const value = valueIndex >= 0 && values[valueIndex] ? parseFloat(values[valueIndex]) : '';
+      
+      // Find matching carton in available options
+      const matchingCarton = availableCartons.find(c => 
+        c.name.toLowerCase() === cartonName.toLowerCase() || 
+        c.text.toLowerCase().includes(cartonName.toLowerCase())
+      );
+      
+      if (!matchingCarton || !matchingCarton.value) {
+        errorCount++;
+        errors.push(`Row ${i + 1}: Carton "${cartonName}" not found in system`);
+        continue;
+      }
+      
+      if (isNaN(quantity) || quantity <= 0) {
+        errorCount++;
+        errors.push(`Row ${i + 1}: Invalid quantity "${values[quantityIndex]}"`);
+        continue;
+      }
+      
+      // Create new row or use first row
+      let targetRow;
+      if (successCount === 0) {
+        // Use first row
+        targetRow = firstRow;
+      } else {
+        // Create new row
+        rowCount++;
+        targetRow = document.createElement('div');
+        targetRow.className = 'row mb-2 carton-row align-items-end';
+        targetRow.innerHTML = firstRow.innerHTML
+          .replace(/carton_type_1/g, `carton_type_${rowCount}`)
+          .replace(/carton_qty_1/g, `carton_qty_${rowCount}`)
+          .replace(/carton_value_1/g, `carton_value_${rowCount}`);
+        cartonRows.appendChild(targetRow);
+      }
+      
+      // Set values
+      const selectElement = targetRow.querySelector('select');
+      const qtyInput = targetRow.querySelector('input[type="number"]:first-of-type');
+      const valueInput = targetRow.querySelector('input[type="number"]:last-of-type');
+      
+      selectElement.value = matchingCarton.value;
+      qtyInput.value = quantity;
+      if (valueInput && value) {
+        valueInput.value = value;
+      }
+      
+      successCount++;
+    }
+    
+    // Update remove buttons
+    updateRemoveButtons();
+    
+    // Show results
+    let message = `Successfully imported ${successCount} carton entries.`;
+    if (errorCount > 0) {
+      message += `\n\nSkipped ${errorCount} entries due to errors:\n${errors.slice(0, 5).join('\n')}`;
+      if (errors.length > 5) {
+        message += `\n... and ${errors.length - 5} more errors`;
+      }
+    }
+    
+    alert(message);
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('bulkUploadModal'));
+    modal.hide();
+  };
+  
+  reader.readAsText(file);
+}
+
+function clearCSVPreview() {
+  document.getElementById('csvPreview').style.display = 'none';
+  document.getElementById('bulkFileInput').value = '';
+  // Remove any error alerts
+  const alerts = document.getElementById('csvPreview').querySelectorAll('.alert-danger');
+  alerts.forEach(alert => alert.remove());
+}
 </script>
 
 {% if recommended %}
@@ -465,13 +772,13 @@ let recommendationData = [];
 {% for r in recommended %}
 recommendationData.push({
     index: {{ loop.index0 }},
-    truck_name: '{{ r.bin_name.split('_')[0] }}',
-    truck_dimensions: '{{ r.truck_dimensions if r.truck_dimensions else 'N/A' }}',
-    utilization: {{ r.utilization }},
-    total_cost: {{ r.total_cost if r.total_cost else 0 }},
-    fitted_items: {{ r.fitted_items|length }},
-    unfitted_items: {{ r.unfitted_items|length }},
-    truck_volume: {{ r.bin_length * r.bin_width * r.bin_height if r.bin_length and r.bin_width and r.bin_height else 0 }},
+    truck_name: '{{ (r.bin_name.split('_')[0] if r.bin_name else 'Unknown') }}',
+    truck_dimensions: '{{ (r.truck_dimensions if r.truck_dimensions else 'N/A') }}',
+    utilization: {{ (r.utilization if r.utilization else 0) }},
+    total_cost: {{ (r.total_cost if r.total_cost else 0) }},
+    fitted_items: {{ (r.fitted_items|length if r.fitted_items else 0) }},
+    unfitted_items: {{ (r.unfitted_items|length if r.unfitted_items else 0) }},
+    truck_volume: {{ ((r.bin_length * r.bin_width * r.bin_height) if (r.bin_length and r.bin_width and r.bin_height) else 0) }},
     rank: {{ loop.index }}
 });
 {% endfor %}
@@ -485,8 +792,8 @@ function showCalculationBreakdown(index) {
     }
 
     // Calculate detailed metrics
-    const totalCartons = {{ original_requirements.total_quantity if original_requirements else 0 }};
-    const totalVolume = {{ original_requirements.total_volume|float if original_requirements else 0 }};
+    const totalCartons = {{ total_cartons if total_cartons else 0 }};
+    const totalVolume = {{ total_vol|float if total_vol else 0 }};
     const truckVolume = recommendation.truck_volume / 1000000; // Convert to m³
     const volumeEfficiency = recommendation.utilization;
     const packingSuccess = recommendation.fitted_items / totalCartons;

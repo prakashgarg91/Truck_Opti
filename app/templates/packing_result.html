@@ -143,7 +143,7 @@
     {% endif %}
     
     <!-- Data structure compatibility layer -->
-    {% set packing_results = result.result_data.get('packing_results', result.result_data) if result.result_data else [] %}
+    {% set packing_results = result_data.get('packing_results', []) %}
     
     {% if not packing_results %}
         <div class="alert alert-warning" role="alert">
