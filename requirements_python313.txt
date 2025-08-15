@@ -1,0 +1,57 @@
+# Python 3.13 Compatible Requirements for TruckOpti Enterprise
+# Updated for PyInstaller compatibility with Python 3.13
+
+# Core Dependencies - Python 3.13 compatible versions
+py3dbp>=1.1.0
+flask>=3.0.0
+flask-sqlalchemy>=3.1.1
+flask-login>=0.6.0
+bootstrap-flask>=2.3.0
+flask-cors>=4.0.0
+flask-jwt-extended>=4.6.0
+flask-limiter>=3.5.0
+
+# Build and Packaging - Python 3.13 support
+pyinstaller>=6.0.0
+python-dateutil>=2.8.0
+
+# Data and Scientific Computing - Python 3.13 compatible
+numpy>=1.26.0
+pandas>=2.1.0
+scipy>=1.11.0
+sqlalchemy>=2.0.23
+
+# Performance and Monitoring (Core only for exe)
+structlog>=23.2.0
+requests>=2.31.0
+
+# Security and Cryptography - Python 3.13 compatible
+cryptography>=41.0.0
+bcrypt>=4.1.0
+jsonschema>=4.19.0
+
+# Utility Libraries - Python 3.13 compatible
+lz4>=4.3.0
+pytz>=2023.3
+python-rapidjson>=1.11.0
+
+# Essential Flask dependencies
+Werkzeug>=3.0.0
+Jinja2>=3.1.0
+MarkupSafe>=2.1.0
+click>=8.1.0
+blinker>=1.6.0
+itsdangerous>=2.1.0
+
+# Additional Flask ecosystem
+WTForms>=3.1.0
+email-validator>=2.1.0
+
+# Development and Testing (optional - not needed in exe)
+pytest>=7.4.0
+pytest-flask>=1.3.0
+pytest-mock>=3.12.0
+black>=23.9.0
+
+# Database utilities
+alembic>=1.12.0
