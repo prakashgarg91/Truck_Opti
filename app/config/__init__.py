@@ -1,1 +1,1 @@
-# Configuration module for TruckOpti Enterprise
+# Configuration module initialization

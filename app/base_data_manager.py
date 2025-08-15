@@ -1,129 +1,104 @@
-from flask import jsonify, request
-from . import db
-from .models import TruckType, CartonType
-import logging
+from flask import jsonify
+from app.models import TruckType, CartonType, AllowedCombination
 
-class BaseDataManager:
-    @staticmethod
-    def get_truck_base_data():
-        """
-        Retrieve comprehensive truck base data with robust error handling.
-        
-        Returns:
-            JSON response with truck data or error details
-        """
-        try:
-            trucks = TruckType.query.all()
-            
-            # Handle empty dataset
-            if not trucks:
-                return jsonify({
-                    'status': 'warning',
-                    'message': 'No truck data available',
-                    'data': []
-                }), 204
-            
-            # Enhanced serialization with performance metrics
-            truck_data = [
-                {
-                    **truck.as_dict(),
-                    'performance_metrics': truck.get_performance_metrics()
-                } 
-                for truck in trucks
-            ]
-            
-            return jsonify({
-                'status': 'success',
-                'message': f'{len(truck_data)} trucks retrieved',
-                'data': truck_data
+
+def get_base_truck_data():
+    """
+    Retrieve base truck data for analytics and visualizations.
+
+    Returns:
+        JSON response with truck type data and statistics
+    """
+    try:
+        truck_types = TruckType.query.all()
+        truck_data = []
+
+        for truck in truck_types:
+            # Count allowed carton combinations for each truck
+            carton_count = AllowedCombination.query.filter_by(
+                truck_type_id=truck.id
+            ).count()
+
+            truck_data.append({
+                'id': truck.id,
+                'name': truck.name,
+                'length': truck.length,
+                'width': truck.width,
+                'height': truck.height,
+                'max_weight': truck.max_weight,
+                'carton_combinations': carton_count
             })
-        
-        except Exception as e:
-            logging.error(f"Error retrieving truck base data: {e}")
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to retrieve truck base data',
-                'details': str(e)
-            }), 500
-    
-    @staticmethod
-    def get_carton_base_data():
-        """
-        Retrieve comprehensive carton base data with robust error handling.
-        
-        Returns:
-            JSON response with carton data or error details
-        """
-        try:
-            cartons = CartonType.query.all()
-            
-            # Handle empty dataset
-            if not cartons:
-                return jsonify({
-                    'status': 'warning',
-                    'message': 'No carton data available',
-                    'data': []
-                }), 204
-            
-            # Enhanced serialization with packaging metrics
-            carton_data = [
-                {
-                    **carton.as_dict(),
-                    'packaging_metrics': carton.get_packaging_metrics()
-                } 
-                for carton in cartons
-            ]
-            
-            return jsonify({
-                'status': 'success',
-                'message': f'{len(carton_data)} cartons retrieved',
-                'data': carton_data
+
+        return jsonify({
+            'success': True,
+            'truck_types': truck_data
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error retrieving truck data: {str(e)}'
+        }), 500
+
+
+def get_base_carton_data():
+    """
+    Retrieve base carton data for analytics and visualizations.
+
+    Returns:
+        JSON response with carton type data and statistics
+    """
+    try:
+        carton_types = CartonType.query.all()
+        carton_data = []
+
+        for carton in carton_types:
+            carton_data.append({
+                'id': carton.id,
+                'name': carton.name,
+                'length': carton.length,
+                'width': carton.width,
+                'height': carton.height,
+                'weight': carton.weight
             })
-        
-        except Exception as e:
-            logging.error(f"Error retrieving carton base data: {e}")
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to retrieve carton base data',
-                'details': str(e)
-            }), 500
-    
-    @staticmethod
-    def initialize_base_data():
-        """
-        Initialize base data if empty, with robust logging and error tracking.
-        
-        Returns:
-            Tuple of (trucks_added, cartons_added)
-        """
-        from .default_data import DEFAULT_TRUCKS, DEFAULT_CARTONS
-        
-        trucks_added = 0
-        cartons_added = 0
-        
-        try:
-            # Check and add trucks
-            existing_trucks = TruckType.query.count()
-            if existing_trucks == 0:
-                for truck_data in DEFAULT_TRUCKS:
-                    truck = TruckType(**truck_data)
-                    db.session.add(truck)
-                    trucks_added += 1
-            
-            # Check and add cartons
-            existing_cartons = CartonType.query.count()
-            if existing_cartons == 0:
-                for carton_data in DEFAULT_CARTONS:
-                    carton = CartonType(**carton_data)
-                    db.session.add(carton)
-                    cartons_added += 1
-            
-            db.session.commit()
-            
-            logging.info(f"Base data initialized: {trucks_added} trucks, {cartons_added} cartons")
-            
-        except Exception as e:
-            db.session.rollback()
-            logging.error(f"Base data initialization failed: {e}")
-        
-        return trucks_added, cartons_added
+
+        return jsonify({
+            'success': True,
+            'carton_types': carton_data
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error retrieving carton data: {str(e)}'
+        }), 500
+
+
+def get_allowed_combinations():
+    """
+    Retrieve allowed truck and carton combinations.
+
+    Returns:
+        JSON response with allowed combinations
+    """
+    try:
+        combinations = AllowedCombination.query.all()
+        combo_data = []
+
+        for combo in combinations:
+            combo_data.append({
+                'truck_type_id': combo.truck_type_id,
+                'carton_type_id': combo.carton_type_id,
+                'max_cartons': combo.max_cartons
+            })
+
+        return jsonify({
+            'success': True,
+            'allowed_combinations': combo_data
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error retrieving allowed combinations: {str(e)}'
+        }), 500
