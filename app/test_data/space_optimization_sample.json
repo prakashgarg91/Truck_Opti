@@ -1,0 +1,70 @@
+{
+    "sample_carton_types": [
+        {
+            "name": "Small Electronics Box",
+            "length": 30,
+            "width": 20,
+            "height": 15,
+            "volume": 9000,
+            "description": "Compact boxes for electronic goods"
+        },
+        {
+            "name": "Medium Machinery Part",
+            "length": 50,
+            "width": 40,
+            "height": 30,
+            "volume": 60000,
+            "description": "Robust boxes for industrial components"
+        },
+        {
+            "name": "Large Appliance Container",
+            "length": 120,
+            "width": 80,
+            "height": 60,
+            "volume": 576000,
+            "description": "Oversized containers for bulky items"
+        }
+    ],
+    "recommended_configurations": [
+        {
+            "truck_type": "Tata 14ft",
+            "remaining_space_percentage": 56.7,
+            "additional_carton_suggestions": [
+                {
+                    "carton_type": "Small Electronics Box",
+                    "max_quantity": 12,
+                    "space_utilization_improvement": 8.5
+                },
+                {
+                    "carton_type": "Medium Machinery Part",
+                    "max_quantity": 3,
+                    "space_utilization_improvement": 15.2
+                }
+            ],
+            "optimization_reasons": [
+                "Corner spaces can be utilized more efficiently",
+                "Recommended rearrangement for better weight distribution"
+            ]
+        },
+        {
+            "truck_type": "Mahindra 9.5ft",
+            "remaining_space_percentage": 42.3,
+            "additional_carton_suggestions": [
+                {
+                    "carton_type": "Small Electronics Box",
+                    "max_quantity": 8,
+                    "space_utilization_improvement": 6.2
+                },
+                {
+                    "carton_type": "Large Appliance Container",
+                    "max_quantity": 1,
+                    "space_utilization_improvement": 22.5
+                }
+            ],
+            "optimization_reasons": [
+                "Vertical stacking can improve space usage",
+                "Consider mixed-size carton packing strategy"
+            ]
+        }
+    ]
+}

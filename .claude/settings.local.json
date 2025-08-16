@@ -1,8 +1,10 @@
 {
-  "defaultMode": "bypassPermissions",
-  "model": "sonnet",
   "permissions": {
-    "allow": [],
+    "allow": [
+      "Bash(npx:*)"
+    ],
     "deny": []
-  }
+  },
+  "model": "sonnet",
+  "defaultMode": "bypassPermissions"
 }

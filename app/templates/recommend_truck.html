@@ -133,6 +133,7 @@
               <tr>
                 <th>Truck Recommendation</th>
                 <th>Space Utilization</th>
+                <th>Space Optimization</th>
                 <th>Cost Analysis</th>
                 <th>AI Analysis</th>
                 <th>Details</th>
@@ -172,6 +173,37 @@
                     <i class="bi bi-info-circle"></i> 
                     {{ 'Excellent' if (r.utilization and r.utilization > 0.8) else 'Good' if (r.utilization and r.utilization > 0.6) else 'Fair' }} efficiency
                   </small>
+                </td>
+                
+                <!-- Space Optimization Widget -->
+                <td>
+                  <div class="space-optimization-widget" data-truck-index="{{ loop.index0 }}">
+                    <div class="utilization-gauge-container">
+                      <div class="utilization-gauge" id="gauge-{{ loop.index0 }}">
+                        <div class="gauge-text">
+                          <span class="utilization-value">{{ ((r.utilization * 100)|round(1) if r.utilization else 0) }}%</span>
+                          <small class="gauge-label">Space Used</small>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="remaining-space-info">
+                      <small class="text-muted">
+                        <i class="bi bi-box text-info"></i>
+                        {% if r.bin_width and r.bin_length and r.bin_height and r.utilization %}
+                          {% set total_volume = (r.bin_width * r.bin_length * r.bin_height) / 1000000 %}
+                          {% set remaining_volume = total_volume * (1 - r.utilization) %}
+                          <span class="remaining-volume">{{ remaining_volume|round(1) }}m³</span> remaining
+                        {% else %}
+                          <span class="remaining-volume">N/A</span> remaining
+                        {% endif %}
+                      </small>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm mt-2 optimize-space-btn" 
+                            data-truck-index="{{ loop.index0 }}"
+                            onclick="spaceOptimizer.showOptimizationPanel({{ loop.index0 }})">
+                      <i class="bi bi-lightning"></i> Optimize
+                    </button>
+                  </div>
                 </td>
                 
                 <!-- Cost Analysis -->
@@ -416,6 +448,7 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/recommend_truck.js') }}"></script>
+<script src="{{ url_for('static', filename='js/space_optimizer.js') }}"></script>
 <script>
 let rowCount = 1;
 
@@ -715,6 +748,25 @@ function clearCSVPreview() {
   const alerts = document.getElementById('csvPreview').querySelectorAll('.alert-danger');
   alerts.forEach(alert => alert.remove());
 }
+
+// Initialize space optimization gauges after page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize utilization gauges with actual values
+  {% if recommended %}
+  {% for r in recommended %}
+  const gauge{{ loop.index0 }} = document.getElementById('gauge-{{ loop.index0 }}');
+  if (gauge{{ loop.index0 }}) {
+    const utilization = {{ ((r.utilization * 100)|round(1) if r.utilization else 0) }};
+    gauge{{ loop.index0 }}.style.setProperty('--utilization', utilization + '%');
+    
+    // Add animation after a short delay
+    setTimeout(() => {
+      gauge{{ loop.index0 }}.style.setProperty('--utilization', utilization + '%');
+    }, {{ loop.index0 * 200 }});
+  }
+  {% endfor %}
+  {% endif %}
+});
 </script>
 
 {% if recommended %}

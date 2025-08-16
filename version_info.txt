@@ -1,0 +1,11 @@
+# Version Information for TruckOpti Enterprise
+# DO NOT MODIFY THIS FILE MANUALLY
+
+FileVersion=3.6.0.0
+ProductVersion=3.6.0
+ProductName=TruckOpti Enterprise
+CompanyName=Logistics Optimization Technologies
+LegalCopyright=© 2025 Logistics Optimization Technologies. All Rights Reserved.
+FileDescription=Advanced Space Optimization Logistics Solution
+InternalName=TruckOpti_Enterprise
+OriginalFilename=TruckOpti_Enterprise_v3.6.0.exe

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger mb-3">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Unexpected Error
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title text-danger">Something went wrong</h4>
+                    <p class="card-text">
+                        We apologize, but an unexpected error occurred during processing.
+                    </p>
+                    
+                    {% if error %}
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Error Details:</strong>
+                        <pre class="text-muted mt-2">{{ error }}</pre>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('main.sale_orders') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-redo me-1"></i>Try Again
+                        </a>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-home me-1"></i>Return to Home
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    If the problem persists, please contact support with the error details.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

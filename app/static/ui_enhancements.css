@@ -1,9 +1,83 @@
 /* Professional UI/UX Enhancements */
+/* Updated with advanced design principles and performance-focused styling */
+
+/* Consistent Color Palette */
+:root {
+    --primary-color: #1a73e8;
+    --secondary-color: #34a853;
+    --accent-color: #fbbc05;
+    --text-color: #202124;
+    --background-color: #f8f9fa;
+    --border-radius: 8px;
+    --transition-speed: 0.25s;
+    --subtle-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --hover-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
 
 /* Enhanced Chart Interactions */
 .chart-interactive-container {
     position: relative;
     transition: all 0.3s ease;
+}
+
+/* CRITICAL CHART FIXES - Prevent infinite scrolling and poor rendering */
+.chart-container {
+    position: relative !important;
+    overflow: hidden !important;
+    max-height: 400px !important;
+    min-height: 200px !important;
+    width: 100% !important;
+}
+
+.chart-container canvas {
+    max-height: 350px !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+}
+
+.professional-chart-container {
+    position: relative !important;
+    overflow: hidden !important;
+    height: 350px !important;
+    width: 100% !important;
+}
+
+.professional-chart-container canvas {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 350px !important;
+}
+
+/* Fix infinite scrolling dashboard charts */
+#shipmentsChart,
+#trucksChart,
+#costsChart,
+#performanceChart,
+#optimizationChart,
+#utilizationChart,
+#costChart {
+    max-height: 350px !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+/* Prevent chart containers from expanding infinitely */
+.card-body:has(canvas) {
+    height: 350px !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+}
+
+/* Dashboard specific chart container fixes */
+.dashboard-card .card-body {
+    min-height: 350px !important;
+    max-height: 350px !important;
+    overflow: hidden !important;
 }
 
 .chart-interactive-container:hover {
@@ -29,6 +103,50 @@
 
 .chart-interactive-container:hover .chart-hover-overlay {
     opacity: 1;
+    transform: translateY(0);
+}
+
+/* Enhanced Tooltip Styling */
+.chart-tooltip {
+    position: absolute;
+    background: rgba(32, 33, 36, 0.95);
+    color: white;
+    padding: 15px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    max-width: 300px;
+    z-index: 1000;
+    transition: all var(--transition-speed) ease;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    font-family: 'Inter', sans-serif;
+}
+
+.chart-interactive-container:hover .chart-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.chart-tooltip h4 {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-contrast-light); /* High contrast for headers */
+    letter-spacing: 0.03em;
+    background-color: var(--primary-color); /* Add background for readability */
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.chart-tooltip p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-contrast-light); /* Improved contrast */
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+    padding: 5px 10px;
 }
 
 /* Progressive Information Cards */
@@ -63,44 +181,100 @@
     top: 0;
 }
 
-/* Remove/Delete Button Styling */
-.btn-remove {
-    background-color: #dc3545;
+/* Professional Remove/Delete Button Styling */
+.btn-professional {
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 8px;
-    padding: 8px 15px;
-    transition: all 0.3s ease;
-    display: flex;
+    border-radius: var(--border-radius);
+    padding: 10px 16px;
+    transition: all var(--transition-speed) ease;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    box-shadow: var(--subtle-shadow);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.btn-professional:hover {
+    background-color: darken(var(--primary-color), 10%);
+    box-shadow: var(--hover-shadow);
+    transform: translateY(-2px);
+}
+
+.btn-professional::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: all var(--transition-speed) ease;
+    z-index: -1;
+}
+
+.btn-professional:hover::before {
+    left: 100%;
+}
+
+.btn-remove::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: all var(--transition-speed) ease;
+    z-index: -1;
 }
 
 .btn-remove:hover {
-    background-color: #c82333;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
+    background: linear-gradient(135deg, #c82333, #a71d2a);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(220, 53, 69, 0.4);
+}
+
+.btn-remove:hover::before {
+    left: 100%;
 }
 
 .btn-remove .remove-icon {
-    font-size: 1rem;
+    font-size: 1.1rem;
+    margin-right: 5px;
 }
 
-/* Duplicate Prevention Styles */
+/* Advanced Duplicate Prevention Styles */
 .duplicate-warning {
     color: #dc3545;
     font-size: 0.8rem;
     margin-top: 5px;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: all var(--transition-speed) ease;
+    transform: translateY(-10px);
+    position: relative;
+}
+
+.duplicate-warning::before {
+    content: '⚠️';
+    margin-right: 5px;
+    display: inline-block;
 }
 
 .form-control.is-duplicate {
     border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    transition: all var(--transition-speed) ease;
 }
 
 .form-control.is-duplicate:focus + .duplicate-warning {
     opacity: 1;
+    transform: translateY(0);
 }
 
 /* Professional Form Validation */
@@ -123,8 +297,576 @@
     opacity: 1;
 }
 
+/* Professional Table Styling */
+.table-professional {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--subtle-shadow);
+}
+
+.table-professional thead {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.table-professional thead th {
+    padding: 12px 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-contrast-light); /* Ensure high contrast */
+}
+
+.table-professional tbody tr {
+    transition: background-color var(--transition-speed) ease;
+}
+
+.table-professional tbody tr:hover {
+    background-color: rgba(0, 86, 179, 0.1); /* Improved hover state */
+    transition: background-color var(--transition-speed) ease;
+}
+
+.table-professional tbody td {
+    padding: 12px 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.table-professional tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-professional .table-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Professional Export Buttons */
+.btn-export {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 10px 16px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all var(--transition-speed) ease;
+    box-shadow: var(--subtle-shadow);
+}
+
+.btn-export:hover {
+    background-color: darken(var(--secondary-color), 10%);
+    box-shadow: var(--hover-shadow);
+    transform: translateY(-2px);
+}
+
+.btn-export i {
+    margin-right: 5px;
+}
+
 /* Responsive Adjustments */
+/* Space Optimization UI Components */
+.space-optimization-widget {
+    background: white;
+    border: 1px solid rgba(0, 123, 255, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.space-optimization-widget:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
+    border-color: rgba(0, 123, 255, 0.3);
+}
+
+.space-optimization-widget::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(0, 123, 255, 0.1), transparent);
+    transition: all 0.5s ease;
+}
+
+.space-optimization-widget:hover::before {
+    left: 100%;
+}
+
+/* Utilization Gauge Styling */
+.utilization-gauge-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.utilization-gauge {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: #f8f9fa;
+    border: 3px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.utilization-gauge::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        #28a745 0deg,
+        #28a745 calc(var(--utilization, 0%) * 3.6deg),
+        #e9ecef calc(var(--utilization, 0%) * 3.6deg),
+        #e9ecef 360deg
+    );
+    z-index: -1;
+    transition: all 1s ease;
+}
+
+.gauge-text {
+    text-align: center;
+    z-index: 2;
+}
+
+.utilization-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.gauge-label {
+    font-size: 0.7rem;
+    color: #6c757d;
+    display: block;
+    margin-top: 2px;
+}
+
+.remaining-space-info {
+    margin-bottom: 10px;
+    padding: 8px;
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 123, 255, 0.1);
+}
+
+.remaining-volume {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.optimize-space-btn {
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-radius: 20px;
+    padding: 5px 15px;
+}
+
+.optimize-space-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+/* Optimization Cards */
+.optimization-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.optimization-card.border-danger {
+    border-left: 4px solid #dc3545;
+}
+
+.optimization-card.border-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.optimization-card.border-info {
+    border-left: 4px solid #17a2b8;
+}
+
+.optimization-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.optimization-card .card-body {
+    padding: 20px;
+}
+
+/* Large Gauge for Modal */
+.space-utilization-gauge-large {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 20px;
+}
+
+.gauge-circle {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        #007bff 0deg,
+        #007bff calc(var(--progress, 0) * 3.6deg),
+        #e9ecef calc(var(--progress, 0) * 3.6deg),
+        #e9ecef 360deg
+    );
+    transition: all 1.5s ease;
+    animation: gaugeLoad 2s ease-in-out;
+}
+
+@keyframes gaugeLoad {
+    0% {
+        transform: rotate(-90deg);
+        opacity: 0;
+    }
+    100% {
+        transform: rotate(0deg);
+        opacity: 1;
+    }
+}
+
+.gauge-center {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.gauge-percentage {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.gauge-subtitle {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Carton Recommendation Cards */
+.carton-recommendation-card {
+    border: 1px solid #e9ecef;
+    border-radius: 15px;
+    transition: all 0.4s ease;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.carton-recommendation-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.carton-recommendation-card:hover::before {
+    transform: scaleX(1);
+}
+
+.carton-recommendation-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-color);
+}
+
+.carton-box-3d {
+    background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%);
+    border: 2px dashed var(--primary-color);
+    border-radius: 12px;
+    padding: 25px;
+    margin: 15px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.carton-box-3d::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transform: rotate(45deg);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+    100% {
+        transform: translateX(100%) rotate(45deg);
+    }
+}
+
+.carton-icon {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Quantity Selector Enhancement */
+.quantity-selector .input-group {
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.quantity-selector .btn {
+    border-radius: 0;
+    border: none;
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.quantity-selector .btn:hover {
+    background: darken(var(--primary-color), 10%);
+    transform: scale(1.05);
+}
+
+.quantity-selector .form-control {
+    border: none;
+    text-align: center;
+    font-weight: 600;
+    background: #f8f9fa;
+}
+
+/* Metric Boxes */
+.metric-box {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary-color);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.metric-box:hover::before {
+    transform: scaleX(1);
+}
+
+.metric-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+/* Progress Enhancement */
+.progress {
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+    border-radius: 10px;
+    transition: all 0.6s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: progressShine 2s infinite;
+}
+
+@keyframes progressShine {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Toast Container Enhancement */
+.toast-container .toast {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+.toast .toast-body {
+    padding: 15px 20px;
+    font-weight: 500;
+}
+
+/* Loading States */
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmerLoading 1.5s infinite;
+}
+
+@keyframes shimmerLoading {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Button Enhancements */
+.btn-professional-enhanced {
+    position: relative;
+    overflow: hidden;
+    border-radius: 25px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border: none;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-professional-enhanced::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: all 0.6s ease;
+}
+
+.btn-professional-enhanced:hover::before {
+    left: 100%;
+}
+
+.btn-professional-enhanced:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile Responsiveness for Space Optimization */
 @media (max-width: 768px) {
+    .space-optimization-widget {
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .utilization-gauge {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .utilization-value {
+        font-size: 0.9rem;
+    }
+    
+    .gauge-label {
+        font-size: 0.6rem;
+    }
+    
+    .optimize-space-btn {
+        font-size: 0.75rem;
+        padding: 4px 12px;
+    }
+    
+    .space-utilization-gauge-large {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .gauge-circle {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .gauge-center {
+        top: 12px;
+        left: 12px;
+        width: 96px;
+        height: 96px;
+    }
+    
+    .gauge-percentage {
+        font-size: 1.4rem;
+    }
+    
+    .carton-recommendation-card {
+        margin-bottom: 15px;
+    }
+    
+    .optimization-card .card-body {
+        padding: 15px;
+    }
+    
     .info-card .detailed-view {
         position: static;
         display: none;

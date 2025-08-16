@@ -1,0 +1,15 @@
+pytest==8.4.1
+selenium==4.22.0
+webdriver-manager==4.0.1
+requests==2.31.0
+pytest-html==4.1.1
+pytest-xdist==3.5.0
+allure-pytest==2.13.5
+python-dotenv==1.0.0
+SQLAlchemy==2.0.25
+openpyxl==3.1.2
+pandas==2.2.1
+Flask-Testing==0.8.1
+coverage==7.4.4
+pillow==10.2.0
+pyperclip==1.8.2

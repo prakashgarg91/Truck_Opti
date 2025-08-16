@@ -29,6 +29,9 @@ class FinalComprehensiveTester:
     
     def log(self, message, test_type="INFO"):
         timestamp = datetime.now().strftime("%H:%M:%S")
+        # Remove emojis and convert to plain text
+        message = message.replace("[OK]", "[OK]").replace("[FAIL]", "[FAIL]")
+        message = ''.join(char for char in message if ord(char) < 128)  # ASCII only
         print(f"[{timestamp}] {test_type}: {message}")
     
     def test_analytics_dashboard(self):
@@ -65,11 +68,11 @@ class FinalComprehensiveTester:
             }
             
             total_features = sum(chart_libraries.values()) + sum(analytics_content.values())
-            self.log(f"✅ Analytics dashboard loaded with {total_features} features")
+            self.log(f"[OK] Analytics dashboard loaded with {total_features} features")
             self.log(f"📊 Charts/Visualizations: {chart_libraries['canvas_elements']} canvas + {chart_libraries['chart_divs']} chart divs")
             
         else:
-            self.log(f"❌ Analytics dashboard failed to load: {response.status_code}", "ERROR")
+            self.log(f"[FAIL] Analytics dashboard failed to load: {response.status_code}", "ERROR")
             self.results['critical_issues'].append(f"Analytics dashboard error: {response.status_code}")
     
     def test_batch_processing_csv(self):
@@ -96,7 +99,7 @@ class FinalComprehensiveTester:
             self.results['batch_processing'] = batch_features
             
             batch_score = sum(batch_features.values())
-            self.log(f"✅ Batch processing features: {batch_score}/5 available")
+            self.log(f"[OK] Batch processing features: {batch_score}/5 available")
             
             if not batch_features['has_upload_form']:
                 self.results['critical_issues'].append("Batch processing missing file upload form")
@@ -110,7 +113,7 @@ Large Box (40x35x25),10"""
             self.log("📄 Sample CSV validation: Format appears correct for batch processing")
             
         else:
-            self.log(f"❌ Batch processing page failed to load: {response.status_code}", "ERROR")
+            self.log(f"[FAIL] Batch processing page failed to load: {response.status_code}", "ERROR")
             self.results['critical_issues'].append(f"Batch processing error: {response.status_code}")
     
     def test_3d_visualization_comprehensive(self):
@@ -154,7 +157,7 @@ Large Box (40x35x25),10"""
                     
             except Exception as e:
                 visualization_results[page_name] = {'error': str(e), 'score': 0}
-                self.log(f"❌ Error testing 3D on {page_name}: {e}", "ERROR")
+                self.log(f"[FAIL] Error testing 3D on {page_name}: {e}", "ERROR")
         
         self.results['3d_visualization'] = visualization_results
         
@@ -229,15 +232,15 @@ Large Box (40x35x25),10"""
                 }
                 
                 if response.status_code == 200:
-                    self.log(f"✅ API {endpoint}: Working")
+                    self.log(f"[OK] API {endpoint}: Working")
                 elif response.status_code == 404:
-                    self.log(f"❌ API {endpoint}: Not found")
+                    self.log(f"[FAIL] API {endpoint}: Not found")
                 else:
-                    self.log(f"⚠️ API {endpoint}: Status {response.status_code}")
+                    self.log(f"[WARNING] API {endpoint}: Status {response.status_code}")
                     
             except Exception as e:
                 api_results[endpoint] = {'error': str(e)}
-                self.log(f"❌ API {endpoint}: Error - {e}", "ERROR")
+                self.log(f"[FAIL] API {endpoint}: Error - {e}", "ERROR")
         
         self.results['api_endpoints'] = api_results
         
@@ -300,7 +303,7 @@ Large Box (40x35x25),10"""
         high_count = sum(1 for issue in ux_issues if issue['severity'] == 'HIGH')
         
         self.log(f"🚨 Critical UX Issues: {critical_count}")
-        self.log(f"⚠️ High Priority UX Issues: {high_count}")
+        self.log(f"[WARNING] High Priority UX Issues: {high_count}")
         self.log(f"📊 Total UX Issues: {len(ux_issues)}")
         
         # Add to critical issues if severity is high enough
@@ -388,6 +391,10 @@ Large Box (40x35x25),10"""
         """Generate the final comprehensive test report"""
         self.log("=== GENERATING FINAL COMPREHENSIVE REPORT ===", "TEST")
         
+        # Remove emojis and unicode characters from text
+        def clean_text(text):
+            return ''.join(char for char in text if ord(char) < 128)
+        
         report = f"""
 {'='*80}
 TRUCKOPTI FINAL COMPREHENSIVE TEST REPORT
@@ -398,14 +405,14 @@ EXECUTIVE SUMMARY:
 TruckOpti is a 3D truck loading optimization platform with solid core functionality
 but significant user experience issues that need immediate attention.
 
-OVERALL GRADE: {self.results['overall_assessment']['grade']}
-Total Score: {self.results['overall_assessment']['total_score']}/100
+OVERALL GRADE: {self.results.get('overall_assessment', {}).get('grade', 'Not Assessed')}
+Total Score: {self.results.get('overall_assessment', {}).get('total_score', 0)}/100
 
 DETAILED SCORES:
 {'='*40}
 """
         
-        for category, score in self.results['overall_assessment']['scores'].items():
+        for category, score in self.results.get('overall_assessment', {}).get('scores', {}).items():
             max_score = {'functionality': 25, 'user_experience': 25, 'performance': 20, 'completeness': 20, 'reliability': 10}[category]
             percentage = (score / max_score) * 100
             report += f"{category.title()}: {score}/{max_score} ({percentage:.1f}%)\n"
@@ -416,15 +423,15 @@ FEATURE-BY-FEATURE ANALYSIS:
 {'='*40}
 
 1. ANALYTICS DASHBOARD:
-   Status: {'✅ FUNCTIONAL' if self.results['analytics_dashboard'].get('page_loads') else '❌ ISSUES'}
+   Status: {'[OK] FUNCTIONAL' if self.results['analytics_dashboard'].get('page_loads') else '[FAIL] ISSUES'}
    Charts/Visualizations: {self.results['analytics_dashboard'].get('canvas_elements', 0)} canvas elements
-   Interactive Features: {'✅' if self.results['analytics_dashboard'].get('has_interactive_elements') else '❌'}
-   Data Analysis: {'✅' if self.results['analytics_dashboard'].get('efficiency_metrics') else '❌'}
+   Interactive Features: {'[OK]' if self.results['analytics_dashboard'].get('has_interactive_elements') else '[FAIL]'}
+   Data Analysis: {'[OK]' if self.results['analytics_dashboard'].get('efficiency_metrics') else '[FAIL]'}
 
 2. BATCH PROCESSING & CSV UPLOAD:
-   Upload Form: {'✅' if self.results['batch_processing'].get('has_upload_form') else '❌'}
-   CSV Support: {'✅' if self.results['batch_processing'].get('accepts_csv') else '❌'}
-   Instructions: {'✅' if self.results['batch_processing'].get('has_instructions') else '❌'}
+   Upload Form: {'[OK]' if self.results['batch_processing'].get('has_upload_form') else '[FAIL]'}
+   CSV Support: {'[OK]' if self.results['batch_processing'].get('accepts_csv') else '[FAIL]'}
+   Instructions: {'[OK]' if self.results['batch_processing'].get('has_instructions') else '[FAIL]'}
    Overall: {sum(self.results['batch_processing'].values())}/5 features working
 
 3. 3D VISUALIZATION:"""
@@ -446,7 +453,7 @@ FEATURE-BY-FEATURE ANALYSIS:
 
 5. API ENDPOINTS:
    Working APIs: {sum(1 for r in self.results['api_endpoints'].values() if r.get('status_code') == 200)}/{len(self.results['api_endpoints'])}
-   JSON Support: {'✅' if any(r.get('returns_json') for r in self.results['api_endpoints'].values()) else '❌'}
+   JSON Support: {'[OK]' if any(r.get('returns_json') for r in self.results['api_endpoints'].values()) else '[FAIL]'}
 
 CRITICAL ISSUES REQUIRING IMMEDIATE ATTENTION:
 {'='*50}
@@ -474,36 +481,36 @@ Impact: {issue['impact']}
 IMMEDIATE ACTION PLAN:
 {'='*25}
 
-🔴 CRITICAL (Fix within 1-2 days):
+CRITICAL (Fix within 1-2 days):
 1. Fix edit functionality - ensure forms pre-populate with existing data
 2. Resolve "Recommend Truck for Cartons" functionality
 3. Fix menu overlap and visibility issues
 
-🟡 HIGH PRIORITY (Fix within 1 week):
+HIGH PRIORITY (Fix within 1 week):
 1. Implement proper 3D visualization on optimization pages
 2. Add truck category management functionality
 3. Improve calculator to show best truck recommendations with visuals
 4. Fix chart overlapping issues on dashboard
 
-🟢 MEDIUM PRIORITY (Fix within 2 weeks):
+MEDIUM PRIORITY (Fix within 2 weeks):
 1. Add export functionality (CSV, PDF, Excel) to all data tables
 2. Implement search and filtering on listing pages
 3. Add bulk operations for data management
 4. Improve responsive design for mobile devices
 
-🔵 LOW PRIORITY (Fix within 1 month):
+LOW PRIORITY (Fix within 1 month):
 1. Enhance API endpoints with full REST capabilities
 2. Add advanced analytics and reporting features
 3. Implement real-time updates and WebSocket integration
 
 STRENGTHS TO MAINTAIN:
 {'='*25}
-✅ Core optimization algorithms are functional and fast
-✅ Professional UI design with Bootstrap integration
-✅ Good performance - fast loading times
-✅ Comprehensive data models for trucks and cartons
-✅ Basic CRUD operations work correctly
-✅ Clean codebase structure
+[OK] Core optimization algorithms are functional and fast
+[OK] Professional UI design with Bootstrap integration
+[OK] Good performance - fast loading times
+[OK] Comprehensive data models for trucks and cartons
+[OK] Basic CRUD operations work correctly
+[OK] Clean codebase structure
 
 FINAL RECOMMENDATIONS:
 {'='*25}
@@ -531,7 +538,7 @@ RECOMMENDED TEAM: 1-2 developers working on UX fixes and feature completion
 """
         
         # Save the comprehensive report
-        with open('/workspaces/Truck_Opti/FINAL_COMPREHENSIVE_TEST_REPORT.md', 'w') as f:
+        with open('D:/Github/Truck_Opti/FINAL_COMPREHENSIVE_TEST_REPORT.md', 'w') as f:
             f.write(report)
         
         print(report)
@@ -539,7 +546,7 @@ RECOMMENDED TEAM: 1-2 developers working on UX fixes and feature completion
     
     def run_all_final_tests(self):
         """Run all final comprehensive tests"""
-        print("🚛 FINAL COMPREHENSIVE TRUCCOPTI TESTING")
+        print("[Truck Testing] FINAL COMPREHENSIVE TRUCCOPTI TESTING")
         print("="*80)
         
         start_time = time.time()
@@ -554,15 +561,36 @@ RECOMMENDED TEAM: 1-2 developers working on UX fixes and feature completion
             self.calculate_overall_grade()
             
         except Exception as e:
+            import traceback
             self.log(f"Critical error during final testing: {str(e)}", "ERROR")
+            self.log(traceback.format_exc(), "TRACEBACK")
             self.results['critical_issues'].append(f"Critical test failure: {str(e)}")
+            # Ensure minimal results are available
+            if 'overall_assessment' not in self.results:
+                self.results['overall_assessment'] = {
+                    'scores': {
+                        'functionality': 0,
+                        'user_experience': 0,
+                        'performance': 0,
+                        'completeness': 0,
+                        'reliability': 0
+                    },
+                    'total_score': 0,
+                    'grade': 'F (Test Failure)'
+                }
         
         end_time = time.time()
         total_time = end_time - start_time
         
-        self.log(f"🎉 Final comprehensive testing completed in {total_time:.2f} seconds")
+        self.log(f"[COMPLETE] Final comprehensive testing completed in {total_time:.2f} seconds")
         
-        return self.generate_final_comprehensive_report()
+        try:
+            return self.generate_final_comprehensive_report()
+        except Exception as e:
+            import traceback
+            print(f"Error generating report: {str(e)}")
+            print(traceback.format_exc())
+            return "Report generation failed"
 
 
 if __name__ == "__main__":

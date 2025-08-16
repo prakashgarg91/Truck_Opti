@@ -340,9 +340,8 @@ function displayRouteDetails(route) {
 }
 
 function editRoute(routeId) {
-    // For now, redirect to add route page with edit mode
-    // In a real implementation, you'd create an edit_route route
-    alert(`Edit functionality for route ${routeId} would redirect to edit form`);
+    // Redirect to the edit route route
+    window.location.href = `/edit-route/${routeId}`;
 }
 
 function editRouteFromModal() {
@@ -353,8 +352,23 @@ function editRouteFromModal() {
 
 function deleteRoute(routeId, routeName) {
     if (confirm(`Are you sure you want to delete route "${routeName}"? This action cannot be undone.`)) {
-        // In a real implementation, you'd make an API call to delete the route
-        alert(`Delete functionality for route ${routeId} would be implemented here`);
+        // Create a form to submit the DELETE request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/delete-route/${routeId}`;
+        
+        // Add CSRF token if needed (Flask-WTF)
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 </script>

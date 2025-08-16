@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Add Route - TruckOpti{% endblock %}
+{% block title %}
+    {% if route %}Edit Route - TruckOpti{% else %}Add Route - TruckOpti{% endif %}
+{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{{ url_for('main.routes') }}">Routes</a></li>
-<li class="breadcrumb-item active">Add Route</li>
+<li class="breadcrumb-item active">
+    {% if route %}Update Route{% else %}Add Route{% endif %}
+</li>
 {% endblock %}
 
 {% block content %}
@@ -13,8 +17,16 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 class="mb-1">Add New Route</h1>
-                    <p class="text-muted mb-0">Create a new delivery route with distance and cost information</p>
+                    <h1 class="mb-1">
+                        {% if route %}Update Route{% else %}Add New Route{% endif %}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% if route %}
+                        Update route details for your delivery logistics
+                        {% else %}
+                        Create a new delivery route with distance and cost information
+                        {% endif %}
+                    </p>
                 </div>
                 <div>
                     <a href="{{ url_for('main.routes') }}" class="btn btn-outline-secondary">
@@ -39,7 +51,8 @@
                                     <i class="bi bi-signpost me-1"></i>Route Name *
                                 </label>
                                 <input type="text" class="form-control" id="name" name="name" 
-                                       placeholder="e.g., Delhi to Mumbai Express" required>
+                                       placeholder="e.g., Delhi to Mumbai Express" 
+                                       {% if route %}value="{{ route.name }}"{% endif %} required>
                                 <div class="form-text">Enter a descriptive name for this route</div>
                             </div>
                         </div>
@@ -50,7 +63,8 @@
                                     <i class="bi bi-geo-alt me-1 text-success"></i>Origin *
                                 </label>
                                 <input type="text" class="form-control" id="origin" name="origin" 
-                                       placeholder="e.g., Delhi" required>
+                                       placeholder="e.g., Delhi" 
+                                       {% if route %}value="{{ route.origin }}"{% endif %} required>
                                 <div class="form-text">Starting point of the route</div>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -58,7 +72,8 @@
                                     <i class="bi bi-geo-alt-fill me-1 text-danger"></i>Destination *
                                 </label>
                                 <input type="text" class="form-control" id="destination" name="destination" 
-                                       placeholder="e.g., Mumbai" required>
+                                       placeholder="e.g., Mumbai" 
+                                       {% if route %}value="{{ route.destination }}"{% endif %} required>
                                 <div class="form-text">End point of the route</div>
                             </div>
                         </div>
@@ -69,7 +84,8 @@
                                     <i class="bi bi-speedometer2 me-1"></i>Distance (km) *
                                 </label>
                                 <input type="number" class="form-control" id="distance_km" name="distance_km" 
-                                       step="0.1" min="0" placeholder="e.g., 1400" required>
+                                       step="0.1" min="0" placeholder="e.g., 1400" 
+                                       {% if route %}value="{{ route.distance_km }}"{% endif %} required>
                                 <div class="form-text">Total distance in kilometers</div>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -77,7 +93,8 @@
                                     <i class="bi bi-clock me-1"></i>Estimated Time (hours)
                                 </label>
                                 <input type="number" class="form-control" id="estimated_time_hours" name="estimated_time_hours" 
-                                       step="0.5" min="0" placeholder="e.g., 22">
+                                       step="0.5" min="0" placeholder="e.g., 22" 
+                                       {% if route %}value="{{ route.estimated_time_hours }}"{% endif %}>
                                 <div class="form-text">Expected travel time in hours</div>
                             </div>
                         </div>
@@ -88,7 +105,8 @@
                                     <i class="bi bi-cash-coin me-1"></i>Toll Cost (₹)
                                 </label>
                                 <input type="number" class="form-control" id="toll_cost" name="toll_cost" 
-                                       step="0.01" min="0" placeholder="e.g., 2500">
+                                       step="0.01" min="0" placeholder="e.g., 2500" 
+                                       {% if route %}value="{{ route.toll_cost }}"{% endif %}>
                                 <div class="form-text">Total toll charges for the route</div>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -96,7 +114,8 @@
                                     <i class="bi bi-fuel-pump me-1"></i>Fuel Cost (₹)
                                 </label>
                                 <input type="number" class="form-control" id="fuel_cost" name="fuel_cost" 
-                                       step="0.01" min="0" placeholder="e.g., 8400">
+                                       step="0.01" min="0" placeholder="e.g., 8400" 
+                                       {% if route %}value="{{ route.fuel_cost }}"{% endif %}>
                                 <div class="form-text">Estimated fuel cost for the route</div>
                             </div>
                         </div>
@@ -141,7 +160,8 @@
                                         <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Form
                                     </button>
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="bi bi-check-circle me-2"></i>Add Route
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        {% if route %}Update Route{% else %}Add Route{% endif %}
                                     </button>
                                 </div>
                             </div>

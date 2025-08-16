@@ -1,3 +1,7 @@
 sale_order_number,carton_name,carton_code,quantity,customer_name,delivery_address,order_date
-SO001,LED TV 32,TV32,25,Customer A,Mumbai Maharashtra,2025-08-12
-SO002,LED TV 32,TV32,75,Customer B,Mumbai Maharashtra,2025-08-12
+SO001,Small Box,SB001,5,ABC Electronics,123 Business St Mumbai,2025-08-14
+SO001,Medium Box,MB001,3,ABC Electronics,123 Business St Mumbai,2025-08-14
+SO002,Large Box,LB001,8,XYZ Corporation,456 Corporate Ave Delhi,2025-08-14
+SO002,Heavy Box,HB001,4,XYZ Corporation,456 Corporate Ave Delhi,2025-08-14
+SO003,Small Box,SB001,15,Tech Solutions Ltd,789 Technology Park Bangalore,2025-08-14
+SO003,Medium Box,MB001,10,Tech Solutions Ltd,789 Technology Park Bangalore,2025-08-14

@@ -33,6 +33,14 @@ class TruckRecommendation:
     cost_efficiency: float
     reasoning: List[str]
 
+class MLSpaceOptimizationEngine:
+    def __init__(self):
+        self.packing_ai = PackingAI()
+    
+    def recommend_cartons_for_remaining_space(self, truck, packed_cartons, remaining_volume, optimization_goal='space_utilization'):
+        return packing_ai.recommend_cartons_for_remaining_space(truck, packed_cartons, remaining_volume, optimization_goal)
+
+
 class PackingAI:
     """AI-powered packing optimization and prediction system"""
     
@@ -359,6 +367,75 @@ class PackingAI:
         
         logging.info(f"AI learning updated with new packing result for {truck_type}")
     
+    def recommend_cartons_for_remaining_space(self, truck, packed_cartons, remaining_volume, optimization_goal='space_utilization'):
+        """
+        AI-powered recommendation for filling remaining truck space
+        Args:
+            truck: Truck object
+            packed_cartons: Already packed cartons
+            remaining_volume: Remaining volume in cubic cm
+            optimization_goal: Strategy for recommending additional cartons
+        """
+        from app.packer import INDIAN_CARTONS
+        
+        # Analyze current packing state
+        total_packed_items = len(packed_cartons)
+        packed_items_volume = sum(
+            carton.length * carton.width * carton.height 
+            for carton in packed_cartons
+        )
+        current_volume_utilization = packed_items_volume / (truck.length * truck.width * truck.height)
+        
+        # Candidate cartons for recommendation
+        candidate_cartons = []
+        for carton_type in INDIAN_CARTONS:
+            carton_volume = carton_type['length'] * carton_type['width'] * carton_type['height']
+            
+            # Skip if carton is too large for remaining space
+            if carton_volume > remaining_volume:
+                continue
+            
+            # Calculate how many of these cartons could fit
+            max_possible = int(remaining_volume // carton_volume)
+            
+            # AI-based scoring for recommendations
+            score_factors = {
+                'volume_fit': min(1, carton_volume / remaining_volume),
+                'current_utilization_boost': abs(current_volume_utilization - 0.85),  # prefer filling to ~85%
+                'weight_balance': carton_type.get('weight', 5) / 100,  # Encourage moderate weight
+                'value_density': carton_type.get('value', 0) / 1000  # Optional value factor
+            }
+            
+            # Different optimization strategies
+            if optimization_goal == 'space_utilization':
+                score = (score_factors['volume_fit'] * 0.5 + 
+                         score_factors['current_utilization_boost'] * 0.3 + 
+                         score_factors['weight_balance'] * 0.2)
+            elif optimization_goal == 'cost_value':
+                score = (score_factors['value_density'] * 0.5 + 
+                         score_factors['volume_fit'] * 0.3 + 
+                         score_factors['weight_balance'] * 0.2)
+            else:  # balanced
+                score = (score_factors['volume_fit'] * 0.4 + 
+                         score_factors['current_utilization_boost'] * 0.3 + 
+                         score_factors['weight_balance'] * 0.2 + 
+                         score_factors['value_density'] * 0.1)
+            
+            candidate_cartons.append({
+                'carton_type': carton_type['type'],
+                'dimensions': [carton_type['length'], carton_type['width'], carton_type['height']],
+                'volume_per_carton': carton_volume,
+                'max_possible': max_possible,
+                'weight_per_carton': carton_type.get('weight', 0),
+                'score': score
+            })
+        
+        # Sort by recommendation score and then max possible quantity
+        candidate_cartons.sort(key=lambda x: (x['score'], x['max_possible']), reverse=True)
+        
+        # Return top 5 recommendations
+        return candidate_cartons[:5]
+
     def get_performance_insights(self) -> Dict:
         """
         Generate insights from historical performance data
@@ -408,3 +485,4 @@ class PackingAI:
 
 # Global AI instance
 packing_ai = PackingAI()
+ml_space_optimizer = MLSpaceOptimizationEngine()

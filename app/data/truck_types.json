@@ -1,0 +1,90 @@
+[
+  {
+    "name": "Tata Ace (Mini)",
+    "length": 180,
+    "width": 120,
+    "height": 120,
+    "max_weight": 750,
+    "cost_per_km": 12
+  },
+  {
+    "name": "Mahindra Jeeto",
+    "length": 200,
+    "width": 140,
+    "height": 140,
+    "max_weight": 700,
+    "cost_per_km": 14
+  },
+  {
+    "name": "Ashok Leyland Dost",
+    "length": 250,
+    "width": 150,
+    "height": 150,
+    "max_weight": 1250,
+    "cost_per_km": 18
+  },
+  {
+    "name": "Eicher 14 ft",
+    "length": 427,
+    "width": 183,
+    "height": 213,
+    "max_weight": 10000,
+    "cost_per_km": 25
+  },
+  {
+    "name": "Tata 14 ft",
+    "length": 427,
+    "width": 183,
+    "height": 213,
+    "max_weight": 10000,
+    "cost_per_km": 26
+  },
+  {
+    "name": "Ashok Leyland 17 ft",
+    "length": 518,
+    "width": 200,
+    "height": 230,
+    "max_weight": 12000,
+    "cost_per_km": 30
+  },
+  {
+    "name": "Eicher 17 ft",
+    "length": 518,
+    "width": 200,
+    "height": 230,
+    "max_weight": 12000,
+    "cost_per_km": 31
+  },
+  {
+    "name": "BharatBenz 19 ft",
+    "length": 579,
+    "width": 213,
+    "height": 244,
+    "max_weight": 14000,
+    "cost_per_km": 35
+  },
+  {
+    "name": "Tata 19 ft",
+    "length": 579,
+    "width": 213,
+    "height": 244,
+    "max_weight": 14000,
+    "cost_per_km": 36
+  },
+  {
+    "name": "Ashok Leyland 20 ft",
+    "length": 610,
+    "width": 244,
+    "height": 244,
+    "max_weight": 16000,
+    "cost_per_km": 40
+  },
+  {
+    "name": "Eicher 32 ft XL",
+    "length": 975,
+    "width": 244,
+    "height": 244,
+    "max_weight": 25000,
+    "cost_per_km": 55
+  }
+]

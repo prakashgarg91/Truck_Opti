@@ -8,6 +8,9 @@ import time
 from threading import Timer
 from app import create_app
 
+# Version info for builds  
+APP_VERSION = "3.3"
+
 def find_available_port(start_port=5000):
     port = start_port
     while True:

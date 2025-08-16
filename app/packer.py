@@ -996,6 +996,85 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
     
     return diverse_combinations
 
+class SpaceOptimizer:
+    def __init__(self, truck=None, cartons=None):
+        self.truck = truck
+        self.cartons = cartons or []
+        self.packer = Packer()
+    
+    def pack_cartons(self, truck, cartons):
+        """Pack cartons into a single truck"""
+        from py3dbp import Bin, Item, Packer
+        from decimal import Decimal, InvalidOperation
+        import math
+
+        # Handle infinite or None max_weight
+        max_weight = 10000 if math.isinf(truck.max_weight or float('inf')) else truck.max_weight
+
+        # Create a Bin object from truck parameters
+        bin_obj = Bin(
+            name=truck.name if hasattr(truck, 'name') else 'TruckBin',
+            width=truck.width,
+            height=truck.height,
+            depth=truck.length,
+            max_weight=max_weight
+        )
+
+        packer = Packer()
+        packer.add_bin(bin_obj)
+        
+        for carton in cartons:
+            packer.add_item(Item(
+                carton.name, 
+                carton.width,  # Note the order of dimensions
+                carton.height, 
+                carton.length,  # py3dbp expects different dimension order
+                carton.weight or 0
+            ))
+        
+        packer.pack()
+        
+        # Convert packed cartons if possible
+        return packer.bins[0].items if packer.bins and packer.bins[0].items else []
+    
+    def calculate_remaining_volume(self, truck, packed_cartons):
+        """Calculate remaining volume after packing"""
+        total_truck_volume = truck.width * truck.height * truck.depth
+        total_packed_volume = sum(
+            carton.width * carton.height * carton.depth 
+            for carton in packed_cartons
+        )
+        return max(0, total_truck_volume - total_packed_volume)
+    
+    def optimize_remaining_space(self, truck, packed_cartons, remaining_volume):
+        """Generate recommendations for remaining space"""
+        # Analyze remaining volume and suggest optimal carton sizes
+        remaining_space_suggestions = []
+        
+        # Basic heuristics for generating recommendations
+        candidate_cartons = INDIAN_CARTONS  # Use predefined carton types
+        
+        for carton_type in candidate_cartons:
+            carton_volume = carton_type['length'] * carton_type['width'] * carton_type['height']
+            
+            # Check if carton can potentially fit
+            if carton_volume <= remaining_volume:
+                max_cartons_possible = int(remaining_volume // carton_volume)
+                
+                if max_cartons_possible > 0:
+                    remaining_space_suggestions.append({
+                        'carton_type': carton_type['type'],
+                        'dimensions': [carton_type['length'], carton_type['width'], carton_type['height']],
+                        'max_possible': max_cartons_possible,
+                        'volume_per_carton': carton_volume,
+                        'weight_per_carton': carton_type.get('weight', 0)
+                    })
+        
+        # Sort by most efficient space utilization
+        remaining_space_suggestions.sort(key=lambda x: x['max_possible'], reverse=True)
+        
+        return remaining_space_suggestions[:5]  # Top 5 recommendations
+
 def estimate_packing_time(num_cartons, num_trucks):
     """
     Estimate packing computation time based on dataset size
