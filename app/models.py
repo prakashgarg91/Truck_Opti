@@ -1,5 +1,9 @@
-from . import db
 from datetime import datetime
+import json
+from flask_sqlalchemy import SQLAlchemy
+
+# Import db from the module where it's defined
+from app import db
 
 class TruckType(db.Model):
     def as_dict(self, include_columns=None, exclude_columns=None):

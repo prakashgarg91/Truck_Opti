@@ -1,0 +1,142 @@
+2025-08-16 19:09:17,883 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-16 19:09:17,883 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 19:09:17,884 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:09:18,077 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:09:18,080 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-16 19:09:20,293 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:09:20] "GET / HTTP/1.1" 200 -
+2025-08-16 19:09:20,407 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:09:20,407 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:09:20] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:09:20,476 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:09:20] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-16 19:10:25,025 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-16 19:10:25,025 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 19:10:25,026 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:10:25,189 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:10:25,190 - werkzeug - INFO -  * Debugger PIN: 140-579-828
+2025-08-16 19:10:27,250 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:10:27] "GET / HTTP/1.1" 200 -
+2025-08-16 19:10:27,342 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:10:27,343 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:10:27] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:10:27,413 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:10:27] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-16 19:10:50,729 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:10:50] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-16 19:10:51,273 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:10:51,273 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:10:51] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:11:10,129 - truckopti - INFO - POST /api/trucks - adding truck: a
+2025-08-16 19:11:10,129 - truckopti - INFO - Successfully added truck: a
+2025-08-16 19:11:10,129 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:11:10] "POST /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:11:10,131 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:11:10,131 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:11:10] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:11:17,162 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:11:17] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-16 19:11:22,073 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:11:22] "[31m[1mPOST /api/optimize HTTP/1.1[0m" 400 -
+2025-08-16 19:12:40,878 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:12:40] "GET / HTTP/1.1" 200 -
+2025-08-16 19:12:40,886 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:12:40,887 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:12:40] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:12:40,905 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:12:40] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-16 19:12:52,155 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:12:52] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-16 19:22:47,053 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-16 19:22:47,053 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 19:22:47,054 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:22:47,257 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:22:47,259 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-16 19:22:49,113 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:22:49] "GET / HTTP/1.1" 200 -
+2025-08-16 19:22:49,122 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:22:49,123 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:22:49] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:22:49,193 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:22:49] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-16 19:24:16,789 - werkzeug - INFO -  * Detected change in 'D:\\Github\\Truck_Opti\\test_comprehensive_screenshot_verification.py', reloading
+2025-08-16 19:24:16,829 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:24:17,060 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:24:17,063 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-16 19:26:15,450 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-16 19:26:15,450 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 19:26:15,450 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:26:15,634 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:26:15,636 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-16 19:26:17,502 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:26:17] "GET / HTTP/1.1" 200 -
+2025-08-16 19:26:17,511 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:26:17,511 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:26:17] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:26:30,524 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:26:30] "GET / HTTP/1.1" 200 -
+2025-08-16 19:26:30,537 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:26:30,537 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:26:30] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:26:30,553 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:26:30] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-16 19:26:48,702 - truckopti - INFO - GET /api/cartons - retrieving carton list
+2025-08-16 19:26:48,702 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:26:48] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-16 19:45:40,353 - truckopti - INFO - GET /api/cartons - retrieving carton list
+2025-08-16 19:45:40,354 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:45:40] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-16 19:45:44,346 - truckopti - INFO - GET /api/cartons - retrieving carton list
+2025-08-16 19:45:44,346 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:45:44] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-16 19:45:44,673 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:45:44,673 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:45:44] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:46:03,697 - werkzeug - INFO -  * Detected change in 'D:\\Github\\Truck_Opti\\simple_truckopti_fixed.py', reloading
+2025-08-16 19:46:03,740 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:46:03,948 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:46:03,950 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-16 19:46:24,774 - truckopti - INFO - GET /api/cartons - retrieving carton list
+2025-08-16 19:46:24,774 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:46:24] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-16 19:46:25,337 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:46:25,337 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:46:25] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:46:33,503 - werkzeug - INFO -  * Detected change in 'D:\\Github\\Truck_Opti\\simple_truckopti_fixed.py', reloading
+2025-08-16 19:46:33,533 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:46:33,746 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:46:33,748 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-16 19:46:52,774 - werkzeug - INFO -  * Detected change in 'D:\\Github\\Truck_Opti\\simple_truckopti_fixed.py', reloading
+2025-08-16 19:46:52,797 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:46:53,023 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:46:53,025 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-16 19:47:18,347 - werkzeug - INFO -  * Detected change in 'D:\\Github\\Truck_Opti\\simple_truckopti_fixed.py', reloading
+2025-08-16 19:47:18,369 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:47:18,570 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:47:18,572 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-16 19:47:27,068 - werkzeug - INFO -  * Detected change in 'D:\\Github\\Truck_Opti\\simple_truckopti_fixed.py', reloading
+2025-08-16 19:47:27,094 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 19:47:27,301 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 19:47:27,303 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-16 19:47:42,679 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:47:42] "GET / HTTP/1.1" 200 -
+2025-08-16 19:47:42,688 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 19:47:42,688 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:47:42] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 19:47:42,707 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 19:47:42] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-16 21:08:30,615 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-16 21:08:30,616 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 21:08:30,616 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 21:08:30,785 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 21:08:30,788 - werkzeug - INFO -  * Debugger PIN: 885-957-602
+2025-08-16 21:11:07,540 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-16 21:11:07,540 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 21:11:07,540 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 21:11:07,698 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 21:11:07,700 - werkzeug - INFO -  * Debugger PIN: 282-133-881
+2025-08-16 21:11:09,593 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 21:11:09] "GET / HTTP/1.1" 200 -
+2025-08-16 21:11:09,604 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 21:11:09,604 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 21:11:09] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-16 21:11:32,304 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-16 21:11:32,304 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 21:11:32,305 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 21:11:32,463 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 21:11:32,465 - werkzeug - INFO -  * Debugger PIN: 430-307-680
+2025-08-16 21:11:34,353 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 21:11:34] "GET / HTTP/1.1" 200 -
+2025-08-16 21:11:34,362 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-16 21:11:34,362 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 21:11:34] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-17 13:37:04,853 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-17 13:37:04,853 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-17 13:37:04,853 - werkzeug - INFO -  * Restarting with stat
+2025-08-17 13:37:05,042 - werkzeug - WARNING -  * Debugger is active!
+2025-08-17 13:37:05,044 - werkzeug - INFO -  * Debugger PIN: 832-061-214
+2025-08-17 13:37:06,910 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:37:06] "GET / HTTP/1.1" 200 -
+2025-08-17 13:37:06,920 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-17 13:37:06,920 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:37:06] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-17 13:37:06,921 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:37:06] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-17 13:37:06,995 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:37:06] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-17 13:37:18,463 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:37:18] "GET / HTTP/1.1" 200 -
+2025-08-17 13:37:18,476 - truckopti - INFO - GET /api/trucks - retrieving truck list
+2025-08-17 13:37:18,476 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:37:18] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-17 13:37:18,476 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:37:18] "GET /api/trucks HTTP/1.1" 200 -
+2025-08-17 13:37:18,494 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:37:18] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-17 13:37:36,993 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:37:36] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-17 13:38:15,267 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:38:15] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-17 13:38:29,544 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:38:29] "GET /api/cartons HTTP/1.1" 200 -
+2025-08-17 13:38:36,077 - werkzeug - INFO - 127.0.0.1 - - [17/Aug/2025 13:38:36] "GET /api/cartons HTTP/1.1" 200 -

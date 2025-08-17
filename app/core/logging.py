@@ -5,6 +5,29 @@ from pathlib import Path
 from logging.handlers import RotatingFileHandler
 
 
+def get_logger(name: str = 'TruckOpti') -> logging.Logger:
+    """Get a logger instance"""
+    return logging.getLogger(name)
+
+
+class PerformanceLogger:
+    """Simple performance logger"""
+    
+    def __init__(self):
+        self.logger = get_logger('Performance')
+    
+    def log_operation(self, operation: str, duration: float, success: bool = True, details: dict = None):
+        """Log operation performance"""
+        status = "SUCCESS" if success else "FAILED"
+        self.logger.info(f"Operation {operation} {status} in {duration:.3f}s", extra=details or {})
+
+
+# Global instances
+performance_logger = PerformanceLogger()
+business_logger = get_logger('Business')
+security_logger = get_logger('Security')
+
+
 def setup_logging(log_level='INFO', log_dir=None):
     """
     Configure logging for the application.

@@ -1,20 +1,21 @@
 """
-Security Middleware
-Enterprise-level security components for authentication, authorization, and protection
+Security Middleware - Enhanced Security Implementation
+Enterprise-grade security middleware with OWASP compliance
 """
 
+import re
 import time
 import hashlib
 import secrets
-from typing import Dict, Any, Optional
-from flask import request, session, abort, g, current_app
+from typing import Dict, List, Optional, Callable, Any
 from functools import wraps
-from collections import defaultdict, deque
 from datetime import datetime, timedelta
+from collections import defaultdict, deque
+from flask import request, jsonify, g, current_app, session, abort
 import logging
 
-from app.core.logging import security_logger
-from app.exceptions import AuthenticationError, AuthorizationError, ValidationError
+from ..core.logging import get_logger, security_logger
+from ..exceptions.domain import SecurityViolationError, AuthenticationError, AuthorizationError, ValidationError
 
 
 class SecurityMiddleware:

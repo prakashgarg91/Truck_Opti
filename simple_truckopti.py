@@ -9,6 +9,8 @@ import sys
 import json
 import webbrowser
 import socket
+import logging
+import traceback
 from datetime import datetime
 from threading import Timer
 from flask import Flask, render_template_string, request, jsonify
@@ -309,11 +311,45 @@ class SpaceOptimizer:
         return sorted(suggestions, key=lambda s: s['total_value'], reverse=True)
 
 # =============================================================================
+# ERROR LOGGING SETUP
+# =============================================================================
+
+def setup_logging():
+    """Setup comprehensive logging for error tracking and improvement"""
+    # Create logs directory if it doesn't exist
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler('logs/truckopti.log'),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+    
+    # Create specific loggers
+    app_logger = logging.getLogger('truckopti')
+    error_logger = logging.getLogger('errors')
+    
+    return app_logger, error_logger
+
+def log_error(error_logger, error, context=""):
+    """Log errors with full context for debugging"""
+    error_logger.error(f"ERROR in {context}: {str(error)}")
+    error_logger.error(f"Traceback: {traceback.format_exc()}")
+
+# =============================================================================
 # FLASK APPLICATION
 # =============================================================================
 
 app = Flask(__name__)
 app.secret_key = 'truckopti_simple_2025'
+
+# Setup logging
+app_logger, error_logger = setup_logging()
 
 # Global data storage
 trucks_db = []
@@ -631,15 +667,15 @@ HTML_TEMPLATE = '''
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚛 TruckOpti</h1>
+            <h1>TruckOpti</h1>
             <p>Smart Truck Loading Optimization with Advanced LAFF Algorithm</p>
         </div>
         
         <div class="main-card">
             <div class="tabs">
-                <button class="tab active" onclick="showTab('trucks')">🚛 Manage Trucks</button>
-                <button class="tab" onclick="showTab('cartons')">📦 Manage Cartons</button>
-                <button class="tab" onclick="showTab('optimize')">🎯 Smart Optimization</button>
+                <button class="tab active" onclick="showTab('trucks')">Manage Trucks</button>
+                <button class="tab" onclick="showTab('cartons')">Manage Cartons</button>
+                <button class="tab" onclick="showTab('optimize')">Smart Optimization</button>
             </div>
             
             <!-- Trucks Tab -->
@@ -746,6 +782,23 @@ HTML_TEMPLATE = '''
                 <h2>Smart Truck Recommendation</h2>
                 
                 <div class="optimization-section">
+                    <!-- Carton Selection Section -->
+                    <div class="carton-selection-section" style="margin-bottom: 20px;">
+                        <h3>Select Cartons to Pack</h3>
+                        <div id="available_cartons_list" style="margin-bottom: 15px;">
+                            <!-- Carton selection will be populated here -->
+                        </div>
+                        <button class="btn btn-primary" onclick="addSelectedCartons()">Add Selected Cartons</button>
+                    </div>
+                    
+                    <!-- Selected Cartons Display -->
+                    <div class="selected-cartons-section" style="margin-bottom: 20px;">
+                        <h3>Selected Cartons for Optimization</h3>
+                        <div id="selected_cartons_display">
+                            <p style="color: #666; font-style: italic;">No cartons selected. Please select cartons above to enable optimization.</p>
+                        </div>
+                    </div>
+                    
                     <div class="form-row">
                         <div>
                             <label>Optimization Strategy:</label>
@@ -761,8 +814,8 @@ HTML_TEMPLATE = '''
                         </div>
                     </div>
                     
-                    <button class="btn btn-success" onclick="optimizeLoading()" style="margin-top: 15px;">
-                        🎯 Find Best Truck & Optimize Loading
+                    <button class="btn btn-success" onclick="optimizeLoading()" style="margin-top: 15px;" id="optimize_button" disabled>
+                        Find Best Truck & Optimize Loading
                     </button>
                 </div>
                 
@@ -877,7 +930,10 @@ HTML_TEMPLATE = '''
                                 <p><strong>Volume:</strong> ${(truck.length * truck.width * truck.height / 1000000).toFixed(2)} m³</p>
                                 <p><strong>Max Weight:</strong> ${truck.max_weight} kg</p>
                                 <p><strong>Cost:</strong> ₹${truck.cost_per_km}/km</p>
-                                <button class="btn btn-danger" onclick="deleteTruck(${index})">Remove</button>
+                                <div style="margin-top: 15px;">
+                                    <button class="btn" onclick="editTruck(${index})" style="background: #28a745; margin-right: 10px;">Edit</button>
+                                    <button class="btn btn-danger" onclick="deleteTruck(${index})">Remove</button>
+                                </div>
                             </div>
                         `;
                     });
@@ -907,10 +963,11 @@ HTML_TEMPLATE = '''
                                     <strong>${carton.name}</strong> (${carton.type})
                                     <br>
                                     <small>${carton.length}×${carton.width}×${carton.height} cm, ${carton.weight} kg, ₹${carton.value}</small>
-                                    <br>
-                                    <small>Quantity: ${carton.quantity}</small>
                                 </div>
-                                <button class="btn btn-danger" onclick="deleteCarton(${index})">Remove</button>
+                                <div>
+                                    <button class="btn" onclick="editCarton(${index})" style="background: #28a745; margin-right: 10px; padding: 8px 12px; font-size: 12px;">Edit</button>
+                                    <button class="btn btn-danger" onclick="deleteCarton(${index})" style="padding: 8px 12px; font-size: 12px;">Remove</button>
+                                </div>
                             </div>
                         `;
                     });
@@ -951,9 +1008,202 @@ HTML_TEMPLATE = '''
             }
         }
         
+        async function editTruck(index) {
+            try {
+                const response = await fetch('/api/trucks');
+                const trucks = await response.json();
+                const truck = trucks[index];
+                
+                // Pre-fill form with current truck data
+                document.getElementById('truck_name').value = truck.name;
+                document.getElementById('truck_length').value = truck.length;
+                document.getElementById('truck_width').value = truck.width;
+                document.getElementById('truck_height').value = truck.height;
+                document.getElementById('truck_weight').value = truck.max_weight;
+                document.getElementById('truck_cost').value = truck.cost_per_km;
+                
+                // Change button to update mode
+                const form = document.querySelector('#trucks form');
+                form.onsubmit = async (event) => {
+                    event.preventDefault();
+                    await updateTruck(index);
+                };
+                
+                // Change button text
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Update Truck';
+                submitBtn.style.background = '#28a745';
+                
+                // Add cancel button
+                if (!form.querySelector('.cancel-btn')) {
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.type = 'button';
+                    cancelBtn.className = 'btn cancel-btn';
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.style.background = '#6c757d';
+                    cancelBtn.style.marginLeft = '10px';
+                    cancelBtn.onclick = () => {
+                        form.reset();
+                        form.onsubmit = addTruck;
+                        submitBtn.textContent = 'Add Truck';
+                        submitBtn.style.background = '';
+                        cancelBtn.remove();
+                    };
+                    submitBtn.parentNode.appendChild(cancelBtn);
+                }
+                
+                showAlert('Edit mode activated. Modify the truck details above.', 'success');
+                
+            } catch (error) {
+                showAlert('Error loading truck for editing: ' + error.message, 'error');
+            }
+        }
+        
+        async function updateTruck(index) {
+            const truck = {
+                name: document.getElementById('truck_name').value,
+                length: parseFloat(document.getElementById('truck_length').value),
+                width: parseFloat(document.getElementById('truck_width').value),
+                height: parseFloat(document.getElementById('truck_height').value),
+                max_weight: parseFloat(document.getElementById('truck_weight').value),
+                cost_per_km: parseFloat(document.getElementById('truck_cost').value)
+            };
+            
+            try {
+                const response = await fetch(`/api/trucks/${index}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(truck)
+                });
+                
+                if (response.ok) {
+                    showAlert('Truck updated successfully!', 'success');
+                    
+                    // Reset form
+                    const form = document.querySelector('#trucks form');
+                    form.reset();
+                    form.onsubmit = addTruck;
+                    
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Add Truck';
+                    submitBtn.style.background = '';
+                    
+                    const cancelBtn = form.querySelector('.cancel-btn');
+                    if (cancelBtn) cancelBtn.remove();
+                    
+                    loadTrucks();
+                } else {
+                    throw new Error('Failed to update truck');
+                }
+            } catch (error) {
+                showAlert('Error updating truck: ' + error.message, 'error');
+            }
+        }
+        
+        async function editCarton(index) {
+            try {
+                const response = await fetch('/api/cartons');
+                const cartons = await response.json();
+                const carton = cartons[index];
+                
+                // Pre-fill form with current carton data
+                document.getElementById('carton_name').value = carton.name;
+                document.getElementById('carton_length').value = carton.length;
+                document.getElementById('carton_width').value = carton.width;
+                document.getElementById('carton_height').value = carton.height;
+                document.getElementById('carton_weight').value = carton.weight;
+                document.getElementById('carton_value').value = carton.value;
+                document.getElementById('carton_quantity').value = 1; // Reset quantity for single edit
+                document.getElementById('carton_type').value = carton.type;
+                
+                // Change button to update mode
+                const form = document.querySelector('#cartons form');
+                form.onsubmit = async (event) => {
+                    event.preventDefault();
+                    await updateCarton(index);
+                };
+                
+                // Change button text
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Update Carton';
+                submitBtn.style.background = '#28a745';
+                
+                // Add cancel button
+                if (!form.querySelector('.cancel-btn')) {
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.type = 'button';
+                    cancelBtn.className = 'btn cancel-btn';
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.style.background = '#6c757d';
+                    cancelBtn.style.marginLeft = '10px';
+                    cancelBtn.onclick = () => {
+                        form.reset();
+                        form.onsubmit = addCarton;
+                        submitBtn.textContent = 'Add Cartons';
+                        submitBtn.style.background = '';
+                        cancelBtn.remove();
+                    };
+                    submitBtn.parentNode.appendChild(cancelBtn);
+                }
+                
+                showAlert('Edit mode activated. Modify the carton details above.', 'success');
+                
+            } catch (error) {
+                showAlert('Error loading carton for editing: ' + error.message, 'error');
+            }
+        }
+        
+        async function updateCarton(index) {
+            const carton = {
+                name: document.getElementById('carton_name').value,
+                length: parseFloat(document.getElementById('carton_length').value),
+                width: parseFloat(document.getElementById('carton_width').value),
+                height: parseFloat(document.getElementById('carton_height').value),
+                weight: parseFloat(document.getElementById('carton_weight').value),
+                value: parseFloat(document.getElementById('carton_value').value),
+                type: document.getElementById('carton_type').value
+            };
+            
+            try {
+                const response = await fetch(`/api/cartons/${index}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(carton)
+                });
+                
+                if (response.ok) {
+                    showAlert('Carton updated successfully!', 'success');
+                    
+                    // Reset form
+                    const form = document.querySelector('#cartons form');
+                    form.reset();
+                    form.onsubmit = addCarton;
+                    
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Add Cartons';
+                    submitBtn.style.background = '';
+                    
+                    const cancelBtn = form.querySelector('.cancel-btn');
+                    if (cancelBtn) cancelBtn.remove();
+                    
+                    loadCartons();
+                } else {
+                    throw new Error('Failed to update carton');
+                }
+            } catch (error) {
+                showAlert('Error updating carton: ' + error.message, 'error');
+            }
+        }
+        
         async function optimizeLoading() {
             const strategy = document.getElementById('optimization_strategy').value;
             const distance = parseFloat(document.getElementById('distance').value);
+            
+            // Check if cartons are selected
+            if (selectedCartons.length === 0) {
+                showAlert('Please select at least one carton for optimization!', 'error');
+                return;
+            }
             
             document.getElementById('loading').style.display = 'block';
             document.getElementById('results').innerHTML = '';
@@ -962,14 +1212,19 @@ HTML_TEMPLATE = '''
                 const response = await fetch('/api/optimize', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({strategy, distance})
+                    body: JSON.stringify({
+                        strategy, 
+                        distance, 
+                        selected_cartons: selectedCartons
+                    })
                 });
                 
                 if (response.ok) {
                     const results = await response.json();
                     displayResults(results);
                 } else {
-                    throw new Error('Optimization failed');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Optimization failed');
                 }
             } catch (error) {
                 showAlert('Error during optimization: ' + error.message, 'error');
@@ -1051,7 +1306,7 @@ HTML_TEMPLATE = '''
             
             if (results.packed_cartons && results.packed_cartons.length > 0) {
                 html += `
-                    <h4>📦 Packed Cartons Layout</h4>
+                    <h4>Packed Cartons Layout</h4>
                     <div style="background: #f8f9fa; padding: 15px; border-radius: 10px;">
                 `;
                 
@@ -1088,8 +1343,137 @@ HTML_TEMPLATE = '''
             }, 5000);
         }
         
+        // Carton Selection Functions
+        let selectedCartons = [];
+        
+        async function loadAvailableCartons() {
+            try {
+                const response = await fetch('/api/cartons');
+                const cartons = await response.json();
+                
+                let html = '';
+                if (cartons.length === 0) {
+                    html = '<p style="color: #666;">No carton types available. Please add carton types first in the "Manage Cartons" tab.</p>';
+                } else {
+                    html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">';
+                    cartons.forEach((carton, index) => {
+                        html += `
+                            <div class="carton-selection-card" style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: white;">
+                                <h4>${carton.name}</h4>
+                                <p><strong>Dimensions:</strong> ${carton.length}×${carton.width}×${carton.height} cm</p>
+                                <p><strong>Weight:</strong> ${carton.weight} kg</p>
+                                <p><strong>Value:</strong> ₹${carton.value}</p>
+                                <div style="margin-top: 10px;">
+                                    <label>Quantity:</label>
+                                    <input type="number" id="carton_qty_${index}" min="1" max="100" value="1" style="width: 60px; margin-left: 10px;">
+                                </div>
+                                <div style="margin-top: 10px;">
+                                    <input type="checkbox" id="carton_select_${index}" value="${index}">
+                                    <label for="carton_select_${index}">Select this carton type</label>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+                
+                document.getElementById('available_cartons_list').innerHTML = html;
+            } catch (error) {
+                showAlert('Error loading carton types: ' + error.message, 'error');
+            }
+        }
+        
+        async function addSelectedCartons() {
+            try {
+                const response = await fetch('/api/cartons');
+                const cartons = await response.json();
+                
+                selectedCartons = []; // Clear previous selection
+                
+                cartons.forEach((carton, index) => {
+                    const checkbox = document.getElementById(`carton_select_${index}`);
+                    const qtyInput = document.getElementById(`carton_qty_${index}`);
+                    
+                    if (checkbox && checkbox.checked) {
+                        const quantity = parseInt(qtyInput.value) || 1;
+                        selectedCartons.push({
+                            ...carton,
+                            quantity: quantity,
+                            total_volume: carton.length * carton.width * carton.height * quantity / 1000000,
+                            total_weight: carton.weight * quantity,
+                            total_value: carton.value * quantity
+                        });
+                    }
+                });
+                
+                displaySelectedCartons();
+                updateOptimizeButton();
+                
+            } catch (error) {
+                showAlert('Error adding selected cartons: ' + error.message, 'error');
+            }
+        }
+        
+        function displaySelectedCartons() {
+            if (selectedCartons.length === 0) {
+                document.getElementById('selected_cartons_display').innerHTML = 
+                    '<p style="color: #666; font-style: italic;">No cartons selected. Please select cartons above to enable optimization.</p>';
+                return;
+            }
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">';
+            selectedCartons.forEach((carton, index) => {
+                html += `
+                    <div class="selected-carton-card" style="border: 1px solid #28a745; padding: 10px; border-radius: 6px; background: #f8f9fa;">
+                        <h5>${carton.name}</h5>
+                        <p><strong>Qty:</strong> ${carton.quantity}</p>
+                        <p><strong>Total Volume:</strong> ${carton.total_volume.toFixed(3)} m³</p>
+                        <p><strong>Total Weight:</strong> ${carton.total_weight} kg</p>
+                        <p><strong>Total Value:</strong> ₹${carton.total_value}</p>
+                        <button class="btn btn-sm" onclick="removeSelectedCarton(${index})" style="background: #dc3545; color: white; padding: 5px 10px; font-size: 12px;">Remove</button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            // Add summary
+            const totalVolume = selectedCartons.reduce((sum, c) => sum + c.total_volume, 0);
+            const totalWeight = selectedCartons.reduce((sum, c) => sum + c.total_weight, 0);
+            const totalValue = selectedCartons.reduce((sum, c) => sum + c.total_value, 0);
+            
+            html += `
+                <div style="margin-top: 15px; padding: 15px; background: #e9ecef; border-radius: 6px;">
+                    <h4>Selection Summary</h4>
+                    <p><strong>Total Items:</strong> ${selectedCartons.reduce((sum, c) => sum + c.quantity, 0)}</p>
+                    <p><strong>Total Volume:</strong> ${totalVolume.toFixed(3)} m³</p>
+                    <p><strong>Total Weight:</strong> ${totalWeight} kg</p>
+                    <p><strong>Total Value:</strong> ₹${totalValue}</p>
+                </div>
+            `;
+            
+            document.getElementById('selected_cartons_display').innerHTML = html;
+        }
+        
+        function removeSelectedCarton(index) {
+            selectedCartons.splice(index, 1);
+            displaySelectedCartons();
+            updateOptimizeButton();
+        }
+        
+        function updateOptimizeButton() {
+            const optimizeButton = document.getElementById('optimize_button');
+            if (selectedCartons.length > 0) {
+                optimizeButton.disabled = false;
+                optimizeButton.style.opacity = '1';
+            } else {
+                optimizeButton.disabled = true;
+                optimizeButton.style.opacity = '0.5';
+            }
+        }
+        
         // Load initial data
         loadTrucks();
+        loadAvailableCartons();
     </script>
 </body>
 </html>
@@ -1103,31 +1487,67 @@ def index():
 def trucks_api():
     global trucks_db
     
-    if request.method == 'GET':
-        return jsonify([asdict(truck) for truck in trucks_db])
-    
-    elif request.method == 'POST':
-        data = request.json
-        truck_id = str(len(trucks_db) + 1)
-        truck = Truck(
-            truck_id,
-            data['name'],
-            data['length'],
-            data['width'], 
-            data['height'],
-            data['max_weight'],
-            data.get('cost_per_km', 25)
-        )
-        trucks_db.append(truck)
-        return jsonify({'success': True, 'truck_id': truck_id})
+    try:
+        if request.method == 'GET':
+            app_logger.info("GET /api/trucks - retrieving truck list")
+            return jsonify([asdict(truck) for truck in trucks_db])
+        
+        elif request.method == 'POST':
+            data = request.json
+            app_logger.info(f"POST /api/trucks - adding truck: {data.get('name', 'Unknown')}")
+            
+            truck_id = str(len(trucks_db) + 1)
+            truck = Truck(
+                truck_id,
+                data['name'],
+                data['length'],
+                data['width'], 
+                data['height'],
+                data['max_weight'],
+                data.get('cost_per_km', 25)
+            )
+            trucks_db.append(truck)
+            app_logger.info(f"Successfully added truck: {truck.name}")
+            return jsonify({'success': True, 'truck_id': truck_id})
+            
+    except Exception as e:
+        log_error(error_logger, e, "trucks_api")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/trucks/<int:index>', methods=['DELETE'])
-def delete_truck(index):
+@app.route('/api/trucks/<int:index>', methods=['DELETE', 'PUT'])
+def manage_truck(index):
     global trucks_db
-    if 0 <= index < len(trucks_db):
-        trucks_db.pop(index)
-        return jsonify({'success': True})
-    return jsonify({'success': False}), 404
+    
+    try:
+        if request.method == 'DELETE':
+            app_logger.info(f"DELETE /api/trucks/{index}")
+            if 0 <= index < len(trucks_db):
+                deleted_truck = trucks_db.pop(index)
+                app_logger.info(f"Successfully deleted truck: {deleted_truck.name}")
+                return jsonify({'success': True})
+            return jsonify({'success': False, 'error': 'Truck not found'}), 404
+            
+        elif request.method == 'PUT':
+            app_logger.info(f"PUT /api/trucks/{index} - editing truck")
+            if 0 <= index < len(trucks_db):
+                data = request.json
+                truck = trucks_db[index]
+                
+                # Update truck properties
+                truck.name = data.get('name', truck.name)
+                truck.length = data.get('length', truck.length)
+                truck.width = data.get('width', truck.width)
+                truck.height = data.get('height', truck.height)
+                truck.max_weight = data.get('max_weight', truck.max_weight)
+                truck.cost_per_km = data.get('cost_per_km', truck.cost_per_km)
+                
+                app_logger.info(f"Successfully updated truck: {truck.name}")
+                return jsonify({'success': True, 'truck': asdict(truck)})
+            return jsonify({'success': False, 'error': 'Truck not found'}), 404
+            
+    except Exception as e:
+        log_error(error_logger, e, f"manage_truck (index: {index})")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/cartons', methods=['GET', 'POST'])
 def cartons_api():
@@ -1157,82 +1577,148 @@ def cartons_api():
         
         return jsonify({'success': True, 'added_count': data['quantity']})
 
-@app.route('/api/cartons/<int:index>', methods=['DELETE'])
-def delete_carton(index):
+@app.route('/api/cartons/<int:index>', methods=['DELETE', 'PUT'])
+def manage_carton(index):
     global cartons_db
-    if 0 <= index < len(cartons_db):
-        cartons_db.pop(index)
-        return jsonify({'success': True})
-    return jsonify({'success': False}), 404
+    
+    try:
+        if request.method == 'DELETE':
+            app_logger.info(f"DELETE /api/cartons/{index}")
+            if 0 <= index < len(cartons_db):
+                deleted_carton = cartons_db.pop(index)
+                app_logger.info(f"Successfully deleted carton: {deleted_carton.name}")
+                return jsonify({'success': True})
+            return jsonify({'success': False, 'error': 'Carton not found'}), 404
+            
+        elif request.method == 'PUT':
+            app_logger.info(f"PUT /api/cartons/{index} - editing carton")
+            if 0 <= index < len(cartons_db):
+                data = request.json
+                carton = cartons_db[index]
+                
+                # Update carton properties
+                carton.name = data.get('name', carton.name)
+                carton.length = data.get('length', carton.length)
+                carton.width = data.get('width', carton.width)
+                carton.height = data.get('height', carton.height)
+                carton.weight = data.get('weight', carton.weight)
+                carton.value = data.get('value', carton.value)
+                carton.type = data.get('type', carton.type)
+                
+                app_logger.info(f"Successfully updated carton: {carton.name}")
+                return jsonify({'success': True, 'carton': asdict(carton)})
+            return jsonify({'success': False, 'error': 'Carton not found'}), 404
+            
+    except Exception as e:
+        log_error(error_logger, e, f"manage_carton (index: {index})")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/optimize', methods=['POST'])
 def optimize_api():
     global trucks_db, cartons_db, available_carton_types
     
-    if not trucks_db or not cartons_db:
-        return jsonify({'error': 'Please add trucks and cartons first'}), 400
-    
-    data = request.json
-    strategy = data.get('strategy', 'space')
-    distance = data.get('distance', 100)
-    
-    packer = AdvancedLAFFPacker()
-    best_truck = None
-    best_packing = []
-    best_score = -1
-    best_metrics = {}
-    
-    # Try each truck and find the best one
-    for truck in trucks_db:
-        packed_cartons, metrics = packer.optimize_with_rotations(cartons_db, truck)
+    try:
+        app_logger.info("POST /api/optimize - starting truck recommendation")
         
-        # Calculate score based on strategy
-        if strategy == 'space':
-            score = metrics['space_utilization']
-        elif strategy == 'cost':
-            total_cost = truck.cost_per_km * distance
-            score = metrics['total_value'] / total_cost if total_cost > 0 else 0
-        else:  # balanced
-            space_score = metrics['space_utilization'] / 100
-            cost_efficiency = metrics['total_value'] / (truck.cost_per_km * distance) if truck.cost_per_km > 0 else 0
-            score = (space_score + min(cost_efficiency / 1000, 1)) / 2
+        if not trucks_db:
+            app_logger.warning("No trucks available for optimization")
+            return jsonify({'error': 'Please add trucks to your fleet first'}), 400
         
-        if score > best_score:
-            best_score = score
-            best_truck = truck
-            best_packing = packed_cartons
-            best_metrics = metrics
-    
-    if not best_truck:
-        return jsonify({'error': 'No suitable truck found'}), 400
-    
-    # Calculate space optimization suggestions
-    space_optimizer = SpaceOptimizer(available_carton_types)
-    remaining_space = space_optimizer.calculate_remaining_space(best_truck, best_packing)
-    space_suggestions = space_optimizer.suggest_additional_cartons(best_truck, best_packing, remaining_space)
-    
-    # Calculate costs
-    total_cost = best_truck.cost_per_km * distance
-    used_volume = sum(p.carton.volume for p in best_packing)
-    
-    results = {
-        'best_truck': asdict(best_truck),
-        'packed_cartons': [
-            {
-                'carton': asdict(p.carton),
-                'x': p.x, 'y': p.y, 'z': p.z,
-                'rotated': p.rotated
-            } for p in best_packing
-        ],
-        'metrics': best_metrics,
-        'total_cost': total_cost,
-        'used_volume': used_volume,
-        'remaining_space': remaining_space,
-        'space_suggestions': space_suggestions[:5],  # Top 5 suggestions
-        'optimization_strategy': strategy
-    }
-    
-    return jsonify(results)
+        data = request.json
+        strategy = data.get('strategy', 'space')
+        distance = data.get('distance', 100)
+        selected_cartons_data = data.get('selected_cartons', [])
+        
+        # Use selected cartons if provided, otherwise fall back to all cartons
+        if selected_cartons_data:
+            # Convert selected cartons data to Carton objects
+            selected_cartons = []
+            for carton_data in selected_cartons_data:
+                carton = Carton(
+                    name=carton_data['name'],
+                    length=carton_data['length'],
+                    width=carton_data['width'],
+                    height=carton_data['height'],
+                    weight=carton_data['weight'],
+                    value=carton_data.get('value', 0),
+                    carton_type=carton_data.get('type', 'Box'),
+                    quantity=carton_data.get('quantity', 1)
+                )
+                # Add multiple instances based on quantity
+                for _ in range(carton_data.get('quantity', 1)):
+                    selected_cartons.append(carton)
+            
+            cartons_to_pack = selected_cartons
+            app_logger.info(f"Using {len(selected_cartons_data)} selected carton types with total {len(cartons_to_pack)} cartons")
+        else:
+            if not cartons_db:
+                app_logger.warning("No cartons available for optimization")
+                return jsonify({'error': 'Please select cartons to pack first'}), 400
+            cartons_to_pack = cartons_db
+            app_logger.info(f"Using all {len(cartons_to_pack)} cartons from database")
+        
+        packer = AdvancedLAFFPacker()
+        best_truck = None
+        best_packing = []
+        best_score = -1
+        best_metrics = {}
+        
+        # Try each truck and find the best one
+        for truck in trucks_db:
+            packed_cartons, metrics = packer.optimize_with_rotations(cartons_to_pack, truck)
+            
+            # Calculate score based on strategy
+            if strategy == 'space':
+                score = metrics['space_utilization']
+            elif strategy == 'cost':
+                total_cost = truck.cost_per_km * distance
+                score = metrics['total_value'] / total_cost if total_cost > 0 else 0
+            else:  # balanced
+                space_score = metrics['space_utilization'] / 100
+                cost_efficiency = metrics['total_value'] / (truck.cost_per_km * distance) if truck.cost_per_km > 0 else 0
+                score = (space_score + min(cost_efficiency / 1000, 1)) / 2
+            
+            if score > best_score:
+                best_score = score
+                best_truck = truck
+                best_packing = packed_cartons
+                best_metrics = metrics
+        
+        if not best_truck:
+            return jsonify({'error': 'No suitable truck found'}), 400
+        
+        # Calculate space optimization suggestions
+        space_optimizer = SpaceOptimizer(available_carton_types)
+        remaining_space = space_optimizer.calculate_remaining_space(best_truck, best_packing)
+        space_suggestions = space_optimizer.suggest_additional_cartons(best_truck, best_packing, remaining_space)
+        
+        # Calculate costs
+        total_cost = best_truck.cost_per_km * distance
+        used_volume = sum(p.carton.volume for p in best_packing)
+        
+        results = {
+            'best_truck': asdict(best_truck),
+            'packed_cartons': [
+                {
+                    'carton': asdict(p.carton),
+                    'x': p.x, 'y': p.y, 'z': p.z,
+                    'rotated': p.rotated
+                } for p in best_packing
+            ],
+            'metrics': best_metrics,
+            'total_cost': total_cost,
+            'used_volume': used_volume,
+            'remaining_space': remaining_space,
+            'space_suggestions': space_suggestions[:5],  # Top 5 suggestions
+            'optimization_strategy': strategy
+        }
+        
+        app_logger.info(f"Optimization completed. Best truck: {best_truck.name}, Utilization: {best_metrics['space_utilization']:.1f}%")
+        return jsonify(results)
+        
+    except Exception as e:
+        log_error(error_logger, e, "optimize_api")
+        return jsonify({'error': f'Optimization failed: {str(e)}'}), 500
 
 def find_available_port(start_port=5000):
     """Find available port starting from start_port"""
@@ -1253,14 +1739,14 @@ if __name__ == '__main__':
     port = find_available_port()
     
     print("=" * 60)
-    print("🚛 TruckOpti - Smart Truck Loading Optimization")
+    print("TruckOpti - Smart Truck Loading Optimization")
     print("=" * 60)
-    print(f"🌐 Server starting on: http://127.0.0.1:{port}/")
-    print("🎯 Features:")
-    print("   • Advanced LAFF Algorithm")
-    print("   • Smart Truck Recommendations") 
-    print("   • Space Optimization")
-    print("   • Remaining Capacity Analysis")
+    print(f"Server starting on: http://127.0.0.1:{port}/")
+    print("Features:")
+    print("   - Advanced LAFF Algorithm")
+    print("   - Smart Truck Recommendations") 
+    print("   - Space Optimization")
+    print("   - Remaining Capacity Analysis")
     print("=" * 60)
     
     # Auto-open browser

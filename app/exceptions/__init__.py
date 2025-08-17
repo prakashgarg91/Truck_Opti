@@ -22,9 +22,7 @@ from .domain import (
 
 from .handlers import (
     register_error_handlers,
-    handle_validation_error,
-    handle_business_logic_error,
-    handle_external_service_error
+    ExceptionHandler
 )
 
 __all__ = [
@@ -45,7 +43,5 @@ __all__ = [
     
     # Error handlers
     'register_error_handlers',
-    'handle_validation_error',
-    'handle_business_logic_error',
-    'handle_external_service_error'
+    'ExceptionHandler'
 ]

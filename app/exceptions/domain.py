@@ -188,3 +188,85 @@ class DataIntegrityError(TruckOptiException):
             details=details,
             cause=cause
         )
+
+
+# Clean Architecture Exception Classes
+class DomainValidationError(TruckOptiException):
+    """Domain validation error for clean architecture"""
+    
+    def __init__(
+        self,
+        message: str,
+        field_errors: Optional[Dict[str, List[str]]] = None,
+        context: Optional[ErrorContext] = None,
+        cause: Optional[Exception] = None
+    ):
+        self.field_errors = field_errors or {}
+        super().__init__(
+            message=message,
+            error_code=ErrorCode.VALIDATION_ERROR,
+            context=context,
+            details={"field_errors": self.field_errors},
+            cause=cause
+        )
+
+
+class BusinessLogicError(TruckOptiException):
+    """Business logic violation error"""
+    
+    def __init__(
+        self,
+        message: str,
+        rule: Optional[str] = None,
+        context: Optional[ErrorContext] = None,
+        cause: Optional[Exception] = None
+    ):
+        self.rule = rule
+        super().__init__(
+            message=message,
+            error_code=ErrorCode.BUSINESS_LOGIC_ERROR,
+            context=context,
+            details={"rule": rule},
+            cause=cause
+        )
+
+
+class EntityNotFoundError(TruckOptiException):
+    """Entity not found error"""
+    
+    def __init__(
+        self,
+        message: str,
+        entity_type: Optional[str] = None,
+        entity_id: Optional[str] = None,
+        context: Optional[ErrorContext] = None,
+        cause: Optional[Exception] = None
+    ):
+        self.entity_type = entity_type
+        self.entity_id = entity_id
+        super().__init__(
+            message=message,
+            error_code=ErrorCode.ENTITY_NOT_FOUND,
+            context=context,
+            details={"entity_type": entity_type, "entity_id": entity_id},
+            cause=cause
+        )
+
+
+class SecurityViolationError(TruckOptiException):
+    """Security violation error"""
+    
+    def __init__(
+        self,
+        message: str,
+        violation_type: Optional[str] = None,
+        context: Optional[ErrorContext] = None,
+        cause: Optional[Exception] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code=ErrorCode.SECURITY_ERROR,
+            context=context,
+            details={"violation_type": violation_type},
+            cause=cause
+        )

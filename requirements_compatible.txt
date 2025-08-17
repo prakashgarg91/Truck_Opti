@@ -1,0 +1,26 @@
+# TruckOpti Requirements - PyInstaller Compatible Versions
+# Core Web Framework
+Flask>=2.3.0,<3.0.0
+Werkzeug>=2.3.0,<3.0.0
+
+# Database
+SQLAlchemy>=1.4.0,<2.1.0
+sqlalchemy-utils>=0.38.0
+
+# 3D Packing & Scientific Computing
+py3dbp>=1.1.0
+numpy>=1.24.0,<2.0.0
+scipy>=1.10.0,<2.0.0
+pandas>=1.5.0,<2.2.0
+
+# Utilities
+python-dateutil>=2.8.0
+psutil>=5.9.0
+openpyxl>=3.0.0
+requests>=2.28.0
+
+# Build Tools
+pyinstaller>=5.13.0,<7.0.0
+
+# Optional ML/Advanced Features
+scikit-learn>=1.2.0,<1.4.0
