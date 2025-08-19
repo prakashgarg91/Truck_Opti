@@ -1,6 +1,32 @@
 /* Professional UI/UX Enhancements */
 /* Updated with advanced design principles and performance-focused styling */
 
+/* Better visibility for Quick Actions and Recent Activity */
+.timeline-content h6 {
+    color: #212529 !important;
+    font-weight: 600;
+}
+
+.timeline-content .text-muted {
+    color: #495057 !important; /* Darker than default for better visibility */
+    font-weight: 500;
+}
+
+/* Improve Quick Actions button visibility */
+.btn-outline-primary, .btn-outline-success, .btn-outline-warning, 
+.btn-outline-info, .btn-outline-secondary {
+    border-width: 2px;
+    font-weight: 600;
+    color: #212529;
+}
+
+.btn-outline-primary:hover, .btn-outline-success:hover, 
+.btn-outline-warning:hover, .btn-outline-info:hover, 
+.btn-outline-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
 /* Consistent Color Palette */
 :root {
     --primary-color: #1a73e8;

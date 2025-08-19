@@ -527,7 +527,7 @@ class SecurityManager:
             # Remove potential XSS patterns
             input_data = re.sub(r'<script.*?</script>', '', input_data, flags=re.IGNORECASE | re.DOTALL)
             input_data = re.sub(r'javascript:', '', input_data, flags=re.IGNORECASE)
-            input_data = re.sub(r'on\w+\s*=', '', input_data, flags=re.IGNORECASE)
+            input_data = re.sub(r'on\\w+\\s*=', '', input_data, flags=re.IGNORECASE)
             
             # Escape HTML entities
             input_data = input_data.replace('<', '&lt;').replace('>', '&gt;')

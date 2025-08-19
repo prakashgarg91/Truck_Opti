@@ -70,12 +70,12 @@ TruckOpti is a Flask-based 3D truck loading optimization platform that uses adva
 **Tech Stack**: Flask + SQLAlchemy + py3dbp (3D bin packing) + Bootstrap 5 + Three.js + SQLite
 
 ## 🏗️ TECH STACK SPECIFICATIONS
-- **Backend**: Flask 2.3+/Python 3.8+, SQLAlchemy 2.0+
+- **Backend**: Flask 2.3+/Python 3.13+, SQLAlchemy 2.0+
 - **Frontend**: Bootstrap 5, Three.js, DataTables.js, Chart.js
 - **Database**: SQLite (development), PostgreSQL (production-ready)
-- **3D Engine**: py3dbp, advanced_packer.py (ML optimization)
-- **Testing**: Pytest, Puppeteer, Jest
-- **Build**: PyInstaller (executable deployment)
+- **3D Engine**: py3dbp, advanced_3d_packer.py (2024-2025 research algorithms), ML optimization
+- **Testing**: Pytest, Puppeteer, Jest, E2E automation with MCP integration
+- **Build**: PyInstaller (executable deployment, Python 3.13 compatible)
 
 ## Development Commands
 
@@ -102,6 +102,13 @@ python test_truck_management_comprehensive.py
 # Frontend tests (requires app to be running)
 npm test
 
+# Advanced 3D packing integration tests
+python test_advanced_3d_integration.py
+python test_algorithms_3d_validation.py
+
+# E2E testing with comprehensive validation
+python test_truck_recommendation_comprehensive_e2e.py
+
 # Specific feature tests
 python test_carton_management_comprehensive.py
 python test_sale_order_comprehensive_final.py
@@ -121,13 +128,14 @@ python show_db_path.py
 
 ### Build Commands
 ```bash
-# Create standalone executable
-pyinstaller TruckOpti_Enterprise.spec --clean --noconfirm
+# Create standalone executable (Full-Featured Enterprise Build)
+pyinstaller TruckOpti_Enterprise_Full.spec --clean --noconfirm
 
 # Alternative build specs available:
-# - TruckOpti_v8.spec (latest version)
-# - SimpleTruckOpti.spec (simplified version)
-# - TruckOpti_Python313_Compatible.spec (Python 3.13 compatible)
+# - TruckOpti_Enterprise_Full.spec (complete feature set with advanced 3D packing - 24.3MB)
+# - TruckOpti_Minimal_Working.spec (minimal build for compatibility - 15MB)
+# - TruckOpti_Enterprise.spec (standard enterprise build)
+# - Python 3.13 compatible builds available
 ```
 
 ### Quality Assurance
@@ -164,13 +172,15 @@ pkill -f "python run.py"                         # Clean shutdown
 app/
 ├── models.py              # SQLAlchemy database models
 ├── routes.py              # Flask routes and API endpoints  
-├── packer.py              # 3D bin packing algorithms (py3dbp)
+├── packer.py              # Legacy 3D bin packing algorithms (py3dbp)
+├── advanced_3d_packer.py  # ⭐ State-of-art 3D packing (2024-2025 research)
 ├── advanced_packer.py     # Enhanced packing with ML optimization
 ├── cost_engine.py         # Cost calculation engine
 ├── ml_optimizer.py        # Machine learning optimization
 ├── multi_order_optimizer.py # Multi-order consolidation
 ├── route_optimizer.py     # Route optimization algorithms
 ├── websocket_manager.py   # Real-time updates
+├── core/                  # Advanced logging and monitoring infrastructure
 ├── static/                # Frontend assets (CSS, JS, images)
 └── templates/             # Jinja2 HTML templates
 ```
@@ -184,12 +194,18 @@ app/
 - **UserSettings**: User preferences and optimization parameters
 - **Analytics**: Performance metrics and KPIs
 
-### Key Algorithms (packer.py)
-- 3D bin packing using py3dbp library
-- Multi-objective optimization (space, cost, weight)
-- Smart truck recommendations based on carton requirements
+### Key Algorithms (advanced_3d_packer.py & packer.py)
+- **Advanced 3D Packing**: State-of-the-art algorithms based on 2024-2025 research papers
+  - Extreme Points positioning algorithm (European Journal of Operational Research 2025)
+  - Stability validation with support area calculations (ArXiv 2025)
+  - Multi-criteria decision analysis (MCDA) for balanced optimization
+  - 6-orientation carton rotation without shape changes
+  - Load distribution scoring for truck safety
+- **Legacy 3D Packing**: Original py3dbp-based algorithms for fallback
+- Multi-objective optimization (space, cost, weight, stability)
+- Smart truck recommendations with advanced stability metrics
 - Fleet optimization for multiple truck types
-- Remaining space optimization suggestions
+- Remaining space optimization with 3D constraint validation
 
 ### Frontend Architecture
 - **Bootstrap 5** for responsive UI components
@@ -244,7 +260,11 @@ Models include comprehensive tracking fields:
 
 ### 3D Packing Integration
 ```python
-# Core packing logic pattern
+# Advanced 3D packing (recommended)
+from app.advanced_3d_packer import create_advanced_packing_recommendation
+result = create_advanced_packing_recommendation(trucks, cartons, 'balanced')
+
+# Legacy packing (fallback)
 from app.packer import pack_cartons_optimized
 result = pack_cartons_optimized(truck, cartons, optimization_goal='space')
 ```
@@ -314,8 +334,10 @@ is_executable = hasattr(sys, 'frozen') and hasattr(sys, '_MEIPASS')
 
 ### Build Specifications
 Multiple PyInstaller specs available for different deployment scenarios:
-- `TruckOpti_Enterprise.spec` - Full featured enterprise build
-- `SimpleTruckOpti.spec` - Lightweight version
+- `TruckOpti_Enterprise_Full.spec` - Complete feature set with advanced 3D packing (24.3MB)
+- `TruckOpti_Minimal_Working.spec` - Lightweight version for compatibility (15MB)
+- `TruckOpti_Enterprise.spec` - Standard enterprise build
+- Python 3.13 compatible builds available
 - Platform-specific builds for Windows/Linux
 
 ## Security Considerations
@@ -325,6 +347,55 @@ Multiple PyInstaller specs available for different deployment scenarios:
 - **CSRF Protection**: Flask-WTF CSRF tokens on forms
 - **File Upload Security**: Restricted file types and size limits for uploads
 - **Local-only Access**: Production mode binds only to localhost (127.0.0.1)
+
+## 🚀 ADVANCED 3D PACKING FEATURES
+
+### Research-Backed Algorithms (2024-2025)
+The `advanced_3d_packer.py` module implements state-of-the-art 3D bin packing algorithms:
+
+```python
+from app.advanced_3d_packer import PackingStrategy
+
+# Available strategies based on recent research
+strategies = {
+    'EXTREME_POINTS': "European Journal 2025 - fast optimization approach",
+    'STABILITY_FIRST': "ArXiv 2025 - stability validation with support areas",
+    'WEIGHT_DISTRIBUTION': "Advanced load balancing for truck safety",
+    'MULTI_CRITERIA': "Balanced optimization (space + stability + distribution)",
+    'BOTTOM_LEFT_FILL': "Classical bottom-left-fill approach"
+}
+```
+
+### Key Features
+- **Stability Validation**: Real-time calculation of support areas and stability scores
+- **6-Orientation Optimization**: Tests all possible carton rotations without shape changes
+- **Load Distribution**: Weight balance scoring to prevent truck tipping
+- **Multi-Criteria Analysis**: Combines space efficiency, stability, and safety
+- **Decimal Type Handling**: Proper handling of py3dbp Decimal types for accuracy
+
+### Integration Points
+```python
+# Smart Truck Recommendations with advanced metrics
+from app.routes import recommend_truck  # Uses advanced_3d_packer automatically
+
+# Template display includes:
+# - Stability score (0-100%)
+# - Load distribution metrics  
+# - Algorithm identification
+# - Enhanced utilization calculations
+```
+
+### Testing Advanced Features
+```bash
+# Validate 3D algorithm accuracy
+python test_algorithms_3d_validation.py
+
+# Test advanced packing integration
+python test_advanced_3d_integration.py
+
+# E2E testing with browser automation
+python test_truck_recommendation_comprehensive_e2e.py
+```
 
 ## Common Development Tasks
 
@@ -362,6 +433,18 @@ Multiple PyInstaller specs available for different deployment scenarios:
 - Monitor space utilization algorithms for large datasets
 - Check database query performance with EXPLAIN QUERY PLAN
 - Profile packing algorithms with large carton sets
+
+### Known Issues (Documented in screenshots_problems_in_exe/)
+- **Bulk Upload CSV**: JavaScript stack overflow issue identified in minimal .exe build
+- **Management Pages**: Some error handlers return JSON instead of HTML templates in .exe mode
+- **JavaScript Conflicts**: Event listener duplications resolved by global function exposure
+
+### Recent Improvements (v3.6.0)
+- ✅ Advanced 3D packing algorithms integrated based on 2024-2025 research
+- ✅ Python 3.13 compatibility achieved for executable builds
+- ✅ E2E testing framework with MCP integration implemented
+- ✅ Stability validation and load distribution metrics added
+- ✅ Full-featured enterprise build (24.3MB) with all algorithms enabled
 
 ## 🚀 AUTO-COMMANDS (TruckOpti-Specific)
 - `/init-logistics` - Initialize truck/carton types with realistic data

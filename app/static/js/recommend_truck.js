@@ -1,7 +1,176 @@
 // Bulk Upload Functionality for Truck Recommendations
 
-// Global variable to track row count
-let rowCount = 1;
+// Global variable to track row count - only if not already defined
+if (typeof window.rowCount === 'undefined') {
+    window.rowCount = 1;
+}
+
+// Progress loading system
+function showProgressWithSteps(title, steps, description = '') {
+    // Create progress modal if it doesn't exist
+    let progressModal = document.getElementById('progressModal');
+    if (!progressModal) {
+        progressModal = document.createElement('div');
+        progressModal.className = 'modal fade';
+        progressModal.id = 'progressModal';
+        progressModal.setAttribute('data-bs-backdrop', 'static');
+        progressModal.setAttribute('data-bs-keyboard', 'false');
+        progressModal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="progressTitle">
+                            <i class="bi bi-gear-fill spin"></i> Processing...
+                        </h5>
+                    </div>
+                    <div class="modal-body">
+                        <div id="algorithmInfo" class="alert alert-info mb-3" style="display: none;">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-cpu me-2"></i>
+                                <div>
+                                    <strong>Algorithm:</strong> <span id="algorithmName"></span><br>
+                                    <small id="algorithmDescription"></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                 role="progressbar" id="progressBar" style="width: 0%">
+                                0%
+                            </div>
+                        </div>
+                        <div id="progressSteps">
+                            <!-- Steps will be populated here -->
+                        </div>
+                        <div class="text-center mt-3">
+                            <small class="text-muted" id="progressMessage">Initializing...</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(progressModal);
+        
+        // Add CSS for spinning icon
+        if (!document.getElementById('progressSpinCSS')) {
+            const style = document.createElement('style');
+            style.id = 'progressSpinCSS';
+            style.textContent = `
+                .spin {
+                    animation: spin 1s linear infinite;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+    
+    // Set title
+    document.getElementById('progressTitle').innerHTML = `<i class="bi bi-gear-fill spin"></i> ${title}`;
+    
+    // Show algorithm information if description provided
+    if (description) {
+        const algorithmInfo = document.getElementById('algorithmInfo');
+        const algorithmName = document.getElementById('algorithmName');
+        const algorithmDescription = document.getElementById('algorithmDescription');
+        
+        algorithmName.textContent = title.replace('🔬 ', '');
+        algorithmDescription.textContent = description;
+        algorithmInfo.style.display = 'block';
+    }
+    
+    // Clear and populate steps
+    const stepsContainer = document.getElementById('progressSteps');
+    stepsContainer.innerHTML = '';
+    
+    steps.forEach((step, index) => {
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'step-item d-flex align-items-center mb-2';
+        stepDiv.innerHTML = `
+            <div class="step-icon me-3">
+                <i class="bi bi-hourglass-split text-muted" id="step-icon-${index}"></i>
+            </div>
+            <div class="step-text">
+                <small class="text-muted" id="step-text-${index}">${step}</small>
+            </div>
+        `;
+        stepsContainer.appendChild(stepDiv);
+    });
+    
+    // Show modal
+    const modal = new bootstrap.Modal(progressModal);
+    modal.show();
+    
+    // Simulate progress
+    simulateProgress(steps);
+    
+    return modal;
+}
+
+function simulateProgress(steps) {
+    const progressBar = document.getElementById('progressBar');
+    const progressMessage = document.getElementById('progressMessage');
+    
+    let currentStep = 0;
+    const totalSteps = steps.length;
+    const stepDuration = 300; // milliseconds per step (faster for 7 steps)
+    
+    function updateStep() {
+        if (currentStep < totalSteps) {
+            // Update previous step to completed
+            if (currentStep > 0) {
+                const prevIcon = document.getElementById(`step-icon-${currentStep - 1}`);
+                const prevText = document.getElementById(`step-text-${currentStep - 1}`);
+                if (prevIcon) prevIcon.className = 'bi bi-check-circle-fill text-success';
+                if (prevText) prevText.className = 'text-success';
+            }
+            
+            // Update current step to in progress
+            const currentIcon = document.getElementById(`step-icon-${currentStep}`);
+            const currentText = document.getElementById(`step-text-${currentStep}`);
+            if (currentIcon) currentIcon.className = 'bi bi-hourglass-split text-primary';
+            if (currentText) currentText.className = 'text-primary';
+            
+            // Update progress bar
+            const progress = ((currentStep + 1) / totalSteps) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+            progressBar.textContent = `${Math.round(progress)}%`;
+            
+            // Update message
+            progressMessage.textContent = steps[currentStep];
+            
+            currentStep++;
+            
+            // Continue to next step
+            setTimeout(updateStep, stepDuration);
+        } else {
+            // Complete final step
+            const lastIcon = document.getElementById(`step-icon-${totalSteps - 1}`);
+            const lastText = document.getElementById(`step-text-${totalSteps - 1}`);
+            if (lastIcon) lastIcon.className = 'bi bi-check-circle-fill text-success';
+            if (lastText) lastText.className = 'text-success';
+            
+            // Finalize progress
+            progressBar.style.width = '100%';
+            progressBar.setAttribute('aria-valuenow', 100);
+            progressBar.textContent = '100%';
+            progressMessage.textContent = 'Processing complete!';
+            
+            // Close modal after a short delay
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+                if (modal) modal.hide();
+            }, 1000);
+        }
+    }
+    
+    // Start the progress simulation
+    setTimeout(updateStep, 300);
+}
 
 // Show Bulk Upload Modal
 function showBulkUpload() {
@@ -293,11 +462,402 @@ function clearCSVPreview() {
     alerts.forEach(alert => alert.remove());
 }
 
-// Ensure DOM is ready before attaching listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Attach event listeners
+// Update algorithm preview function
+function updateAlgorithmPreview(e) {
+    const algorithmPreview = document.getElementById('algorithmPreview');
+    if (!algorithmPreview) return;
+    
+    const selectedValue = e.target.value;
+    let previewHtml = '';
+    
+    switch(selectedValue) {
+        case 'space_utilization':
+            previewHtml = `
+                <div class="algorithm-preview bg-light p-2 rounded">
+                    <i class="bi bi-boxes text-primary"></i> <strong>LAFF Algorithm (Largest Area/Volume First)</strong><br>
+                    <small class="text-muted">• 3D bin packing without carton reshaping<br>
+                    • Prioritizes largest items first for optimal fit<br>
+                    • Minimizes unused truck space and air gaps</small>
+                </div>`;
+            break;
+        case 'cost_saving':
+            previewHtml = `
+                <div class="algorithm-preview bg-light p-2 rounded">
+                    <i class="bi bi-calculator text-success"></i> <strong>Cost-Optimized Multi-Constraint Algorithm</strong><br>
+                    <small class="text-muted">• 3D fitting with fuel efficiency optimization<br>
+                    • Balances truck utilization vs transportation costs<br>
+                    • Route distance and load factor optimization</small>
+                </div>`;
+            break;
+        case 'value_protected':
+            previewHtml = `
+                <div class="algorithm-preview bg-light p-2 rounded">
+                    <i class="bi bi-shield-check text-warning"></i> <strong>Value-Protected 3D Packing Algorithm</strong><br>
+                    <small class="text-muted">• Secure 3D placement for high-value items<br>
+                    • Optimal 70-85% utilization for cargo protection<br>
+                    • Minimizes handling and movement risk</small>
+                </div>`;
+            break;
+        default:
+            previewHtml = `
+                <div class="algorithm-preview bg-light p-2 rounded">
+                    <i class="bi bi-gear text-info"></i> <strong>Balanced MCDA (Multi-Criteria Decision Analysis)</strong><br>
+                    <small class="text-muted">• 3D fitting with weighted criteria optimization<br>
+                    • Balances space efficiency, cost, and operations<br>
+                    • Considers loading ease and truck suitability</small>
+                </div>`;
+    }
+    
+    algorithmPreview.innerHTML = previewHtml;
+}
+
+// Handle form submission with loading screen - FIXED FOR STACK OVERFLOW
+function handleFormSubmission(e) {
+    // Prevent default submission
+    e.preventDefault();
+    
+    console.log('Form submission intercepted - showing loading screen');
+    
+    // CRITICAL FIX: Check if we're already processing to prevent infinite recursion
+    if (window.isFormSubmitting) {
+        console.log('Form already being processed, ignoring duplicate submission');
+        return false;
+    }
+    
+    // Set flag to prevent duplicate submissions
+    window.isFormSubmitting = true;
+    
+    // Get selected optimization goal
+    const optimizationGoal = document.querySelector('select[name="optimization_goal"]').value;
+    
+    let algorithmName = '';
+    let algorithmDescription = '';
+    
+    switch(optimizationGoal) {
+        case 'space_utilization':
+            algorithmName = 'LAFF (Largest Area Fit First) Algorithm';
+            algorithmDescription = 'Advanced 3D packing with space optimization priority';
+            break;
+        case 'cost_saving':
+            algorithmName = 'Cost-Optimized Multi-Truck Algorithm';
+            algorithmDescription = 'Multi-objective optimization for cost efficiency';
+            break;
+        case 'value_protected':
+            algorithmName = 'Value-Protected Packing Algorithm';
+            algorithmDescription = 'High-value cargo protection with secure placement';
+            break;
+        default:
+            algorithmName = 'Advanced Multi-Criteria Algorithm V2';
+            algorithmDescription = 'State-of-the-art 3D optimization with stability validation';
+    }
+    
+    const steps = [
+        'Validating carton dimensions and constraints...',
+        'Loading truck specifications from database...',
+        `Initializing ${algorithmName}...`,
+        'Running advanced 3D packing simulations...',
+        'Calculating space utilization and stability metrics...',
+        'Performing cost analysis and ranking...',
+        'Generating final recommendations...'
+    ];
+    
+    // Show progress modal
+    console.log('Showing progress modal with algorithm:', algorithmName);
+    showProgressWithSteps(`🔬 ${algorithmName}`, steps, algorithmDescription);
+    
+    // Submit form after showing progress - FIXED APPROACH
+    setTimeout(() => {
+        console.log('Submitting form after progress display');
+        
+        // Create a new form submission WITHOUT event handlers to prevent recursion
+        const form = e.target;
+        const formData = new FormData(form);
+        
+        // Submit via fetch to avoid event listener conflicts
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.text();
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        })
+        .then(html => {
+            // Replace current page content with response
+            document.documentElement.innerHTML = html;
+            
+            // Re-initialize JavaScript for the new page
+            if (typeof initializePage === 'function') {
+                initializePage();
+            }
+        })
+        .catch(error => {
+            console.error('Form submission failed:', error);
+            alert('Recommendation generation failed. Please try again.');
+        })
+        .finally(() => {
+            // Reset flag regardless of success/failure
+            window.isFormSubmitting = false;
+            
+            // Hide progress modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+            if (modal) modal.hide();
+        });
+        
+    }, 3500); // Reduced time for better UX
+}
+
+// Add Carton functionality
+function addCartonRow() {
+    console.log('Adding new carton row');
+    window.rowCount++;
+    
+    // Get the first row to clone structure
+    const firstRow = document.querySelector('.carton-row');
+    if (!firstRow) {
+        console.error('No existing carton row found to clone');
+        return;
+    }
+    
+    const row = document.createElement('div');
+    row.className = 'row mb-2 carton-row align-items-end';
+    
+    // Get carton options from first select
+    const firstSelect = firstRow.querySelector('select');
+    let cartonOptions = '';
+    if (firstSelect) {
+        cartonOptions = firstSelect.innerHTML;
+    }
+    
+    row.innerHTML = `
+        <div class="col-md-5">
+            <select name="carton_type_${window.rowCount}" class="form-select carton-type-select" required>
+                ${cartonOptions}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="carton_qty_${window.rowCount}" class="form-control" min="1" placeholder="Quantity" required>
+        </div>
+        <div class="col-md-3">
+            <input type="number" name="carton_value_${window.rowCount}" class="form-control" min="0" step="0.01" placeholder="Per unit value">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-danger btn-sm remove-row">
+                <i class="bi bi-trash"></i> Remove
+            </button>
+        </div>
+    `;
+    
+    document.getElementById('cartonRows').appendChild(row);
+    updateRemoveButtons();
+    console.log('Carton row added successfully');
+}
+
+// Update remove buttons functionality
+function updateRemoveButtons() {
+    const rows = document.querySelectorAll('.carton-row');
+    rows.forEach((row, idx) => {
+        const btn = row.querySelector('.remove-row');
+        if (btn) {
+            btn.style.display = rows.length > 1 ? '' : 'none';
+            btn.onclick = function() {
+                row.remove();
+                updateRemoveButtons();
+                console.log('Carton row removed');
+            };
+        }
+    });
+}
+
+// Auto-populate value field when carton type is selected
+function handleCartonTypeChange(e) {
+    if (e.target.classList.contains('carton-type-select')) {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        const cartonValue = selectedOption.getAttribute('data-value') || '';
+        
+        // Find the corresponding value input field
+        const rowIndex = e.target.name.split('_')[2] || '1';
+        const valueInput = document.querySelector(`input[name="carton_value_${rowIndex}"]`);
+        
+        if (valueInput && cartonValue) {
+            valueInput.value = cartonValue;
+            console.log(`Auto-populated value ${cartonValue} for row ${rowIndex}`);
+        }
+    }
+}
+
+// Make functions globally available
+window.showBulkUpload = showBulkUpload;
+window.downloadSampleCSV = downloadSampleCSV;
+window.previewCSV = previewCSV;
+window.processBulkUpload = processBulkUpload;
+window.clearCSVPreview = clearCSVPreview;
+
+// CRITICAL FIX: Clean event listener initialization to prevent conflicts
+function initializePage() {
+    console.log('Initializing page with clean event handlers');
+    
+    // Clear any existing flags
+    window.isFormSubmitting = false;
+    window.isInitialized = false;
+    
+    // Remove existing listeners to prevent stacking
+    document.removeEventListener('change', handleCartonTypeChange);
+    
+    // Initialize Add Carton button with conflict prevention
+    const addRowButton = document.getElementById('addRow');
+    if (addRowButton) {
+        console.log('Setting up Add Carton button');
+        // Remove existing listeners
+        const clonedButton = addRowButton.cloneNode(true);
+        addRowButton.parentNode.replaceChild(clonedButton, addRowButton);
+        // Add single listener
+        clonedButton.addEventListener('click', addCartonRow);
+    } else {
+        console.warn('addRow button not found');
+    }
+    
+    // Set up carton type change handler (single listener)
+    document.addEventListener('change', handleCartonTypeChange);
+    
+    // Initialize remove buttons for existing rows
+    updateRemoveButtons();
+    
+    // Bulk upload button with conflict prevention
     const bulkUploadButton = document.querySelector('button[onclick="showBulkUpload()"]');
     if (bulkUploadButton) {
-        bulkUploadButton.addEventListener('click', showBulkUpload);
+        console.log('Setting up Bulk Upload button');
+        // Remove existing onclick to prevent conflicts
+        bulkUploadButton.removeAttribute('onclick');
+        // Clone to remove all listeners
+        const clonedBulkButton = bulkUploadButton.cloneNode(true);
+        bulkUploadButton.parentNode.replaceChild(clonedBulkButton, bulkUploadButton);
+        // Add single listener
+        clonedBulkButton.addEventListener('click', showBulkUpload);
     }
-});
+    
+    // Algorithm preview updater with conflict prevention
+    const optimizationSelect = document.querySelector('select[name="optimization_goal"]');
+    if (optimizationSelect) {
+        console.log('Setting up algorithm preview updater');
+        // Clone to remove existing listeners
+        const clonedSelect = optimizationSelect.cloneNode(true);
+        optimizationSelect.parentNode.replaceChild(clonedSelect, optimizationSelect);
+        // Add single listener
+        clonedSelect.addEventListener('change', updateAlgorithmPreview);
+        // Trigger initial update
+        updateAlgorithmPreview({ target: clonedSelect });
+    } else {
+        console.warn('optimization select element not found');
+    }
+    
+    // Form submission handler with conflict prevention
+    const cartonForm = document.getElementById('cartonForm');
+    if (cartonForm) {
+        console.log('Setting up form submission handler');
+        // Remove existing listeners by cloning
+        const clonedForm = cartonForm.cloneNode(true);
+        cartonForm.parentNode.replaceChild(clonedForm, cartonForm);
+        // Add single listener
+        clonedForm.addEventListener('submit', handleFormSubmission);
+    } else {
+        console.warn('cartonForm element not found');
+    }
+    
+    // Mark as initialized
+    window.isInitialized = true;
+    console.log('Page initialization completed successfully');
+}
+
+// Ensure DOM is ready before attaching listeners - FIXED APPROACH
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePage);
+} else {
+    // DOM already loaded
+    initializePage();
+}
+
+// ENHANCED: Professional progress modal with steps animation
+function showProgressWithSteps(algorithmTitle, steps, description) {
+    console.log('[DEBUG] Showing progress modal:', algorithmTitle);
+    
+    // Update modal content
+    document.getElementById('progressTitle').textContent = algorithmTitle;
+    document.getElementById('algorithmName').textContent = algorithmTitle;
+    document.getElementById('algorithmDescription').textContent = description;
+    
+    // Reset progress
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+    progressBar.style.width = '0%';
+    progressPercent.textContent = '0%';
+    
+    // Reset all steps
+    for (let i = 1; i <= 6; i++) {
+        const stepIcon = document.getElementById(`step${i}-icon`);
+        if (stepIcon) {
+            stepIcon.className = 'bi bi-circle text-secondary me-2';
+        }
+    }
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('progressModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    modal.show();
+    
+    // Animate progress through steps
+    animateProgressSteps(steps);
+}
+
+function animateProgressSteps(steps) {
+    let currentStep = 0;
+    const totalSteps = Math.min(steps.length, 6);
+    const progressIncrement = 100 / totalSteps;
+    
+    function updateStep() {
+        if (currentStep >= totalSteps) {
+            return;
+        }
+        
+        // Update current step text
+        const stepText = steps[currentStep] || `Step ${currentStep + 1}`;
+        document.getElementById('currentStep').textContent = stepText;
+        document.getElementById('stepDescription').textContent = `Processing: ${stepText.toLowerCase()}`;
+        
+        // Update progress bar
+        const progressPercent = Math.round((currentStep + 1) * progressIncrement);
+        const progressBar = document.getElementById('progressBar');
+        const progressPercentSpan = document.getElementById('progressPercent');
+        
+        progressBar.style.width = progressPercent + '%';
+        progressPercentSpan.textContent = progressPercent + '%';
+        
+        // Update step icon
+        const stepNumber = currentStep + 1;
+        const stepIcon = document.getElementById(`step${stepNumber}-icon`);
+        if (stepIcon) {
+            stepIcon.className = 'bi bi-check-circle-fill text-success me-2';
+        }
+        
+        currentStep++;
+        
+        // Continue to next step
+        if (currentStep < totalSteps) {
+            setTimeout(updateStep, 800); // 800ms between steps
+        }
+    }
+    
+    // Start the animation
+    setTimeout(updateStep, 500); // Initial delay
+}
+
+// Show loading modal (legacy support)
+function showLoadingModal() {
+    const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    modal.show();
+}

@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional, Tuple
 from flask import jsonify, request, current_app
 import logging
 import traceback
+import sys
 from datetime import datetime
 
 from .base import TruckOptiException
@@ -132,5 +133,16 @@ def register_error_handlers(app):
     
     @app.errorhandler(500)
     def handle_internal_server_error(error):
+        # For .exe build, skip JSON error handling for HTML requests to allow template rendering
+        if getattr(sys, 'frozen', False):
+            # Check if this is an API request or HTML request
+            is_api_request = (request.endpoint and request.endpoint.startswith('api.')) or \
+                            request.path.startswith('/api/') or \
+                            'application/json' in (request.headers.get('Accept', ''))
+            
+            if not is_api_request:
+                # For HTML requests in exe build, let Flask handle normally
+                raise error
+        
         response, status_code = handler.handle_generic_exception(error)
         return jsonify(response), status_code

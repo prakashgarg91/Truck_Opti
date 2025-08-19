@@ -582,11 +582,26 @@ def setup_flask_error_capture(app):
             'user_agent': request.headers.get('User-Agent')
         })
         
-        return {
-            'error': 'An error occurred',
-            'error_id': error_id,
-            'message': 'This error has been captured for analysis and improvement'
-        }, 500
+        # Check if this is an API request or HTML request
+        is_api_request = (request.endpoint and request.endpoint.startswith('api.')) or \
+                        request.path.startswith('/api/') or \
+                        'application/json' in (request.headers.get('Accept', ''))
+        
+        if is_api_request:
+            return {
+                'error': 'An error occurred',
+                'error_id': error_id,
+                'message': 'This error has been captured for analysis and improvement'
+            }, 500
+        else:
+            # For HTML requests, let Flask handle the error normally
+            # This allows template rendering to work properly
+            import traceback
+            print(f"[ERROR] Template rendering error: {str(e)}")
+            print(f"[ERROR] Traceback: {traceback.format_exc()}")
+            
+            # Re-raise the exception to let Flask handle it normally
+            raise e
 
 if __name__ == "__main__":
     # Test the error monitor

@@ -11,12 +11,21 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <h4 class="card-title text-danger">Something went wrong</h4>
+                    <h4 class="card-title text-danger">{{ error_message or "Something went wrong" }}</h4>
                     <p class="card-text">
-                        We apologize, but an unexpected error occurred during processing.
+                        {% if error_message %}
+                            {{ error_message }}
+                        {% else %}
+                            We apologize, but an unexpected error occurred during processing.
+                        {% endif %}
                     </p>
                     
-                    {% if error %}
+                    {% if error_details %}
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Error Details:</strong>
+                        <pre class="text-muted mt-2">{{ error_details }}</pre>
+                    </div>
+                    {% elif error %}
                     <div class="alert alert-warning" role="alert">
                         <strong>Error Details:</strong>
                         <pre class="text-muted mt-2">{{ error }}</pre>

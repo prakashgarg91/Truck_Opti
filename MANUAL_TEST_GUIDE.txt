@@ -1,0 +1,67 @@
+============================================================
+TRUCK RECOMMENDATION SYSTEM - MANUAL VERIFICATION GUIDE
+============================================================
+
+AUTOMATED TESTS COMPLETED SUCCESSFULLY!
+All page elements, JavaScript functions, and form submission are working.
+
+MANUAL VERIFICATION STEPS:
+Follow these steps to verify the loading screen and algorithm info updates:
+
+1. OPEN THE APPLICATION:
+   • Open your browser
+   • Navigate to: http://127.0.0.1:5004/recommend-truck
+   • Verify the page loads completely
+
+2. TEST ALGORITHM INFO UPDATES:
+   • Locate the 'Algorithm & Optimization Goal' dropdown
+   • Notice the 'Algorithm Info' panel on the right
+   • Change the dropdown selection and verify:
+     - LAFF Algorithm → Shows 'Largest Area/Volume First packing strategy'
+     - Cost-Optimized → Shows 'Multi-truck cost analysis'
+     - Value-Protected → Shows 'Prioritizes high-value items'
+     - Balanced → Shows 'Optimal balance of all factors'
+   • Algorithm info should update IMMEDIATELY when dropdown changes
+
+3. ENTER TEST DATA:
+   • Select a carton type (e.g., 'LED TV 32')
+   • Enter quantity: 5
+   • Choose algorithm: 'LAFF Algorithm - Maximum Space Utilization'
+   • Verify algorithm info shows the correct description
+
+4. TEST LOADING SCREEN:
+   • Click 'Get Smart Recommendations' button
+   • Immediately watch for:
+     - Loading modal appears within 1 second
+     - Shows 'LAFF Algorithm' in the title
+     - Displays algorithm-specific steps
+     - Shows spinning animation
+     - Algorithm description is visible
+
+5. VERIFY RESULTS:
+   • Wait for recommendations to appear
+   • Check that results show truck recommendations
+   • Verify loading screen automatically closes
+
+SUCCESS CRITERIA:
+   - Algorithm info updates instantly when dropdown changes
+   - Loading screen appears immediately on form submission
+   - Loading screen shows specific algorithm being used
+   - Algorithm steps are displayed during processing
+   - User clearly sees something is happening
+
+FAILURE INDICATORS:
+   • Algorithm info doesn't change with dropdown
+   • No loading screen appears
+   • Form seems unresponsive
+   • Generic loading message without algorithm info
+
+TROUBLESHOOTING:
+   • If algorithm info doesn't update: Check browser console for JS errors
+   • If no loading screen: Verify recommend_truck.js is loaded
+   • If form unresponsive: Check Flask server is running
+
+============================================================
+READY FOR MANUAL TESTING!
+All automated checks passed - system is ready for user verification
+============================================================

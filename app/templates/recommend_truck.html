@@ -37,14 +37,20 @@
         
         <!-- Optimization Goal Selection -->
         <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Optimization Goal <i class="bi bi-info-circle" title="Choose your primary optimization objective"></i></label>
-            <select name="optimization_goal" class="form-select">
-              <option value="balanced">🎯 Balanced (Space + Cost)</option>
-              <option value="space_utilization">📦 Maximum Space Utilization</option>
-              <option value="cost_saving">💰 Minimum Cost</option>
-              <option value="value_protected">🛡️ Value Protection (High-value cargo)</option>
+          <div class="col-md-8">
+            <label class="form-label">Algorithm & Optimization Goal <i class="bi bi-info-circle" title="Choose your primary optimization objective and algorithm"></i></label>
+            <select name="optimization_goal" class="form-select" id="optimizationSelect">
+              <option value="balanced">🎯 Balanced Multi-Criteria Algorithm (Space + Cost + Efficiency)</option>
+              <option value="space_utilization">📦 LAFF Algorithm - Maximum Space Utilization</option>
+              <option value="cost_saving">💰 Cost-Optimized Multi-Truck Algorithm</option>
+              <option value="value_protected">🛡️ Value-Protected Packing Algorithm (High-value cargo)</option>
             </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Algorithm Info</label>
+            <div class="alert alert-info p-2" id="algorithmPreview">
+              <small><i class="bi bi-cpu"></i> <strong>Balanced Algorithm:</strong> Optimizes space, cost, and efficiency simultaneously</small>
+            </div>
           </div>
         </div>
         
@@ -203,6 +209,42 @@
                             onclick="spaceOptimizer.showOptimizationPanel({{ loop.index0 }})">
                       <i class="bi bi-lightning"></i> Optimize
                     </button>
+                    
+                    {% if r.remaining_space_suggestions and r.remaining_space_suggestions|length > 0 %}
+                    <button class="btn btn-outline-success btn-sm mt-1" 
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#suggestions-{{ loop.index0 }}" 
+                            aria-expanded="false">
+                      <i class="bi bi-plus-circle"></i> Add More Items
+                    </button>
+                    <div class="collapse mt-2" id="suggestions-{{ loop.index0 }}">
+                      <div class="card card-body bg-light border-success">
+                        <h6 class="text-success mb-2">
+                          <i class="bi bi-lightbulb"></i> Optimize Remaining Space
+                        </h6>
+                        <div class="row g-2">
+                          {% for suggestion in r.remaining_space_suggestions[:3] %}
+                          <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center bg-white rounded p-2 border">
+                              <div>
+                                <strong>{{ suggestion.carton_name }}</strong><br>
+                                <small class="text-muted">{{ suggestion.dimensions }}</small>
+                              </div>
+                              <div class="text-end">
+                                <span class="badge bg-success">+{{ suggestion.max_quantity }}</span><br>
+                                <small class="text-success">+{{ suggestion.utilization_improvement }}% space</small>
+                              </div>
+                            </div>
+                          </div>
+                          {% endfor %}
+                        </div>
+                        <small class="text-muted mt-2">
+                          <i class="bi bi-info-circle"></i> These cartons can fit in your remaining {{ remaining_volume|round(2) }}m³ space
+                        </small>
+                      </div>
+                    </div>
+                    {% endif %}
                   </div>
                 </td>
                 
@@ -268,7 +310,6 @@
         <div class="card-body">
           {% if recommended %}
           {% set total_cartons = total_items %}
-          {% set total_vol = total_volume %}
           {% set best_recommendation = recommended[0] %}
           
           <div class="calculation-summary">
@@ -301,14 +342,48 @@
               </div>
             </div>
 
+            <!-- Advanced 3D Packing Metrics -->
+            {% if best_recommendation and best_recommendation.stability_score is defined %}
+            <div class="metric-box mb-3">
+              <h6 class="text-warning">🚀 3D Packing Analysis</h6>
+              <div class="row">
+                <div class="col-6">
+                  <div class="bg-warning bg-opacity-10 p-2 rounded text-center">
+                    <strong>{{ (best_recommendation.stability_score * 100)|round(0) }}%</strong>
+                    <br><small>Stability Score</small>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="bg-info bg-opacity-10 p-2 rounded text-center">
+                    <strong>{{ (best_recommendation.load_distribution_score * 100)|round(0) }}%</strong>
+                    <br><small>Load Balance</small>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-2">
+                <small class="text-muted">
+                  <i class="bi bi-cpu"></i> Algorithm: {{ best_recommendation.algorithm_used or "Advanced 3D Packing" }}
+                </small>
+              </div>
+            </div>
+            {% endif %}
+
             <div class="metric-box mb-3">
               <h6 class="text-info">Algorithm Steps</h6>
               <ol class="small">
+                {% if best_recommendation and best_recommendation.algorithm_used and 'Advanced 3D' in best_recommendation.algorithm_used %}
+                <li>3D stability validation analysis</li>
+                <li>Extreme points positioning algorithm</li>
+                <li>Multi-criteria optimization scoring</li>
+                <li>Load distribution balance check</li>
+                <li>Carton orientation optimization</li>
+                {% else %}
                 <li>Calculate total volume requirements</li>
                 <li>Pre-filter viable truck sizes</li>
                 <li>Test packing combinations</li>
                 <li>Calculate efficiency scores</li>
                 <li>Rank by optimal utilization</li>
+                {% endif %}
               </ol>
             </div>
 
@@ -359,6 +434,118 @@
   </div>
   
   {% endif %}
+
+  <!-- Enhanced Professional Progress Modal -->
+  <div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <h5 class="modal-title" id="progressModalLabel">
+            <i class="bi bi-cpu-fill me-2" id="progressIcon"></i>
+            <span id="progressTitle">Advanced 3D Packing Algorithm</span>
+          </h5>
+        </div>
+        <div class="modal-body text-center p-4">
+          <div id="progressContent">
+            <!-- Algorithm Logo -->
+            <div class="mb-4">
+              <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                <i class="bi bi-boxes text-primary" style="font-size: 2.5rem;"></i>
+              </div>
+            </div>
+            
+            <!-- Algorithm Name -->
+            <h4 id="algorithmName" class="text-primary mb-2">Multi-Criteria Decision Analysis</h4>
+            <p id="algorithmDescription" class="text-muted mb-4">State-of-the-art 3D optimization with stability validation</p>
+            
+            <!-- Progress Bar -->
+            <div class="mb-4">
+              <div class="progress position-relative" style="height: 25px;">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                     role="progressbar" style="width: 0%">
+                  <span id="progressPercent" class="position-absolute w-100 text-center text-dark fw-bold">0%</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Current Step -->
+            <div class="mb-4">
+              <h6 id="currentStep" class="text-success">Initializing algorithm...</h6>
+              <p id="stepDescription" class="text-muted small">Preparing advanced 3D packing analysis</p>
+            </div>
+            
+            <!-- Progress Steps -->
+            <div id="progressSteps" class="text-start">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="step-item mb-2" id="step1">
+                    <i class="bi bi-circle text-secondary me-2" id="step1-icon"></i>
+                    <span class="text-muted">Carton Analysis</span>
+                  </div>
+                  <div class="step-item mb-2" id="step2">
+                    <i class="bi bi-circle text-secondary me-2" id="step2-icon"></i>
+                    <span class="text-muted">3D Space Mapping</span>
+                  </div>
+                  <div class="step-item mb-2" id="step3">
+                    <i class="bi bi-circle text-secondary me-2" id="step3-icon"></i>
+                    <span class="text-muted">Algorithm Execution</span>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="step-item mb-2" id="step4">
+                    <i class="bi bi-circle text-secondary me-2" id="step4-icon"></i>
+                    <span class="text-muted">Stability Validation</span>
+                  </div>
+                  <div class="step-item mb-2" id="step5">
+                    <i class="bi bi-circle text-secondary me-2" id="step5-icon"></i>
+                    <span class="text-muted">Cost Analysis</span>
+                  </div>
+                  <div class="step-item mb-2" id="step6">
+                    <i class="bi bi-circle text-secondary me-2" id="step6-icon"></i>
+                    <span class="text-muted">Final Optimization</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Algorithm Info -->
+            <div class="mt-4">
+              <div class="alert alert-info p-2">
+                <small>
+                  <i class="bi bi-info-circle me-1"></i>
+                  <strong>Advanced Features:</strong> Real-time 3D positioning, weight distribution analysis, 
+                  stability scoring, and multi-objective optimization for enterprise-grade recommendations.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Legacy Loading Modal (kept for compatibility) -->
+  <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="loadingModalLabel">
+            <i class="bi bi-gear-fill" id="loadingIcon"></i> Processing Request
+          </h5>
+        </div>
+        <div class="modal-body text-center">
+          <div id="loadingContent">
+            <div class="spinner-border text-primary mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <h6 id="loadingTitle">Generating Truck Recommendations...</h6>
+            <p id="loadingDescription" class="text-muted">Please wait while we calculate optimal solutions</p>
+            <div id="loadingSteps" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Bulk Upload Modal -->
   <div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-labelledby="bulkUploadModalLabel" aria-hidden="true">
@@ -450,304 +637,13 @@
 <script src="{{ url_for('static', filename='js/recommend_truck.js') }}"></script>
 <script src="{{ url_for('static', filename='js/space_optimizer.js') }}"></script>
 <script>
-let rowCount = 1;
+// Row management functions moved to external JS file (recommend_truck.js)
+// This prevents conflicts and allows for better maintenance
+console.log('Template script loaded - functions are handled by external JS');
 
-// Add progress bar to form submission
-document.getElementById('cartonForm').addEventListener('submit', function(e) {
-    const steps = [
-        'Validating carton data...',
-        'Loading truck specifications...',
-        'Running optimization algorithm...',
-        'Calculating cost analysis...',
-        'Finalizing recommendations...'
-    ];
-    
-    showProgressWithSteps('Finding Optimal Trucks', steps);
-    
-    // Simulate processing time for demonstration
-    setTimeout(() => {
-        // Let the form submit naturally after showing progress
-    }, 500);
-});
+// All bulk upload functions moved to external JS file (recommend_truck.js)
 
-document.getElementById('addRow').onclick = function() {
-  rowCount++;
-  const row = document.createElement('div');
-  row.className = 'row mb-2 carton-row';
-  row.innerHTML = `
-    <div class="col-md-5">
-      <select name="carton_type_${rowCount}" class="form-select carton-type-select" required>
-        <option value="" disabled selected>Select Carton Type</option>
-        {% for carton in cartons %}
-        <option value="{{ carton.id }}" data-size="{{ carton.length }}x{{ carton.width }}x{{ carton.height }}" data-value="{{ carton.value }}">
-          {{ carton.name }} ({{ carton.length }}x{{ carton.width }}x{{ carton.height }} cm)
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2">
-      <input type="number" name="carton_qty_${rowCount}" class="form-control" min="1" placeholder="Quantity" required>
-    </div>
-    <div class="col-md-3">
-      <input type="number" name="carton_value_${rowCount}" class="form-control" min="0" step="0.01" placeholder="Per unit value">
-    </div>
-    <div class="col-md-2">
-      <button type="button" class="btn btn-danger remove-row">Remove</button>
-    </div>
-  `;
-  document.getElementById('cartonRows').appendChild(row);
-  updateRemoveButtons();
-};
-
-// Auto-populate value field when carton type is selected
-document.addEventListener('change', function(e) {
-  if (e.target.classList.contains('carton-type-select')) {
-    const selectedOption = e.target.options[e.target.selectedIndex];
-    const cartonValue = selectedOption.getAttribute('data-value') || '';
-    
-    // Find the corresponding value input field
-    const rowIndex = e.target.name.split('_')[2] || '1';
-    const valueInput = document.querySelector(`input[name="carton_value_${rowIndex}"]`);
-    
-    if (valueInput && cartonValue) {
-      valueInput.value = cartonValue;
-    }
-  }
-});
-
-function updateRemoveButtons() {
-  const rows = document.querySelectorAll('.carton-row');
-  rows.forEach((row, idx) => {
-    const btn = row.querySelector('.remove-row');
-    btn.style.display = rows.length > 1 ? '' : 'none';
-    btn.onclick = function() {
-      row.remove();
-      updateRemoveButtons();
-    };
-  });
-}
-updateRemoveButtons();
-
-// Bulk Upload Functions
-function showBulkUpload() {
-  const modal = new bootstrap.Modal(document.getElementById('bulkUploadModal'));
-  modal.show();
-}
-
-function downloadSampleCSV() {
-  // Create sample CSV data for truck recommendations
-  const sampleData = `carton_name,quantity,value
-Small Box,10,500
-Medium Box,5,800
-Large Box,3,1200
-Heavy Box,2,2000`;
-  
-  const blob = new Blob([sampleData], { type: 'text/csv' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.style.display = 'none';
-  a.href = url;
-  a.download = 'bulk_cartons_sample.csv';
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
-}
-
-function previewCSV() {
-  const fileInput = document.getElementById('bulkFileInput');
-  const file = fileInput.files[0];
-  
-  if (!file) return;
-  
-  if (file.type !== 'text/csv' && !file.name.toLowerCase().endsWith('.csv')) {
-    alert('Please select a valid CSV file.');
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const csv = e.target.result;
-    const lines = csv.split('\n').filter(line => line.trim() !== '');
-    
-    if (lines.length < 2) {
-      alert('CSV file must contain at least a header row and one data row.');
-      return;
-    }
-    
-    // Parse CSV headers
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const headerRow = document.getElementById('previewHeaders');
-    headerRow.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
-    
-    // Parse CSV data (show max 10 rows for preview)
-    const tbody = document.getElementById('previewBody');
-    tbody.innerHTML = '';
-    
-    for (let i = 1; i < Math.min(lines.length, 11); i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      const row = document.createElement('tr');
-      row.innerHTML = values.map(v => `<td>${v}</td>`).join('');
-      tbody.appendChild(row);
-    }
-    
-    if (lines.length > 11) {
-      const moreRow = document.createElement('tr');
-      moreRow.innerHTML = `<td colspan="${headers.length}" class="text-center text-muted"><em>... and ${lines.length - 11} more rows</em></td>`;
-      tbody.appendChild(moreRow);
-    }
-    
-    // Validate required columns
-    const requiredColumns = ['carton_name', 'quantity'];
-    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
-    
-    if (missingColumns.length > 0) {
-      const alert = document.createElement('div');
-      alert.className = 'alert alert-danger mt-2';
-      alert.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Missing required columns: ${missingColumns.join(', ')}`;
-      document.getElementById('csvPreview').appendChild(alert);
-    }
-    
-    document.getElementById('csvPreview').style.display = 'block';
-  };
-  
-  reader.readAsText(file);
-}
-
-function processBulkUpload() {
-  const fileInput = document.getElementById('bulkFileInput');
-  const file = fileInput.files[0];
-  
-  if (!file) {
-    alert('Please select a CSV file first.');
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const csv = e.target.result;
-    const lines = csv.split('\n').filter(line => line.trim() !== '');
-    
-    if (lines.length < 2) return;
-    
-    // Parse headers and find column indices
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const cartonNameIndex = headers.indexOf('carton_name');
-    const quantityIndex = headers.indexOf('quantity');
-    const valueIndex = headers.indexOf('value');
-    
-    if (cartonNameIndex === -1 || quantityIndex === -1) {
-      alert('CSV must contain carton_name and quantity columns.');
-      return;
-    }
-    
-    // Clear existing rows (keep first row)
-    const cartonRows = document.getElementById('cartonRows');
-    const firstRow = cartonRows.querySelector('.carton-row');
-    cartonRows.innerHTML = '';
-    cartonRows.appendChild(firstRow);
-    rowCount = 1;
-    
-    // Get available carton options from the first select
-    const firstSelect = firstRow.querySelector('select');
-    const availableCartons = Array.from(firstSelect.options).map(option => ({
-      value: option.value,
-      text: option.textContent,
-      name: option.textContent.split('(')[0].trim()
-    }));
-    
-    // Process CSV data
-    let successCount = 0;
-    let errorCount = 0;
-    const errors = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      
-      if (values.length < Math.max(cartonNameIndex, quantityIndex) + 1) continue;
-      
-      const cartonName = values[cartonNameIndex];
-      const quantity = parseInt(values[quantityIndex]);
-      const value = valueIndex >= 0 && values[valueIndex] ? parseFloat(values[valueIndex]) : '';
-      
-      // Find matching carton in available options
-      const matchingCarton = availableCartons.find(c => 
-        c.name.toLowerCase() === cartonName.toLowerCase() || 
-        c.text.toLowerCase().includes(cartonName.toLowerCase())
-      );
-      
-      if (!matchingCarton || !matchingCarton.value) {
-        errorCount++;
-        errors.push(`Row ${i + 1}: Carton "${cartonName}" not found in system`);
-        continue;
-      }
-      
-      if (isNaN(quantity) || quantity <= 0) {
-        errorCount++;
-        errors.push(`Row ${i + 1}: Invalid quantity "${values[quantityIndex]}"`);
-        continue;
-      }
-      
-      // Create new row or use first row
-      let targetRow;
-      if (successCount === 0) {
-        // Use first row
-        targetRow = firstRow;
-      } else {
-        // Create new row
-        rowCount++;
-        targetRow = document.createElement('div');
-        targetRow.className = 'row mb-2 carton-row align-items-end';
-        targetRow.innerHTML = firstRow.innerHTML
-          .replace(/carton_type_1/g, `carton_type_${rowCount}`)
-          .replace(/carton_qty_1/g, `carton_qty_${rowCount}`)
-          .replace(/carton_value_1/g, `carton_value_${rowCount}`);
-        cartonRows.appendChild(targetRow);
-      }
-      
-      // Set values
-      const selectElement = targetRow.querySelector('select');
-      const qtyInput = targetRow.querySelector('input[type="number"]:first-of-type');
-      const valueInput = targetRow.querySelector('input[type="number"]:last-of-type');
-      
-      selectElement.value = matchingCarton.value;
-      qtyInput.value = quantity;
-      if (valueInput && value) {
-        valueInput.value = value;
-      }
-      
-      successCount++;
-    }
-    
-    // Update remove buttons
-    updateRemoveButtons();
-    
-    // Show results
-    let message = `Successfully imported ${successCount} carton entries.`;
-    if (errorCount > 0) {
-      message += `\n\nSkipped ${errorCount} entries due to errors:\n${errors.slice(0, 5).join('\n')}`;
-      if (errors.length > 5) {
-        message += `\n... and ${errors.length - 5} more errors`;
-      }
-    }
-    
-    alert(message);
-    
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('bulkUploadModal'));
-    modal.hide();
-  };
-  
-  reader.readAsText(file);
-}
-
-function clearCSVPreview() {
-  document.getElementById('csvPreview').style.display = 'none';
-  document.getElementById('bulkFileInput').value = '';
-  // Remove any error alerts
-  const alerts = document.getElementById('csvPreview').querySelectorAll('.alert-danger');
-  alerts.forEach(alert => alert.remove());
-}
+// All bulk upload processing functions moved to external JS file
 
 // Initialize space optimization gauges after page load
 document.addEventListener('DOMContentLoaded', function() {

@@ -1,0 +1,41 @@
+TRUCKOPTI EXECUTABLE COMPREHENSIVE TEST REPORT
+==================================================
+
+Test Execution Time: 2025-08-18 21:36:38
+Executable Path: dist/TruckOpti_Enterprise_Complete_v3.6.3.exe
+Base URL: http://127.0.0.1:5000
+
+SUMMARY:
+Total Tests: 6
+Passed: 4
+Failed: 2
+Success Rate: 66.7%
+
+DETAILED RESULTS:
+------------------------------
+Health Check: PASS
+
+Page Load - Dashboard: PASS
+
+Page Load - Truck Recommendations: PASS
+
+Page Load - Truck Types: PASS
+
+Page Load - Carton Types: PASS
+
+Page Load - Analytics: PASS
+
+API - Analytics API: FAIL
+
+API - Drill-down API: PASS
+
+Database Functionality: PASS
+
+Static File - recommend_truck.js: PASS
+
+Static File - style.css: PASS
+
+Static File - ui_enhancements.css: PASS
+
+Truck Recommendation Workflow: FAIL
+

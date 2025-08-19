@@ -1,0 +1,114 @@
+{
+  "test_summary": {
+    "total_tests": 6,
+    "passed_tests": 4,
+    "failed_tests": 2,
+    "success_rate": "66.7%",
+    "timestamp": "2025-08-18T21:36:38.000850"
+  },
+  "test_results": [
+    {
+      "test": "Health Check",
+      "success": true,
+      "response_code": 200,
+      "details": {
+        "architecture": "Clean Architecture (Implementing)",
+        "message": "TruckOpti running with enhanced architecture foundation",
+        "status": "healthy",
+        "timestamp": "2025-08-18T16:06:31.887809",
+        "version": "v3.6.0"
+      }
+    },
+    {
+      "test": "Page Load - Dashboard",
+      "success": true,
+      "url": "/",
+      "response_code": 200,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 51624
+    },
+    {
+      "test": "Page Load - Truck Recommendations",
+      "success": true,
+      "url": "/recommend-truck",
+      "response_code": 200,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 22885
+    },
+    {
+      "test": "Page Load - Truck Types",
+      "success": true,
+      "url": "/truck-types",
+      "response_code": 200,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 27811
+    },
+    {
+      "test": "Page Load - Carton Types",
+      "success": true,
+      "url": "/carton-types",
+      "response_code": 200,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 24553
+    },
+    {
+      "test": "Page Load - Analytics",
+      "success": true,
+      "url": "/analytics",
+      "response_code": 200,
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 75801
+    },
+    {
+      "test": "API - Analytics API",
+      "success": false,
+      "endpoint": "/api/analytics",
+      "response_code": 500,
+      "json_valid": true,
+      "response_size": 120
+    },
+    {
+      "test": "API - Drill-down API",
+      "success": true,
+      "endpoint": "/api/drill-down/trucks",
+      "response_code": 200,
+      "json_valid": true,
+      "response_size": 3912
+    },
+    {
+      "test": "Database Functionality",
+      "success": true,
+      "response_code": 200,
+      "truck_count": 17
+    },
+    {
+      "test": "Static File - recommend_truck.js",
+      "success": true,
+      "url": "/static/js/recommend_truck.js",
+      "response_code": 200,
+      "file_size": 33499
+    },
+    {
+      "test": "Static File - style.css",
+      "success": true,
+      "url": "/static/style.css",
+      "response_code": 200,
+      "file_size": 18788
+    },
+    {
+      "test": "Static File - ui_enhancements.css",
+      "success": true,
+      "url": "/static/ui_enhancements.css",
+      "response_code": 200,
+      "file_size": 19051
+    },
+    {
+      "test": "Truck Recommendation Workflow",
+      "success": false,
+      "response_code": 500,
+      "content_type": "text/html; charset=utf-8",
+      "has_recommendations": false,
+      "response_length": 265
+    }
+  ]
+}

@@ -63,6 +63,11 @@ INDIAN_CARTONS = [
 @lru_cache(maxsize=128)
 def _calculate_item_sort_key(name: str, weight: float, value: float, priority: int, fragile: bool, stackable: bool, optimization_goal: str) -> Tuple:
     """Cached function to calculate sorting key for items"""
+    # Ensure safe values
+    weight = weight or 0
+    value = value or 0
+    priority = priority or 1
+    
     if optimization_goal == 'space':
         return (not stackable, -priority, -value)
     elif optimization_goal == 'weight':
@@ -236,12 +241,12 @@ def pack_cartons_optimized(truck_types_with_quantities, carton_types_with_quanti
                 carton_type.height,
                 carton_type.weight if carton_type.weight else 0
             )
-            # Add custom attributes
+            # Add custom attributes with safe defaults
             base_item.fragile = getattr(carton_type, 'fragile', False)
             base_item.stackable = getattr(carton_type, 'stackable', True)
             base_item.max_stack_height = getattr(carton_type, 'max_stack_height', 5)
-            base_item.value = getattr(carton_type, 'value', 0)
-            base_item.priority = getattr(carton_type, 'priority', 1)
+            base_item.value = getattr(carton_type, 'value', 0) or 0
+            base_item.priority = getattr(carton_type, 'priority', 1) or 1
             base_item.can_rotate = getattr(carton_type, 'can_rotate', True)
             item_cache[cache_key] = base_item
         
@@ -253,9 +258,13 @@ def pack_cartons_optimized(truck_types_with_quantities, carton_types_with_quanti
                 base_item.width, base_item.height, base_item.depth,
                 base_item.weight
             )
-            # Copy attributes
-            for attr in ['fragile', 'stackable', 'max_stack_height', 'value', 'priority', 'can_rotate']:
-                setattr(item_copy, attr, getattr(base_item, attr))
+            # Copy attributes with safe defaults
+            item_copy.fragile = getattr(base_item, 'fragile', False)
+            item_copy.stackable = getattr(base_item, 'stackable', True)
+            item_copy.max_stack_height = getattr(base_item, 'max_stack_height', 5)
+            item_copy.value = getattr(base_item, 'value', 0) or 0
+            item_copy.priority = getattr(base_item, 'priority', 1) or 1
+            item_copy.can_rotate = getattr(base_item, 'can_rotate', True)
             items.append(item_copy)
 
     # Optimized sorting using cached function
@@ -690,22 +699,30 @@ def _pack_single_truck(truck_bin, items_to_pack):
     unfitted_items_details = [{'name': item.name} for item in truck_bin.unfitted_items]
     
     # Realistic Cost Calculation - only show if cost data available
-    truck_type = truck_bin.truck_type
-    has_cost_data = (
-        getattr(truck_type, 'cost_per_km', 0) > 0 or
-        getattr(truck_type, 'fuel_efficiency', 0) > 0 or  
-        getattr(truck_type, 'driver_cost_per_day', 0) > 0 or
-        getattr(truck_type, 'maintenance_cost_per_km', 0) > 0
-    )
+    truck_type = getattr(truck_bin, 'truck_type', None)
+    has_cost_data = False
     
-    if has_cost_data:
+    if truck_type:
+        has_cost_data = (
+            (getattr(truck_type, 'cost_per_km', 0) or 0) > 0 or
+            (getattr(truck_type, 'fuel_efficiency', 0) or 0) > 0 or  
+            (getattr(truck_type, 'driver_cost_per_day', 0) or 0) > 0 or
+            (getattr(truck_type, 'maintenance_cost_per_km', 0) or 0) > 0
+        )
+    
+    if has_cost_data and truck_type:
         # Only calculate if we have actual cost data
         distance_km = 100  # Default distance - should be user input
-        fuel_cost = (distance_km / truck_type.fuel_efficiency) * 100 if truck_type.fuel_efficiency > 0 else 0
-        maintenance_cost = distance_km * truck_type.maintenance_cost_per_km if truck_type.maintenance_cost_per_km else 0
-        driver_cost = truck_type.driver_cost_per_day if truck_type.driver_cost_per_day else 0
-        truck_cost = fuel_cost + maintenance_cost + driver_cost + (truck_type.cost_per_km * distance_km if truck_type.cost_per_km else 0)
-        total_carton_value = sum(getattr(item, 'value', 0) for item in truck_bin.items)
+        fuel_eff = getattr(truck_type, 'fuel_efficiency', 0) or 0
+        maint_cost = getattr(truck_type, 'maintenance_cost_per_km', 0) or 0
+        driver_cost_val = getattr(truck_type, 'driver_cost_per_day', 0) or 0
+        cost_per_km = getattr(truck_type, 'cost_per_km', 0) or 0
+        
+        fuel_cost = (distance_km / fuel_eff) * 100 if fuel_eff > 0 else 0
+        maintenance_cost = distance_km * maint_cost
+        driver_cost = driver_cost_val
+        truck_cost = fuel_cost + maintenance_cost + driver_cost + (cost_per_km * distance_km)
+        total_carton_value = sum(getattr(item, 'value', 0) or 0 for item in truck_bin.items)
         total_cost = truck_cost + total_carton_value
     else:
         # No cost data available - don't show misleading costs
@@ -815,21 +832,29 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
         unfitted_items_details = [{'name': item.name} for item in truck_bin.unfitted_items]
 
         # Realistic Cost Calculation - only show if cost data available
-        truck_type = truck_bin.truck_type
-        has_cost_data = (
-            getattr(truck_type, 'cost_per_km', 0) > 0 or
-            getattr(truck_type, 'fuel_efficiency', 0) > 0 or  
-            getattr(truck_type, 'driver_cost_per_day', 0) > 0 or
-            getattr(truck_type, 'maintenance_cost_per_km', 0) > 0
-        )
+        truck_type = getattr(truck_bin, 'truck_type', None)
+        has_cost_data = False
         
-        if has_cost_data:
+        if truck_type:
+            has_cost_data = (
+                (getattr(truck_type, 'cost_per_km', 0) or 0) > 0 or
+                (getattr(truck_type, 'fuel_efficiency', 0) or 0) > 0 or  
+                (getattr(truck_type, 'driver_cost_per_day', 0) or 0) > 0 or
+                (getattr(truck_type, 'maintenance_cost_per_km', 0) or 0) > 0
+            )
+        
+        if has_cost_data and truck_type:
             distance_km = 100  # Should be user input
-            fuel_cost = (distance_km / truck_type.fuel_efficiency) * 100 if truck_type.fuel_efficiency > 0 else 0
-            maintenance_cost = distance_km * truck_type.maintenance_cost_per_km if truck_type.maintenance_cost_per_km else 0
-            driver_cost = truck_type.driver_cost_per_day if truck_type.driver_cost_per_day else 0
-            truck_cost = fuel_cost + maintenance_cost + driver_cost + (truck_type.cost_per_km * distance_km if truck_type.cost_per_km else 0)
-            total_carton_value = sum(getattr(item, 'value', 0) for item in truck_bin.items)
+            fuel_eff = getattr(truck_type, 'fuel_efficiency', 0) or 0
+            maint_cost = getattr(truck_type, 'maintenance_cost_per_km', 0) or 0
+            driver_cost_val = getattr(truck_type, 'driver_cost_per_day', 0) or 0
+            cost_per_km = getattr(truck_type, 'cost_per_km', 0) or 0
+            
+            fuel_cost = (distance_km / fuel_eff) * 100 if fuel_eff > 0 else 0
+            maintenance_cost = distance_km * maint_cost
+            driver_cost = driver_cost_val
+            truck_cost = fuel_cost + maintenance_cost + driver_cost + (cost_per_km * distance_km)
+            total_carton_value = sum(getattr(item, 'value', 0) or 0 for item in truck_bin.items)
             total_cost = truck_cost + total_carton_value
         else:
             truck_cost = 0
