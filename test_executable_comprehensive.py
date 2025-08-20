@@ -433,13 +433,17 @@ def main():
     """Main test execution"""
     # Look for executable files in common locations
     exe_locations = [
-        'dist/TruckOpti_Enterprise_Complete_v3.6.3.exe',
+        'dist/TruckOpti_Enterprise_VERIFIED_v3.6.5.exe',
+        'dist/TruckOpti_Enterprise_WORKING_v3.6.4.exe',
         'dist/TruckOpti_Enterprise_Fixed_v3.6.2.exe',
+        'dist/TruckOpti_Enterprise_Complete_v3.6.3.exe',
         'dist/TruckOpti_Enterprise_Full_v3.6.0.exe',
         'dist/TruckOpti_Enterprise_v3.6.0.exe',
         'dist/TruckOpti_Working_Minimal.exe',
-        'TruckOpti_Enterprise_Complete_v3.6.3.exe',
+        'TruckOpti_Enterprise_VERIFIED_v3.6.5.exe',
+        'TruckOpti_Enterprise_WORKING_v3.6.4.exe',
         'TruckOpti_Enterprise_Fixed_v3.6.2.exe',
+        'TruckOpti_Enterprise_Complete_v3.6.3.exe',
         'TruckOpti_Enterprise_Full_v3.6.0.exe',
         'TruckOpti_Enterprise_v3.6.0.exe',
         'TruckOpti_Working_Minimal.exe'

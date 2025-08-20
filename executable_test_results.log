@@ -165,3 +165,178 @@
 2025-08-18 21:36:38,005 - INFO - - executable_test_report.txt
 2025-08-18 21:36:38,005 - INFO - - executable_test_results.log
 2025-08-18 21:36:38,008 - INFO - Executable stopped successfully
+2025-08-19 08:27:11,460 - INFO - ============================================================
+2025-08-19 08:27:11,460 - INFO - COMPREHENSIVE EXECUTABLE TESTING FRAMEWORK
+2025-08-19 08:27:11,460 - INFO - Testing ALL functionality to ensure executable actually works
+2025-08-19 08:27:11,460 - INFO - ============================================================
+2025-08-19 08:27:11,460 - INFO - Starting executable: dist/TruckOpti_Enterprise_FINAL_v3.6.4.exe
+2025-08-19 08:27:54,226 - ERROR - Failed to start executable: Failed to connect to executable after 10 port attempts
+2025-08-19 08:27:54,226 - ERROR - CRITICAL: Cannot start executable - all tests failed
+2025-08-19 08:29:18,382 - INFO - ============================================================
+2025-08-19 08:29:18,382 - INFO - COMPREHENSIVE EXECUTABLE TESTING FRAMEWORK
+2025-08-19 08:29:18,382 - INFO - Testing ALL functionality to ensure executable actually works
+2025-08-19 08:29:18,382 - INFO - ============================================================
+2025-08-19 08:29:18,382 - INFO - Starting executable: dist/TruckOpti_Enterprise_WORKING_v3.6.4.exe
+2025-08-19 08:29:21,928 - INFO - Executable started successfully on port 5000
+2025-08-19 08:29:26,929 - INFO - 
+--- Running Health Check Test ---
+2025-08-19 08:29:26,949 - INFO - Health Check: PASS
+2025-08-19 08:29:27,949 - INFO - 
+--- Running Main Pages Test ---
+2025-08-19 08:29:27,958 - INFO - Page Dashboard: PASS
+2025-08-19 08:29:27,978 - INFO - Page Truck Recommendations: PASS
+2025-08-19 08:29:27,983 - INFO - Page Truck Types: PASS
+2025-08-19 08:29:27,987 - INFO - Page Carton Types: PASS
+2025-08-19 08:29:28,010 - INFO - Page Analytics: PASS
+2025-08-19 08:29:29,011 - INFO - 
+--- Running API Endpoints Test ---
+2025-08-19 08:29:29,014 - INFO - API Analytics API: PASS
+2025-08-19 08:29:29,034 - INFO - API Drill-down API: PASS
+2025-08-19 08:29:30,035 - INFO - 
+--- Running Database Functionality Test ---
+2025-08-19 08:29:30,040 - INFO - Database Functionality: PASS
+2025-08-19 08:29:31,040 - INFO - 
+--- Running Static Files Test ---
+2025-08-19 08:29:31,043 - INFO - Static recommend_truck.js: PASS
+2025-08-19 08:29:31,044 - INFO - Static style.css: PASS
+2025-08-19 08:29:31,065 - INFO - Static ui_enhancements.css: PASS
+2025-08-19 08:29:32,066 - INFO - 
+--- Running Truck Recommendation Test ---
+2025-08-19 08:29:32,122 - INFO - Truck Recommendation: PASS
+2025-08-19 08:29:33,124 - INFO - 
+============================================================
+2025-08-19 08:29:33,124 - INFO - FINAL TEST RESULTS
+2025-08-19 08:29:33,124 - INFO - ============================================================
+2025-08-19 08:29:33,124 - INFO - Tests Passed: 6/6
+2025-08-19 08:29:33,124 - INFO - Success Rate: 100.0%
+2025-08-19 08:29:33,126 - INFO - Detailed reports saved:
+2025-08-19 08:29:33,126 - INFO - - executable_test_report.json
+2025-08-19 08:29:33,126 - INFO - - executable_test_report.txt
+2025-08-19 08:29:33,126 - INFO - - executable_test_results.log
+2025-08-19 08:29:33,129 - INFO - Executable stopped successfully
+2025-08-19 08:34:05,985 - INFO - ============================================================
+2025-08-19 08:34:05,985 - INFO - COMPREHENSIVE EXECUTABLE TESTING FRAMEWORK
+2025-08-19 08:34:05,985 - INFO - Testing ALL functionality to ensure executable actually works
+2025-08-19 08:34:05,985 - INFO - ============================================================
+2025-08-19 08:34:05,985 - INFO - Starting executable: dist/TruckOpti_Enterprise_VERIFIED_v3.6.5.exe
+2025-08-19 08:34:10,348 - INFO - Executable started successfully on port 5000
+2025-08-19 08:34:15,348 - INFO - 
+--- Running Health Check Test ---
+2025-08-19 08:34:15,366 - INFO - Health Check: PASS
+2025-08-19 08:34:16,367 - INFO - 
+--- Running Main Pages Test ---
+2025-08-19 08:34:16,375 - INFO - Page Dashboard: PASS
+2025-08-19 08:34:16,387 - INFO - Page Truck Recommendations: PASS
+2025-08-19 08:34:16,409 - INFO - Page Truck Types: PASS
+2025-08-19 08:34:16,425 - INFO - Page Carton Types: PASS
+2025-08-19 08:34:16,442 - INFO - Page Analytics: PASS
+2025-08-19 08:34:17,442 - INFO - 
+--- Running API Endpoints Test ---
+2025-08-19 08:34:17,459 - INFO - API Analytics API: PASS
+2025-08-19 08:34:17,474 - INFO - API Drill-down API: PASS
+2025-08-19 08:34:18,474 - INFO - 
+--- Running Database Functionality Test ---
+2025-08-19 08:34:18,477 - INFO - Database Functionality: PASS
+2025-08-19 08:34:19,478 - INFO - 
+--- Running Static Files Test ---
+2025-08-19 08:34:19,481 - INFO - Static recommend_truck.js: PASS
+2025-08-19 08:34:19,484 - INFO - Static style.css: PASS
+2025-08-19 08:34:19,497 - INFO - Static ui_enhancements.css: PASS
+2025-08-19 08:34:20,498 - INFO - 
+--- Running Truck Recommendation Test ---
+2025-08-19 08:34:20,579 - INFO - Truck Recommendation: PASS
+2025-08-19 08:34:21,580 - INFO - 
+============================================================
+2025-08-19 08:34:21,580 - INFO - FINAL TEST RESULTS
+2025-08-19 08:34:21,580 - INFO - ============================================================
+2025-08-19 08:34:21,580 - INFO - Tests Passed: 6/6
+2025-08-19 08:34:21,580 - INFO - Success Rate: 100.0%
+2025-08-19 08:34:21,581 - INFO - Detailed reports saved:
+2025-08-19 08:34:21,581 - INFO - - executable_test_report.json
+2025-08-19 08:34:21,581 - INFO - - executable_test_report.txt
+2025-08-19 08:34:21,581 - INFO - - executable_test_results.log
+2025-08-19 08:34:21,583 - INFO - Executable stopped successfully
+2025-08-19 08:51:18,292 - INFO - ============================================================
+2025-08-19 08:51:18,293 - INFO - COMPREHENSIVE EXECUTABLE TESTING FRAMEWORK
+2025-08-19 08:51:18,293 - INFO - Testing ALL functionality to ensure executable actually works
+2025-08-19 08:51:18,293 - INFO - ============================================================
+2025-08-19 08:51:18,293 - INFO - Starting executable: dist/TruckOpti_Enterprise_VERIFIED_v3.6.5.exe
+2025-08-19 08:51:20,300 - INFO - Executable started successfully on port 5000
+2025-08-19 08:51:25,300 - INFO - 
+--- Running Health Check Test ---
+2025-08-19 08:51:25,303 - INFO - Health Check: PASS
+2025-08-19 08:51:26,304 - INFO - 
+--- Running Main Pages Test ---
+2025-08-19 08:51:26,331 - INFO - Page Dashboard: PASS
+2025-08-19 08:51:26,335 - INFO - Page Truck Recommendations: PASS
+2025-08-19 08:51:26,356 - INFO - Page Truck Types: PASS
+2025-08-19 08:51:26,372 - INFO - Page Carton Types: PASS
+2025-08-19 08:51:26,383 - INFO - Page Analytics: PASS
+2025-08-19 08:51:27,384 - INFO - 
+--- Running API Endpoints Test ---
+2025-08-19 08:51:27,400 - INFO - API Analytics API: PASS
+2025-08-19 08:51:27,415 - INFO - API Drill-down API: PASS
+2025-08-19 08:51:28,416 - INFO - 
+--- Running Database Functionality Test ---
+2025-08-19 08:51:28,420 - INFO - Database Functionality: PASS
+2025-08-19 08:51:29,421 - INFO - 
+--- Running Static Files Test ---
+2025-08-19 08:51:29,449 - INFO - Static recommend_truck.js: PASS
+2025-08-19 08:51:29,462 - INFO - Static style.css: PASS
+2025-08-19 08:51:29,483 - INFO - Static ui_enhancements.css: PASS
+2025-08-19 08:51:30,484 - INFO - 
+--- Running Truck Recommendation Test ---
+2025-08-19 08:51:30,583 - INFO - Truck Recommendation: PASS
+2025-08-19 08:51:31,585 - INFO - 
+============================================================
+2025-08-19 08:51:31,585 - INFO - FINAL TEST RESULTS
+2025-08-19 08:51:31,585 - INFO - ============================================================
+2025-08-19 08:51:31,585 - INFO - Tests Passed: 6/6
+2025-08-19 08:51:31,585 - INFO - Success Rate: 100.0%
+2025-08-19 08:51:31,587 - INFO - Detailed reports saved:
+2025-08-19 08:51:31,588 - INFO - - executable_test_report.json
+2025-08-19 08:51:31,588 - INFO - - executable_test_report.txt
+2025-08-19 08:51:31,588 - INFO - - executable_test_results.log
+2025-08-19 08:51:31,590 - INFO - Executable stopped successfully
+2025-08-19 08:54:25,800 - INFO - ============================================================
+2025-08-19 08:54:25,800 - INFO - COMPREHENSIVE EXECUTABLE TESTING FRAMEWORK
+2025-08-19 08:54:25,800 - INFO - Testing ALL functionality to ensure executable actually works
+2025-08-19 08:54:25,800 - INFO - ============================================================
+2025-08-19 08:54:25,800 - INFO - Starting executable: dist/TruckOpti_Enterprise_VERIFIED_v3.6.5.exe
+2025-08-19 08:54:27,818 - INFO - Executable started successfully on port 5000
+2025-08-19 08:54:32,819 - INFO - 
+--- Running Health Check Test ---
+2025-08-19 08:54:32,834 - INFO - Health Check: PASS
+2025-08-19 08:54:33,835 - INFO - 
+--- Running Main Pages Test ---
+2025-08-19 08:54:33,843 - INFO - Page Dashboard: PASS
+2025-08-19 08:54:33,867 - INFO - Page Truck Recommendations: PASS
+2025-08-19 08:54:33,870 - INFO - Page Truck Types: PASS
+2025-08-19 08:54:33,885 - INFO - Page Carton Types: PASS
+2025-08-19 08:54:33,902 - INFO - Page Analytics: PASS
+2025-08-19 08:54:34,902 - INFO - 
+--- Running API Endpoints Test ---
+2025-08-19 08:54:34,905 - INFO - API Analytics API: PASS
+2025-08-19 08:54:34,919 - INFO - API Drill-down API: PASS
+2025-08-19 08:54:35,919 - INFO - 
+--- Running Database Functionality Test ---
+2025-08-19 08:54:35,923 - INFO - Database Functionality: PASS
+2025-08-19 08:54:36,923 - INFO - 
+--- Running Static Files Test ---
+2025-08-19 08:54:36,948 - INFO - Static recommend_truck.js: PASS
+2025-08-19 08:54:36,970 - INFO - Static style.css: PASS
+2025-08-19 08:54:36,988 - INFO - Static ui_enhancements.css: PASS
+2025-08-19 08:54:37,989 - INFO - 
+--- Running Truck Recommendation Test ---
+2025-08-19 08:54:38,084 - INFO - Truck Recommendation: PASS
+2025-08-19 08:54:39,088 - INFO - 
+============================================================
+2025-08-19 08:54:39,089 - INFO - FINAL TEST RESULTS
+2025-08-19 08:54:39,089 - INFO - ============================================================
+2025-08-19 08:54:39,089 - INFO - Tests Passed: 6/6
+2025-08-19 08:54:39,090 - INFO - Success Rate: 100.0%
+2025-08-19 08:54:39,093 - INFO - Detailed reports saved:
+2025-08-19 08:54:39,093 - INFO - - executable_test_report.json
+2025-08-19 08:54:39,093 - INFO - - executable_test_report.txt
+2025-08-19 08:54:39,093 - INFO - - executable_test_results.log
+2025-08-19 08:54:39,095 - INFO - Executable stopped successfully
