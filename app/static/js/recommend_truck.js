@@ -586,12 +586,21 @@ function handleFormSubmission(e) {
             }
         })
         .then(html => {
-            // Replace current page content with response
-            document.documentElement.innerHTML = html;
+            // Parse the response and redirect to results
+            console.log('Form submission successful, redirecting to results');
             
-            // Re-initialize JavaScript for the new page
-            if (typeof initializePage === 'function') {
-                initializePage();
+            // Hide progress modal first
+            const modal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+            if (modal) modal.hide();
+            
+            // Instead of replacing HTML, redirect to the results page
+            // The server should return a redirect response or JSON with redirect URL
+            if (html.includes('recommendations')) {
+                // If HTML contains recommendations, we can update specific sections
+                window.location.reload();
+            } else {
+                // Otherwise reload the page to show results
+                window.location.reload();
             }
         })
         .catch(error => {

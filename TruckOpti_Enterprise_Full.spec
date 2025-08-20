@@ -82,7 +82,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='TruckOpti_Enterprise_FINAL_v3.6.4',
+    name='TruckOpti_Enterprise_TEXT_VISIBILITY_FIXED_v3.6.7',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
