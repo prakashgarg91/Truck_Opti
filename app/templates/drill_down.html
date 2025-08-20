@@ -38,18 +38,66 @@
                     <thead class="table-light">
                         {% if data and data|length > 0 %}
                             <tr>
-                                {% for key in data[0].keys() %}
-                                <th>{{ key.replace('_', ' ').title() }}</th>
-                                {% endfor %}
+                                {% if 'Vehicles' in (data_type or '') or data_type == 'trucks' or page_title == 'Available Vehicles Details' %}
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Dimensions (cm)</th>
+                                    <th>Max Weight (kg)</th>
+                                    <th>Volume (m³)</th>
+                                    <th>Availability</th>
+                                    <th>Cost/km</th>
+                                    <th>Created Date</th>
+                                {% elif data_type == 'Item Categories' or data_type == 'items' %}
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Dimensions (cm)</th>
+                                    <th>Weight (kg)</th>
+                                    <th>Volume (m³)</th>
+                                    <th>Fragile</th>
+                                    <th>Stackable</th>
+                                    <th>Created Date</th>
+                                {% elif columns and columns|length > 0 %}
+                                    {% for column in columns %}
+                                    <th>{{ column }}</th>
+                                    {% endfor %}
+                                {% else %}
+                                    {% for key in data[0].keys() %}
+                                    <th>{{ key.replace('_', ' ').title() }}</th>
+                                    {% endfor %}
+                                {% endif %}
                             </tr>
                         {% endif %}
                     </thead>
                     <tbody>
                         {% for row in data %}
                         <tr>
-                            {% for key, value in row.items() %}
-                            <td>{{ value }}</td>
-                            {% endfor %}
+                            {% if 'Vehicles' in (data_type or '') or data_type == 'trucks' or page_title == 'Available Vehicles Details' %}
+                                <td>{{ row.get('Name', 'N/A') }}</td>
+                                <td>{{ row.get('Category', 'N/A') }}</td>
+                                <td>{{ row.get('Dimensions (cm)', 'N/A') }}</td>
+                                <td>{{ row.get('Max Weight (kg)', 'N/A') }}</td>
+                                <td>{{ row.get('Volume (m³)', 'N/A') }}</td>
+                                <td>{{ row.get('Availability', 'N/A') }}</td>
+                                <td>{{ row.get('Cost/km', 'N/A') }}</td>
+                                <td>{{ row.get('Created Date', 'N/A') }}</td>
+                            {% elif data_type == 'Item Categories' or data_type == 'items' %}
+                                <td>{{ row.get('Name', 'N/A') }}</td>
+                                <td>{{ row.get('Category', 'N/A') }}</td>
+                                <td>{{ row.get('Dimensions (cm)', 'N/A') }}</td>
+                                <td>{{ row.get('Weight (kg)', 'N/A') }}</td>
+                                <td>{{ row.get('Volume (m³)', 'N/A') }}</td>
+                                <td>{{ row.get('Fragile', 'N/A') }}</td>
+                                <td>{{ row.get('Stackable', 'N/A') }}</td>
+                                <td>{{ row.get('Created Date', 'N/A') }}</td>
+                            {% elif columns and columns|length > 0 %}
+                                {% for column in columns %}
+                                <td>{{ row.get(column, 'N/A') }}</td>
+                                {% endfor %}
+                            {% else %}
+                                {% for key, value in row.items() %}
+                                <td>{{ value if value is not none else 'N/A' }}</td>
+                                {% endfor %}
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -96,26 +144,65 @@ $(document).ready(function() {
 
 // Export functionality
 function exportData(dataType) {
-    // Get table data
-    const table = $('#drillDownTable').DataTable();
-    
-    // Export as CSV
-    const csv = table.buttons.exportData({
-        format: {
-            body: function(data, row, column, node) {
-                return data;
+    try {
+        // Get table data
+        const table = $('#drillDownTable').DataTable();
+        
+        // Create CSV content
+        let csvContent = '';
+        
+        // Add headers
+        const headers = [];
+        $('#drillDownTable thead th').each(function() {
+            headers.push($(this).text().trim());
+        });
+        csvContent += headers.join(',') + '\n';
+        
+        // Add data rows
+        table.rows().data().each(function(rowData, index) {
+            const row = [];
+            for (let i = 0; i < rowData.length; i++) {
+                // Escape commas and quotes in CSV
+                let cellData = String(rowData[i] || '').replace(/"/g, '""');
+                if (cellData.includes(',') || cellData.includes('"') || cellData.includes('\n')) {
+                    cellData = `"${cellData}"`;
+                }
+                row.push(cellData);
             }
-        }
-    });
-    
-    // Create download
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${dataType}_data_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+            csvContent += row.join(',') + '\n';
+        });
+        
+        // Create download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${dataType}_data_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            <strong>Export Successful!</strong> Data has been downloaded as CSV.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.card'));
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Error exporting data. Please try again.');
+    }
 }
 
 // Real-time search functionality

@@ -3444,20 +3444,21 @@ def api_drill_down_data(data_type):
             trucks = TruckType.query.all()
             data = []
             for truck in trucks:
+                # Format dimensions properly
+                dimensions = f"{truck.length or 0}×{truck.width or 0}×{truck.height or 0}" if truck.length and truck.width and truck.height else "N/A"
+                
+                # Calculate volume in m³
+                volume = max(0, truck.length * truck.width * truck.height / 1000000) if all([truck.length, truck.width, truck.height]) else 0
+                
                 data.append({
-                    'id': truck.id,
-                    'name': truck.name,
-                    'category': getattr(truck, 'truck_category', getattr(truck, 'category', 'Unspecified')),
-                    'length': truck.length or 0,
-                    'width': truck.width or 0,
-                    'height': truck.height or 0,
-                    'max_weight': truck.max_weight or 0,
-                    # m³
-                    'volume': max(0, truck.length * truck.width * truck.height / 1000000) if all([truck.length, truck.width, truck.height]) else 0,
-                    'availability': truck.availability,
-                    'cost_per_km': getattr(truck, 'cost_per_km', 0),
-                    'fuel_efficiency': getattr(truck, 'fuel_efficiency', 0),
-                    'created_date': getattr(truck, 'date_created', datetime.now()).strftime('%Y-%m-%d') if hasattr(truck, 'date_created') and truck.date_created else 'N/A'
+                    'Name': truck.name,
+                    'Category': getattr(truck, 'truck_category', getattr(truck, 'category', 'Standard')),
+                    'Dimensions (cm)': dimensions,
+                    'Max Weight (kg)': truck.max_weight or 0,
+                    'Volume (m³)': round(volume, 2) if volume > 0 else 0,
+                    'Availability': truck.availability if truck.availability is not None else 1,
+                    'Cost/km': getattr(truck, 'cost_per_km', 0),
+                    'Created Date': getattr(truck, 'date_created', datetime.now()).strftime('%Y-%m-%d') if hasattr(truck, 'date_created') and truck.date_created else 'N/A'
                 })
 
             return jsonify({'data': data,
@@ -3547,19 +3548,21 @@ def api_drill_down_data(data_type):
             cartons = CartonType.query.all()
             data = []
             for carton in cartons:
+                # Format dimensions properly
+                dimensions = f"{carton.length or 0}×{carton.width or 0}×{carton.height or 0}" if carton.length and carton.width and carton.height else "N/A"
+                
+                # Calculate volume in m³
+                volume = max(0, carton.length * carton.width * carton.height / 1000000) if all([carton.length, carton.width, carton.height]) else 0
+                
                 data.append({
-                    'id': carton.id,
-                    'name': carton.name,
-                    'category': getattr(carton, 'category', getattr(carton, 'item_category', 'General')),
-                    'length': carton.length or 0,
-                    'width': carton.width or 0,
-                    'height': carton.height or 0,
-                    'weight': carton.weight or 0,
-                    # m³
-                    'volume': max(0, carton.length * carton.width * carton.height / 1000000) if all([carton.length, carton.width, carton.height]) else 0,
-                    'fragile': getattr(carton, 'fragile', False),
-                    'stackable': getattr(carton, 'stackable', True),
-                    'created_date': getattr(carton, 'date_created', datetime.now()).strftime('%Y-%m-%d') if hasattr(carton, 'date_created') and carton.date_created else 'N/A'
+                    'Name': carton.name,
+                    'Category': getattr(carton, 'category', getattr(carton, 'item_category', 'General')),
+                    'Dimensions (cm)': dimensions,
+                    'Weight (kg)': carton.weight or 0,
+                    'Volume (m³)': round(volume, 4) if volume > 0 else 0,
+                    'Fragile': 'Yes' if getattr(carton, 'fragile', False) else 'No',
+                    'Stackable': 'Yes' if getattr(carton, 'stackable', True) else 'No',
+                    'Created Date': getattr(carton, 'date_created', datetime.now()).strftime('%Y-%m-%d') if hasattr(carton, 'date_created') and carton.date_created else 'N/A'
                 })
 
             return jsonify({'data': data,
@@ -3660,10 +3663,11 @@ def dashboard_drill_down(data_type):
 
         # Return HTML template instead of JSON
         return render_template('drill_down.html',
-                               data_type=data_type,
+                               data_type=data_result.get('data_type', data_type),
                                data=data_result.get('data', []),
                                total_count=data_result.get('total_count', 0),
-                               page_title=f"{data_type.title()} Details")
+                               columns=data_result.get('columns', []),
+                               page_title=data_result.get('data_type', f"{data_type.title()} Details"))
     except Exception as e:
         print(f"[ERROR] Dashboard drill-down error: {e}")
         # Return error template instead of JSON error
