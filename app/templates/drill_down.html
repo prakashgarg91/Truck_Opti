@@ -38,7 +38,9 @@
                     <thead class="table-light">
                         {% if data and data|length > 0 %}
                             <tr>
-                                {% if 'Vehicles' in (data_type or '') or data_type == 'trucks' or page_title == 'Available Vehicles Details' %}
+                                <!-- BULLETPROOF: Always use hardcoded headers for Available Vehicles -->
+                                {% set is_vehicles = (page_title and 'Vehicles' in page_title) or (data_type and 'Vehicles' in data_type) or ('Name' in data[0] and 'Category' in data[0] and 'Dimensions (cm)' in data[0]) %}
+                                {% if is_vehicles %}
                                     <th>Name</th>
                                     <th>Category</th>
                                     <th>Dimensions (cm)</th>
@@ -47,23 +49,16 @@
                                     <th>Availability</th>
                                     <th>Cost/km</th>
                                     <th>Created Date</th>
-                                {% elif data_type == 'Item Categories' or data_type == 'items' %}
+                                {% else %}
+                                    <!-- Fallback for other data types -->
                                     <th>Name</th>
                                     <th>Category</th>
-                                    <th>Dimensions (cm)</th>
-                                    <th>Weight (kg)</th>
-                                    <th>Volume (m³)</th>
-                                    <th>Fragile</th>
-                                    <th>Stackable</th>
-                                    <th>Created Date</th>
-                                {% elif columns and columns|length > 0 %}
-                                    {% for column in columns %}
-                                    <th>{{ column }}</th>
-                                    {% endfor %}
-                                {% else %}
-                                    {% for key in data[0].keys() %}
-                                    <th>{{ key.replace('_', ' ').title() }}</th>
-                                    {% endfor %}
+                                    <th>Details</th>
+                                    <th>Value</th>
+                                    <th>Status</th>
+                                    <th>Type</th>
+                                    <th>Info</th>
+                                    <th>Date</th>
                                 {% endif %}
                             </tr>
                         {% endif %}
@@ -71,31 +66,22 @@
                     <tbody>
                         {% for row in data %}
                         <tr>
-                            {% if 'Vehicles' in (data_type or '') or data_type == 'trucks' or page_title == 'Available Vehicles Details' %}
-                                <td>{{ row.get('Name', 'N/A') }}</td>
-                                <td>{{ row.get('Category', 'N/A') }}</td>
-                                <td>{{ row.get('Dimensions (cm)', 'N/A') }}</td>
-                                <td>{{ row.get('Max Weight (kg)', 'N/A') }}</td>
-                                <td>{{ row.get('Volume (m³)', 'N/A') }}</td>
-                                <td>{{ row.get('Availability', 'N/A') }}</td>
-                                <td>{{ row.get('Cost/km', 'N/A') }}</td>
-                                <td>{{ row.get('Created Date', 'N/A') }}</td>
-                            {% elif data_type == 'Item Categories' or data_type == 'items' %}
-                                <td>{{ row.get('Name', 'N/A') }}</td>
-                                <td>{{ row.get('Category', 'N/A') }}</td>
-                                <td>{{ row.get('Dimensions (cm)', 'N/A') }}</td>
-                                <td>{{ row.get('Weight (kg)', 'N/A') }}</td>
-                                <td>{{ row.get('Volume (m³)', 'N/A') }}</td>
-                                <td>{{ row.get('Fragile', 'N/A') }}</td>
-                                <td>{{ row.get('Stackable', 'N/A') }}</td>
-                                <td>{{ row.get('Created Date', 'N/A') }}</td>
-                            {% elif columns and columns|length > 0 %}
-                                {% for column in columns %}
-                                <td>{{ row.get(column, 'N/A') }}</td>
-                                {% endfor %}
+                            <!-- BULLETPROOF: Use same logic as headers -->
+                            {% set is_vehicles = (page_title and 'Vehicles' in page_title) or (data_type and 'Vehicles' in data_type) or ('Name' in row and 'Category' in row and 'Dimensions (cm)' in row) %}
+                            {% if is_vehicles %}
+                                <td>{{ row.get('Name', row.get('name', 'N/A')) }}</td>
+                                <td>{{ row.get('Category', row.get('category', 'N/A')) }}</td>
+                                <td>{{ row.get('Dimensions (cm)', row.get('dimensions', 'N/A')) }}</td>
+                                <td>{{ row.get('Max Weight (kg)', row.get('max_weight', 'N/A')) }}</td>
+                                <td>{{ row.get('Volume (m³)', row.get('volume', 'N/A')) }}</td>
+                                <td>{{ row.get('Availability', row.get('availability', 'N/A')) }}</td>
+                                <td>{{ row.get('Cost/km', row.get('cost_per_km', 'N/A')) }}</td>
+                                <td>{{ row.get('Created Date', row.get('created_date', 'N/A')) }}</td>
                             {% else %}
-                                {% for key, value in row.items() %}
-                                <td>{{ value if value is not none else 'N/A' }}</td>
+                                <!-- Fallback: Use first 8 values from row data -->
+                                {% set values = row.values() | list %}
+                                {% for i in range(8) %}
+                                    <td>{{ values[i] if i < values|length else 'N/A' }}</td>
                                 {% endfor %}
                             {% endif %}
                         </tr>

@@ -198,6 +198,42 @@ def recommend_truck():
         cartons = CartonType.query.all()
         trucks = TruckType.query.all()
         print(f"[DEBUG] Found {len(cartons)} cartons, {len(trucks)} trucks")
+        
+        # EXECUTABLE FIX: If no data found, seed with default data
+        if not trucks:
+            try:
+                from app.packer import INDIAN_TRUCKS
+                for t in INDIAN_TRUCKS[:5]:  # Add first 5 trucks
+                    truck = TruckType(
+                        name=t['name'],
+                        length=t['length'],
+                        width=t['width'],
+                        height=t['height'],
+                        max_weight=t['max_weight'])
+                    db.session.add(truck)
+                db.session.commit()
+                trucks = TruckType.query.all()  # Reload
+                print(f"[INFO] Seeded {len(trucks)} default trucks for executable")
+            except Exception as seed_error:
+                print(f"[WARNING] Could not seed truck data: {seed_error}")
+        
+        if not cartons:
+            try:
+                from app.packer import INDIAN_CARTONS
+                for c in INDIAN_CARTONS[:5]:  # Add first 5 cartons
+                    carton = CartonType(
+                        name=c['type'],
+                        length=c['length'],
+                        width=c['width'],
+                        height=c['height'],
+                        weight=c['weight'])
+                    db.session.add(carton)
+                db.session.commit()
+                cartons = CartonType.query.all()  # Reload
+                print(f"[INFO] Seeded {len(cartons)} default cartons for executable")
+            except Exception as seed_error:
+                print(f"[WARNING] Could not seed carton data: {seed_error}")
+                
     except Exception as e:
         print(f"[ERROR] Database query failed: {str(e)}")
         # Fallback: return empty lists to prevent errors
@@ -3440,26 +3476,97 @@ def api_drill_down_data(data_type):
 
     try:
         if data_type == 'trucks':
-            # Get detailed truck data
+            # Get detailed truck data with executable-safe handling
             trucks = TruckType.query.all()
             data = []
+            
+            # If no trucks found, seed with default data for executable mode
+            if not trucks:
+                try:
+                    from app.packer import INDIAN_TRUCKS
+                    for t in INDIAN_TRUCKS[:3]:  # Add first 3 trucks for testing
+                        truck = TruckType(
+                            name=t['name'],
+                            length=t['length'],
+                            width=t['width'],
+                            height=t['height'],
+                            max_weight=t['max_weight'])
+                        db.session.add(truck)
+                    db.session.commit()
+                    trucks = TruckType.query.all()  # Reload trucks
+                except Exception as seed_error:
+                    print(f"[WARNING] Could not seed truck data: {seed_error}")
+            
             for truck in trucks:
-                # Format dimensions properly
-                dimensions = f"{truck.length or 0}×{truck.width or 0}×{truck.height or 0}" if truck.length and truck.width and truck.height else "N/A"
-                
-                # Calculate volume in m³
-                volume = max(0, truck.length * truck.width * truck.height / 1000000) if all([truck.length, truck.width, truck.height]) else 0
-                
-                data.append({
-                    'Name': truck.name,
-                    'Category': getattr(truck, 'truck_category', getattr(truck, 'category', 'Standard')),
-                    'Dimensions (cm)': dimensions,
-                    'Max Weight (kg)': truck.max_weight or 0,
-                    'Volume (m³)': round(volume, 2) if volume > 0 else 0,
-                    'Availability': truck.availability if truck.availability is not None else 1,
-                    'Cost/km': getattr(truck, 'cost_per_km', 0),
-                    'Created Date': getattr(truck, 'date_created', datetime.now()).strftime('%Y-%m-%d') if hasattr(truck, 'date_created') and truck.date_created else 'N/A'
-                })
+                try:
+                    # BULLETPROOF: Handle all attributes safely for executable mode
+                    truck_name = str(getattr(truck, 'name', 'Unknown Truck'))
+                    truck_length = float(getattr(truck, 'length', 0)) or 0
+                    truck_width = float(getattr(truck, 'width', 0)) or 0
+                    truck_height = float(getattr(truck, 'height', 0)) or 0
+                    truck_max_weight = float(getattr(truck, 'max_weight', 0)) or 0
+                    
+                    # Format dimensions safely
+                    dimensions = f"{truck_length}×{truck_width}×{truck_height}" if all([truck_length, truck_width, truck_height]) else "N/A"
+                    
+                    # Calculate volume in m³ safely
+                    volume = max(0, truck_length * truck_width * truck_height / 1000000) if all([truck_length, truck_width, truck_height]) else 0
+                    
+                    # Handle optional attributes with proper fallbacks
+                    category = 'Standard'
+                    try:
+                        category = getattr(truck, 'truck_category', None) or getattr(truck, 'category', 'Standard') or 'Standard'
+                    except:
+                        category = 'Standard'
+                    
+                    availability = 1
+                    try:
+                        availability = getattr(truck, 'availability', 1)
+                        if availability is None:
+                            availability = 1
+                    except:
+                        availability = 1
+                    
+                    cost_per_km = 0
+                    try:
+                        cost_per_km = getattr(truck, 'cost_per_km', 0) or 0
+                    except:
+                        cost_per_km = 0
+                    
+                    created_date = 'N/A'
+                    try:
+                        if hasattr(truck, 'date_created') and truck.date_created:
+                            created_date = truck.date_created.strftime('%Y-%m-%d')
+                        else:
+                            created_date = datetime.now().strftime('%Y-%m-%d')
+                    except:
+                        created_date = 'N/A'
+                    
+                    # Create bulletproof data structure
+                    data.append({
+                        'Name': truck_name,
+                        'Category': str(category),
+                        'Dimensions (cm)': str(dimensions),
+                        'Max Weight (kg)': int(truck_max_weight),
+                        'Volume (m³)': round(volume, 2) if volume > 0 else 0,
+                        'Availability': int(availability),
+                        'Cost/km': float(cost_per_km),
+                        'Created Date': str(created_date)
+                    })
+                    
+                except Exception as truck_error:
+                    print(f"[ERROR] Failed to process truck {getattr(truck, 'id', 'unknown')}: {truck_error}")
+                    # Add a fallback entry to prevent empty table
+                    data.append({
+                        'Name': 'Error Loading Truck',
+                        'Category': 'Standard', 
+                        'Dimensions (cm)': 'N/A',
+                        'Max Weight (kg)': 0,
+                        'Volume (m³)': 0,
+                        'Availability': 1,
+                        'Cost/km': 0,
+                        'Created Date': 'N/A'
+                    })
 
             return jsonify({'data': data,
                             'total_count': len(data),
