@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}TruckOptimum - Trucks{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-truck"></i> Truck Management
+        </h1>
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="bi bi-truck"></i> Truck Fleet Management</h5>
+                <button class="btn btn-success" onclick="showAddTruckModal()">
+                    <i class="bi bi-plus"></i> Add New Truck
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="trucksContainer">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading trucks...</span>
+                        </div>
+                        <p>Loading truck fleet...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<!-- Add/Edit Truck Modal -->
+<div class="modal fade" id="truckModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="truckModalTitle">Add New Truck</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="truckForm">
+                <div class="modal-body">
+                    <input type="hidden" id="truckId">
+                    <div class="mb-3">
+                        <label for="truckName" class="form-label">Truck Name *</label>
+                        <input type="text" class="form-control" id="truckName" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="truckLength" class="form-label">Length (m) *</label>
+                            <input type="number" class="form-control" id="truckLength" step="0.1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="truckWidth" class="form-label">Width (m) *</label>
+                            <input type="number" class="form-control" id="truckWidth" step="0.1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="truckHeight" class="form-label">Height (m) *</label>
+                            <input type="number" class="form-control" id="truckHeight" step="0.1" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label for="truckMaxWeight" class="form-label">Max Weight (kg) *</label>
+                            <input type="number" class="form-control" id="truckMaxWeight" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="truckCostPerKm" class="form-label">Cost per KM ($)</label>
+                            <input type="number" class="form-control" id="truckCostPerKm" step="0.01" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Truck</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+        
+        <div class="mt-3">
+            <a href="{{ url_for('optimize') }}" class="btn btn-primary">
+                <i class="bi bi-gear"></i> Start Optimization
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentTruckId = null;
+
+// Load trucks when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadTrucks();
+});
+
+async function loadTrucks() {
+    try {
+        const response = await fetch('/api/trucks');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayTrucks(data.trucks);
+        } else {
+            showError('Failed to load trucks');
+        }
+    } catch (error) {
+        showError('Error loading trucks: ' + error.message);
+    }
+}
+
+function displayTrucks(trucks) {
+    const container = document.getElementById('trucksContainer');
+    
+    if (trucks.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle"></i>
+                <h6>No trucks found</h6>
+                <p>Click "Add New Truck" to get started.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHtml = `
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Dimensions (L×W×H)</th>
+                        <th>Volume</th>
+                        <th>Max Weight</th>
+                        <th>Cost/km</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    trucks.forEach(truck => {
+        tableHtml += `
+            <tr>
+                <td><strong>${truck.name}</strong></td>
+                <td>${truck.length}m × ${truck.width}m × ${truck.height}m</td>
+                <td>${truck.volume.toFixed(1)}m³</td>
+                <td>${truck.max_weight}kg</td>
+                <td>$${truck.cost_per_km}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editTruck(${truck.id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteTruck(${truck.id}, '${truck.name}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHtml += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = tableHtml;
+}
+
+function showAddTruckModal() {
+    currentTruckId = null;
+    document.getElementById('truckModalTitle').textContent = 'Add New Truck';
+    document.getElementById('truckForm').reset();
+    document.getElementById('truckId').value = '';
+    new bootstrap.Modal(document.getElementById('truckModal')).show();
+}
+
+async function editTruck(truckId) {
+    try {
+        const response = await fetch('/api/trucks');
+        const data = await response.json();
+        
+        if (data.success) {
+            const truck = data.trucks.find(t => t.id === truckId);
+            if (truck) {
+                currentTruckId = truckId;
+                document.getElementById('truckModalTitle').textContent = 'Edit Truck';
+                document.getElementById('truckId').value = truck.id;
+                document.getElementById('truckName').value = truck.name;
+                document.getElementById('truckLength').value = truck.length;
+                document.getElementById('truckWidth').value = truck.width;
+                document.getElementById('truckHeight').value = truck.height;
+                document.getElementById('truckMaxWeight').value = truck.max_weight;
+                document.getElementById('truckCostPerKm').value = truck.cost_per_km;
+                
+                new bootstrap.Modal(document.getElementById('truckModal')).show();
+            }
+        }
+    } catch (error) {
+        showError('Error loading truck details: ' + error.message);
+    }
+}
+
+async function deleteTruck(truckId, truckName) {
+    if (!confirm(`Are you sure you want to delete "${truckName}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/trucks/${truckId}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess('Truck deleted successfully');
+            loadTrucks();
+        } else {
+            showError(data.error || 'Failed to delete truck');
+        }
+    } catch (error) {
+        showError('Error deleting truck: ' + error.message);
+    }
+}
+
+// Handle form submission
+document.getElementById('truckForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('truckName').value,
+        length: parseFloat(document.getElementById('truckLength').value),
+        width: parseFloat(document.getElementById('truckWidth').value),
+        height: parseFloat(document.getElementById('truckHeight').value),
+        max_weight: parseInt(document.getElementById('truckMaxWeight').value),
+        cost_per_km: parseFloat(document.getElementById('truckCostPerKm').value) || 0
+    };
+    
+    try {
+        let response;
+        if (currentTruckId) {
+            // Update existing truck
+            response = await fetch(`/api/trucks/${currentTruckId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+        } else {
+            // Create new truck
+            response = await fetch('/api/trucks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess(data.message);
+            bootstrap.Modal.getInstance(document.getElementById('truckModal')).hide();
+            loadTrucks();
+        } else {
+            showError(data.error || 'Failed to save truck');
+        }
+    } catch (error) {
+        showError('Error saving truck: ' + error.message);
+    }
+});
+
+function showSuccess(message) {
+    // Simple alert for now - could be enhanced with toast notifications
+    alert('Success: ' + message);
+}
+
+function showError(message) {
+    alert('Error: ' + message);
+}
+</script>
+{% endblock %}

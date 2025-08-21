@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}TruckOptimum - Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="jumbotron bg-primary text-white p-5 rounded mb-4">
+            <h1 class="display-4">
+                <i class="bi bi-truck"></i> TruckOptimum
+            </h1>
+            <p class="lead">Fast, intelligent truck loading optimization with advanced 3D packing algorithms</p>
+            <hr class="my-4 border-light">
+            <p class="mb-4">Maximize space utilization, minimize costs, and improve logistics efficiency with our smart recommendation system.</p>
+            <a class="btn btn-light btn-lg" href="{{ url_for('optimize') }}">
+                <i class="bi bi-gear"></i> Start Optimizing
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-lightning-charge text-warning" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Lightning Fast</h5>
+                <p class="card-text">Sub-2 second startup with lazy loading of advanced algorithms only when needed.</p>
+                <div class="mt-auto">
+                    <small class="text-success">
+                        <i class="bi bi-check-circle"></i> Startup: {{ startup_time }}s
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-cpu text-info" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Smart Algorithms</h5>
+                <p class="card-text">Multiple 3D bin packing algorithms with automatic best-fit selection and rotation optimization.</p>
+                <div class="mt-auto">
+                    <small class="text-muted">
+                        Bottom-Left-Fill, Best-Fit-Decreasing, First-Fit, Next-Fit
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up text-success" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Optimal Results</h5>
+                <p class="card-text">Comprehensive metrics including stability scoring, weight distribution, and cost efficiency analysis.</p>
+                <div class="mt-auto">
+                    <small class="text-muted">
+                        Volume, Weight, Stability, Cost Optimization
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h3>Key Features</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success"></i> <strong>3D Packing Optimization:</strong> Real 3D bin packing with carton rotation</li>
+                    <li><i class="bi bi-check-circle text-success"></i> <strong>Smart Truck Recommendations:</strong> AI-powered truck selection for optimal loading</li>
+                    <li><i class="bi bi-check-circle text-success"></i> <strong>Stability Analysis:</strong> Advanced support area calculations for safe loading</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success"></i> <strong>Multiple Algorithms:</strong> Automatic selection of best packing strategy</li>
+                    <li><i class="bi bi-check-circle text-success"></i> <strong>Cost Efficiency:</strong> Cost per kilometer analysis for optimal fleet utilization</li>
+                    <li><i class="bi bi-check-circle text-success"></i> <strong>Fast Performance:</strong> Lazy loading ensures rapid response times</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h5><i class="bi bi-speedometer2"></i> Performance Status</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Startup Time</strong><br>
+                        <span class="text-success">{{ startup_time }}s</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Algorithm Status</strong><br>
+                        <span class="text-info">Lazy Loaded</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Database</strong><br>
+                        <span class="text-success">SQLite Ready</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>3D Engine</strong><br>
+                        <span class="text-warning">On-Demand</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

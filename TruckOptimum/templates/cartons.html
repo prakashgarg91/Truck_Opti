@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}TruckOptimum - Cartons{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-box"></i> Carton Management
+        </h1>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5>Available Cartons</h5>
+            </div>
+            <div class="card-body">
+                {% if cartons %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Dimensions (L×W×H)</th>
+                                <th>Volume</th>
+                                <th>Weight</th>
+                                <th>Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for carton in cartons %}
+                            <tr>
+                                <td>{{ carton[0] }}</td>
+                                <td><strong>{{ carton[1] }}</strong></td>
+                                <td>{{ carton[2] }}m × {{ carton[3] }}m × {{ carton[4] }}m</td>
+                                <td>{{ "%.3f"|format(carton[2] * carton[3] * carton[4]) }}m³</td>
+                                <td>{{ carton[5] }}kg</td>
+                                <td>{{ carton[6] if carton[6] else 1 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No cartons found. Sample data will be added automatically.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <a href="{{ url_for('optimize') }}" class="btn btn-primary">
+                <i class="bi bi-gear"></i> Start Optimization
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
