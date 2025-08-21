@@ -36,6 +36,31 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Import comprehensive debug logging system
+try:
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    from debug_logger import (
+        log_user_action, log_system_event, log_api_request, 
+        log_database_operation, log_algorithm_execution, log_error,
+        route_logger, database_logger, debug_logger
+    )
+    DEBUG_LOGGING_ENABLED = True
+    print("[DEBUG] Comprehensive debug logging system loaded successfully")
+except ImportError as e:
+    print(f"[WARNING] Debug logging not available: {e}")
+    DEBUG_LOGGING_ENABLED = False
+    # Create no-op functions if debug logger not available
+    def log_user_action(action, details=None): pass
+    def log_system_event(event, details=None): pass
+    def log_api_request(endpoint, method, data=None, response=None): pass
+    def log_database_operation(operation, table, data=None, result=None): pass
+    def log_algorithm_execution(algorithm, input_data, output_data, execution_time=None): pass
+    def log_error(error, context=None): pass
+    def route_logger(func): return func
+    def database_logger(func): return func
+
 # Safe database query helper functions to prevent AttributeError
 
 
@@ -190,14 +215,31 @@ api = Blueprint('api', __name__)
 
 
 @bp.route('/recommend-truck', methods=['GET', 'POST'])
+@route_logger
 def recommend_truck():
     """Advanced 3D bin packing truck recommendations with stability validation"""
     print("[DEBUG] recommend_truck route called - Advanced 3D Packing Enabled")
+    
+    # Log route access
+    log_user_action("TRUCK_RECOMMENDATION_PAGE_ACCESS", {
+        "method": request.method,
+        "user_agent": request.headers.get('User-Agent'),
+        "timestamp": datetime.now().isoformat()
+    })
 
     try:
+        # Log database query attempt
+        log_database_operation("QUERY_START", "carton_type,truck_type", {"action": "load_all_types"})
+        
         cartons = CartonType.query.all()
         trucks = TruckType.query.all()
         print(f"[DEBUG] Found {len(cartons)} cartons, {len(trucks)} trucks")
+        
+        # Log successful database query
+        log_database_operation("QUERY_SUCCESS", "carton_type,truck_type", {
+            "carton_count": len(cartons),
+            "truck_count": len(trucks)
+        })
         
         # EXECUTABLE FIX: If no data found, seed with default data
         if not trucks:
@@ -249,6 +291,12 @@ def recommend_truck():
 
     if request.method == 'POST':
         print("[DEBUG] POST request received")
+        
+        # Log user form submission
+        log_user_action("TRUCK_RECOMMENDATION_FORM_SUBMIT", {
+            "form_data": dict(request.form),
+            "timestamp": datetime.now().isoformat()
+        })
 
         # Get basic form data
         carton_type_id = request.form.get('carton_type_1')
@@ -256,6 +304,13 @@ def recommend_truck():
         optimization_goal = request.form.get('optimization_goal', 'balanced')
 
         print(f"[DEBUG] Form data: carton_type_id={carton_type_id}, qty={qty}")
+        
+        # Log extracted form data
+        log_system_event("FORM_DATA_EXTRACTED", {
+            "carton_type_id": carton_type_id,
+            "quantity": qty,
+            "optimization_goal": optimization_goal
+        })
 
         # Simple validation
         if carton_type_id and qty:
@@ -328,6 +383,14 @@ def recommend_truck():
                         len(carton_data)} carton items with {
                         len(truck_data)} truck types")
 
+                # Log algorithm preparation
+                log_system_event("ALGORITHM_PREPARATION", {
+                    "carton_count": len(carton_data),
+                    "truck_count": len(truck_data),
+                    "advanced_packer_available": ADVANCED_PACKER_AVAILABLE,
+                    "optimization_goal": optimization_goal
+                })
+
                 # Use Advanced 3D Packer V2 if available, fallback to legacy
                 print(f"[CRITICAL DEBUG] ADVANCED_PACKER_AVAILABLE={ADVANCED_PACKER_AVAILABLE}, carton_data_length={len(carton_data)}")
                 if ADVANCED_PACKER_AVAILABLE and len(carton_data) > 0:
@@ -335,8 +398,25 @@ def recommend_truck():
                         print(
                             "[DEBUG] Using Advanced 3D Packer V2 - 2024-2025 Research Implementation")
                         print(f"[DEBUG] Calling create_enterprise_packing_recommendation with {len(truck_data)} trucks and {len(carton_data)} cartons")
+                        
+                        # Log algorithm execution start
+                        algo_start_time = time.time()
+                        log_algorithm_execution("ADVANCED_3D_PACKER_V2_START", {
+                            "truck_data": truck_data,
+                            "carton_data": carton_data,
+                            "optimization_goal": optimization_goal
+                        }, None)
+                        
                         advanced_result = create_enterprise_packing_recommendation(
                             truck_data, carton_data, optimization_goal)
+                        
+                        # Log algorithm execution completion
+                        algo_execution_time = (time.time() - algo_start_time) * 1000
+                        log_algorithm_execution("ADVANCED_3D_PACKER_V2_SUCCESS", {
+                            "truck_data": truck_data,
+                            "carton_data": carton_data,
+                            "optimization_goal": optimization_goal
+                        }, advanced_result, algo_execution_time)
                         print(f"[CRITICAL DEBUG] Advanced result: {type(advanced_result)}, keys: {advanced_result.keys() if isinstance(advanced_result, dict) else 'Not a dict'}")
 
                         print(
@@ -1641,14 +1721,30 @@ def api_calculate_truck_requirements():
 
 
 @api.route('/fleet-optimization', methods=['POST'])
+@route_logger
 def api_fleet_optimization():
     """CRITICAL FIX: Fleet optimization API with comprehensive error handling"""
     try:
         print("[CRITICAL DEBUG] Fleet optimization API called")
+        
+        # Log API request
+        log_api_request("fleet-optimization", "POST", None, None)
+        log_user_action("FLEET_OPTIMIZATION_API_CALL", {
+            "timestamp": datetime.now().isoformat(),
+            "user_agent": request.headers.get('User-Agent')
+        })
+        
         data = request.get_json()
         if not data:
             print("[ERROR] No JSON data received")
+            log_error(ValueError("No JSON data received"), {"endpoint": "fleet-optimization"})
             return jsonify({'error': 'No data provided'}), 400
+            
+        # Log received data
+        log_system_event("FLEET_OPTIMIZATION_DATA_RECEIVED", {
+            "data_keys": list(data.keys()) if data else [],
+            "data_size": len(str(data)) if data else 0
+        })
             
         truck_data = data.get('trucks', [])
         carton_data = data.get('cartons', [])
@@ -1694,6 +1790,31 @@ def api_fleet_optimization():
             'details': str(e),
             'success': False
         }), 500
+
+# --- Debug Logging API ---
+
+@api.route('/debug-log', methods=['POST'])
+def api_debug_log():
+    """Receive frontend debug logs"""
+    try:
+        log_data = request.get_json()
+        if not log_data:
+            return jsonify({'error': 'No log data provided'}), 400
+        
+        # Log the frontend event
+        log_system_event("FRONTEND_DEBUG_LOG", {
+            "frontend_session_id": log_data.get('sessionId'),
+            "event_type": log_data.get('eventType'),
+            "frontend_data": log_data.get('data'),
+            "frontend_url": log_data.get('url'),
+            "frontend_timestamp": log_data.get('timestamp')
+        })
+        
+        return jsonify({'status': 'logged'}), 200
+        
+    except Exception as e:
+        log_error(e, {"endpoint": "debug-log"})
+        return jsonify({'error': 'Failed to log debug data'}), 500
 
 # --- Enhanced Cost Calculation APIs ---
 
