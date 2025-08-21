@@ -59,15 +59,31 @@ class TruckOptiFrontendDebugLogger {
     }
     
     setupEventListeners() {
-        // Track all clicks
+        // Track all clicks with timing
         document.addEventListener('click', (event) => {
-            this.logUserAction('CLICK', {
-                element: event.target.tagName,
-                id: event.target.id,
-                className: event.target.className,
-                text: event.target.textContent?.substring(0, 50),
-                coordinates: { x: event.clientX, y: event.clientY }
+            const clickTime = performance.now();
+            const target = event.target;
+            
+            this.logUserAction('CLICK_START', {
+                element: target.tagName,
+                id: target.id,
+                className: target.className,
+                text: target.textContent?.substring(0, 50),
+                href: target.href,
+                coordinates: { x: event.clientX, y: event.clientY },
+                clickTime: clickTime,
+                timestamp: new Date().toISOString()
             });
+            
+            // Track processing time for navigation clicks
+            if (target.tagName === 'A' || target.href || target.onclick) {
+                this.trackNavigation(target, clickTime);
+            }
+            
+            // Track form button clicks
+            if (target.type === 'submit' || target.tagName === 'BUTTON') {
+                this.trackButtonClick(target, clickTime);
+            }
         });
         
         // Track form submissions
@@ -333,6 +349,51 @@ class TruckOptiFrontendDebugLogger {
     // Get current logs
     getLogs() {
         return this.logBuffer;
+    }
+    
+    trackNavigation(target, clickTime) {
+        // Monitor for page changes or AJAX responses
+        const checkResponse = () => {
+            const responseTime = performance.now();
+            const processingTime = responseTime - clickTime;
+            
+            this.logUserAction('NAVIGATION_COMPLETE', {
+                element: target.tagName,
+                href: target.href,
+                clickTime: clickTime,
+                responseTime: responseTime,
+                processingTime: processingTime,
+                timestamp: new Date().toISOString()
+            });
+        };
+        
+        // Wait for navigation or AJAX to complete
+        setTimeout(checkResponse, 100);
+    }
+    
+    trackButtonClick(target, clickTime) {
+        // Track when button action completes
+        const form = target.closest('form');
+        if (form) {
+            const formSubmitHandler = () => {
+                const submitTime = performance.now();
+                const processingTime = submitTime - clickTime;
+                
+                this.logUserAction('BUTTON_SUBMIT_START', {
+                    buttonText: target.textContent,
+                    buttonId: target.id,
+                    formAction: form.action,
+                    clickTime: clickTime,
+                    submitTime: submitTime,
+                    processingTime: processingTime,
+                    timestamp: new Date().toISOString()
+                });
+                
+                form.removeEventListener('submit', formSubmitHandler);
+            };
+            
+            form.addEventListener('submit', formSubmitHandler);
+        }
     }
 }
 
