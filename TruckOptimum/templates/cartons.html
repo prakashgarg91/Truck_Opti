@@ -10,44 +10,72 @@
         </h1>
         
         <div class="card">
-            <div class="card-header">
-                <h5>Available Cartons</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="bi bi-box"></i> Carton Fleet Management</h5>
+                <button class="btn btn-success" onclick="showAddCartonModal()">
+                    <i class="bi bi-plus"></i> Add New Carton
+                </button>
             </div>
             <div class="card-body">
-                {% if cartons %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Dimensions (L×W×H)</th>
-                                <th>Volume</th>
-                                <th>Weight</th>
-                                <th>Quantity</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for carton in cartons %}
-                            <tr>
-                                <td>{{ carton[0] }}</td>
-                                <td><strong>{{ carton[1] }}</strong></td>
-                                <td>{{ carton[2] }}m × {{ carton[3] }}m × {{ carton[4] }}m</td>
-                                <td>{{ "%.3f"|format(carton[2] * carton[3] * carton[4]) }}m³</td>
-                                <td>{{ carton[5] }}kg</td>
-                                <td>{{ carton[6] if carton[6] else 1 }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div id="cartonsContainer">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading cartons...</span>
+                        </div>
+                        <p>Loading carton inventory...</p>
+                    </div>
                 </div>
-                {% else %}
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> No cartons found. Sample data will be added automatically.
-                </div>
-                {% endif %}
             </div>
         </div>
+
+<!-- Add/Edit Carton Modal -->
+<div class="modal fade" id="cartonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cartonModalTitle">Add New Carton</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="cartonForm">
+                <div class="modal-body">
+                    <input type="hidden" id="cartonId">
+                    <div class="mb-3">
+                        <label for="cartonName" class="form-label">Carton Name *</label>
+                        <input type="text" class="form-control" id="cartonName" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="cartonLength" class="form-label">Length (m) *</label>
+                            <input type="number" class="form-control" id="cartonLength" step="0.1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="cartonWidth" class="form-label">Width (m) *</label>
+                            <input type="number" class="form-control" id="cartonWidth" step="0.1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="cartonHeight" class="form-label">Height (m) *</label>
+                            <input type="number" class="form-control" id="cartonHeight" step="0.1" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label for="cartonWeight" class="form-label">Weight (kg) *</label>
+                            <input type="number" class="form-control" id="cartonWeight" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cartonQuantity" class="form-label">Default Quantity</label>
+                            <input type="number" class="form-control" id="cartonQuantity" value="1">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Carton</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
         
         <div class="mt-3">
             <a href="{{ url_for('optimize') }}" class="btn btn-primary">
@@ -56,4 +84,198 @@
         </div>
     </div>
 </div>
+
+<script>
+let currentCartonId = null;
+
+// Load cartons when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadCartons();
+});
+
+async function loadCartons() {
+    try {
+        const response = await fetch('/api/cartons');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayCartons(data.cartons);
+        } else {
+            showError('Failed to load cartons');
+        }
+    } catch (error) {
+        showError('Error loading cartons: ' + error.message);
+    }
+}
+
+function displayCartons(cartons) {
+    const container = document.getElementById('cartonsContainer');
+    
+    if (cartons.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle"></i>
+                <h6>No cartons found</h6>
+                <p>Click "Add New Carton" to get started.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHtml = `
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Dimensions (L×W×H)</th>
+                        <th>Volume</th>
+                        <th>Weight</th>
+                        <th>Quantity</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    cartons.forEach(carton => {
+        const volume = carton.length * carton.width * carton.height;
+        tableHtml += `
+            <tr>
+                <td><strong>${carton.name}</strong></td>
+                <td>${carton.length}m × ${carton.width}m × ${carton.height}m</td>
+                <td>${volume.toFixed(3)}m³</td>
+                <td>${carton.weight}kg</td>
+                <td>${carton.quantity || 1}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editCarton(${carton.id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteCarton(${carton.id}, '${carton.name}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHtml += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = tableHtml;
+}
+
+function showAddCartonModal() {
+    currentCartonId = null;
+    document.getElementById('cartonModalTitle').textContent = 'Add New Carton';
+    document.getElementById('cartonForm').reset();
+    document.getElementById('cartonId').value = '';
+    new bootstrap.Modal(document.getElementById('cartonModal')).show();
+}
+
+async function editCarton(cartonId) {
+    try {
+        const response = await fetch('/api/cartons');
+        const data = await response.json();
+        
+        if (data.success) {
+            const carton = data.cartons.find(c => c.id === cartonId);
+            if (carton) {
+                currentCartonId = cartonId;
+                document.getElementById('cartonModalTitle').textContent = 'Edit Carton';
+                document.getElementById('cartonId').value = carton.id;
+                document.getElementById('cartonName').value = carton.name;
+                document.getElementById('cartonLength').value = carton.length;
+                document.getElementById('cartonWidth').value = carton.width;
+                document.getElementById('cartonHeight').value = carton.height;
+                document.getElementById('cartonWeight').value = carton.weight;
+                document.getElementById('cartonQuantity').value = carton.quantity || 1;
+                
+                new bootstrap.Modal(document.getElementById('cartonModal')).show();
+            }
+        }
+    } catch (error) {
+        showError('Error loading carton details: ' + error.message);
+    }
+}
+
+async function deleteCarton(cartonId, cartonName) {
+    if (!confirm(`Are you sure you want to delete "${cartonName}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/cartons/${cartonId}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess('Carton deleted successfully');
+            loadCartons();
+        } else {
+            showError(data.error || 'Failed to delete carton');
+        }
+    } catch (error) {
+        showError('Error deleting carton: ' + error.message);
+    }
+}
+
+// Handle form submission
+document.getElementById('cartonForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('cartonName').value,
+        length: parseFloat(document.getElementById('cartonLength').value),
+        width: parseFloat(document.getElementById('cartonWidth').value),
+        height: parseFloat(document.getElementById('cartonHeight').value),
+        weight: parseFloat(document.getElementById('cartonWeight').value),
+        quantity: parseInt(document.getElementById('cartonQuantity').value) || 1
+    };
+    
+    try {
+        let response;
+        if (currentCartonId) {
+            // Update existing carton
+            response = await fetch(`/api/cartons/${currentCartonId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+        } else {
+            // Create new carton
+            response = await fetch('/api/cartons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess(data.message);
+            bootstrap.Modal.getInstance(document.getElementById('cartonModal')).hide();
+            loadCartons();
+        } else {
+            showError(data.error || 'Failed to save carton');
+        }
+    } catch (error) {
+        showError('Error saving carton: ' + error.message);
+    }
+});
+
+function showSuccess(message) {
+    alert('Success: ' + message);
+}
+
+function showError(message) {
+    alert('Error: ' + message);
+}
+</script>
 {% endblock %}
