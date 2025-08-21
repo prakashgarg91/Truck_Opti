@@ -20,6 +20,29 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="font-inter">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" style="
+        position: fixed; 
+        top: 0; left: 0; 
+        width: 100%; height: 100%; 
+        background: #0056b3; 
+        color: white; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        z-index: 9999;
+        font-family: 'Inter', sans-serif;
+    ">
+        <div style="text-align: center;">
+            <div class="spinner-border text-light mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h4>TruckOpti Loading...</h4>
+            <p id="loadingStatus">Initializing application...</p>
+            <small id="loadingTime">0.0s</small>
+        </div>
+    </div>
+    
     <style>
         .font-inter {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -151,6 +174,61 @@
     
     <!-- TruckOpti Debug Logging System -->
     <script src="/static/js/debug_frontend.js"></script>
+    
+    <!-- Loading Screen Control -->
+    <script>
+        // Track page load timing
+        const pageStartTime = performance.now();
+        let loadingInterval;
+        
+        function updateLoadingTime() {
+            const elapsed = ((performance.now() - pageStartTime) / 1000).toFixed(1);
+            const timeElement = document.getElementById('loadingTime');
+            if (timeElement) {
+                timeElement.textContent = elapsed + 's';
+            }
+        }
+        
+        function updateLoadingStatus(status) {
+            const statusElement = document.getElementById('loadingStatus');
+            if (statusElement) {
+                statusElement.textContent = status;
+            }
+            console.log('[LOADING]', status);
+        }
+        
+        // Start loading timer
+        loadingInterval = setInterval(updateLoadingTime, 100);
+        
+        // Update status as page loads
+        if (document.readyState === 'loading') {
+            updateLoadingStatus('Loading page content...');
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLoadingStatus('DOM loaded, loading assets...');
+        });
+        
+        window.addEventListener('load', function() {
+            updateLoadingStatus('Page fully loaded!');
+            
+            // Hide loading screen after everything is ready
+            setTimeout(function() {
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
+                }
+                clearInterval(loadingInterval);
+                
+                const totalTime = ((performance.now() - pageStartTime) / 1000).toFixed(2);
+                console.log(`[LOADING] Total page load time: ${totalTime}s`);
+            }, 500); // Small delay to show final message
+        });
+        
+        // Update status for different stages
+        setTimeout(() => updateLoadingStatus('Loading scripts and styles...'), 100);
+        setTimeout(() => updateLoadingStatus('Initializing components...'), 500);
+    </script>
     
     {% block extra_js %}{% endblock %}
     {% block scripts %}{% endblock %}
