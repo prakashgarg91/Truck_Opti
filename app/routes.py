@@ -1631,29 +1631,58 @@ def api_calculate_truck_requirements():
 
 @api.route('/fleet-optimization', methods=['POST'])
 def api_fleet_optimization():
-    data = request.get_json()
-    truck_data = data.get('trucks', [])
-    carton_data = data.get('cartons', [])
+    """CRITICAL FIX: Fleet optimization API with comprehensive error handling"""
+    try:
+        print("[CRITICAL DEBUG] Fleet optimization API called")
+        data = request.get_json()
+        if not data:
+            print("[ERROR] No JSON data received")
+            return jsonify({'error': 'No data provided'}), 400
+            
+        truck_data = data.get('trucks', [])
+        carton_data = data.get('cartons', [])
+        print(f"[DEBUG] Received {len(truck_data)} trucks, {len(carton_data)} cartons")
 
-    truck_quantities = {}
-    for item in truck_data:
-        truck_type = TruckType.query.get(item['id'])
-        if truck_type:
-            truck_quantities[truck_type] = item['quantity']
+        truck_quantities = {}
+        for item in truck_data:
+            try:
+                truck_type = TruckType.query.get(item['id'])
+                if truck_type:
+                    truck_quantities[truck_type] = item['quantity']
+                    print(f"[DEBUG] Added truck: {truck_type.name} x {item['quantity']}")
+            except Exception as truck_error:
+                print(f"[ERROR] Failed to process truck {item}: {truck_error}")
 
-    carton_quantities = {}
-    for item in carton_data:
-        carton_type = CartonType.query.get(item['id'])
-        if carton_type:
-            carton_quantities[carton_type] = item['quantity']
+        carton_quantities = {}
+        for item in carton_data:
+            try:
+                carton_type = CartonType.query.get(item['id'])
+                if carton_type:
+                    carton_quantities[carton_type] = item['quantity']
+                    print(f"[DEBUG] Added carton: {carton_type.name} x {item['quantity']}")
+            except Exception as carton_error:
+                print(f"[ERROR] Failed to process carton {item}: {carton_error}")
 
-    if not truck_quantities or not carton_quantities:
-        return jsonify({'error': 'Trucks and cartons must be provided'}), 400
+        if not truck_quantities or not carton_quantities:
+            print("[ERROR] Missing trucks or cartons")
+            return jsonify({'error': 'Trucks and cartons must be provided'}), 400
 
-    from . import packer
-    results = packer.pack_cartons(truck_quantities, carton_quantities, 'space')
+        print("[DEBUG] Starting packing optimization...")
+        from . import packer
+        results = packer.pack_cartons(truck_quantities, carton_quantities, 'space')
+        print(f"[DEBUG] Packing completed successfully: {type(results)}")
 
-    return jsonify(results)
+        return jsonify(results)
+        
+    except Exception as e:
+        print(f"[CRITICAL ERROR] Fleet optimization failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': 'Fleet optimization failed',
+            'details': str(e),
+            'success': False
+        }), 500
 
 # --- Enhanced Cost Calculation APIs ---
 
@@ -3568,17 +3597,19 @@ def api_drill_down_data(data_type):
                         'Created Date': 'N/A'
                     })
 
-            return jsonify({'data': data,
-                            'total_count': len(data),
-                            'data_type': 'Available Vehicles',
-                            'columns': ['Name',
-                                        'Category',
-                                        'Dimensions (cm)',
-                                        'Max Weight (kg)',
-                                        'Volume (m³)',
-                                        'Availability',
-                                        'Cost/km',
-                                        'Created Date']})
+            # CRITICAL EXECUTABLE FIX: Force exact column order and data structure
+            print(f"[CRITICAL DEBUG] Returning {len(data)} truck records")
+            if data:
+                print(f"[CRITICAL DEBUG] First truck data: {data[0]}")
+            
+            response_data = {
+                'data': data,
+                'total_count': len(data),
+                'data_type': 'Available Vehicles',
+                'columns': ['Name', 'Category', 'Dimensions (cm)', 'Max Weight (kg)', 'Volume (m³)', 'Availability', 'Cost/km', 'Created Date']
+            }
+            print(f"[CRITICAL DEBUG] Response structure: {response_data}")
+            return jsonify(response_data)
 
         elif data_type == 'bookings':
             # Get packing jobs data
