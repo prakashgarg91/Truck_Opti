@@ -329,12 +329,15 @@ def recommend_truck():
                         len(truck_data)} truck types")
 
                 # Use Advanced 3D Packer V2 if available, fallback to legacy
+                print(f"[CRITICAL DEBUG] ADVANCED_PACKER_AVAILABLE={ADVANCED_PACKER_AVAILABLE}, carton_data_length={len(carton_data)}")
                 if ADVANCED_PACKER_AVAILABLE and len(carton_data) > 0:
                     try:
                         print(
                             "[DEBUG] Using Advanced 3D Packer V2 - 2024-2025 Research Implementation")
+                        print(f"[DEBUG] Calling create_enterprise_packing_recommendation with {len(truck_data)} trucks and {len(carton_data)} cartons")
                         advanced_result = create_enterprise_packing_recommendation(
                             truck_data, carton_data, optimization_goal)
+                        print(f"[CRITICAL DEBUG] Advanced result: {type(advanced_result)}, keys: {advanced_result.keys() if isinstance(advanced_result, dict) else 'Not a dict'}")
 
                         print(
                             f"[DEBUG] Advanced packing completed: {
@@ -391,15 +394,22 @@ def recommend_truck():
 
                     except Exception as e:
                         print(f"[ERROR] Advanced packing failed: {e}")
+                        import traceback
+                        traceback.print_exc()
                         recommended = []
+                else:
+                    print(f"[DEBUG] Skipping advanced packer: ADVANCED_PACKER_AVAILABLE={ADVANCED_PACKER_AVAILABLE}, carton_data_length={len(carton_data) if 'carton_data' in locals() else 'undefined'}")
 
                 # If advanced packing didn't produce results or failed,
                 # fallback to legacy algorithm
                 if not recommended:
+                    print("[DEBUG] Fallback to legacy algorithm")
                     recommended = []
                     total_carton_volume = total_volume  # Already calculated above
 
-                if optimization_goal == 'space_utilization':
+                    print(f"[DEBUG] Legacy algorithm starting with goal: {optimization_goal}")
+
+                if optimization_goal == 'space_utilization' and not recommended:
                     # 🔬 LAFF Algorithm (Largest Area/Volume First with Perfect Fit)
                     algorithm_name = "LAFF (Largest Area/Volume First)"
 
@@ -447,7 +457,7 @@ def recommend_truck():
                                 'bin_height': truck.height,
                                 'efficiency_score': fit_score})
 
-                elif optimization_goal == 'cost_saving':
+                elif optimization_goal == 'cost_saving' and not recommended:
                     # 💰 Cost-Optimized Multi-Constraint Algorithm
                     algorithm_name = "Cost-Optimized Multi-Constraint"
 
@@ -497,7 +507,7 @@ def recommend_truck():
                                 'bin_height': truck.height,
                                 'efficiency_score': cost_score})
 
-                elif optimization_goal == 'value_protected':
+                elif optimization_goal == 'value_protected' and not recommended:
                     # 🛡️ Value-Protected High-Security Algorithm
                     algorithm_name = "Value-Protected Security"
 
@@ -548,7 +558,7 @@ def recommend_truck():
                                 'bin_height': truck.height,
                                 'efficiency_score': sec_score})
 
-                else:  # balanced strategy
+                elif not recommended:  # balanced strategy fallback
                     # ⚖️ Balanced Multi-Criteria Decision Analysis (MCDA) Algorithm
                     algorithm_name = "Balanced MCDA (Multi-Criteria Decision Analysis)"
 
@@ -658,7 +668,8 @@ def recommend_truck():
 
     print(
         f"[DEBUG] Returning template with recommended={
-            recommended is not None}")
+            recommended is not None}, recommended_count={len(recommended) if recommended else 0}")
+    print(f"[CRITICAL DEBUG] Final recommended data: {recommended}")
     try:
         return render_template(
             'recommend_truck.html',
