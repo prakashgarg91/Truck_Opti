@@ -785,20 +785,25 @@ class TruckOptimum:
         # Convert to API format
         result = []
         for rec in recommendations[:5]:  # Top 5 recommendations
-            result.append({
-                'truck_id': rec['truck'].id,
-                'truck_name': rec['truck'].name,
-                'recommendation_score': round(rec['recommendation_score'], 1),
-                'fits_all': rec['fits_all'],
-                'volume_utilization': round(rec['packing_result'].volume_utilization, 1),
-                'weight_utilization': round(rec['packing_result'].weight_utilization, 1),
-                'stability_score': round(rec['packing_result'].stability_score, 1),
-                'cost_efficiency': round(rec['cost_efficiency'], 2),
-                'algorithm': rec['packing_result'].algorithm_used,
-                'packed_cartons': len(rec['packing_result'].packed_cartons),
-                'unpacked_cartons': len(rec['packing_result'].unpacked_cartons),
-                'recommendation': self._get_advanced_recommendation(rec['packing_result'])
-            })
+            try:
+                result.append({
+                    'truck_id': rec['truck'].id,
+                    'truck_name': rec['truck'].name,
+                    'recommendation_score': round(rec['recommendation_score'], 1),
+                    'fits_all': rec['fits_all'],
+                    'volume_utilization': round(rec['packing_result'].volume_utilization, 1),
+                    'weight_utilization': round(rec['packing_result'].weight_utilization, 1),
+                    'stability_score': round(rec['packing_result'].stability_score, 1),
+                    'cost_efficiency': round(rec['cost_efficiency'], 2),
+                    'algorithm': getattr(rec['packing_result'], 'algorithm_used', 'Advanced Multi-Pass'),
+                    'packed_cartons': len(rec['packing_result'].packed_cartons),
+                    'unpacked_cartons': len(rec['packing_result'].unpacked_cartons),
+                    'recommendation': self._get_advanced_recommendation(rec['packing_result']),
+                    'space_suggestions': rec.get('space_suggestions', [])
+                })
+            except Exception as e:
+                print(f"Error processing recommendation: {e}")
+                continue
         
         return result
     

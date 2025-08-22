@@ -697,22 +697,48 @@ class SmartTruckRecommendation:
     
     def recommend_optimal_trucks(self, available_trucks: List[Truck3D], 
                                 cartons: List[Carton3D]) -> List[Dict]:
-        """Recommend trucks sorted by optimization score"""
+        """Enhanced truck recommendation with advanced multi-pass optimization"""
         recommendations = []
         
+        # Advanced optimization strategies from previous TruckOpti
+        optimization_strategies = [
+            ("volume_priority", lambda c: c.volume),
+            ("weight_priority", lambda c: c.weight), 
+            ("density_priority", lambda c: c.weight / c.volume if c.volume > 0 else 0),
+            ("balanced_priority", lambda c: c.volume * 0.4 + c.weight * 0.6),
+            ("space_efficiency", lambda c: (c.length * c.width * c.height) / (c.length + c.width + c.height))
+        ]
+        
         for truck in available_trucks:
-            # Try packing cartons in this truck
-            packing_result = self.packer.pack_cartons_in_truck(truck, cartons, "auto")
+            best_result = None
+            best_score = 0
             
-            # Calculate recommendation score
-            score = self._calculate_recommendation_score(truck, packing_result)
+            # Try multiple optimization strategies and keep the best
+            for strategy_name, sort_key in optimization_strategies:
+                # Sort cartons according to current strategy
+                sorted_cartons = sorted(cartons, key=sort_key, reverse=True)
+                
+                # Try packing with this strategy
+                packing_result = self.packer.pack_cartons_in_truck(truck, sorted_cartons, "auto")
+                
+                # Enhanced scoring with multiple criteria
+                score = self._calculate_enhanced_recommendation_score(truck, packing_result, strategy_name)
+                
+                if score > best_score:
+                    best_score = score
+                    best_result = packing_result
+                    best_result.optimization_strategy = strategy_name
+            
+            # Use best result for this truck
+            final_score = self._calculate_recommendation_score(truck, best_result)
             
             recommendations.append({
                 'truck': truck,
-                'packing_result': packing_result,
-                'recommendation_score': score,
-                'fits_all': len(packing_result.unpacked_cartons) == 0,
-                'cost_efficiency': self._calculate_cost_efficiency(truck, packing_result)
+                'packing_result': best_result,
+                'recommendation_score': final_score,
+                'fits_all': len(best_result.unpacked_cartons) == 0,
+                'cost_efficiency': self._calculate_cost_efficiency(truck, best_result),
+                'space_suggestions': self._generate_space_optimization_suggestions(truck, best_result)
             })
         
         # Sort by recommendation score (highest first)
@@ -739,6 +765,71 @@ class SmartTruckRecommendation:
             return float('inf')
         
         return truck.cost_per_km / (result.volume_utilization / 100)
+    
+    def _calculate_enhanced_recommendation_score(self, truck: Truck3D, result: PackingResult, strategy: str) -> float:
+        """Enhanced scoring with strategy-specific weighting from advanced TruckOpti"""
+        if not result.success:
+            return 0.0
+        
+        # Base scores
+        volume_score = result.volume_utilization
+        weight_score = result.weight_utilization  
+        stability_score = result.stability_score
+        efficiency_score = result.packing_efficiency
+        
+        # Strategy-specific weighting (from previous TruckOpti advanced algorithms)
+        if strategy == "volume_priority":
+            weighted_score = volume_score * 0.5 + weight_score * 0.2 + stability_score * 0.2 + efficiency_score * 0.1
+        elif strategy == "weight_priority":
+            weighted_score = volume_score * 0.2 + weight_score * 0.5 + stability_score * 0.2 + efficiency_score * 0.1
+        elif strategy == "density_priority":
+            weighted_score = volume_score * 0.25 + weight_score * 0.25 + stability_score * 0.4 + efficiency_score * 0.1
+        elif strategy == "balanced_priority":
+            weighted_score = volume_score * 0.3 + weight_score * 0.3 + stability_score * 0.25 + efficiency_score * 0.15
+        elif strategy == "space_efficiency":
+            weighted_score = volume_score * 0.4 + weight_score * 0.15 + stability_score * 0.15 + efficiency_score * 0.3
+        else:
+            weighted_score = (volume_score + weight_score + stability_score + efficiency_score) / 4
+        
+        # Bonus for perfect fits
+        if len(result.unpacked_cartons) == 0:
+            weighted_score *= 1.1
+        
+        # Penalty for poor utilization
+        if volume_score < 50:
+            weighted_score *= 0.8
+        
+        return min(weighted_score, 100.0)
+    
+    def _generate_space_optimization_suggestions(self, truck: Truck3D, result: PackingResult) -> List[str]:
+        """Generate space optimization suggestions from advanced TruckOpti algorithms"""
+        suggestions = []
+        
+        if result.volume_utilization < 60:
+            suggestions.append("Consider using a smaller truck to improve cost efficiency")
+        
+        if result.weight_utilization < 70:
+            suggestions.append("Additional cartons can be loaded - weight capacity not fully utilized")
+        
+        if result.stability_score < 80:
+            suggestions.append("Rearrange heavier items at the bottom for better stability")
+        
+        if len(result.unpacked_cartons) > 0:
+            suggestions.append(f"{len(result.unpacked_cartons)} cartons couldn't fit - consider larger truck or split shipment")
+        
+        if result.volume_utilization > 90:
+            suggestions.append("Excellent space utilization achieved!")
+        
+        if result.stability_score > 90:
+            suggestions.append("Load is well-balanced and stable for transport")
+        
+        # Advanced suggestions based on packing efficiency
+        if result.packing_efficiency > 85:
+            suggestions.append("Optimal packing configuration found - ready for dispatch")
+        elif result.packing_efficiency < 60:
+            suggestions.append("Try reordering cartons by size or weight for better packing")
+        
+        return suggestions if suggestions else ["Good packing configuration achieved"]
 
 # Global lazy-loaded instance
 _packing_engine = None
