@@ -12,9 +12,14 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="bi bi-truck"></i> Truck Fleet Management</h5>
-                <button class="btn btn-success" onclick="showAddTruckModal()">
-                    <i class="bi bi-plus"></i> Add New Truck
-                </button>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="showAddTruckModal()">
+                        <i class="bi bi-plus"></i> Add New Truck
+                    </button>
+                    <button class="btn btn-primary" onclick="showBulkUploadModal()">
+                        <i class="bi bi-upload"></i> Bulk Upload CSV
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 <div id="trucksContainer">
@@ -71,6 +76,51 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Truck</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Upload Modal -->
+<div class="modal fade" id="bulkUploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Upload Trucks</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="bulkUploadForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> CSV Format Required</h6>
+                        <p class="mb-2">Your CSV file must have these columns:</p>
+                        <ul class="mb-2">
+                            <li><code>name</code> - Truck name</li>
+                            <li><code>length</code> - Length in meters</li>
+                            <li><code>width</code> - Width in meters</li>
+                            <li><code>height</code> - Height in meters</li>
+                            <li><code>max_weight</code> - Maximum weight in kg</li>
+                            <li><code>cost_per_km</code> - Cost per km (optional, default 0)</li>
+                        </ul>
+                        <small class="text-muted">Example: name,length,width,height,max_weight,cost_per_km</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="csvFile" class="form-label">Select CSV File</label>
+                        <input type="file" class="form-control" id="csvFile" accept=".csv" required>
+                    </div>
+                    
+                    <div id="uploadProgress" class="d-none">
+                        <div class="progress mb-2">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                        </div>
+                        <small class="text-muted">Processing CSV file...</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload Trucks</button>
                 </div>
             </form>
         </div>
@@ -277,5 +327,56 @@ function showSuccess(message) {
 function showError(message) {
     alert('Error: ' + message);
 }
+
+function showBulkUploadModal() {
+    document.getElementById('bulkUploadForm').reset();
+    document.getElementById('uploadProgress').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('bulkUploadModal')).show();
+}
+
+// Handle bulk upload form submission
+document.getElementById('bulkUploadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('csvFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showError('Please select a CSV file');
+        return;
+    }
+    
+    // Show progress
+    document.getElementById('uploadProgress').classList.remove('d-none');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('/api/trucks/bulk-upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            let message = data.message;
+            if (data.errors && data.errors.length > 0) {
+                message += `\n\nWarnings:\n${data.errors.join('\n')}`;
+            }
+            showSuccess(message);
+            bootstrap.Modal.getInstance(document.getElementById('bulkUploadModal')).hide();
+            loadTrucks(); // Reload the trucks list
+        } else {
+            showError(data.error || 'Upload failed');
+        }
+    } catch (error) {
+        showError('Upload error: ' + error.message);
+    } finally {
+        // Hide progress
+        document.getElementById('uploadProgress').classList.add('d-none');
+    }
+});
 </script>
 {% endblock %}

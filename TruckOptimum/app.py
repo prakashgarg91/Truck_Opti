@@ -4,6 +4,7 @@ Startup Target: <2 seconds
 """
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for
+from typing import List, Dict, Optional, Tuple
 import sqlite3
 import os
 import sys
@@ -286,25 +287,6 @@ class TruckOptimum:
                 return jsonify({'error': str(e)}), 500
         
         # RECOMMENDATION HISTORY ENDPOINTS
-        @self.app.route('/api/recommendations', methods=['GET'])
-        def api_recommendations():
-            """Get recommendation history"""
-            with sqlite3.connect(self.db_path) as conn:
-                recommendations = conn.execute('''
-                    SELECT * FROM recommendations ORDER BY created_at DESC LIMIT 50
-                ''').fetchall()
-                
-                recommendation_list = []
-                for rec in recommendations:
-                    recommendation_list.append({
-                        'id': rec[0], 'recommendation_id': rec[1], 'carton_requirements': rec[2],
-                        'recommended_truck_name': rec[4], 'recommendation_score': rec[5],
-                        'volume_utilization': rec[6], 'weight_utilization': rec[7], 'stability_score': rec[8],
-                        'packed_cartons': rec[9], 'total_cartons': rec[10], 'algorithm_used': rec[11],
-                        'processing_time': rec[12], 'created_at': rec[13]
-                    })
-                
-                return jsonify({'success': True, 'recommendations': recommendation_list})
         
         @self.app.route('/api/recommendations/<recommendation_id>', methods=['GET'])
         def api_recommendation_detail(recommendation_id):
@@ -568,6 +550,132 @@ class TruckOptimum:
                         return jsonify({'success': True, 'message': 'Carton deleted successfully'})
                     except Exception as e:
                         return jsonify({'success': False, 'error': str(e)}), 400
+        
+        @self.app.route('/api/trucks/bulk-upload', methods=['POST'])
+        def api_trucks_bulk_upload():
+            """Bulk upload trucks from CSV file"""
+            try:
+                if 'file' not in request.files:
+                    return jsonify({'success': False, 'error': 'No file uploaded'}), 400
+                
+                file = request.files['file']
+                if file.filename == '':
+                    return jsonify({'success': False, 'error': 'No file selected'}), 400
+                
+                if not file.filename.lower().endswith('.csv'):
+                    return jsonify({'success': False, 'error': 'File must be a CSV'}), 400
+                
+                import csv
+                import io
+                
+                # Read CSV content
+                stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+                csv_input = csv.DictReader(stream)
+                
+                trucks_added = 0
+                errors = []
+                
+                with sqlite3.connect(self.db_path) as conn:
+                    for row_num, row in enumerate(csv_input, start=2):  # Start at 2 for header
+                        try:
+                            # Expected CSV columns: name, length, width, height, max_weight, cost_per_km
+                            name = row.get('name', '').strip()
+                            length = float(row.get('length', 0))
+                            width = float(row.get('width', 0))
+                            height = float(row.get('height', 0))
+                            max_weight = float(row.get('max_weight', 0))
+                            cost_per_km = float(row.get('cost_per_km', 0))
+                            
+                            if not name or length <= 0 or width <= 0 or height <= 0 or max_weight <= 0:
+                                errors.append(f"Row {row_num}: Invalid data - all fields must be positive")
+                                continue
+                            
+                            conn.execute('''
+                                INSERT INTO trucks (name, length, width, height, max_weight, cost_per_km)
+                                VALUES (?, ?, ?, ?, ?, ?)
+                            ''', (name, length, width, height, max_weight, cost_per_km))
+                            
+                            trucks_added += 1
+                            
+                        except (ValueError, KeyError) as e:
+                            errors.append(f"Row {row_num}: {str(e)}")
+                        except Exception as e:
+                            errors.append(f"Row {row_num}: Database error - {str(e)}")
+                    
+                    conn.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Successfully added {trucks_added} trucks',
+                    'trucks_added': trucks_added,
+                    'errors': errors[:10]  # Limit errors shown
+                })
+                
+            except Exception as e:
+                return jsonify({'success': False, 'error': f'Upload failed: {str(e)}'}), 500
+        
+        @self.app.route('/api/cartons/bulk-upload', methods=['POST']) 
+        def api_cartons_bulk_upload():
+            """Bulk upload cartons from CSV file"""
+            try:
+                if 'file' not in request.files:
+                    return jsonify({'success': False, 'error': 'No file uploaded'}), 400
+                
+                file = request.files['file']
+                if file.filename == '':
+                    return jsonify({'success': False, 'error': 'No file selected'}), 400
+                
+                if not file.filename.lower().endswith('.csv'):
+                    return jsonify({'success': False, 'error': 'File must be a CSV'}), 400
+                
+                import csv
+                import io
+                
+                # Read CSV content
+                stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+                csv_input = csv.DictReader(stream)
+                
+                cartons_added = 0
+                errors = []
+                
+                with sqlite3.connect(self.db_path) as conn:
+                    for row_num, row in enumerate(csv_input, start=2):  # Start at 2 for header
+                        try:
+                            # Expected CSV columns: name, length, width, height, weight, quantity
+                            name = row.get('name', '').strip()
+                            length = float(row.get('length', 0))
+                            width = float(row.get('width', 0))
+                            height = float(row.get('height', 0))
+                            weight = float(row.get('weight', 0))
+                            quantity = int(row.get('quantity', 1))
+                            
+                            if not name or length <= 0 or width <= 0 or height <= 0 or weight <= 0:
+                                errors.append(f"Row {row_num}: Invalid data - all fields must be positive")
+                                continue
+                            
+                            conn.execute('''
+                                INSERT INTO cartons (name, length, width, height, weight, quantity)
+                                VALUES (?, ?, ?, ?, ?, ?)
+                            ''', (name, length, width, height, weight, quantity))
+                            
+                            cartons_added += 1
+                            
+                        except (ValueError, KeyError) as e:
+                            errors.append(f"Row {row_num}: {str(e)}")
+                        except Exception as e:
+                            errors.append(f"Row {row_num}: Database error - {str(e)}")
+                    
+                    conn.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Successfully added {cartons_added} cartons',
+                    'cartons_added': cartons_added,
+                    'errors': errors[:10]  # Limit errors shown
+                })
+                
+            except Exception as e:
+                return jsonify({'success': False, 'error': f'Upload failed: {str(e)}'}), 500
         
         @self.app.route('/api/health')
         def health():

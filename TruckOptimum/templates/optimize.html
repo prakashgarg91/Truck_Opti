@@ -78,10 +78,14 @@
 <script>
 function getCartonRequirements() {
     const requirements = [];
-    const cartonIds = [1, 2, 3]; // Small Box, Medium Box, Large Box
     
-    for (const cartonId of cartonIds) {
-        const quantity = parseInt(document.getElementById(`quantity${cartonId}`).value) || 0;
+    // Get all carton quantity inputs dynamically
+    const cartonInputs = document.querySelectorAll('input[id^="quantity"]');
+    
+    for (const input of cartonInputs) {
+        const cartonId = parseInt(input.id.replace('quantity', ''));
+        const quantity = parseInt(input.value) || 0;
+        
         if (quantity > 0) {
             requirements.push({
                 carton_id: cartonId,
