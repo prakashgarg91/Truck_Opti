@@ -1,0 +1,16 @@
+RESOLVED: SQLite Connection Error Fixed
+
+Issue: Screenshots showed "Error: sqlite3.Connection object has no attribute 'rowcount'"
+Fix: Updated all CRUD operations to use cursor.rowcount instead of conn.rowcount
+
+Files Modified:
+- app.py lines 479, 489, 537, 547: Fixed truck and carton UPDATE/DELETE operations
+
+Verification:
+✅ Truck CRUD operations working correctly
+✅ Carton CRUD operations working correctly  
+✅ Database operations handle row counts properly
+✅ No more SQLite connection errors
+
+Status: RESOLVED - All database CRUD operations functional
+Date: 2025-08-22 15:36

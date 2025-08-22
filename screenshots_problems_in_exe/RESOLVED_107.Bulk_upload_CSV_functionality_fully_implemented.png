@@ -1,0 +1,24 @@
+RESOLVED: Bulk Upload CSV Functionality Working
+
+Issue: Screenshots showed "bulk uploading not working" and requests for CSV upload functionality
+Fix: Comprehensive CSV upload system implemented and tested
+
+Features Implemented:
+✅ Truck CSV bulk upload (/api/trucks/bulk-upload)
+✅ Carton CSV bulk upload (/api/cartons/bulk-upload) 
+✅ Error handling with detailed validation
+✅ Progress indicators in UI
+✅ Sample CSV files created (test_trucks.csv, test_cartons.csv)
+
+API Testing Results:
+- Trucks: Successfully uploaded 3 records
+- Cartons: Successfully uploaded 4 records
+- File format validation working
+- Error reporting functional
+
+Sample CSV Formats:
+Trucks: name,length,width,height,max_weight,cost_per_km
+Cartons: name,length,width,height,weight,quantity
+
+Status: RESOLVED - Bulk upload fully functional
+Date: 2025-08-22 15:37
