@@ -129,6 +129,11 @@ class TruckOptimum:
                 cartons = conn.execute('SELECT * FROM cartons').fetchall()
             return render_template('optimize.html', trucks=trucks, cartons=cartons)
         
+        @self.app.route('/recommendations')
+        def recommendations():
+            """Advanced recommendation history with analytics"""
+            return render_template('recommendations.html')
+        
         @self.app.route('/api/optimize', methods=['POST'])
         def api_optimize():
             """Fast optimization API - lazy load algorithms only when needed"""
@@ -321,6 +326,132 @@ class TruckOptimum:
                 }
                 
                 return jsonify({'success': True, 'recommendation': recommendation})
+        
+        @self.app.route('/api/recommendations', methods=['GET'])
+        def api_recommendations():
+            """Advanced recommendation history with filtering and analytics"""
+            with sqlite3.connect(self.db_path) as conn:
+                # Get query parameters for filtering
+                page = int(request.args.get('page', 1))
+                limit = int(request.args.get('limit', 10))
+                offset = (page - 1) * limit
+                
+                truck_filter = request.args.get('truck_name', '')
+                algorithm_filter = request.args.get('algorithm', '')
+                min_score = request.args.get('min_score', '')
+                date_from = request.args.get('date_from', '')
+                date_to = request.args.get('date_to', '')
+                sort_by = request.args.get('sort_by', 'created_at')
+                sort_order = request.args.get('sort_order', 'DESC')
+                
+                # Build WHERE clause
+                where_conditions = []
+                params = []
+                
+                if truck_filter:
+                    where_conditions.append("recommended_truck_name LIKE ?")
+                    params.append(f"%{truck_filter}%")
+                
+                if algorithm_filter:
+                    where_conditions.append("algorithm_used LIKE ?")
+                    params.append(f"%{algorithm_filter}%")
+                
+                if min_score:
+                    where_conditions.append("recommendation_score >= ?")
+                    params.append(float(min_score))
+                
+                if date_from:
+                    where_conditions.append("DATE(created_at) >= ?")
+                    params.append(date_from)
+                
+                if date_to:
+                    where_conditions.append("DATE(created_at) <= ?")
+                    params.append(date_to)
+                
+                where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+                
+                # Get total count for pagination
+                count_query = f"SELECT COUNT(*) FROM recommendations {where_clause}"
+                total_count = conn.execute(count_query, params).fetchone()[0]
+                
+                # Get filtered recommendations
+                main_query = f'''
+                    SELECT * FROM recommendations {where_clause}
+                    ORDER BY {sort_by} {sort_order}
+                    LIMIT ? OFFSET ?
+                '''
+                params.extend([limit, offset])
+                
+                recommendations = conn.execute(main_query, params).fetchall()
+                
+                # Convert to dictionaries
+                recommendation_list = []
+                for rec in recommendations:
+                    recommendation_list.append({
+                        'id': rec[0], 'recommendation_id': rec[1], 'carton_requirements': rec[2],
+                        'recommended_truck_name': rec[4], 'recommendation_score': rec[5],
+                        'volume_utilization': rec[6], 'weight_utilization': rec[7], 
+                        'stability_score': rec[8], 'packed_cartons': rec[9], 
+                        'total_cartons': rec[10], 'algorithm_used': rec[11],
+                        'processing_time': rec[12], 'created_at': rec[13]
+                    })
+                
+                # Calculate analytics
+                analytics = self._calculate_recommendation_analytics(conn, where_clause, params[:-2])
+                
+                return jsonify({
+                    'success': True,
+                    'recommendations': recommendation_list,
+                    'pagination': {
+                        'page': page,
+                        'limit': limit,
+                        'total': total_count,
+                        'pages': (total_count + limit - 1) // limit
+                    },
+                    'analytics': analytics
+                })
+        
+        @self.app.route('/api/recommendations/compare', methods=['POST'])
+        def api_compare_recommendations():
+            """Compare and suggest optimization improvements"""
+            try:
+                data = request.get_json()
+                recommendation_ids = data.get('recommendation_ids', [])
+                
+                if len(recommendation_ids) < 2:
+                    return jsonify({'success': False, 'error': 'Need at least 2 recommendations to compare'}), 400
+                
+                # Get recommendations from database
+                recommendations = []
+                with sqlite3.connect(self.db_path) as conn:
+                    for rec_id in recommendation_ids:
+                        rec = conn.execute('''
+                            SELECT * FROM recommendations WHERE recommendation_id = ?
+                        ''', (rec_id,)).fetchone()
+                        
+                        if rec:
+                            recommendations.append({
+                                'id': rec[0], 'recommendation_id': rec[1], 'carton_requirements': rec[2],
+                                'recommended_truck_name': rec[4], 'recommendation_score': rec[5],
+                                'volume_utilization': rec[6], 'weight_utilization': rec[7], 
+                                'stability_score': rec[8], 'packed_cartons': rec[9], 
+                                'total_cartons': rec[10], 'algorithm_used': rec[11],
+                                'processing_time': rec[12], 'created_at': rec[13]
+                            })
+                
+                if len(recommendations) < 2:
+                    return jsonify({'success': False, 'error': 'Could not find specified recommendations'}), 400
+                
+                # Generate comparison analysis
+                comparison = self._generate_recommendation_comparison(recommendations)
+                
+                return jsonify({
+                    'success': True,
+                    'comparison': comparison
+                })
+                
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         # TRUCK CRUD ENDPOINTS
         @self.app.route('/api/trucks', methods=['GET', 'POST'])
@@ -576,6 +707,270 @@ class TruckOptimum:
                 return 'Acceptable fit'
         else:
             return f'Partial fit ({len(packing_result.unpacked_cartons)} cartons remaining)'
+    
+    def _calculate_recommendation_analytics(self, conn, where_clause, params):
+        """Calculate analytics for recommendation history"""
+        try:
+            # Overall statistics
+            stats_query = f'''
+                SELECT 
+                    COUNT(*) as total_recommendations,
+                    AVG(recommendation_score) as avg_score,
+                    AVG(volume_utilization) as avg_volume_util,
+                    AVG(weight_utilization) as avg_weight_util,
+                    AVG(stability_score) as avg_stability,
+                    MAX(recommendation_score) as max_score,
+                    MIN(recommendation_score) as min_score
+                FROM recommendations {where_clause}
+            '''
+            stats = conn.execute(stats_query, params).fetchone()
+            
+            # Most popular trucks
+            truck_stats_query = f'''
+                SELECT 
+                    recommended_truck_name,
+                    COUNT(*) as usage_count,
+                    AVG(recommendation_score) as avg_score,
+                    AVG(volume_utilization) as avg_volume_util
+                FROM recommendations {where_clause}
+                GROUP BY recommended_truck_name
+                ORDER BY usage_count DESC
+                LIMIT 5
+            '''
+            truck_stats = conn.execute(truck_stats_query, params).fetchall()
+            
+            # Algorithm performance
+            algo_stats_query = f'''
+                SELECT 
+                    algorithm_used,
+                    COUNT(*) as usage_count,
+                    AVG(recommendation_score) as avg_score,
+                    AVG(processing_time) as avg_processing_time
+                FROM recommendations {where_clause}
+                GROUP BY algorithm_used
+                ORDER BY avg_score DESC
+            '''
+            algo_stats = conn.execute(algo_stats_query, params).fetchall()
+            
+            # Trend data (last 30 days)
+            trend_query = f'''
+                SELECT 
+                    DATE(created_at) as date,
+                    COUNT(*) as daily_count,
+                    AVG(recommendation_score) as daily_avg_score
+                FROM recommendations 
+                {where_clause + (" AND " if where_clause else "WHERE ") + "created_at >= datetime('now', '-30 days')"}
+                GROUP BY DATE(created_at)
+                ORDER BY date DESC
+                LIMIT 30
+            '''
+            trend_params = params + [] if not where_clause else params
+            trend_data = conn.execute(trend_query, trend_params).fetchall()
+            
+            return {
+                'summary': {
+                    'total_recommendations': stats[0] or 0,
+                    'avg_score': round(stats[1] or 0, 1),
+                    'avg_volume_utilization': round(stats[2] or 0, 1),
+                    'avg_weight_utilization': round(stats[3] or 0, 1),
+                    'avg_stability': round(stats[4] or 0, 1),
+                    'max_score': round(stats[5] or 0, 1),
+                    'min_score': round(stats[6] or 0, 1)
+                },
+                'popular_trucks': [
+                    {
+                        'name': truck[0],
+                        'usage_count': truck[1],
+                        'avg_score': round(truck[2] or 0, 1),
+                        'avg_volume_util': round(truck[3] or 0, 1)
+                    } for truck in truck_stats
+                ],
+                'algorithm_performance': [
+                    {
+                        'algorithm': algo[0],
+                        'usage_count': algo[1],
+                        'avg_score': round(algo[2] or 0, 1),
+                        'avg_processing_time': round(float(algo[3] or 0), 3)
+                    } for algo in algo_stats
+                ],
+                'trend_data': [
+                    {
+                        'date': trend[0],
+                        'count': trend[1],
+                        'avg_score': round(trend[2] or 0, 1)
+                    } for trend in trend_data
+                ]
+            }
+        except Exception as e:
+            return {
+                'summary': {},
+                'popular_trucks': [],
+                'algorithm_performance': [],
+                'trend_data': [],
+                'error': str(e)
+            }
+    
+    def _generate_recommendation_comparison(self, recommendations: List[Dict]) -> Dict:
+        """Generate detailed comparison analysis and optimization suggestions"""
+        try:
+            # Sort by recommendation score for analysis
+            sorted_recs = sorted(recommendations, key=lambda x: x['recommendation_score'], reverse=True)
+            best_rec = sorted_recs[0]
+            worst_rec = sorted_recs[-1]
+            
+            # Calculate performance metrics
+            avg_score = sum(r['recommendation_score'] for r in recommendations) / len(recommendations)
+            avg_volume = sum(r['volume_utilization'] for r in recommendations) / len(recommendations)
+            avg_weight = sum(r['weight_utilization'] for r in recommendations) / len(recommendations)
+            avg_stability = sum(r['stability_score'] for r in recommendations) / len(recommendations)
+            
+            # Identify performance gaps
+            score_gap = best_rec['recommendation_score'] - worst_rec['recommendation_score']
+            volume_gap = best_rec['volume_utilization'] - worst_rec['volume_utilization']
+            weight_gap = best_rec['weight_utilization'] - worst_rec['weight_utilization']
+            stability_gap = best_rec['stability_score'] - worst_rec['stability_score']
+            
+            # Generate optimization suggestions
+            suggestions = []
+            
+            # Algorithm optimization suggestions
+            if score_gap > 20:
+                best_algorithm = best_rec['algorithm_used']
+                worst_algorithm = worst_rec['algorithm_used']
+                suggestions.append({
+                    'type': 'algorithm_optimization',
+                    'priority': 'high',
+                    'title': 'Algorithm Performance Gap Detected',
+                    'description': f'Switch from "{worst_algorithm}" to "{best_algorithm}" for {score_gap:.1f}% improvement',
+                    'potential_improvement': f'{score_gap:.1f}% better recommendation score',
+                    'implementation': 'automatic_algorithm_selection'
+                })
+            
+            # Volume utilization suggestions
+            if volume_gap > 15:
+                suggestions.append({
+                    'type': 'space_optimization',
+                    'priority': 'medium',
+                    'title': 'Space Utilization Improvement',
+                    'description': f'Optimize carton placement for {volume_gap:.1f}% better space utilization',
+                    'potential_improvement': f'{volume_gap:.1f}% more efficient space usage',
+                    'implementation': 'enhanced_3d_packing'
+                })
+            
+            # Weight distribution suggestions
+            if weight_gap > 20:
+                suggestions.append({
+                    'type': 'weight_optimization',
+                    'priority': 'medium',
+                    'title': 'Weight Distribution Enhancement',
+                    'description': f'Improve weight distribution for {weight_gap:.1f}% better utilization',
+                    'potential_improvement': f'{weight_gap:.1f}% improved weight efficiency',
+                    'implementation': 'physics_based_placement'
+                })
+            
+            # Stability improvement suggestions
+            if stability_gap > 25:
+                suggestions.append({
+                    'type': 'stability_enhancement',
+                    'priority': 'high',
+                    'title': 'Stability Optimization Required',
+                    'description': f'Critical stability improvement needed: {stability_gap:.1f}% gap detected',
+                    'potential_improvement': f'{stability_gap:.1f}% more stable load configuration',
+                    'implementation': 'center_of_gravity_optimization'
+                })
+            
+            # Cost efficiency analysis
+            truck_usage = {}
+            for rec in recommendations:
+                truck = rec['recommended_truck_name']
+                if truck not in truck_usage:
+                    truck_usage[truck] = {'count': 0, 'avg_score': 0, 'scores': []}
+                truck_usage[truck]['count'] += 1
+                truck_usage[truck]['scores'].append(rec['recommendation_score'])
+            
+            # Calculate average scores per truck
+            for truck in truck_usage:
+                truck_usage[truck]['avg_score'] = sum(truck_usage[truck]['scores']) / len(truck_usage[truck]['scores'])
+            
+            # Find best performing truck
+            best_truck = max(truck_usage.items(), key=lambda x: x[1]['avg_score'])
+            if best_truck[1]['avg_score'] > avg_score + 10:
+                suggestions.append({
+                    'type': 'truck_selection',
+                    'priority': 'medium',
+                    'title': 'Optimal Truck Selection',
+                    'description': f'Consider using "{best_truck[0]}" more frequently for better results',
+                    'potential_improvement': f'{best_truck[1]["avg_score"] - avg_score:.1f}% score improvement',
+                    'implementation': 'truck_fleet_optimization'
+                })
+            
+            # Performance trend analysis
+            efficiency_trends = []
+            for i, rec in enumerate(recommendations):
+                efficiency_trends.append({
+                    'order': i + 1,
+                    'recommendation_id': rec['recommendation_id'],
+                    'score': rec['recommendation_score'],
+                    'volume_util': rec['volume_utilization'],
+                    'weight_util': rec['weight_utilization'],
+                    'stability': rec['stability_score'],
+                    'truck': rec['recommended_truck_name'],
+                    'algorithm': rec['algorithm_used']
+                })
+            
+            # Overall assessment
+            if avg_score >= 80:
+                overall_assessment = "Excellent performance across recommendations"
+            elif avg_score >= 60:
+                overall_assessment = "Good performance with room for optimization"
+            elif avg_score >= 40:
+                overall_assessment = "Average performance, significant improvement potential"
+            else:
+                overall_assessment = "Poor performance, urgent optimization required"
+            
+            return {
+                'summary': {
+                    'total_compared': len(recommendations),
+                    'best_score': best_rec['recommendation_score'],
+                    'worst_score': worst_rec['recommendation_score'],
+                    'average_score': round(avg_score, 1),
+                    'score_range': round(score_gap, 1),
+                    'overall_assessment': overall_assessment
+                },
+                'performance_metrics': {
+                    'average_volume_utilization': round(avg_volume, 1),
+                    'average_weight_utilization': round(avg_weight, 1),
+                    'average_stability_score': round(avg_stability, 1),
+                    'volume_gap': round(volume_gap, 1),
+                    'weight_gap': round(weight_gap, 1),
+                    'stability_gap': round(stability_gap, 1)
+                },
+                'best_recommendation': {
+                    'id': best_rec['recommendation_id'],
+                    'score': best_rec['recommendation_score'],
+                    'truck': best_rec['recommended_truck_name'],
+                    'algorithm': best_rec['algorithm_used'],
+                    'volume_util': best_rec['volume_utilization'],
+                    'weight_util': best_rec['weight_utilization'],
+                    'stability': best_rec['stability_score']
+                },
+                'optimization_suggestions': suggestions,
+                'truck_performance': truck_usage,
+                'efficiency_trends': efficiency_trends,
+                'recommendations': {
+                    'immediate_actions': [s for s in suggestions if s['priority'] == 'high'],
+                    'medium_term_improvements': [s for s in suggestions if s['priority'] == 'medium'],
+                    'algorithm_recommendation': best_rec['algorithm_used'] if score_gap > 10 else 'current_algorithms_adequate',
+                    'truck_recommendation': best_truck[0] if best_truck[1]['avg_score'] > avg_score + 5 else 'current_selection_adequate'
+                }
+            }
+        except Exception as e:
+            return {
+                'summary': {'error': 'Failed to generate comparison'},
+                'performance_metrics': {},
+                'optimization_suggestions': [],
+                'error': str(e)
+            }
     
     def run(self, host='127.0.0.1', port=5000, debug=False):
         """Run the application"""

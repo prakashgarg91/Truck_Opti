@@ -1,0 +1,133 @@
+{
+  "session_id": "PROFILE_20250821_102014",
+  "generated_at": "2025-08-21T10:20:14.788640",
+  "total_startup_time_seconds": 0.10211491584777832,
+  "total_checkpoints": 7,
+  "total_errors": 0,
+  "performance_summary": {
+    "peak_memory_mb": 18.4140625,
+    "average_cpu_percent": 0.0,
+    "slowest_imports": [
+      [
+        "json",
+        4.76837158203125e-07
+      ]
+    ],
+    "slowest_initializations": [
+      [
+        "test_component",
+        0.05
+      ]
+    ]
+  },
+  "detailed_timeline": [
+    {
+      "session_id": "PROFILE_20250821_102014",
+      "timestamp": "2025-08-21T10:20:14.687151",
+      "elapsed_seconds": 0.0006537437438964844,
+      "checkpoint": "PROFILER_INITIALIZED",
+      "description": "Startup profiler initialized",
+      "details": {},
+      "memory_mb": 18.39453125,
+      "cpu_percent": 0.0
+    },
+    {
+      "session_id": "PROFILE_20250821_102014",
+      "timestamp": "2025-08-21T10:20:14.687418",
+      "elapsed_seconds": 0.0009210109710693359,
+      "checkpoint": "TEST_START",
+      "description": "Starting profiling test",
+      "details": {},
+      "memory_mb": 18.41015625,
+      "cpu_percent": 0.0
+    },
+    {
+      "session_id": "PROFILE_20250821_102014",
+      "timestamp": "2025-08-21T10:20:14.687558",
+      "elapsed_seconds": 0.0010607242584228516,
+      "checkpoint": "IMPORT_JSON",
+      "description": "Imported json",
+      "details": {
+        "import_time_ms": 0.000476837158203125,
+        "module": "json"
+      },
+      "memory_mb": 18.4140625,
+      "cpu_percent": 0.0
+    },
+    {
+      "session_id": "PROFILE_20250821_102014",
+      "timestamp": "2025-08-21T10:20:14.687748",
+      "elapsed_seconds": 0.0012507438659667969,
+      "checkpoint": "START_TEST_INITIALIZATION",
+      "description": "Starting test_initialization",
+      "details": {},
+      "memory_mb": 18.4140625,
+      "cpu_percent": 0.0
+    },
+    {
+      "session_id": "PROFILE_20250821_102014",
+      "timestamp": "2025-08-21T10:20:14.788064",
+      "elapsed_seconds": 0.10156631469726562,
+      "checkpoint": "COMPLETE_TEST_INITIALIZATION",
+      "description": "Completed test_initialization",
+      "details": {
+        "operation_time_ms": 100.31390190124512
+      },
+      "memory_mb": 18.41796875,
+      "cpu_percent": 0.0
+    },
+    {
+      "session_id": "PROFILE_20250821_102014",
+      "timestamp": "2025-08-21T10:20:14.788294",
+      "elapsed_seconds": 0.10179758071899414,
+      "checkpoint": "INIT_TEST_COMPONENT",
+      "description": "Initialized test_component",
+      "details": {
+        "init_time_ms": 50.0,
+        "component": "test_component",
+        "component_type": "test",
+        "details": "test initialization"
+      },
+      "memory_mb": 18.41796875,
+      "cpu_percent": 0.0
+    },
+    {
+      "session_id": "PROFILE_20250821_102014",
+      "timestamp": "2025-08-21T10:20:14.788432",
+      "elapsed_seconds": 0.10193538665771484,
+      "checkpoint": "TEST_COMPLETE",
+      "description": "Profiling test completed",
+      "details": {},
+      "memory_mb": 18.41796875,
+      "cpu_percent": 0.0
+    }
+  ],
+  "import_analysis": {
+    "json": 4.76837158203125e-07
+  },
+  "initialization_analysis": {
+    "test_component": 0.05
+  },
+  "memory_timeline": [
+    {
+      "timestamp": 0.0006396770477294922,
+      "memory_mb": 18.39453125
+    },
+    {
+      "timestamp": 0.10114693641662598,
+      "memory_mb": 18.4140625
+    }
+  ],
+  "cpu_timeline": [
+    {
+      "timestamp": 0.0006406307220458984,
+      "cpu_percent": 0.0
+    },
+    {
+      "timestamp": 0.10114789009094238,
+      "cpu_percent": 0.0
+    }
+  ],
+  "error_log": [],
+  "recommendations": []
+}

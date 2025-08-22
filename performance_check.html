@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TruckOpti Performance Check</title>
+</head>
+<body>
+    <h1>Performance Analysis</h1>
+    <button onclick="analyzePerformance()">Check Performance</button>
+    <div id="results"></div>
+
+    <script>
+    function analyzePerformance() {
+        // Use built-in Performance API
+        const nav = performance.getEntriesByType('navigation')[0];
+        const resources = performance.getEntriesByType('resource');
+        
+        const results = document.getElementById('results');
+        results.innerHTML = `
+            <h2>Page Load Times:</h2>
+            <p>DNS Lookup: ${nav.domainLookupEnd - nav.domainLookupStart}ms</p>
+            <p>TCP Connect: ${nav.connectEnd - nav.connectStart}ms</p>
+            <p>Request: ${nav.responseStart - nav.requestStart}ms</p>
+            <p>Response: ${nav.responseEnd - nav.responseStart}ms</p>
+            <p>DOM Processing: ${nav.domComplete - nav.domLoading}ms</p>
+            <p>Total Load Time: ${nav.loadEventEnd - nav.navigationStart}ms</p>
+            
+            <h2>Slow Resources (>100ms):</h2>
+            ${resources.filter(r => r.duration > 100).map(r => 
+                `<p>${r.name}: ${r.duration.toFixed(2)}ms</p>`
+            ).join('')}
+        `;
+    }
+    
+    // Auto-run on load
+    window.addEventListener('load', analyzePerformance);
+    </script>
+</body>
+</html>
