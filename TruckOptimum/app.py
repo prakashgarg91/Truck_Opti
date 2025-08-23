@@ -10,6 +10,16 @@ import os
 import sys
 import time
 
+# Import advanced 3D algorithms
+try:
+    from advanced_3d_algorithms import (
+        Advanced3DPackingEngine, Algorithm3DType, Carton3D, Truck3D
+    )
+    ADVANCED_ALGORITHMS_AVAILABLE = True
+except ImportError:
+    ADVANCED_ALGORITHMS_AVAILABLE = False
+    print("Advanced 3D algorithms not available")
+
 # Global timing for performance monitoring
 APP_START_TIME = time.time()
 
@@ -18,6 +28,15 @@ class TruckOptimum:
         self.app = Flask(__name__)
         self.app.secret_key = 'truckoptimum-2025'
         self.db_path = self.get_db_path()
+        
+        # Initialize advanced 3D algorithms engine
+        if ADVANCED_ALGORITHMS_AVAILABLE:
+            self.advanced_engine = Advanced3DPackingEngine()
+            print("DEBUG: Advanced 3D algorithms engine initialized")
+        else:
+            self.advanced_engine = None
+            print("DEBUG: Using fallback algorithms only")
+            
         self.setup_routes()
         self.init_database()
         
@@ -1034,8 +1053,291 @@ Carton Details:
             return jsonify({
                 'status': 'ok',
                 'startup_time': f"{time.time() - APP_START_TIME:.2f}s",
-                'version': '1.0.0'
+                'version': '1.0.0',
+                'advanced_algorithms': ADVANCED_ALGORITHMS_AVAILABLE
             })
+        
+        # Advanced 3D Algorithm Routes
+        print("DEBUG: About to register advanced 3D algorithm routes")
+        
+        @self.app.route('/api/algorithms/list')
+        def api_algorithms_list():
+            """Get list of available advanced algorithms"""
+            if not ADVANCED_ALGORITHMS_AVAILABLE:
+                return jsonify({'error': 'Advanced algorithms not available'}), 503
+            
+            algorithms = self.advanced_engine.get_algorithm_info()
+            return jsonify({
+                'success': True,
+                'algorithms': algorithms,
+                'total_algorithms': len(algorithms)
+            })
+        
+        @self.app.route('/api/algorithms/pack', methods=['POST'])
+        def api_algorithms_pack():
+            """Pack cartons using specified advanced algorithm"""
+            if not ADVANCED_ALGORITHMS_AVAILABLE:
+                return jsonify({'error': 'Advanced algorithms not available'}), 503
+            
+            try:
+                data = request.get_json()
+                truck_id = data.get('truck_id')
+                carton_requirements = data.get('carton_requirements', [])
+                algorithm_type = data.get('algorithm', 'skyline_bl')
+                
+                if not truck_id or not carton_requirements:
+                    return jsonify({'error': 'Missing truck_id or carton_requirements'}), 400
+                
+                with sqlite3.connect(self.db_path) as conn:
+                    # Get truck data
+                    truck_row = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
+                    if not truck_row:
+                        return jsonify({'error': 'Truck not found'}), 404
+                    
+                    truck = Truck3D(
+                        id=truck_row[0],
+                        name=truck_row[1], 
+                        length=truck_row[2],
+                        width=truck_row[3],
+                        height=truck_row[4],
+                        max_weight=truck_row[5],
+                        cost_per_km=truck_row[6]
+                    )
+                    
+                    # Get carton data
+                    cartons = []
+                    for req in carton_requirements:
+                        carton_id = req.get('carton_id')
+                        quantity = req.get('quantity', 1)
+                        
+                        carton_row = conn.execute('SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+                        if carton_row:
+                            carton = Carton3D(
+                                id=carton_row[0],
+                                name=carton_row[1],
+                                length=carton_row[2], 
+                                width=carton_row[3],
+                                height=carton_row[4],
+                                weight=carton_row[5],
+                                quantity=quantity
+                            )
+                            cartons.append(carton)
+                    
+                    # Convert algorithm string to enum
+                    try:
+                        algorithm_enum = Algorithm3DType(algorithm_type)
+                    except ValueError:
+                        return jsonify({'error': f'Unknown algorithm: {algorithm_type}'}), 400
+                    
+                    # Run packing algorithm
+                    result = self.advanced_engine.pack_with_algorithm(truck, cartons, algorithm_enum)
+                    
+                    # Convert result for JSON serialization
+                    json_result = {
+                        'success': True,
+                        'algorithm': result['algorithm'],
+                        'volume_utilization': result['volume_utilization'],
+                        'weight_utilization': result['weight_utilization'],
+                        'total_packed': result['total_packed'],
+                        'total_unpacked': result['total_unpacked'],
+                        'efficiency_score': result['efficiency_score'],
+                        'truck_info': {
+                            'name': truck.name,
+                            'volume': truck.volume,
+                            'max_weight': truck.max_weight
+                        },
+                        'packed_cartons': [{
+                            'carton_name': pc.carton.name,
+                            'position': {'x': pc.x, 'y': pc.y, 'z': pc.z},
+                            'orientation': {'l': pc.orientation[0], 'w': pc.orientation[1], 'h': pc.orientation[2]},
+                            'volume': pc.carton.volume,
+                            'weight': pc.carton.weight
+                        } for pc in result['packed_cartons']],
+                        'unpacked_cartons': [{
+                            'carton_name': uc.name,
+                            'volume': uc.volume, 
+                            'weight': uc.weight
+                        } for uc in result['unpacked_cartons']]
+                    }
+                    
+                    return jsonify(json_result)
+                    
+            except Exception as e:
+                import traceback
+                print(f"Error in advanced packing: {str(e)}")
+                print(traceback.format_exc())
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/api/algorithms/compare', methods=['POST']) 
+        def api_algorithms_compare():
+            """Compare multiple algorithms for the same packing problem"""
+            if not ADVANCED_ALGORITHMS_AVAILABLE:
+                return jsonify({'error': 'Advanced algorithms not available'}), 503
+            
+            try:
+                data = request.get_json()
+                truck_id = data.get('truck_id')
+                carton_requirements = data.get('carton_requirements', [])
+                algorithms = data.get('algorithms', ['skyline_bl', 'genetic', 'extreme_points'])
+                
+                if not truck_id or not carton_requirements:
+                    return jsonify({'error': 'Missing truck_id or carton_requirements'}), 400
+                
+                with sqlite3.connect(self.db_path) as conn:
+                    # Get truck data
+                    truck_row = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
+                    if not truck_row:
+                        return jsonify({'error': 'Truck not found'}), 404
+                    
+                    truck = Truck3D(
+                        id=truck_row[0],
+                        name=truck_row[1],
+                        length=truck_row[2], 
+                        width=truck_row[3],
+                        height=truck_row[4],
+                        max_weight=truck_row[5],
+                        cost_per_km=truck_row[6]
+                    )
+                    
+                    # Get carton data
+                    cartons = []
+                    for req in carton_requirements:
+                        carton_id = req.get('carton_id')
+                        quantity = req.get('quantity', 1)
+                        
+                        carton_row = conn.execute('SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+                        if carton_row:
+                            carton = Carton3D(
+                                id=carton_row[0],
+                                name=carton_row[1],
+                                length=carton_row[2],
+                                width=carton_row[3], 
+                                height=carton_row[4],
+                                weight=carton_row[5],
+                                quantity=quantity
+                            )
+                            cartons.append(carton)
+                    
+                    # Convert algorithm strings to enums
+                    algorithm_enums = []
+                    for alg in algorithms:
+                        try:
+                            algorithm_enums.append(Algorithm3DType(alg))
+                        except ValueError:
+                            return jsonify({'error': f'Unknown algorithm: {alg}'}), 400
+                    
+                    # Compare algorithms
+                    results = self.advanced_engine.compare_algorithms(truck, cartons, algorithm_enums)
+                    
+                    # Convert results for JSON
+                    json_results = {}
+                    for alg_name, result in results.items():
+                        if 'error' not in result:
+                            json_results[alg_name] = {
+                                'algorithm': result['algorithm'],
+                                'volume_utilization': result['volume_utilization'],
+                                'weight_utilization': result['weight_utilization'],
+                                'total_packed': result['total_packed'],
+                                'total_unpacked': result['total_unpacked'],
+                                'efficiency_score': result['efficiency_score']
+                            }
+                        else:
+                            json_results[alg_name] = result
+                    
+                    return jsonify({
+                        'success': True,
+                        'results': json_results,
+                        'truck_info': {
+                            'name': truck.name,
+                            'volume': truck.volume,
+                            'max_weight': truck.max_weight
+                        }
+                    })
+                    
+            except Exception as e:
+                import traceback
+                print(f"Error in algorithm comparison: {str(e)}")
+                print(traceback.format_exc())
+                return jsonify({'error': str(e)}), 500
+        
+        @self.app.route('/api/algorithms/best', methods=['POST'])
+        def api_algorithms_best():
+            """Find the best algorithm for given truck and cartons"""
+            if not ADVANCED_ALGORITHMS_AVAILABLE:
+                return jsonify({'error': 'Advanced algorithms not available'}), 503
+            
+            try:
+                data = request.get_json()
+                truck_id = data.get('truck_id')
+                carton_requirements = data.get('carton_requirements', [])
+                
+                if not truck_id or not carton_requirements:
+                    return jsonify({'error': 'Missing truck_id or carton_requirements'}), 400
+                
+                with sqlite3.connect(self.db_path) as conn:
+                    # Get truck data
+                    truck_row = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
+                    if not truck_row:
+                        return jsonify({'error': 'Truck not found'}), 404
+                    
+                    truck = Truck3D(
+                        id=truck_row[0],
+                        name=truck_row[1],
+                        length=truck_row[2],
+                        width=truck_row[3],
+                        height=truck_row[4],
+                        max_weight=truck_row[5],
+                        cost_per_km=truck_row[6]
+                    )
+                    
+                    # Get carton data
+                    cartons = []
+                    for req in carton_requirements:
+                        carton_id = req.get('carton_id')
+                        quantity = req.get('quantity', 1)
+                        
+                        carton_row = conn.execute('SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+                        if carton_row:
+                            carton = Carton3D(
+                                id=carton_row[0],
+                                name=carton_row[1],
+                                length=carton_row[2],
+                                width=carton_row[3],
+                                height=carton_row[4],
+                                weight=carton_row[5],
+                                quantity=quantity
+                            )
+                            cartons.append(carton)
+                    
+                    # Find best algorithm
+                    best_algorithm, best_result = self.advanced_engine.get_best_algorithm(truck, cartons)
+                    
+                    if best_result:
+                        return jsonify({
+                            'success': True,
+                            'best_algorithm': best_algorithm,
+                            'result': {
+                                'algorithm': best_result['algorithm'],
+                                'volume_utilization': best_result['volume_utilization'],
+                                'weight_utilization': best_result['weight_utilization'],
+                                'total_packed': best_result['total_packed'],
+                                'total_unpacked': best_result['total_unpacked'],
+                                'efficiency_score': best_result['efficiency_score']
+                            },
+                            'truck_info': {
+                                'name': truck.name,
+                                'volume': truck.volume,
+                                'max_weight': truck.max_weight
+                            }
+                        })
+                    else:
+                        return jsonify({'error': 'No suitable algorithm found'}), 500
+                    
+            except Exception as e:
+                import traceback
+                print(f"Error finding best algorithm: {str(e)}")
+                print(traceback.format_exc())
+                return jsonify({'error': str(e)}), 500
         
         @self.app.route('/api/working-test', methods=['POST'])
         def working_test():
