@@ -34,6 +34,22 @@
                                         </div>
                                     </div>
                                     {% endfor %}
+                                    
+                                    <!-- Add New Carton Type Option -->
+                                    <div class="col-12 mb-3">
+                                        <div class="card border-info">
+                                            <div class="card-header bg-light">
+                                                <h6 class="mb-0 text-info">
+                                                    <i class="bi bi-plus-circle"></i> Add New Carton Type
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <button type="button" class="btn btn-outline-info btn-sm w-100" data-bs-toggle="modal" data-bs-target="#addCartonModal">
+                                                    <i class="bi bi-plus"></i> Create Custom Carton Type
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -296,5 +312,158 @@ function showError(message) {
         </div>
     `;
 }
+
+// Add New Carton Type Modal functionality
+document.getElementById('addCartonForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const cartonData = {
+        name: formData.get('name'),
+        length: parseFloat(formData.get('length')),
+        width: parseFloat(formData.get('width')),
+        height: parseFloat(formData.get('height')),
+        weight: parseFloat(formData.get('weight')),
+        quantity: parseInt(formData.get('quantity')) || 1
+    };
+    
+    try {
+        const response = await fetch('/api/cartons', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(cartonData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCartonModal'));
+            modal.hide();
+            
+            // Show success message
+            showToast('Carton type created successfully!', 'success');
+            
+            // Refresh the page to show the new carton type
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            
+        } else {
+            showToast('Failed to create carton type: ' + result.error, 'error');
+        }
+        
+    } catch (error) {
+        showToast('Request failed: ' + error.message, 'error');
+    }
+});
+
+function showToast(message, type) {
+    const toastHtml = `
+        <div class="toast align-items-center text-bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = document.body.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remove toast element after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+</script>
+
+<!-- Add Carton Type Modal -->
+<div class="modal fade" id="addCartonModal" tabindex="-1" aria-labelledby="addCartonModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCartonModalLabel">
+                    <i class="bi bi-plus-circle text-info"></i> Add New Carton Type
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addCartonForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label for="cartonName" class="form-label">Carton Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="cartonName" name="name" required placeholder="e.g., Heavy Package, Electronics Box">
+                            <div class="form-text">Give your carton type a descriptive name</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="cartonLength" class="form-label">Length (m) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="cartonLength" name="length" step="0.1" min="0.1" max="10" required placeholder="1.5">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cartonWidth" class="form-label">Width (m) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="cartonWidth" name="width" step="0.1" min="0.1" max="10" required placeholder="1.0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cartonHeight" class="form-label">Height (m) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="cartonHeight" name="height" step="0.1" min="0.1" max="10" required placeholder="0.8">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cartonWeight" class="form-label">Weight (kg) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="cartonWeight" name="weight" step="0.1" min="0.1" max="1000" required placeholder="25.0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cartonQuantity" class="form-label">Default Quantity</label>
+                            <input type="number" class="form-control" id="cartonQuantity" name="quantity" min="1" max="1000" value="1" placeholder="1">
+                            <div class="form-text">How many of these do you typically have?</div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Volume Calculation:</strong> <span id="volumePreview">Enter dimensions to see volume</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-info">
+                        <i class="bi bi-plus-circle"></i> Add Carton Type
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Real-time volume calculation
+document.addEventListener('input', function(e) {
+    if (['cartonLength', 'cartonWidth', 'cartonHeight'].includes(e.target.id)) {
+        const length = parseFloat(document.getElementById('cartonLength').value) || 0;
+        const width = parseFloat(document.getElementById('cartonWidth').value) || 0;
+        const height = parseFloat(document.getElementById('cartonHeight').value) || 0;
+        
+        if (length > 0 && width > 0 && height > 0) {
+            const volume = length * width * height;
+            document.getElementById('volumePreview').textContent = `Volume: ${volume.toFixed(3)} m³`;
+        } else {
+            document.getElementById('volumePreview').textContent = 'Enter dimensions to see volume';
+        }
+    }
+});
 </script>
 {% endblock %}

@@ -115,20 +115,20 @@ class TruckOptimum:
         @self.app.route('/trucks')
         def trucks():
             with sqlite3.connect(self.db_path) as conn:
-                trucks = conn.execute('SELECT * FROM trucks').fetchall()
+                trucks = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks').fetchall()
             return render_template('trucks.html', trucks=trucks)
         
         @self.app.route('/cartons')
         def cartons():
             with sqlite3.connect(self.db_path) as conn:
-                cartons = conn.execute('SELECT * FROM cartons').fetchall()
+                cartons = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons').fetchall()
             return render_template('cartons.html', cartons=cartons)
         
         @self.app.route('/optimize')
         def optimize():
             with sqlite3.connect(self.db_path) as conn:
-                trucks = conn.execute('SELECT * FROM trucks').fetchall()
-                cartons = conn.execute('SELECT * FROM cartons').fetchall()
+                trucks = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks').fetchall()
+                cartons = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons').fetchall()
             return render_template('optimize.html', trucks=trucks, cartons=cartons)
         
         @self.app.route('/recommendations')
@@ -149,7 +149,7 @@ class TruckOptimum:
                 
                 # Get truck from database
                 with sqlite3.connect(self.db_path) as conn:
-                    truck = conn.execute('SELECT * FROM trucks WHERE id = ?', (truck_id,)).fetchone()
+                    truck = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
                     
                     cartons = []
                     if carton_requirements:
@@ -165,7 +165,7 @@ class TruckOptimum:
                     else:
                         # Old format - single instance of each carton
                         for cid in carton_ids:
-                            carton = conn.execute('SELECT * FROM cartons WHERE id = ?', (cid,)).fetchone()
+                            carton = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (cid,)).fetchone()
                             if carton:
                                 cartons.append(carton)
                 
@@ -215,7 +215,7 @@ class TruckOptimum:
                     for req in carton_requirements:
                         carton_id = req.get('carton_id')
                         quantity = req.get('quantity', 1)
-                        carton = conn.execute('SELECT * FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+                        carton = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                         if carton:
                             volume = carton[2] * carton[3] * carton[4]  # L * W * H
                             weight = carton[5]
@@ -253,7 +253,7 @@ class TruckOptimum:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
                 
-        # @self.app.route('/api/recommend-trucks', methods=['POST'])  # TEMPORARILY DISABLED
+        @self.app.route('/api/recommend-trucks', methods=['POST'])
         def api_recommend_trucks():
             """Smart truck recommendation for given cartons with quantities"""
             import json
@@ -303,7 +303,7 @@ class TruckOptimum:
                     else:
                         # Old format - single instance of each carton
                         for cid in carton_ids:
-                            carton = conn.execute('SELECT * FROM cartons WHERE id = ?', (cid,)).fetchone()
+                            carton = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (cid,)).fetchone()
                             if carton:
                                 cartons.append(carton)
                         carton_summary['total_cartons'] = len(cartons)
