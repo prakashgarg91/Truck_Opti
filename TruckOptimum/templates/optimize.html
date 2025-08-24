@@ -185,7 +185,9 @@ document.getElementById('recommendForm').addEventListener('submit', async functi
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                carton_requirements: cartonRequirements
+                carton_requirements: cartonRequirements,
+                algorithm: document.getElementById('algorithmSelect') ? document.getElementById('algorithmSelect').value : 'auto',
+                compare_algorithms: document.getElementById('compareAlgorithms') ? document.getElementById('compareAlgorithms').checked : false
             })
         });
         
