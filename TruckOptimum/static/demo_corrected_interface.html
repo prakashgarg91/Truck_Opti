@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruckOptimum - Corrected Carton Selection Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>🎯 CORRECTED Carton Selection Interface</h2>
+        <p class="text-muted">This shows how the interface should look according to your requirements</p>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-box"></i> Your Carton Inventory</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">Select cartons and quantities for truck recommendation.</p>
+                        
+                        <!-- Corrected Control Buttons -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <label class="form-label mb-0"><strong><i class="bi bi-box"></i> Selected Cartons for Recommendation:</strong></label>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Add Carton
+                                </button>
+                                <button type="button" class="btn btn-outline-primary">
+                                    <i class="bi bi-upload"></i> Bulk Upload CSV
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary">
+                                    <i class="bi bi-trash"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Demo: Empty State (Initial) -->
+                        <div class="alert alert-info text-center" id="emptyState">
+                            <i class="bi bi-info-circle"></i>
+                            <h6>No cartons selected for recommendation</h6>
+                            <p class="mb-2">Add cartons to get intelligent truck recommendations.</p>
+                            <button type="button" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus"></i> Add Your First Carton
+                            </button>
+                        </div>
+                        
+                        <!-- Demo: Selected Cartons Display -->
+                        <div id="selectedCartonsDemo" style="display: none;">
+                            <!-- Example: Selected Carton -->
+                            <div class="card mb-2 border-success">
+                                <div class="card-body py-2">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-5">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-box" style="font-size: 14px;"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">Small Box</h6>
+                                                    <small class="text-muted">0.5×0.5×0.5m, 10.0kg</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted">Quantity</small>
+                                            <input type="number" class="form-control form-control-sm" value="25" min="1" max="10000">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="row text-center">
+                                                <div class="col">
+                                                    <small class="text-muted d-block">Volume</small>
+                                                    <span class="badge bg-light text-dark">0.12m³</span>
+                                                </div>
+                                                <div class="col">
+                                                    <small class="text-muted d-block">Total</small>
+                                                    <span class="badge bg-info">3.00m³</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-1">
+                                            <button type="button" class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Summary Card -->
+                            <div class="card border-primary mt-3">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="bi bi-calculator"></i> Recommendation Summary</h6>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row text-center">
+                                        <div class="col">
+                                            <small class="text-muted d-block">Total Cartons</small>
+                                            <strong>25</strong>
+                                        </div>
+                                        <div class="col">
+                                            <small class="text-muted d-block">Total Volume</small>
+                                            <strong>3.00m³</strong>
+                                        </div>
+                                        <div class="col">
+                                            <small class="text-muted d-block">Total Weight</small>
+                                            <strong>250.00kg</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Demo Toggle Buttons -->
+                        <div class="mt-4 text-center">
+                            <button class="btn btn-info btn-sm me-2" onclick="showEmpty()">Show Empty State</button>
+                            <button class="btn btn-info btn-sm" onclick="showSelected()">Show Selected Cartons</button>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="button" class="btn btn-success btn-lg">
+                                <i class="bi bi-truck"></i> Recommend Truck Size
+                            </button>
+                            <small class="text-muted text-center">
+                                Get intelligent truck recommendations for selected cartons only
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-check-circle-fill text-success"></i> Key Features Fixed</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="text-success"><i class="bi bi-check"></i> Requirements Implemented:</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i> 
+                                <strong>Only chosen cartons shown</strong> - No more showing all available cartons
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i> 
+                                <strong>Bulk CSV upload option</strong> - Upload carton quantities via CSV/Excel
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i> 
+                                <strong>Clean interface</strong> - Shows selected cartons with quantities only
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i> 
+                                <strong>Professional workflow</strong> - Add → Select → Recommend
+                            </li>
+                        </ul>
+                        
+                        <h6 class="text-primary mt-4"><i class="bi bi-upload"></i> CSV Format:</h6>
+                        <pre class="bg-light p-2 rounded">carton_name,quantity
+Small Box,25
+Medium Box,15
+Large Box,10</pre>
+                        
+                        <h6 class="text-info mt-4"><i class="bi bi-gear"></i> Workflow:</h6>
+                        <ol class="small">
+                            <li><strong>Add Carton</strong> - Select from existing inventory</li>
+                            <li><strong>Bulk Upload</strong> - CSV file with quantities</li>
+                            <li><strong>View Selected</strong> - Only chosen cartons displayed</li>
+                            <li><strong>Get Recommendation</strong> - Based on selected cartons only</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showEmpty() {
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('selectedCartonsDemo').style.display = 'none';
+        }
+        
+        function showSelected() {
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('selectedCartonsDemo').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
