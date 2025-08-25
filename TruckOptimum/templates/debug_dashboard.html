@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruckOptimum - Debug Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .debug-card { margin-bottom: 1rem; }
+        .error-item { 
+            background: #f8f9fa; 
+            border-left: 4px solid #dc3545; 
+            padding: 10px; 
+            margin-bottom: 5px; 
+        }
+        .status-success { color: #28a745; }
+        .status-error { color: #dc3545; }
+        .status-warning { color: #ffc107; }
+        .log-content { 
+            max-height: 300px; 
+            overflow-y: auto; 
+            background: #f8f9fa; 
+            padding: 10px; 
+            font-family: monospace; 
+            font-size: 12px; 
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .auto-refresh {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-truck"></i> TruckOptimum Debug Dashboard
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">← Back to App</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1><i class="fas fa-bug"></i> Debug Dashboard</h1>
+                    <button class="btn btn-primary" onclick="refreshAll()">
+                        <i class="fas fa-sync-alt" id="refresh-icon"></i> Refresh All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <h3 id="uptime">--</h3>
+                    <p>Uptime (seconds)</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <h3 id="error-count">--</h3>
+                    <p>Total Errors</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <h3 id="truck-count">--</h3>
+                    <p>Trucks</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <h3 id="carton-count">--</h3>
+                    <p>Cartons</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Information -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card debug-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> System Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <tr><td><strong>Python Version:</strong></td><td id="python-version">Loading...</td></tr>
+                            <tr><td><strong>Platform:</strong></td><td id="platform">Loading...</td></tr>
+                            <tr><td><strong>Database Path:</strong></td><td id="db-path">Loading...</td></tr>
+                            <tr><td><strong>Database Status:</strong></td><td id="db-status">Loading...</td></tr>
+                            <tr><td><strong>Advanced Algorithms:</strong></td><td id="advanced-algo">Loading...</td></tr>
+                            <tr><td><strong>Error Logging:</strong></td><td id="error-logging">Loading...</td></tr>
+                            <tr><td><strong>Executable Mode:</strong></td><td id="exe-mode">Loading...</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card debug-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Error Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="error-status-content">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Errors -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card debug-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list-alt"></i> Recent Errors</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-errors">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Testing -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card debug-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-vial"></i> API Testing</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-primary w-100" onclick="testAPI('/api/trucks')">Test GET /api/trucks</button>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-primary w-100" onclick="testAPI('/api/cartons')">Test GET /api/cartons</button>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-primary w-100" onclick="testAPI('/api/debug-info')">Test Debug Info</button>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <pre id="api-test-results" class="log-content">API test results will appear here...</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card debug-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-tools"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <button class="btn btn-warning w-100" onclick="generateTestError()">
+                                    <i class="fas fa-exclamation-circle"></i> Generate Test Error
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-info w-100" onclick="clearConsole()">
+                                    <i class="fas fa-eraser"></i> Clear Console
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-secondary w-100" onclick="downloadLogs()">
+                                    <i class="fas fa-download"></i> Download Logs
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-success w-100" onclick="runTestSuite()">
+                                    <i class="fas fa-play"></i> Run Tests
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let autoRefreshInterval;
+
+        async function loadDebugInfo() {
+            try {
+                const response = await fetch('/api/debug-info');
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.message);
+                }
+
+                // Update system info
+                document.getElementById('uptime').textContent = Math.round(data.uptime_seconds);
+                document.getElementById('truck-count').textContent = data.truck_count || 0;
+                document.getElementById('carton-count').textContent = data.carton_count || 0;
+                document.getElementById('python-version').textContent = data.python_version.split(' ')[0];
+                document.getElementById('platform').textContent = data.platform;
+                document.getElementById('db-path').textContent = data.database_path;
+                document.getElementById('db-status').innerHTML = getStatusBadge(data.database_status);
+                document.getElementById('advanced-algo').innerHTML = getStatusBadge(data.advanced_algorithms);
+                document.getElementById('error-logging').innerHTML = getStatusBadge(data.error_logging);
+                document.getElementById('exe-mode').innerHTML = getStatusBadge(data.executable_mode);
+                
+            } catch (error) {
+                console.error('Failed to load debug info:', error);
+                showError('Failed to load debug information: ' + error.message);
+            }
+        }
+
+        async function loadErrorStatus() {
+            try {
+                const response = await fetch('/api/error-status');
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.message);
+                }
+
+                document.getElementById('error-count').textContent = data.total_errors || 0;
+                
+                if (data.error_logging === 'disabled') {
+                    document.getElementById('error-status-content').innerHTML = 
+                        '<div class="alert alert-warning">Error logging is disabled</div>';
+                    document.getElementById('recent-errors').innerHTML = 
+                        '<div class="alert alert-info">Error logging not available</div>';
+                    return;
+                }
+
+                // Update error status
+                document.getElementById('error-status-content').innerHTML = `
+                    <p><strong>Session Errors:</strong> ${data.session_errors}</p>
+                    <p><strong>Total Errors:</strong> ${data.total_errors}</p>
+                    <p><strong>Error Log:</strong> ${data.error_log_path}</p>
+                    <p><strong>Debug Log:</strong> ${data.debug_log_path}</p>
+                `;
+
+                // Update recent errors
+                if (data.recent_errors && data.recent_errors.length > 0) {
+                    const errorsHtml = data.recent_errors.map(error => 
+                        `<div class="error-item">${error}</div>`
+                    ).join('');
+                    document.getElementById('recent-errors').innerHTML = errorsHtml;
+                } else {
+                    document.getElementById('recent-errors').innerHTML = 
+                        '<div class="alert alert-success">No recent errors</div>';
+                }
+
+            } catch (error) {
+                console.error('Failed to load error status:', error);
+                showError('Failed to load error status: ' + error.message);
+            }
+        }
+
+        function getStatusBadge(status) {
+            if (status === true || status === 'connected' || status === 'enabled') {
+                return '<span class="badge bg-success">✓ Good</span>';
+            } else if (status === false || status === 'disabled') {
+                return '<span class="badge bg-secondary">○ Disabled</span>';
+            } else if (typeof status === 'string' && status.startsWith('error:')) {
+                return '<span class="badge bg-danger">✗ Error</span>';
+            } else {
+                return `<span class="badge bg-info">${status}</span>`;
+            }
+        }
+
+        async function testAPI(endpoint) {
+            const resultsEl = document.getElementById('api-test-results');
+            resultsEl.textContent = `Testing ${endpoint}...`;
+            
+            try {
+                const start = Date.now();
+                const response = await fetch(endpoint);
+                const duration = Date.now() - start;
+                const data = await response.json();
+                
+                resultsEl.textContent = `${endpoint} - ${response.status} (${duration}ms)\n` +
+                    JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsEl.textContent = `Error testing ${endpoint}: ${error.message}`;
+            }
+        }
+
+        function generateTestError() {
+            // This would trigger a test error for logging verification
+            fetch('/api/nonexistent-endpoint')
+                .then(() => showMessage('Test error generated'))
+                .catch(() => showMessage('Test error generated'));
+        }
+
+        function clearConsole() {
+            document.getElementById('api-test-results').textContent = 'Console cleared...';
+            console.clear();
+        }
+
+        function downloadLogs() {
+            showMessage('Log download functionality would be implemented here');
+        }
+
+        function runTestSuite() {
+            showMessage('Test suite execution would be triggered here');
+        }
+
+        function refreshAll() {
+            const refreshIcon = document.getElementById('refresh-icon');
+            refreshIcon.classList.add('auto-refresh');
+            
+            Promise.all([loadDebugInfo(), loadErrorStatus()])
+                .then(() => {
+                    refreshIcon.classList.remove('auto-refresh');
+                    showMessage('Dashboard refreshed successfully');
+                })
+                .catch(error => {
+                    refreshIcon.classList.remove('auto-refresh');
+                    showError('Failed to refresh dashboard');
+                });
+        }
+
+        function showMessage(message) {
+            // Create a temporary alert
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 3000);
+        }
+
+        function showError(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshAll();
+            
+            // Auto-refresh every 30 seconds
+            autoRefreshInterval = setInterval(refreshAll, 30000);
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

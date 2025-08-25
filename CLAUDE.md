@@ -15,6 +15,7 @@
 6. **Cost Optimization** - Efficient solutions, resource awareness
 7. **Speed Optimization** - Fast development, quick deployment
 8. **Zero Tolerance** - 100% working systems, no exceptions
+9. **NO UNICODE IN EXECUTABLES** - Never use Unicode characters (emojis) in Python code for PyInstaller executables due to Windows cp1252 encoding limitations
 
 ## 📋 G2G SYSTEM ACCESS
 

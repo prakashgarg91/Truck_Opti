@@ -1,6 +1,7 @@
 """
 TruckOptimum - Fast, Clean Truck Loading Optimization
 Startup Target: <2 seconds
+Enhanced with comprehensive error logging and debugging
 """
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for
@@ -9,6 +10,22 @@ import sqlite3
 import os
 import sys
 import time
+import atexit
+
+# Import enhanced error logging system
+try:
+    from error_logger import (
+        error_logger, handle_flask_error, handle_api_error, 
+        handle_database_error, log_startup_info, log_shutdown_info
+    )
+    ERROR_LOGGING_ENABLED = True
+    print("Enhanced error logging system enabled")
+except ImportError as e:
+    ERROR_LOGGING_ENABLED = False
+    print(f"Error logging not available: {e}")
+except Exception as e:
+    ERROR_LOGGING_ENABLED = False
+    print(f"Error initializing error logging: {e}")
 
 # Import advanced 3D algorithms
 try:
@@ -30,20 +47,59 @@ APP_START_TIME = time.time()
 
 class TruckOptimum:
     def __init__(self):
+        # Log application startup
+        if ERROR_LOGGING_ENABLED:
+            log_startup_info()
+            # Register shutdown logging
+            atexit.register(log_shutdown_info)
+        
         self.app = Flask(__name__)
         self.app.secret_key = 'truckoptimum-2025'
         self.db_path = self.get_db_path()
 
-        # Initialize advanced 3D algorithms engine
-        if ADVANCED_ALGORITHMS_AVAILABLE:
-            self.advanced_engine = Advanced3DPackingEngine()
-            print("DEBUG: Advanced 3D algorithms engine initialized")
-        else:
-            self.advanced_engine = None
-            print("DEBUG: Using fallback algorithms only")
+        # Setup Flask error handling
+        if ERROR_LOGGING_ENABLED:
+            self.app.errorhandler(Exception)(self.handle_general_error)
+            self.app.errorhandler(500)(self.handle_server_error)
+            self.app.errorhandler(404)(self.handle_not_found_error)
 
-        self.setup_routes()
-        self.init_database()
+        # Initialize advanced 3D algorithms engine
+        try:
+            if ADVANCED_ALGORITHMS_AVAILABLE:
+                self.advanced_engine = Advanced3DPackingEngine()
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_debug("Advanced 3D algorithms engine initialized", "STARTUP")
+                print("DEBUG: Advanced 3D algorithms engine initialized")
+            else:
+                self.advanced_engine = None
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_debug("Using fallback algorithms only", "STARTUP")
+                print("DEBUG: Using fallback algorithms only")
+        except Exception as e:
+            if ERROR_LOGGING_ENABLED:
+                error_logger.log_error(
+                    e,
+                    context="Advanced algorithms initialization",
+                    expected_behavior="Algorithms should initialize successfully",
+                    actual_behavior="Failed to initialize advanced algorithms"
+                )
+            print(f"ERROR: Failed to initialize algorithms: {e}")
+            self.advanced_engine = None
+
+        try:
+            self.setup_routes()
+            if ERROR_LOGGING_ENABLED:
+                self.setup_error_monitoring_routes()
+            self.init_database()
+        except Exception as e:
+            if ERROR_LOGGING_ENABLED:
+                error_logger.log_error(
+                    e,
+                    context="Application initialization",
+                    expected_behavior="Application should start successfully",
+                    actual_behavior="Failed during initialization"
+                )
+            raise
 
     def get_db_path(self):
         """Get database path for both dev and executable"""
@@ -127,6 +183,53 @@ class TruckOptimum:
             'INSERT INTO trucks (name, length, width, height, max_weight, cost_per_km) VALUES (?, ?, ?, ?, ?, ?)', trucks)
         conn.executemany('INSERT INTO cartons (name, length, width, height, weight) VALUES (?, ?, ?, ?, ?)', cartons)
         conn.commit()
+
+    def handle_general_error(self, error):
+        """Handle general application errors with comprehensive logging"""
+        if ERROR_LOGGING_ENABLED:
+            error_logger.log_error(
+                error,
+                context="General Application Error",
+                user_action="Using application",
+                expected_behavior="Application should work without errors",
+                actual_behavior=f"Unexpected error: {str(error)}"
+            )
+        
+        return jsonify({
+            "error": True,
+            "message": "An unexpected error occurred. Details have been logged.",
+            "error_id": f"ERR_{error_logger.error_count:04d}" if ERROR_LOGGING_ENABLED else "N/A",
+            "timestamp": time.time()
+        }), 500
+
+    def handle_server_error(self, error):
+        """Handle 500 server errors"""
+        if ERROR_LOGGING_ENABLED:
+            error_logger.log_error(
+                Exception(f"Server Error: {error}"),
+                context="Server Error (500)",
+                user_action="Accessing application",
+                expected_behavior="Server should respond normally",
+                actual_behavior="Server returned 500 error"
+            )
+        
+        return jsonify({
+            "error": True,
+            "message": "Server error occurred. Please try again.",
+            "error_code": 500
+        }), 500
+
+    def handle_not_found_error(self, error):
+        """Handle 404 not found errors"""
+        if ERROR_LOGGING_ENABLED:
+            error_logger.log_debug(f"404 Error: {request.url}", "ROUTING")
+        
+        return jsonify({
+            "error": True,
+            "message": "Page or resource not found",
+            "error_code": 404,
+            "requested_url": request.url
+        }), 404
 
     def setup_routes(self):
         """Setup all routes"""
@@ -1155,7 +1258,7 @@ Carton Details:
 
                     return jsonify({
                         'success': True,
-                        'message': f'✅ ADVANCED ALGORITHM "{algorithm}" WORKING CORRECTLY!',
+                        'message': f'ADVANCED ALGORITHM "{algorithm}" WORKING CORRECTLY!',
                         'algorithm': result.get('algorithm', algorithm),
                         'efficiency': result.get('packing_efficiency', 0),
                         'packed': result.get('packed_cartons', 0),
@@ -2077,6 +2180,86 @@ Carton Details:
                 'optimization_suggestions': [],
                 'error': str(e)
             }
+
+    def setup_error_monitoring_routes(self):
+        """Setup error monitoring and debugging routes"""
+        
+        @self.app.route('/api/error-status')
+        def api_error_status():
+            """Get current error status and recent errors for debugging"""
+            if not ERROR_LOGGING_ENABLED:
+                return jsonify({
+                    "error_logging": "disabled",
+                    "message": "Error logging system not available"
+                })
+            
+            try:
+                error_summary = error_logger.get_error_summary()
+                return jsonify({
+                    "error_logging": "enabled",
+                    "session_errors": len(error_logger.session_errors),
+                    "total_errors": error_summary.get("total_errors", 0),
+                    "recent_errors": error_summary.get("recent_errors", [])[:3],  # Last 3 errors
+                    "error_log_path": error_summary.get("error_log_path", ""),
+                    "debug_log_path": error_summary.get("debug_log_path", ""),
+                    "timestamp": time.time()
+                })
+            except Exception as e:
+                return jsonify({
+                    "error": True,
+                    "message": f"Failed to get error status: {str(e)}"
+                }), 500
+
+        @self.app.route('/api/debug-info')
+        def api_debug_info():
+            """Get debug information for troubleshooting"""
+            try:
+                debug_info = {
+                    "timestamp": time.time(),
+                    "uptime_seconds": time.time() - APP_START_TIME,
+                    "python_version": sys.version,
+                    "platform": sys.platform,
+                    "database_path": self.db_path,
+                    "database_exists": os.path.exists(self.db_path),
+                    "advanced_algorithms": ADVANCED_ALGORITHMS_AVAILABLE,
+                    "error_logging": ERROR_LOGGING_ENABLED,
+                    "working_directory": os.getcwd(),
+                    "executable_mode": getattr(sys, 'frozen', False)
+                }
+                
+                # Test database connection
+                try:
+                    with sqlite3.connect(self.db_path) as conn:
+                        truck_count = conn.execute('SELECT COUNT(*) FROM trucks').fetchone()[0]
+                        carton_count = conn.execute('SELECT COUNT(*) FROM cartons').fetchone()[0]
+                        debug_info["database_status"] = "connected"
+                        debug_info["truck_count"] = truck_count
+                        debug_info["carton_count"] = carton_count
+                except Exception as db_error:
+                    debug_info["database_status"] = f"error: {str(db_error)}"
+                
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_debug("Debug info requested", "DEBUG", debug_info)
+                
+                return jsonify(debug_info)
+            except Exception as e:
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_error(
+                        e,
+                        context="Debug info API",
+                        user_action="Requesting debug information",
+                        expected_behavior="Should return system debug info",
+                        actual_behavior=f"Failed with error: {str(e)}"
+                    )
+                return jsonify({
+                    "error": True,
+                    "message": f"Failed to get debug info: {str(e)}"
+                }), 500
+
+        @self.app.route('/debug')
+        def debug_dashboard():
+            """Debug dashboard for monitoring errors and system status"""
+            return render_template('debug_dashboard.html')
 
     def run(self, host='127.0.0.1', port=5000, debug=False):
         """Run the application"""
