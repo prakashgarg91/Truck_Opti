@@ -1,42 +1,24 @@
-# Testing Framework Dependencies
-pytest==7.4.3
-pytest-html==4.1.1
-pytest-cov==4.1.0
-pytest-xdist==3.3.1
-pytest-timeout==2.2.0
+# Core Testing Framework
+pytest
+pytest-html
+pytest-cov
+pytest-timeout
 
 # Web Testing
-selenium==4.15.2
-webdriver-manager==4.0.1
+selenium
+webdriver-manager
 
 # API Testing
-requests==2.31.0
-httpx==0.25.2
+requests
 
-# Performance Testing
-locust==2.17.0
-
-# Data Testing
-pandas==2.1.3
-openpyxl==3.1.2
-
-# Visual Testing
-Pillow==10.1.0
-opencv-python==4.8.1.78
-
-# Database Testing
-sqlite3  # Built-in
+# Visual Testing  
+Pillow
 
 # Reporting
-allure-pytest==2.13.2
-pytest-json-report==1.5.0
-
-# Mocking and Fixtures
-pytest-mock==3.12.0
-responses==0.23.3
+pytest-json-report
 
 # Code Coverage
-coverage==7.3.2
+coverage
 
-# Logging and Debugging
-pytest-loguru==0.3.0
+# Additional utilities
+psutil
