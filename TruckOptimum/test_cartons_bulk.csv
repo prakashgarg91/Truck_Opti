@@ -1,0 +1,6 @@
+name,length,width,height,weight
+Small Package,0.3,0.2,0.15,1.5
+Medium Box,0.5,0.4,0.3,5.0
+Large Crate,1.0,0.8,0.6,15.0
+Extra Large Box,1.2,1.0,0.8,25.0
+Heavy Equipment Box,1.5,1.2,1.0,50.0

@@ -27,12 +27,13 @@ except Exception as e:
 # Global timing for performance monitoring
 APP_START_TIME = time.time()
 
+
 class TruckOptimum:
     def __init__(self):
         self.app = Flask(__name__)
         self.app.secret_key = 'truckoptimum-2025'
         self.db_path = self.get_db_path()
-        
+
         # Initialize advanced 3D algorithms engine
         if ADVANCED_ALGORITHMS_AVAILABLE:
             self.advanced_engine = Advanced3DPackingEngine()
@@ -40,10 +41,10 @@ class TruckOptimum:
         else:
             self.advanced_engine = None
             print("DEBUG: Using fallback algorithms only")
-            
+
         self.setup_routes()
         self.init_database()
-        
+
     def get_db_path(self):
         """Get database path for both dev and executable"""
         if getattr(sys, 'frozen', False):
@@ -52,7 +53,7 @@ class TruckOptimum:
         else:
             # Development mode
             return os.path.join(os.path.dirname(__file__), 'truck_optimum.db')
-    
+
     def init_database(self):
         """Initialize database with essential tables"""
         with sqlite3.connect(self.db_path) as conn:
@@ -69,7 +70,7 @@ class TruckOptimum:
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-            
+
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS cartons (
                     id INTEGER PRIMARY KEY,
@@ -83,7 +84,7 @@ class TruckOptimum:
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-            
+
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS recommendations (
                     id INTEGER PRIMARY KEY,
@@ -103,11 +104,11 @@ class TruckOptimum:
                     FOREIGN KEY (recommended_truck_id) REFERENCES trucks(id)
                 )
             ''')
-            
+
             # Add sample data if empty
             if conn.execute('SELECT COUNT(*) FROM trucks').fetchone()[0] == 0:
                 self.add_sample_data(conn)
-    
+
     def add_sample_data(self, conn):
         """Add essential sample data"""
         trucks = [
@@ -115,72 +116,79 @@ class TruckOptimum:
             ('Medium Truck', 8.0, 2.5, 3.0, 5000, 20),
             ('Large Truck', 12.0, 2.5, 3.5, 8000, 25),
         ]
-        
+
         cartons = [
             ('Small Box', 0.5, 0.5, 0.5, 10),
             ('Medium Box', 1.0, 1.0, 1.0, 25),
             ('Large Box', 1.5, 1.5, 1.5, 50),
         ]
-        
-        conn.executemany('INSERT INTO trucks (name, length, width, height, max_weight, cost_per_km) VALUES (?, ?, ?, ?, ?, ?)', trucks)
+
+        conn.executemany(
+            'INSERT INTO trucks (name, length, width, height, max_weight, cost_per_km) VALUES (?, ?, ?, ?, ?, ?)', trucks)
         conn.executemany('INSERT INTO cartons (name, length, width, height, weight) VALUES (?, ?, ?, ?, ?)', cartons)
         conn.commit()
-    
+
     def setup_routes(self):
         """Setup all routes"""
         print("DEBUG: Starting to setup routes")
-        
+
         @self.app.route('/')
         def index():
             startup_time = time.time() - APP_START_TIME
             return render_template('index.html', startup_time=f"{startup_time:.2f}")
-        
+
         @self.app.route('/trucks')
         def trucks():
             with sqlite3.connect(self.db_path) as conn:
-                trucks = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks').fetchall()
+                trucks = conn.execute(
+                    'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks').fetchall()
             return render_template('trucks.html', trucks=trucks)
-        
+
         @self.app.route('/cartons')
         def cartons():
             with sqlite3.connect(self.db_path) as conn:
-                cartons = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons').fetchall()
+                cartons = conn.execute(
+                    'SELECT id, name, length, width, height, weight, quantity FROM cartons').fetchall()
             return render_template('cartons.html', cartons=cartons)
-        
+
         @self.app.route('/optimize')
         def optimize():
             with sqlite3.connect(self.db_path) as conn:
-                trucks = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks').fetchall()
-                cartons = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons').fetchall()
+                trucks = conn.execute(
+                    'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks').fetchall()
+                cartons = conn.execute(
+                    'SELECT id, name, length, width, height, weight, quantity FROM cartons').fetchall()
             return render_template('optimize.html', trucks=trucks, cartons=cartons)
-        
+
         @self.app.route('/recommendations')
         def recommendations():
             """Advanced recommendation history with analytics"""
             return render_template('recommendations.html')
-        
+
         @self.app.route('/api/optimize', methods=['POST'])
         def api_optimize():
             """Fast optimization API - lazy load algorithms only when needed"""
             start_time = time.time()
-            
+
             try:
                 data = request.get_json()
                 truck_id = data.get('truck_id')
                 carton_requirements = data.get('carton_requirements', [])
                 carton_ids = data.get('carton_ids', [])  # Fallback for old format
-                
+
                 # Get truck from database
                 with sqlite3.connect(self.db_path) as conn:
-                    truck = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
-                    
+                    truck = conn.execute(
+                        'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
+
                     cartons = []
                     if carton_requirements:
                         # New quantity-based format
                         for req in carton_requirements:
                             carton_id = req.get('carton_id')
                             quantity = req.get('quantity', 1)
-                            carton = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+                            carton = conn.execute(
+                                'SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                             if carton:
                                 # Add multiple instances of the same carton
                                 for i in range(quantity):
@@ -188,22 +196,23 @@ class TruckOptimum:
                     else:
                         # Old format - single instance of each carton
                         for cid in carton_ids:
-                            carton = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (cid,)).fetchone()
+                            carton = conn.execute(
+                                'SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (cid,)).fetchone()
                             if carton:
                                 cartons.append(carton)
-                
+
                 if not truck or not cartons:
                     return jsonify({'error': 'Invalid truck or cartons'}), 400
-                
+
                 use_advanced = data.get('use_advanced', True)
-                
+
                 if use_advanced:
                     # Use advanced 3D packing (lazy loaded)
                     result = self.advanced_optimize(truck, cartons)
                 else:
                     # Use simple optimization
                     result = self.simple_optimize(truck, cartons)
-                
+
                 # Add quantity summary to result
                 if carton_requirements:
                     result['carton_summary'] = {
@@ -211,52 +220,53 @@ class TruckOptimum:
                         'carton_types': len(carton_requirements),
                         'requirements': carton_requirements
                     }
-                
+
                 processing_time = time.time() - start_time
                 result['processing_time'] = f"{processing_time:.3f}s"
-                
+
                 return jsonify(result)
-                
+
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
-        
+
         @self.app.route('/api/recommend-trucks-simple', methods=['POST'])
         def api_recommend_trucks_simple():
             """Simple truck recommendation without advanced algorithms"""
             try:
                 data = request.get_json()
                 carton_requirements = data.get('carton_requirements', [])
-                
+
                 if not carton_requirements:
                     return jsonify({'error': 'No cartons specified'}), 400
-                
+
                 # Simple volume-based recommendation
                 total_volume = 0
                 total_weight = 0
-                
+
                 with sqlite3.connect(self.db_path) as conn:
                     for req in carton_requirements:
                         carton_id = req.get('carton_id')
                         quantity = req.get('quantity', 1)
-                        carton = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+                        carton = conn.execute(
+                            'SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                         if carton:
                             volume = carton[2] * carton[3] * carton[4]  # L * W * H
                             weight = carton[5]
                             total_volume += volume * quantity
                             total_weight += weight * quantity
-                    
+
                     # Find trucks that can handle this load
                     trucks = conn.execute('SELECT * FROM trucks ORDER BY length * width * height').fetchall()
                     recommendations = []
-                    
+
                     for truck in trucks:
                         truck_volume = truck[2] * truck[3] * truck[4]
                         truck_max_weight = truck[5]
-                        
+
                         if truck_volume >= total_volume and truck_max_weight >= total_weight:
                             volume_util = (total_volume / truck_volume) * 100
                             weight_util = (total_weight / truck_max_weight) * 100
-                            
+
                             recommendations.append({
                                 'truck_id': truck[0],
                                 'truck_name': truck[1],
@@ -265,24 +275,24 @@ class TruckOptimum:
                                 'fits_all': True,
                                 'recommendation_score': round(volume_util + weight_util, 1)
                             })
-                    
+
                     return jsonify({
                         'success': True,
                         'recommendations': recommendations[:3],
                         'total_volume': total_volume,
                         'total_weight': total_weight
                     })
-                    
+
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
-                
+
         @self.app.route('/api/recommend-trucks', methods=['POST'])
         def api_recommend_trucks():
             """Smart truck recommendation for given cartons with quantities"""
             import json
             import uuid
             start_time = time.time()
-            
+
             try:
                 print("DEBUG: Starting recommend-trucks API - ROUTE CONFIRMED")
                 import sys
@@ -296,30 +306,32 @@ class TruckOptimum:
                 print(f"DEBUG: Algorithm selected: {selected_algorithm}")
                 print(f"DEBUG: Carton requirements: {carton_requirements}")
                 print("DEBUG: Passed initial data processing")
-                
+
                 if not carton_requirements and not carton_ids:
                     return jsonify({'error': 'No cartons specified'}), 400
-                
+
                 print("DEBUG: About to connect to database")
                 # Get all trucks and specified cartons
                 with sqlite3.connect(self.db_path) as conn:
                     print("DEBUG: Connected to database successfully")
-                    trucks = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY length * width * height').fetchall()
+                    trucks = conn.execute(
+                        'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY length * width * height').fetchall()
                     print(f"DEBUG: Retrieved {len(trucks)} trucks")
                     cartons = []
                     print("DEBUG: Initialized cartons list")
                     carton_summary = {'total_cartons': 0, 'carton_types': 0, 'requirements': []}
-                    
+
                     if carton_requirements:
                         # New quantity-based format
                         carton_summary['carton_types'] = len(carton_requirements)
                         carton_summary['requirements'] = carton_requirements
-                        
+
                         for req in carton_requirements:
                             carton_id = req.get('carton_id')
                             quantity = req.get('quantity', 1)
                             print(f"DEBUG: Processing requirement: carton_id={carton_id}, quantity={quantity}")
-                            carton = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+                            carton = conn.execute(
+                                'SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                             print(f"DEBUG: Retrieved carton: {carton}")
                             if carton:
                                 # Add multiple instances of the same carton
@@ -331,31 +343,33 @@ class TruckOptimum:
                     else:
                         # Old format - single instance of each carton
                         for cid in carton_ids:
-                            carton = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (cid,)).fetchone()
+                            carton = conn.execute(
+                                'SELECT id, name, length, width, height, weight, quantity FROM cartons WHERE id = ?', (cid,)).fetchone()
                             if carton:
                                 cartons.append(carton)
                         carton_summary['total_cartons'] = len(cartons)
                         carton_summary['carton_types'] = len(cartons)
-                
+
                 if not trucks or not cartons:
                     return jsonify({'error': 'No trucks or cartons available'}), 400
-                
+
                 # Use advanced algorithms if available and selected
                 if ADVANCED_ALGORITHMS_AVAILABLE and self.advanced_engine and selected_algorithm != 'simple':
                     print(f"DEBUG: Using advanced algorithms - Algorithm: {selected_algorithm}")
-                    recommendations = self.advanced_truck_recommendation(trucks, cartons, carton_summary, selected_algorithm, compare_algorithms)
+                    recommendations = self.advanced_truck_recommendation(
+                        trucks, cartons, carton_summary, selected_algorithm, compare_algorithms)
                 else:
                     print("DEBUG: Using simple truck recommendation")
                     recommendations = self.simple_truck_recommendation(trucks, cartons, carton_summary)
-                
+
                 processing_time = time.time() - start_time
-                
+
                 # Save recommendation to database if we have results
                 recommendation_id = None
                 if recommendations:
                     recommendation_id = f"REC-{uuid.uuid4().hex[:8].upper()}"
                     best_recommendation = recommendations[0]
-                    
+
                     with sqlite3.connect(self.db_path) as conn:
                         conn.execute('''
                             INSERT INTO recommendations (
@@ -365,15 +379,16 @@ class TruckOptimum:
                                 algorithm_used, processing_time
                             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (
-                            recommendation_id, json.dumps(carton_requirements), 
+                            recommendation_id, json.dumps(carton_requirements),
                             best_recommendation.get('truck_id'), best_recommendation.get('truck_name'),
-                            best_recommendation.get('recommendation_score'), best_recommendation.get('volume_utilization'),
+                            best_recommendation.get('recommendation_score'), best_recommendation.get(
+                                'volume_utilization'),
                             best_recommendation.get('weight_utilization'), best_recommendation.get('stability_score'),
                             best_recommendation.get('packed_cartons'), carton_summary['total_cartons'],
                             best_recommendation.get('algorithm'), f"{processing_time:.3f}s"
                         ))
                         conn.commit()
-                
+
                 return jsonify({
                     'success': True,
                     'recommendation_id': recommendation_id,
@@ -384,15 +399,15 @@ class TruckOptimum:
                     'carton_types': carton_summary['carton_types'],
                     'carton_summary': carton_summary
                 })
-                
+
             except Exception as e:
                 import traceback
                 error_details = traceback.format_exc()
                 print(f"Recommendation API Error: {error_details}")
                 return jsonify({'error': str(e), 'details': error_details.split('\n')[-3:-1]}), 500
-        
+
         # RECOMMENDATION HISTORY ENDPOINTS
-        
+
         @self.app.route('/api/recommendations/<recommendation_id>', methods=['GET'])
         def api_recommendation_detail(recommendation_id):
             """Get specific recommendation details"""
@@ -400,10 +415,10 @@ class TruckOptimum:
                 rec = conn.execute('''
                     SELECT * FROM recommendations WHERE recommendation_id = ?
                 ''', (recommendation_id,)).fetchone()
-                
+
                 if not rec:
                     return jsonify({'success': False, 'error': 'Recommendation not found'}), 404
-                
+
                 recommendation = {
                     'id': rec[0], 'recommendation_id': rec[1], 'carton_requirements': rec[2],
                     'recommended_truck_name': rec[4], 'recommendation_score': rec[5],
@@ -411,9 +426,9 @@ class TruckOptimum:
                     'packed_cartons': rec[9], 'total_cartons': rec[10], 'algorithm_used': rec[11],
                     'processing_time': rec[12], 'created_at': rec[13]
                 }
-                
+
                 return jsonify({'success': True, 'recommendation': recommendation})
-        
+
         @self.app.route('/api/recommendations', methods=['GET'])
         def api_recommendations():
             """Advanced recommendation history with filtering and analytics"""
@@ -422,7 +437,7 @@ class TruckOptimum:
                 page = int(request.args.get('page', 1))
                 limit = int(request.args.get('limit', 10))
                 offset = (page - 1) * limit
-                
+
                 truck_filter = request.args.get('truck_name', '')
                 algorithm_filter = request.args.get('algorithm', '')
                 min_score = request.args.get('min_score', '')
@@ -430,37 +445,37 @@ class TruckOptimum:
                 date_to = request.args.get('date_to', '')
                 sort_by = request.args.get('sort_by', 'created_at')
                 sort_order = request.args.get('sort_order', 'DESC')
-                
+
                 # Build WHERE clause
                 where_conditions = []
                 params = []
-                
+
                 if truck_filter:
                     where_conditions.append("recommended_truck_name LIKE ?")
                     params.append(f"%{truck_filter}%")
-                
+
                 if algorithm_filter:
                     where_conditions.append("algorithm_used LIKE ?")
                     params.append(f"%{algorithm_filter}%")
-                
+
                 if min_score:
                     where_conditions.append("recommendation_score >= ?")
                     params.append(float(min_score))
-                
+
                 if date_from:
                     where_conditions.append("DATE(created_at) >= ?")
                     params.append(date_from)
-                
+
                 if date_to:
                     where_conditions.append("DATE(created_at) <= ?")
                     params.append(date_to)
-                
+
                 where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
-                
+
                 # Get total count for pagination
                 count_query = f"SELECT COUNT(*) FROM recommendations {where_clause}"
                 total_count = conn.execute(count_query, params).fetchone()[0]
-                
+
                 # Get filtered recommendations
                 main_query = f'''
                     SELECT * FROM recommendations {where_clause}
@@ -468,24 +483,24 @@ class TruckOptimum:
                     LIMIT ? OFFSET ?
                 '''
                 params.extend([limit, offset])
-                
+
                 recommendations = conn.execute(main_query, params).fetchall()
-                
+
                 # Convert to dictionaries
                 recommendation_list = []
                 for rec in recommendations:
                     recommendation_list.append({
                         'id': rec[0], 'recommendation_id': rec[1], 'carton_requirements': rec[2],
                         'recommended_truck_name': rec[4], 'recommendation_score': rec[5],
-                        'volume_utilization': rec[6], 'weight_utilization': rec[7], 
-                        'stability_score': rec[8], 'packed_cartons': rec[9], 
+                        'volume_utilization': rec[6], 'weight_utilization': rec[7],
+                        'stability_score': rec[8], 'packed_cartons': rec[9],
                         'total_cartons': rec[10], 'algorithm_used': rec[11],
                         'processing_time': rec[12], 'created_at': rec[13]
                     })
-                
+
                 # Calculate analytics
                 analytics = self._calculate_recommendation_analytics(conn, where_clause, params[:-2])
-                
+
                 return jsonify({
                     'success': True,
                     'recommendations': recommendation_list,
@@ -497,17 +512,17 @@ class TruckOptimum:
                     },
                     'analytics': analytics
                 })
-        
+
         @self.app.route('/api/recommendations/compare', methods=['POST'])
         def api_compare_recommendations():
             """Compare and suggest optimization improvements"""
             try:
                 data = request.get_json()
                 recommendation_ids = data.get('recommendation_ids', [])
-                
+
                 if len(recommendation_ids) < 2:
                     return jsonify({'success': False, 'error': 'Need at least 2 recommendations to compare'}), 400
-                
+
                 # Get recommendations from database
                 recommendations = []
                 with sqlite3.connect(self.db_path) as conn:
@@ -515,31 +530,31 @@ class TruckOptimum:
                         rec = conn.execute('''
                             SELECT * FROM recommendations WHERE recommendation_id = ?
                         ''', (rec_id,)).fetchone()
-                        
+
                         if rec:
                             recommendations.append({
                                 'id': rec[0], 'recommendation_id': rec[1], 'carton_requirements': rec[2],
                                 'recommended_truck_name': rec[4], 'recommendation_score': rec[5],
-                                'volume_utilization': rec[6], 'weight_utilization': rec[7], 
-                                'stability_score': rec[8], 'packed_cartons': rec[9], 
+                                'volume_utilization': rec[6], 'weight_utilization': rec[7],
+                                'stability_score': rec[8], 'packed_cartons': rec[9],
                                 'total_cartons': rec[10], 'algorithm_used': rec[11],
                                 'processing_time': rec[12], 'created_at': rec[13]
                             })
-                
+
                 if len(recommendations) < 2:
                     return jsonify({'success': False, 'error': 'Could not find specified recommendations'}), 400
-                
+
                 # Generate comparison analysis
                 comparison = self._generate_recommendation_comparison(recommendations)
-                
+
                 return jsonify({
                     'success': True,
                     'comparison': comparison
                 })
-                
+
             except Exception as e:
                 return jsonify({'success': False, 'error': str(e)}), 500
-        
+
         # TRUCK CRUD ENDPOINTS
         @self.app.route('/api/trucks', methods=['GET', 'POST'])
         def api_trucks():
@@ -555,37 +570,39 @@ class TruckOptimum:
                             'volume': truck[2] * truck[3] * truck[4], 'created_at': truck[7]
                         })
                     return jsonify({'success': True, 'trucks': truck_list})
-                
+
                 elif request.method == 'POST':
                     data = request.get_json()
-                    
+
                     print(f"DEBUG: POST to /api/trucks received data: {data}")
                     print(f"DEBUG: Data type: {type(data)}")
-                    print(f"DEBUG: 'carton_requirements' in data: {'carton_requirements' in data if data else 'data is None'}")
-                    print(f"DEBUG: data.get('carton_requirements'): {data.get('carton_requirements') if data else 'data is None'}")
-                    
+                    print(
+                        f"DEBUG: 'carton_requirements' in data: {'carton_requirements' in data if data else 'data is None'}")
+                    print(
+                        f"DEBUG: data.get('carton_requirements'): {data.get('carton_requirements') if data else 'data is None'}")
+
                     # Check if this is a recommendation request
                     if data and 'carton_requirements' in data and data.get('carton_requirements'):
                         print(f"DEBUG: ROUTING TO RECOMMENDATION - Processing recommendation request")
                         return self.handle_truck_recommendation(data, conn)
-                    
+
                     print(f"DEBUG: ROUTING TO TRUCK CREATION - Processing truck creation with data: {data}")
-                    
+
                     # Regular truck creation - validate required fields first
                     if not data:
                         return jsonify({'success': False, 'error': 'No data provided'}), 400
-                    
+
                     required_fields = ['name', 'length', 'width', 'height', 'max_weight']
                     missing_fields = [field for field in required_fields if field not in data]
-                    
+
                     if missing_fields:
                         return jsonify({'success': False, 'error': f'Missing required fields: {missing_fields}'}), 400
-                    
+
                     try:
                         conn.execute('''
                             INSERT INTO trucks (name, length, width, height, max_weight, cost_per_km)
                             VALUES (?, ?, ?, ?, ?, ?)
-                        ''', (data['name'], data['length'], data['width'], data['height'], 
+                        ''', (data['name'], data['length'], data['width'], data['height'],
                               data['max_weight'], data.get('cost_per_km', 0)))
                         conn.commit()
                         return jsonify({'success': True, 'message': 'Truck added successfully'})
@@ -594,7 +611,7 @@ class TruckOptimum:
                         error_details = traceback.format_exc()
                         print(f"ERROR in truck creation: {error_details}")
                         return jsonify({'success': False, 'error': str(e)}), 400
-        
+
         @self.app.route('/api/trucks/<int:truck_id>', methods=['PUT', 'DELETE'])
         def api_truck_detail(truck_id):
             """Update or delete a specific truck"""
@@ -605,7 +622,7 @@ class TruckOptimum:
                         cursor = conn.execute('''
                             UPDATE trucks SET name=?, length=?, width=?, height=?, max_weight=?, 
                             cost_per_km=?, updated_at=CURRENT_TIMESTAMP WHERE id=?
-                        ''', (data['name'], data['length'], data['width'], data['height'], 
+                        ''', (data['name'], data['length'], data['width'], data['height'],
                               data['max_weight'], data.get('cost_per_km', 0), truck_id))
                         if cursor.rowcount == 0:
                             return jsonify({'success': False, 'error': 'Truck not found'}), 404
@@ -613,7 +630,7 @@ class TruckOptimum:
                         return jsonify({'success': True, 'message': 'Truck updated successfully'})
                     except Exception as e:
                         return jsonify({'success': False, 'error': str(e)}), 400
-                
+
                 elif request.method == 'DELETE':
                     try:
                         cursor = conn.execute('DELETE FROM trucks WHERE id=?', (truck_id,))
@@ -623,8 +640,8 @@ class TruckOptimum:
                         return jsonify({'success': True, 'message': 'Truck deleted successfully'})
                     except Exception as e:
                         return jsonify({'success': False, 'error': str(e)}), 400
-        
-        # CARTON CRUD ENDPOINTS  
+
+        # CARTON CRUD ENDPOINTS
         @self.app.route('/api/cartons', methods=['GET', 'POST'])
         def api_cartons():
             """Get all cartons or create a new carton"""
@@ -639,20 +656,20 @@ class TruckOptimum:
                             'volume': carton[2] * carton[3] * carton[4], 'created_at': carton[7]
                         })
                     return jsonify({'success': True, 'cartons': carton_list})
-                
+
                 elif request.method == 'POST':
                     data = request.get_json()
                     try:
                         conn.execute('''
                             INSERT INTO cartons (name, length, width, height, weight, quantity)
                             VALUES (?, ?, ?, ?, ?, ?)
-                        ''', (data['name'], data['length'], data['width'], data['height'], 
+                        ''', (data['name'], data['length'], data['width'], data['height'],
                               data['weight'], data.get('quantity', 1)))
                         conn.commit()
                         return jsonify({'success': True, 'message': 'Carton added successfully'})
                     except Exception as e:
                         return jsonify({'success': False, 'error': str(e)}), 400
-        
+
         @self.app.route('/api/cartons/<int:carton_id>', methods=['PUT', 'DELETE'])
         def api_carton_detail(carton_id):
             """Update or delete a specific carton"""
@@ -663,7 +680,7 @@ class TruckOptimum:
                         cursor = conn.execute('''
                             UPDATE cartons SET name=?, length=?, width=?, height=?, weight=?, 
                             quantity=?, updated_at=CURRENT_TIMESTAMP WHERE id=?
-                        ''', (data['name'], data['length'], data['width'], data['height'], 
+                        ''', (data['name'], data['length'], data['width'], data['height'],
                               data['weight'], data.get('quantity', 1), carton_id))
                         if cursor.rowcount == 0:
                             return jsonify({'success': False, 'error': 'Carton not found'}), 404
@@ -671,7 +688,7 @@ class TruckOptimum:
                         return jsonify({'success': True, 'message': 'Carton updated successfully'})
                     except Exception as e:
                         return jsonify({'success': False, 'error': str(e)}), 400
-                
+
                 elif request.method == 'DELETE':
                     try:
                         cursor = conn.execute('DELETE FROM cartons WHERE id=?', (carton_id,))
@@ -681,31 +698,31 @@ class TruckOptimum:
                         return jsonify({'success': True, 'message': 'Carton deleted successfully'})
                     except Exception as e:
                         return jsonify({'success': False, 'error': str(e)}), 400
-        
+
         @self.app.route('/api/trucks/bulk-upload', methods=['POST'])
         def api_trucks_bulk_upload():
             """Bulk upload trucks from CSV file"""
             try:
                 if 'file' not in request.files:
                     return jsonify({'success': False, 'error': 'No file uploaded'}), 400
-                
+
                 file = request.files['file']
                 if file.filename == '':
                     return jsonify({'success': False, 'error': 'No file selected'}), 400
-                
+
                 if not file.filename.lower().endswith('.csv'):
                     return jsonify({'success': False, 'error': 'File must be a CSV'}), 400
-                
+
                 import csv
                 import io
-                
+
                 # Read CSV content
                 stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
                 csv_input = csv.DictReader(stream)
-                
+
                 trucks_added = 0
                 errors = []
-                
+
                 with sqlite3.connect(self.db_path) as conn:
                     for row_num, row in enumerate(csv_input, start=2):  # Start at 2 for header
                         try:
@@ -716,59 +733,59 @@ class TruckOptimum:
                             height = float(row.get('height', 0))
                             max_weight = float(row.get('max_weight', 0))
                             cost_per_km = float(row.get('cost_per_km', 0))
-                            
+
                             if not name or length <= 0 or width <= 0 or height <= 0 or max_weight <= 0:
                                 errors.append(f"Row {row_num}: Invalid data - all fields must be positive")
                                 continue
-                            
+
                             conn.execute('''
                                 INSERT INTO trucks (name, length, width, height, max_weight, cost_per_km)
                                 VALUES (?, ?, ?, ?, ?, ?)
                             ''', (name, length, width, height, max_weight, cost_per_km))
-                            
+
                             trucks_added += 1
-                            
+
                         except (ValueError, KeyError) as e:
                             errors.append(f"Row {row_num}: {str(e)}")
                         except Exception as e:
                             errors.append(f"Row {row_num}: Database error - {str(e)}")
-                    
+
                     conn.commit()
-                
+
                 return jsonify({
                     'success': True,
                     'message': f'Successfully added {trucks_added} trucks',
                     'trucks_added': trucks_added,
                     'errors': errors[:10]  # Limit errors shown
                 })
-                
+
             except Exception as e:
                 return jsonify({'success': False, 'error': f'Upload failed: {str(e)}'}), 500
-        
-        @self.app.route('/api/cartons/bulk-upload', methods=['POST']) 
+
+        @self.app.route('/api/cartons/bulk-upload', methods=['POST'])
         def api_cartons_bulk_upload():
             """Bulk upload cartons from CSV file"""
             try:
                 if 'file' not in request.files:
                     return jsonify({'success': False, 'error': 'No file uploaded'}), 400
-                
+
                 file = request.files['file']
                 if file.filename == '':
                     return jsonify({'success': False, 'error': 'No file selected'}), 400
-                
+
                 if not file.filename.lower().endswith('.csv'):
                     return jsonify({'success': False, 'error': 'File must be a CSV'}), 400
-                
+
                 import csv
                 import io
-                
+
                 # Read CSV content
                 stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
                 csv_input = csv.DictReader(stream)
-                
+
                 cartons_added = 0
                 errors = []
-                
+
                 with sqlite3.connect(self.db_path) as conn:
                     for row_num, row in enumerate(csv_input, start=2):  # Start at 2 for header
                         try:
@@ -779,44 +796,46 @@ class TruckOptimum:
                             height = float(row.get('height', 0))
                             weight = float(row.get('weight', 0))
                             quantity = int(row.get('quantity', 1))
-                            
+
                             if not name or length <= 0 or width <= 0 or height <= 0 or weight <= 0:
                                 errors.append(f"Row {row_num}: Invalid data - all fields must be positive")
                                 continue
-                            
+
                             conn.execute('''
                                 INSERT INTO cartons (name, length, width, height, weight, quantity)
                                 VALUES (?, ?, ?, ?, ?, ?)
                             ''', (name, length, width, height, weight, quantity))
-                            
+
                             cartons_added += 1
-                            
+
                         except (ValueError, KeyError) as e:
                             errors.append(f"Row {row_num}: {str(e)}")
                         except Exception as e:
                             errors.append(f"Row {row_num}: Database error - {str(e)}")
-                    
+
                     conn.commit()
-                
+
                 return jsonify({
                     'success': True,
                     'message': f'Successfully added {cartons_added} cartons',
                     'cartons_added': cartons_added,
                     'errors': errors[:10]  # Limit errors shown
                 })
-                
+
             except Exception as e:
                 return jsonify({'success': False, 'error': f'Upload failed: {str(e)}'}), 500
-        
+
         # PDF EXPORT ENDPOINTS
         print("DEBUG: About to register PDF export routes")
+
         @self.app.route('/api/export/trucks/pdf', methods=['GET'])
         def export_trucks_pdf():
             """Export trucks data to PDF"""
             try:
                 with sqlite3.connect(self.db_path) as conn:
-                    trucks = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY name').fetchall()
-                    
+                    trucks = conn.execute(
+                        'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY name').fetchall()
+
                 # Create simple text-based report content
                 from datetime import datetime
                 pdf_content = f"""Available Trucks - Base Data Report
@@ -827,7 +846,7 @@ Total Records: {len(trucks)}
 
 Truck Details:
 """
-                
+
                 for i, truck in enumerate(trucks, 1):
                     # truck: id, name, length, width, height, max_weight, cost_per_km
                     volume = truck[2] * truck[3] * truck[4]
@@ -838,7 +857,7 @@ Truck Details:
    - Max Weight: {truck[5]} kg
    - Cost/km: ${truck[6]:.2f}
 """
-                
+
                 # Return as plain text report
                 from flask import Response
                 return Response(
@@ -849,17 +868,18 @@ Truck Details:
                         'Content-Type': 'text/plain; charset=utf-8'
                     }
                 )
-                
+
             except Exception as e:
                 return jsonify({'error': f'Export failed: {str(e)}'}), 500
-        
+
         @self.app.route('/api/export/cartons/pdf', methods=['GET'])
         def export_cartons_pdf():
             """Export cartons data to PDF"""
             try:
                 with sqlite3.connect(self.db_path) as conn:
-                    cartons = conn.execute('SELECT id, name, length, width, height, weight, quantity FROM cartons ORDER BY name').fetchall()
-                    
+                    cartons = conn.execute(
+                        'SELECT id, name, length, width, height, weight, quantity FROM cartons ORDER BY name').fetchall()
+
                 # Create simple text-based report content
                 from datetime import datetime
                 pdf_content = f"""Available Cartons - Base Data Report
@@ -870,7 +890,7 @@ Total Records: {len(cartons)}
 
 Carton Details:
 """
-                
+
                 for i, carton in enumerate(cartons, 1):
                     # carton: id, name, length, width, height, weight, quantity
                     volume = carton[2] * carton[3] * carton[4]
@@ -881,7 +901,7 @@ Carton Details:
    - Weight: {carton[5]} kg
    - Quantity: {carton[6]}
 """
-                
+
                 # Return as plain text report
                 from flask import Response
                 return Response(
@@ -892,49 +912,52 @@ Carton Details:
                         'Content-Type': 'text/plain; charset=utf-8'
                     }
                 )
-                
+
             except Exception as e:
                 return jsonify({'error': f'Export failed: {str(e)}'}), 500
-        
+
         print("DEBUG: About to register working recommendation route")
+
         @self.app.route('/api/recommend-trucks-working', methods=['POST'])
         def api_recommend_trucks_working():
             """Working truck recommendation endpoint"""
             try:
                 data = request.get_json()
                 carton_requirements = data.get('carton_requirements', [])
-                
+
                 if not carton_requirements:
                     return jsonify({'error': 'No cartons specified'}), 400
-                
+
                 # Calculate totals safely
                 total_volume = 0
                 total_weight = 0
-                
+
                 with sqlite3.connect(self.db_path) as conn:
                     for req in carton_requirements:
                         carton_id = req.get('carton_id')
                         quantity = req.get('quantity', 1)
-                        
-                        result = conn.execute('SELECT length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+
+                        result = conn.execute(
+                            'SELECT length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                         if result:
                             length, width, height, weight = result
                             volume = length * width * height
                             total_volume += volume * quantity
                             total_weight += weight * quantity
-                    
+
                     # Get trucks safely
-                    trucks = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY length * width * height').fetchall()
-                    
+                    trucks = conn.execute(
+                        'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY length * width * height').fetchall()
+
                     recommendations = []
                     for truck in trucks:
                         truck_id, name, length, width, height, max_weight, cost_per_km = truck
                         truck_volume = length * width * height
-                        
+
                         if truck_volume >= total_volume and max_weight >= total_weight:
                             volume_util = (total_volume / truck_volume) * 100 if truck_volume > 0 else 0
                             weight_util = (total_weight / max_weight) * 100 if max_weight > 0 else 0
-                            
+
                             recommendations.append({
                                 'truck_id': truck_id,
                                 'truck_name': name,
@@ -950,9 +973,9 @@ Carton Details:
                                 'recommendation': f'This {name} can accommodate all {sum(req.get("quantity", 1) for req in carton_requirements)} cartons efficiently',
                                 'space_suggestions': ['Optimize loading order', 'Distribute weight evenly', 'Use vertical space']
                             })
-                    
+
                     recommendations.sort(key=lambda x: x['recommendation_score'], reverse=True)
-                    
+
                     return jsonify({
                         'success': True,
                         'recommendations': recommendations[:3],
@@ -960,10 +983,10 @@ Carton Details:
                         'total_weight': round(total_weight, 1),
                         'carton_count': sum(req.get('quantity', 1) for req in carton_requirements)
                     })
-                    
+
             except Exception as e:
                 return jsonify({'error': f'Recommendation failed: {str(e)}'}), 500
-        
+
         @self.app.route('/api/test-recommendation', methods=['POST'])
         def test_recommendation():
             """Test endpoint to debug recommendation issues"""
@@ -976,7 +999,7 @@ Carton Details:
                 })
             except Exception as e:
                 return jsonify({'error': f'Test error: {str(e)}'}), 500
-        
+
         @self.app.route('/api/debug-routes')
         def debug_routes():
             import urllib.parse
@@ -988,11 +1011,11 @@ Carton Details:
                     'endpoint': rule.endpoint
                 })
             return jsonify({'routes': routes})
-        
+
         @self.app.route('/api/simple-test')
         def simple_test():
             return jsonify({'message': 'Simple test works'})
-        
+
         # WORKING TRUCK RECOMMENDATION - PLACED BEFORE HEALTH ROUTE
         @self.app.route('/api/recommend-trucks-final', methods=['POST'])
         def api_recommend_trucks_final():
@@ -1000,36 +1023,38 @@ Carton Details:
             try:
                 data = request.get_json()
                 carton_requirements = data.get('carton_requirements', [])
-                
+
                 if not carton_requirements:
                     return jsonify({'error': 'No cartons specified'}), 400
-                
+
                 total_volume = 0
                 total_weight = 0
-                
+
                 with sqlite3.connect(self.db_path) as conn:
                     for req in carton_requirements:
                         carton_id = req.get('carton_id')
                         quantity = req.get('quantity', 1)
-                        
-                        result = conn.execute('SELECT length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+
+                        result = conn.execute(
+                            'SELECT length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                         if result:
                             length, width, height, weight = result
                             volume = length * width * height
                             total_volume += volume * quantity
                             total_weight += weight * quantity
-                    
-                    trucks = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY length * width * height').fetchall()
-                    
+
+                    trucks = conn.execute(
+                        'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY length * width * height').fetchall()
+
                     recommendations = []
                     for truck in trucks:
                         truck_id, name, length, width, height, max_weight, cost_per_km = truck
                         truck_volume = length * width * height
-                        
+
                         if truck_volume >= total_volume and max_weight >= total_weight:
                             volume_util = (total_volume / truck_volume) * 100 if truck_volume > 0 else 0
                             weight_util = (total_weight / max_weight) * 100 if max_weight > 0 else 0
-                            
+
                             recommendations.append({
                                 'truck_id': truck_id,
                                 'truck_name': name,
@@ -1045,9 +1070,9 @@ Carton Details:
                                 'recommendation': f'This {name} can efficiently accommodate {sum(req.get("quantity", 1) for req in carton_requirements)} cartons with {volume_util:.1f}% volume utilization',
                                 'space_suggestions': ['Distribute weight evenly', 'Load heavy items first', 'Maximize vertical space usage']
                             })
-                    
+
                     recommendations.sort(key=lambda x: x['recommendation_score'], reverse=True)
-                    
+
                     return jsonify({
                         'success': True,
                         'recommendations': recommendations[:5],
@@ -1057,11 +1082,12 @@ Carton Details:
                         'carton_count': sum(req.get('quantity', 1) for req in carton_requirements),
                         'algorithm_info': 'Fast volume-weight calculation with 100% accuracy'
                     })
-                    
+
             except Exception as e:
                 return jsonify({'error': f'Recommendation failed: {str(e)}'}), 500
-        
+
         print("DEBUG: About to register health route")
+
         @self.app.route('/api/health')
         def health():
             return jsonify({
@@ -1070,7 +1096,7 @@ Carton Details:
                 'version': '1.0.0',
                 'advanced_algorithms': ADVANCED_ALGORITHMS_AVAILABLE
             })
-        
+
         @self.app.route('/api/debug/routes')
         def debug_routes_list():
             routes = []
@@ -1081,10 +1107,10 @@ Carton Details:
                     'endpoint': rule.endpoint
                 })
             return jsonify({'routes': routes})
-        
+
         # Advanced 3D Algorithm Routes
         print("DEBUG: About to register advanced 3D algorithm routes")
-        
+
         try:
             @self.app.route('/api/algorithms/list')
             def api_algorithms_list_route():
@@ -1092,7 +1118,7 @@ Carton Details:
                 print(f"DEBUG: Algorithm list called, AVAILABLE={ADVANCED_ALGORITHMS_AVAILABLE}")
                 if not ADVANCED_ALGORITHMS_AVAILABLE:
                     return jsonify({'error': 'Advanced algorithms not available'}), 503
-                
+
                 algorithms = self.advanced_engine.get_algorithm_info()
                 return jsonify({
                     'success': True,
@@ -1100,7 +1126,7 @@ Carton Details:
                     'total_algorithms': len(algorithms)
                 })
             print("DEBUG: Successfully registered /api/algorithms/list")
-            
+
             # Add direct algorithm test route
             @self.app.route('/api/test-algorithms', methods=['POST'])
             def test_algorithms_direct():
@@ -1108,25 +1134,25 @@ Carton Details:
                 print("DEBUG: ADVANCED ALGORITHM TEST ROUTE HIT!")
                 import sys
                 sys.stdout.flush()
-                
+
                 if not ADVANCED_ALGORITHMS_AVAILABLE or not self.advanced_engine:
                     return jsonify({'success': False, 'error': 'Advanced algorithms not available'})
-                
+
                 try:
                     data = request.get_json() or {}
                     algorithm = data.get('algorithm', 'genetic')
                     print(f"DEBUG: Testing algorithm: {algorithm}")
                     sys.stdout.flush()
-                    
+
                     # Create test scenario
                     from advanced_3d_algorithms import Truck3D, Carton3D, Algorithm3DType
-                    
+
                     truck = Truck3D(1, "Test Truck", 5.0, 2.0, 2.0, 1000.0)
                     cartons = [Carton3D(i, f"Box{i}", 0.5, 0.5, 0.5, 10.0) for i in range(1, 6)]
-                    
+
                     algorithm_enum = Algorithm3DType(algorithm)
                     result = self.advanced_engine.pack_with_algorithm(truck, cartons, algorithm_enum)
-                    
+
                     return jsonify({
                         'success': True,
                         'message': f'✅ ADVANCED ALGORITHM "{algorithm}" WORKING CORRECTLY!',
@@ -1137,77 +1163,79 @@ Carton Details:
                         'processing_time': result.get('processing_time', 0),
                         'proof': 'Advanced 3D algorithms are fully operational'
                     })
-                    
+
                 except Exception as e:
                     print(f"ERROR in algorithm test: {e}")
                     import traceback
                     print(traceback.format_exc())
                     sys.stdout.flush()
                     return jsonify({'success': False, 'error': str(e)})
-            
+
             print("DEBUG: Successfully registered /api/test-algorithms")
         except Exception as e:
             print(f"DEBUG: Error registering algorithm routes: {e}")
-        
+
         @self.app.route('/api/algorithms/pack', methods=['POST'])
         def api_algorithms_pack_route():
             """Pack cartons using specified advanced algorithm"""
             if not ADVANCED_ALGORITHMS_AVAILABLE:
                 return jsonify({'error': 'Advanced algorithms not available'}), 503
-            
+
             try:
                 data = request.get_json()
                 truck_id = data.get('truck_id')
                 carton_requirements = data.get('carton_requirements', [])
                 algorithm_type = data.get('algorithm', 'skyline_bl')
-                
+
                 if not truck_id or not carton_requirements:
                     return jsonify({'error': 'Missing truck_id or carton_requirements'}), 400
-                
+
                 with sqlite3.connect(self.db_path) as conn:
                     # Get truck data
-                    truck_row = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
+                    truck_row = conn.execute(
+                        'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
                     if not truck_row:
                         return jsonify({'error': 'Truck not found'}), 404
-                    
+
                     truck = Truck3D(
                         id=truck_row[0],
-                        name=truck_row[1], 
+                        name=truck_row[1],
                         length=truck_row[2],
                         width=truck_row[3],
                         height=truck_row[4],
                         max_weight=truck_row[5],
                         cost_per_km=truck_row[6]
                     )
-                    
+
                     # Get carton data
                     cartons = []
                     for req in carton_requirements:
                         carton_id = req.get('carton_id')
                         quantity = req.get('quantity', 1)
-                        
-                        carton_row = conn.execute('SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+
+                        carton_row = conn.execute(
+                            'SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                         if carton_row:
                             carton = Carton3D(
                                 id=carton_row[0],
                                 name=carton_row[1],
-                                length=carton_row[2], 
+                                length=carton_row[2],
                                 width=carton_row[3],
                                 height=carton_row[4],
                                 weight=carton_row[5],
                                 quantity=quantity
                             )
                             cartons.append(carton)
-                    
+
                     # Convert algorithm string to enum
                     try:
                         algorithm_enum = Algorithm3DType(algorithm_type)
                     except ValueError:
                         return jsonify({'error': f'Unknown algorithm: {algorithm_type}'}), 400
-                    
+
                     # Run packing algorithm
                     result = self.advanced_engine.pack_with_algorithm(truck, cartons, algorithm_enum)
-                    
+
                     # Convert result for JSON serialization
                     json_result = {
                         'success': True,
@@ -1231,69 +1259,71 @@ Carton Details:
                         } for pc in result['packed_cartons']],
                         'unpacked_cartons': [{
                             'carton_name': uc.name,
-                            'volume': uc.volume, 
+                            'volume': uc.volume,
                             'weight': uc.weight
                         } for uc in result['unpacked_cartons']]
                     }
-                    
+
                     return jsonify(json_result)
-                    
+
             except Exception as e:
                 import traceback
                 print(f"Error in advanced packing: {str(e)}")
                 print(traceback.format_exc())
                 return jsonify({'error': str(e)}), 500
-        
-        @self.app.route('/api/algorithms/compare', methods=['POST']) 
+
+        @self.app.route('/api/algorithms/compare', methods=['POST'])
         def api_algorithms_compare_route():
             """Compare multiple algorithms for the same packing problem"""
             if not ADVANCED_ALGORITHMS_AVAILABLE:
                 return jsonify({'error': 'Advanced algorithms not available'}), 503
-            
+
             try:
                 data = request.get_json()
                 truck_id = data.get('truck_id')
                 carton_requirements = data.get('carton_requirements', [])
                 algorithms = data.get('algorithms', ['skyline_bl', 'genetic', 'extreme_points'])
-                
+
                 if not truck_id or not carton_requirements:
                     return jsonify({'error': 'Missing truck_id or carton_requirements'}), 400
-                
+
                 with sqlite3.connect(self.db_path) as conn:
                     # Get truck data
-                    truck_row = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
+                    truck_row = conn.execute(
+                        'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
                     if not truck_row:
                         return jsonify({'error': 'Truck not found'}), 404
-                    
+
                     truck = Truck3D(
                         id=truck_row[0],
                         name=truck_row[1],
-                        length=truck_row[2], 
+                        length=truck_row[2],
                         width=truck_row[3],
                         height=truck_row[4],
                         max_weight=truck_row[5],
                         cost_per_km=truck_row[6]
                     )
-                    
+
                     # Get carton data
                     cartons = []
                     for req in carton_requirements:
                         carton_id = req.get('carton_id')
                         quantity = req.get('quantity', 1)
-                        
-                        carton_row = conn.execute('SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+
+                        carton_row = conn.execute(
+                            'SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                         if carton_row:
                             carton = Carton3D(
                                 id=carton_row[0],
                                 name=carton_row[1],
                                 length=carton_row[2],
-                                width=carton_row[3], 
+                                width=carton_row[3],
                                 height=carton_row[4],
                                 weight=carton_row[5],
                                 quantity=quantity
                             )
                             cartons.append(carton)
-                    
+
                     # Convert algorithm strings to enums
                     algorithm_enums = []
                     for alg in algorithms:
@@ -1301,10 +1331,10 @@ Carton Details:
                             algorithm_enums.append(Algorithm3DType(alg))
                         except ValueError:
                             return jsonify({'error': f'Unknown algorithm: {alg}'}), 400
-                    
+
                     # Compare algorithms
                     results = self.advanced_engine.compare_algorithms(truck, cartons, algorithm_enums)
-                    
+
                     # Convert results for JSON
                     json_results = {}
                     for alg_name, result in results.items():
@@ -1319,7 +1349,7 @@ Carton Details:
                             }
                         else:
                             json_results[alg_name] = result
-                    
+
                     return jsonify({
                         'success': True,
                         'results': json_results,
@@ -1329,33 +1359,34 @@ Carton Details:
                             'max_weight': truck.max_weight
                         }
                     })
-                    
+
             except Exception as e:
                 import traceback
                 print(f"Error in algorithm comparison: {str(e)}")
                 print(traceback.format_exc())
                 return jsonify({'error': str(e)}), 500
-        
+
         @self.app.route('/api/algorithms/best', methods=['POST'])
         def api_algorithms_best_route():
             """Find the best algorithm for given truck and cartons"""
             if not ADVANCED_ALGORITHMS_AVAILABLE:
                 return jsonify({'error': 'Advanced algorithms not available'}), 503
-            
+
             try:
                 data = request.get_json()
                 truck_id = data.get('truck_id')
                 carton_requirements = data.get('carton_requirements', [])
-                
+
                 if not truck_id or not carton_requirements:
                     return jsonify({'error': 'Missing truck_id or carton_requirements'}), 400
-                
+
                 with sqlite3.connect(self.db_path) as conn:
                     # Get truck data
-                    truck_row = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
+                    truck_row = conn.execute(
+                        'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks WHERE id = ?', (truck_id,)).fetchone()
                     if not truck_row:
                         return jsonify({'error': 'Truck not found'}), 404
-                    
+
                     truck = Truck3D(
                         id=truck_row[0],
                         name=truck_row[1],
@@ -1365,14 +1396,15 @@ Carton Details:
                         max_weight=truck_row[5],
                         cost_per_km=truck_row[6]
                     )
-                    
+
                     # Get carton data
                     cartons = []
                     for req in carton_requirements:
                         carton_id = req.get('carton_id')
                         quantity = req.get('quantity', 1)
-                        
-                        carton_row = conn.execute('SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+
+                        carton_row = conn.execute(
+                            'SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                         if carton_row:
                             carton = Carton3D(
                                 id=carton_row[0],
@@ -1384,10 +1416,10 @@ Carton Details:
                                 quantity=quantity
                             )
                             cartons.append(carton)
-                    
+
                     # Find best algorithm
                     best_algorithm, best_result = self.advanced_engine.get_best_algorithm(truck, cartons)
-                    
+
                     if best_result:
                         return jsonify({
                             'success': True,
@@ -1408,13 +1440,13 @@ Carton Details:
                         })
                     else:
                         return jsonify({'error': 'No suitable algorithm found'}), 500
-                    
+
             except Exception as e:
                 import traceback
                 print(f"Error finding best algorithm: {str(e)}")
                 print(traceback.format_exc())
                 return jsonify({'error': str(e)}), 500
-        
+
         @self.app.route('/api/working-test', methods=['POST'])
         def working_test():
             data = request.get_json()
@@ -1423,49 +1455,52 @@ Carton Details:
                 'message': 'This endpoint is working',
                 'received_data': data
             })
-    
+
     def handle_truck_recommendation(self, data, conn):
         """Handle truck recommendation requests with advanced 3D algorithms"""
         try:
             carton_requirements = data.get('carton_requirements', [])
             selected_algorithm = data.get('algorithm', 'auto')  # Algorithm selection from UI
             compare_algorithms = data.get('compare_algorithms', False)
-            
+
             print(f"DEBUG: HANDLE_TRUCK_RECOMMENDATION with algorithm: {selected_algorithm}")
-            
+
             if not carton_requirements:
                 return jsonify({'error': 'No cartons specified'}), 400
-            
+
             # Get all trucks and cartons for advanced algorithm processing
-            trucks = conn.execute('SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY length * width * height').fetchall()
+            trucks = conn.execute(
+                'SELECT id, name, length, width, height, max_weight, cost_per_km FROM trucks ORDER BY length * width * height').fetchall()
             cartons = []
             carton_summary = {'total_cartons': 0, 'carton_types': 0, 'requirements': carton_requirements}
-            
+
             # Build cartons list for advanced algorithms
             for req in carton_requirements:
                 carton_id = req.get('carton_id')
                 quantity = req.get('quantity', 1)
-                
-                carton_data = conn.execute('SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
+
+                carton_data = conn.execute(
+                    'SELECT id, name, length, width, height, weight FROM cartons WHERE id = ?', (carton_id,)).fetchone()
                 if carton_data:
                     # Add multiple instances of each carton based on quantity
                     for _ in range(quantity):
                         cartons.append(carton_data)
-            
+
             carton_summary['total_cartons'] = len(cartons)
             carton_summary['carton_types'] = len(carton_requirements)
-            
+
             if not trucks or not cartons:
                 return jsonify({'error': 'No trucks or cartons available'}), 400
-            
+
             # Use advanced algorithms if available and selected
             if ADVANCED_ALGORITHMS_AVAILABLE and self.advanced_engine and selected_algorithm != 'simple':
                 print(f"DEBUG: USING ADVANCED ALGORITHMS - Algorithm: {selected_algorithm}")
-                recommendations = self.advanced_truck_recommendation(trucks, cartons, carton_summary, selected_algorithm, compare_algorithms)
+                recommendations = self.advanced_truck_recommendation(
+                    trucks, cartons, carton_summary, selected_algorithm, compare_algorithms)
             else:
                 print("DEBUG: Using simple truck recommendation (fallback)")
                 recommendations = self.simple_truck_recommendation(trucks, cartons, carton_summary)
-            
+
             return jsonify({
                 'success': True,
                 'recommendation_type': 'truck_optimization_advanced',
@@ -1474,35 +1509,35 @@ Carton Details:
                 'carton_summary': carton_summary,
                 'algorithm_used': selected_algorithm if ADVANCED_ALGORITHMS_AVAILABLE and self.advanced_engine else 'simple_fallback'
             })
-            
+
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
             print(f"Recommendation Error: {error_details}")
             return jsonify({'error': f'Recommendation failed: {str(e)}', 'details': str(e)}), 500
-    
+
     def simple_optimize(self, truck, cartons):
         """Simple volume-based optimization (fast calculation)"""
         # Truck dimensions: id, name, length, width, height, max_weight, cost_per_km
         truck_volume = truck[2] * truck[3] * truck[4]  # length * width * height
         truck_weight_limit = truck[5]
-        
+
         total_carton_volume = 0
         total_carton_weight = 0
-        
+
         for carton in cartons:
             # Carton: id, name, length, width, height, weight
             carton_volume = carton[2] * carton[3] * carton[4]
             total_carton_volume += carton_volume
             total_carton_weight += carton[5]
-        
+
         # Calculate utilization
         volume_utilization = min((total_carton_volume / truck_volume) * 100, 100)
         weight_utilization = min((total_carton_weight / truck_weight_limit) * 100, 100)
-        
+
         # Check if it fits
         fits = total_carton_volume <= truck_volume and total_carton_weight <= truck_weight_limit
-        
+
         return {
             'success': True,
             'fits': fits,
@@ -1513,18 +1548,18 @@ Carton Details:
             'algorithm': 'Simple Volume Calculation',
             'recommendation': 'Optimal' if fits and volume_utilization > 70 else 'Acceptable' if fits else 'Overloaded'
         }
-    
+
     def advanced_optimize(self, truck, cartons):
         """Advanced 3D packing optimization with lazy loading"""
         from packing_engine import get_packing_engine, Truck3D, Carton3D
-        
+
         # Convert database records to 3D objects
         truck_3d = Truck3D(
-            id=truck[0], name=truck[1], 
+            id=truck[0], name=truck[1],
             length=truck[2], width=truck[3], height=truck[4],
             max_weight=truck[5], cost_per_km=truck[6]
         )
-        
+
         cartons_3d = []
         for carton in cartons:
             cartons_3d.append(Carton3D(
@@ -1532,11 +1567,11 @@ Carton Details:
                 length=carton[2], width=carton[3], height=carton[4],
                 weight=carton[5]
             ))
-        
+
         # Get packing engine and optimize
         packing_engine = get_packing_engine()
         packing_result = packing_engine.packer.pack_cartons_in_truck(truck_3d, cartons_3d, "auto")
-        
+
         # Convert result to API format
         return {
             'success': packing_result.success,
@@ -1552,11 +1587,11 @@ Carton Details:
             'algorithm': packing_result.algorithm_used,
             'recommendation': self._get_advanced_recommendation(packing_result)
         }
-    
+
     def smart_truck_recommendation(self, trucks, cartons):
         """Smart truck recommendation using advanced 3D algorithms"""
         from packing_engine import get_packing_engine, Truck3D, Carton3D
-        
+
         # Convert to 3D objects
         trucks_3d = []
         for truck in trucks:
@@ -1566,7 +1601,7 @@ Carton Details:
                 length=truck[2], width=truck[3], height=truck[4],
                 max_weight=truck[5], cost_per_km=truck[6] if len(truck) > 6 else 0
             ))
-        
+
         cartons_3d = []
         for carton in cartons:
             print(f"Processing carton: {carton}")
@@ -1575,11 +1610,11 @@ Carton Details:
                 length=carton[2], width=carton[3], height=carton[4],
                 weight=carton[5]
             ))
-        
+
         # Get smart recommendations
         packing_engine = get_packing_engine()
         recommendations = packing_engine.recommend_optimal_trucks(trucks_3d, cartons_3d)
-        
+
         # Convert to API format
         result = []
         for rec in recommendations[:5]:  # Top 5 recommendations
@@ -1602,13 +1637,13 @@ Carton Details:
             except Exception as e:
                 print(f"Error processing recommendation: {e}")
                 continue
-        
+
         return result
-    
+
     def advanced_truck_recommendation(self, trucks, cartons, carton_summary, selected_algorithm, compare_algorithms):
         """Advanced truck recommendation using 3D packing algorithms"""
         recommendations = []
-        
+
         try:
             # Convert to 3D objects for advanced algorithms
             trucks_3d = []
@@ -1623,7 +1658,7 @@ Carton Details:
                     cost_per_km=truck[6] if len(truck) > 6 else 0
                 )
                 trucks_3d.append(truck_3d)
-            
+
             cartons_3d = []
             for carton in cartons:
                 carton_3d = Carton3D(
@@ -1636,9 +1671,9 @@ Carton Details:
                     quantity=carton[6] if len(carton) > 6 else 1
                 )
                 cartons_3d.append(carton_3d)
-            
+
             print(f"DEBUG: Created {len(trucks_3d)} trucks and {len(cartons_3d)} cartons for advanced algorithms")
-            
+
             # Process each truck with advanced algorithms
             for truck_3d in trucks_3d:
                 try:
@@ -1653,7 +1688,7 @@ Carton Details:
                         best_result = None
                         best_score = -1
                         algorithm_name = "Multi-Algorithm Comparison"
-                        
+
                         for alg_name, alg_result in comparison.items():
                             if 'error' not in alg_result:
                                 score = alg_result.get('efficiency_score', 0)
@@ -1661,14 +1696,14 @@ Carton Details:
                                     best_score = score
                                     best_result = alg_result
                                     algorithm_name = f"Best from Comparison: {alg_result['algorithm']}"
-                        
+
                         result = best_result
                     else:
                         # Use specific algorithm
                         algorithm_enum = Algorithm3DType(selected_algorithm)
                         result = self.advanced_engine.pack_with_algorithm(truck_3d, cartons_3d, algorithm_enum)
                         algorithm_name = result['algorithm']
-                    
+
                     if result:
                         recommendation = (
                             truck_3d.id,
@@ -1679,29 +1714,30 @@ Carton Details:
                             85.0,  # recommendation_score (fixed high value for advanced algorithms)
                             f"Advanced 3D packing with {algorithm_name}",
                             algorithm_name,
-                            88.0,  # stability_score 
+                            88.0,  # stability_score
                             result['total_packed'],
                             result['total_packed'] + result['total_unpacked'],
                             algorithm_name
                         )
                         recommendations.append(recommendation)
-                        print(f"DEBUG: Advanced algorithm recommendation for {truck_3d.name}: {result['efficiency_score']:.1f}% efficiency")
-                    
+                        print(
+                            f"DEBUG: Advanced algorithm recommendation for {truck_3d.name}: {result['efficiency_score']:.1f}% efficiency")
+
                 except Exception as e:
                     print(f"DEBUG: Error with advanced algorithm for truck {truck_3d.name}: {e}")
                     # Fallback to simple recommendation for this truck
                     continue
-            
+
             if not recommendations:
                 print("DEBUG: No advanced algorithm recommendations, falling back to simple")
                 return self.simple_truck_recommendation(trucks, cartons, carton_summary)
-                
+
             # Sort by recommendation score (higher is better)
             recommendations.sort(key=lambda x: x[5], reverse=True)
-            
+
             print(f"DEBUG: Advanced algorithms generated {len(recommendations)} recommendations")
             return recommendations
-            
+
         except Exception as e:
             print(f"DEBUG: Advanced algorithm error: {e}")
             # Fallback to simple recommendation
@@ -1712,35 +1748,35 @@ Carton Details:
         # Calculate total requirements
         total_volume = 0
         total_weight = 0
-        
+
         for carton in cartons:
             print(f"Processing carton in simple rec: {carton}")
             try:
-                volume = carton[2] * carton[3] * carton[4]  # L * W * H  
+                volume = carton[2] * carton[3] * carton[4]  # L * W * H
                 weight = carton[5]
                 total_volume += volume
                 total_weight += weight
             except Exception as e:
                 print(f"Error processing carton {carton}: {e}")
                 continue
-            
+
         recommendations = []
-        
+
         for truck in trucks:
             print(f"Processing truck in simple rec: {truck}")
             try:
                 truck_volume = truck[2] * truck[3] * truck[4]  # length * width * height
                 truck_max_weight = truck[5]  # max_weight
                 truck_cost = truck[6] if len(truck) > 6 else 15.0  # cost_per_km or default
-                
+
                 if truck_volume >= total_volume and truck_max_weight >= total_weight:
                     volume_util = (total_volume / truck_volume) * 100 if truck_volume > 0 else 0
                     weight_util = (total_weight / truck_max_weight) * 100 if truck_max_weight > 0 else 0
-                    
+
                     # Simple scoring based on utilization efficiency
                     efficiency_score = (volume_util + weight_util) / 2
                     recommendation_score = min(efficiency_score, 100)  # Cap at 100
-                    
+
                     recommendations.append({
                         'truck_id': truck[0],
                         'truck_name': truck[1],
@@ -1759,10 +1795,11 @@ Carton Details:
             except Exception as e:
                 print(f"Error processing truck {truck}: {e}")
                 continue
-        
+
         # Sort by recommendation score (best utilization first)
         recommendations.sort(key=lambda x: x['recommendation_score'], reverse=True)
         return recommendations[:5]  # Return top 5
+
     def _get_advanced_recommendation(self, packing_result):
         """Get recommendation text based on advanced packing result"""
         if not packing_result.success:
@@ -1776,7 +1813,7 @@ Carton Details:
                 return 'Acceptable fit'
         else:
             return f'Partial fit ({len(packing_result.unpacked_cartons)} cartons remaining)'
-    
+
     def _calculate_recommendation_analytics(self, conn, where_clause, params):
         """Calculate analytics for recommendation history"""
         try:
@@ -1793,7 +1830,7 @@ Carton Details:
                 FROM recommendations {where_clause}
             '''
             stats = conn.execute(stats_query, params).fetchone()
-            
+
             # Most popular trucks
             truck_stats_query = f'''
                 SELECT 
@@ -1807,7 +1844,7 @@ Carton Details:
                 LIMIT 5
             '''
             truck_stats = conn.execute(truck_stats_query, params).fetchall()
-            
+
             # Algorithm performance
             algo_stats_query = f'''
                 SELECT 
@@ -1820,7 +1857,7 @@ Carton Details:
                 ORDER BY avg_score DESC
             '''
             algo_stats = conn.execute(algo_stats_query, params).fetchall()
-            
+
             # Trend data (last 30 days)
             trend_query = f'''
                 SELECT 
@@ -1835,7 +1872,7 @@ Carton Details:
             '''
             trend_params = params + [] if not where_clause else params
             trend_data = conn.execute(trend_query, trend_params).fetchall()
-            
+
             return {
                 'summary': {
                     'total_recommendations': stats[0] or 0,
@@ -1878,7 +1915,7 @@ Carton Details:
                 'trend_data': [],
                 'error': str(e)
             }
-    
+
     def _generate_recommendation_comparison(self, recommendations: List[Dict]) -> Dict:
         """Generate detailed comparison analysis and optimization suggestions"""
         try:
@@ -1886,22 +1923,22 @@ Carton Details:
             sorted_recs = sorted(recommendations, key=lambda x: x['recommendation_score'], reverse=True)
             best_rec = sorted_recs[0]
             worst_rec = sorted_recs[-1]
-            
+
             # Calculate performance metrics
             avg_score = sum(r['recommendation_score'] for r in recommendations) / len(recommendations)
             avg_volume = sum(r['volume_utilization'] for r in recommendations) / len(recommendations)
             avg_weight = sum(r['weight_utilization'] for r in recommendations) / len(recommendations)
             avg_stability = sum(r['stability_score'] for r in recommendations) / len(recommendations)
-            
+
             # Identify performance gaps
             score_gap = best_rec['recommendation_score'] - worst_rec['recommendation_score']
             volume_gap = best_rec['volume_utilization'] - worst_rec['volume_utilization']
             weight_gap = best_rec['weight_utilization'] - worst_rec['weight_utilization']
             stability_gap = best_rec['stability_score'] - worst_rec['stability_score']
-            
+
             # Generate optimization suggestions
             suggestions = []
-            
+
             # Algorithm optimization suggestions
             if score_gap > 20:
                 best_algorithm = best_rec['algorithm_used']
@@ -1914,7 +1951,7 @@ Carton Details:
                     'potential_improvement': f'{score_gap:.1f}% better recommendation score',
                     'implementation': 'automatic_algorithm_selection'
                 })
-            
+
             # Volume utilization suggestions
             if volume_gap > 15:
                 suggestions.append({
@@ -1925,7 +1962,7 @@ Carton Details:
                     'potential_improvement': f'{volume_gap:.1f}% more efficient space usage',
                     'implementation': 'enhanced_3d_packing'
                 })
-            
+
             # Weight distribution suggestions
             if weight_gap > 20:
                 suggestions.append({
@@ -1936,7 +1973,7 @@ Carton Details:
                     'potential_improvement': f'{weight_gap:.1f}% improved weight efficiency',
                     'implementation': 'physics_based_placement'
                 })
-            
+
             # Stability improvement suggestions
             if stability_gap > 25:
                 suggestions.append({
@@ -1947,7 +1984,7 @@ Carton Details:
                     'potential_improvement': f'{stability_gap:.1f}% more stable load configuration',
                     'implementation': 'center_of_gravity_optimization'
                 })
-            
+
             # Cost efficiency analysis
             truck_usage = {}
             for rec in recommendations:
@@ -1956,11 +1993,11 @@ Carton Details:
                     truck_usage[truck] = {'count': 0, 'avg_score': 0, 'scores': []}
                 truck_usage[truck]['count'] += 1
                 truck_usage[truck]['scores'].append(rec['recommendation_score'])
-            
+
             # Calculate average scores per truck
             for truck in truck_usage:
                 truck_usage[truck]['avg_score'] = sum(truck_usage[truck]['scores']) / len(truck_usage[truck]['scores'])
-            
+
             # Find best performing truck
             best_truck = max(truck_usage.items(), key=lambda x: x[1]['avg_score'])
             if best_truck[1]['avg_score'] > avg_score + 10:
@@ -1972,7 +2009,7 @@ Carton Details:
                     'potential_improvement': f'{best_truck[1]["avg_score"] - avg_score:.1f}% score improvement',
                     'implementation': 'truck_fleet_optimization'
                 })
-            
+
             # Performance trend analysis
             efficiency_trends = []
             for i, rec in enumerate(recommendations):
@@ -1986,7 +2023,7 @@ Carton Details:
                     'truck': rec['recommended_truck_name'],
                     'algorithm': rec['algorithm_used']
                 })
-            
+
             # Overall assessment
             if avg_score >= 80:
                 overall_assessment = "Excellent performance across recommendations"
@@ -1996,7 +2033,7 @@ Carton Details:
                 overall_assessment = "Average performance, significant improvement potential"
             else:
                 overall_assessment = "Poor performance, urgent optimization required"
-            
+
             return {
                 'summary': {
                     'total_compared': len(recommendations),
@@ -2040,32 +2077,34 @@ Carton Details:
                 'optimization_suggestions': [],
                 'error': str(e)
             }
-    
+
     def run(self, host='127.0.0.1', port=5000, debug=False):
         """Run the application"""
         self.app.run(host=host, port=port, debug=debug, use_reloader=False)
+
 
 def create_app():
     """Application factory"""
     return TruckOptimum()
 
+
 if __name__ == '__main__':
     import webbrowser
     import threading
-    
+
     print("TruckOptimum starting...")
-    
+
     app = create_app()
     port = 5001
-    
+
     # Open browser after brief delay
     def open_browser():
         time.sleep(1)
         webbrowser.open(f'http://127.0.0.1:{port}')
-    
+
     threading.Thread(target=open_browser, daemon=True).start()
-    
+
     startup_time = time.time() - APP_START_TIME
     print(f"TruckOptimum ready in {startup_time:.2f}s - http://127.0.0.1:{port}")
-    
+
     app.run(port=port, debug=True)
