@@ -17,73 +17,35 @@
                         <p class="text-muted mb-3">Specify how many cartons you have of each type, and we'll recommend the optimal truck size.</p>
                         
                         <form id="recommendForm">
-                            <!-- Enhanced Carton Selection Interface -->
+                            <!-- Carton Selection for Truck Recommendation -->
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <label class="form-label mb-0"><strong><i class="bi bi-box"></i> Available Cartons:</strong></label>
+                                    <label class="form-label mb-0"><strong><i class="bi bi-box"></i> Selected Cartons for Recommendation:</strong></label>
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-primary" onclick="refreshCartonList()">
-                                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCartonToRecommendationModal">
+                                            <i class="bi bi-plus-circle"></i> Add Carton
                                         </button>
-                                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#selectCartonModal">
-                                            <i class="bi bi-plus-circle"></i> Add Available Carton
+                                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bulkUploadCartonModal">
+                                            <i class="bi bi-upload"></i> Bulk Upload CSV
                                         </button>
-                                        <a href="/cartons" class="btn btn-outline-info btn-sm">
-                                            <i class="bi bi-gear"></i> Manage Cartons
-                                        </a>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="clearAllCartons()">
+                                            <i class="bi bi-trash"></i> Clear All
+                                        </button>
                                     </div>
                                 </div>
                                 
-                                <!-- Professional Carton Selection Cards -->
-                                <div id="cartonSelectionContainer">
-                                    {% if cartons %}
-                                        {% for carton in cartons %}
-                                        <div class="card mb-2 carton-selection-card" data-carton-id="{{ carton[0] }}">
-                                            <div class="card-body py-2">
-                                                <div class="row align-items-center">
-                                                    <div class="col-md-5">
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                                                <i class="bi bi-box" style="font-size: 14px;"></i>
-                                                            </div>
-                                                            <div>
-                                                                <h6 class="mb-0">{{ carton[1] }}</h6>
-                                                                <small class="text-muted">{{ carton[2] }}×{{ carton[3] }}×{{ carton[4] }}m, {{ carton[5] }}kg</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <small class="text-muted">Quantity</small>
-                                                        <input type="number" class="form-control form-control-sm carton-quantity" 
-                                                               id="quantity{{ carton[0] }}" min="0" max="1000" value="0" 
-                                                               placeholder="0" onchange="updateCartonSelection({{ carton[0] }})">
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="row text-center">
-                                                            <div class="col">
-                                                                <small class="text-muted d-block">Volume</small>
-                                                                <span class="badge bg-light text-dark">{{ "%.2f"|format(carton[2] * carton[3] * carton[4]) }}m³</span>
-                                                            </div>
-                                                            <div class="col">
-                                                                <small class="text-muted d-block">Available</small>
-                                                                <span class="badge bg-success">{{ carton[6] if carton[6] else "∞" }}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    {% else %}
-                                        <div class="alert alert-info text-center">
-                                            <i class="bi bi-info-circle"></i>
-                                            <h6>No cartons available</h6>
-                                            <p class="mb-2">Add cartons to start getting truck recommendations.</p>
-                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCartonModal">
-                                                <i class="bi bi-plus"></i> Add Your First Carton
-                                            </button>
-                                        </div>
-                                    {% endif %}
+                                <!-- Selected Cartons Display -->
+                                <div id="selectedCartonsContainer">
+                                    <div id="emptyCartonMessage" class="alert alert-info text-center">
+                                        <i class="bi bi-info-circle"></i>
+                                        <h6>No cartons selected for recommendation</h6>
+                                        <p class="mb-2">Add cartons to get intelligent truck recommendations.</p>
+                                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCartonToRecommendationModal">
+                                            <i class="bi bi-plus"></i> Add Your First Carton
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="selectedCartonsList"></div>
                                 </div>
                                 
                                 <!-- Selected Cartons Summary -->
@@ -314,125 +276,164 @@ function updateAlgorithmInfo(algorithmType) {
     }
 }
 
-// Enhanced Carton Selection Management
-let cartonDatabase = [];
+// Selected Cartons Management for Truck Recommendation
+let selectedCartons = [];
 
-// Update carton selection tracking
-function updateCartonSelection(cartonId) {
-    const quantityInput = document.getElementById('quantity' + cartonId);
-    const quantity = parseInt(quantityInput.value) || 0;
+// Add carton to recommendation list
+function addCartonToRecommendation(cartonId, cartonName, dimensions, weight, volume, quantity) {
+    // Check if carton already exists
+    const existingIndex = selectedCartons.findIndex(c => c.id === cartonId);
     
-    // Update visual feedback
-    const cartonCard = document.querySelector(`.carton-selection-card[data-carton-id="${cartonId}"]`);
-    if (quantity > 0) {
-        cartonCard.classList.add('border-success');
-        cartonCard.style.backgroundColor = '#f8f9fa';
+    if (existingIndex !== -1) {
+        // Update existing carton quantity
+        selectedCartons[existingIndex].quantity = parseInt(quantity);
     } else {
-        cartonCard.classList.remove('border-success');
-        cartonCard.style.backgroundColor = '';
+        // Add new carton
+        selectedCartons.push({
+            id: cartonId,
+            name: cartonName,
+            dimensions: dimensions,
+            weight: weight,
+            volume: volume,
+            quantity: parseInt(quantity)
+        });
     }
     
-    // Update summary
-    updateSelectedCartonsSummary();
+    updateSelectedCartonsDisplay();
 }
 
-// Update selected cartons summary
-function updateSelectedCartonsSummary() {
-    const summaryContainer = document.getElementById('selectedCartonsSummary');
-    const selectedList = document.getElementById('selectedCartonsList');
-    const totalCartonsEl = document.getElementById('totalCartons');
-    const totalVolumeEl = document.getElementById('totalVolume');
-    const totalWeightEl = document.getElementById('totalWeight');
+// Update the display of selected cartons
+function updateSelectedCartonsDisplay() {
+    const container = document.getElementById('selectedCartonsContainer');
+    const emptyMessage = document.getElementById('emptyCartonMessage');
+    const listContainer = document.getElementById('selectedCartonsList');
     
-    const requirements = getCartonRequirements();
-    
-    if (requirements.length === 0) {
-        summaryContainer.classList.add('d-none');
+    if (selectedCartons.length === 0) {
+        emptyMessage.style.display = 'block';
+        listContainer.innerHTML = '';
         return;
     }
     
-    // Show summary
-    summaryContainer.classList.remove('d-none');
+    emptyMessage.style.display = 'none';
     
-    // Build selected cartons list
     let listHtml = '';
     let totalCartons = 0;
     let totalVolume = 0;
     let totalWeight = 0;
     
-    requirements.forEach(req => {
-        const cartonCard = document.querySelector(`.carton-selection-card[data-carton-id="${req.carton_id}"]`);
-        if (cartonCard) {
-            const cartonName = cartonCard.querySelector('h6').textContent;
-            const dimensionsText = cartonCard.querySelector('small.text-muted').textContent;
-            const volumeBadge = cartonCard.querySelector('.badge.bg-light').textContent;
-            
-            // Extract weight from dimensions text (format: LxWxHm, Wkg)
-            const weightMatch = dimensionsText.match(/(\d+\.?\d*)kg/);
-            const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
-            const volume = parseFloat(volumeBadge);
-            
-            totalCartons += req.quantity;
-            totalVolume += volume * req.quantity;
-            totalWeight += weight * req.quantity;
-            
-            listHtml += `
-                <div class="d-flex justify-content-between align-items-center py-1">
-                    <span><strong>${cartonName}</strong></span>
-                    <span class="badge bg-primary">${req.quantity}</span>
+    selectedCartons.forEach((carton, index) => {
+        totalCartons += carton.quantity;
+        totalVolume += carton.volume * carton.quantity;
+        totalWeight += carton.weight * carton.quantity;
+        
+        listHtml += `
+            <div class="card mb-2 border-success" data-carton-index="${index}">
+                <div class="card-body py-2">
+                    <div class="row align-items-center">
+                        <div class="col-md-5">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-box" style="font-size: 14px;"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">${carton.name}</h6>
+                                    <small class="text-muted">${carton.dimensions}, ${carton.weight}kg</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Quantity</small>
+                            <input type="number" class="form-control form-control-sm" 
+                                   value="${carton.quantity}" min="1" max="10000" 
+                                   onchange="updateCartonQuantity(${index}, this.value)">
+                        </div>
+                        <div class="col-md-3">
+                            <div class="row text-center">
+                                <div class="col">
+                                    <small class="text-muted d-block">Volume</small>
+                                    <span class="badge bg-light text-dark">${carton.volume.toFixed(2)}m³</span>
+                                </div>
+                                <div class="col">
+                                    <small class="text-muted d-block">Total</small>
+                                    <span class="badge bg-info">${(carton.volume * carton.quantity).toFixed(2)}m³</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeCartonFromRecommendation(${index})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            `;
-        }
+            </div>
+        `;
     });
     
-    selectedList.innerHTML = listHtml;
-    totalCartonsEl.textContent = totalCartons;
-    totalVolumeEl.textContent = totalVolume.toFixed(2) + 'm³';
-    totalWeightEl.textContent = totalWeight.toFixed(2) + 'kg';
+    // Add summary
+    listHtml += `
+        <div class="card border-primary mt-3">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-calculator"></i> Recommendation Summary</h6>
+            </div>
+            <div class="card-body py-2">
+                <div class="row text-center">
+                    <div class="col">
+                        <small class="text-muted d-block">Total Cartons</small>
+                        <strong>${totalCartons}</strong>
+                    </div>
+                    <div class="col">
+                        <small class="text-muted d-block">Total Volume</small>
+                        <strong>${totalVolume.toFixed(2)}m³</strong>
+                    </div>
+                    <div class="col">
+                        <small class="text-muted d-block">Total Weight</small>
+                        <strong>${totalWeight.toFixed(2)}kg</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    listContainer.innerHTML = listHtml;
 }
 
-// Refresh carton list from server
-async function refreshCartonList() {
-    try {
-        const response = await fetch('/api/cartons');
-        const data = await response.json();
-        
-        if (data.success) {
-            // Reload the page to get fresh carton data
-            window.location.reload();
-        } else {
-            alert('Failed to refresh carton list: ' + (data.error || 'Unknown error'));
-        }
-    } catch (error) {
-        alert('Error refreshing carton list: ' + error.message);
+// Update carton quantity
+function updateCartonQuantity(index, newQuantity) {
+    if (selectedCartons[index]) {
+        selectedCartons[index].quantity = parseInt(newQuantity) || 1;
+        updateSelectedCartonsDisplay();
     }
 }
 
-// Add new carton success callback
-function onCartonAdded() {
-    // Refresh the carton list after successful addition
-    setTimeout(() => {
-        refreshCartonList();
-    }, 500);
+// Remove carton from recommendation
+function removeCartonFromRecommendation(index) {
+    if (confirm('Remove this carton from the recommendation?')) {
+        selectedCartons.splice(index, 1);
+        updateSelectedCartonsDisplay();
+    }
+}
+
+// Clear all cartons
+function clearAllCartons() {
+    if (confirm('Remove all cartons from the recommendation?')) {
+        selectedCartons = [];
+        updateSelectedCartonsDisplay();
+    }
 }
 
 function getCartonRequirements() {
     const requirements = [];
     
-    // Get all carton quantity inputs dynamically
-    const cartonInputs = document.querySelectorAll('input[id^="quantity"]');
-    
-    for (const input of cartonInputs) {
-        const cartonId = parseInt(input.id.replace('quantity', ''));
-        const quantity = parseInt(input.value) || 0;
-        
-        if (quantity > 0) {
+    // Get requirements from selected cartons
+    selectedCartons.forEach(carton => {
+        if (carton.quantity > 0) {
             requirements.push({
-                carton_id: cartonId,
-                quantity: quantity
+                carton_id: carton.id,
+                quantity: carton.quantity
             });
         }
-    }
+    });
     
     return requirements;
 }
@@ -443,7 +444,7 @@ document.getElementById('recommendForm').addEventListener('submit', async functi
     const cartonRequirements = getCartonRequirements();
     
     if (cartonRequirements.length === 0) {
-        alert('Please specify at least one carton quantity greater than 0');
+        alert('Please add cartons to get truck recommendations');
         return;
     }
     
@@ -967,56 +968,238 @@ document.getElementById('selectCartonForm').addEventListener('submit', function(
     refreshCartonList();
 });
 
-// Load available cartons when modal is shown
-document.getElementById('selectCartonModal').addEventListener('show.bs.modal', function() {
-    loadAvailableCartons();
+// Add Carton to Recommendation Modal Handlers
+document.getElementById('addCartonToRecommendationModal').addEventListener('show.bs.modal', async function() {
+    try {
+        const response = await fetch('/api/cartons');
+        const data = await response.json();
+        
+        const select = document.getElementById('recommendationCartonSelect');
+        select.innerHTML = '<option value="">-- Select a carton type --</option>';
+        
+        if (data.success && data.cartons) {
+            data.cartons.forEach(carton => {
+                const option = document.createElement('option');
+                option.value = carton.id;
+                option.textContent = `${carton.name} (${carton.length}×${carton.width}×${carton.height}m, ${carton.weight}kg)`;
+                option.dataset.cartonData = JSON.stringify(carton);
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading cartons:', error);
+    }
+});
+
+// Handle carton selection preview for recommendation
+document.getElementById('recommendationCartonSelect').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const preview = document.getElementById('recommendationCartonPreview');
+    
+    if (selectedOption.value && selectedOption.dataset.cartonData) {
+        const carton = JSON.parse(selectedOption.dataset.cartonData);
+        const volume = (carton.length * carton.width * carton.height).toFixed(3);
+        
+        document.getElementById('recommendationCartonPreviewContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-8">
+                    <h6>${carton.name}</h6>
+                    <p class="text-muted mb-1">Dimensions: ${carton.length} × ${carton.width} × ${carton.height} meters</p>
+                    <p class="text-muted mb-0">Weight: ${carton.weight} kg | Volume: ${volume} m³</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 48px; height: 48px;">
+                        <i class="bi bi-box"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+// Handle add carton to recommendation form submission
+document.getElementById('addCartonToRecommendationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const cartonSelect = document.getElementById('recommendationCartonSelect');
+    const quantityInput = document.getElementById('recommendationCartonQuantity');
+    
+    const cartonId = parseInt(cartonSelect.value);
+    const quantity = parseInt(quantityInput.value);
+    
+    if (!cartonId || !quantity || quantity < 1) {
+        alert('Please select a carton type and enter a valid quantity');
+        return;
+    }
+    
+    const selectedOption = cartonSelect.options[cartonSelect.selectedIndex];
+    const cartonData = JSON.parse(selectedOption.dataset.cartonData);
+    
+    const dimensions = `${cartonData.length}×${cartonData.width}×${cartonData.height}m`;
+    const volume = cartonData.length * cartonData.width * cartonData.height;
+    
+    addCartonToRecommendation(
+        cartonId,
+        cartonData.name,
+        dimensions,
+        cartonData.weight,
+        volume,
+        quantity
+    );
+    
+    // Close modal and reset form
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addCartonToRecommendationModal'));
+    modal.hide();
+    
+    // Reset form
+    cartonSelect.value = '';
+    quantityInput.value = '';
+    document.getElementById('recommendationCartonPreview').style.display = 'none';
+});
+
+// Handle bulk upload carton form
+document.getElementById('bulkUploadCartonForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('bulkCartonFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a CSV or Excel file');
+        return;
+    }
+    
+    // Read and process the file
+    const text = await file.text();
+    const lines = text.split('\n');
+    
+    // Parse CSV
+    const cartons = [];
+    let errors = [];
+    
+    for (let i = 1; i < lines.length; i++) { // Skip header
+        const line = lines[i].trim();
+        if (line) {
+            const parts = line.split(',');
+            if (parts.length >= 2) {
+                const cartonName = parts[0].trim();
+                const quantity = parseInt(parts[1].trim());
+                
+                if (cartonName && quantity > 0) {
+                    cartons.push({ name: cartonName, quantity: quantity });
+                } else {
+                    errors.push(`Line ${i + 1}: Invalid data`);
+                }
+            }
+        }
+    }
+    
+    if (cartons.length === 0) {
+        alert('No valid carton data found in the file');
+        return;
+    }
+    
+    // Match cartons with existing inventory
+    try {
+        const response = await fetch('/api/cartons');
+        const data = await response.json();
+        
+        if (data.success && data.cartons) {
+            let addedCount = 0;
+            
+            cartons.forEach(csvCarton => {
+                const matchedCarton = data.cartons.find(c => 
+                    c.name.toLowerCase() === csvCarton.name.toLowerCase()
+                );
+                
+                if (matchedCarton) {
+                    const dimensions = `${matchedCarton.length}×${matchedCarton.width}×${matchedCarton.height}m`;
+                    const volume = matchedCarton.length * matchedCarton.width * matchedCarton.height;
+                    
+                    addCartonToRecommendation(
+                        matchedCarton.id,
+                        matchedCarton.name,
+                        dimensions,
+                        matchedCarton.weight,
+                        volume,
+                        csvCarton.quantity
+                    );
+                    addedCount++;
+                } else {
+                    errors.push(`Carton "${csvCarton.name}" not found in inventory`);
+                }
+            });
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('bulkUploadCartonModal'));
+            modal.hide();
+            
+            // Show results
+            if (addedCount > 0) {
+                alert(`Successfully added ${addedCount} carton types to recommendation.${errors.length > 0 ? '\\n\\nErrors:\\n' + errors.join('\\n') : ''}`);
+            } else {
+                alert('No cartons were added. Please check that carton names match your inventory.');
+            }
+            
+            // Reset form
+            fileInput.value = '';
+            
+        } else {
+            alert('Failed to load carton inventory');
+        }
+    } catch (error) {
+        alert('Error processing bulk upload: ' + error.message);
+    }
 });
 </script>
 
-<!-- Select Available Carton Modal -->
-<div class="modal fade" id="selectCartonModal" tabindex="-1" aria-labelledby="selectCartonModalLabel" aria-hidden="true">
+<!-- Add Carton to Recommendation Modal -->
+<div class="modal fade" id="addCartonToRecommendationModal" tabindex="-1" aria-labelledby="addCartonToRecommendationModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="selectCartonModalLabel">
-                    <i class="bi bi-plus-circle text-success"></i> Add Available Carton to Selection
+                <h5 class="modal-title" id="addCartonToRecommendationModalLabel">
+                    <i class="bi bi-plus-circle text-success"></i> Add Carton to Truck Recommendation
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="selectCartonForm">
+            <form id="addCartonToRecommendationForm">
                 <div class="modal-body">
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Select from your existing carton types to add to the truck recommendation.
+                        <i class="bi bi-info-circle"></i> Select a carton type and quantity for truck recommendation.
                     </div>
                     
                     <div class="mb-3">
-                        <label for="availableCartonSelect" class="form-label">Choose Carton Type <span class="text-danger">*</span></label>
-                        <select class="form-select" id="availableCartonSelect" required>
+                        <label for="recommendationCartonSelect" class="form-label">Choose Carton Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="recommendationCartonSelect" required>
                             <option value="">-- Select a carton type --</option>
                         </select>
-                        <div class="form-text">Select from cartons available in your inventory</div>
+                        <div class="form-text">Select from your available carton inventory</div>
                     </div>
                     
-                    <div class="mb-3" id="selectedCartonPreview" style="display: none;">
+                    <div class="mb-3" id="recommendationCartonPreview" style="display: none;">
                         <div class="card border-primary">
                             <div class="card-header bg-primary text-white">
                                 <h6 class="mb-0"><i class="bi bi-box"></i> Selected Carton Details</h6>
                             </div>
-                            <div class="card-body" id="cartonPreviewContent">
+                            <div class="card-body" id="recommendationCartonPreviewContent">
                                 <!-- Carton details will be populated here -->
                             </div>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="initialQuantity" class="form-label">Initial Quantity</label>
-                        <input type="number" class="form-control" id="initialQuantity" min="0" max="1000" placeholder="10" value="10">
-                        <div class="form-text">How many of this carton type to add initially (you can adjust later)</div>
+                        <label for="recommendationCartonQuantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="recommendationCartonQuantity" min="1" max="10000" placeholder="Enter quantity" required>
+                        <div class="form-text">How many of this carton type do you need to pack?</div>
                     </div>
                     
                     <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i> <strong>Need to create a new carton type?</strong> 
-                        Use the <a href="/cartons" class="alert-link">Carton Management</a> page to create, edit, and delete carton types.
+                        <i class="bi bi-exclamation-triangle"></i> <strong>Don't see your carton type?</strong> 
+                        Use the <a href="/cartons" class="alert-link">Carton Management</a> page to create new carton types first.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1024,7 +1207,69 @@ document.getElementById('selectCartonModal').addEventListener('show.bs.modal', f
                         <i class="bi bi-x"></i> Cancel
                     </button>
                     <button type="submit" class="btn btn-success">
-                        <i class="bi bi-plus"></i> Add to Selection
+                        <i class="bi bi-plus"></i> Add to Recommendation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Upload Carton CSV Modal -->
+<div class="modal fade" id="bulkUploadCartonModal" tabindex="-1" aria-labelledby="bulkUploadCartonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkUploadCartonModalLabel">
+                    <i class="bi bi-upload text-primary"></i> Bulk Upload Carton Quantities for Recommendation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="bulkUploadCartonForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Upload a CSV file with carton types and quantities for truck recommendation.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bulkCartonFile" class="form-label">CSV File <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="bulkCartonFile" accept=".csv,.xlsx,.xls" required>
+                        <div class="form-text">Upload CSV or Excel file with carton quantities</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-info-circle"></i> CSV Format Required</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>CSV should have these columns:</strong></p>
+                            <code>carton_name,quantity</code>
+                            <br><br>
+                            <p class="mb-2"><strong>Example:</strong></p>
+                            <pre class="bg-light p-2 rounded">Small Box,25
+Medium Box,15
+Large Box,10
+Heavy Package,5</pre>
+                        </div>
+                    </div>
+                    
+                    <div id="bulkUploadPreview" class="mt-3" style="display: none;">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="bi bi-check-circle"></i> Upload Preview</h6>
+                            </div>
+                            <div class="card-body" id="bulkUploadPreviewContent">
+                                <!-- Preview content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Upload & Add to Recommendation
                     </button>
                 </div>
             </form>
