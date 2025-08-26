@@ -280,13 +280,21 @@ function updateAlgorithmInfo(algorithmType) {
 let selectedCartons = [];
 
 // Add carton to recommendation list
-function addCartonToRecommendation(cartonId, cartonName, dimensions, weight, volume, quantity) {
+function addCartonToRecommendation(cartonId, cartonName, dimensions, weight, volume, quantity, fromBulkUpload = false) {
     // Check if carton already exists
     const existingIndex = selectedCartons.findIndex(c => c.id === cartonId);
+    let result;
     
     if (existingIndex !== -1) {
         // Update existing carton quantity
+        const oldQuantity = selectedCartons[existingIndex].quantity;
         selectedCartons[existingIndex].quantity = parseInt(quantity);
+        
+        if (!fromBulkUpload) {
+            console.log(`Updated ${cartonName} quantity from ${oldQuantity} to ${quantity}`);
+        }
+        
+        result = 'updated';
     } else {
         // Add new carton
         selectedCartons.push({
@@ -297,9 +305,16 @@ function addCartonToRecommendation(cartonId, cartonName, dimensions, weight, vol
             volume: volume,
             quantity: parseInt(quantity)
         });
+        
+        if (!fromBulkUpload) {
+            console.log(`Added new carton: ${cartonName} with quantity ${quantity}`);
+        }
+        
+        result = 'added';
     }
     
     updateSelectedCartonsDisplay();
+    return result;
 }
 
 // Update the display of selected cartons
@@ -839,26 +854,49 @@ document.addEventListener('DOMContentLoaded', function() {
             // Parse CSV
             const cartons = [];
             let errors = [];
+            let duplicates = [];
+            
+            console.log('Processing', lines.length, 'lines from CSV');
             
             for (let i = 1; i < lines.length; i++) { // Skip header
                 const line = lines[i].trim();
+                console.log(`Line ${i + 1}: "${line}"`);
+                
                 if (line) {
                     const parts = line.split(',');
+                    console.log(`Parsed parts:`, parts);
+                    
                     if (parts.length >= 2) {
                         const cartonName = parts[0].trim();
                         const quantity = parseInt(parts[1].trim());
                         
-                        if (cartonName && quantity > 0) {
-                            cartons.push({ name: cartonName, quantity: quantity });
+                        console.log(`Parsed: name="${cartonName}", quantity=${quantity}`);
+                        
+                        if (cartonName && quantity > 0 && !isNaN(quantity)) {
+                            // Check for duplicates in CSV
+                            const existingCarton = cartons.find(c => c.name.toLowerCase() === cartonName.toLowerCase());
+                            if (existingCarton) {
+                                duplicates.push(`Line ${i + 1}: "${cartonName}" already exists in CSV (updating quantity from ${existingCarton.quantity} to ${quantity})`);
+                                existingCarton.quantity = quantity; // Update quantity
+                            } else {
+                                cartons.push({ name: cartonName, quantity: quantity });
+                            }
                         } else {
-                            errors.push(`Line ${i + 1}: Invalid data`);
+                            errors.push(`Line ${i + 1}: Invalid data - name="${cartonName}", quantity=${quantity}`);
                         }
+                    } else {
+                        errors.push(`Line ${i + 1}: Invalid format - expected 2 columns, got ${parts.length}`);
                     }
                 }
             }
             
+            console.log('Parsed cartons:', cartons);
+            console.log('Errors:', errors);
+            console.log('Duplicates:', duplicates);
+            
             if (cartons.length === 0) {
-                alert('No valid carton data found in the file');
+                const errorMsg = 'No valid carton data found in the file.\n\nErrors found:\n' + errors.join('\n');
+                alert(errorMsg);
                 return;
             }
             
@@ -869,6 +907,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (data.success && data.cartons) {
                     let addedCount = 0;
+                    let updatedCount = 0;
                     
                     cartons.forEach(csvCarton => {
                         const matchedCarton = data.cartons.find(c => 
@@ -879,15 +918,22 @@ document.addEventListener('DOMContentLoaded', function() {
                             const dimensions = `${matchedCarton.length}×${matchedCarton.width}×${matchedCarton.height}m`;
                             const volume = matchedCarton.length * matchedCarton.width * matchedCarton.height;
                             
-                            addCartonToRecommendation(
+                            const result = addCartonToRecommendation(
                                 matchedCarton.id,
                                 matchedCarton.name,
                                 dimensions,
                                 matchedCarton.weight,
                                 volume,
-                                csvCarton.quantity
+                                csvCarton.quantity,
+                                true  // fromBulkUpload = true
                             );
-                            addedCount++;
+                            
+                            if (result === 'added') {
+                                addedCount++;
+                            } else if (result === 'updated') {
+                                updatedCount++;
+                                duplicates.push(`"${csvCarton.name}" was already selected - quantity updated to ${csvCarton.quantity}`);
+                            }
                         } else {
                             errors.push(`Carton "${csvCarton.name}" not found in inventory`);
                         }
@@ -900,10 +946,40 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     // Show results
-                    if (addedCount > 0) {
-                        alert(`Successfully added ${addedCount} carton types to recommendation.${errors.length > 0 ? '\\n\\nErrors:\\n' + errors.join('\\n') : ''}`);
+                    const totalProcessed = addedCount + updatedCount;
+                    
+                    if (totalProcessed > 0) {
+                        let message = `Successfully processed ${totalProcessed} carton types:`;
+                        
+                        if (addedCount > 0) {
+                            message += `\\n• ${addedCount} new cartons added`;
+                        }
+                        
+                        if (updatedCount > 0) {
+                            message += `\\n• ${updatedCount} existing cartons updated`;
+                        }
+                        
+                        if (duplicates.length > 0) {
+                            message += `\\n\\nDuplicate handling:\\n${duplicates.join('\\n')}`;
+                        }
+                        
+                        if (errors.length > 0) {
+                            message += `\\n\\nErrors:\\n${errors.join('\\n')}`;
+                        }
+                        
+                        alert(message);
                     } else {
-                        alert('No cartons were added. Please check that carton names match your inventory.');
+                        let message = 'No cartons were processed. Please check that carton names match your inventory.';
+                        
+                        if (errors.length > 0) {
+                            message += `\\n\\nErrors found:\\n${errors.join('\\n')}`;
+                        }
+                        
+                        if (duplicates.length > 0) {
+                            message += `\\n\\nDuplicates found:\\n${duplicates.join('\\n')}`;
+                        }
+                        
+                        alert(message);
                     }
                     
                     // Reset form
