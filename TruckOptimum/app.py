@@ -1866,20 +1866,20 @@ Carton Details:
                         algorithm_name = result['algorithm']
 
                     if result:
-                        recommendation = (
-                            truck_3d.id,
-                            truck_3d.name,
-                            result['volume_utilization'],
-                            result['weight_utilization'],
-                            True if result['total_unpacked'] == 0 else False,  # fits_all
-                            85.0,  # recommendation_score (fixed high value for advanced algorithms)
-                            f"Advanced 3D packing with {algorithm_name}",
-                            algorithm_name,
-                            88.0,  # stability_score
-                            result['total_packed'],
-                            result['total_packed'] + result['total_unpacked'],
-                            algorithm_name
-                        )
+                        recommendation = {
+                            'truck_id': truck_3d.id,
+                            'truck_name': truck_3d.name,
+                            'volume_utilization': result['volume_utilization'],
+                            'weight_utilization': result['weight_utilization'],
+                            'fits_all': True if result['total_unpacked'] == 0 else False,
+                            'recommendation_score': 85.0,  # fixed high value for advanced algorithms
+                            'recommendation': f"Advanced 3D packing with {algorithm_name}",
+                            'algorithm': algorithm_name,
+                            'stability_score': 88.0,
+                            'packed_cartons': result['total_packed'],
+                            'total_cartons': result['total_packed'] + result['total_unpacked'],
+                            'algorithm_used': algorithm_name
+                        }
                         recommendations.append(recommendation)
                         print(
                             f"DEBUG: Advanced algorithm recommendation for {truck_3d.name}: {result['efficiency_score']:.1f}% efficiency")
@@ -1894,7 +1894,7 @@ Carton Details:
                 return self.simple_truck_recommendation(trucks, cartons, carton_summary)
 
             # Sort by recommendation score (higher is better)
-            recommendations.sort(key=lambda x: x[5], reverse=True)
+            recommendations.sort(key=lambda x: x['recommendation_score'], reverse=True)
 
             print(f"DEBUG: Advanced algorithms generated {len(recommendations)} recommendations")
             return recommendations
@@ -2481,6 +2481,58 @@ Carton Details:
                         'message': f'Test suite failed to execute: {str(e)}'
                     }]
                 }), 500
+
+        # CSV Template Download Endpoints
+        @self.app.route('/api/templates/trucks.csv')
+        def download_trucks_template():
+            """Download CSV template for trucks bulk upload"""
+            from flask import Response
+            
+            csv_content = '''name,length,width,height,max_weight
+Small Van,3.5,2.0,2.0,1000
+Medium Truck,6.0,2.4,2.4,3500
+Large Truck,8.0,2.4,2.6,7500
+Semi Trailer,13.6,2.48,2.7,24000'''
+            
+            return Response(
+                csv_content,
+                mimetype='text/csv',
+                headers={'Content-Disposition': 'attachment; filename=trucks_template.csv'}
+            )
+
+        @self.app.route('/api/templates/cartons.csv')
+        def download_cartons_template():
+            """Download CSV template for cartons bulk upload"""
+            from flask import Response
+            
+            csv_content = '''name,length,width,height,weight,quantity
+Small Box,0.5,0.5,0.5,10,100
+Medium Box,1.0,1.0,1.0,25,50
+Large Box,1.5,1.5,1.5,50,25
+Extra Large Box,2.0,2.0,2.0,100,10'''
+            
+            return Response(
+                csv_content,
+                mimetype='text/csv',
+                headers={'Content-Disposition': 'attachment; filename=cartons_template.csv'}
+            )
+
+        @self.app.route('/api/templates/carton-selection.csv')
+        def download_carton_selection_template():
+            """Download CSV template for carton selection bulk upload"""
+            from flask import Response
+            
+            csv_content = '''carton_name,quantity
+Small Box,20
+Medium Box,15
+Large Box,10
+Extra Large Box,5'''
+            
+            return Response(
+                csv_content,
+                mimetype='text/csv',
+                headers={'Content-Disposition': 'attachment; filename=carton_selection_template.csv'}
+            )
 
         @self.app.route('/debug')
         def debug_dashboard():

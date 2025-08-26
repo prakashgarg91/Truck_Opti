@@ -1,0 +1,61 @@
+# -*- mode: python ; coding: utf-8 -*-
+
+a = Analysis(
+    ['app.py'],
+    pathex=['D:\\Github\\Truck_Opti\\TruckOptimum'],
+    binaries=[],
+    datas=[
+        ('templates', 'templates'),
+        ('static', 'static'),
+        ('truck_optimum.db', '.'),
+        ('packing_engine.py', '.'),
+        ('error_logger.py', '.'),
+    ],
+    hiddenimports=[
+        'packing_engine',
+        'error_logger',
+        'flask',
+        'sqlite3',
+        'json',
+        'datetime',
+        'os',
+        'sys',
+        'threading',
+        'webbrowser',
+        'logging',
+        'traceback',
+        'csv',
+        'io',
+        'uuid',
+    ],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name='TruckOptimum_v2.6.0_Complete_CSV_Templates',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon=None,
+)

@@ -1278,7 +1278,14 @@ document.getElementById('selectCartonForm').addEventListener('submit', function(
             <form id="bulkUploadCartonForm" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Upload a CSV file with carton types and quantities for truck recommendation.
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-info-circle"></i> Upload a CSV file with carton types and quantities for truck recommendation.
+                            </div>
+                            <a href="/api/templates/carton-selection.csv" class="btn btn-outline-success btn-sm" download="carton_selection_template.csv">
+                                <i class="bi bi-download"></i> Download Template
+                            </a>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
