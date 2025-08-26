@@ -263,6 +263,11 @@ class TruckOptimum:
                     'SELECT id, name, length, width, height, weight, quantity FROM cartons').fetchall()
             return render_template('optimize.html', trucks=trucks, cartons=cartons)
 
+        @self.app.route('/algorithms')
+        def algorithms():
+            """Advanced 3D packing algorithms testing and comparison"""
+            return render_template('algorithms.html')
+
         @self.app.route('/recommendations')
         def recommendations():
             """Advanced recommendation history with analytics"""
