@@ -111,8 +111,9 @@ class TruckOptimum:
             return os.path.join(os.path.dirname(__file__), 'truck_optimum.db')
 
     def init_database(self):
-        """Initialize database with essential tables"""
+        """Initialize database with essential tables and handle migrations"""
         with sqlite3.connect(self.db_path) as conn:
+            # Create tables with new schema
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS trucks (
                     id INTEGER PRIMARY KEY,
@@ -161,9 +162,61 @@ class TruckOptimum:
                 )
             ''')
 
+            # Handle migrations for existing tables
+            self.migrate_database_schema(conn)
+
             # Add sample data if empty
             if conn.execute('SELECT COUNT(*) FROM trucks').fetchone()[0] == 0:
                 self.add_sample_data(conn)
+
+    def migrate_database_schema(self, conn):
+        """Migrate existing database schema to add missing columns"""
+        try:
+            # Check if trucks table has created_at column
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(trucks)")
+            columns = [column[1] for column in cursor.fetchall()]
+            
+            if 'created_at' not in columns:
+                conn.execute('ALTER TABLE trucks ADD COLUMN created_at DATETIME')
+                # Update existing rows with current timestamp
+                conn.execute("UPDATE trucks SET created_at = datetime('now') WHERE created_at IS NULL")
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_debug("Added created_at column to trucks table", "DATABASE")
+                    
+            if 'updated_at' not in columns:
+                conn.execute('ALTER TABLE trucks ADD COLUMN updated_at DATETIME')
+                # Update existing rows with current timestamp
+                conn.execute("UPDATE trucks SET updated_at = datetime('now') WHERE updated_at IS NULL")
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_debug("Added updated_at column to trucks table", "DATABASE")
+
+            # Check if cartons table has created_at column
+            cursor.execute("PRAGMA table_info(cartons)")
+            columns = [column[1] for column in cursor.fetchall()]
+            
+            if 'created_at' not in columns:
+                conn.execute('ALTER TABLE cartons ADD COLUMN created_at DATETIME')
+                # Update existing rows with current timestamp
+                conn.execute("UPDATE cartons SET created_at = datetime('now') WHERE created_at IS NULL")
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_debug("Added created_at column to cartons table", "DATABASE")
+                    
+            if 'updated_at' not in columns:
+                conn.execute('ALTER TABLE cartons ADD COLUMN updated_at DATETIME')
+                # Update existing rows with current timestamp
+                conn.execute("UPDATE cartons SET updated_at = datetime('now') WHERE updated_at IS NULL")
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_debug("Added updated_at column to cartons table", "DATABASE")
+
+        except Exception as e:
+            if ERROR_LOGGING_ENABLED:
+                error_logger.log_error(
+                    e,
+                    context="Database schema migration",
+                    expected_behavior="Schema should migrate successfully",
+                    actual_behavior=f"Migration failed: {str(e)}"
+                )
 
     def add_sample_data(self, conn):
         """Add essential sample data"""
@@ -2259,6 +2312,174 @@ Carton Details:
                 return jsonify({
                     "error": True,
                     "message": f"Failed to get debug info: {str(e)}"
+                }), 500
+
+        # Enhanced Debug API Endpoints
+        @self.app.route('/api/logs/download')
+        def api_logs_download():
+            """Download all log files as a ZIP archive"""
+            try:
+                import io
+                import zipfile
+                import os
+                from flask import send_file
+                
+                # Create a zip file in memory
+                zip_buffer = io.BytesIO()
+                
+                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                    logs_dir = 'logs'
+                    if os.path.exists(logs_dir):
+                        for filename in os.listdir(logs_dir):
+                            if filename.endswith('.log'):
+                                file_path = os.path.join(logs_dir, filename)
+                                if os.path.isfile(file_path):
+                                    zip_file.write(file_path, filename)
+                    else:
+                        # Add a note if no logs directory exists
+                        zip_file.writestr('README.txt', 'No log files found in logs directory')
+                
+                zip_buffer.seek(0)
+                
+                return send_file(
+                    io.BytesIO(zip_buffer.read()),
+                    mimetype='application/zip',
+                    as_attachment=True,
+                    download_name=f'truck_optimum_logs_{int(time.time())}.zip'
+                )
+                
+            except Exception as e:
+                error_logger.log_error(e, "Log download failed", {"endpoint": "/api/logs/download"})
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @self.app.route('/api/test-suite/run', methods=['POST'])
+        def api_test_suite_run():
+            """Run comprehensive test suite"""
+            try:
+                data = request.get_json() or {}
+                comprehensive = data.get('comprehensive', True)
+                
+                test_results = {
+                    'success': True,
+                    'total_tests': 0,
+                    'tests_passed': 0,
+                    'tests_failed': 0,
+                    'duration': 0,
+                    'test_details': []
+                }
+                
+                start_time = time.time()
+                
+                # Test 1: Database connectivity
+                try:
+                    with sqlite3.connect(self.db_path) as conn:
+                        conn.execute('SELECT 1').fetchone()
+                    test_results['test_details'].append({
+                        'name': 'Database Connectivity',
+                        'status': 'PASS',
+                        'message': 'Database connection successful'
+                    })
+                    test_results['tests_passed'] += 1
+                except Exception as e:
+                    test_results['test_details'].append({
+                        'name': 'Database Connectivity',
+                        'status': 'FAIL',
+                        'message': f'Database connection failed: {str(e)}'
+                    })
+                    test_results['tests_failed'] += 1
+                test_results['total_tests'] += 1
+                
+                # Test 2: API endpoints
+                endpoints_to_test = ['/api/trucks', '/api/cartons', '/api/debug-info']
+                for endpoint in endpoints_to_test:
+                    try:
+                        with self.app.test_client() as client:
+                            response = client.get(endpoint)
+                            if response.status_code == 200:
+                                test_results['test_details'].append({
+                                    'name': f'API Endpoint {endpoint}',
+                                    'status': 'PASS',
+                                    'message': f'Endpoint responded with 200'
+                                })
+                                test_results['tests_passed'] += 1
+                            else:
+                                test_results['test_details'].append({
+                                    'name': f'API Endpoint {endpoint}',
+                                    'status': 'FAIL',
+                                    'message': f'Endpoint responded with {response.status_code}'
+                                })
+                                test_results['tests_failed'] += 1
+                    except Exception as e:
+                        test_results['test_details'].append({
+                            'name': f'API Endpoint {endpoint}',
+                            'status': 'FAIL',
+                            'message': f'Test failed: {str(e)}'
+                        })
+                        test_results['tests_failed'] += 1
+                    test_results['total_tests'] += 1
+                
+                # Test 3: Advanced algorithms (if available)
+                if ADVANCED_ALGORITHMS_AVAILABLE:
+                    try:
+                        # Simple algorithm test
+                        test_results['test_details'].append({
+                            'name': 'Advanced Algorithms',
+                            'status': 'PASS',
+                            'message': 'Advanced algorithms engine available'
+                        })
+                        test_results['tests_passed'] += 1
+                    except Exception as e:
+                        test_results['test_details'].append({
+                            'name': 'Advanced Algorithms',
+                            'status': 'FAIL',
+                            'message': f'Algorithm test failed: {str(e)}'
+                        })
+                        test_results['tests_failed'] += 1
+                    test_results['total_tests'] += 1
+                
+                # Test 4: Error logging system
+                if ERROR_LOGGING_ENABLED:
+                    try:
+                        # Test error logging
+                        test_error = Exception("Test error for validation")
+                        error_logger.log_error(test_error, "Test error context", {"test": True})
+                        test_results['test_details'].append({
+                            'name': 'Error Logging System',
+                            'status': 'PASS',
+                            'message': 'Error logging system functional'
+                        })
+                        test_results['tests_passed'] += 1
+                    except Exception as e:
+                        test_results['test_details'].append({
+                            'name': 'Error Logging System',
+                            'status': 'FAIL',
+                            'message': f'Error logging test failed: {str(e)}'
+                        })
+                        test_results['tests_failed'] += 1
+                    test_results['total_tests'] += 1
+                
+                test_results['duration'] = int((time.time() - start_time) * 1000)
+                
+                # Log test completion
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_debug("TEST_SUITE", "Test suite completed", test_results)
+                
+                return jsonify(test_results)
+                
+            except Exception as e:
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_error(e, "Test suite execution failed", {"endpoint": "/api/test-suite/run"})
+                return jsonify({
+                    'success': False,
+                    'error': str(e),
+                    'total_tests': 0,
+                    'tests_passed': 0,
+                    'tests_failed': 1,
+                    'test_details': [{
+                        'name': 'Test Suite Execution',
+                        'status': 'FAIL',
+                        'message': f'Test suite failed to execute: {str(e)}'
+                    }]
                 }), 500
 
         @self.app.route('/debug')

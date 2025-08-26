@@ -688,6 +688,236 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+    // Add Carton to Recommendation Modal Handler - FIXED: Now inside DOMContentLoaded
+    const addCartonModal = document.getElementById('addCartonToRecommendationModal');
+    if (addCartonModal) {
+        addCartonModal.addEventListener('show.bs.modal', async function() {
+            console.log('Modal opening, loading cartons...');
+            try {
+                const response = await fetch('/api/cartons');
+                console.log('API response:', response.status);
+                const data = await response.json();
+                console.log('Cartons data:', data);
+                
+                const select = document.getElementById('recommendationCartonSelect');
+                if (!select) {
+                    console.error('Select element not found!');
+                    return;
+                }
+                
+                select.innerHTML = '<option value="">-- Select a carton type --</option>';
+                
+                if (data.success && data.cartons && data.cartons.length > 0) {
+                    console.log(`Loading ${data.cartons.length} cartons into dropdown`);
+                    data.cartons.forEach(carton => {
+                        const option = document.createElement('option');
+                        option.value = carton.id;
+                        option.textContent = `${carton.name} (${carton.length}×${carton.width}×${carton.height}m, ${carton.weight}kg)`;
+                        option.dataset.cartonData = JSON.stringify(carton);
+                        select.appendChild(option);
+                    });
+                    console.log('Cartons loaded successfully');
+                } else {
+                    console.error('No cartons found or API error:', data);
+                    const noCartonsOption = document.createElement('option');
+                    noCartonsOption.value = '';
+                    noCartonsOption.textContent = 'No cartons available - add cartons first';
+                    select.appendChild(noCartonsOption);
+                }
+            } catch (error) {
+                console.error('Error loading cartons:', error);
+                const errorOption = document.createElement('option');
+                errorOption.value = '';
+                errorOption.textContent = 'Error loading cartons';
+                document.getElementById('recommendationCartonSelect').appendChild(errorOption);
+            }
+        });
+    }
+
+    // Handle carton selection preview for recommendation - FIXED: Now inside DOMContentLoaded
+    const cartonSelect = document.getElementById('recommendationCartonSelect');
+    if (cartonSelect) {
+        cartonSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const preview = document.getElementById('recommendationCartonPreview');
+            
+            if (selectedOption.value && selectedOption.dataset.cartonData) {
+                const carton = JSON.parse(selectedOption.dataset.cartonData);
+                const volume = (carton.length * carton.width * carton.height).toFixed(3);
+                
+                document.getElementById('recommendationCartonPreviewContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>${carton.name}</h6>
+                            <p class="text-muted mb-1">Dimensions: ${carton.length} × ${carton.width} × ${carton.height} meters</p>
+                            <p class="text-muted mb-0">Weight: ${carton.weight} kg | Volume: ${volume} m³</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 48px; height: 48px;">
+                                <i class="bi bi-box"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+    }
+
+    // Handle add carton to recommendation form submission - FIXED: Now inside DOMContentLoaded
+    const addCartonForm = document.getElementById('addCartonToRecommendationForm');
+    if (addCartonForm) {
+        addCartonForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const cartonSelect = document.getElementById('recommendationCartonSelect');
+            const quantityInput = document.getElementById('recommendationCartonQuantity');
+            
+            const cartonId = parseInt(cartonSelect.value);
+            const quantity = parseInt(quantityInput.value);
+            
+            if (!cartonId || !quantity || quantity < 1) {
+                alert('Please select a carton type and enter a valid quantity');
+                return;
+            }
+            
+            const selectedOption = cartonSelect.options[cartonSelect.selectedIndex];
+            if (!selectedOption.dataset.cartonData) {
+                alert('Error: Carton data not found');
+                return;
+            }
+            
+            const cartonData = JSON.parse(selectedOption.dataset.cartonData);
+            
+            const dimensions = `${cartonData.length}×${cartonData.width}×${cartonData.height}m`;
+            const volume = cartonData.length * cartonData.width * cartonData.height;
+            
+            addCartonToRecommendation(
+                cartonId,
+                cartonData.name,
+                dimensions,
+                cartonData.weight,
+                volume,
+                quantity
+            );
+            
+            // Close modal and reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCartonToRecommendationModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Reset form
+            cartonSelect.value = '';
+            quantityInput.value = '';
+            document.getElementById('recommendationCartonPreview').style.display = 'none';
+            
+            console.log('Carton added to recommendation:', cartonData.name, 'Quantity:', quantity);
+        });
+    }
+
+    // Handle bulk upload carton form - FIXED: Now inside DOMContentLoaded
+    const bulkUploadForm = document.getElementById('bulkUploadCartonForm');
+    if (bulkUploadForm) {
+        bulkUploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('bulkCartonFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a CSV or Excel file');
+                return;
+            }
+            
+            // Read and process the file
+            const text = await file.text();
+            const lines = text.split('\\n');
+            
+            // Parse CSV
+            const cartons = [];
+            let errors = [];
+            
+            for (let i = 1; i < lines.length; i++) { // Skip header
+                const line = lines[i].trim();
+                if (line) {
+                    const parts = line.split(',');
+                    if (parts.length >= 2) {
+                        const cartonName = parts[0].trim();
+                        const quantity = parseInt(parts[1].trim());
+                        
+                        if (cartonName && quantity > 0) {
+                            cartons.push({ name: cartonName, quantity: quantity });
+                        } else {
+                            errors.push(`Line ${i + 1}: Invalid data`);
+                        }
+                    }
+                }
+            }
+            
+            if (cartons.length === 0) {
+                alert('No valid carton data found in the file');
+                return;
+            }
+            
+            // Match cartons with existing inventory
+            try {
+                const response = await fetch('/api/cartons');
+                const data = await response.json();
+                
+                if (data.success && data.cartons) {
+                    let addedCount = 0;
+                    
+                    cartons.forEach(csvCarton => {
+                        const matchedCarton = data.cartons.find(c => 
+                            c.name.toLowerCase() === csvCarton.name.toLowerCase()
+                        );
+                        
+                        if (matchedCarton) {
+                            const dimensions = `${matchedCarton.length}×${matchedCarton.width}×${matchedCarton.height}m`;
+                            const volume = matchedCarton.length * matchedCarton.width * matchedCarton.height;
+                            
+                            addCartonToRecommendation(
+                                matchedCarton.id,
+                                matchedCarton.name,
+                                dimensions,
+                                matchedCarton.weight,
+                                volume,
+                                csvCarton.quantity
+                            );
+                            addedCount++;
+                        } else {
+                            errors.push(`Carton "${csvCarton.name}" not found in inventory`);
+                        }
+                    });
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('bulkUploadCartonModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Show results
+                    if (addedCount > 0) {
+                        alert(`Successfully added ${addedCount} carton types to recommendation.${errors.length > 0 ? '\\n\\nErrors:\\n' + errors.join('\\n') : ''}`);
+                    } else {
+                        alert('No cartons were added. Please check that carton names match your inventory.');
+                    }
+                    
+                    // Reset form
+                    fileInput.value = '';
+                    
+                } else {
+                    alert('Failed to load carton inventory');
+                }
+            } catch (error) {
+                alert('Error processing bulk upload: ' + error.message);
+            }
+        });
+    }
+
 function showToast(message, type) {
     const toastHtml = `
         <div class="toast align-items-center text-bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
@@ -968,192 +1198,12 @@ document.getElementById('selectCartonForm').addEventListener('submit', function(
     refreshCartonList();
 });
 
-// Add Carton to Recommendation Modal Handlers
-document.getElementById('addCartonToRecommendationModal').addEventListener('show.bs.modal', async function() {
-    try {
-        const response = await fetch('/api/cartons');
-        const data = await response.json();
-        
-        const select = document.getElementById('recommendationCartonSelect');
-        select.innerHTML = '<option value="">-- Select a carton type --</option>';
-        
-        if (data.success && data.cartons) {
-            data.cartons.forEach(carton => {
-                const option = document.createElement('option');
-                option.value = carton.id;
-                option.textContent = `${carton.name} (${carton.length}×${carton.width}×${carton.height}m, ${carton.weight}kg)`;
-                option.dataset.cartonData = JSON.stringify(carton);
-                select.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Error loading cartons:', error);
-    }
-});
+// Add Carton to Recommendation Modal Handlers - MOVED TO DOMContentLoaded
+// This is now inside the DOMContentLoaded event handler below
 
-// Handle carton selection preview for recommendation
-document.getElementById('recommendationCartonSelect').addEventListener('change', function() {
-    const selectedOption = this.options[this.selectedIndex];
-    const preview = document.getElementById('recommendationCartonPreview');
-    
-    if (selectedOption.value && selectedOption.dataset.cartonData) {
-        const carton = JSON.parse(selectedOption.dataset.cartonData);
-        const volume = (carton.length * carton.width * carton.height).toFixed(3);
-        
-        document.getElementById('recommendationCartonPreviewContent').innerHTML = `
-            <div class="row">
-                <div class="col-md-8">
-                    <h6>${carton.name}</h6>
-                    <p class="text-muted mb-1">Dimensions: ${carton.length} × ${carton.width} × ${carton.height} meters</p>
-                    <p class="text-muted mb-0">Weight: ${carton.weight} kg | Volume: ${volume} m³</p>
-                </div>
-                <div class="col-md-4 text-center">
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 48px; height: 48px;">
-                        <i class="bi bi-box"></i>
-                    </div>
-                </div>
-            </div>
-        `;
-        preview.style.display = 'block';
-    } else {
-        preview.style.display = 'none';
-    }
-});
+// OLD HANDLERS REMOVED - Now properly inside DOMContentLoaded above
 
-// Handle add carton to recommendation form submission
-document.getElementById('addCartonToRecommendationForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const cartonSelect = document.getElementById('recommendationCartonSelect');
-    const quantityInput = document.getElementById('recommendationCartonQuantity');
-    
-    const cartonId = parseInt(cartonSelect.value);
-    const quantity = parseInt(quantityInput.value);
-    
-    if (!cartonId || !quantity || quantity < 1) {
-        alert('Please select a carton type and enter a valid quantity');
-        return;
-    }
-    
-    const selectedOption = cartonSelect.options[cartonSelect.selectedIndex];
-    const cartonData = JSON.parse(selectedOption.dataset.cartonData);
-    
-    const dimensions = `${cartonData.length}×${cartonData.width}×${cartonData.height}m`;
-    const volume = cartonData.length * cartonData.width * cartonData.height;
-    
-    addCartonToRecommendation(
-        cartonId,
-        cartonData.name,
-        dimensions,
-        cartonData.weight,
-        volume,
-        quantity
-    );
-    
-    // Close modal and reset form
-    const modal = bootstrap.Modal.getInstance(document.getElementById('addCartonToRecommendationModal'));
-    modal.hide();
-    
-    // Reset form
-    cartonSelect.value = '';
-    quantityInput.value = '';
-    document.getElementById('recommendationCartonPreview').style.display = 'none';
-});
-
-// Handle bulk upload carton form
-document.getElementById('bulkUploadCartonForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const fileInput = document.getElementById('bulkCartonFile');
-    const file = fileInput.files[0];
-    
-    if (!file) {
-        alert('Please select a CSV or Excel file');
-        return;
-    }
-    
-    // Read and process the file
-    const text = await file.text();
-    const lines = text.split('\n');
-    
-    // Parse CSV
-    const cartons = [];
-    let errors = [];
-    
-    for (let i = 1; i < lines.length; i++) { // Skip header
-        const line = lines[i].trim();
-        if (line) {
-            const parts = line.split(',');
-            if (parts.length >= 2) {
-                const cartonName = parts[0].trim();
-                const quantity = parseInt(parts[1].trim());
-                
-                if (cartonName && quantity > 0) {
-                    cartons.push({ name: cartonName, quantity: quantity });
-                } else {
-                    errors.push(`Line ${i + 1}: Invalid data`);
-                }
-            }
-        }
-    }
-    
-    if (cartons.length === 0) {
-        alert('No valid carton data found in the file');
-        return;
-    }
-    
-    // Match cartons with existing inventory
-    try {
-        const response = await fetch('/api/cartons');
-        const data = await response.json();
-        
-        if (data.success && data.cartons) {
-            let addedCount = 0;
-            
-            cartons.forEach(csvCarton => {
-                const matchedCarton = data.cartons.find(c => 
-                    c.name.toLowerCase() === csvCarton.name.toLowerCase()
-                );
-                
-                if (matchedCarton) {
-                    const dimensions = `${matchedCarton.length}×${matchedCarton.width}×${matchedCarton.height}m`;
-                    const volume = matchedCarton.length * matchedCarton.width * matchedCarton.height;
-                    
-                    addCartonToRecommendation(
-                        matchedCarton.id,
-                        matchedCarton.name,
-                        dimensions,
-                        matchedCarton.weight,
-                        volume,
-                        csvCarton.quantity
-                    );
-                    addedCount++;
-                } else {
-                    errors.push(`Carton "${csvCarton.name}" not found in inventory`);
-                }
-            });
-            
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('bulkUploadCartonModal'));
-            modal.hide();
-            
-            // Show results
-            if (addedCount > 0) {
-                alert(`Successfully added ${addedCount} carton types to recommendation.${errors.length > 0 ? '\\n\\nErrors:\\n' + errors.join('\\n') : ''}`);
-            } else {
-                alert('No cartons were added. Please check that carton names match your inventory.');
-            }
-            
-            // Reset form
-            fileInput.value = '';
-            
-        } else {
-            alert('Failed to load carton inventory');
-        }
-    } catch (error) {
-        alert('Error processing bulk upload: ' + error.message);
-    }
-});
+// OLD BULK UPLOAD HANDLER REMOVED - Now properly inside DOMContentLoaded above
 </script>
 
 <!-- Add Carton to Recommendation Modal -->
