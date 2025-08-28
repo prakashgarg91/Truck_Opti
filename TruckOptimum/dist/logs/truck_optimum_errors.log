@@ -1,0 +1,233 @@
+2025-08-26 08:31:17,348 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0001: no such column: created_at
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: no such column: created_at
+File: app.py:672
+Function: api_trucks
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 672, in api_trucks
+sqlite3.OperationalError: no such column: created_at
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:31:21,804 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0002: no such column: created_at
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: no such column: created_at
+File: app.py:758
+Function: api_cartons
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 758, in api_cartons
+sqlite3.OperationalError: no such column: created_at
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:31:25,645 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0003: no such column: created_at
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: no such column: created_at
+File: app.py:758
+Function: api_cartons
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 758, in api_cartons
+sqlite3.OperationalError: no such column: created_at
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:32:12,594 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0004: no such column: created_at
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: no such column: created_at
+File: app.py:672
+Function: api_trucks
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 672, in api_trucks
+sqlite3.OperationalError: no such column: created_at
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:32:15,859 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0005: no such column: created_at
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: no such column: created_at
+File: app.py:672
+Function: api_trucks
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 672, in api_trucks
+sqlite3.OperationalError: no such column: created_at
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:32:16,283 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0006: no such column: created_at
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: no such column: created_at
+File: app.py:672
+Function: api_trucks
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 672, in api_trucks
+sqlite3.OperationalError: no such column: created_at
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:32:47,499 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0007: no such column: created_at
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: no such column: created_at
+File: app.py:672
+Function: api_trucks
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 672, in api_trucks
+sqlite3.OperationalError: no such column: created_at
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:32:55,170 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0008: no such column: created_at
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: no such column: created_at
+File: app.py:758
+Function: api_cartons
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 758, in api_cartons
+sqlite3.OperationalError: no such column: created_at
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:36:28,941 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0001: Cannot add a column with non-constant default
+Context: Database schema migration
+User Action: 
+Expected: Schema should migrate successfully
+Actual: Migration failed: Cannot add a column with non-constant default
+File: app.py:181
+Function: migrate_database_schema
+Full Traceback:
+Traceback (most recent call last):
+  File "app.py", line 181, in migrate_database_schema
+sqlite3.OperationalError: Cannot add a column with non-constant default
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:52:05,314 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0001: Test error for validation
+Context: Test error context
+User Action: {'test': True}
+Expected: 
+Actual: 
+File: unknown:unknown
+Function: unknown
+Full Traceback:
+NoneType: None
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 08:55:06,188 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0002: 405 Method Not Allowed: The method is not allowed for the requested URL.
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: 405 Method Not Allowed: The method is not allowed for the requested URL.
+File: werkzeug\routing\map.py:624
+Function: match
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 891, in dispatch_request
+  File "flask\app.py", line 500, in raise_routing_exception
+  File "flask\ctx.py", line 362, in match_request
+  File "werkzeug\routing\map.py", line 624, in match
+werkzeug.exceptions.MethodNotAllowed: 405 Method Not Allowed: The method is not allowed for the requested URL.
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-26 09:08:36,253 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0001: Test error for validation
+Context: Test error context
+User Action: {'test': True}
+Expected: 
+Actual: 
+File: unknown:unknown
+Function: unknown
+Full Traceback:
+NoneType: None
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:01:06,030 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0001: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+

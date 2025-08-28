@@ -178,14 +178,14 @@ class TruckOptimum:
             columns = [column[1] for column in cursor.fetchall()]
             
             if 'created_at' not in columns:
-                conn.execute('ALTER TABLE trucks ADD COLUMN created_at DATETIME')
+                conn.execute('ALTER TABLE trucks ADD COLUMN created_at DATETIME DEFAULT NULL')
                 # Update existing rows with current timestamp
                 conn.execute("UPDATE trucks SET created_at = datetime('now') WHERE created_at IS NULL")
                 if ERROR_LOGGING_ENABLED:
                     error_logger.log_debug("Added created_at column to trucks table", "DATABASE")
                     
             if 'updated_at' not in columns:
-                conn.execute('ALTER TABLE trucks ADD COLUMN updated_at DATETIME')
+                conn.execute('ALTER TABLE trucks ADD COLUMN updated_at DATETIME DEFAULT NULL')
                 # Update existing rows with current timestamp
                 conn.execute("UPDATE trucks SET updated_at = datetime('now') WHERE updated_at IS NULL")
                 if ERROR_LOGGING_ENABLED:
@@ -196,14 +196,14 @@ class TruckOptimum:
             columns = [column[1] for column in cursor.fetchall()]
             
             if 'created_at' not in columns:
-                conn.execute('ALTER TABLE cartons ADD COLUMN created_at DATETIME')
+                conn.execute('ALTER TABLE cartons ADD COLUMN created_at DATETIME DEFAULT NULL')
                 # Update existing rows with current timestamp
                 conn.execute("UPDATE cartons SET created_at = datetime('now') WHERE created_at IS NULL")
                 if ERROR_LOGGING_ENABLED:
                     error_logger.log_debug("Added created_at column to cartons table", "DATABASE")
                     
             if 'updated_at' not in columns:
-                conn.execute('ALTER TABLE cartons ADD COLUMN updated_at DATETIME')
+                conn.execute('ALTER TABLE cartons ADD COLUMN updated_at DATETIME DEFAULT NULL')
                 # Update existing rows with current timestamp
                 conn.execute("UPDATE cartons SET updated_at = datetime('now') WHERE updated_at IS NULL")
                 if ERROR_LOGGING_ENABLED:
@@ -2557,6 +2557,22 @@ if __name__ == '__main__':
 
     app = create_app()
     port = 5001
+
+    # Start autonomous UX improvement system in background
+    try:
+        from auto_improvement_integration import activate_g2g_auto_improvement
+        
+        def start_auto_improvement():
+            print("🤖 Activating Autonomous UX Improvement System...")
+            integration, status = activate_g2g_auto_improvement()
+            print("✅ Auto-improvement system active - learning from logs automatically")
+        
+        # Start auto-improvement in background thread
+        auto_improvement_thread = threading.Thread(target=start_auto_improvement, daemon=True)
+        auto_improvement_thread.start()
+        
+    except Exception as e:
+        print(f"⚠️  Auto-improvement system not started: {str(e)}")
 
     # Open browser after brief delay
     def open_browser():

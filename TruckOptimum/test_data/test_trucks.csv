@@ -1,0 +1,4 @@
+name,length,width,height,max_weight,cost_per_km
+Test Small Truck,5.0,2.0,2.0,2500,12
+Test Medium Truck,7.0,2.4,2.8,4500,18
+Test Large Truck,10.0,2.5,3.2,7500,22

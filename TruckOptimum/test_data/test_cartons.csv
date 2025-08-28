@@ -1,0 +1,5 @@
+name,length,width,height,weight,quantity
+Small Package,0.3,0.3,0.3,5,10
+Medium Package,0.6,0.6,0.6,15,8
+Large Package,1.0,1.0,1.0,30,5
+XL Package,1.2,1.2,1.2,50,3

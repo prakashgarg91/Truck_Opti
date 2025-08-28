@@ -1,0 +1,57 @@
+2025-08-28 08:15:48,742 - EnterpriseStandards - INFO - [AUDIT] - Enterprise Standards Validator initialized
+2025-08-28 08:15:48,742 - EnterpriseStandards - INFO - [AUDIT] - Enterprise Standards Validator initialized
+2025-08-28 08:15:48,742 - EnterpriseStandards - INFO - [AUDIT] - Enterprise Standards Validator initialized
+2025-08-28 08:15:48,742 - EnterpriseStandards - INFO - [AUDIT] - Starting comprehensive enterprise compliance validation
+2025-08-28 08:15:48,742 - EnterpriseStandards - INFO - [AUDIT] - Starting comprehensive enterprise compliance validation
+2025-08-28 08:15:48,742 - EnterpriseStandards - INFO - [AUDIT] - Validating security standards...
+2025-08-28 08:15:48,742 - EnterpriseStandards - INFO - [AUDIT] - Validating security standards...
+2025-08-28 08:15:48,752 - EnterpriseStandards - ERROR - [AUDIT] - Security check failed: name 'auth_indicators' is not defined
+2025-08-28 08:15:48,752 - EnterpriseStandards - ERROR - [AUDIT] - Security check failed: name 'auth_indicators' is not defined
+2025-08-28 08:15:48,761 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: sql_injection - SQL injection vulnerabilities found in database queries
+2025-08-28 08:15:48,761 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: sql_injection - SQL injection vulnerabilities found in database queries
+2025-08-28 08:15:48,762 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: hardcoded_secret - Hardcoded Flask secret key found in source code
+2025-08-28 08:15:48,762 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: hardcoded_secret - Hardcoded Flask secret key found in source code
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating performance standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating performance standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating code quality standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating code quality standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: quality_code_complexity - Code quality metric code_complexity below threshold: 6.20 < 10.0
+2025-08-28 08:15:48,762 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: quality_code_complexity - Code quality metric code_complexity below threshold: 6.20 < 10.0
+2025-08-28 08:15:48,762 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: quality_code_style_compliance - Code quality metric code_style_compliance below threshold: 0.78 < 0.9
+2025-08-28 08:15:48,762 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: quality_code_style_compliance - Code quality metric code_style_compliance below threshold: 0.78 < 0.9
+2025-08-28 08:15:48,762 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: quality_technical_debt - Code quality metric technical_debt below threshold: 0.18 < 0.2
+2025-08-28 08:15:48,762 - EnterpriseStandards - WARNING - [AUDIT] - Standards violation: quality_technical_debt - Code quality metric technical_debt below threshold: 0.18 < 0.2
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating documentation standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating documentation standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating accessibility standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating accessibility standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating data protection standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating data protection standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating audit trail standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating audit trail standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating monitoring standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Validating monitoring standards...
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - ============================================================
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - ============================================================
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - ENTERPRISE COMPLIANCE VALIDATION RESULTS
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - ENTERPRISE COMPLIANCE VALIDATION RESULTS
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - ============================================================
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - ============================================================
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Overall Score: 0.46
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Overall Score: 0.46
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Compliance Level: BASIC
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Compliance Level: BASIC
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Enterprise Ready: False
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Enterprise Ready: False
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Checks Passed: 23/50
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Checks Passed: 23/50
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Violations: 5
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Violations: 5
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] -   Critical: 2, High: 0, Medium: 3, Low: 0
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] -   Critical: 2, High: 0, Medium: 3, Low: 0
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - ============================================================
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - ============================================================
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Audit: compliance_validation - {"overall_score": 0.46, "compliance_level": "basic", "violations_count": 5, "enterprise_ready": false}
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Audit: compliance_validation - {"overall_score": 0.46, "compliance_level": "basic", "violations_count": 5, "enterprise_ready": false}
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Enterprise compliance validation completed - Score: 0.46
+2025-08-28 08:15:48,762 - EnterpriseStandards - INFO - [AUDIT] - Enterprise compliance validation completed - Score: 0.46

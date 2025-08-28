@@ -1,0 +1,72 @@
+2025-08-26 09:43:05,661 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-08-26 09:43:05,661 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-08-26 09:43:05,661 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-08-26 09:43:05,662 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-08-26 09:43:05,662 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-08-26 09:43:05,662 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-08-26 09:43:05,662 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-08-26 09:43:05,662 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-08-26 09:43:05,662 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-08-26 09:43:05,662 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-08-26 09:43:05,662 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-08-26 09:43:05,663 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-08-26 09:43:05,687 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-26 09:43:05,687 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-08-26 09:58:21,914 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-08-26 09:58:21,915 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-08-26 09:58:21,939 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-26 09:58:21,939 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-08-26 20:11:00,853 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-08-26 20:11:00,853 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-08-26 20:11:00,853 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-08-26 20:11:00,853 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-08-26 20:11:00,854 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-08-26 20:11:00,854 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-08-26 20:11:00,854 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-08-26 20:11:00,854 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-08-26 20:11:00,854 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-08-26 20:11:00,854 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-08-26 20:11:00,854 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-08-26 20:11:00,856 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-08-26 20:11:00,891 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-26 20:11:00,891 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-08-26 20:11:01,951 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:11:01] "GET / HTTP/1.1" 200 -
+2025-08-26 20:11:02,037 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://127.0.0.1:5001/favicon.ico | Details: None
+2025-08-26 20:11:02,037 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:11:02] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-26 20:11:25,894 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:11:25] "GET /campaigns HTTP/1.1" 200 -
+2025-08-26 20:11:26,018 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://127.0.0.1:5001/favicon.ico | Details: None
+2025-08-26 20:11:26,018 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:11:26] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-26 20:12:35,331 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:12:35] "GET /campaigns HTTP/1.1" 200 -
+2025-08-26 20:12:35,878 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:12:35] "GET /recommendations HTTP/1.1" 200 -
+2025-08-26 20:12:35,907 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:12:35] "GET /api/recommendations?page=1&limit=10 HTTP/1.1" 200 -
+2025-08-26 20:12:36,550 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:12:36] "GET /campaigns HTTP/1.1" 200 -
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-08-26 20:22:40,491 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-08-26 20:22:40,492 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-08-26 20:22:40,514 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-26 20:22:40,514 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-08-26 20:22:41,597 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:22:41] "GET / HTTP/1.1" 200 -
+2025-08-26 20:23:05,621 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [26/Aug/2025 20:23:05] "GET / HTTP/1.1" 200 -
