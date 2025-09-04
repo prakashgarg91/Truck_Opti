@@ -53,7 +53,10 @@ class TruckOptimum:
             # Register shutdown logging
             atexit.register(log_shutdown_info)
         
-        self.app = Flask(__name__)
+        # Get template and static folders for PyInstaller compatibility
+        template_folder = self.get_template_path()
+        static_folder = self.get_static_path()
+        self.app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
         self.app.secret_key = 'truckoptimum-2025'
         self.db_path = self.get_db_path()
 
@@ -109,6 +112,51 @@ class TruckOptimum:
         else:
             # Development mode
             return os.path.join(os.path.dirname(__file__), 'truck_optimum.db')
+    
+    def get_template_path(self):
+        """Get template folder path for both dev and executable"""
+        if getattr(sys, 'frozen', False):
+            # Executable mode - try PyInstaller locations in order
+            base_path = os.path.dirname(sys.executable)
+            
+            # Try _internal location first
+            template_path = os.path.join(base_path, '_internal', 'templates')
+            if os.path.exists(template_path):
+                return template_path
+            
+            # Try direct templates folder
+            template_path = os.path.join(base_path, 'templates')
+            if os.path.exists(template_path):
+                return template_path
+            
+            # Fall back to sys._MEIPASS for PyInstaller
+            if hasattr(sys, '_MEIPASS'):
+                template_path = os.path.join(sys._MEIPASS, 'templates')
+                if os.path.exists(template_path):
+                    return template_path
+            
+            return None
+        else:
+            # Development mode
+            return os.path.join(os.path.dirname(__file__), 'templates')
+    
+    def get_static_path(self):
+        """Get static folder path for both dev and executable"""
+        if getattr(sys, 'frozen', False):
+            # Executable mode - static files are bundled in _internal folder
+            base_path = os.path.dirname(sys.executable)
+            static_path = os.path.join(base_path, '_internal', 'static')
+            if not os.path.exists(static_path):
+                # Try alternate locations
+                static_path = os.path.join(base_path, 'static')
+                if not os.path.exists(static_path):
+                    # Fall back to sys._MEIPASS for PyInstaller
+                    if hasattr(sys, '_MEIPASS'):
+                        static_path = os.path.join(sys._MEIPASS, 'static')
+            return static_path
+        else:
+            # Development mode
+            return os.path.join(os.path.dirname(__file__), 'static')
 
     def init_database(self):
         """Initialize database with essential tables and handle migrations"""
@@ -2558,21 +2606,8 @@ if __name__ == '__main__':
     app = create_app()
     port = 5001
 
-    # Start autonomous UX improvement system in background
-    try:
-        from auto_improvement_integration import activate_g2g_auto_improvement
-        
-        def start_auto_improvement():
-            print("🤖 Activating Autonomous UX Improvement System...")
-            integration, status = activate_g2g_auto_improvement()
-            print("✅ Auto-improvement system active - learning from logs automatically")
-        
-        # Start auto-improvement in background thread
-        auto_improvement_thread = threading.Thread(target=start_auto_improvement, daemon=True)
-        auto_improvement_thread.start()
-        
-    except Exception as e:
-        print(f"⚠️  Auto-improvement system not started: {str(e)}")
+    # Auto-improvement system disabled for stable production build
+    print("[SYSTEM] Auto-improvement system disabled for stable executable")
 
     # Open browser after brief delay
     def open_browser():

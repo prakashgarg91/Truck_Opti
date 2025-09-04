@@ -854,3 +854,365 @@ jinja2.exceptions.TemplateNotFound: index.html
 2025-08-28 08:01:06,032 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:01:06] "[35m[1mGET / HTTP/1.1[0m" 500 -
 2025-08-28 08:01:06,152 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://127.0.0.1:5001/favicon.ico | Details: None
 2025-08-28 08:01:06,152 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:01:06] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum\dist
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: D:\Github\Truck_Opti\TruckOptimum\dist\TruckOptimum_v2.7.1_Fixed.exe
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-08-28 08:32:21,882 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-08-28 08:32:21,883 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-08-28 08:32:21,908 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-28 08:32:21,908 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-08-28 08:32:22,985 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0002: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:32:22,986 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:32:22] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:32:23,024 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://127.0.0.1:5001/favicon.ico | Details: None
+2025-08-28 08:32:23,024 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:32:23] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-28 08:35:08,081 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0003: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:35:08,082 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:35:08] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:35:22,356 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0004: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:35:22,356 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:35:22] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:35:27,258 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0005: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:35:27,259 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:35:27] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:37:18,925 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0006: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:37:18,926 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:37:18] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:37:18,982 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0007: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:37:18,983 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:37:18] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:38:17,461 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0008: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:38:17,462 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:38:17] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:38:29,808 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0009: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:38:29,808 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:38:29] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:38:43,043 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0010: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:38:43,043 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:38:43] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:38:57,920 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0011: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:38:57,921 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:38:57] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:41:32,221 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0012: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:41:32,222 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:41:32] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:41:32,517 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0013: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:41:32,518 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:41:32] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:42:31,029 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0014: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:42:31,030 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:42:31] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:42:31,340 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0015: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:42:31,341 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:42:31] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum\dist
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: D:\Github\Truck_Opti\TruckOptimum\dist\TruckOptimum_v2.7.2_Template_Fixed.exe
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-08-28 08:43:57,166 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-08-28 08:43:57,167 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-08-28 08:43:57,190 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-28 08:43:57,190 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-08-28 08:43:58,254 - TruckOptimum.Errors - ERROR - error_logger.py:103 - ERROR ERR_0016: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+2025-08-28 08:43:58,254 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [28/Aug/2025 08:43:58] "[35m[1mGET / HTTP/1.1[0m" 500 -

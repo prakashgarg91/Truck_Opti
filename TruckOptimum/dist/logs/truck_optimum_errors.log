@@ -231,3 +231,378 @@ error_logger.py
 Traceback: None
 ====================================================================================================
 
+2025-08-28 08:32:22,985 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0002: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:35:08,081 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0003: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:35:22,356 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0004: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:35:27,258 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0005: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:37:18,925 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0006: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:37:18,982 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0007: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:38:17,461 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0008: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:38:29,808 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0009: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:38:43,043 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0010: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:38:57,920 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0011: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:41:32,221 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0012: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:41:32,517 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0013: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:42:31,029 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0014: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:42:31,340 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0015: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+
+2025-08-28 08:43:58,254 - ERROR - error_logger.py:103 - log_error() - ERROR ERR_0016: index.html
+Context: General Application Error
+User Action: Using application
+Expected: Application should work without errors
+Actual: Unexpected error: index.html
+File: flask\templating.py:99
+Function: _get_source_fast
+Full Traceback:
+Traceback (most recent call last):
+  File "flask\app.py", line 917, in full_dispatch_request
+  File "flask\app.py", line 902, in dispatch_request
+  File "app.py", line 294, in index
+  File "flask\templating.py", line 149, in render_template
+  File "jinja2\environment.py", line 1087, in get_or_select_template
+  File "jinja2\environment.py", line 1016, in get_template
+  File "jinja2\environment.py", line 975, in _load_template
+  File "jinja2\loaders.py", line 126, in load
+  File "flask\templating.py", line 65, in get_source
+  File "flask\templating.py", line 99, in _get_source_fast
+jinja2.exceptions.TemplateNotFound: index.html
+
+error_logger.py
+Traceback: None
+====================================================================================================
+

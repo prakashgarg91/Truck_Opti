@@ -7,8 +7,6 @@ a = Analysis(
     datas=[
         ('templates', 'templates'),
         ('static', 'static'),
-        ('templates/*', 'templates'),
-        ('templates/*.html', 'templates'),
     ],
     hiddenimports=[
         'advanced_3d_algorithms',
@@ -35,7 +33,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='TruckOptimum_v2.7.1_Fixed',
+    name='TruckOptimum_v2.7.2_Template_Fixed',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

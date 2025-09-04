@@ -1,21 +1,21 @@
 {
-  "timestamp": "2025-08-26T08:55:06.187711",
+  "timestamp": "2025-08-28T08:32:22.982711",
   "error_id": "ERR_0002",
-  "error_type": "MethodNotAllowed",
-  "error_message": "405 Method Not Allowed: The method is not allowed for the requested URL.",
+  "error_type": "TemplateNotFound",
+  "error_message": "index.html",
   "context": "General Application Error",
   "user_action": "Using application",
   "expected_behavior": "Application should work without errors",
-  "actual_behavior": "Unexpected error: 405 Method Not Allowed: The method is not allowed for the requested URL.",
+  "actual_behavior": "Unexpected error: index.html",
   "file_info": {
-    "filename": "werkzeug\\routing\\map.py",
-    "line_number": 624,
-    "function": "match"
+    "filename": "flask\\templating.py",
+    "line_number": 99,
+    "function": "_get_source_fast"
   },
-  "full_traceback": "Traceback (most recent call last):\n  File \"flask\\app.py\", line 917, in full_dispatch_request\n  File \"flask\\app.py\", line 891, in dispatch_request\n  File \"flask\\app.py\", line 500, in raise_routing_exception\n  File \"flask\\ctx.py\", line 362, in match_request\n  File \"werkzeug\\routing\\map.py\", line 624, in match\nwerkzeug.exceptions.MethodNotAllowed: 405 Method Not Allowed: The method is not allowed for the requested URL.\n",
+  "full_traceback": "Traceback (most recent call last):\n  File \"flask\\app.py\", line 917, in full_dispatch_request\n  File \"flask\\app.py\", line 902, in dispatch_request\n  File \"app.py\", line 294, in index\n  File \"flask\\templating.py\", line 149, in render_template\n  File \"jinja2\\environment.py\", line 1087, in get_or_select_template\n  File \"jinja2\\environment.py\", line 1016, in get_template\n  File \"jinja2\\environment.py\", line 975, in _load_template\n  File \"jinja2\\loaders.py\", line 126, in load\n  File \"flask\\templating.py\", line 65, in get_source\n  File \"flask\\templating.py\", line 99, in _get_source_fast\njinja2.exceptions.TemplateNotFound: index.html\n",
   "system_info": {
     "python_version": "3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]",
     "platform": "win32",
-    "executable_path": "D:\\Github\\Truck_Opti\\TruckOptimum\\dist\\TruckOptimum_v2.5.0_Enhanced_Debugging.exe"
+    "executable_path": "D:\\Github\\Truck_Opti\\TruckOptimum\\dist\\TruckOptimum_v2.7.0_World_Class_3D_Algorithms.exe"
   }
 }

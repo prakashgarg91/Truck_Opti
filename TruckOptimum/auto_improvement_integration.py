@@ -569,10 +569,10 @@ def activate_g2g_auto_improvement():
     """Activate G2G Auto-Improvement Integration"""
     integration = G2GAutoImprovementIntegration()
     
-    print("🚀 Activating G2G Auto-Improvement Integration...")
-    print("🤖 Starting multi-agent coordination...")
-    print("📊 Beginning continuous monitoring...")
-    print("🔧 Ready for autonomous improvements...")
+    print("[G2G] Activating G2G Auto-Improvement Integration...")
+    print("[G2G] Starting multi-agent coordination...")
+    print("[G2G] Beginning continuous monitoring...")
+    print("[G2G] Ready for autonomous improvements...")
     
     status = integration.start_integrated_monitoring()
     
@@ -586,7 +586,7 @@ if __name__ == "__main__":
         while True:
             time.sleep(60)
             report = integration.generate_improvement_report()
-            print(f"📊 System Status: {report['system_status']}")
+            print(f"[G2G] System Status: {report['system_status']}")
     except KeyboardInterrupt:
-        print("🛑 Shutting down G2G Auto-Improvement Integration...")
+        print("[G2G] Shutting down G2G Auto-Improvement Integration...")
         integration.monitoring_active = False

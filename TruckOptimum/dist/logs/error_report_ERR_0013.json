@@ -1,6 +1,6 @@
 {
-  "timestamp": "2025-08-28T08:35:27.256568",
-  "error_id": "ERR_0005",
+  "timestamp": "2025-08-28T08:41:32.515577",
+  "error_id": "ERR_0013",
   "error_type": "TemplateNotFound",
   "error_message": "index.html",
   "context": "General Application Error",
