@@ -4,13 +4,18 @@ Startup Target: <2 seconds
 Enhanced with comprehensive error logging and debugging
 """
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from typing import List, Dict, Optional, Tuple
 import sqlite3
 import os
 import sys
 import time
 import atexit
+import hashlib
+import secrets
+import uuid
+from datetime import datetime, timedelta
+import re
 
 # Import enhanced error logging system
 try:
@@ -56,7 +61,24 @@ class TruckOptimum:
         # Get template and static folders for PyInstaller compatibility
         template_folder = self.get_template_path()
         static_folder = self.get_static_path()
-        self.app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+        
+        # Validate template folder exists
+        if template_folder and not os.path.exists(template_folder):
+            print(f"WARNING: Template folder does not exist: {template_folder}")
+            print(f"Creating template folder...")
+            try:
+                os.makedirs(template_folder, exist_ok=True)
+            except Exception as e:
+                print(f"ERROR: Could not create template folder: {e}")
+                template_folder = None
+        
+        # Initialize Flask app with validated paths
+        if template_folder and static_folder:
+            self.app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+            print(f"DEBUG: Flask initialized with template_folder='{template_folder}', static_folder='{static_folder}'")
+        else:
+            print("WARNING: Using default Flask paths due to missing template/static folders")
+            self.app = Flask(__name__)
         self.app.secret_key = 'truckoptimum-2025'
         self.db_path = self.get_db_path()
 
@@ -119,26 +141,42 @@ class TruckOptimum:
             # Executable mode - try PyInstaller locations in order
             base_path = os.path.dirname(sys.executable)
             
-            # Try _internal location first
+            # Try _internal location first (most common PyInstaller location)
             template_path = os.path.join(base_path, '_internal', 'templates')
             if os.path.exists(template_path):
+                print(f"DEBUG: Found templates at: {template_path}")
                 return template_path
             
             # Try direct templates folder
             template_path = os.path.join(base_path, 'templates')
             if os.path.exists(template_path):
+                print(f"DEBUG: Found templates at: {template_path}")
                 return template_path
             
             # Fall back to sys._MEIPASS for PyInstaller
             if hasattr(sys, '_MEIPASS'):
                 template_path = os.path.join(sys._MEIPASS, 'templates')
                 if os.path.exists(template_path):
+                    print(f"DEBUG: Found templates at: {template_path}")
                     return template_path
             
-            return None
+            # Last resort - create templates directory if it doesn't exist
+            template_path = os.path.join(base_path, 'templates')
+            print(f"ERROR: No templates folder found! Checked locations:")
+            print(f"  - {os.path.join(base_path, '_internal', 'templates')}")
+            print(f"  - {os.path.join(base_path, 'templates')}")
+            if hasattr(sys, '_MEIPASS'):
+                print(f"  - {os.path.join(sys._MEIPASS, 'templates')}")
+            
+            # Return development mode path as fallback
+            fallback_path = os.path.join(os.path.dirname(__file__), 'templates')
+            print(f"DEBUG: Using fallback template path: {fallback_path}")
+            return fallback_path
         else:
             # Development mode
-            return os.path.join(os.path.dirname(__file__), 'templates')
+            template_path = os.path.join(os.path.dirname(__file__), 'templates')
+            print(f"DEBUG: Development mode - templates at: {template_path}")
+            return template_path
     
     def get_static_path(self):
         """Get static folder path for both dev and executable"""
@@ -209,6 +247,53 @@ class TruckOptimum:
                     FOREIGN KEY (recommended_truck_id) REFERENCES trucks(id)
                 )
             ''')
+            
+            # User Authentication Tables
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    first_name TEXT,
+                    last_name TEXT,
+                    role TEXT DEFAULT 'user',
+                    is_active BOOLEAN DEFAULT 1,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    last_login DATETIME,
+                    failed_login_attempts INTEGER DEFAULT 0,
+                    account_locked_until DATETIME
+                )
+            ''')
+            
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS user_sessions (
+                    id INTEGER PRIMARY KEY,
+                    session_id TEXT UNIQUE NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    expires_at DATETIME NOT NULL,
+                    is_active BOOLEAN DEFAULT 1,
+                    ip_address TEXT,
+                    user_agent TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            ''')
+            
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS user_activity_log (
+                    id INTEGER PRIMARY KEY,
+                    user_id INTEGER,
+                    action TEXT NOT NULL,
+                    resource TEXT,
+                    ip_address TEXT,
+                    user_agent TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    details TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+                )
+            ''')
 
             # Handle migrations for existing tables
             self.migrate_database_schema(conn)
@@ -216,6 +301,10 @@ class TruckOptimum:
             # Add sample data if empty
             if conn.execute('SELECT COUNT(*) FROM trucks').fetchone()[0] == 0:
                 self.add_sample_data(conn)
+            
+            # Create default admin user if no users exist
+            if conn.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0:
+                self.create_default_admin(conn)
 
     def migrate_database_schema(self, conn):
         """Migrate existing database schema to add missing columns"""
@@ -285,6 +374,107 @@ class TruckOptimum:
         conn.executemany('INSERT INTO cartons (name, length, width, height, weight) VALUES (?, ?, ?, ?, ?)', cartons)
         conn.commit()
 
+    def create_default_admin(self, conn):
+        """Create default admin user"""
+        admin_password = self.hash_password('admin123')
+        conn.execute('''
+            INSERT INTO users (username, email, password_hash, first_name, last_name, role, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', ('admin', 'admin@truckoptimum.com', admin_password, 'Admin', 'User', 'admin', 1))
+        conn.commit()
+        print("Default admin user created: admin / admin123")
+
+    # Authentication Methods
+    def hash_password(self, password: str) -> str:
+        """Hash password using SHA-256 with salt"""
+        salt = secrets.token_hex(16)
+        password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+        return f"{salt}:{password_hash}"
+
+    def verify_password(self, stored_password: str, provided_password: str) -> bool:
+        """Verify password against stored hash"""
+        try:
+            salt, password_hash = stored_password.split(':')
+            return hashlib.sha256((provided_password + salt).encode()).hexdigest() == password_hash
+        except ValueError:
+            return False
+
+    def validate_email(self, email: str) -> bool:
+        """Validate email format"""
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return re.match(pattern, email) is not None
+
+    def validate_password_strength(self, password: str) -> tuple[bool, str]:
+        """Validate password meets security requirements"""
+        if len(password) < 8:
+            return False, "Password must be at least 8 characters long"
+        if not re.search(r'[A-Za-z]', password):
+            return False, "Password must contain at least one letter"
+        if not re.search(r'\d', password):
+            return False, "Password must contain at least one number"
+        return True, "Password is valid"
+
+    def create_user_session(self, user_id: int) -> str:
+        """Create a new user session"""
+        session_id = str(uuid.uuid4())
+        expires_at = datetime.now() + timedelta(hours=24)  # Session expires in 24 hours
+        
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute('''
+                INSERT INTO user_sessions (session_id, user_id, expires_at, ip_address, user_agent)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (session_id, user_id, expires_at, 
+                  request.remote_addr if request else None,
+                  request.headers.get('User-Agent') if request else None))
+            conn.commit()
+        
+        return session_id
+
+    def validate_session(self, session_id: str) -> Optional[Dict]:
+        """Validate user session and return user data"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute('''
+                SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.role, s.expires_at
+                FROM user_sessions s
+                JOIN users u ON s.user_id = u.id
+                WHERE s.session_id = ? AND s.is_active = 1 AND s.expires_at > datetime('now')
+            ''', (session_id,))
+            
+            result = cursor.fetchone()
+            if result:
+                return {
+                    'id': result[0],
+                    'username': result[1], 
+                    'email': result[2],
+                    'first_name': result[3],
+                    'last_name': result[4],
+                    'role': result[5],
+                    'expires_at': result[6]
+                }
+        return None
+
+    def logout_user(self, session_id: str):
+        """Invalidate user session"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute('''
+                UPDATE user_sessions 
+                SET is_active = 0 
+                WHERE session_id = ?
+            ''', (session_id,))
+            conn.commit()
+
+    def log_user_activity(self, user_id: Optional[int], action: str, resource: str = None, details: str = None):
+        """Log user activity"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute('''
+                INSERT INTO user_activity_log (user_id, action, resource, ip_address, user_agent, details)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (user_id, action, resource, 
+                  request.remote_addr if request else None,
+                  request.headers.get('User-Agent') if request else None,
+                  details))
+            conn.commit()
+
     def handle_general_error(self, error):
         """Handle general application errors with comprehensive logging"""
         if ERROR_LOGGING_ENABLED:
@@ -338,8 +528,25 @@ class TruckOptimum:
 
         @self.app.route('/')
         def index():
-            startup_time = time.time() - APP_START_TIME
-            return render_template('index.html', startup_time=f"{startup_time:.2f}")
+            try:
+                startup_time = time.time() - APP_START_TIME
+                return render_template('index.html', startup_time=f"{startup_time:.2f}")
+            except Exception as e:
+                if ERROR_LOGGING_ENABLED:
+                    log_error("ERR_0016", f"Template error: {str(e)}", "index route")
+                # Return a basic HTML response if template fails
+                return f'''
+                <!DOCTYPE html>
+                <html>
+                <head><title>TruckOptimum</title></head>
+                <body>
+                    <h1>TruckOptimum - Truck Loading Optimization System</h1>
+                    <p>Application is running but templates are not accessible.</p>
+                    <p>Error: {str(e)}</p>
+                    <p><a href="/health">Health Check</a> | <a href="/api/health">API Health</a></p>
+                </body>
+                </html>
+                ''', 200
 
         @self.app.route('/trucks')
         def trucks():
@@ -1305,6 +1512,216 @@ Carton Details:
                 'version': '1.0.0',
                 'advanced_algorithms': ADVANCED_ALGORITHMS_AVAILABLE
             })
+
+        # Authentication Routes
+        @self.app.route('/api/auth/register', methods=['POST'])
+        def api_auth_register():
+            """User registration endpoint"""
+            try:
+                data = request.get_json()
+                username = data.get('username', '').strip()
+                email = data.get('email', '').strip()
+                password = data.get('password', '')
+                first_name = data.get('first_name', '').strip()
+                last_name = data.get('last_name', '').strip()
+                
+                # Validate input
+                if not username or not email or not password:
+                    return jsonify({'success': False, 'error': 'Username, email, and password are required'}), 400
+                
+                if len(username) < 3:
+                    return jsonify({'success': False, 'error': 'Username must be at least 3 characters long'}), 400
+                
+                if not self.validate_email(email):
+                    return jsonify({'success': False, 'error': 'Invalid email format'}), 400
+                
+                is_valid, password_error = self.validate_password_strength(password)
+                if not is_valid:
+                    return jsonify({'success': False, 'error': password_error}), 400
+                
+                # Check if user already exists
+                with sqlite3.connect(self.db_path) as conn:
+                    existing = conn.execute(
+                        'SELECT id FROM users WHERE username = ? OR email = ?',
+                        (username, email)
+                    ).fetchone()
+                    
+                    if existing:
+                        return jsonify({'success': False, 'error': 'Username or email already exists'}), 409
+                    
+                    # Create new user
+                    password_hash = self.hash_password(password)
+                    cursor = conn.execute('''
+                        INSERT INTO users (username, email, password_hash, first_name, last_name, role, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (username, email, password_hash, first_name, last_name, 'user', 1))
+                    
+                    user_id = cursor.lastrowid
+                    conn.commit()
+                    
+                    # Log activity
+                    self.log_user_activity(user_id, 'REGISTER', 'user', f'User {username} registered')
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': 'User registered successfully',
+                        'user_id': user_id
+                    }), 201
+                    
+            except Exception as e:
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_error(
+                        f"ERR_AUTH_001", str(e), "User registration failed"
+                    )
+                return jsonify({'success': False, 'error': 'Registration failed'}), 500
+
+        @self.app.route('/api/auth/login', methods=['POST'])
+        def api_auth_login():
+            """User login endpoint"""
+            try:
+                data = request.get_json()
+                username = data.get('username', '').strip()
+                password = data.get('password', '')
+                
+                if not username or not password:
+                    return jsonify({'success': False, 'error': 'Username and password are required'}), 400
+                
+                with sqlite3.connect(self.db_path) as conn:
+                    # Check if account is locked
+                    user = conn.execute('''
+                        SELECT id, username, email, password_hash, first_name, last_name, role, 
+                               is_active, failed_login_attempts, account_locked_until
+                        FROM users 
+                        WHERE (username = ? OR email = ?) AND is_active = 1
+                    ''', (username, username)).fetchone()
+                    
+                    if not user:
+                        self.log_user_activity(None, 'LOGIN_FAILED', 'auth', f'Failed login attempt for {username}')
+                        return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
+                    
+                    user_id, db_username, email, password_hash, first_name, last_name, role, is_active, failed_attempts, locked_until = user
+                    
+                    # Check if account is locked
+                    if locked_until and datetime.fromisoformat(locked_until.replace('Z', '+00:00')) > datetime.now():
+                        return jsonify({'success': False, 'error': 'Account is temporarily locked. Please try again later.'}), 423
+                    
+                    # Verify password
+                    if not self.verify_password(password_hash, password):
+                        # Increment failed login attempts
+                        new_attempts = (failed_attempts or 0) + 1
+                        lock_until = None
+                        
+                        if new_attempts >= 5:  # Lock account after 5 failed attempts
+                            lock_until = datetime.now() + timedelta(minutes=30)
+                            conn.execute('''
+                                UPDATE users 
+                                SET failed_login_attempts = ?, account_locked_until = ?
+                                WHERE id = ?
+                            ''', (new_attempts, lock_until, user_id))
+                        else:
+                            conn.execute('''
+                                UPDATE users 
+                                SET failed_login_attempts = ?
+                                WHERE id = ?
+                            ''', (new_attempts, user_id))
+                        
+                        conn.commit()
+                        self.log_user_activity(user_id, 'LOGIN_FAILED', 'auth', f'Failed login attempt #{new_attempts}')
+                        return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
+                    
+                    # Successful login - reset failed attempts and create session
+                    conn.execute('''
+                        UPDATE users 
+                        SET failed_login_attempts = 0, account_locked_until = NULL, last_login = datetime('now')
+                        WHERE id = ?
+                    ''', (user_id,))
+                    conn.commit()
+                    
+                    # Create session
+                    session_id = self.create_user_session(user_id)
+                    
+                    # Log successful login
+                    self.log_user_activity(user_id, 'LOGIN_SUCCESS', 'auth', f'Successful login')
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': 'Login successful',
+                        'session_id': session_id,
+                        'user': {
+                            'id': user_id,
+                            'username': db_username,
+                            'email': email,
+                            'first_name': first_name,
+                            'last_name': last_name,
+                            'role': role
+                        }
+                    }), 200
+                    
+            except Exception as e:
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_error(
+                        f"ERR_AUTH_002", str(e), "User login failed"
+                    )
+                return jsonify({'success': False, 'error': 'Login failed'}), 500
+
+        @self.app.route('/api/auth/logout', methods=['POST'])
+        def api_auth_logout():
+            """User logout endpoint"""
+            try:
+                data = request.get_json()
+                session_id = data.get('session_id', '')
+                
+                if not session_id:
+                    return jsonify({'success': False, 'error': 'Session ID is required'}), 400
+                
+                # Validate session and get user info
+                user_data = self.validate_session(session_id)
+                if not user_data:
+                    return jsonify({'success': False, 'error': 'Invalid session'}), 401
+                
+                # Logout user
+                self.logout_user(session_id)
+                
+                # Log logout activity
+                self.log_user_activity(user_data['id'], 'LOGOUT', 'auth', 'User logged out')
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Logout successful'
+                }), 200
+                
+            except Exception as e:
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_error(
+                        f"ERR_AUTH_003", str(e), "User logout failed"
+                    )
+                return jsonify({'success': False, 'error': 'Logout failed'}), 500
+
+        @self.app.route('/api/auth/validate', methods=['POST'])
+        def api_auth_validate():
+            """Validate user session endpoint"""
+            try:
+                data = request.get_json()
+                session_id = data.get('session_id', '')
+                
+                if not session_id:
+                    return jsonify({'success': False, 'error': 'Session ID is required'}), 400
+                
+                user_data = self.validate_session(session_id)
+                if not user_data:
+                    return jsonify({'success': False, 'error': 'Invalid or expired session'}), 401
+                
+                return jsonify({
+                    'success': True,
+                    'user': user_data
+                }), 200
+                
+            except Exception as e:
+                if ERROR_LOGGING_ENABLED:
+                    error_logger.log_error(
+                        f"ERR_AUTH_004", str(e), "Session validation failed"
+                    )
+                return jsonify({'success': False, 'error': 'Session validation failed'}), 500
 
         @self.app.route('/api/debug/routes')
         def debug_routes_list():

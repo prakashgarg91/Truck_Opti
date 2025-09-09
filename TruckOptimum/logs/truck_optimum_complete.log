@@ -162,3 +162,137 @@
 2025-08-28 08:42:29,968 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on http://127.0.0.1:5001
 2025-08-28 08:42:29,968 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-09-05 08:17:26,923 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-09-05 08:17:26,933 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-09-05 08:17:26,980 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-09-05 08:17:26,980 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-09-05 08:17:28,425 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [05/Sep/2025 08:17:28] "GET / HTTP/1.1" 200 -
+2025-09-05 08:17:28,614 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://127.0.0.1:5001/favicon.ico | Details: None
+2025-09-05 08:17:28,615 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [05/Sep/2025 08:17:28] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-09-05 09:07:19,313 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-09-05 09:07:19,314 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-09-05 09:07:19,335 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-09-05 09:07:19,335 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-09-05 09:07:20,420 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [05/Sep/2025 09:07:20] "GET / HTTP/1.1" 200 -
+2025-09-05 09:07:20,576 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://127.0.0.1:5001/favicon.ico | Details: None
+2025-09-05 09:07:20,576 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [05/Sep/2025 09:07:20] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-09-05 09:09:09,307 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-09-05 09:09:09,308 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-09-05 09:09:09,314 - TruckOptimum - INFO - error_logger.py:304 - ============================================================
+2025-09-05 09:09:09,314 - TruckOptimum - INFO - error_logger.py:305 - TRUCKOPTIMUM APPLICATION SHUTTING DOWN
+2025-09-05 09:09:09,314 - TruckOptimum - INFO - error_logger.py:306 - ============================================================
+2025-09-05 09:09:09,314 - TruckOptimum - INFO - error_logger.py:307 - Session Errors: 0
+2025-09-05 09:09:09,314 - TruckOptimum - INFO - error_logger.py:308 - Session Report: logs/session_20250905_090909.log
+2025-09-05 09:09:09,314 - TruckOptimum - INFO - error_logger.py:309 - Error Logs: logs/truck_optimum_errors.log
+2025-09-05 09:09:09,314 - TruckOptimum - INFO - error_logger.py:310 - Debug Logs: logs/truck_optimum_debug.log
+2025-09-05 09:09:09,314 - TruckOptimum - INFO - error_logger.py:311 - ============================================================
+2025-09-05 09:11:37,416 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-09-05 09:11:37,416 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-09-05 09:11:37,416 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-09-05 09:11:37,416 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-09-05 09:11:37,416 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-09-05 09:11:37,416 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-09-05 09:11:37,417 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-09-05 09:11:37,417 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-09-05 09:11:37,417 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-09-05 09:11:37,417 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-09-05 09:11:37,417 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-09-05 09:11:37,418 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-09-05 09:11:37,428 - TruckOptimum - INFO - error_logger.py:304 - ============================================================
+2025-09-05 09:11:37,428 - TruckOptimum - INFO - error_logger.py:305 - TRUCKOPTIMUM APPLICATION SHUTTING DOWN
+2025-09-05 09:11:37,428 - TruckOptimum - INFO - error_logger.py:306 - ============================================================
+2025-09-05 09:11:37,428 - TruckOptimum - INFO - error_logger.py:307 - Session Errors: 0
+2025-09-05 09:11:37,428 - TruckOptimum - INFO - error_logger.py:308 - Session Report: logs/session_20250905_091137.log
+2025-09-05 09:11:37,428 - TruckOptimum - INFO - error_logger.py:309 - Error Logs: logs/truck_optimum_errors.log
+2025-09-05 09:11:37,428 - TruckOptimum - INFO - error_logger.py:310 - Debug Logs: logs/truck_optimum_debug.log
+2025-09-05 09:11:37,428 - TruckOptimum - INFO - error_logger.py:311 - ============================================================
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-09-05 09:11:57,046 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-09-05 09:11:57,047 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-09-05 09:11:57,054 - TruckOptimum - INFO - error_logger.py:304 - ============================================================
+2025-09-05 09:11:57,054 - TruckOptimum - INFO - error_logger.py:305 - TRUCKOPTIMUM APPLICATION SHUTTING DOWN
+2025-09-05 09:11:57,054 - TruckOptimum - INFO - error_logger.py:306 - ============================================================
+2025-09-05 09:11:57,054 - TruckOptimum - INFO - error_logger.py:307 - Session Errors: 0
+2025-09-05 09:11:57,054 - TruckOptimum - INFO - error_logger.py:308 - Session Report: logs/session_20250905_091157.log
+2025-09-05 09:11:57,054 - TruckOptimum - INFO - error_logger.py:309 - Error Logs: logs/truck_optimum_errors.log
+2025-09-05 09:11:57,054 - TruckOptimum - INFO - error_logger.py:310 - Debug Logs: logs/truck_optimum_debug.log
+2025-09-05 09:11:57,054 - TruckOptimum - INFO - error_logger.py:311 - ============================================================
+2025-09-05 09:12:24,494 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-09-05 09:12:24,494 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-09-05 09:12:24,495 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-09-05 09:12:24,495 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-09-05 09:12:24,495 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-09-05 09:12:24,495 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-09-05 09:12:24,495 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-09-05 09:12:24,495 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-09-05 09:12:24,495 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-09-05 09:12:24,495 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-09-05 09:12:24,495 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-09-05 09:12:24,496 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-09-05 09:12:24,505 - TruckOptimum - INFO - error_logger.py:304 - ============================================================
+2025-09-05 09:12:24,505 - TruckOptimum - INFO - error_logger.py:305 - TRUCKOPTIMUM APPLICATION SHUTTING DOWN
+2025-09-05 09:12:24,505 - TruckOptimum - INFO - error_logger.py:306 - ============================================================
+2025-09-05 09:12:24,505 - TruckOptimum - INFO - error_logger.py:307 - Session Errors: 0
+2025-09-05 09:12:24,505 - TruckOptimum - INFO - error_logger.py:308 - Session Report: logs/session_20250905_091224.log
+2025-09-05 09:12:24,505 - TruckOptimum - INFO - error_logger.py:309 - Error Logs: logs/truck_optimum_errors.log
+2025-09-05 09:12:24,505 - TruckOptimum - INFO - error_logger.py:310 - Debug Logs: logs/truck_optimum_debug.log
+2025-09-05 09:12:24,505 - TruckOptimum - INFO - error_logger.py:311 - ============================================================
+2025-09-05 09:13:06,261 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-09-05 09:13:06,262 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-09-05 09:13:06,263 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-09-05 09:13:06,287 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-09-05 09:13:06,287 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-09-05 09:13:07,515 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [05/Sep/2025 09:13:07] "GET / HTTP/1.1" 200 -
+2025-09-05 09:13:07,672 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://127.0.0.1:5001/favicon.ico | Details: None
+2025-09-05 09:13:07,673 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [05/Sep/2025 09:13:07] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -

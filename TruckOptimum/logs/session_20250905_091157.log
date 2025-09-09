@@ -1,0 +1,11 @@
+{
+  "session_start": "2025-09-05T09:11:57.054407",
+  "total_errors": 0,
+  "errors": [],
+  "summary": {
+    "critical_errors": 0,
+    "api_errors": 0,
+    "ui_errors": 0,
+    "database_errors": 0
+  }
+}
