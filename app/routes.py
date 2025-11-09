@@ -50,16 +50,29 @@ try:
     print("[DEBUG] Comprehensive debug logging system loaded successfully")
 except ImportError as e:
     print(f"[WARNING] Debug logging not available: {e}")
+    print("[INFO] Loading comprehensive fallback logging system...")
     DEBUG_LOGGING_ENABLED = False
-    # Create no-op functions if debug logger not available
-    def log_user_action(action, details=None): pass
-    def log_system_event(event, details=None): pass
-    def log_api_request(endpoint, method, data=None, response=None): pass
-    def log_database_operation(operation, table, data=None, result=None): pass
-    def log_algorithm_execution(algorithm, input_data, output_data, execution_time=None): pass
-    def log_error(error, context=None): pass
-    def route_logger(func): return func
-    def database_logger(func): return func
+
+    # Load comprehensive fallback logging system
+    try:
+        from app.core.debug_logging_fallback import (
+            log_user_action, log_system_event, log_api_request,
+            log_database_operation, log_algorithm_execution, log_error
+        )
+        print("[SUCCESS] Fallback logging system loaded successfully")
+        def route_logger(func): return func
+        def database_logger(func): return func
+    except ImportError as fallback_error:
+        print(f"[ERROR] Fallback logging also failed: {fallback_error}")
+        # Create minimal no-op functions as last resort
+        def log_user_action(action, details=None): pass
+        def log_system_event(event, details=None): pass
+        def log_api_request(endpoint, method, data=None, response=None): pass
+        def log_database_operation(operation, table, data=None, result=None): pass
+        def log_algorithm_execution(algorithm, input_data, output_data, execution_time=None): pass
+        def log_error(error, context=None): pass
+        def route_logger(func): return func
+        def database_logger(func): return func
 
 # Safe database query helper functions to prevent AttributeError
 
