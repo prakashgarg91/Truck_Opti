@@ -54,9 +54,9 @@ class PackingDomainService:
         except Exception as e:
             self.logger.error(f"Packing optimization error: {str(e)}")
             return ServiceResult(
-                success=False, errors=[
-                    f"Packing optimization failed: {
-                        str(e)}"])
+                success=False,
+                errors=[f"Packing optimization failed: {str(e)}"]
+            )
 
     def _sort_cartons_by_strategy(
             self,
@@ -389,9 +389,9 @@ class CostCalculationService:
         except Exception as e:
             self.logger.error(f"Cost calculation error: {str(e)}")
             return ServiceResult(
-                success=False, errors=[
-                    f"Cost calculation failed: {
-                        str(e)}"])
+                success=False,
+                errors=[f"Cost calculation failed: {str(e)}"]
+            )
 
     def _calculate_fuel_cost(
             self,
