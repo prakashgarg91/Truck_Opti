@@ -1,0 +1,9 @@
+{
+  "carton_requirements": [
+    {"carton_id": 1, "quantity": 5},
+    {"carton_id": 2, "quantity": 3},
+    {"carton_id": 3, "quantity": 2}
+  ],
+  "algorithm": "auto",
+  "compare_algorithms": true
+}

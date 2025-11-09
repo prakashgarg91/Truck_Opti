@@ -296,3 +296,143 @@
 2025-09-05 09:13:07,515 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [05/Sep/2025 09:13:07] "GET / HTTP/1.1" 200 -
 2025-09-05 09:13:07,672 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://127.0.0.1:5001/favicon.ico | Details: None
 2025-09-05 09:13:07,673 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [05/Sep/2025 09:13:07] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-11-09 18:39:12,253 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-11-09 18:39:12,254 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-11-09 18:39:12,260 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-11-09 18:39:12,316 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-11-09 18:39:12,316 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-11-09 18:39:13,419 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:39:13] "GET / HTTP/1.1" 200 -
+2025-11-09 18:39:13,961 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://127.0.0.1:5001/favicon.ico | Details: None
+2025-11-09 18:39:13,961 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:39:13] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-11-09 18:39:17,055 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:39:17] "GET /optimize HTTP/1.1" 200 -
+2025-11-09 18:39:19,905 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:39:19] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 18:39:30,035 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:39:30] "POST /api/recommend-trucks HTTP/1.1" 200 -
+2025-11-09 18:53:19,482 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:53:19] "HEAD / HTTP/1.1" 200 -
+2025-11-09 18:53:48,668 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:53:48] "GET /api/health HTTP/1.1" 200 -
+2025-11-09 18:54:01,079 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:54:01] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 18:54:12,051 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:54:12] "GET /api/trucks HTTP/1.1" 200 -
+2025-11-09 18:54:23,327 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:54:23] "[35m[1mPOST /api/recommend-trucks HTTP/1.1[0m" 500 -
+2025-11-09 18:54:49,913 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:54:49] "[35m[1mPOST /api/recommend-trucks HTTP/1.1[0m" 500 -
+2025-11-09 18:55:28,319 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:55:28] "POST /api/recommend-trucks HTTP/1.1" 200 -
+2025-11-09 18:56:02,146 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://localhost:5001/api/cartons/bulk | Details: None
+2025-11-09 18:56:02,146 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:56:02] "[33mPOST /api/cartons/bulk HTTP/1.1[0m" 404 -
+2025-11-09 18:56:52,915 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:56:52] "GET / HTTP/1.1" 200 -
+2025-11-09 18:56:53,590 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:56:53] "GET /optimize HTTP/1.1" 200 -
+2025-11-09 18:56:54,569 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:56:54] "GET /trucks HTTP/1.1" 200 -
+2025-11-09 18:56:54,582 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:56:54] "GET /api/trucks HTTP/1.1" 200 -
+2025-11-09 18:56:56,527 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:56:56] "GET /cartons HTTP/1.1" 200 -
+2025-11-09 18:56:56,545 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:56:56] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 18:56:57,294 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:56:57] "GET /recommendations HTTP/1.1" 200 -
+2025-11-09 18:56:57,308 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:56:57] "GET /api/recommendations?page=1&limit=10 HTTP/1.1" 200 -
+2025-11-09 18:57:01,870 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:57:01] "GET / HTTP/1.1" 200 -
+2025-11-09 18:57:03,836 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:57:03] "GET /optimize HTTP/1.1" 200 -
+2025-11-09 18:57:05,608 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:57:05] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 18:57:12,872 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:57:12] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 18:57:37,682 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:57:37] "POST /api/recommend-trucks HTTP/1.1" 200 -
+2025-11-09 18:57:56,948 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:57:56] "GET /api/debug/routes HTTP/1.1" 200 -
+2025-11-09 18:57:58,991 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:57:58] "GET /api/templates/cartons.csv HTTP/1.1" 200 -
+2025-11-09 18:58:01,033 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:58:01] "GET /api/templates/trucks.csv HTTP/1.1" 200 -
+2025-11-09 18:58:03,076 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:58:03] "GET /api/templates/carton-selection.csv HTTP/1.1" 200 -
+2025-11-09 18:58:05,124 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:58:05] "POST /api/cartons/bulk-upload HTTP/1.1" 200 -
+2025-11-09 18:58:07,170 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:58:07] "POST /api/trucks/bulk-upload HTTP/1.1" 200 -
+2025-11-09 18:58:09,202 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:58:09] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 18:58:11,245 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:58:11] "GET /api/trucks HTTP/1.1" 200 -
+2025-11-09 18:58:13,282 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 18:58:13] "POST /api/cartons/bulk-upload HTTP/1.1" 200 -
+2025-11-09 19:04:16,212 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-11-09 19:04:16,212 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-11-09 19:04:16,212 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-11-09 19:04:16,212 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-11-09 19:04:16,212 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-11-09 19:04:16,212 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-11-09 19:04:16,212 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-09 19:04:16,212 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-11-09 19:04:16,212 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-11-09 19:04:16,213 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-11-09 19:04:16,213 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-11-09 19:04:16,214 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-11-09 19:04:16,238 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-11-09 19:04:16,238 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-11-09 19:04:17,353 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:04:17] "GET / HTTP/1.1" 200 -
+2025-11-09 19:04:30,232 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:04:30] "GET /api/health HTTP/1.1" 200 -
+2025-11-09 19:05:04,070 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:05:04] "POST /api/recommend-trucks HTTP/1.1" 200 -
+2025-11-09 19:05:06,108 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://localhost:5001/api/reports/generate | Details: None
+2025-11-09 19:05:06,108 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:05:06] "[33mPOST /api/reports/generate HTTP/1.1[0m" 404 -
+2025-11-09 19:05:08,137 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [ROUTING] 404 Error: http://localhost:5001/api/reports/templates | Details: None
+2025-11-09 19:05:08,138 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:05:08] "[33mGET /api/reports/templates HTTP/1.1[0m" 404 -
+2025-11-09 19:06:18,072 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:06:18] "POST /api/recommend-trucks HTTP/1.1" 200 -
+2025-11-09 19:06:20,090 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:06:20] "[31m[1mPOST /api/recommend-trucks HTTP/1.1[0m" 400 -
+2025-11-09 19:06:22,115 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:06:22] "[31m[1mPOST /api/recommend-trucks HTTP/1.1[0m" 400 -
+2025-11-09 19:06:24,157 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:06:24] "[35m[1mPOST /api/recommend-trucks HTTP/1.1[0m" 500 -
+2025-11-09 19:06:26,188 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:06:26] "[31m[1mPOST /api/recommend-trucks HTTP/1.1[0m" 400 -
+2025-11-09 19:06:28,210 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:06:28] "[31m[1mPOST /api/recommend-trucks HTTP/1.1[0m" 400 -
+2025-11-09 19:20:02,414 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-11-09 19:20:02,414 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-11-09 19:20:02,414 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-11-09 19:20:02,414 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-11-09 19:20:02,414 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-11-09 19:20:02,414 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-11-09 19:20:02,414 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-09 19:20:02,414 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-11-09 19:20:02,414 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-11-09 19:20:02,415 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-11-09 19:20:02,415 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-11-09 19:20:02,417 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-11-09 19:20:02,445 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-11-09 19:20:02,445 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-11-09 19:20:03,549 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:20:03] "GET / HTTP/1.1" 200 -
+2025-11-09 19:26:55,188 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:26:55] "GET /api/health HTTP/1.1" 200 -
+2025-11-09 19:26:57,212 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:26:57] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:26:59,238 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:26:59] "GET /api/trucks HTTP/1.1" 200 -
+2025-11-09 19:28:54,626 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:28:54] "GET /api/health HTTP/1.1" 200 -
+2025-11-09 19:28:56,644 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:28:56] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:28:58,659 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:28:58] "GET /api/trucks HTTP/1.1" 200 -
+2025-11-09 19:29:31,171 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:29:31] "GET /api/health HTTP/1.1" 200 -
+2025-11-09 19:29:33,224 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:29:33] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:29:35,275 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:29:35] "GET /api/trucks HTTP/1.1" 200 -
+2025-11-09 19:30:01,975 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:30:01] "GET /optimize HTTP/1.1" 200 -
+2025-11-09 19:30:02,951 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:30:02] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:31:07,584 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\TruckOptimum
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: C:\Users\Prakash\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-11-09 19:31:07,585 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-11-09 19:31:07,587 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-11-09 19:31:07,624 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-11-09 19:31:07,624 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-11-09 19:31:08,802 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:31:08] "GET / HTTP/1.1" 200 -
+2025-11-09 19:31:15,371 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:31:15] "GET /optimize HTTP/1.1" 200 -
+2025-11-09 19:31:22,127 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:31:22] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:31:48,246 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:31:48] "GET /api/health HTTP/1.1" 200 -
+2025-11-09 19:31:50,516 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:31:50] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:31:52,806 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:31:52] "GET /api/trucks HTTP/1.1" 200 -
+2025-11-09 19:32:43,309 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:32:43] "GET /api/health HTTP/1.1" 200 -
+2025-11-09 19:32:45,401 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:32:45] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:32:47,545 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:32:47] "GET /api/trucks HTTP/1.1" 200 -
+2025-11-09 19:33:59,142 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:33:59] "POST /api/recommend-trucks HTTP/1.1" 200 -
+2025-11-09 19:34:01,304 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:34:01] "GET /api/trucks HTTP/1.1" 200 -
+2025-11-09 19:34:03,424 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:34:03] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:34:05,564 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:34:05] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:34:07,681 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:34:07] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:34:09,784 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:34:09] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:34:11,890 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:34:11] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:34:14,172 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:34:14] "GET /api/cartons HTTP/1.1" 200 -
+2025-11-09 19:34:49,996 - werkzeug - INFO - _internal.py:97 - 127.0.0.1 - - [09/Nov/2025 19:34:49] "POST /api/recommend-trucks HTTP/1.1" 200 -

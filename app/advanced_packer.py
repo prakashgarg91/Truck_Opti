@@ -15,15 +15,11 @@ Version: 3.5.0 - World-Class Algorithm Implementation
 """
 
 import numpy as np
-import math
 import time
 import logging
 from typing import List, Dict, Tuple, Optional, Any
-from functools import lru_cache
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from py3dbp import Packer, Bin, Item
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # Set up logging for algorithm performance tracking
 logging.basicConfig(level=logging.INFO)
@@ -231,7 +227,7 @@ class RANSACGeometricOptimizer:
                 optimal_dims = carton.get_optimal_orientation(truck_dims)
                 
                 # Try to place in current remaining space
-                placement = self._find_placement_position(optimal_dims, remaining_space)
+                placement = self._find_placement_position(carton, remaining_space)
                 
                 if placement:
                     zones.append({
@@ -254,10 +250,9 @@ class RANSACGeometricOptimizer:
             self.logger.warning(f"Failed to generate placement hypothesis: {e}")
             return None
     
-    def _find_placement_position(self, carton_dims: Tuple[float, float, float], 
-                               available_space: Dict) -> Optional[Dict]:
+    def _find_placement_position(self, carton: LAFFOptimizedCarton, available_space: Dict) -> Optional[Dict]:
         """Find optimal placement position within available space"""
-        cl, cw, ch = carton_dims
+        cl, cw, ch = carton.length, carton.width, carton.height
         origin = available_space['origin']
         space_dims = available_space['dimensions']
         
@@ -268,7 +263,7 @@ class RANSACGeometricOptimizer:
                 carton_dims=(cl, cw, ch),
                 space_dims=space_dims,
                 origin=origin,
-                carton_weight=getattr(carton, 'weight', 0)
+                carton_weight=carton.weight
             )
 
             return {
