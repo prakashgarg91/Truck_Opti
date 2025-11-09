@@ -207,9 +207,7 @@ def register_controllers(app: Flask) -> None:
             print("   ✅ Enhanced API Controllers: Registered")
 
         except Exception as api_error:
-            print(
-                f"   ⚠️  API Controller Registration Warning: {
-                    str(api_error)}")
+            print(f"   ⚠️  API Controller Registration Warning: {str(api_error)}")
 
         try:
             # Web Controllers
@@ -230,9 +228,7 @@ def register_controllers(app: Flask) -> None:
             print("   ✅ Enhanced Web Controllers: Registered")
 
         except Exception as web_error:
-            print(
-                f"   ⚠️  Web Controller Registration Warning: {
-                    str(web_error)}")
+            print(f"   ⚠️  Web Controller Registration Warning: {str(web_error)}")
 
     except Exception as e:
         print(f"   ⚠️  Controller Registration Error: {str(e)}")

@@ -400,21 +400,11 @@ class Address:
 
     def format_single_line(self) -> str:
         """Format address as single line"""
-        return f"{
-            self.street}, {
-            self.city}, {
-            self.state} {
-                self.postal_code}, {
-                    self.country}"
+        return f"{self.street}, {self.city}, {self.state} {self.postal_code}, {self.country}"
 
     def format_multi_line(self) -> str:
         """Format address as multiple lines"""
-        return f"{
-            self.street}\n{
-            self.city}, {
-            self.state} {
-                self.postal_code}\n{
-                    self.country}"
+        return f"{self.street}\n{self.city}, {self.state} {self.postal_code}\n{self.country}"
 
     def is_same_city(self, other: 'Address') -> bool:
         """Check if in same city"""

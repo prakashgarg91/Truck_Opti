@@ -54,9 +54,9 @@ class PackingDomainService:
         except Exception as e:
             self.logger.error(f"Packing optimization error: {str(e)}")
             return ServiceResult(
-                success=False, errors=[
-                    f"Packing optimization failed: {
-                        str(e)}"])
+                success=False,
+                errors=[f"Packing optimization failed: {str(e)}"]
+            )
 
     def _sort_cartons_by_strategy(
             self,
@@ -357,12 +357,29 @@ class CostCalculationService:
             # Calculate insurance cost
             insurance_cost = self._calculate_insurance_cost(packing_result)
 
+            # Calculate toll cost using Indian toll calculator
+            from app.core.toll_calculator import toll_calculator
+            toll_cost = Money(0.0)
+            try:
+                toll_result = toll_calculator.calculate_toll_by_distance(
+                    distance_km=distance_km,
+                    truck_weight_kg=truck.max_weight.kilograms if truck.max_weight else 10000,
+                    truck_category=truck.truck_category if hasattr(truck, 'truck_category') else None,
+                    highway_type="national_highway"
+                )
+                if toll_result.get('success'):
+                    toll_cost = Money(toll_result['total_toll_cost'])
+            except Exception as e:
+                self.logger.error(f"Error calculating toll cost: {str(e)}")
+                # Use fallback estimate: ~2 INR per km for trucks
+                toll_cost = Money(distance_km * 2.0)
+
             # Create cost breakdown
             cost_breakdown = CostBreakdown(
                 fuel_cost=fuel_cost,
                 driver_cost=driver_cost,
                 maintenance_cost=maintenance_cost,
-                toll_cost=Money(0.0),  # TODO: Calculate based on route
+                toll_cost=toll_cost,
                 insurance_cost=insurance_cost,
                 loading_cost=self.default_loading_cost
             )
@@ -372,9 +389,9 @@ class CostCalculationService:
         except Exception as e:
             self.logger.error(f"Cost calculation error: {str(e)}")
             return ServiceResult(
-                success=False, errors=[
-                    f"Cost calculation failed: {
-                        str(e)}"])
+                success=False,
+                errors=[f"Cost calculation failed: {str(e)}"]
+            )
 
     def _calculate_fuel_cost(
             self,

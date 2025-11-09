@@ -263,15 +263,81 @@ class RANSACGeometricOptimizer:
         
         # Check if carton fits in available space
         if (cl <= space_dims[0] and cw <= space_dims[1] and ch <= space_dims[2]):
-            # Simple placement at origin for now
-            # In full implementation, this would consider optimal positioning
+            # Calculate placement score based on multiple factors
+            score = self._calculate_placement_score(
+                carton_dims=(cl, cw, ch),
+                space_dims=space_dims,
+                origin=origin,
+                carton_weight=getattr(carton, 'weight', 0)
+            )
+
             return {
                 'position': origin,
-                'score': 0.8,  # Placeholder score
+                'score': score,
                 'fits': True
             }
-        
+
         return None
+
+    def _calculate_placement_score(self, carton_dims: Tuple[float, float, float],
+                                   space_dims: Tuple[float, float, float],
+                                   origin: Tuple[float, float, float],
+                                   carton_weight: float = 0) -> float:
+        """
+        Calculate placement score based on multiple factors:
+        - Space utilization
+        - Corner/edge proximity (stability)
+        - Height efficiency
+        - Weight distribution
+
+        Returns: Score between 0.0 and 1.0
+        """
+        try:
+            cl, cw, ch = carton_dims
+            sl, sw, sh = space_dims
+            ox, oy, oz = origin
+
+            # Factor 1: Space utilization (how well carton fills the space)
+            carton_volume = cl * cw * ch
+            space_volume = sl * sw * sh
+            volume_efficiency = carton_volume / space_volume if space_volume > 0 else 0
+
+            # Factor 2: Corner proximity bonus (more stable placement)
+            # Score higher if placed at origin (corner/edge)
+            corner_score = 1.0 if (ox == 0 or oy == 0 or oz == 0) else 0.7
+
+            # Factor 3: Height efficiency (prefer lower placement for stability)
+            max_height = sh
+            height_efficiency = 1.0 - (oz / max_height) if max_height > 0 else 1.0
+
+            # Factor 4: Dimensional fit (how well dimensions match)
+            length_fit = min(cl / sl, sl / cl) if sl > 0 and cl > 0 else 0.5
+            width_fit = min(cw / sw, sw / cw) if sw > 0 and cw > 0 else 0.5
+            height_fit = min(ch / sh, sh / ch) if sh > 0 and ch > 0 else 0.5
+            dimensional_fit = (length_fit + width_fit + height_fit) / 3.0
+
+            # Factor 5: Weight considerations (heavier items should be placed lower)
+            if carton_weight > 0:
+                # Heavier items get bonus for lower placement
+                weight_factor = 1.0 if oz < sh * 0.3 else 0.8
+            else:
+                weight_factor = 1.0
+
+            # Weighted combination of all factors
+            final_score = (
+                volume_efficiency * 0.30 +      # 30% weight on volume use
+                corner_score * 0.20 +            # 20% weight on corner placement
+                height_efficiency * 0.20 +        # 20% weight on height
+                dimensional_fit * 0.20 +          # 20% weight on dimensional fit
+                weight_factor * 0.10              # 10% weight on weight distribution
+            )
+
+            # Ensure score is between 0 and 1
+            return max(0.0, min(1.0, final_score))
+
+        except Exception as e:
+            # If calculation fails, return moderate score
+            return 0.6
     
     def _test_hypothesis(self, hypothesis: Dict, all_cartons: List[LAFFOptimizedCarton], 
                         truck_dims: Tuple[float, float, float]) -> Tuple[float, List]:
