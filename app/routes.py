@@ -185,10 +185,7 @@ def calculate_remaining_space_optimization(
                     {
                         'carton_name': carton.name,
                         'carton_id': carton.id,
-                        'dimensions': f"{
-                            carton.length}×{
-                            carton.width}×{
-                            carton.height} cm",
+                        'dimensions': f"{carton.length}x{carton.width}x{carton.height} cm",
                         'max_quantity': max_qty,
                         'volume_per_unit': round(
                             carton_volume,
@@ -392,9 +389,7 @@ def recommend_truck():
                     })
 
                 print(
-                    f"[DEBUG] Processing {
-                        len(carton_data)} carton items with {
-                        len(truck_data)} truck types")
+                    f"[DEBUG] Processing {len(carton_data)} carton items with {len(truck_data)} truck types")
 
                 # Log algorithm preparation
                 log_system_event("ALGORITHM_PREPARATION", {
@@ -433,11 +428,7 @@ def recommend_truck():
                         print(f"[CRITICAL DEBUG] Advanced result: {type(advanced_result)}, keys: {advanced_result.keys() if isinstance(advanced_result, dict) else 'Not a dict'}")
 
                         print(
-                            f"[DEBUG] Advanced packing completed: {
-                                len(
-                                    advanced_result.get(
-                                        'recommendations',
-                                        []))} recommendations")
+                            f"[DEBUG] Advanced packing completed: {len(advanced_result.get('recommendations', []))} recommendations")
 
                         # Process advanced results
                         recommended = []
@@ -449,10 +440,7 @@ def recommend_truck():
                             # Enhanced recommendation with stability metrics
                             recommendation = {
                                 'truck_type': truck_info['name'],
-                                'truck_dimensions': f"{
-                                    truck_info['length']}×{
-                                    truck_info['width']}×{
-                                    truck_info['height']} cm",
+                                'truck_dimensions': f"{truck_info['length']}×{truck_info['width']}×{truck_info['height']} cm",
                                 'quantity_needed': 1,
                                 'utilization': packing_result['truck_utilization'],
                                 'total_cost': (
@@ -462,10 +450,7 @@ def recommend_truck():
                                 'confidence': min(
                                     0.95,
                                     packing_result['stability_score'] + 0.2),
-                                'recommendation_reason': f"Advanced 3D Packing V2: {
-                                    packing_result['truck_utilization']:.1f}% utilization, {
-                                    packing_result['stability_score']:.0f}% stability, {
-                                        packing_result['packed_count']} items fitted",
+                                'recommendation_reason': f"Advanced 3D Packing V2: {packing_result['truck_utilization']:.1f}% utilization, {packing_result['stability_score']:.0f}% stability, {packing_result['packed_count']} items fitted",
                                 'bin_name': truck_info['name'],
                                 'fitted_items': packing_result['packed_count'],
                                 'unfitted_items': packing_result['unpacked_count'],
@@ -475,15 +460,11 @@ def recommend_truck():
                                 'efficiency_score': packing_result['efficiency_score'],
                                 'stability_score': packing_result['stability_score'],
                                 'load_distribution_score': packing_result['weight_distribution_score'],
-                                'algorithm_used': f"Advanced 3D V2 ({
-                                    advanced_result['strategy_used'].replace(
-                                        '_',
-                                        ' ').title()})"}
+                                'algorithm_used': f"Advanced 3D V2 ({advanced_result['strategy_used'].replace('_', ' ').title()})"}
                             recommended.append(recommendation)
 
                         print(
-                            f"[DEBUG] Advanced packing generated {
-                                len(recommended)} recommendations")
+                            f"[DEBUG] Advanced packing generated {len(recommended)} recommendations")
 
                     except Exception as e:
                         print(f"[ERROR] Advanced packing failed: {e}")
@@ -531,17 +512,13 @@ def recommend_truck():
                         recommended.append(
                             {
                                 'truck_type': truck.name,
-                                'truck_dimensions': f"{
-                                    truck.length}×{
-                                    truck.width}×{
-                                    truck.height} cm",
+                                'truck_dimensions': f"{truck.length}×{truck.width}×{truck.height} cm",
                                 'quantity_needed': 1,
                                 'utilization': utilization,
                                 'total_cost': cost,
                                 'cost_per_item': cost / qty,
                                 'confidence': confidence,
-                                'recommendation_reason': f"{algorithm_name}: {
-                                    utilization * 100:.1f}% space efficiency, minimal waste design",
+                                'recommendation_reason': f"{algorithm_name}: {utilization * 100:.1f}% space efficiency, minimal waste design",
                                 'bin_name': truck.name,
                                 'fitted_items': [],
                                 'unfitted_items': [],
@@ -581,17 +558,13 @@ def recommend_truck():
                         recommended.append(
                             {
                                 'truck_type': truck.name,
-                                'truck_dimensions': f"{
-                                    truck.length}×{
-                                    truck.width}×{
-                                    truck.height} cm",
+                                'truck_dimensions': f"{truck.length}×{truck.width}×{truck.height} cm",
                                 'quantity_needed': 1,
                                 'utilization': utilization,
                                 'total_cost': opt_cost,
                                 'cost_per_item': opt_cost / qty,
                                 'confidence': confidence,
-                                'recommendation_reason': f"{algorithm_name}: ₹{
-                                    opt_cost:.0f} optimized route cost with fuel efficiency",
+                                'recommendation_reason': f"{algorithm_name}: ₹{opt_cost:.0f} optimized route cost with fuel efficiency",
                                 'bin_name': truck.name,
                                 'fitted_items': [],
                                 'unfitted_items': [],
@@ -632,17 +605,13 @@ def recommend_truck():
                         recommended.append(
                             {
                                 'truck_type': truck.name,
-                                'truck_dimensions': f"{
-                                    truck.length}×{
-                                    truck.width}×{
-                                    truck.height} cm",
+                                'truck_dimensions': f"{truck.length}×{truck.width}×{truck.height} cm",
                                 'quantity_needed': 1,
                                 'utilization': utilization,
                                 'total_cost': secure_cost,
                                 'cost_per_item': secure_cost / qty,
                                 'confidence': confidence,
-                                'recommendation_reason': f"{algorithm_name}: {
-                                    utilization * 100:.1f}% optimal security utilization with premium handling",
+                                'recommendation_reason': f"{algorithm_name}: {utilization * 100:.1f}% optimal security utilization with premium handling",
                                 'bin_name': truck.name,
                                 'fitted_items': [],
                                 'unfitted_items': [],
@@ -693,17 +662,13 @@ def recommend_truck():
                         recommended.append(
                             {
                                 'truck_type': truck.name,
-                                'truck_dimensions': f"{
-                                    truck.length}×{
-                                    truck.width}×{
-                                    truck.height} cm",
+                                'truck_dimensions': f"{truck.length}×{truck.width}×{truck.height} cm",
                                 'quantity_needed': 1,
                                 'utilization': utilization,
                                 'total_cost': bal_cost,
                                 'cost_per_item': bal_cost / qty,
                                 'confidence': confidence,
-                                'recommendation_reason': f"{algorithm_name}: {
-                                    utilization * 100:.1f}% balanced optimization across space, cost, and operations",
+                                'recommendation_reason': f"{algorithm_name}: {utilization * 100:.1f}% balanced optimization across space, cost, and operations",
                                 'bin_name': truck.name,
                                 'fitted_items': [],
                                 'unfitted_items': [],
@@ -726,10 +691,7 @@ def recommend_truck():
                     recommended.append(
                         {
                             'truck_type': largest_truck.name,
-                            'truck_dimensions': f"{
-                                largest_truck.length}×{
-                                largest_truck.width}×{
-                                largest_truck.height} cm",
+                            'truck_dimensions': f"{largest_truck.length}×{largest_truck.width}×{largest_truck.height} cm",
                             'quantity_needed': 1,
                             'utilization': utilization,
                             'total_cost': (
@@ -737,8 +699,7 @@ def recommend_truck():
                             'cost_per_item': (
                                 (largest_truck.cost_per_km or 60) * 140) / qty,
                             'confidence': 0.75,
-                            'recommendation_reason': f"Fallback Algorithm: Largest available truck with {
-                                utilization * 100:.1f}% estimated utilization",
+                            'recommendation_reason': f"Fallback Algorithm: Largest available truck with {utilization * 100:.1f}% estimated utilization",
                             'bin_name': largest_truck.name,
                             'fitted_items': [],
                             'unfitted_items': [],
@@ -760,8 +721,7 @@ def recommend_truck():
         print("[DEBUG] Invalid form data, showing empty form")
 
     print(
-        f"[DEBUG] Returning template with recommended={
-            recommended is not None}, recommended_count={len(recommended) if recommended else 0}")
+        f"[DEBUG] Returning template with recommended={recommended is not None}, recommended_count={len(recommended) if recommended else 0}")
     print(f"[CRITICAL DEBUG] Final recommended data: {recommended}")
     try:
         return render_template(
@@ -781,9 +741,7 @@ def recommend_truck():
         print(f"[ERROR] Full traceback: {traceback.format_exc()}")
 
         # Return a simple error page instead
-        return f"<h1>Template Error</h1><p>Error: {
-            str(e)}</p><pre>{
-            traceback.format_exc()}</pre>", 500
+        return f"<h1>Template Error</h1><p>Error: {str(e)}</p><pre>{traceback.format_exc()}</pre>", 500
 # Redirect deprecated route to fleet optimization
 
 
@@ -1422,8 +1380,7 @@ def packing_result(job_id):
     except Exception as e:
         import logging
         logging.error(
-            f"Error in packing_result for job_id {job_id}: {
-                str(e)}", exc_info=True)
+            f"Error in packing_result for job_id {job_id}: {str(e)}", exc_info=True)
         flash(f'Error loading packing job: {str(e)}', 'error')
         return redirect(url_for('main.packing_jobs'))
 
@@ -2766,8 +2723,7 @@ def sale_orders():
 
                 if processing_result['success']:
                     flash(
-                        f'Successfully processed {
-                            processing_result["processed_orders"]} sale orders',
+                        f'Successfully processed {processing_result["processed_orders"]} sale orders',
                         'success')
                     return redirect(
                         url_for(
@@ -2775,8 +2731,7 @@ def sale_orders():
                             batch_id=processing_result['batch_id']))
                 else:
                     flash(
-                        f'Error processing file: {
-                            processing_result["error"]}',
+                        f'Error processing file: {processing_result["error"]}',
                         'error')
             else:
                 flash(
@@ -2874,8 +2829,7 @@ def process_sale_order_file(
             db.session.rollback()
             return {
                 'success': False,
-                'error': f'Database error creating batch: {
-                    str(e)}'}
+                'error': f'Database error creating batch: {str(e)}'}
 
         processed_orders = 0
         failed_orders = 0
@@ -2933,8 +2887,7 @@ def process_sale_order_file(
                 db.session.add(sale_order)
                 db.session.flush()  # Get sale order ID
                 logger.info(
-                    f"Created sale order {order_num} with ID: {
-                        sale_order.id}")
+                    f"Created sale order {order_num} with ID: {sale_order.id}")
 
                 total_volume = 0
                 total_weight = 0
@@ -2975,14 +2928,10 @@ def process_sale_order_file(
 
                         if carton_type:
                             logger.debug(
-                                f"Found matching carton type: {
-                                    carton_type.name} for {
-                                    carton_data['carton_name']}")
+                                f"Found matching carton type: {carton_type.name} for {carton_data['carton_name']}")
                         else:
                             logger.error(
-                                f"CRITICAL: No matching carton type found for: {
-                                    carton_data['carton_name']} (Code: {
-                                    carton_data['carton_code']}), using default generic carton")
+                                f"CRITICAL: No matching carton type found for: {carton_data['carton_name']} (Code: {carton_data['carton_code']}), using default generic carton")
                             # Create a temporary generic carton type
                             temp_carton_type = CartonType(
                                 name=f"Generic_{carton_data['carton_name']}",
@@ -2998,9 +2947,7 @@ def process_sale_order_file(
                             carton_type = temp_carton_type
                     except Exception as e:
                         logger.error(
-                            f"Error finding carton type for {
-                                carton_data['carton_name']}: {
-                                str(e)}")
+                            f"Error finding carton type for {carton_data['carton_name']}: {str(e)}")
                         carton_type = None
 
                     # Create sale order item with carton dimensions
@@ -3015,8 +2962,7 @@ def process_sale_order_file(
                         unit_weight=carton_type.weight if carton_type else 2.0,
                         fragile=carton_type.fragile if carton_type else False,
                         stackable=carton_type.stackable if carton_type else True,
-                        notes=f"Mapped to carton: {
-                            carton_type.name}" if carton_type else "No matching carton found - using defaults")
+                        notes=f"Mapped to carton: {carton_type.name}" if carton_type else "No matching carton found - using defaults")
 
                     # Calculate totals
                     item_volume = (sale_order_item.unit_length * sale_order_item.unit_width * \
@@ -3078,11 +3024,7 @@ def process_sale_order_file(
                             estimated_cost=recommendation['total_cost'],
                             fits_completely=True,
                             overflow_items=0,
-                            recommendation_reason=f"🚚 CONSOLIDATED SOLUTION: {
-                                len(
-                                    recommendation['orders'])} orders in 1 truck • {
-                                recommendation['utilization']:.1%} utilization • SAVES ₹{
-                                recommendation['savings']:.0f}",
+                            recommendation_reason=f"🚚 CONSOLIDATED SOLUTION: {len(recommendation['orders'])} orders in 1 truck • {recommendation['utilization']:.1%} utilization • SAVES ₹{recommendation['savings']:.0f}",
                             ranking=1  # Give consolidated solutions top priority
                         )
                         db.session.add(consolidated_rec)
@@ -3101,14 +3043,12 @@ def process_sale_order_file(
                                 estimated_cost=0,
                                 fits_completely=True,
                                 overflow_items=0,
-                                recommendation_reason=f"🔗 CONSOLIDATED with Order #{
-                                    primary_order.sale_order_number} • No additional cost • Included in consolidated truck",
+                                recommendation_reason=f"🔗 CONSOLIDATED with Order #{primary_order.sale_order_number} • No additional cost • Included in consolidated truck",
                                 ranking=1)
                             db.session.add(consolidated_ref)
 
                 print(
-                    f"Generated {
-                        len(consolidated_recommendations)} consolidated recommendations")
+                    f"Generated {len(consolidated_recommendations)} consolidated recommendations")
 
             except Exception as e:
                 print(f"Error in multi-order optimization: {str(e)}")
@@ -3117,27 +3057,21 @@ def process_sale_order_file(
 
         # Generate individual truck recommendations for all orders
         logger.info(
-            f"Generating truck recommendations for {
-                len(all_sale_orders)} orders")
+            f"Generating truck recommendations for {len(all_sale_orders)} orders")
         for sale_order in all_sale_orders:
             try:
                 logger.info(
-                    f"Generating recommendations for order: {
-                        sale_order.sale_order_number}")
+                    f"Generating recommendations for order: {sale_order.sale_order_number}")
                 generate_truck_recommendations(sale_order, optimization_goal)
                 logger.info(
-                    f"Successfully generated recommendations for order: {
-                        sale_order.sale_order_number}")
+                    f"Successfully generated recommendations for order: {sale_order.sale_order_number}")
             except Exception as e:
                 failed_orders += 1
                 logger.error(
-                    f"Error generating recommendations for order {
-                        sale_order.sale_order_number}: {
-                        str(e)}")
+                    f"Error generating recommendations for order {sale_order.sale_order_number}: {str(e)}")
                 # Mark order as failed but continue processing other orders
                 sale_order.status = 'failed'
-                sale_order.processing_notes = f"Failed to generate recommendations: {
-                    str(e)}"
+                sale_order.processing_notes = f"Failed to generate recommendations: {str(e)}"
 
         # Update batch statistics
         batch.total_orders = len(orders_dict)
@@ -3157,8 +3091,7 @@ def process_sale_order_file(
 
     except Exception as e:
         logger.error(
-            f"Critical error in sale order processing: {
-                str(e)}", exc_info=True)
+            f"Critical error in sale order processing: {str(e)}", exc_info=True)
         db.session.rollback()
         return {'success': False, 'error': f'Processing failed: {str(e)}'}
 
@@ -3173,13 +3106,7 @@ def _get_carton_hash(sale_order):
     carton_info = []
     for item in sale_order.sale_order_items:
         carton_info.append(
-            f"{
-                item.item_name}_{
-                item.unit_length}_{
-                item.unit_width}_{
-                    item.unit_height}_{
-                        item.unit_weight}_{
-                            item.quantity}")
+            f"{item.item_name}_{item.unit_length}_{item.unit_width}_{item.unit_height}_{item.unit_weight}_{item.quantity}")
     carton_string = "|".join(sorted(carton_info))
     return hashlib.md5(carton_string.encode()).hexdigest()
 
@@ -3218,16 +3145,14 @@ def generate_truck_recommendations(sale_order, optimization_goal='cost'):
 
     logger = logging.getLogger(__name__)
     logger.info(
-        f"Starting truck recommendations for sale order: {
-            sale_order.sale_order_number}")
+        f"Starting truck recommendations for sale order: {sale_order.sale_order_number}")
 
     # Check cache first for performance improvement
     cached_recommendations = _get_cached_recommendation(
         sale_order, optimization_goal)
     if cached_recommendations:
         logger.info(
-            f"Using cached recommendations for order: {
-                sale_order.sale_order_number}")
+            f"Using cached recommendations for order: {sale_order.sale_order_number}")
         # Apply cached recommendations to database
         for cached_rec in cached_recommendations:
             recommendation = TruckRecommendation(
@@ -3357,8 +3282,7 @@ def generate_truck_recommendations(sale_order, optimization_goal='cost'):
         trucks_to_test = trucks[:8] if smallest_fitting_truck and best_single_truck_result.get(
             'utilization', 0) > 0.8 else trucks[:12]
         logger.info(
-            f"Testing {
-                len(trucks_to_test)} trucks for recommendations")
+            f"Testing {len(trucks_to_test)} trucks for recommendations")
 
         for truck in trucks_to_test:
             try:
@@ -3418,18 +3342,15 @@ def generate_truck_recommendations(sale_order, optimization_goal='cost'):
                         if truck == smallest_fitting_truck:
                             overall_score = 1000 + \
                                 (space_utilization * 100)  # Highest priority
-                            reason = f"✅ OPTIMAL CHOICE: Smallest truck that fits all cartons • {
-                                space_utilization:.1%} utilization • MAXIMUM COST SAVINGS"
+                            reason = f"✅ OPTIMAL CHOICE: Smallest truck that fits all cartons • {space_utilization:.1%} utilization • MAXIMUM COST SAVINGS"
                         else:
                             overall_score = 800 + \
                                 (space_utilization * 100) - (size_efficiency_score * 10)
-                            reason = f"✅ COMPLETE FIT: All cartons fit • {
-                                space_utilization:.1%} utilization • Single truck solution"
+                            reason = f"✅ COMPLETE FIT: All cartons fit • {space_utilization:.1%} utilization • Single truck solution"
                     else:
                         # Incomplete fit: much lower priority
                         overall_score = space_utilization * 100 - 200  # Heavy penalty
-                        reason = f"⚠️ OVERFLOW: {overflow_items} cartons don't fit • {
-                            space_utilization:.1%} utilization • Requires multiple trucks"
+                        reason = f"⚠️ OVERFLOW: {overflow_items} cartons don't fit • {space_utilization:.1%} utilization • Requires multiple trucks"
 
                     # Weight utilization calculation
                     total_weight = sum(
@@ -3499,16 +3420,12 @@ def generate_truck_recommendations(sale_order, optimization_goal='cost'):
 
             # Add processing note about optimization strategy
             if best_recommendation.fits_completely:
-                sale_order.processing_notes = f"Single truck solution found with {
-                    best_recommendation.space_utilization:.1%} space utilization - COST OPTIMAL"
+                sale_order.processing_notes = f"Single truck solution found with {best_recommendation.space_utilization:.1%} space utilization - COST OPTIMAL"
             else:
-                sale_order.processing_notes = f"Warning: No single truck can fit all cartons. Best option has {
-                    best_recommendation.overflow_items} overflow items."
+                sale_order.processing_notes = f"Warning: No single truck can fit all cartons. Best option has {best_recommendation.overflow_items} overflow items."
 
             logger.info(
-                f"Successfully generated {
-                    len(recommendations)} recommendations for order {
-                    sale_order.sale_order_number}")
+                f"Successfully generated {len(recommendations)} recommendations for order {sale_order.sale_order_number}")
 
             # Cache the recommendations for future use
             cache_data = []
@@ -3529,18 +3446,14 @@ def generate_truck_recommendations(sale_order, optimization_goal='cost'):
                 })
             _cache_recommendation(sale_order, optimization_goal, cache_data)
             logger.info(
-                f"Cached {
-                    len(cache_data)} recommendations for future use")
+                f"Cached {len(cache_data)} recommendations for future use")
 
     except Exception as e:
         logger.error(
-            f"Error generating truck recommendations for order {
-                sale_order.sale_order_number}: {
-                str(e)}", exc_info=True)
+            f"Error generating truck recommendations for order {sale_order.sale_order_number}: {str(e)}", exc_info=True)
         # Mark the sale order as failed
         sale_order.status = 'failed'
-        sale_order.processing_notes = f"Failed to generate recommendations: {
-            str(e)}"
+        sale_order.processing_notes = f"Failed to generate recommendations: {str(e)}"
         raise  # Re-raise to be handled by caller
 
 # API Routes for Sale Orders
@@ -3799,9 +3712,7 @@ def api_drill_down_data(data_type):
                         r,
                         'distance_km',
                         0) > 0 for r in job_results)
-                cost_display = "Complete route data required" if not has_route_data else f"₹{
-                    sum(
-                        r.total_cost for r in job_results):.0f}"
+                cost_display = "Complete route data required" if not has_route_data else f"₹{sum(r.total_cost for r in job_results):.0f}"
 
                 data.append({
                     'id': job.id,
