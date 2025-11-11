@@ -16,8 +16,10 @@ from .optimization import optimization_bp
 from .analytics import analytics_bp
 from .shipments import shipments_bp
 from .health import health_bp
+from .auth import auth_bp
 
 # Register sub-blueprints
+api_v1.register_blueprint(auth_bp)
 api_v1.register_blueprint(trucks_bp)
 api_v1.register_blueprint(cartons_bp)
 api_v1.register_blueprint(optimization_bp)
@@ -35,6 +37,7 @@ def api_root():
         'status': 'active',
         'timestamp': datetime.utcnow().isoformat(),
         'resources': {
+            'auth': '/api/v1/auth',
             'trucks': '/api/v1/trucks',
             'cartons': '/api/v1/cartons',
             'optimization': '/api/v1/optimization',
