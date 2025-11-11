@@ -45,14 +45,16 @@ class DIContainer:
     Dependency Injection Container with automatic dependency resolution
     """
     
-    def __init__(self):
+    def __init__(self, db=None):
         self._services: Dict[Type, ServiceRegistration] = {}
         self._instances: Dict[Type, Any] = {}
         self._lock = Lock()
         self.logger = get_logger(self.__class__.__name__)
-        
-        # Register core services
-        self._register_core_services()
+        self._db = db
+
+        # Register core services if db is provided
+        if db is not None:
+            self._register_core_services(db)
     
     def register_singleton(self, service_type: Type[T], implementation_type: Type[T] = None,
                           factory: Callable = None) -> 'DIContainer':
@@ -155,47 +157,51 @@ class DIContainer:
             self.logger.error(f"Error creating instance of {registration.implementation_type.__name__}: {str(e)}")
             raise
     
-    def _register_core_services(self):
+    def _register_core_services(self, db=None):
         """Register core application services"""
+        # Note: db should be passed in via configure_container to avoid circular imports
+        if db is None:
+            self.logger.warning("Database session not provided, repositories will not be registered")
+            return
+
         try:
-            from .. import db
             from ..domain.services import PackingDomainService, CostCalculationService
-            
+
             # Register repositories with factory methods
             self.register_singleton(
                 ITruckRepository,
                 TruckRepository,
                 factory=lambda container: TruckRepository(db.session)
             )
-            
+
             self.register_singleton(
-                ICartonRepository, 
+                ICartonRepository,
                 CartonRepository,
                 factory=lambda container: CartonRepository(db.session)
             )
-            
+
             self.register_singleton(
                 IPackingJobRepository,
-                PackingJobRepository, 
+                PackingJobRepository,
                 factory=lambda container: PackingJobRepository(db.session)
             )
-            
+
             self.register_singleton(
                 IShipmentRepository,
                 ShipmentRepository,
                 factory=lambda container: ShipmentRepository(db.session)
             )
-            
+
             self.register_singleton(
                 IAnalyticsRepository,
                 AnalyticsRepository,
                 factory=lambda container: AnalyticsRepository(db.session)
             )
-            
+
             # Register domain services
             self.register_singleton(PackingDomainService)
             self.register_singleton(CostCalculationService)
-            
+
             # Register application services
             self.register_singleton(
                 TruckOptimizationService,
@@ -208,7 +214,7 @@ class DIContainer:
                     db=db
                 )
             )
-            
+
         except ImportError as e:
             self.logger.warning(f"Some services could not be registered: {e}")
         except Exception as e:
@@ -291,22 +297,35 @@ _container_lock = Lock()
 def get_container() -> DIContainer:
     """Get global container instance (singleton)"""
     global _container
-    
+
     if _container is None:
         with _container_lock:
             if _container is None:
                 _container = DIContainer()
-    
+
     return _container
 
 
-def configure_container(config: Dict[str, Any] = None) -> DIContainer:
-    """Configure the global container"""
-    container = get_container()
-    
+def configure_container(config: Dict[str, Any] = None, db=None) -> DIContainer:
+    """Configure the global container with database and config"""
+    global _container
+
+    # Create new container with db if not exists
+    if _container is None:
+        with _container_lock:
+            if _container is None:
+                _container = DIContainer(db=db)
+
+    container = _container
+
+    # Register core services if db is provided and not yet registered
+    if db is not None and container._db is None:
+        container._db = db
+        container._register_core_services(db)
+
     if config:
         container.register_configuration(config)
-    
+
     return container
 
 

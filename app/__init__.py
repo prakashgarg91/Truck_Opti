@@ -4,14 +4,14 @@ import os
 import sys
 from typing import Optional, Dict, Any
 
-# Temporarily disable clean architecture imports to fix circular dependency
-# from .core.container import configure_container, get_container
-# from .core.performance import performance_monitor, cache_manager
-# from .middleware.security import SecurityHeaders
-# from .controllers import (
-#     OptimizationController, OptimizationWebController,
-#     TruckController, AnalyticsController
-# )
+# Clean architecture imports - now fixed for circular dependencies
+from .core.container import configure_container, get_container
+from .middleware.security import SecurityHeaders
+from .controllers import (
+    OptimizationController,
+    TruckController,
+    AnalyticsController
+)
 
 db = SQLAlchemy()
 
@@ -84,12 +84,12 @@ def create_app(config_context: Optional[str] = None,
             except Exception as log_error:
                 print(f"Could not write error log: {log_error}")
 
-    # Configure dependency injection container (temporarily disabled)
-    # container = configure_container(config_overrides or {})
-    # app.container = container
+    # Configure dependency injection container
+    container = configure_container(config_overrides or {}, db=db)
+    app.container = container
 
-    # Register enhanced controllers with clean architecture (temporarily disabled)
-    # register_controllers(app)
+    # Register enhanced controllers with clean architecture
+    register_controllers(app)
 
     # Setup legacy routes for backward compatibility
     from . import routes
@@ -99,8 +99,8 @@ def create_app(config_context: Optional[str] = None,
     # Register new modular blueprints
     register_modular_blueprints(app)
 
-    # Setup enhanced middleware (temporarily disabled)
-    # setup_middleware(app)
+    # Setup enhanced middleware
+    setup_middleware(app)
 
     # Setup Intelligent Error Monitoring
     setup_error_monitoring(app)
@@ -261,8 +261,7 @@ def setup_middleware(app: Flask) -> None:
         # Apply security headers to all responses
         @app.after_request
         def apply_security_headers(response):
-            # return SecurityHeaders.apply_security_headers(response)  # Disabled due to missing import
-            return response
+            return SecurityHeaders.apply_security_headers(response)
 
         print("   ✅ Security Middleware: Active")
 
