@@ -360,8 +360,12 @@ class AlgorithmTester:
                 serializable_result = {}
                 for key, value in result.items():
                     if key in ['packed_cartons', 'unpacked_cartons']:
-                        # Skip complex objects for now
-                        serializable_result[key] = f"{len(value)} items"
+                        # Safely count items, even if value is None or not iterable
+                        try:
+                            count = len(value)
+                        except (TypeError, AttributeError):
+                            count = 0
+                        serializable_result[key] = f"{count} items"
                     elif key == 'center_of_mass' and isinstance(value, dict):
                         serializable_result[key] = value
                     elif key == 'center_of_mass' and isinstance(value, tuple):
