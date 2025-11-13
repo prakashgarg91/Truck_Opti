@@ -144,7 +144,7 @@ Testing Infrastructure:
 - [x] Authentication and security
 - [x] Frontend responsive design
 - [x] 3D visualization
-- [ ] Production dependencies install (run: pip install -r requirements.txt)
+- [ ] Install production dependencies (run: pip install -r requirements.txt)
 - [ ] Environment configuration (.env setup)
 - [ ] Database initialization
 - [ ] SSL/TLS certificates
