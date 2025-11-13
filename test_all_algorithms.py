@@ -49,7 +49,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'TruckOptimum'))
 try:
     from advanced_3d_algorithms import (
         Advanced3DPackingEngine, Algorithm3DType,
-        Carton3D, Truck3D, PlacedCarton
+        Carton3D, Truck3D
     )
     print("SUCCESS: Advanced algorithms imported successfully")
 except ImportError as e:
