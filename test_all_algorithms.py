@@ -120,7 +120,7 @@ class AlgorithmTester:
         cartons = [
             Carton3D(1, "Electronics Box", 50, 40, 30, 20, quantity=8, priority=3, fragile=True, stackable=False),
             Carton3D(2, "Clothing Box", 60, 40, 40, 15, quantity=12, priority=1, fragile=False, stackable=True),
-            Carton3D(3, "Books Box", 40, 30, 25, 35, priority=1, quantity=10, fragile=False, stackable=True),
+            Carton3D(3, "Books Box", 40, 30, 25, 35, quantity=10, priority=1, fragile=False, stackable=True),
             Carton3D(4, "Large Appliance", 100, 80, 80, 150, quantity=2, priority=2, fragile=True, stackable=False),
             Carton3D(5, "Small Parts", 30, 20, 20, 5, quantity=20, priority=1, fragile=False, stackable=True),
             Carton3D(6, "Odd Shape", 70, 50, 90, 40, quantity=4, priority=2, fragile=False, stackable=True),
