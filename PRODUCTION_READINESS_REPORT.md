@@ -307,7 +307,7 @@ cp .env.example .env
 nano .env  # Configure DATABASE_URL, SECRET_KEY, etc.
 
 # 4. Initialize database
-python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
+python init_db.py
 
 # 5. Run with Gunicorn
 gunicorn -w 4 -b 0.0.0.0:8000 "app:create_app()"
