@@ -5,12 +5,15 @@ from flask_sqlalchemy import SQLAlchemy
 # Import db from the module where it's defined
 from app import db
 
-class TruckType(db.Model):
+
+class BaseModel:
+    """Base model class with shared functionality for all models"""
+
     def as_dict(self, include_columns=None, exclude_columns=None):
         """Enhanced dictionary serialization with optional column filtering"""
         columns = include_columns or [c.name for c in self.__table__.columns]
         exclude_columns = exclude_columns or []
-        
+
         def safe_serialize(column_name):
             """Safely convert complex types to JSON-serializable formats"""
             value = getattr(self, column_name, None)
@@ -25,12 +28,15 @@ class TruckType(db.Model):
                 return value
             except TypeError:
                 return str(value)
-        
+
         result = {}
         for column in columns:
             if column not in exclude_columns:
                 result[column] = safe_serialize(column)
         return result
+
+
+class TruckType(BaseModel, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     length = db.Column(db.Float, nullable=False)
@@ -78,32 +84,7 @@ class TruckType(db.Model):
         db.Index('idx_truck_availability_category', availability, truck_category),
     )
 
-class CartonType(db.Model):
-    def as_dict(self, include_columns=None, exclude_columns=None):
-        """Enhanced dictionary serialization with optional column filtering"""
-        columns = include_columns or [c.name for c in self.__table__.columns]
-        exclude_columns = exclude_columns or []
-        
-        def safe_serialize(column_name):
-            """Safely convert complex types to JSON-serializable formats"""
-            value = getattr(self, column_name, None)
-            if value is None:
-                return None
-            if isinstance(value, datetime):
-                return value.isoformat()
-            if hasattr(value, 'as_dict'):
-                return value.as_dict()
-            try:
-                json.dumps(value)
-                return value
-            except TypeError:
-                return str(value)
-        
-        result = {}
-        for column in columns:
-            if column not in exclude_columns:
-                result[column] = safe_serialize(column)
-        return result
+class CartonType(BaseModel, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     length = db.Column(db.Float, nullable=False)
@@ -222,7 +203,7 @@ class PackingResult(db.Model):
 
 class Analytics(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, default=datetime.utcnow().date())
+    date = db.Column(db.Date, default=lambda: datetime.utcnow().date())
     total_shipments = db.Column(db.Integer, default=0)
     total_trucks_used = db.Column(db.Integer, default=0)
     average_space_utilization = db.Column(db.Float, default=0.0)

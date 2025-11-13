@@ -100,13 +100,38 @@ def create_truck():
                     'error': f'Missing required field: {field}'
                 }), 400
 
-        # Create truck
+        # BUG FIX #9: Validate dimensions are positive numbers
+        try:
+            length = float(data['length'])
+            width = float(data['width'])
+            height = float(data['height'])
+            max_weight = float(data.get('max_weight', 0))
+
+            if length <= 0 or width <= 0 or height <= 0:
+                return jsonify({
+                    'success': False,
+                    'error': 'Dimensions (length, width, height) must be positive numbers'
+                }), 400
+
+            if max_weight < 0:
+                return jsonify({
+                    'success': False,
+                    'error': 'Max weight cannot be negative'
+                }), 400
+
+        except ValueError as ve:
+            return jsonify({
+                'success': False,
+                'error': f'Invalid number format: {str(ve)}'
+            }), 400
+
+        # Create truck with validated data
         truck = TruckType(
             name=data['name'],
-            length=float(data['length']),
-            width=float(data['width']),
-            height=float(data['height']),
-            max_weight=float(data.get('max_weight', 0)),
+            length=length,
+            width=width,
+            height=height,
+            max_weight=max_weight,
             cost_per_km=float(data.get('cost_per_km', 0)),
             fuel_efficiency=float(data.get('fuel_efficiency', 0)),
             driver_cost_per_day=float(data.get('driver_cost_per_day', 0)),

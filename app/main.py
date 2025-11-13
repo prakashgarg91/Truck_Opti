@@ -20,20 +20,20 @@ from app import create_app
 def main():
     """Main entry point for the application."""
     try:
-        print("🚀 Starting TruckOpti Enterprise...")
-        print("📦 Loading application components...")
-        
+        print(">> Starting TruckOpti Enterprise...")
+        print(">> Loading application components...")
+
         # Create the Flask application
         app = create_app()
-        
+
         # Configuration
         host = os.environ.get('HOST', '0.0.0.0')
         port = int(os.environ.get('PORT', 5000))
         debug = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes', 'on')
-        
-        print("🌐 Web interface starting...")
-        print(f"📍 URL: http://{host}:{port}")
-        print("🛑 Press Ctrl+C to stop the server")
+
+        print(">> Web interface starting...")
+        print(f">> URL: http://{host}:{port}")
+        print(">> Press Ctrl+C to stop the server")
         print("-" * 50)
         
         # Start the Flask development server
@@ -46,9 +46,9 @@ def main():
         )
         
     except KeyboardInterrupt:
-        print("\n🛑 Server stopped by user")
+        print("\n>> Server stopped by user")
     except Exception as e:
-        print(f"❌ Error starting application: {e}")
+        print(f"ERROR: Error starting application: {e}")
         sys.exit(1)
 
 if __name__ == '__main__':
