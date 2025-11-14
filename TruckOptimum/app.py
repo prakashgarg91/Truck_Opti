@@ -5,7 +5,7 @@ Enhanced with comprehensive error logging and debugging
 """
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple  # BUG FIX #10: Added Tuple import for Python <3.9 compatibility
 import sqlite3
 import os
 import sys
@@ -79,7 +79,17 @@ class TruckOptimum:
         else:
             print("WARNING: Using default Flask paths due to missing template/static folders")
             self.app = Flask(__name__)
-        self.app.secret_key = 'truckoptimum-2025'
+
+        # SECURITY FIX: Secret key must be from environment variable
+        # Never use hardcoded secrets in production
+        secret_key = os.environ.get('SECRET_KEY')
+        if not secret_key:
+            # Only allow fallback in development/testing
+            secret_key = secrets.token_hex(32)
+            print("WARNING: No SECRET_KEY environment variable set. Generated temporary key.")
+            print("WARNING: Set SECRET_KEY environment variable for production use!")
+
+        self.app.secret_key = secret_key
         self.db_path = self.get_db_path()
 
         # Setup Flask error handling
@@ -266,6 +276,12 @@ class TruckOptimum:
                     account_locked_until DATETIME
                 )
             ''')
+
+            # BUG FIX #7: Add performance indexes for frequently queried columns
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active)')
             
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS user_sessions (
@@ -280,6 +296,11 @@ class TruckOptimum:
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 )
             ''')
+
+            # BUG FIX #7: Add performance indexes for session lookups (critical for every request)
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_user_sessions_session_id ON user_sessions(session_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at)')
             
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS user_activity_log (
@@ -404,7 +425,7 @@ class TruckOptimum:
         pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         return re.match(pattern, email) is not None
 
-    def validate_password_strength(self, password: str) -> tuple[bool, str]:
+    def validate_password_strength(self, password: str) -> Tuple[bool, str]:
         """Validate password meets security requirements"""
         if len(password) < 8:
             return False, "Password must be at least 8 characters long"
