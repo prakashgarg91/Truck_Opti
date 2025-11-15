@@ -211,6 +211,8 @@ class ExtremePointsPackerFFD:
                         )
 
                         if not self._has_collision(test_placement, placements):
+                            # Mark this extreme point as used (infeasible)
+                            ep.feasible = False
                             return test_placement
 
         return None
@@ -218,7 +220,10 @@ class ExtremePointsPackerFFD:
     def _update_extreme_points(self, placement: CartonPlacement, truck_spec: Dict):
         """
         Update extreme points after placing a carton
-        Based on Crainic et al. (2008) algorithm
+        Based on Crainic et al. (2008) algorithm - CORRECTED VERSION
+
+        Key fix: New extreme points should allow full remaining truck space,
+        not just the dimensions of the placed box.
         """
         l, w, h = placement.dimensions
         x, y, z = placement.position.x, placement.position.y, placement.position.z
@@ -226,25 +231,37 @@ class ExtremePointsPackerFFD:
         # Generate new extreme points from the three faces of the placed box
         new_eps = []
 
-        # EP1: Top face (above the box)
+        # EP1: Top face (above the box) - allows full remaining length and width
         if z + h < truck_spec['height']:
             new_eps.append(ExtremePoint(
                 position=Point3D(x, y, z + h),
-                max_dimensions=(l, w, truck_spec['height'] - (z + h))
+                max_dimensions=(
+                    truck_spec['length'] - x,  # Full remaining length
+                    truck_spec['width'] - y,    # Full remaining width
+                    truck_spec['height'] - (z + h)  # Remaining height
+                )
             ))
 
-        # EP2: Right face (to the right of the box)
+        # EP2: Right face (to the right of the box) - allows full remaining width
         if y + w < truck_spec['width']:
             new_eps.append(ExtremePoint(
                 position=Point3D(x, y + w, z),
-                max_dimensions=(l, truck_spec['width'] - (y + w), h)
+                max_dimensions=(
+                    truck_spec['length'] - x,  # Full remaining length
+                    truck_spec['width'] - (y + w),  # Remaining width
+                    truck_spec['height'] - z  # Full remaining height
+                )
             ))
 
-        # EP3: Front face (in front of the box)
+        # EP3: Front face (in front of the box) - allows full remaining length
         if x + l < truck_spec['length']:
             new_eps.append(ExtremePoint(
                 position=Point3D(x + l, y, z),
-                max_dimensions=(truck_spec['length'] - (x + l), w, h)
+                max_dimensions=(
+                    truck_spec['length'] - (x + l),  # Remaining length
+                    truck_spec['width'] - y,  # Full remaining width
+                    truck_spec['height'] - z  # Full remaining height
+                )
             ))
 
         # Add new extreme points
@@ -255,12 +272,21 @@ class ExtremePointsPackerFFD:
         self._remove_dominated_extreme_points()
 
     def _remove_dominated_extreme_points(self):
-        """Remove extreme points dominated by others"""
+        """
+        Remove extreme points dominated by others
+
+        Key fix: Only consider feasible points for domination check
+        """
         eps_list = list(self.extreme_points)
 
         for i, ep1 in enumerate(eps_list):
+            # Only check domination for feasible points
+            if not ep1.feasible:
+                continue
+
             for j, ep2 in enumerate(eps_list):
-                if i != j and not ep1.dominated:
+                # Only compare against other feasible points
+                if i != j and ep2.feasible and not ep1.dominated:
                     # EP1 is dominated by EP2 if EP2 is better or equal in all dimensions
                     if (ep2.position.x <= ep1.position.x and
                         ep2.position.y <= ep1.position.y and
@@ -401,6 +427,7 @@ class ExtremePointsPackerBFD:
 
         best_placement = None
         best_score = float('inf')  # Lower is better (less wasted space)
+        best_ep = None
 
         for ep in sorted_eps:
             for orientation in orientations:
@@ -437,32 +464,56 @@ class ExtremePointsPackerBFD:
                             if total_score < best_score:
                                 best_score = total_score
                                 best_placement = test_placement
+                                best_ep = ep
+
+        # Mark the used extreme point as infeasible
+        if best_placement and best_ep:
+            best_ep.feasible = False
 
         return best_placement
 
     def _update_extreme_points(self, placement: CartonPlacement, truck_spec: Dict):
-        """Update extreme points (same as FFD)"""
+        """
+        Update extreme points (same as FFD) - CORRECTED VERSION
+
+        Key fix: New extreme points should allow full remaining truck space
+        """
         l, w, h = placement.dimensions
         x, y, z = placement.position.x, placement.position.y, placement.position.z
 
         new_eps = []
 
+        # EP1: Top face - full remaining dimensions
         if z + h < truck_spec['height']:
             new_eps.append(ExtremePoint(
                 position=Point3D(x, y, z + h),
-                max_dimensions=(l, w, truck_spec['height'] - (z + h))
+                max_dimensions=(
+                    truck_spec['length'] - x,
+                    truck_spec['width'] - y,
+                    truck_spec['height'] - (z + h)
+                )
             ))
 
+        # EP2: Right face - full remaining dimensions
         if y + w < truck_spec['width']:
             new_eps.append(ExtremePoint(
                 position=Point3D(x, y + w, z),
-                max_dimensions=(l, truck_spec['width'] - (y + w), h)
+                max_dimensions=(
+                    truck_spec['length'] - x,
+                    truck_spec['width'] - (y + w),
+                    truck_spec['height'] - z
+                )
             ))
 
+        # EP3: Front face - full remaining dimensions
         if x + l < truck_spec['length']:
             new_eps.append(ExtremePoint(
                 position=Point3D(x + l, y, z),
-                max_dimensions=(truck_spec['length'] - (x + l), w, h)
+                max_dimensions=(
+                    truck_spec['length'] - (x + l),
+                    truck_spec['width'] - y,
+                    truck_spec['height'] - z
+                )
             ))
 
         for ep in new_eps:
@@ -471,12 +522,21 @@ class ExtremePointsPackerBFD:
         self._remove_dominated_extreme_points()
 
     def _remove_dominated_extreme_points(self):
-        """Remove dominated extreme points"""
+        """
+        Remove dominated extreme points
+
+        Key fix: Only consider feasible points for domination check
+        """
         eps_list = list(self.extreme_points)
 
         for i, ep1 in enumerate(eps_list):
+            # Only check domination for feasible points
+            if not ep1.feasible:
+                continue
+
             for j, ep2 in enumerate(eps_list):
-                if i != j and not ep1.dominated:
+                # Only compare against other feasible points
+                if i != j and ep2.feasible and not ep1.dominated:
                     if (ep2.position.x <= ep1.position.x and
                         ep2.position.y <= ep1.position.y and
                         ep2.position.z <= ep1.position.z and
