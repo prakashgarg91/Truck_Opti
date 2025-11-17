@@ -1,0 +1,9 @@
+repos:
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.1.0
+    hooks:
+      - id: flake8
+        name: Checking Python code with flake8
+        args:
+          - apps/web/app
+          - apps/web/tests

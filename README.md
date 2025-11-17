@@ -330,3 +330,15 @@ The application uses Puppeteer for end-to-end testing.
    ```bash
    npm test
    ```
+
+## Pre-commit Quality Checks
+
+Use the bundled `.pre-commit-config.yaml` to lint the authoritative Python sources before committing changes:
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+The hook executes `flake8` against `apps/web/app` and its tests, ensuring the linter runs successfully even when invoked from the repository root.

@@ -1,0 +1,30 @@
+2025-11-16 16:11:12,116 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-11-16 16:11:12,116 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-11-16 16:11:12,117 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-11-16 16:11:12,117 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-11-16 16:11:12,117 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-11-16 16:11:12,117 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\dist
+2025-11-16 16:11:12,117 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: D:\Github\Truck_Opti\dist\TruckOpti_Enterprise_LATEST.exe
+2025-11-16 16:11:12,117 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-11-16 16:11:12,117 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-11-16 16:11:12,117 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-11-16 16:11:12,117 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-11-16 16:11:12,118 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-11-16 16:11:12,172 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-11-16 16:11:12,172 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:286 - ============================================================
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:287 - TRUCKOPTIMUM APPLICATION STARTING
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:288 - ============================================================
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:289 - Python Version: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:290 - Platform: win32
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:291 - Working Directory: D:\Github\Truck_Opti\dist
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:292 - Executable Path: D:\Github\Truck_Opti\dist\TruckOpti_Enterprise_LATEST.exe
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:293 - Error Logging: ENABLED
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:294 - Debug Logging: ENABLED
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:295 - Performance Monitoring: ENABLED
+2025-11-16 16:11:13,143 - TruckOptimum - INFO - error_logger.py:296 - ============================================================
+2025-11-16 16:11:13,146 - TruckOptimum.Debug - DEBUG - error_logger.py:149 - [STARTUP] Advanced 3D algorithms engine initialized | Details: None
+2025-11-16 16:11:13,194 - werkzeug - INFO - _internal.py:97 - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-11-16 16:11:13,194 - werkzeug - INFO - _internal.py:97 - [33mPress CTRL+C to quit[0m
