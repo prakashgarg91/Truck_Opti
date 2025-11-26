@@ -4,12 +4,17 @@ TruckOpti Microsoft - Skyline Bottom Left Algorithm
 This module implements the Skyline Bottom Left algorithm for 3D bin packing.
 """
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from .base_algorithm import BasePackingAlgorithm
 from ..models.truck import Truck
 from ..models.carton import Carton
 from ..models.packed_carton import PackedCarton
 from ..models.coordinates import Coordinates3D
+
+try:
+    from ..config.scenario_config import ScenarioConfig
+except ImportError:
+    ScenarioConfig = None
 
 
 class SkylineBottomLeftAlgorithm(BasePackingAlgorithm):
@@ -20,10 +25,11 @@ class SkylineBottomLeftAlgorithm(BasePackingAlgorithm):
     at the bottom-left position of available spaces.
     """
     
-    def __init__(self):
+    def __init__(self, config: Optional['ScenarioConfig'] = None):
         super().__init__(
             name="Skyline Bottom Left",
-            description="Skyline Bottom Left algorithm for 3D bin packing"
+            description="Skyline Bottom Left algorithm for 3D bin packing",
+            config=config
         )
     
     def pack_cartons(self, cartons: List[Carton], truck: Truck, 

@@ -16,6 +16,14 @@ from ..models.carton import Carton
 from ..models.packed_carton import PackedCarton
 from ..models.coordinates import Coordinates3D
 
+try:
+    from ..config.scenario_config import ScenarioConfig, get_scenario_config, ScenarioType
+except ImportError:
+    # Graceful fallback if config module not available
+    ScenarioConfig = None
+    ScenarioType = None
+    get_scenario_config = None
+
 
 class BasePackingAlgorithm(ABC):
     """
@@ -25,20 +33,26 @@ class BasePackingAlgorithm(ABC):
     for all packing algorithms in the TruckOpti system.
     """
     
-    def __init__(self, name: str, description: str):
+    def __init__(self, name: str, description: str, config: Optional['ScenarioConfig'] = None):
         """
         Initialize the base algorithm.
         
         Args:
             name: Algorithm name
             description: Algorithm description
+            config: Optional scenario configuration
         """
         self.name = name
         self.description = description
+        self.config = config
         self.logger = logging.getLogger(f"TruckOpti.{self.__class__.__name__}")
         self.execution_stats = {}
         self.start_time = None
         self.end_time = None
+        
+        # Log configuration if provided
+        if self.config:
+            self.logger.info(f"Initialized with scenario: {self.config.name}")
     
     @abstractmethod
     def pack_cartons(self, cartons: List[Carton], truck: Truck, 
@@ -139,7 +153,7 @@ class BasePackingAlgorithm(ABC):
     
     def find_valid_position(self, carton: Carton, truck: Truck, 
                           existing_cartons: List[PackedCarton],
-                          search_grid_size: float = 1.0) -> Optional[Coordinates3D]:
+                          search_grid_size: Optional[float] = None) -> Optional[Coordinates3D]:
         """
         Find a valid position for a carton in the truck.
         
@@ -149,11 +163,17 @@ class BasePackingAlgorithm(ABC):
             carton: Carton to position
             truck: Target truck
             existing_cartons: Already packed cartons
-            search_grid_size: Grid size for search (smaller = more precise, slower)
+            search_grid_size: Grid size for search (None = use config, smaller = more precise, slower)
             
         Returns:
             Optional[Coordinates3D]: Valid position or None if no position found
         """
+        # Use scenario config grid size if not explicitly provided
+        if search_grid_size is None and self.config:
+            min_dimension = min(carton.length, carton.width, carton.height)
+            search_grid_size = min_dimension * self.config.algorithm_params.grid_size_factor
+        elif search_grid_size is None:
+            search_grid_size = 1.0
         max_x = truck.constraints.max_length - carton.length
         max_y = truck.constraints.max_width - carton.width
         max_z = truck.constraints.max_height - carton.height

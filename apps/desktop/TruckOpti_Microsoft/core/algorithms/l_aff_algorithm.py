@@ -22,6 +22,19 @@ from ..models.carton import Carton
 from ..models.packed_carton import PackedCarton
 from ..models.coordinates import Coordinates3D
 
+try:
+    from ..config.scenario_config import ScenarioConfig
+except ImportError:
+    ScenarioConfig = None
+
+try:
+    from ..utils.platform_detector import get_optimal_worker_count
+except ImportError:
+    # Fallback if platform_detector not available
+    def get_optimal_worker_count():
+        import multiprocessing
+        return max(1, multiprocessing.cpu_count() // 2)
+
 
 class LAFFAlgorithm(BasePackingAlgorithm):
     """
@@ -31,15 +44,28 @@ class LAFFAlgorithm(BasePackingAlgorithm):
     multi-pass optimization and RANSAC-based sampling for enhanced performance.
     """
     
-    def __init__(self):
+    def __init__(self, config: Optional['ScenarioConfig'] = None):
         """Initialize the Advanced LAFF Algorithm."""
         super().__init__(
             name="Advanced LAFF",
-            description="Largest Area Fit First with RANSAC optimization and multi-pass refinement"
+            description="Largest Area Fit First with RANSAC optimization and multi-pass refinement",
+            config=config
         )
-        self.ransac_iterations = 100
-        self.optimization_passes = 3
-        self.parallel_workers = 4  # Microsoft multi-core optimization
+        
+        # Use scenario config if available, otherwise use defaults
+        if config:
+            self.ransac_iterations = config.algorithm_params.ransac_iterations
+            self.optimization_passes = config.algorithm_params.optimization_passes
+            self.parallel_workers = config.algorithm_params.parallel_workers or get_optimal_worker_count()
+        else:
+            self.ransac_iterations = 100
+            self.optimization_passes = 3
+            self.parallel_workers = get_optimal_worker_count()
+        
+        self.logger.info(
+            f"LAFF initialized: {self.ransac_iterations} RANSAC iterations, "
+            f"{self.optimization_passes} passes, {self.parallel_workers} workers"
+        )
         
     def pack_cartons(self, cartons: List[Carton], truck: Truck, 
                     max_iterations: int = 1000) -> Tuple[List[PackedCarton], Dict[str, Any]]:
@@ -654,7 +680,7 @@ class LAFFAlgorithm(BasePackingAlgorithm):
             'ransac_iterations': self.ransac_iterations,
             'optimization_passes': self.optimization_passes,
             'parallel_workers': self.parallel_workers,
-            'failed_cartons_count': len(result['failed_cartonsons']),
+            'failed_cartons_count': len(result['failed_cartons']),
             'pack_score': result['score'],
             'algorithm_info': self.get_algorithm_info()
         })

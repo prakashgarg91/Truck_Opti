@@ -47,6 +47,20 @@ class Carton:
     def __post_init__(self):
         """Validate carton properties after initialization."""
         if self.length <= 0 or self.width <= 0 or self.height <= 0:
-            raise ValueError(f"C
-
-[Response interrupted by a tool use result. Only one tool may be used at a time and should be placed at the end of the message.]
+            raise ValueError(f"Carton dimensions must be positive: {self.length}x{self.width}x{self.height}")
+        
+        if self.weight <= 0:
+            raise ValueError(f"Carton weight must be positive: {self.weight}")
+    
+    @property
+    def volume(self) -> float:
+        """Calculate carton volume."""
+        return self.length * self.width * self.height
+    
+    def __str__(self) -> str:
+        """String representation."""
+        return f"Carton({self.id}: {self.length}x{self.width}x{self.height}, {self.weight}kg)"
+    
+    def __repr__(self) -> str:
+        """Detailed representation."""
+        return f"Carton(id={self.id}, name='{self.name}', dimensions={self.length}x{self.width}x{self.height})"
