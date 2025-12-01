@@ -26,6 +26,8 @@ class Algorithm3DType(Enum):
     EXTREME_POINTS = "extreme_points"  # Extreme Points Method
     HYBRID_GENETIC = "hybrid_genetic"  # Hybrid Genetic + Local Search
     DEEP_REINFORCEMENT = "deep_rl"  # Deep Reinforcement Learning
+    DWAVE_SCIPY = "dwave_scipy"  # Mathematical optimization (local)
+    DWAVE_QUANTUM = "dwave_quantum"  # Quantum hybrid (cloud - future)
 
 
 @dataclass

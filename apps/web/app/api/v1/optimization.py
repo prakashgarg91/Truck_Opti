@@ -7,6 +7,7 @@ from flask import Blueprint, request, jsonify
 from app.models import TruckType, CartonType, PackingJob
 from app.packer import pack_cartons, calculate_optimal_truck_combination
 from app.core.logging import get_logger
+from app.core.advanced_packer_bridge import packer_bridge
 
 logger = get_logger(__name__)
 
@@ -290,6 +291,98 @@ def get_packing_job(job_id: int):
             'error': 'Packing job not found',
             'message': str(e)
         }), 404
+
+
+@optimization_bp.route('/pack-advanced', methods=['POST'])
+def pack_advanced():
+    """
+    Advanced packing using multiple algorithms
+    Request body:
+    {
+        "algorithm": "guillotine|maxrects|skyline",
+        "trucks": [{"id": 1, "quantity": 2}, ...],
+        "cartons": [{"type": "box_a", "quantity": 10}, ...],
+        "optimization_goal": "space|cost|weight|truck_count",
+        "options": {"rotation": true, "heuristic": "best_fit"}
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if not data or 'algorithm' not in data or 'trucks' not in data or 'cartons' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required fields: algorithm, trucks, cartons'
+            }), 400
+
+        algorithm = data.get('algorithm', 'guillotine')
+        trucks = data.get('trucks', [])
+        cartons = data.get('cartons', [])
+        optimization_goal = data.get('optimization_goal', 'space')
+        options = data.get('options', {})
+
+        if not trucks or not cartons:
+            return jsonify({
+                'success': False,
+                'error': 'Trucks and cartons lists cannot be empty'
+            }), 400
+
+        # Use advanced packer bridge
+        result = packer_bridge.pack(
+            algorithm=algorithm,
+            trucks=trucks,
+            cartons=cartons,
+            optimization_goal=optimization_goal,
+            options=options
+        )
+
+        return jsonify({
+            'success': True,
+            'data': result
+        }), 200
+
+    except ValueError as e:
+        logger.warning(f"Invalid parameter in advanced packing: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Invalid parameter',
+            'message': str(e)
+        }), 400
+
+    except Exception as e:
+        logger.error(f"Error in advanced packing: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to perform advanced packing',
+            'message': str(e)
+        }), 500
+
+
+@optimization_bp.route('/algorithms', methods=['GET'])
+def get_algorithms():
+    """
+    Get list of available packing algorithms
+    Returns: {
+        "success": true,
+        "data": ["guillotine", "maxrects", "skyline", ...]
+    }
+    """
+    try:
+        # Get available algorithms from packer bridge
+        algorithms = packer_bridge.get_available_algorithms()
+
+        return jsonify({
+            'success': True,
+            'data': algorithms
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error getting algorithms: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to retrieve algorithms',
+            'message': str(e)
+        }), 500
 
 
 __all__ = ['optimization_bp']

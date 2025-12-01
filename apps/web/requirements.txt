@@ -116,3 +116,11 @@ brotli==1.1.0
 
 # Internationalization
 Flask-Babel==4.0.0
+
+# Advanced 3D Bin Packing - Mathematical Optimization
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Advanced 3D Bin Packing - D-Wave Mathematical Optimization
+# dimod>=0.12.0  # Uncomment when ready for quantum solver
+# dwave-system>=1.18.0  # Optional - D-Wave quantum cloud
