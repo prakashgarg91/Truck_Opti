@@ -8,39 +8,50 @@
         'MEDIUM': 30,
         'LOW': 20
     };
+    
+    // Flag to prevent recursive error capture
+    let isCapturing = false;
 
     // Error capture function
     function captureError(error, context = {}) {
-        const errorData = {
-            message: error.message,
-            name: error.name,
-            stack: error.stack,
-            timestamp: new Date().toISOString(),
-            url: window.location.href,
-            context: {
-                ...context,
-                userAgent: navigator.userAgent,
-                screenResolution: `${window.screen.width}x${window.screen.height}`,
-                browserLanguage: navigator.language
-            }
-        };
+        // Prevent infinite recursion
+        if (isCapturing) return;
+        isCapturing = true;
+        
+        try {
+            const errorData = {
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                context: {
+                    ...context,
+                    userAgent: navigator.userAgent,
+                    screenResolution: `${window.screen.width}x${window.screen.height}`,
+                    browserLanguage: navigator.language
+                }
+            };
 
-        // Determine error level
-        let errorLevel = 'MEDIUM';
-        if (error.name === 'Error') errorLevel = 'HIGH';
-        if (error.name === 'TypeError' || error.name === 'ReferenceError') errorLevel = 'CRITICAL';
+            // Determine error level
+            let errorLevel = 'MEDIUM';
+            if (error.name === 'Error') errorLevel = 'HIGH';
+            if (error.name === 'TypeError' || error.name === 'ReferenceError') errorLevel = 'CRITICAL';
 
-        // Send to backend
-        fetch(ERROR_CAPTURE_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                error: errorData,
-                level: errorLevel
-            })
-        }).catch(console.error);
+            // Send to backend
+            fetch(ERROR_CAPTURE_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    error: errorData,
+                    level: errorLevel
+                })
+            }).catch(() => {}); // Silent catch to avoid recursion
+        } finally {
+            isCapturing = false;
+        }
     }
 
     // Global error handler
@@ -59,24 +70,8 @@
         });
     });
 
-    // Console error capture
-    const originalConsoleError = console.error;
-    console.error = function() {
-        // Call original console.error
-        originalConsoleError.apply(console, arguments);
-
-        // Capture the error
-        const error = arguments[0];
-        if (error instanceof Error) {
-            captureError(error, {
-                type: 'Console Error'
-            });
-        } else if (typeof error === 'string') {
-            captureError(new Error(error), {
-                type: 'Console Error'
-            });
-        }
-    };
+    // Note: We no longer wrap console.error to avoid infinite recursion
+    // with other logging systems like debug_frontend.js
 
     // Expose error capture for manual use
     window.TruckOptiErrorCapture = {

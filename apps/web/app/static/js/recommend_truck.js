@@ -586,22 +586,37 @@ function handleFormSubmission(e) {
             }
         })
         .then(html => {
-            // Parse the response and redirect to results
-            console.log('Form submission successful, redirecting to results');
+            // Replace the entire page with the response HTML that contains results
+            console.log('Form submission successful, replacing page content with results');
             
             // Hide progress modal first
             const modal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
             if (modal) modal.hide();
             
-            // Instead of replacing HTML, redirect to the results page
-            // The server should return a redirect response or JSON with redirect URL
-            if (html.includes('recommendations')) {
-                // If HTML contains recommendations, we can update specific sections
-                window.location.reload();
-            } else {
-                // Otherwise reload the page to show results
-                window.location.reload();
-            }
+            // Replace the entire document with the new HTML containing recommendations
+            // This preserves the server-rendered results instead of losing them with reload()
+            document.open();
+            document.write(html);
+            document.close();
+            
+            // After document.write, hide the loading screen that appears in the new HTML
+            // and scroll to results
+            setTimeout(() => {
+                // Hide loading screen from the new document
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
+                }
+                
+                // Scroll to results section if it exists
+                const resultsSection = document.getElementById('recommendationResults') || 
+                                       document.querySelector('.recommendation-results') ||
+                                       document.querySelector('[id*="result"]') ||
+                                       document.querySelector('h5');
+                if (resultsSection) {
+                    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
         })
         .catch(error => {
             console.error('Form submission failed:', error);

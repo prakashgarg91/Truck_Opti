@@ -107,7 +107,7 @@
               </div>
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="text-muted">Total Volume:</span>
-                <strong class="text-info">{{ total_vol }} m³</strong>
+                <strong class="text-info">{{ "%.2f"|format(total_vol|float) }} m³</strong>
               </div>
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="text-muted">Optimization Goal:</span>

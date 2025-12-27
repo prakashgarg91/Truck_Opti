@@ -9,6 +9,15 @@ class TruckOptiFrontendDebugLogger {
         this.debugEnabled = true;
         this.logBuffer = [];
         this.maxBufferSize = 1000;
+        this.isLogging = false;  // Flag to prevent recursive logging
+        
+        // Store original console methods BEFORE any overriding
+        this.originalConsole = {
+            log: console.log.bind(console),
+            error: console.error.bind(console),
+            warn: console.warn.bind(console),
+            info: console.info.bind(console)
+        };
         
         // Initialize logging
         this.initializeLogging();
@@ -25,27 +34,30 @@ class TruckOptiFrontendDebugLogger {
     }
     
     initializeLogging() {
-        // Override console methods to capture all logs
-        const originalConsole = {
-            log: console.log,
-            error: console.error,
-            warn: console.warn,
-            info: console.info
-        };
+        const self = this;
         
+        // Override console methods to capture all logs
+        // Use arrow functions to prevent 'this' binding issues
         console.log = (...args) => {
-            this.logEvent('CONSOLE_LOG', { message: args.join(' ') });
-            originalConsole.log(...args);
+            // Prevent recursive logging
+            if (!self.isLogging) {
+                self.logEvent('CONSOLE_LOG', { message: args.join(' ') });
+            }
+            self.originalConsole.log(...args);
         };
         
         console.error = (...args) => {
-            this.logEvent('CONSOLE_ERROR', { message: args.join(' ') });
-            originalConsole.error(...args);
+            if (!self.isLogging) {
+                self.logEvent('CONSOLE_ERROR', { message: args.join(' ') });
+            }
+            self.originalConsole.error(...args);
         };
         
         console.warn = (...args) => {
-            this.logEvent('CONSOLE_WARN', { message: args.join(' ') });
-            originalConsole.warn(...args);
+            if (!self.isLogging) {
+                self.logEvent('CONSOLE_WARN', { message: args.join(' ') });
+            }
+            self.originalConsole.warn(...args);
         };
         
         // Capture all user interactions
@@ -240,30 +252,37 @@ class TruckOptiFrontendDebugLogger {
     
     logEvent(eventType, data) {
         if (!this.debugEnabled) return;
+        if (this.isLogging) return;  // Prevent recursive logging
         
-        const logEntry = {
-            sessionId: this.sessionId,
-            timestamp: new Date().toISOString(),
-            eventType: eventType,
-            data: data,
-            url: window.location.href,
-            userAgent: navigator.userAgent
-        };
+        this.isLogging = true;
         
-        // Add to buffer
-        this.logBuffer.push(logEntry);
-        
-        // Maintain buffer size
-        if (this.logBuffer.length > this.maxBufferSize) {
-            this.logBuffer.shift();
-        }
-        
-        // Console output for development
-        console.log(`[TruckOpti Debug] ${eventType}:`, data);
-        
-        // Send to server if critical
-        if (this.isCriticalEvent(eventType)) {
-            this.sendToServer(logEntry);
+        try {
+            const logEntry = {
+                sessionId: this.sessionId,
+                timestamp: new Date().toISOString(),
+                eventType: eventType,
+                data: data,
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            };
+            
+            // Add to buffer
+            this.logBuffer.push(logEntry);
+            
+            // Maintain buffer size
+            if (this.logBuffer.length > this.maxBufferSize) {
+                this.logBuffer.shift();
+            }
+            
+            // Console output for development - use original console to prevent recursion
+            this.originalConsole.log(`[TruckOpti Debug] ${eventType}:`, data);
+            
+            // Send to server if critical
+            if (this.isCriticalEvent(eventType)) {
+                this.sendToServer(logEntry);
+            }
+        } finally {
+            this.isLogging = false;
         }
     }
     
