@@ -1,0 +1,53 @@
+2025-12-27 09:55:28 | INFO     | SYSTEM EVENT: FORM_DATA_EXTRACTED
+Details: {
+  "carton_type_id": "1",
+  "quantity": "50",
+  "optimization_goal": "balanced"
+}
+2025-12-27 09:55:28 | INFO     | SYSTEM EVENT: ALGORITHM_PREPARATION
+Details: {
+  "carton_count": 50,
+  "truck_count": 17,
+  "advanced_packer_available": true,
+  "optimization_goal": "balanced"
+}
+2025-12-27 09:58:44 | INFO     | SYSTEM EVENT: FORM_DATA_EXTRACTED
+Details: {
+  "carton_type_id": "1",
+  "quantity": "100",
+  "optimization_goal": "balanced"
+}
+2025-12-27 09:58:44 | INFO     | SYSTEM EVENT: ALGORITHM_PREPARATION
+Details: {
+  "carton_count": 100,
+  "truck_count": 17,
+  "advanced_packer_available": true,
+  "optimization_goal": "balanced"
+}
+2025-12-27 09:59:49 | INFO     | SYSTEM EVENT: FORM_DATA_EXTRACTED
+Details: {
+  "carton_type_id": "1",
+  "quantity": "100",
+  "optimization_goal": "balanced"
+}
+2025-12-27 09:59:49 | INFO     | SYSTEM EVENT: ALGORITHM_PREPARATION
+Details: {
+  "carton_count": 100,
+  "truck_count": 17,
+  "advanced_packer_available": true,
+  "optimization_goal": "balanced"
+}
+2025-12-27 10:18:21 | INFO     | SYSTEM EVENT: FRONTEND_DEBUG_LOG
+Details: {
+  "frontend_session_id": "FRONTEND_1766810901853_qqwu5r1ir",
+  "event_type": "JAVASCRIPT_ERROR",
+  "frontend_data": {
+    "message": "Uncaught SyntaxError: Unexpected token ')'",
+    "filename": "http://127.0.0.1:5000/analytics",
+    "lineno": 1320,
+    "colno": 10,
+    "stack": "SyntaxError: Unexpected token ')'"
+  },
+  "frontend_url": "http://127.0.0.1:5000/analytics",
+  "frontend_timestamp": "2025-12-27T04:48:21.859Z"
+}

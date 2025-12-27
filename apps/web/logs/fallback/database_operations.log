@@ -1,0 +1,63 @@
+2025-12-27 09:54:48 | INFO     | DATABASE: QUERY_START on carton_type,truck_type
+Data: {
+  "action": "load_all_types"
+}
+2025-12-27 09:54:48 | INFO     | DATABASE: QUERY_SUCCESS on carton_type,truck_type
+Data: {
+  "carton_count": 19,
+  "truck_count": 17
+}
+2025-12-27 09:55:28 | INFO     | DATABASE: QUERY_START on carton_type,truck_type
+Data: {
+  "action": "load_all_types"
+}
+2025-12-27 09:55:28 | INFO     | DATABASE: QUERY_SUCCESS on carton_type,truck_type
+Data: {
+  "carton_count": 19,
+  "truck_count": 17
+}
+2025-12-27 09:55:28 | INFO     | DATABASE: QUERY_START on carton_type,truck_type
+Data: {
+  "action": "load_all_types"
+}
+2025-12-27 09:55:28 | INFO     | DATABASE: QUERY_SUCCESS on carton_type,truck_type
+Data: {
+  "carton_count": 19,
+  "truck_count": 17
+}
+2025-12-27 09:58:18 | INFO     | DATABASE: QUERY_START on carton_type,truck_type
+Data: {
+  "action": "load_all_types"
+}
+2025-12-27 09:58:18 | INFO     | DATABASE: QUERY_SUCCESS on carton_type,truck_type
+Data: {
+  "carton_count": 19,
+  "truck_count": 17
+}
+2025-12-27 09:58:44 | INFO     | DATABASE: QUERY_START on carton_type,truck_type
+Data: {
+  "action": "load_all_types"
+}
+2025-12-27 09:58:44 | INFO     | DATABASE: QUERY_SUCCESS on carton_type,truck_type
+Data: {
+  "carton_count": 19,
+  "truck_count": 17
+}
+2025-12-27 09:59:33 | INFO     | DATABASE: QUERY_START on carton_type,truck_type
+Data: {
+  "action": "load_all_types"
+}
+2025-12-27 09:59:33 | INFO     | DATABASE: QUERY_SUCCESS on carton_type,truck_type
+Data: {
+  "carton_count": 19,
+  "truck_count": 17
+}
+2025-12-27 09:59:49 | INFO     | DATABASE: QUERY_START on carton_type,truck_type
+Data: {
+  "action": "load_all_types"
+}
+2025-12-27 09:59:49 | INFO     | DATABASE: QUERY_SUCCESS on carton_type,truck_type
+Data: {
+  "carton_count": 19,
+  "truck_count": 17
+}
