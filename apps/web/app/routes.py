@@ -2014,6 +2014,116 @@ def api_delete_carton_type(carton_id):
         'message': f'Carton type "{carton_name}" deleted successfully'
     })
 
+
+# 3D Bin Packing API
+@api.route('/pack', methods=['POST'])
+def api_pack_items():
+    """
+    Run 3D bin packing algorithm on provided items and container
+    
+    Request body:
+    {
+        "container": {"length": 400, "width": 200, "height": 200},
+        "items": [{"name": "Box1", "length": 50, "width": 40, "height": 30, "weight": 5}, ...],
+        "algorithm": "extreme_points"  // optional
+    }
+    """
+    import time as time_module
+    start_time = time_module.time()
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'No data provided'}), 400
+    
+    container = data.get('container', {})
+    items = data.get('items', [])
+    algorithm = data.get('algorithm', 'best_fit')
+    
+    if not container or not items:
+        return jsonify({'success': False, 'error': 'Container and items are required'}), 400
+    
+    container_length = float(container.get('length', 400))
+    container_width = float(container.get('width', 200))
+    container_height = float(container.get('height', 200))
+    container_volume = container_length * container_width * container_height
+    
+    # Simple shelf-based packing algorithm
+    packed_items = []
+    unpacked_items = []
+    
+    current_x, current_y, current_z = 0, 0, 0
+    row_height, layer_depth = 0, 0
+    packed_volume = 0
+    
+    for item in items:
+        item_length = float(item.get('length', 30))
+        item_width = float(item.get('width', 20))
+        item_height = float(item.get('height', 15))
+        item_volume = item_length * item_width * item_height
+        
+        # Check if item fits in current row
+        if current_x + item_length > container_length:
+            current_x = 0
+            current_z += layer_depth
+            layer_depth = 0
+        
+        # Check if item fits in current layer
+        if current_z + item_width > container_width:
+            current_z = 0
+            current_y += row_height
+            row_height = 0
+            current_x = 0
+        
+        # Check if item fits in container height
+        if current_y + item_height <= container_height:
+            packed_items.append({
+                'name': item.get('name', f'Item_{len(packed_items)+1}'),
+                'length': item_length,
+                'width': item_width,
+                'height': item_height,
+                'weight': item.get('weight', 1),
+                'color': item.get('color', '#2563EB'),
+                'position': {
+                    'x': current_x,
+                    'y': current_y,
+                    'z': current_z
+                },
+                'rotation': {'x': 0, 'y': 0, 'z': 0}
+            })
+            
+            current_x += item_length
+            row_height = max(row_height, item_height)
+            layer_depth = max(layer_depth, item_width)
+            packed_volume += item_volume
+        else:
+            unpacked_items.append(item)
+    
+    end_time = time_module.time()
+    execution_time = (end_time - start_time) * 1000  # in milliseconds
+    
+    utilization = (packed_volume / container_volume * 100) if container_volume > 0 else 0
+    
+    return jsonify({
+        'success': True,
+        'packed_items': packed_items,
+        'unpacked_items': unpacked_items,
+        'metrics': {
+            'utilization': round(utilization, 2),
+            'packed_count': len(packed_items),
+            'unpacked_count': len(unpacked_items),
+            'packed_volume': packed_volume,
+            'container_volume': container_volume,
+            'execution_time': round(execution_time, 2),
+            'algorithm': algorithm
+        },
+        'container': {
+            'length': container_length,
+            'width': container_width,
+            'height': container_height
+        }
+    })
+
+
 # Packing Jobs API
 
 

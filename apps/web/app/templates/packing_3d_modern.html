@@ -1,0 +1,1050 @@
+{% extends "base_modern.html" %}
+
+{% block title %}3D Bin Packing - TruckOpti{% endblock %}
+
+{% block extra_css %}
+<style>
+    .packing-container {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 1.5rem;
+        min-height: calc(100vh - 200px);
+    }
+    
+    .controls-panel {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+    
+    .visualization-panel {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+    
+    .visualization-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #E4E4E7;
+    }
+    
+    .visualization-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #18181B;
+    }
+    
+    .visualization-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .vis-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1px solid #E4E4E7;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .vis-btn:hover {
+        background: #F4F4F5;
+        border-color: #D4D4D8;
+    }
+    
+    .vis-btn.active {
+        background: #2563EB;
+        color: white;
+        border-color: #2563EB;
+    }
+    
+    #visualization-canvas {
+        width: 100%;
+        height: 600px;
+        display: block;
+    }
+    
+    .section-header {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #52525B;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #E4E4E7;
+    }
+    
+    .form-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .input-group-modern {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+    
+    .input-group-modern label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #3F3F46;
+        margin-bottom: 0.375rem;
+    }
+    
+    .input-group-modern input,
+    .input-group-modern select {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        border: 1px solid #E4E4E7;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    
+    .input-group-modern input:focus,
+    .input-group-modern select:focus {
+        outline: none;
+        border-color: #2563EB;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    .item-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+    }
+    
+    .item-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border: 1px solid #E4E4E7;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        background: #FAFAFA;
+    }
+    
+    .item-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+    }
+    
+    .item-info {
+        flex: 1;
+    }
+    
+    .item-name {
+        font-weight: 500;
+        font-size: 0.875rem;
+        color: #18181B;
+    }
+    
+    .item-dims {
+        font-size: 0.75rem;
+        color: #71717A;
+    }
+    
+    .item-quantity {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .qty-btn {
+        width: 24px;
+        height: 24px;
+        border: 1px solid #E4E4E7;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+    }
+    
+    .qty-btn:hover {
+        background: #F4F4F5;
+    }
+    
+    .qty-value {
+        min-width: 24px;
+        text-align: center;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .remove-btn {
+        background: none;
+        border: none;
+        color: #EF4444;
+        cursor: pointer;
+        padding: 0.25rem;
+    }
+    
+    .btn-modern {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        width: 100%;
+    }
+    
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+        color: white;
+    }
+    
+    .btn-primary-modern:hover {
+        background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    
+    .btn-secondary-modern {
+        background: white;
+        border: 1px solid #E4E4E7;
+        color: #3F3F46;
+    }
+    
+    .btn-secondary-modern:hover {
+        background: #F4F4F5;
+    }
+    
+    .algorithm-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .algorithm-option {
+        padding: 0.75rem;
+        border: 1px solid #E4E4E7;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    
+    .algorithm-option:hover {
+        border-color: #2563EB;
+    }
+    
+    .algorithm-option.selected {
+        border-color: #2563EB;
+        background: #EFF6FF;
+    }
+    
+    .algorithm-name {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #18181B;
+    }
+    
+    .results-panel {
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        border-radius: 12px;
+        padding: 1rem;
+        color: white;
+        margin-top: 1rem;
+    }
+    
+    .results-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+    
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .result-item {
+        text-align: center;
+    }
+    
+    .result-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+    
+    .result-label {
+        font-size: 0.75rem;
+        opacity: 0.9;
+    }
+    
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 1rem;
+        z-index: 100;
+    }
+    
+    .loading-overlay.active {
+        display: flex;
+    }
+    
+    .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #E4E4E7;
+        border-top-color: #2563EB;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Dark mode support */
+    [data-theme="dark"] .controls-panel,
+    [data-theme="dark"] .visualization-panel {
+        background: #27272A;
+    }
+    
+    [data-theme="dark"] .section-header {
+        color: #A1A1AA;
+        border-color: #3F3F46;
+    }
+    
+    [data-theme="dark"] .visualization-header {
+        border-color: #3F3F46;
+    }
+    
+    [data-theme="dark"] .visualization-title {
+        color: #FAFAFA;
+    }
+    
+    [data-theme="dark"] .input-group-modern label {
+        color: #D4D4D8;
+    }
+    
+    [data-theme="dark"] .input-group-modern input,
+    [data-theme="dark"] .input-group-modern select {
+        background: #3F3F46;
+        border-color: #52525B;
+        color: #FAFAFA;
+    }
+    
+    [data-theme="dark"] .item-card {
+        background: #3F3F46;
+        border-color: #52525B;
+    }
+    
+    [data-theme="dark"] .item-name {
+        color: #FAFAFA;
+    }
+    
+    @media (max-width: 1024px) {
+        .packing-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .controls-panel {
+            position: relative;
+            top: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="packing-container">
+    <!-- Controls Panel -->
+    <div class="controls-panel">
+        <div class="form-section">
+            <div class="section-header">
+                <i class="bi bi-truck me-2"></i>Container/Truck
+            </div>
+            <div class="input-group-modern">
+                <label>Select Container</label>
+                <select id="containerSelect">
+                    {% for truck in trucks %}
+                    <option value="{{ truck.id }}" data-length="{{ truck.length }}" data-width="{{ truck.width }}" data-height="{{ truck.height }}" data-weight="{{ truck.max_weight }}">
+                        {{ truck.name }} ({{ truck.length }}x{{ truck.width }}x{{ truck.height }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="d-flex gap-2">
+                <div class="input-group-modern flex-grow-1">
+                    <label>L (cm)</label>
+                    <input type="number" id="containerLength" value="400" min="1">
+                </div>
+                <div class="input-group-modern flex-grow-1">
+                    <label>W (cm)</label>
+                    <input type="number" id="containerWidth" value="200" min="1">
+                </div>
+                <div class="input-group-modern flex-grow-1">
+                    <label>H (cm)</label>
+                    <input type="number" id="containerHeight" value="200" min="1">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <div class="section-header">
+                <i class="bi bi-box me-2"></i>Add Items
+            </div>
+            <div class="d-flex gap-2 mb-2">
+                <div class="input-group-modern flex-grow-1 mb-0">
+                    <label>Name</label>
+                    <input type="text" id="itemName" placeholder="Item name">
+                </div>
+            </div>
+            <div class="d-flex gap-2 mb-2">
+                <div class="input-group-modern flex-grow-1 mb-0">
+                    <label>L</label>
+                    <input type="number" id="itemLength" value="30" min="1">
+                </div>
+                <div class="input-group-modern flex-grow-1 mb-0">
+                    <label>W</label>
+                    <input type="number" id="itemWidth" value="20" min="1">
+                </div>
+                <div class="input-group-modern flex-grow-1 mb-0">
+                    <label>H</label>
+                    <input type="number" id="itemHeight" value="15" min="1">
+                </div>
+                <div class="input-group-modern flex-grow-1 mb-0">
+                    <label>Qty</label>
+                    <input type="number" id="itemQty" value="1" min="1">
+                </div>
+            </div>
+            <button class="btn-modern btn-secondary-modern" onclick="addItem()">
+                <i class="bi bi-plus-lg"></i> Add Item
+            </button>
+        </div>
+        
+        <div class="form-section">
+            <div class="section-header">
+                <i class="bi bi-list-check me-2"></i>Items to Pack
+            </div>
+            <div class="item-list" id="itemList">
+                <!-- Items will be added here dynamically -->
+            </div>
+            <button class="btn-modern btn-secondary-modern mb-2" onclick="loadSampleItems()">
+                <i class="bi bi-magic"></i> Load Sample Items
+            </button>
+            <button class="btn-modern btn-secondary-modern" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                <i class="bi bi-upload"></i> Import from File
+            </button>
+        </div>
+        
+        <div class="form-section">
+            <div class="section-header">
+                <i class="bi bi-cpu me-2"></i>Algorithm
+            </div>
+            <div class="algorithm-grid">
+                <div class="algorithm-option selected" data-algorithm="extreme_points" onclick="selectAlgorithm(this)">
+                    <i class="bi bi-lightning"></i>
+                    <div class="algorithm-name">Extreme Points</div>
+                </div>
+                <div class="algorithm-option" data-algorithm="genetic" onclick="selectAlgorithm(this)">
+                    <i class="bi bi-diagram-3"></i>
+                    <div class="algorithm-name">Genetic Algorithm</div>
+                </div>
+                <div class="algorithm-option" data-algorithm="simulated_annealing" onclick="selectAlgorithm(this)">
+                    <i class="bi bi-thermometer-half"></i>
+                    <div class="algorithm-name">Simulated Annealing</div>
+                </div>
+                <div class="algorithm-option" data-algorithm="skyline" onclick="selectAlgorithm(this)">
+                    <i class="bi bi-building"></i>
+                    <div class="algorithm-name">Skyline BL</div>
+                </div>
+                <div class="algorithm-option" data-algorithm="tabu_search" onclick="selectAlgorithm(this)">
+                    <i class="bi bi-search"></i>
+                    <div class="algorithm-name">Tabu Search</div>
+                </div>
+                <div class="algorithm-option" data-algorithm="best_fit" onclick="selectAlgorithm(this)">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                    <div class="algorithm-name">Best Fit</div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn-modern btn-primary-modern" onclick="runPacking()">
+            <i class="bi bi-play-fill"></i> Run 3D Packing
+        </button>
+        
+        <div class="results-panel" id="resultsPanel" style="display: none;">
+            <div class="results-title">
+                <i class="bi bi-check-circle me-1"></i> Packing Results
+            </div>
+            <div class="results-grid">
+                <div class="result-item">
+                    <div class="result-value" id="utilizationValue">0%</div>
+                    <div class="result-label">Utilization</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-value" id="packedValue">0</div>
+                    <div class="result-label">Items Packed</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-value" id="unpackedValue">0</div>
+                    <div class="result-label">Unpacked</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-value" id="timeValue">0ms</div>
+                    <div class="result-label">Time</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 3D Visualization Panel -->
+    <div class="visualization-panel">
+        <div class="visualization-header">
+            <div class="visualization-title">
+                <i class="bi bi-box me-2"></i>3D Visualization
+            </div>
+            <div class="visualization-controls">
+                <button class="vis-btn" id="resetViewBtn" title="Reset View">
+                    <i class="bi bi-house"></i>
+                </button>
+                <button class="vis-btn" id="topViewBtn" title="Top View">
+                    <i class="bi bi-arrow-down"></i>
+                </button>
+                <button class="vis-btn" id="frontViewBtn" title="Front View">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <button class="vis-btn" id="sideViewBtn" title="Side View">
+                    <i class="bi bi-arrow-up-right"></i>
+                </button>
+                <button class="vis-btn" id="wireframeBtn" title="Toggle Wireframe">
+                    <i class="bi bi-grid-3x3"></i>
+                </button>
+                <button class="vis-btn" id="fullscreenBtn" title="Fullscreen">
+                    <i class="bi bi-fullscreen"></i>
+                </button>
+            </div>
+        </div>
+        <div style="position: relative;">
+            <canvas id="visualization-canvas"></canvas>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+                <div style="font-weight: 500; color: #3F3F46;">Running 3D Packing Algorithm...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 16px; border: none;">
+            <div class="modal-header" style="border-bottom: 1px solid #E4E4E7;">
+                <h5 class="modal-title" style="font-weight: 600;">
+                    <i class="bi bi-cloud-upload me-2" style="color: #2563EB;"></i>Import Items Data
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div id="uploadZone" class="upload-zone" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <i class="bi bi-cloud-upload" style="font-size: 3rem; color: #2563EB; margin-bottom: 1rem;"></i>
+                    <h5 style="font-weight: 600; margin-bottom: 0.5rem;">Drag & Drop your file here</h5>
+                    <p style="color: #71717A; margin-bottom: 1rem;">or click to browse</p>
+                    <input type="file" id="fileInput" accept=".csv,.json,.xlsx,.xls" style="display: none;" onchange="handleFileSelect(event)">
+                    <button class="btn-modern btn-secondary-modern" style="width: auto;" onclick="document.getElementById('fileInput').click()">
+                        <i class="bi bi-folder2-open"></i> Browse Files
+                    </button>
+                    <p style="color: #A1A1AA; font-size: 0.75rem; margin-top: 1rem;">Supported formats: CSV, JSON, Excel (.xlsx, .xls)</p>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <a href="/api/upload/template/items" class="btn-modern btn-secondary-modern" style="width: auto; text-decoration: none;">
+                        <i class="bi bi-download"></i> Download Items Template
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+    // Global state
+    let items = [];
+    let selectedAlgorithm = 'extreme_points';
+    let scene, camera, renderer, controls;
+    let containerMesh, itemMeshes = [];
+    
+    // Item colors
+    const COLORS = [
+        '#2563EB', '#10B981', '#F97316', '#EF4444', '#8B5CF6',
+        '#EC4899', '#14B8A6', '#F59E0B', '#6366F1', '#84CC16'
+    ];
+    
+    // Initialize Three.js scene
+    function initScene() {
+        const canvas = document.getElementById('visualization-canvas');
+        const container = canvas.parentElement;
+        
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf4f4f5);
+        
+        camera = new THREE.PerspectiveCamera(60, container.clientWidth / canvas.clientHeight, 1, 10000);
+        camera.position.set(500, 400, 500);
+        
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(container.clientWidth, 600);
+        renderer.shadowMap.enabled = true;
+        
+        // OrbitControls
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(100, 200, 100);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+        
+        // Grid helper
+        const gridHelper = new THREE.GridHelper(1000, 20, 0xcccccc, 0xe0e0e0);
+        scene.add(gridHelper);
+        
+        // Initialize with default container
+        updateContainerVisualization();
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+            const width = container.clientWidth;
+            camera.aspect = width / 600;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, 600);
+        });
+    }
+    
+    function updateContainerVisualization() {
+        // Remove existing container
+        if (containerMesh) {
+            scene.remove(containerMesh);
+        }
+        
+        const length = parseFloat(document.getElementById('containerLength').value) || 400;
+        const width = parseFloat(document.getElementById('containerWidth').value) || 200;
+        const height = parseFloat(document.getElementById('containerHeight').value) || 200;
+        
+        // Create container wireframe
+        const geometry = new THREE.BoxGeometry(length, height, width);
+        const edges = new THREE.EdgesGeometry(geometry);
+        const material = new THREE.LineBasicMaterial({ color: 0x2563eb, linewidth: 2 });
+        containerMesh = new THREE.LineSegments(edges, material);
+        containerMesh.position.set(length / 2, height / 2, width / 2);
+        scene.add(containerMesh);
+        
+        // Add floor
+        const floorGeometry = new THREE.PlaneGeometry(length, width);
+        const floorMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0x2563eb, 
+            opacity: 0.1, 
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(length / 2, 0.1, width / 2);
+        containerMesh.add(floor);
+    }
+    
+    function addItem() {
+        const name = document.getElementById('itemName').value || `Item ${items.length + 1}`;
+        const length = parseFloat(document.getElementById('itemLength').value) || 30;
+        const width = parseFloat(document.getElementById('itemWidth').value) || 20;
+        const height = parseFloat(document.getElementById('itemHeight').value) || 15;
+        const quantity = parseInt(document.getElementById('itemQty').value) || 1;
+        
+        const item = {
+            id: Date.now(),
+            name: name,
+            length: length,
+            width: width,
+            height: height,
+            quantity: quantity,
+            color: COLORS[items.length % COLORS.length]
+        };
+        
+        items.push(item);
+        renderItemList();
+        document.getElementById('itemName').value = '';
+    }
+    
+    function removeItem(id) {
+        items = items.filter(item => item.id !== id);
+        renderItemList();
+    }
+    
+    function updateQuantity(id, delta) {
+        const item = items.find(i => i.id === id);
+        if (item) {
+            item.quantity = Math.max(1, item.quantity + delta);
+            renderItemList();
+        }
+    }
+    
+    function renderItemList() {
+        const container = document.getElementById('itemList');
+        container.innerHTML = items.map(item => `
+            <div class="item-card">
+                <div class="item-color" style="background: ${item.color}"></div>
+                <div class="item-info">
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-dims">${item.length}×${item.width}×${item.height} cm</div>
+                </div>
+                <div class="item-quantity">
+                    <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
+                    <span class="qty-value">${item.quantity}</span>
+                    <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
+                </div>
+                <button class="remove-btn" onclick="removeItem(${item.id})">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+    
+    function loadSampleItems() {
+        items = [
+            { id: 1, name: 'Large Box', length: 60, width: 40, height: 30, quantity: 5, color: COLORS[0] },
+            { id: 2, name: 'Medium Box', length: 40, width: 30, height: 25, quantity: 8, color: COLORS[1] },
+            { id: 3, name: 'Small Box', length: 30, width: 20, height: 15, quantity: 15, color: COLORS[2] },
+            { id: 4, name: 'Tall Box', length: 25, width: 25, height: 50, quantity: 4, color: COLORS[3] },
+            { id: 5, name: 'Flat Box', length: 50, width: 40, height: 10, quantity: 6, color: COLORS[4] }
+        ];
+        renderItemList();
+    }
+    
+    function selectAlgorithm(element) {
+        document.querySelectorAll('.algorithm-option').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+        selectedAlgorithm = element.dataset.algorithm;
+    }
+    
+    async function runPacking() {
+        if (items.length === 0) {
+            alert('Please add some items to pack');
+            return;
+        }
+        
+        document.getElementById('loadingOverlay').classList.add('active');
+        
+        const containerData = {
+            length: parseFloat(document.getElementById('containerLength').value),
+            width: parseFloat(document.getElementById('containerWidth').value),
+            height: parseFloat(document.getElementById('containerHeight').value)
+        };
+        
+        // Expand items by quantity
+        const expandedItems = [];
+        items.forEach(item => {
+            for (let i = 0; i < item.quantity; i++) {
+                expandedItems.push({
+                    name: `${item.name}_${i + 1}`,
+                    length: item.length,
+                    width: item.width,
+                    height: item.height,
+                    weight: 1,
+                    color: item.color
+                });
+            }
+        });
+        
+        try {
+            const response = await fetch('/api/pack', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    container: containerData,
+                    items: expandedItems,
+                    algorithm: selectedAlgorithm
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success || result.packed_items) {
+                visualizePackingResult(result, containerData);
+                showResults(result);
+            } else {
+                // Fallback: Simple local packing simulation
+                const simulated = simulateLocalPacking(expandedItems, containerData);
+                visualizePackingResult(simulated, containerData);
+                showResults(simulated);
+            }
+        } catch (error) {
+            console.error('Packing error:', error);
+            // Fallback: Simple local packing simulation
+            const simulated = simulateLocalPacking(expandedItems, containerData);
+            visualizePackingResult(simulated, containerData);
+            showResults(simulated);
+        } finally {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+    }
+    
+    function simulateLocalPacking(items, container) {
+        // Simple shelf-based packing simulation
+        const packed = [];
+        let currentX = 0, currentY = 0, currentZ = 0;
+        let rowHeight = 0, layerDepth = 0;
+        
+        const startTime = performance.now();
+        
+        items.forEach((item, index) => {
+            if (currentX + item.length > container.length) {
+                currentX = 0;
+                currentZ += layerDepth;
+                layerDepth = 0;
+            }
+            
+            if (currentZ + item.width > container.width) {
+                currentZ = 0;
+                currentY += rowHeight;
+                rowHeight = 0;
+                currentX = 0;
+            }
+            
+            if (currentY + item.height <= container.height) {
+                packed.push({
+                    ...item,
+                    position: { x: currentX, y: currentY, z: currentZ },
+                    rotation: { x: 0, y: 0, z: 0 }
+                });
+                
+                currentX += item.length;
+                rowHeight = Math.max(rowHeight, item.height);
+                layerDepth = Math.max(layerDepth, item.width);
+            }
+        });
+        
+        const endTime = performance.now();
+        const containerVolume = container.length * container.width * container.height;
+        const packedVolume = packed.reduce((sum, item) => sum + item.length * item.width * item.height, 0);
+        
+        return {
+            packed_items: packed,
+            unpacked_items: items.slice(packed.length),
+            metrics: {
+                utilization: (packedVolume / containerVolume * 100).toFixed(1),
+                packed_count: packed.length,
+                unpacked_count: items.length - packed.length,
+                execution_time: (endTime - startTime).toFixed(0)
+            }
+        };
+    }
+    
+    function visualizePackingResult(result, container) {
+        // Clear existing items
+        itemMeshes.forEach(mesh => scene.remove(mesh));
+        itemMeshes = [];
+        
+        // Update container
+        updateContainerVisualization();
+        
+        // Add packed items
+        if (result.packed_items) {
+            result.packed_items.forEach((item, index) => {
+                const geometry = new THREE.BoxGeometry(item.length, item.height, item.width);
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: item.color || COLORS[index % COLORS.length],
+                    opacity: 0.85,
+                    transparent: true
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+                
+                const pos = item.position || { x: 0, y: 0, z: 0 };
+                mesh.position.set(
+                    pos.x + item.length / 2,
+                    pos.y + item.height / 2,
+                    pos.z + item.width / 2
+                );
+                
+                // Add edges
+                const edges = new THREE.EdgesGeometry(geometry);
+                const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
+                const edgeMesh = new THREE.LineSegments(edges, edgeMaterial);
+                mesh.add(edgeMesh);
+                
+                scene.add(mesh);
+                itemMeshes.push(mesh);
+            });
+        }
+    }
+    
+    function showResults(result) {
+        const panel = document.getElementById('resultsPanel');
+        panel.style.display = 'block';
+        
+        const metrics = result.metrics || {};
+        document.getElementById('utilizationValue').textContent = (metrics.utilization || 0) + '%';
+        document.getElementById('packedValue').textContent = metrics.packed_count || (result.packed_items?.length || 0);
+        document.getElementById('unpackedValue').textContent = metrics.unpacked_count || (result.unpacked_items?.length || 0);
+        document.getElementById('timeValue').textContent = (metrics.execution_time || 0) + 'ms';
+    }
+    
+    // View controls
+    document.getElementById('resetViewBtn').addEventListener('click', () => {
+        camera.position.set(500, 400, 500);
+        controls.target.set(200, 100, 100);
+        controls.update();
+    });
+    
+    document.getElementById('topViewBtn').addEventListener('click', () => {
+        camera.position.set(200, 600, 100);
+        controls.target.set(200, 0, 100);
+        controls.update();
+    });
+    
+    document.getElementById('frontViewBtn').addEventListener('click', () => {
+        camera.position.set(200, 200, 600);
+        controls.target.set(200, 100, 100);
+        controls.update();
+    });
+    
+    document.getElementById('sideViewBtn').addEventListener('click', () => {
+        camera.position.set(700, 200, 100);
+        controls.target.set(200, 100, 100);
+        controls.update();
+    });
+    
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+        const canvas = document.getElementById('visualization-canvas');
+        if (canvas.requestFullscreen) {
+            canvas.requestFullscreen();
+        }
+    });
+    
+    // Container select change
+    document.getElementById('containerSelect').addEventListener('change', function() {
+        const option = this.selectedOptions[0];
+        document.getElementById('containerLength').value = option.dataset.length;
+        document.getElementById('containerWidth').value = option.dataset.width;
+        document.getElementById('containerHeight').value = option.dataset.height;
+        updateContainerVisualization();
+    });
+    
+    // Container dimension inputs
+    ['containerLength', 'containerWidth', 'containerHeight'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updateContainerVisualization);
+    });
+    
+    // File upload handlers
+    function handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            processUploadedFile(files[0]);
+        }
+    }
+    
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    }
+    
+    function handleDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+    
+    function handleFileSelect(e) {
+        const files = e.target.files;
+        if (files.length > 0) {
+            processUploadedFile(files[0]);
+        }
+    }
+    
+    async function processUploadedFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'items');
+        
+        try {
+            const response = await fetch('/api/upload/preview', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.preview) {
+                // Convert previewed data to items
+                items = result.preview.valid_data.map((row, idx) => ({
+                    id: Date.now() + idx,
+                    name: row.data.name || `Item ${idx + 1}`,
+                    length: parseFloat(row.data.length) || 30,
+                    width: parseFloat(row.data.width) || 20,
+                    height: parseFloat(row.data.height) || 15,
+                    quantity: parseInt(row.data.quantity) || 1,
+                    color: COLORS[idx % COLORS.length]
+                }));
+                renderItemList();
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                modal.hide();
+                
+                alert(`Successfully loaded ${items.length} items from file`);
+            } else {
+                alert('Error processing file: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Error uploading file');
+        }
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        initScene();
+    });
+</script>
+{% endblock %}

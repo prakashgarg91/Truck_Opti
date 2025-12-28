@@ -92,6 +92,11 @@ def create_app(config_context: Optional[str] = None,
     app.register_blueprint(routes.bp)
     app.register_blueprint(routes.api, url_prefix='/api')
 
+    # Register upload API routes
+    from .api.upload_routes import upload_bp
+    app.register_blueprint(upload_bp)
+    print("   [OK] Upload API Routes: Registered (/api/upload/*)")
+
     # Register new modular blueprints
     register_modular_blueprints(app)
 

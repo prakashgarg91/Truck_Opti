@@ -1,6 +1,26 @@
 🛠️ DEVELOPMENT.md
 
-Universal Development & Execution Contract
+# TruckOpti - Modern Logistics & 3D Bin Packing Solution
+
+## Project Identity
+
+**TruckOpti** is an enterprise-grade logistics optimization platform featuring:
+- Modern 3D bin packing algorithms
+- Interactive Three.js visualization  
+- Data upload (CSV/JSON/Excel)
+- Fleet optimization & analytics
+
+### Technology Stack
+| Component | Technology |
+|-----------|------------|
+| Backend | Python Flask 2.3+ |
+| Frontend | Bootstrap 5.3.2, Three.js r128 |
+| Database | SQLite / PostgreSQL |
+| Algorithms | Extreme Points, Genetic, Simulated Annealing, etc. |
+
+---
+
+## Universal Development & Execution Contract
 
 Purpose:
 This document defines how development is done, not what is being built.
