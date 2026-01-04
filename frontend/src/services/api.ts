@@ -37,7 +37,7 @@ api.interceptors.response.use(
 
 export const authApi = {
   // OTP Authentication
-  sendOTP: async (phone: string, channel: 'sms' | 'whatsapp' = 'sms') => {
+  sendOTP: async (phone: string, channel: 'sms' | 'whatsapp' | 'telegram' | 'email' | 'console' = 'sms') => {
     const { data } = await api.post('/auth/send-otp', { phone, channel })
     return data
   },
@@ -47,7 +47,7 @@ export const authApi = {
     return data
   },
   
-  resendOTP: async (phone: string, channel: 'sms' | 'whatsapp' = 'sms') => {
+  resendOTP: async (phone: string, channel: 'sms' | 'whatsapp' | 'telegram' | 'email' | 'console' = 'sms') => {
     const { data } = await api.post('/auth/resend-otp', { phone, channel })
     return data
   },

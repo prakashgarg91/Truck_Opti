@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Phone, ArrowRight, MessageCircle, Shield, Truck, Sparkles } from 'lucide-react'
+import { Phone, ArrowRight, MessageCircle, Shield, Truck, Sparkles, Send } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authApi } from '../../services/api'
@@ -16,7 +16,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const { setPendingPhone } = useAuthStore()
   const [phone, setPhone] = useState('')
-  const [channel, setChannel] = useState<'sms' | 'whatsapp'>('sms')
+  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'telegram'>('telegram')
   const [isFocused, setIsFocused] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
   
@@ -143,21 +143,21 @@ export default function LoginPage() {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Receive OTP via
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <button
               type="button"
-              onClick={() => setChannel('sms')}
-              className={`relative flex items-center justify-center gap-2 py-4 px-4 rounded-xl border-2 transition-all duration-300 ripple ${
-                channel === 'sms'
-                  ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20 scale-[1.02]'
+              onClick={() => setChannel('telegram')}
+              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${
+                channel === 'telegram'
+                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
-              aria-pressed={channel === 'sms'}
+              aria-pressed={channel === 'telegram'}
             >
-              <Phone className={`w-5 h-5 ${channel === 'sms' ? 'animate-bounce-subtle' : ''}`} />
-              <span className="font-medium">SMS</span>
-              {channel === 'sms' && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center animate-scale-in">
+              <Send className={`w-4 h-4 ${channel === 'telegram' ? 'animate-bounce-subtle' : ''}`} />
+              <span className="font-medium text-sm">Telegram</span>
+              {channel === 'telegram' && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center animate-scale-in">
                   <span className="text-white text-xs">✓</span>
                 </span>
               )}
@@ -165,17 +165,35 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setChannel('whatsapp')}
-              className={`relative flex items-center justify-center gap-2 py-4 px-4 rounded-xl border-2 transition-all duration-300 ripple ${
+              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${
                 channel === 'whatsapp'
                   ? 'border-green-600 bg-green-50 dark:bg-green-900/30 text-green-600 shadow-lg shadow-green-500/20 scale-[1.02]'
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
               aria-pressed={channel === 'whatsapp'}
             >
-              <MessageCircle className={`w-5 h-5 ${channel === 'whatsapp' ? 'animate-bounce-subtle' : ''}`} />
-              <span className="font-medium">WhatsApp</span>
+              <MessageCircle className={`w-4 h-4 ${channel === 'whatsapp' ? 'animate-bounce-subtle' : ''}`} />
+              <span className="font-medium text-sm">WhatsApp</span>
               {channel === 'whatsapp' && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-600 rounded-full flex items-center justify-center animate-scale-in">
+                  <span className="text-white text-xs">✓</span>
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setChannel('sms')}
+              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${
+                channel === 'sms'
+                  ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20 scale-[1.02]'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+              aria-pressed={channel === 'sms'}
+            >
+              <Phone className={`w-4 h-4 ${channel === 'sms' ? 'animate-bounce-subtle' : ''}`} />
+              <span className="font-medium text-sm">SMS</span>
+              {channel === 'sms' && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center animate-scale-in">
                   <span className="text-white text-xs">✓</span>
                 </span>
               )}
