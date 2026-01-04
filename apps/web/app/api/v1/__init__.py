@@ -1,6 +1,6 @@
 """
 API Version 1 - RESTful Endpoints
-Main API blueprint with all v1 endpoints
+TruckOpti Advanced Logistics Platform for India
 """
 
 from datetime import datetime
@@ -14,6 +14,7 @@ from .health import health_bp
 from .optimization import optimization_bp
 from .shipments import shipments_bp
 from .trucks import trucks_bp
+from .location import location_bp
 
 # Create main API v1 blueprint
 api_v1 = Blueprint('api_v1', __name__, url_prefix='/api/v1')
@@ -26,6 +27,7 @@ api_v1.register_blueprint(optimization_bp)
 api_v1.register_blueprint(analytics_bp)
 api_v1.register_blueprint(shipments_bp)
 api_v1.register_blueprint(health_bp)
+api_v1.register_blueprint(location_bp)
 
 
 # API v1 root endpoint
@@ -33,7 +35,9 @@ api_v1.register_blueprint(health_bp)
 def api_root():
     """API v1 root endpoint with available resources"""
     return jsonify({
+        'name': 'TruckOpti API',
         'version': '1.0',
+        'description': 'Advanced Logistics Solution for India',
         'status': 'active',
         'timestamp': datetime.utcnow().isoformat(),
         'resources': {
@@ -43,8 +47,17 @@ def api_root():
             'optimization': '/api/v1/optimization',
             'analytics': '/api/v1/analytics',
             'shipments': '/api/v1/shipments',
-            'health': '/api/v1/health'
+            'health': '/api/v1/health',
+            'location': '/api/v1/location'
         },
+        'features': {
+            '3d_bin_packing': 'Multi-algorithm truck loading optimization',
+            'otp_auth': 'Phone-based login with SMS/WhatsApp OTP',
+            'google_oauth': 'Login with Google account',
+            'location_sharing': 'Real-time driver tracking',
+            'route_optimization': 'Indian road network optimization'
+        },
+        'market': 'India',
         'documentation': '/api/v1/docs'
     })
 

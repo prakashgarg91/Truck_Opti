@@ -1,0 +1,54 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuthStore } from './stores/authStore'
+
+// Layouts
+import MobileLayout from './layouts/MobileLayout'
+import AuthLayout from './layouts/AuthLayout'
+
+// Pages
+import LoginPage from './pages/auth/LoginPage'
+import OTPPage from './pages/auth/OTPPage'
+import Dashboard from './pages/Dashboard'
+import PackingPage from './pages/PackingPage'
+import RoutesPage from './pages/RoutesPage'
+import TrackingPage from './pages/TrackingPage'
+import ProfilePage from './pages/ProfilePage'
+
+// Protected Route wrapper
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuthStore()
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+  
+  return <>{children}</>
+}
+
+export default function App() {
+  return (
+    <Routes>
+      {/* Auth routes */}
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/otp" element={<OTPPage />} />
+      </Route>
+      
+      {/* Protected routes with mobile layout */}
+      <Route element={
+        <ProtectedRoute>
+          <MobileLayout />
+        </ProtectedRoute>
+      }>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/packing" element={<PackingPage />} />
+        <Route path="/routes" element={<RoutesPage />} />
+        <Route path="/tracking" element={<TrackingPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+      </Route>
+      
+      {/* Catch all */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}

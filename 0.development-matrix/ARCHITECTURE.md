@@ -14,18 +14,20 @@
 └── ARCHITECTURE.md ........... [YOU ARE HERE] Architecture
 -->
 
-# ARCHITECTURE - Autonomous Blogging System
+# ARCHITECTURE - TruckOpti Logistics Platform
 
-**Version:** 1.0.0 | **Last Updated:** December 2, 2025
+**Version:** 1.0.0 | **Last Updated:** January 4, 2026
 
 ## System Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                  AUTONOMOUS BLOGGING ARCHITECTURE               │
+│                    TRUCKOPTI ARCHITECTURE                       │
 ├─────────────────────────────────────────────────────────────────┤
-│  Frontend (React)  │  Backend (Express)  │  MCP Server         │
-│  Port: 5173        │  Port: 3001         │  135+ Tools         │
+│  Frontend (React)  │  Backend (Flask)    │  3D Engine          │
+│  Port: 5173        │  Port: 5000         │  Python Algorithms  │
+├─────────────────────────────────────────────────────────────────┤
+│  Auth: OTP + Google OAuth  │  Maps: Google  │  SMS: MSG91      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

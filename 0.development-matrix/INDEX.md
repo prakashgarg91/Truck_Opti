@@ -2,6 +2,7 @@
 <!-- 
 📂 DEVELOPMENT MATRIX STRUCTURE:
 ├── INDEX.md .................. [YOU ARE HERE] Start here
+├── LOGISTICS-MASTER-PLAN.md .. Master plan for India logistics app
 ├── 0.development.md .......... Development rules & contract
 ├── USER-REQUIREMENTS.md ...... What user wants (READ-ONLY)
 ├── features.json ............. Feature status (machine-readable)
@@ -10,14 +11,14 @@
 ├── skills.md ................. Testing protocols & learnings
 ├── ENGINEERING-GUARDRAILS.md . Anti-patterns to avoid
 ├── CONFESSION.md ............. Known bugs & gaps
-├── MENU-CHART.md ............. Menu system documentation
 └── ARCHITECTURE.md ........... System architecture
 -->
 
-# 📚 INDEX.md - Blogger-MCP Documentation Hub
+# 📚 INDEX.md - TruckOpti Development Hub
 
-> **Central index of all documentation files in the Autonomous Blogging System**
-> **Last Updated:** 2025-12-16
+> **Central index for Advanced Logistics Solution - India Market**
+> **Last Updated:** January 4, 2026
+> **Project:** TruckOpti - 3D Bin Packing & Route Optimization
 
 ---
 
