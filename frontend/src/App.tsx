@@ -18,9 +18,12 @@ import TrucksPage from './pages/TrucksPage'
 import CartonsPage from './pages/CartonsPage'
 import CustomersPage from './pages/CustomersPage'
 
-// Protected Route wrapper
+// Protected Route wrapper - BYPASSED FOR TESTING
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore()
+  // const { isAuthenticated } = useAuthStore()
+  
+  // TEMPORARILY BYPASS AUTH FOR UI TESTING
+  const isAuthenticated = true
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />

@@ -1,8 +1,8 @@
-import { useRef, Suspense } from 'react'
+import { useRef, Suspense, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, PerspectiveCamera, Text, Environment, ContactShadows } from '@react-three/drei'
+import { OrbitControls, PerspectiveCamera, Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
-import { Maximize2, RotateCcw, Move3d } from 'lucide-react'
+import { RotateCcw, Move3d, Eye, Layers } from 'lucide-react'
 
 interface PackedBox {
   id: string
@@ -14,6 +14,7 @@ interface PackedBox {
   depth: number
   color: string
   label: string
+  itemId?: string
 }
 
 interface TruckViewerProps {
@@ -26,34 +27,54 @@ interface TruckViewerProps {
   onBoxClick?: (box: PackedBox) => void
 }
 
-function Box({ box, onBoxClick }: { box: PackedBox; onBoxClick?: (box: PackedBox) => void }) {
+function Box({ box, onBoxClick, isHovered, onHover }: { 
+  box: PackedBox; 
+  onBoxClick?: (box: PackedBox) => void
+  isHovered: boolean
+  onHover: (id: string | null) => void 
+}) {
   const meshRef = useRef<THREE.Mesh>(null)
   
   return (
-    <mesh
-      ref={meshRef}
-      position={[
-        box.x + box.width / 2,
-        box.y + box.height / 2,
-        box.z + box.depth / 2
-      ]}
-      onClick={(e) => {
-        e.stopPropagation()
-        onBoxClick?.(box)
-      }}
-    >
-      <boxGeometry args={[box.width, box.height, box.depth]} />
-      <meshStandardMaterial color={box.color} opacity={0.8} transparent />
-      <Text
-        position={[0, 0, box.depth / 2 + 0.01]}
-        fontSize={0.1}
-        color="white"
-        anchorX="center"
-        anchorY="middle"
+    <group>
+      <mesh
+        ref={meshRef}
+        position={[
+          box.x + box.width / 2,
+          box.y + box.height / 2,
+          box.z + box.depth / 2
+        ]}
+        onClick={(e) => {
+          e.stopPropagation()
+          onBoxClick?.(box)
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          onHover(box.id)
+        }}
+        onPointerOut={() => onHover(null)}
       >
-        {box.label}
-      </Text>
-    </mesh>
+        <boxGeometry args={[box.width * 0.98, box.height * 0.98, box.depth * 0.98]} />
+        <meshStandardMaterial 
+          color={box.color} 
+          opacity={isHovered ? 1 : 0.85} 
+          transparent 
+          roughness={0.3}
+          metalness={0.1}
+        />
+      </mesh>
+      {/* Box edges for better visibility */}
+      <lineSegments
+        position={[
+          box.x + box.width / 2,
+          box.y + box.height / 2,
+          box.z + box.depth / 2
+        ]}
+      >
+        <edgesGeometry args={[new THREE.BoxGeometry(box.width * 0.98, box.height * 0.98, box.depth * 0.98)]} />
+        <lineBasicMaterial color={isHovered ? "#ffffff" : "#000000"} opacity={0.3} transparent />
+      </lineSegments>
+    </group>
   )
 }
 
@@ -63,26 +84,46 @@ function TruckContainer({ dimensions }: { dimensions: { length: number; width: n
       {/* Wireframe for the truck */}
       <mesh position={[dimensions.length / 2, dimensions.height / 2, dimensions.width / 2]}>
         <boxGeometry args={[dimensions.length, dimensions.height, dimensions.width]} />
-        <meshBasicMaterial color="#94a3b8" wireframe transparent opacity={0.3} />
+        <meshBasicMaterial color="#64748b" wireframe transparent opacity={0.4} />
+      </mesh>
+      
+      {/* Truck walls - semi-transparent */}
+      <mesh position={[dimensions.length / 2, dimensions.height / 2, 0]}>
+        <planeGeometry args={[dimensions.length, dimensions.height]} />
+        <meshBasicMaterial color="#1e293b" transparent opacity={0.1} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0, dimensions.height / 2, dimensions.width / 2]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[dimensions.width, dimensions.height]} />
+        <meshBasicMaterial color="#1e293b" transparent opacity={0.1} side={THREE.DoubleSide} />
       </mesh>
       
       {/* Floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[dimensions.length / 2, 0, dimensions.width / 2]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[dimensions.length / 2, 0.01, dimensions.width / 2]}>
         <planeGeometry args={[dimensions.length, dimensions.width]} />
-        <meshStandardMaterial color="#1e293b" />
+        <meshStandardMaterial color="#334155" />
       </mesh>
       
       {/* Grid helper */}
       <gridHelper 
-        args={[Math.max(dimensions.length, dimensions.width) * 2, 20, 0x475569, 0x1e293b]} 
-        position={[dimensions.length / 2, 0.01, dimensions.width / 2]}
+        args={[Math.max(dimensions.length, dimensions.width) * 1.5, 20, 0x475569, 0x1e293b]} 
+        position={[dimensions.length / 2, 0.02, dimensions.width / 2]}
       />
+      
+      {/* Dimension markers */}
+      <group position={[dimensions.length / 2, -0.1, dimensions.width + 0.2]}>
+        <mesh>
+          <boxGeometry args={[dimensions.length, 0.02, 0.02]} />
+          <meshBasicMaterial color="#f59e0b" />
+        </mesh>
+      </group>
     </group>
   )
 }
 
 export default function TruckViewer({ truckDimensions, packedBoxes = [], onBoxClick }: TruckViewerProps) {
   const controlsRef = useRef<any>(null)
+  const [hoveredBox, setHoveredBox] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'3d' | 'top' | 'side'>('3d')
 
   const resetCamera = () => {
     if (controlsRef.current) {
@@ -90,64 +131,137 @@ export default function TruckViewer({ truckDimensions, packedBoxes = [], onBoxCl
     }
   }
 
-  const sampleBoxes: PackedBox[] = [
-    { id: '1', x: 0, y: 0, z: 0, width: 1, height: 0.8, depth: 0.8, color: '#3b82f6', label: 'A1' },
-    { id: '2', x: 1.1, y: 0, z: 0, width: 1.2, height: 1, depth: 0.9, color: '#22c55e', label: 'A2' },
-    { id: '3', x: 0, y: 0, z: 0.9, width: 0.8, height: 0.6, depth: 0.7, color: '#f59e0b', label: 'B1' },
-    { id: '4', x: 0, y: 0.85, z: 0, width: 1, height: 0.5, depth: 0.8, color: '#ef4444', label: 'C1' },
-  ]
+  // Use actual packed boxes or sample if empty
+  const displayBoxes = packedBoxes.length > 0 ? packedBoxes : []
+  
+  // Calculate utilization
+  const truckVolume = truckDimensions.length * truckDimensions.width * truckDimensions.height
+  const packedVolume = displayBoxes.reduce((sum, box) => sum + box.width * box.height * box.depth, 0)
+  const utilization = truckVolume > 0 ? Math.round((packedVolume / truckVolume) * 100) : 0
 
-  const displayBoxes = packedBoxes.length > 0 ? packedBoxes : sampleBoxes
+  // Camera positions for different views
+  const getCameraPosition = () => {
+    const { length, width, height } = truckDimensions
+    switch (viewMode) {
+      case 'top':
+        return [length / 2, Math.max(length, width) * 1.5, width / 2]
+      case 'side':
+        return [length * 1.5, height / 2, width / 2]
+      default:
+        return [length * 1.3, height * 1.5, width * 1.8]
+    }
+  }
 
   return (
-    <div className="relative bg-slate-900 rounded-lg overflow-hidden h-[400px] w-full">
-      {/* Controls */}
-      <div className="absolute top-3 right-3 flex gap-2 z-10">
+    <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-lg overflow-hidden h-[300px] sm:h-[350px] lg:h-[400px] w-full">
+      {/* Controls - Responsive */}
+      <div className="absolute top-2 sm:top-3 right-2 sm:right-3 flex flex-col sm:flex-row gap-1 sm:gap-2 z-10">
         <button 
           onClick={resetCamera}
-          className="w-8 h-8 bg-white/10 backdrop-blur rounded flex items-center justify-center text-white hover:bg-white/20"
+          className="w-8 h-8 bg-white/10 backdrop-blur rounded flex items-center justify-center text-white hover:bg-white/20 transition-colors"
           title="Reset View"
         >
           <RotateCcw className="w-4 h-4" />
         </button>
-        <button className="w-8 h-8 bg-white/10 backdrop-blur rounded flex items-center justify-center text-white hover:bg-white/20">
-          <Maximize2 className="w-4 h-4" />
+        <button 
+          onClick={() => setViewMode('3d')}
+          className={`w-8 h-8 backdrop-blur rounded flex items-center justify-center transition-colors ${viewMode === '3d' ? 'bg-primary-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+          title="3D View"
+        >
+          <Layers className="w-4 h-4" />
+        </button>
+        <button 
+          onClick={() => setViewMode('top')}
+          className={`w-8 h-8 backdrop-blur rounded flex items-center justify-center transition-colors ${viewMode === 'top' ? 'bg-primary-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+          title="Top View"
+        >
+          <Eye className="w-4 h-4" />
         </button>
       </div>
       
-      {/* Legend */}
-      <div className="absolute bottom-3 left-3 bg-white/10 backdrop-blur rounded p-2 text-xs text-white z-10">
+      {/* Legend - Responsive */}
+      <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 bg-black/40 backdrop-blur-md rounded-lg p-2 text-xs text-white z-10 max-w-[200px] sm:max-w-none">
         <div className="flex items-center gap-2 mb-1">
-          <Move3d className="w-4 h-4" />
-          <span>Orbit: Left Click | Pan: Right Click | Zoom: Scroll</span>
+          <Move3d className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Orbit: Drag | Pan: Right Click | Zoom: Scroll</span>
+          <span className="sm:hidden">Drag to rotate</span>
         </div>
-        <div className="text-slate-400">
+        <div className="text-slate-300">
           {truckDimensions.length}m × {truckDimensions.width}m × {truckDimensions.height}m
         </div>
       </div>
       
-      {/* Stats */}
-      <div className="absolute top-3 left-3 bg-white/10 backdrop-blur rounded p-2 z-10">
+      {/* Stats - Responsive */}
+      <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-black/40 backdrop-blur-md rounded-lg p-2 z-10">
         <div className="text-xs text-white space-y-1">
-          <p><span className="text-slate-400">Boxes:</span> {displayBoxes.length}</p>
-          <p><span className="text-slate-400">Utilization:</span> 78%</p>
+          <p className="flex items-center justify-between gap-4">
+            <span className="text-slate-300">Boxes:</span> 
+            <span className="font-semibold">{displayBoxes.length}</span>
+          </p>
+          <p className="flex items-center justify-between gap-4">
+            <span className="text-slate-300">Utilization:</span>
+            <span className={`font-semibold ${utilization > 70 ? 'text-green-400' : utilization > 40 ? 'text-amber-400' : 'text-red-400'}`}>
+              {utilization}%
+            </span>
+          </p>
+        </div>
+        {/* Mini progress bar */}
+        <div className="w-full h-1.5 bg-slate-700 rounded-full mt-2 overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all ${utilization > 70 ? 'bg-green-500' : utilization > 40 ? 'bg-amber-500' : 'bg-red-500'}`}
+            style={{ width: `${Math.min(utilization, 100)}%` }}
+          />
         </div>
       </div>
 
+      {/* Empty state */}
+      {displayBoxes.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+          <div className="text-center text-white/60">
+            <Layers className="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Run optimization to see packed boxes</p>
+          </div>
+        </div>
+      )}
+
       <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[truckDimensions.length * 1.5, truckDimensions.height * 2, truckDimensions.width * 1.5]} fov={50} />
-        <OrbitControls ref={controlsRef} makeDefault />
+        <PerspectiveCamera 
+          makeDefault 
+          position={getCameraPosition() as [number, number, number]} 
+          fov={50} 
+        />
+        <OrbitControls 
+          ref={controlsRef} 
+          makeDefault 
+          enableDamping
+          dampingFactor={0.05}
+          minDistance={1}
+          maxDistance={Math.max(truckDimensions.length, truckDimensions.width) * 3}
+        />
         
-        <ambientLight intensity={0.5} />
+        <ambientLight intensity={0.6} />
         <pointLight position={[10, 10, 10]} intensity={1} castShadow />
-        <spotLight position={[-10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
+        <spotLight position={[-10, 10, 10]} angle={0.15} penumbra={1} intensity={0.8} castShadow />
+        <directionalLight position={[5, 5, 5]} intensity={0.5} />
         
         <Suspense fallback={null}>
           <TruckContainer dimensions={truckDimensions} />
           {displayBoxes.map((box) => (
-            <Box key={box.id} box={box} onBoxClick={onBoxClick} />
+            <Box 
+              key={box.id} 
+              box={box} 
+              onBoxClick={onBoxClick}
+              isHovered={hoveredBox === box.id}
+              onHover={setHoveredBox}
+            />
           ))}
-          <ContactShadows position={[truckDimensions.length / 2, 0, truckDimensions.width / 2]} opacity={0.4} scale={20} blur={2} far={4.5} />
+          <ContactShadows 
+            position={[truckDimensions.length / 2, 0, truckDimensions.width / 2]} 
+            opacity={0.4} 
+            scale={Math.max(truckDimensions.length, truckDimensions.width) * 2} 
+            blur={2} 
+            far={4.5} 
+          />
           <Environment preset="city" />
         </Suspense>
       </Canvas>
