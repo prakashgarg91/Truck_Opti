@@ -22,6 +22,7 @@ const navItems = [
   { path: '/packing', icon: Package, label: 'Pack', labelHi: 'पैकिंग' },
   { path: '/routes', icon: Route, label: 'Routes', labelHi: 'रूट' },
   { path: '/tracking', icon: MapPin, label: 'Track', labelHi: 'ट्रैक' },
+  { path: '/management', icon: Settings, label: 'Manage', labelHi: 'मैनेज' },
   { path: '/profile', icon: User, label: 'Profile', labelHi: 'प्रोफाइल' },
 ]
 

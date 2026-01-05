@@ -3,6 +3,8 @@ Bridge module to connect TruckOptimum with advanced packing algorithms
 """
 from typing import Dict, List, Optional, Any
 import logging
+import time
+from app.extensions import socketio
 
 logger = logging.getLogger(__name__)
 
@@ -42,19 +44,37 @@ class AdvancedPackerBridge:
         Returns:
             Packing result dictionary
         """
-        logger.info(f"Packing with algorithm: {algorithm}, goal: {optimization_goal}")
+        job_id = kwargs.get('job_id', f"job_{int(time.time())}")
+        logger.info(f"Packing with algorithm: {algorithm}, goal: {optimization_goal}, job: {job_id}")
 
+        # Emit start event
+        socketio.emit('packing_started', {
+            'job_id': job_id,
+            'algorithm': algorithm,
+            'total_items': len(cartons)
+        })
+
+        result = None
         if algorithm == 'dwave_scipy':
-            return self._pack_dwave(trucks, cartons, **kwargs)
+            result = self._pack_dwave(trucks, cartons, **kwargs)
         elif algorithm == 'py3dbp':
-            return self._pack_py3dbp(trucks, cartons, optimization_goal)
+            result = self._pack_py3dbp(trucks, cartons, optimization_goal)
         elif algorithm == 'genetic':
-            return self._pack_genetic(trucks, cartons, **kwargs)
+            result = self._pack_genetic(trucks, cartons, **kwargs)
         elif algorithm == 'skyline':
-            return self._pack_skyline(trucks, cartons)
+            result = self._pack_skyline(trucks, cartons)
         else:
             logger.warning(f"Unknown algorithm {algorithm}, falling back to py3dbp")
-            return self._pack_py3dbp(trucks, cartons, optimization_goal)
+            result = self._pack_py3dbp(trucks, cartons, optimization_goal)
+
+        # Emit completion event
+        socketio.emit('packing_completed', {
+            'job_id': job_id,
+            'success': result.get('success', True),
+            'packed_count': len(result.get('packed_items', [])) if result else 0
+        })
+
+        return result
 
     def _pack_dwave(self, trucks: List[Dict], cartons: List[Dict], **kwargs) -> Dict:
         """Pack using D-Wave mathematical optimization"""

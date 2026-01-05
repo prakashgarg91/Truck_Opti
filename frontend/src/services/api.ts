@@ -112,6 +112,21 @@ export const trucksApi = {
     return data
   },
   
+  create: async (truck: any) => {
+    const { data } = await api.post('/trucks', truck)
+    return data
+  },
+  
+  update: async (id: number, truck: any) => {
+    const { data } = await api.put(`/trucks/${id}`, truck)
+    return data
+  },
+  
+  delete: async (id: number) => {
+    const { data } = await api.delete(`/trucks/${id}`)
+    return data
+  },
+  
   getIndianTrucks: async () => {
     const { data } = await api.get('/trucks/indian-catalog')
     return data
@@ -130,6 +145,52 @@ export const cartonsApi = {
   
   getById: async (id: number) => {
     const { data } = await api.get(`/cartons/${id}`)
+    return data
+  },
+  
+  create: async (carton: any) => {
+    const { data } = await api.post('/cartons', carton)
+    return data
+  },
+  
+  update: async (id: number, carton: any) => {
+    const { data } = await api.put(`/cartons/${id}`, carton)
+    return data
+  },
+  
+  delete: async (id: number) => {
+    const { data } = await api.delete(`/cartons/${id}`)
+    return data
+  },
+}
+
+// =============================================================================
+// CUSTOMERS API
+// =============================================================================
+
+export const customersApi = {
+  getAll: async () => {
+    const { data } = await api.get('/customers')
+    return data
+  },
+  
+  getById: async (id: number) => {
+    const { data } = await api.get(`/customers/${id}`)
+    return data
+  },
+  
+  create: async (customer: any) => {
+    const { data } = await api.post('/customers', customer)
+    return data
+  },
+  
+  update: async (id: number, customer: any) => {
+    const { data } = await api.put(`/customers/${id}`, customer)
+    return data
+  },
+  
+  delete: async (id: number) => {
+    const { data } = await api.delete(`/customers/${id}`)
     return data
   },
 }
@@ -236,6 +297,37 @@ export const locationApi = {
   
   getIndianCities: async () => {
     const { data } = await api.get('/location/cities')
+    return data
+  },
+}
+
+// =============================================================================
+// ROUTES API
+// =============================================================================
+
+export const routesApi = {
+  getAll: async (params?: { status?: string }) => {
+    const { data } = await api.get('/routes', { params })
+    return data
+  },
+  
+  getById: async (id: number) => {
+    const { data } = await api.get(`/routes/${id}`)
+    return data
+  },
+  
+  optimize: async (request: {
+    start_location: string
+    destinations: string[]
+    optimization_goal?: 'distance' | 'time' | 'cost'
+    return_to_start?: boolean
+  }) => {
+    const { data } = await api.post('/routes/optimize', request)
+    return data
+  },
+  
+  getTollEstimate: async (routeId: number) => {
+    const { data } = await api.get(`/routes/${routeId}/toll-estimate`)
     return data
   },
 }

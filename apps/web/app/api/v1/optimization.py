@@ -385,4 +385,105 @@ def get_algorithms():
         }), 500
 
 
+@optimization_bp.route('/benchmark', methods=['POST'])
+def benchmark_algorithms():
+    """
+    Benchmark multiple algorithms on the same data
+    Request body:
+    {
+        "algorithms": ["skyline", "genetic", "py3dbp"],
+        "truck": {"length": 600, "width": 240, "height": 240, "max_weight": 10000},
+        "cartons": [{"length": 50, "width": 40, "height": 30, "weight": 10, "quantity": 50}, ...]
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data or 'truck' not in data or 'cartons' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required fields: truck, cartons'
+            }), 400
+
+        algorithms = data.get('algorithms', ['skyline', 'py3dbp'])
+        truck_data = data['truck']
+        cartons_data = data['cartons']
+
+        # Prepare trucks and cartons for bridge
+        trucks = [{
+            'name': 'Benchmark Truck',
+            'length': truck_data['length'],
+            'width': truck_data['width'],
+            'height': truck_data['height'],
+            'max_weight': truck_data['max_weight']
+        }]
+
+        # Expand cartons by quantity
+        expanded_cartons = []
+        for c in cartons_data:
+            qty = c.get('quantity', 1)
+            for _ in range(qty):
+                expanded_cartons.append({
+                    'type': c.get('type', 'Box'),
+                    'length': c['length'],
+                    'width': c['width'],
+                    'height': c['height'],
+                    'weight': c.get('weight', 0)
+                })
+
+        results = {}
+        import time
+
+        for algo in algorithms:
+            start_time = time.time()
+            try:
+                res = packer_bridge.pack(
+                    algorithm=algo,
+                    trucks=trucks,
+                    cartons=expanded_cartons
+                )
+                execution_time = time.time() - start_time
+
+                if res.get('success') is not False:
+                    # Calculate metrics
+                    packed_count = len(res.get('packed_items', []))
+                    total_count = len(expanded_cartons)
+                    
+                    # Calculate volume utilization
+                    truck_vol = truck_data['length'] * truck_data['width'] * truck_data['height']
+                    packed_vol = sum(item['width'] * item['height'] * item['depth'] for item in res.get('packed_items', []))
+                    utilization = (packed_vol / truck_vol) * 100 if truck_vol > 0 else 0
+
+                    results[algo] = {
+                        'success': True,
+                        'execution_time': execution_time,
+                        'packed_count': packed_count,
+                        'total_count': total_count,
+                        'utilization_percentage': round(utilization, 2),
+                        'summary': f"Packed {packed_count}/{total_count} items in {execution_time:.2f}s"
+                    }
+                else:
+                    results[algo] = {
+                        'success': False,
+                        'error': res.get('error', 'Unknown error')
+                    }
+            except Exception as e:
+                results[algo] = {
+                    'success': False,
+                    'error': str(e)
+                }
+
+        return jsonify({
+            'success': True,
+            'data': results
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in benchmark: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Benchmark failed',
+            'message': str(e)
+        }), 500
+
+
 __all__ = ['optimization_bp']

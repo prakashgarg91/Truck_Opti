@@ -1,50 +1,100 @@
-import { useState } from 'react'
-import { MapPin, Truck, Clock, RefreshCw, Navigation } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MapPin, Truck, Clock, RefreshCw, Navigation, Search, ChevronRight, Activity, Shield, Map as MapIcon } from 'lucide-react'
+import { locationApi, shipmentsApi } from '../services/api'
 
-const liveTracking = [
-  {
-    id: 'TRK-001',
-    driver: 'Rajesh Kumar',
-    vehicle: 'Tata Ace',
-    location: 'Near Lonavala Toll Plaza',
-    destination: 'Pune',
-    eta: '45 min',
-    speed: '62 km/h',
-    status: 'in_transit',
-    lat: 18.7558,
-    lng: 73.4027
-  },
-  {
-    id: 'TRK-002',
-    driver: 'Amit Singh',
-    vehicle: 'Eicher 14ft',
-    location: 'Gurugram Sector 44',
-    destination: 'Delhi',
-    eta: '1h 20min',
-    speed: '45 km/h',
-    status: 'in_transit',
-    lat: 28.4595,
-    lng: 77.0266
-  },
-  {
-    id: 'TRK-003',
-    driver: 'Suresh Patil',
-    vehicle: 'BharatBenz',
-    location: 'Arrived at destination',
-    destination: 'Chennai',
-    eta: 'Delivered',
-    speed: '0 km/h',
-    status: 'delivered',
-    lat: 13.0827,
-    lng: 80.2707
-  },
-]
+interface ShipmentLocation {
+  shipment_id: string
+  latitude: number
+  longitude: number
+  speed: number
+  status: string
+  last_updated: string
+  driver_name?: string
+  vehicle_number?: string
+  destination_city?: string
+}
 
 export default function TrackingPage() {
-  const [selectedTruck, setSelectedTruck] = useState<string | null>(null)
-  
+  const [shipments, setShipments] = useState<ShipmentLocation[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchActiveShipments()
+    
+    // Simulate WebSocket updates every 10 seconds
+    const interval = setInterval(() => {
+      updateShipmentLocations()
+    }, 10000)
+    
+    return () => clearInterval(interval)
+  }, [])
+
+  const fetchActiveShipments = async () => {
+    try {
+      setLoading(true)
+      // In a real app, we'd fetch shipments with 'in_transit' status
+      const data = await shipmentsApi.getAll({ status: 'in_transit' })
+      
+      // For demo, if no real data, we'll use mock data but structure it for the API
+      if (data.length === 0) {
+        setShipments([
+          {
+            shipment_id: 'SHP-1001',
+            latitude: 19.0760,
+            longitude: 72.8777,
+            speed: 65,
+            status: 'in_transit',
+            last_updated: new Date().toISOString(),
+            driver_name: 'Rajesh Kumar',
+            vehicle_number: 'MH-01-AX-1234',
+            destination_city: 'Pune'
+          },
+          {
+            shipment_id: 'SHP-1002',
+            latitude: 28.6139,
+            longitude: 77.2090,
+            speed: 42,
+            status: 'in_transit',
+            last_updated: new Date().toISOString(),
+            driver_name: 'Amit Singh',
+            vehicle_number: 'DL-01-CZ-5678',
+            destination_city: 'Jaipur'
+          }
+        ])
+      } else {
+        setShipments(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch shipments:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateShipmentLocations = async () => {
+    // In a real app, this would be handled by WebSocket
+    // Here we just slightly jitter the coordinates for visual effect
+    setShipments(prev => prev.map(s => ({
+      ...s,
+      latitude: s.latitude + (Math.random() - 0.5) * 0.01,
+      longitude: s.longitude + (Math.random() - 0.5) * 0.01,
+      speed: Math.max(30, Math.min(80, s.speed + (Math.random() - 0.5) * 5)),
+      last_updated: new Date().toISOString()
+    })))
+  }
+
+  const filteredShipments = shipments.filter(s => 
+    s.shipment_id.toLowerCase().includes(search.toLowerCase()) ||
+    s.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
+    s.vehicle_number?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const selectedShipment = shipments.find(s => s.shipment_id === selectedId)
+
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -52,116 +102,129 @@ export default function TrackingPage() {
             Live Tracking
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Track shipments in real-time
+            Real-time GPS fleet monitoring
           </p>
         </div>
-        <button className="btn btn-secondary">
-          <RefreshCw className="w-5 h-5" />
+        <button 
+          onClick={fetchActiveShipments}
+          className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all"
+        >
+          <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
       
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="card p-3 text-center">
-          <p className="text-2xl font-bold text-green-600">2</p>
-          <p className="text-xs text-slate-500">In Transit</p>
+      {/* Search & Stats */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search shipment, driver or vehicle..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+          />
         </div>
-        <div className="card p-3 text-center">
-          <p className="text-2xl font-bold text-blue-600">1</p>
-          <p className="text-xs text-slate-500">Delivered</p>
-        </div>
-        <div className="card p-3 text-center">
-          <p className="text-2xl font-bold text-orange-600">0</p>
-          <p className="text-xs text-slate-500">Delayed</p>
-        </div>
-      </div>
-      
-      {/* Map Placeholder */}
-      <div className="card overflow-hidden">
-        <div className="bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900/30 dark:to-green-900/30 h-48 relative">
-          {/* Simulated truck markers */}
-          <div className="absolute top-1/4 left-1/3 animate-pulse">
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
-              <Truck className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="absolute top-1/2 right-1/4 animate-pulse">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg">
-              <Truck className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="absolute bottom-1/4 left-1/2">
-            <div className="w-8 h-8 bg-slate-400 rounded-full flex items-center justify-center text-white shadow-lg">
-              <MapPin className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 backdrop-blur">
-              Google Maps coming soon
-            </p>
+        <div className="flex gap-2">
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 px-4 py-2 rounded-2xl flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{shipments.length} Active</span>
           </div>
         </div>
       </div>
       
-      {/* Tracking List */}
-      <div className="space-y-3">
-        {liveTracking.map((item) => (
+      {/* Map View Placeholder */}
+      <div className="relative h-64 bg-slate-200 dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner">
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        
+        {/* Simulated Markers */}
+        {shipments.map((s) => (
           <div 
-            key={item.id}
-            onClick={() => setSelectedTruck(item.id)}
-            className={`card card-hover p-4 cursor-pointer transition-all ${
-              selectedTruck === item.id ? 'ring-2 ring-primary-500' : ''
+            key={s.shipment_id}
+            className="absolute transition-all duration-1000 ease-linear cursor-pointer group"
+            style={{ 
+              left: `${((s.longitude - 70) * 5) % 100}%`, 
+              top: `${((30 - s.latitude) * 5) % 100}%` 
+            }}
+            onClick={() => setSelectedId(s.shipment_id)}
+          >
+            <div className={`p-2 rounded-full shadow-lg transition-transform group-hover:scale-125 ${selectedId === s.shipment_id ? 'bg-primary-600 scale-110 z-10' : 'bg-white dark:bg-slate-700'}`}>
+              <Truck className={`w-4 h-4 ${selectedId === s.shipment_id ? 'text-white' : 'text-primary-600'}`} />
+            </div>
+            {selectedId === s.shipment_id && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-xl">
+                {s.shipment_id}
+              </div>
+            )}
+          </div>
+        ))}
+
+        <div className="absolute bottom-4 right-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-full text-[10px] font-bold text-slate-500 flex items-center gap-2 border border-white/20">
+          <MapIcon className="w-3 h-3" />
+          LIVE MAP PREVIEW
+        </div>
+      </div>
+      
+      {/* Shipment List */}
+      <div className="space-y-4">
+        {filteredShipments.map((s) => (
+          <div 
+            key={s.shipment_id}
+            onClick={() => setSelectedId(s.shipment_id)}
+            className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all cursor-pointer ${
+              selectedId === s.shipment_id 
+                ? 'border-primary-500 ring-1 ring-primary-500 shadow-md' 
+                : 'border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-300'
             }`}
           >
-            <div className="flex items-start justify-between mb-3">
+            <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  item.status === 'in_transit' ? 'bg-green-100 text-green-600' :
-                  item.status === 'delivered' ? 'bg-blue-100 text-blue-600' :
-                  'bg-orange-100 text-orange-600'
-                }`}>
+                <div className={`p-2.5 rounded-xl ${selectedId === s.shipment_id ? 'bg-primary-100 text-primary-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
                   <Truck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900 dark:text-white">
-                    {item.id}
-                  </h3>
-                  <p className="text-sm text-slate-500">{item.driver}</p>
+                  <h3 className="font-bold text-slate-900 dark:text-white">{s.shipment_id}</h3>
+                  <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name}</p>
                 </div>
               </div>
-              <span className={`badge ${
-                item.status === 'in_transit' ? 'badge-success' :
-                item.status === 'delivered' ? 'badge-info' :
-                'badge-warning'
-              }`}>
-                {item.status === 'in_transit' ? 'Live' : 
-                 item.status === 'delivered' ? 'Delivered' : 'Delayed'}
-              </span>
+              <div className="text-right">
+                <div className="flex items-center gap-1 text-emerald-600 font-bold text-sm">
+                  <Activity className="w-3 h-3" />
+                  {s.speed} km/h
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">Updated {new Date(s.last_updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              </div>
             </div>
             
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                <MapPin className="w-4 h-4 text-slate-400" />
-                <span>{item.location}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                  <Navigation className="w-4 h-4 text-slate-400" />
-                  <span>To: {item.destination}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-slate-400" />
-                  <span className="font-medium text-slate-700 dark:text-slate-300">
-                    {item.eta}
-                  </span>
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary-500" />
+                <div className="overflow-hidden">
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">Current Location</p>
+                  <p className="text-xs font-medium truncate">{s.latitude.toFixed(4)}, {s.longitude.toFixed(4)}</p>
                 </div>
               </div>
-              {item.speed !== '0 km/h' && (
-                <div className="text-xs text-slate-500">
-                  Speed: {item.speed}
+              <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
+                <Navigation className="w-4 h-4 text-emerald-500" />
+                <div className="overflow-hidden">
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">Destination</p>
+                  <p className="text-xs font-medium truncate">{s.destination_city || 'Unknown'}</p>
                 </div>
-              )}
+              </div>
             </div>
+
+            {selectedId === s.shipment_id && (
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex gap-2 animate-fade-in">
+                <button className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all">
+                  View Details
+                </button>
+                <button className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
+                  <Shield className="w-3 h-3" />
+                  Contact Driver
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

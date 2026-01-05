@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 
 # Clean architecture imports - now fixed for circular dependencies
 from .core.container import configure_container
-from .extensions import db
+from .extensions import db, socketio
 from .middleware.security import SecurityHeaders
 
 def create_app(config_context: Optional[str] = None,
@@ -35,6 +35,7 @@ def create_app(config_context: Optional[str] = None,
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
+    socketio.init_app(app)
 
     from . import models
     with app.app_context():

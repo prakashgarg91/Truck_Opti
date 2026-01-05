@@ -37,6 +37,17 @@ export default function PackingPage() {
     }
   })
 
+  const packMutation = useMutation({
+    mutationFn: (data: any) => optimizationApi.pack(data),
+    onSuccess: (data) => {
+      // Handle packed results, update 3D viewer
+      toast.success('Packing optimized!')
+    },
+    onError: () => {
+      toast.error('Optimization failed')
+    }
+  })
+
   const handleRunBenchmark = () => {
     if (!selectedTruck) return
     benchmarkMutation.mutate({
@@ -46,6 +57,18 @@ export default function PackingPage() {
         { carton_id: 2, quantity: 5 }
       ],
       algorithms: selectedAlgorithms
+    })
+  }
+
+  const handleStartOptimization = () => {
+    if (!selectedTruck) return
+    packMutation.mutate({
+      truck_id: 1, // Mock ID
+      cartons: [
+        { carton_id: 1, quantity: 10 },
+        { carton_id: 2, quantity: 5 }
+      ],
+      algorithm: algorithm as any
     })
   }
 
@@ -232,11 +255,11 @@ export default function PackingPage() {
       
       {/* Action Button */}
       <button 
-        disabled={!selectedTruck || (isBenchmarkMode && selectedAlgorithms.length === 0) || benchmarkMutation.isPending}
-        onClick={isBenchmarkMode ? handleRunBenchmark : () => {}}
+        disabled={!selectedTruck || (isBenchmarkMode && selectedAlgorithms.length === 0) || benchmarkMutation.isPending || packMutation.isPending}
+        onClick={isBenchmarkMode ? handleRunBenchmark : handleStartOptimization}
         className={`btn w-full ${isBenchmarkMode ? 'btn-secondary' : 'btn-primary'}`}
       >
-        {benchmarkMutation.isPending ? (
+        {benchmarkMutation.isPending || packMutation.isPending ? (
           <div className="spinner w-5 h-5" />
         ) : isBenchmarkMode ? (
           <>

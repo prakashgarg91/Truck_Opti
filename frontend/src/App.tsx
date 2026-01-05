@@ -13,6 +13,10 @@ import PackingPage from './pages/PackingPage'
 import RoutesPage from './pages/RoutesPage'
 import TrackingPage from './pages/TrackingPage'
 import ProfilePage from './pages/ProfilePage'
+import ManagementPage from './pages/ManagementPage'
+import TrucksPage from './pages/TrucksPage'
+import CartonsPage from './pages/CartonsPage'
+import CustomersPage from './pages/CustomersPage'
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -45,6 +49,10 @@ export default function App() {
         <Route path="/routes" element={<RoutesPage />} />
         <Route path="/tracking" element={<TrackingPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/management" element={<ManagementPage />} />
+        <Route path="/management/trucks" element={<TrucksPage />} />
+        <Route path="/management/cartons" element={<CartonsPage />} />
+        <Route path="/management/customers" element={<CustomersPage />} />
       </Route>
       
       {/* Catch all */}
