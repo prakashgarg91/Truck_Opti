@@ -617,6 +617,10 @@ This requires:
 read, update and follow 0.development-matrix (all files), update this project, and make this a modern looking app with, modern ui/ux, latest 3D packing Algorithms, make this a logistic solution, uploading , bin/trucks data
 
 3D Design of trucks with BINs in it, 3D visulisation, 
+
+UI/UX OF DESKTOP AND MOBILE PHONE MUST BE OPTIMISED AND ALGORITHM SHOULD BE ADVANCE FOR 3D BIN FEEDING IN ALL AVAILABLE TRUCKS SO THAT WE CAN CALL THE RIGHT TRUCK OR TRUCKS ACCORDING TO THE SALE ORDER RECEIVED
+
+Language should be shown 1 at a time
 ---
 
 *Document Version: 3.0*

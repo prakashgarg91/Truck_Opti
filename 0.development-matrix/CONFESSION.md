@@ -17,8 +17,50 @@
 # 🙏 CONFESSION.md - Known Issues, Errors & Missed Items
 
 > **Honest acknowledgment of what's broken, missed, or incomplete**
-> **Last Updated:** 2025-12-27 (Session 19 Iteration 2 - End-to-End Delivery Test)
+> **Last Updated:** 2026-01-06 (TruckOpti UI/UX Session)
 > **Purpose:** Help future development by documenting known issues
+
+---
+
+## 🟢 TruckOpti Session: UI/UX Improvements (January 6, 2026)
+
+### ✅ DESKTOP RESPONSIVE LAYOUT FIX
+
+| Issue | Status | Fix Applied |
+|-------|--------|-------------|
+| **Sidebar not fixed on desktop** | ✅ FIXED | Added `lg:fixed lg:inset-y-0` to sidebar |
+| **Main content under sidebar** | ✅ FIXED | Added `lg:ml-64` offset to main area |
+| **Bilingual nav labels** | ✅ REMOVED | Cleaned up redundant Hindi labels |
+
+### ✅ LANGUAGE TOGGLE FEATURE
+
+| Feature | Status | Implementation |
+|---------|--------|----------------|
+| **Globe icon button** | ✅ ADDED | PackingPage.tsx header |
+| **English/Hindi toggle** | ✅ WORKING | `lang` state with 'en'/'hi' values |
+| **Translation object** | ✅ CREATED | `t[lang]` for UI strings |
+| **Page title** | ✅ TRANSLATES | "Smart Truck Loading" / "स्मार्ट ट्रक लोडिंग" |
+| **All labels** | ✅ TRANSLATES | Buttons, headings, cards |
+
+### Verified Results (January 6, 2026)
+```
+✅ Desktop Layout: Sidebar fixed, main content properly offset
+✅ Language Toggle: EN ↔ HI switching works correctly
+✅ Dark Mode: Working properly with Tailwind dark: classes
+✅ 3D Visualization: Three.js rendering correctly
+✅ Smart Truck Recommendation: Cards displaying properly
+✅ GitHub: Commit 7cddfd14 pushed to main
+```
+
+### Files Modified
+```
+frontend/src/layouts/MobileLayout.tsx  - Desktop responsive fixes
+frontend/src/pages/PackingPage.tsx     - Language toggle implementation
+```
+
+### Known Issues (None Critical)
+- Language toggle is page-specific (not global context yet)
+- Hindi translations may need native speaker review
 
 ---
 

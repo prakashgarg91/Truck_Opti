@@ -2,12 +2,24 @@
   "$schema": "features-schema.json",
   "$comment": "BREADCRUMB: 0.development-matrix/features.json - TruckOpti Logistics Platform for India Market",
   "project": "TruckOpti - Advanced Logistics Solution",
-  "version": "1.0.0",
-  "lastUpdated": "2026-01-04T10:00:00.000Z",
+  "version": "1.1.0",
+  "lastUpdated": "2026-01-06T18:00:00.000Z",
   "description": "3D Bin Packing, Route Optimization, OTP Auth, Google Integration for Indian Market",
-  "overallProgress": 10,
+  "overallProgress": 25,
 
   "changelog": {
+    "2026-01-06-v1.1": {
+      "version": "1.1.0",
+      "changes": [
+        "✅ UI/UX: Fixed desktop responsive layout (sidebar fixed positioning)",
+        "✅ UI/UX: Added main content lg:ml-64 offset for sidebar",
+        "✅ FEATURE: Language toggle (English/Hindi) on PackingPage",
+        "✅ FEATURE: Globe icon button for language switching",
+        "✅ VERIFIED: Dark mode working correctly",
+        "✅ VERIFIED: 3D visualization rendering properly",
+        "✅ CLEANED: Removed bilingual navigation labels"
+      ]
+    },
     "2026-01-04-v1.0": {
       "version": "1.0.0",
       "changes": [

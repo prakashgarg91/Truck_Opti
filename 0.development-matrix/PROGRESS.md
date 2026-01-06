@@ -16,8 +16,8 @@
 
 # PROGRESS.MD - TruckOpti Logistics Platform
 
-**Last Updated:** January 4, 2026
-**Version:** 1.0.0
+**Last Updated:** January 6, 2026
+**Version:** 1.1.0
 **Project:** Advanced 3D Bin Packing & Route Optimization for India
 
 ---
