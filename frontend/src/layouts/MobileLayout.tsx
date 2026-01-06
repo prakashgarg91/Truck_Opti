@@ -49,9 +49,9 @@ export default function MobileLayout() {
   }, [location.pathname])
   
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-      {/* Mobile Header */}
-      <header className="glass border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-40 safe-area-inset-top">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Mobile Header - Hidden on desktop */}
+      <header className="glass border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-40 safe-area-inset-top lg:hidden">
         <div className="flex items-center justify-between px-4 h-14">
           <button 
             onClick={() => setSidebarOpen(true)}
@@ -96,8 +96,9 @@ export default function MobileLayout() {
       
       {/* Sidebar */}
       <aside className={clsx(
-        "fixed top-0 left-0 bottom-0 w-80 bg-white dark:bg-slate-800 z-50 transform transition-transform duration-300 ease-out shadow-2xl lg:translate-x-0 lg:static lg:w-64 lg:shadow-none",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed top-0 left-0 bottom-0 w-80 bg-white dark:bg-slate-800 z-50 transform transition-transform duration-300 ease-out shadow-2xl",
+        "lg:fixed lg:translate-x-0 lg:w-64 lg:shadow-lg lg:border-r lg:border-slate-200 dark:lg:border-slate-700",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
@@ -144,7 +145,6 @@ export default function MobileLayout() {
                   "group-hover:scale-110"
                 )} />
                 <span className="font-medium">{item.label}</span>
-                <span className="text-xs opacity-60 ml-auto">{item.labelHi}</span>
               </NavLink>
             ))}
             
@@ -207,7 +207,7 @@ export default function MobileLayout() {
       </aside>
       
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-6 overflow-x-hidden">
+      <main className="flex-1 pb-24 lg:pb-6 lg:ml-64 overflow-x-hidden min-h-screen">
         <Outlet />
       </main>
       

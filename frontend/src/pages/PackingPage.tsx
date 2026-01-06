@@ -2,10 +2,89 @@ import { useState, useMemo, useCallback } from 'react'
 import { 
   Package, Truck, Play, Settings, Layers, CheckCircle2, 
   Plus, Trash2, Wand2, AlertTriangle, ChevronDown,
-  Zap, Brain, Target, Calculator, ShoppingCart, ArrowRight
+  Zap, Brain, Target, Calculator, ShoppingCart, ArrowRight, Globe
 } from 'lucide-react'
 import TruckViewer from '../components/TruckViewer'
 import toast from 'react-hot-toast'
+
+// ============= LANGUAGE =============
+type Language = 'en' | 'hi'
+const t = {
+  en: {
+    title: '3D Bin Packing',
+    subtitle: 'Smart Truck Recommendation System',
+    smartMode: 'Smart',
+    manualMode: 'Manual',
+    saleOrderItems: 'Sale Order Items',
+    addItem: 'Add Item',
+    algorithm: 'Algorithm',
+    selectTruck: 'Select Truck',
+    findBestTruck: 'Find Best Truck',
+    optimizePacking: 'Optimize Packing',
+    recommendedTrucks: 'Recommended Trucks',
+    packingDetails: 'Packing Details',
+    itemsPacked: 'Items Packed',
+    volumeUsed: 'Volume Used',
+    weightUsed: 'Weight Used',
+    estCost: 'Est. Cost',
+    itemsWontFit: "Items That Won't Fit",
+    additionalTruck: 'Consider using an additional truck or larger vehicle',
+    book: 'Book',
+    noItems: 'No items added',
+    addFirstItem: 'Add your first item above',
+    selectTruckPrompt: 'Select a truck to see 3D preview',
+    smartPrompt: 'Click "Find Best Truck" to see 3D visualization',
+    itemName: 'Item',
+    length: 'L (cm)',
+    width: 'W (cm)',
+    height: 'H (cm)',
+    weight: 'Wt (kg)',
+    qty: 'Qty',
+    fragile: 'Fragile',
+    stackable: 'Stackable',
+    itemsFit: 'Items Fit',
+    volume: 'Volume',
+    best: 'Best',
+    wontFit: "items won't fit"
+  },
+  hi: {
+    title: '3डी बिन पैकिंग',
+    subtitle: 'स्मार्ट ट्रक अनुशंसा प्रणाली',
+    smartMode: 'स्मार्ट',
+    manualMode: 'मैन्युअल',
+    saleOrderItems: 'सेल ऑर्डर आइटम',
+    addItem: 'आइटम जोड़ें',
+    algorithm: 'एल्गोरिदम',
+    selectTruck: 'ट्रक चुनें',
+    findBestTruck: 'सबसे अच्छा ट्रक खोजें',
+    optimizePacking: 'पैकिंग ऑप्टिमाइज़ करें',
+    recommendedTrucks: 'अनुशंसित ट्रक',
+    packingDetails: 'पैकिंग विवरण',
+    itemsPacked: 'पैक किए गए',
+    volumeUsed: 'वॉल्यूम',
+    weightUsed: 'वजन',
+    estCost: 'अनुमानित लागत',
+    itemsWontFit: 'जो आइटम नहीं बैठेंगे',
+    additionalTruck: 'अतिरिक्त ट्रक या बड़ा वाहन उपयोग करें',
+    book: 'बुक करें',
+    noItems: 'कोई आइटम नहीं',
+    addFirstItem: 'ऊपर पहला आइटम जोड़ें',
+    selectTruckPrompt: 'ट्रक चुनें और देखें',
+    smartPrompt: 'बटन दबाएं',
+    itemName: 'आइटम',
+    length: 'लं (सेमी)',
+    width: 'चौ (सेमी)',
+    height: 'ऊँ (सेमी)',
+    weight: 'वज़न (किग्रा)',
+    qty: 'मात्रा',
+    fragile: 'नाज़ुक',
+    stackable: 'स्टैक',
+    itemsFit: 'फिट',
+    volume: 'वॉल्यूम',
+    best: 'बेस्ट',
+    wontFit: 'फिट नहीं होंगे'
+  }
+}
 
 // ============= TYPES =============
 interface SaleOrderItem {
@@ -398,6 +477,7 @@ function recommendTrucks(items: SaleOrderItem[], algorithm: string): TruckRecomm
 // ============= MAIN COMPONENT =============
 export default function PackingPage() {
   // State
+  const [lang, setLang] = useState<Language>('en')
   const [mode, setMode] = useState<'manual' | 'smart'>('smart')
   const [selectedTruck, setSelectedTruck] = useState<string | null>(null)
   const [algorithm, setAlgorithm] = useState('extreme_points')
@@ -531,39 +611,50 @@ export default function PackingPage() {
             <div>
               <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Package className="w-6 h-6 text-primary-500" />
-                3D Bin Packing
-                <span className="text-xs font-normal text-slate-500 ml-2 hidden sm:inline">/ 3डी बिन पैकिंग</span>
+                {t[lang].title}
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Smart truck selection for your orders / आपके ऑर्डर के लिए स्मार्ट ट्रक चयन
+                {t[lang].subtitle}
               </p>
             </div>
             
-            {/* Mode Toggle */}
-            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            {/* Language & Mode Toggle */}
+            <div className="flex items-center gap-3">
+              {/* Language Toggle */}
               <button
-                onClick={() => setMode('smart')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  mode === 'smart' 
-                    ? 'bg-primary-600 text-white shadow-md' 
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
+                onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
               >
-                <Wand2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Smart Mode</span>
-                <span className="sm:hidden">Smart</span>
+                <Globe className="w-4 h-4" />
+                {lang === 'en' ? 'हिंदी' : 'English'}
               </button>
-              <button
-                onClick={() => setMode('manual')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  mode === 'manual' 
-                    ? 'bg-slate-700 text-white shadow-md' 
+
+              {/* Mode Toggle */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <button
+                  onClick={() => setMode('smart')}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    mode === 'smart' 
+                      ? 'bg-primary-600 text-white shadow-md' 
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Wand2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t[lang].smartMode}</span>
+                  <span className="sm:hidden">{t[lang].smartMode}</span>
+                </button>
+                <button
+                  onClick={() => setMode('manual')}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    mode === 'manual' 
+                      ? 'bg-slate-700 text-white shadow-md' 
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
                 <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline">Manual</span>
+                <span className="hidden sm:inline">{t[lang].manualMode}</span>
               </button>
+              </div>
             </div>
           </div>
         </div>
@@ -583,7 +674,7 @@ export default function PackingPage() {
               >
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                   <ShoppingCart className="w-4 h-4 text-primary-500" />
-                  Sale Order Items / सेल ऑर्डर आइटम
+                  {t[lang].saleOrderItems}
                   <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-xs px-2 py-0.5 rounded-full">
                     {totalStats.totalItems}
                   </span>
@@ -595,15 +686,15 @@ export default function PackingPage() {
                 {/* Stats Summary */}
                 <div className="px-4 pb-3 grid grid-cols-3 gap-2 text-center">
                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2">
-                    <p className="text-xs text-slate-500">Items</p>
+                    <p className="text-xs text-slate-500">{t[lang].itemName}</p>
                     <p className="font-bold text-slate-900 dark:text-white">{totalStats.totalItems}</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2">
-                    <p className="text-xs text-slate-500">Weight</p>
+                    <p className="text-xs text-slate-500">{t[lang].weight}</p>
                     <p className="font-bold text-slate-900 dark:text-white">{totalStats.totalWeight}kg</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2">
-                    <p className="text-xs text-slate-500">Volume</p>
+                    <p className="text-xs text-slate-500">{t[lang].volume}</p>
                     <p className="font-bold text-slate-900 dark:text-white">{totalStats.totalVolume}m³</p>
                   </div>
                 </div>
@@ -643,42 +734,42 @@ export default function PackingPage() {
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <input
                         type="text"
-                        placeholder="Item name"
+                        placeholder={t[lang].itemName}
                         value={newItem.name}
                         onChange={e => setNewItem(prev => ({ ...prev, name: e.target.value }))}
                         className="input text-sm col-span-2"
                       />
                       <input
                         type="number"
-                        placeholder="L (cm)"
+                        placeholder={t[lang].length}
                         value={newItem.length || ''}
                         onChange={e => setNewItem(prev => ({ ...prev, length: +e.target.value }))}
                         className="input text-sm"
                       />
                       <input
                         type="number"
-                        placeholder="W (cm)"
+                        placeholder={t[lang].width}
                         value={newItem.width || ''}
                         onChange={e => setNewItem(prev => ({ ...prev, width: +e.target.value }))}
                         className="input text-sm"
                       />
                       <input
                         type="number"
-                        placeholder="H (cm)"
+                        placeholder={t[lang].height}
                         value={newItem.height || ''}
                         onChange={e => setNewItem(prev => ({ ...prev, height: +e.target.value }))}
                         className="input text-sm"
                       />
                       <input
                         type="number"
-                        placeholder="Weight (kg)"
+                        placeholder={t[lang].weight}
                         value={newItem.weight || ''}
                         onChange={e => setNewItem(prev => ({ ...prev, weight: +e.target.value }))}
                         className="input text-sm"
                       />
                       <input
                         type="number"
-                        placeholder="Qty"
+                        placeholder={t[lang].qty}
                         value={newItem.quantity || ''}
                         onChange={e => setNewItem(prev => ({ ...prev, quantity: +e.target.value }))}
                         className="input text-sm"
@@ -690,12 +781,12 @@ export default function PackingPage() {
                           onChange={e => setNewItem(prev => ({ ...prev, stackable: e.target.checked }))}
                           className="rounded text-primary-600"
                         />
-                        Stackable
+                        {t[lang].stackable}
                       </label>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => setShowItemForm(false)} className="btn btn-secondary flex-1 py-2">Cancel</button>
-                      <button onClick={handleAddItem} className="btn btn-primary flex-1 py-2">Add Item</button>
+                      <button onClick={() => setShowItemForm(false)} className="btn btn-secondary flex-1 py-2">{lang === 'en' ? 'Cancel' : 'रद्द करें'}</button>
+                      <button onClick={handleAddItem} className="btn btn-primary flex-1 py-2">{t[lang].addItem}</button>
                     </div>
                   </div>
                 ) : (
@@ -705,7 +796,7 @@ export default function PackingPage() {
                       className="btn btn-outline w-full py-2"
                     >
                       <Plus className="w-4 h-4" />
-                      Add Item / आइटम जोड़ें
+                      {t[lang].addItem}
                     </button>
                   </div>
                 )}
@@ -716,7 +807,7 @@ export default function PackingPage() {
             <div className="card p-4">
               <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                 <Brain className="w-4 h-4 text-primary-500" />
-                Algorithm / एल्गोरिदम
+                {t[lang].algorithm}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-2">
                 {ALGORITHMS.map(algo => (
@@ -731,7 +822,7 @@ export default function PackingPage() {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <algo.icon className={`w-4 h-4 ${algorithm === algo.id ? 'text-primary-500' : 'text-slate-400'}`} />
-                      <span className="text-sm font-medium text-slate-900 dark:text-white">{algo.name}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{lang === 'en' ? algo.name : algo.nameHi}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <span className={`px-1.5 py-0.5 rounded ${
@@ -753,7 +844,7 @@ export default function PackingPage() {
               <div className="card p-4 animate-fade-in">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                   <Truck className="w-4 h-4 text-primary-500" />
-                  Select Truck / ट्रक चुनें
+                  {t[lang].selectTruck}
                 </h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {TRUCKS.map(truck => (
@@ -768,7 +859,7 @@ export default function PackingPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-slate-900 dark:text-white">{truck.name}</p>
+                          <p className="font-medium text-slate-900 dark:text-white">{lang === 'en' ? truck.name : truck.nameHi}</p>
                           <p className="text-xs text-slate-500">
                             {truck.dimensions.length}×{truck.dimensions.width}×{truck.dimensions.height}m • {truck.capacity}kg
                           </p>
@@ -798,12 +889,12 @@ export default function PackingPage() {
               ) : mode === 'smart' ? (
                 <>
                   <Wand2 className="w-5 h-5" />
-                  Find Best Truck / सबसे अच्छा ट्रक खोजें
+                  {t[lang].findBestTruck}
                 </>
               ) : (
                 <>
                   <Play className="w-5 h-5" />
-                  Optimize Packing / पैकिंग ऑप्टिमाइज़ करें
+                  {t[lang].optimizePacking}
                 </>
               )}
             </button>
@@ -817,7 +908,7 @@ export default function PackingPage() {
               <div className="card p-4 animate-fade-in">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-500" />
-                  Recommended Trucks / अनुशंसित ट्रक
+                  {t[lang].recommendedTrucks}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {recommendations.map((rec, idx) => (
@@ -835,16 +926,16 @@ export default function PackingPage() {
                     >
                       {idx === 0 && (
                         <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
-                          Best Match
+                          {t[lang].best}
                         </div>
                       )}
                       <div className="flex items-center gap-2 mb-2">
                         <Truck className={`w-5 h-5 ${idx === 0 ? 'text-amber-500' : 'text-slate-400'}`} />
-                        <span className="font-semibold text-slate-900 dark:text-white">{rec.truck.name}</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">{lang === 'en' ? rec.truck.name : rec.truck.nameHi}</span>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">Items Fit</span>
+                          <span className="text-slate-500">{t[lang].itemsFit}</span>
                           <span className={`font-medium ${
                             rec.itemsFit === rec.totalItems ? 'text-green-600' : 'text-amber-600'
                           }`}>
@@ -852,7 +943,7 @@ export default function PackingPage() {
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">Volume</span>
+                          <span className="text-slate-500">{t[lang].volume}</span>
                           <div className="flex items-center gap-2">
                             <div className="w-16 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                               <div 
@@ -867,7 +958,7 @@ export default function PackingPage() {
                           </div>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">Est. Cost</span>
+                          <span className="text-slate-500">{t[lang].estCost}</span>
                           <span className="font-medium text-slate-900 dark:text-white">₹{rec.estimatedCost}</span>
                         </div>
                       </div>
@@ -875,7 +966,7 @@ export default function PackingPage() {
                         <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                           <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
-                            {rec.unfitItems.length} items won't fit
+                            {rec.unfitItems.length} {t[lang].wontFit}
                           </p>
                         </div>
                       )}
@@ -899,11 +990,8 @@ export default function PackingPage() {
                       <Layers className="w-8 h-8 text-slate-400" />
                     </div>
                     <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      {mode === 'smart' ? 'Click "Find Best Truck" to see 3D visualization' : 'Select a truck to see 3D preview'}
+                      {mode === 'smart' ? t[lang].smartPrompt : t[lang].selectTruckPrompt}
                     </h3>
-                    <p className="text-sm text-slate-500">
-                      {mode === 'smart' ? 'स्मार्ट अनुशंसा के लिए ऊपर बटन दबाएं' : 'ट्रक चुनें और विज़ुअलाइज़ेशन देखें'}
-                    </p>
                   </div>
                 </div>
               )}
@@ -914,25 +1002,25 @@ export default function PackingPage() {
               <div className="card p-4 animate-fade-in">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
                   <Calculator className="w-4 h-4 text-primary-500" />
-                  Packing Details / पैकिंग विवरण
+                  {t[lang].packingDetails}
                 </h3>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400">{selectedRecommendation.itemsFit}</p>
-                    <p className="text-xs text-green-700 dark:text-green-500">Items Packed</p>
+                    <p className="text-xs text-green-700 dark:text-green-500">{t[lang].itemsPacked}</p>
                   </div>
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{selectedRecommendation.volumeUtilization}%</p>
-                    <p className="text-xs text-blue-700 dark:text-blue-500">Volume Used</p>
+                    <p className="text-xs text-blue-700 dark:text-blue-500">{t[lang].volumeUsed}</p>
                   </div>
                   <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{selectedRecommendation.weightUtilization}%</p>
-                    <p className="text-xs text-purple-700 dark:text-purple-500">Weight Used</p>
+                    <p className="text-xs text-purple-700 dark:text-purple-500">{t[lang].weightUsed}</p>
                   </div>
                   <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">₹{selectedRecommendation.estimatedCost}</p>
-                    <p className="text-xs text-amber-700 dark:text-amber-500">Est. Cost</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-500">{t[lang].estCost}</p>
                   </div>
                 </div>
 
@@ -940,7 +1028,7 @@ export default function PackingPage() {
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-4">
                     <h4 className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-4 h-4" />
-                      Items That Won't Fit / जो आइटम नहीं बैठेंगे
+                      {t[lang].itemsWontFit}
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedRecommendation.unfitItems.map((item, idx) => (
@@ -950,7 +1038,7 @@ export default function PackingPage() {
                       ))}
                     </div>
                     <p className="text-sm text-amber-600 dark:text-amber-500 mt-3">
-                      Consider using an additional truck or larger vehicle
+                      {t[lang].additionalTruck}
                     </p>
                   </div>
                 )}
@@ -958,7 +1046,7 @@ export default function PackingPage() {
                 {/* Book Truck Button */}
                 <button className="btn bg-gradient-to-r from-green-500 to-emerald-600 text-white w-full py-4 text-lg shadow-lg hover:from-green-600 hover:to-emerald-700">
                   <Truck className="w-5 h-5" />
-                  Book {selectedRecommendation.truck.name}
+                  {t[lang].book} {lang === 'en' ? selectedRecommendation.truck.name : selectedRecommendation.truck.nameHi}
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
