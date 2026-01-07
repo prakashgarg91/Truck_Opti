@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { 
-  User, Phone, Mail, MapPin, Shield, Bell, 
-  Globe, ChevronRight, LogOut, Camera,
-  Link as LinkIcon, Unlink
+  Phone, Mail, MapPin, Shield, Bell, 
+  Globe, ChevronRight, LogOut, Camera, Unlink
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 
@@ -36,7 +35,7 @@ export default function ProfilePage() {
           {user?.name || 'Guest User'}
         </h1>
         <p className="text-slate-500 dark:text-slate-400">
-          {user?.company || 'TruckOpti User'}
+          TruckOpti User
         </p>
         <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600">
           <Shield className="w-4 h-4" />

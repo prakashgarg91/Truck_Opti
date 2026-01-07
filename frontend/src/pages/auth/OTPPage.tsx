@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, RefreshCw, Shield, CheckCircle2, XCircle } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Shield, CheckCircle2 } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authApi } from '../../services/api'

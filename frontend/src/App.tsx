@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuthStore } from './stores/authStore'
 
 // Layouts
 import MobileLayout from './layouts/MobileLayout'

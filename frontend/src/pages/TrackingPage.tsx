@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { MapPin, Truck, Clock, RefreshCw, Navigation, Search, ChevronRight, Activity, Shield, Map as MapIcon } from 'lucide-react'
-import { locationApi, shipmentsApi } from '../services/api'
+import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Map as MapIcon } from 'lucide-react'
+import { shipmentsApi } from '../services/api'
 
 interface ShipmentLocation {
   shipment_id: string
@@ -90,8 +90,6 @@ export default function TrackingPage() {
     s.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
     s.vehicle_number?.toLowerCase().includes(search.toLowerCase())
   )
-
-  const selectedShipment = shipments.find(s => s.shipment_id === selectedId)
 
   return (
     <div className="p-4 space-y-6 pb-8">
