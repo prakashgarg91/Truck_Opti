@@ -3,3 +3,9 @@
 __pycache__/
 *.pyc
 *.pyo
+# Build output - too large for GitHub
+frontend/release/
+frontend/release/**
+
+# node modules
+node_modules/

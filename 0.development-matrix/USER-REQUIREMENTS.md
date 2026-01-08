@@ -621,6 +621,10 @@ read, update and follow 0.development-matrix (all files), update this project, a
 UI/UX OF DESKTOP AND MOBILE PHONE MUST BE OPTIMISED AND ALGORITHM SHOULD BE ADVANCE FOR 3D BIN FEEDING IN ALL AVAILABLE TRUCKS SO THAT WE CAN CALL THE RIGHT TRUCK OR TRUCKS ACCORDING TO THE SALE ORDER RECEIVED
 
 Language should be shown 1 at a time
+
+Monthly subscription model that cover each and every possible cost plus 60% margin on cost
+
+we can use phonepay integration of UPI Payment
 ---
 
 *Document Version: 3.0*
