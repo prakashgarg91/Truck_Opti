@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { 
   LayoutDashboard, 
   Package, 
@@ -12,10 +12,14 @@ import {
   HelpCircle,
   LogOut,
   Moon,
-  Sun
+  Sun,
+  CreditCard
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
+import { useLanguageStore } from '../stores/languageStore'
+import { useAuthStore } from '../stores/authStore'
+import toast from 'react-hot-toast'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home', labelHi: 'होम' },
@@ -31,6 +35,9 @@ export default function MobileLayout() {
   const [isDark, setIsDark] = useState(false)
   const [notificationCount] = useState(3)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { language, toggleLanguage } = useLanguageStore()
+  const { logout } = useAuthStore()
   
   const currentPage = navItems.find(item => item.path === location.pathname)
   
@@ -144,21 +151,42 @@ export default function MobileLayout() {
                   "w-5 h-5 transition-transform duration-200",
                   "group-hover:scale-110"
                 )} />
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium">{language === 'en' ? item.label : item.labelHi}</span>
               </NavLink>
             ))}
             
             <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-3">
-                Settings
+                {language === 'en' ? 'Settings' : 'सेटिंग्स'}
               </p>
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
-                <Settings className="w-5 h-5" />
-                <span className="font-medium">Settings</span>
+              <button 
+                onClick={() => {
+                  navigate('/pricing')
+                  setSidebarOpen(false)
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <CreditCard className="w-5 h-5" />
+                <span className="font-medium">{language === 'en' ? 'Subscription' : 'सदस्यता'}</span>
               </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+              <button 
+                onClick={() => {
+                  navigate('/profile')
+                  setSidebarOpen(false)
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <Settings className="w-5 h-5" />
+                <span className="font-medium">{language === 'en' ? 'Settings' : 'सेटिंग्स'}</span>
+              </button>
+              <button 
+                onClick={() => {
+                  toast.success(language === 'en' ? 'Support: support@truckopti.in' : 'सहायता: support@truckopti.in')
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+              >
                 <HelpCircle className="w-5 h-5" />
-                <span className="font-medium">Help & Support</span>
+                <span className="font-medium">{language === 'en' ? 'Help & Support' : 'सहायता'}</span>
               </button>
             </div>
           </nav>
@@ -187,10 +215,26 @@ export default function MobileLayout() {
             
             {/* Language Toggle */}
             <div className="bg-slate-100 dark:bg-slate-700 rounded-xl p-1.5 flex gap-1.5">
-              <button className="flex-1 py-2.5 text-sm font-medium bg-white dark:bg-slate-600 rounded-lg text-slate-900 dark:text-white shadow-sm transition-all">
+              <button 
+                onClick={() => language !== 'en' && toggleLanguage()}
+                className={clsx(
+                  "flex-1 py-2.5 text-sm font-medium rounded-lg transition-all",
+                  language === 'en' 
+                    ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm" 
+                    : "text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50"
+                )}
+              >
                 English
               </button>
-              <button className="flex-1 py-2.5 text-sm font-medium text-slate-500 dark:text-slate-400 rounded-lg hover:bg-white/50 dark:hover:bg-slate-600/50 transition-all">
+              <button 
+                onClick={() => language !== 'hi' && toggleLanguage()}
+                className={clsx(
+                  "flex-1 py-2.5 text-sm font-medium rounded-lg transition-all",
+                  language === 'hi' 
+                    ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm" 
+                    : "text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50"
+                )}
+              >
                 हिंदी
               </button>
             </div>
@@ -198,9 +242,16 @@ export default function MobileLayout() {
           
           {/* Logout */}
           <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-            <button className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium">
+            <button 
+              onClick={() => {
+                logout()
+                toast.success(language === 'en' ? 'Logged out successfully' : 'सफलतापूर्वक लॉगआउट')
+                navigate('/login')
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium"
+            >
               <LogOut className="w-5 h-5" />
-              <span>Sign Out</span>
+              <span>{language === 'en' ? 'Sign Out' : 'लॉगआउट'}</span>
             </button>
           </div>
         </div>
@@ -241,7 +292,7 @@ export default function MobileLayout() {
                   "text-[10px] font-medium transition-all duration-300",
                   isActive && "font-semibold"
                 )}>
-                  {item.label}
+                  {language === 'en' ? item.label : item.labelHi}
                 </span>
               </NavLink>
             )

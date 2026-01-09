@@ -625,6 +625,10 @@ Language should be shown 1 at a time
 Monthly subscription model that cover each and every possible cost plus 60% margin on cost
 
 we can use phonepay integration of UPI Payment
+
+live map tracking should be done for driver who we have asked to login with truck opti as fleet runner, and client can ask driver to login and share the location by visiting the link we generate with sale invoice, route optimisation should use gmaps and their algorithms for , manage option: truck/cartons/customer type count showing but when I clicked to check no truck showing, picture adding to truck and bin should be there, dashboard should be working and interactive, and all actual data should be used, subscription option choosing and changing option required in settings, user profile management option required in setting, setting option must work, 
+
+Language toggle not working, help & Support not clicable, check every clickable buttong option must work, 
 ---
 
 *Document Version: 3.0*

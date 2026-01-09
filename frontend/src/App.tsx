@@ -19,6 +19,7 @@ import CustomersPage from './pages/CustomersPage'
 import PricingPage from './pages/PricingPage'
 import CheckoutPage from './pages/CheckoutPage'
 import PaymentCallbackPage from './pages/PaymentCallbackPage'
+import TestPaymentPage from './pages/TestPaymentPage'
 
 // Protected Route wrapper - BYPASSED FOR TESTING
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/payment/callback" element={<PaymentCallbackPage />} />
+        <Route path="/test-payment" element={<TestPaymentPage />} />
       </Route>
       
       {/* Protected routes with mobile layout */}

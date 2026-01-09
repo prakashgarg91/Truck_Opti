@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Loader2, CreditCard, Smartphone, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
+import { initiateRazorpayPayment, getRazorpayConfig, RazorpayPaymentResult } from '../services/razorpayPayment';
 import toast from 'react-hot-toast';
 
 interface Plan {
@@ -30,7 +30,7 @@ const CheckoutPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
 
-  const paymentConfig = getPaymentConfig();
+  const paymentConfig = getRazorpayConfig();
 
   useEffect(() => {
     loadData();
@@ -91,21 +91,22 @@ const CheckoutPage: React.FC = () => {
       const taxAmount = Math.round(amount * 0.18); // 18% GST
       const totalAmount = amount + taxAmount;
 
-      const result = await initiatePhonePePayment({
-        amount: totalAmount,
-        orderId: `ORD${Date.now()}`,
+      const result: RazorpayPaymentResult = await initiateRazorpayPayment({
+        amount: totalAmount, // Already in paise from database
+        description: `TruckOpti ${plan.name} - ${billingCycle === 'yearly' ? 'Annual' : 'Monthly'}`,
         userId: user.id,
         planId: plan.id,
-        billingCycle,
+        billingCycle: billingCycle === 'yearly' ? 'yearly' : 'monthly',
         customerPhone: phone,
         customerEmail: email,
+        customerName: user.user_metadata?.name || 'Customer',
       });
 
-      if (result.success && result.data?.instrumentResponse?.redirectInfo?.url) {
-        // Redirect to PhonePe payment page
-        window.location.href = result.data.instrumentResponse.redirectInfo.url;
+      if (result.success) {
+        toast.success(language === 'en' ? 'Payment successful!' : 'भुगतान सफल!');
+        navigate('/payment/success?payment_id=' + result.paymentId);
       } else {
-        toast.error(result.message || 'Payment initiation failed');
+        toast.error(result.error || 'Payment failed');
       }
     } catch (error) {
       console.error('Payment error:', error);

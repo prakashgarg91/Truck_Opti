@@ -4,9 +4,49 @@ import {
   Globe, ChevronRight, LogOut, Camera, Unlink
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
+import { useLanguageStore } from '../stores/languageStore'
+
+const translations = {
+  en: {
+    contactInfo: 'Contact Information',
+    phone: 'Phone',
+    email: 'Email',
+    location: 'Location',
+    verified: 'Verified',
+    verifiedAccount: 'Verified Account',
+    settings: 'Settings',
+    language: 'Language',
+    notifications: 'Notifications',
+    notificationDesc: 'Manage notification preferences',
+    locationSharing: 'Live Location Sharing',
+    locationDesc: 'Allow fleet tracking while delivering',
+    logout: 'Logout',
+    signOut: 'Sign out of your account',
+    user: 'TruckOpti User'
+  },
+  hi: {
+    contactInfo: 'संपर्क जानकारी',
+    phone: 'फोन',
+    email: 'ईमेल',
+    location: 'स्थान',
+    verified: 'सत्यापित',
+    verifiedAccount: 'सत्यापित खाता',
+    settings: 'सेटिंग्स',
+    language: 'भाषा',
+    notifications: 'नोटिफिकेशन',
+    notificationDesc: 'नोटिफिकेशन प्राथमिकताएं प्रबंधित करें',
+    locationSharing: 'लाइव लोकेशन शेयरिंग',
+    locationDesc: 'डिलीवरी के दौरान फ्लीट ट्रैकिंग की अनुमति दें',
+    logout: 'लॉगआउट',
+    signOut: 'अपने खाते से साइन आउट करें',
+    user: 'TruckOpti उपयोगकर्ता'
+  }
+}
 
 export default function ProfilePage() {
   const { user, logout } = useAuthStore()
+  const { language, toggleLanguage } = useLanguageStore()
+  const t = translations[language]
   const [isLocationSharing, setIsLocationSharing] = useState(true)
   const [notifications, setNotifications] = useState({
     sms: true,
@@ -35,37 +75,37 @@ export default function ProfilePage() {
           {user?.name || 'Guest User'}
         </h1>
         <p className="text-slate-500 dark:text-slate-400">
-          TruckOpti User
+          {t.user}
         </p>
         <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600">
           <Shield className="w-4 h-4" />
-          <span>Verified Account</span>
+          <span>{t.verifiedAccount}</span>
         </div>
       </div>
       
       {/* Contact Info */}
       <div className="card divide-y divide-slate-100 dark:divide-slate-700">
         <h2 className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
-          Contact Information
+          {t.contactInfo}
         </h2>
         <div className="p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
             <Phone className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-slate-500">Phone</p>
+            <p className="text-sm text-slate-500">{t.phone}</p>
             <p className="font-medium text-slate-900 dark:text-white">
               +91 98765 43210
             </p>
           </div>
-          <span className="badge badge-success">Verified</span>
+          <span className="badge badge-success">{t.verified}</span>
         </div>
         <div className="p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
             <Mail className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-slate-500">Email</p>
+            <p className="text-sm text-slate-500">{t.email}</p>
             <p className="font-medium text-slate-900 dark:text-white">
               {user?.email || 'user@truckopti.in'}
             </p>
@@ -77,7 +117,7 @@ export default function ProfilePage() {
             <MapPin className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-slate-500">Location</p>
+            <p className="text-sm text-slate-500">{t.location}</p>
             <p className="font-medium text-slate-900 dark:text-white">
               Mumbai, Maharashtra
             </p>
@@ -125,10 +165,10 @@ export default function ProfilePage() {
             </div>
             <div>
               <p className="font-medium text-slate-900 dark:text-white">
-                Location Sharing
+                {t.locationSharing}
               </p>
               <p className="text-sm text-slate-500">
-                Share live location with dispatchers
+                {t.locationDesc}
               </p>
             </div>
           </div>
@@ -148,12 +188,14 @@ export default function ProfilePage() {
       <div className="card divide-y divide-slate-100 dark:divide-slate-700">
         <h2 className="px-4 py-3 font-semibold text-slate-900 dark:text-white flex items-center gap-2">
           <Bell className="w-5 h-5" />
-          Notifications
+          {t.notifications}
         </h2>
         {Object.entries(notifications).map(([key, value]) => (
           <div key={key} className="p-4 flex items-center justify-between">
             <span className="text-slate-700 dark:text-slate-300 capitalize">
-              {key === 'sms' ? 'SMS Alerts' : key === 'push' ? 'Push Notifications' : 'Email Updates'}
+              {key === 'sms' ? (language === 'en' ? 'SMS Alerts' : 'एसएमएस अलर्ट') : 
+               key === 'push' ? (language === 'en' ? 'Push Notifications' : 'पुश नोटिफिकेशन') : 
+               (language === 'en' ? 'Email Updates' : 'ईमेल अपडेट')}
             </span>
             <label className="relative inline-flex items-center cursor-pointer">
               <input 
@@ -174,12 +216,17 @@ export default function ProfilePage() {
       {/* App Info */}
       <div className="card p-4 space-y-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">App Version</span>
+          <span className="text-slate-500">{language === 'en' ? 'App Version' : 'ऐप संस्करण'}</span>
           <span className="text-slate-700 dark:text-slate-300">2.0.0-beta</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">Language</span>
-          <span className="text-slate-700 dark:text-slate-300">English / हिंदी</span>
+          <span className="text-slate-500">{t.language}</span>
+          <button 
+            onClick={toggleLanguage}
+            className="text-primary-600 dark:text-primary-400 hover:underline"
+          >
+            {language === 'en' ? 'English → हिंदी' : 'हिंदी → English'}
+          </button>
         </div>
       </div>
       
@@ -189,7 +236,7 @@ export default function ProfilePage() {
         className="w-full btn bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30"
       >
         <LogOut className="w-5 h-5" />
-        <span>Sign Out</span>
+        <span>{t.logout}</span>
       </button>
       
       {/* Footer */}

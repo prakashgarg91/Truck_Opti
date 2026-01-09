@@ -1,38 +1,118 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell } from 'lucide-react'
+import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, Loader2 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
+import { useLanguageStore } from '../stores/languageStore'
+import { supabase } from '../lib/supabase'
 
-// Placeholder stats data
-const stats = [
-  { label: 'Active Shipments', value: '12', icon: Package, color: 'from-blue-500 to-blue-600', change: '+3' },
-  { label: 'Trucks in Transit', value: '8', icon: Truck, color: 'from-green-500 to-green-600', change: '+2' },
-  { label: 'Routes Today', value: '15', icon: Route, color: 'from-orange-500 to-orange-600', change: '+5' },
-  { label: 'Deliveries Done', value: '47', icon: MapPin, color: 'from-purple-500 to-purple-600', change: '+12' },
-]
-
-const recentActivity = [
-  { id: 1, type: 'delivery', message: 'Shipment #1234 delivered to Mumbai', time: '10 min ago', status: 'success' },
-  { id: 2, type: 'packing', message: '3D packing optimized for Truck #TRK-089', time: '25 min ago', status: 'info' },
-  { id: 3, type: 'route', message: 'New route Delhi → Jaipur created', time: '1 hour ago', status: 'info' },
-  { id: 4, type: 'alert', message: 'Driver location updated near Pune', time: '2 hours ago', status: 'warning' },
-]
-
-const quickActions = [
-  { icon: Package, label: '3D Pack', labelHi: 'पैकिंग', path: '/packing', color: 'bg-blue-500', description: 'Optimize loading' },
-  { icon: Route, label: 'Routes', labelHi: 'रूट', path: '/routes', color: 'bg-green-500', description: 'Plan delivery' },
-  { icon: MapPin, label: 'Track', labelHi: 'ट्रैक', path: '/tracking', color: 'bg-orange-500', description: 'Live GPS' },
-]
+interface DashboardStats {
+  activeShipments: number
+  trucksCount: number
+  routesToday: number
+  deliveriesDone: number
+}
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const [greeting] = useState(() => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good Morning'
-    if (hour < 17) return 'Good Afternoon'
-    return 'Good Evening'
+  const { language } = useLanguageStore()
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<DashboardStats>({
+    activeShipments: 0,
+    trucksCount: 0,
+    routesToday: 0,
+    deliveriesDone: 0
   })
+  const [greeting, setGreeting] = useState('')
+
+  useEffect(() => {
+    const hour = new Date().getHours()
+    if (hour < 12) setGreeting(language === 'en' ? 'Good Morning' : 'सुप्रभात')
+    else if (hour < 17) setGreeting(language === 'en' ? 'Good Afternoon' : 'नमस्कार')
+    else setGreeting(language === 'en' ? 'Good Evening' : 'शुभ संध्या')
+  }, [language])
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+      
+      // Fetch counts from Supabase
+      const [trucksRes, shipmentsRes, routesRes] = await Promise.all([
+        supabase.from('trucks').select('id', { count: 'exact' }),
+        supabase.from('shipments').select('id, status', { count: 'exact' }),
+        supabase.from('routes').select('id', { count: 'exact' })
+      ])
+
+      const activeShipments = shipmentsRes.data?.filter(s => s.status === 'in_transit').length || 0
+      const deliveriesDone = shipmentsRes.data?.filter(s => s.status === 'delivered').length || 0
+
+      setStats({
+        activeShipments,
+        trucksCount: trucksRes.count || 0,
+        routesToday: routesRes.count || 0,
+        deliveriesDone
+      })
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const statsConfig = [
+    { 
+      label: language === 'en' ? 'Active Shipments' : 'सक्रिय शिपमेंट', 
+      value: stats.activeShipments.toString(), 
+      icon: Package, 
+      color: 'from-blue-500 to-blue-600', 
+      change: '+0' 
+    },
+    { 
+      label: language === 'en' ? 'Trucks Available' : 'उपलब्ध ट्रक', 
+      value: stats.trucksCount.toString(), 
+      icon: Truck, 
+      color: 'from-green-500 to-green-600', 
+      change: `+${stats.trucksCount}` 
+    },
+    { 
+      label: language === 'en' ? 'Routes Today' : 'आज के रूट', 
+      value: stats.routesToday.toString(), 
+      icon: Route, 
+      color: 'from-orange-500 to-orange-600', 
+      change: '+0' 
+    },
+    { 
+      label: language === 'en' ? 'Deliveries Done' : 'डिलीवरी पूर्ण', 
+      value: stats.deliveriesDone.toString(), 
+      icon: MapPin, 
+      color: 'from-purple-500 to-purple-600', 
+      change: '+0' 
+    },
+  ]
+
+  const recentActivity = [
+    { id: 1, type: 'delivery', message: language === 'en' ? 'System ready for packing' : 'पैकिंग के लिए सिस्टम तैयार', time: language === 'en' ? 'Just now' : 'अभी', status: 'success' },
+    { id: 2, type: 'packing', message: language === 'en' ? `${stats.trucksCount} trucks loaded in database` : `${stats.trucksCount} ट्रक डेटाबेस में लोड`, time: language === 'en' ? '1 min ago' : '1 मिनट पहले', status: 'info' },
+    { id: 3, type: 'route', message: language === 'en' ? 'Route optimization ready' : 'रूट अनुकूलन तैयार', time: language === 'en' ? '5 min ago' : '5 मिनट पहले', status: 'info' },
+  ]
+
+  const quickActions = [
+    { icon: Package, label: language === 'en' ? '3D Pack' : 'पैकिंग', path: '/packing', color: 'bg-blue-500', description: language === 'en' ? 'Optimize loading' : 'लोडिंग अनुकूलित करें' },
+    { icon: Route, label: language === 'en' ? 'Routes' : 'रूट', path: '/routes', color: 'bg-green-500', description: language === 'en' ? 'Plan delivery' : 'डिलीवरी प्लान' },
+    { icon: MapPin, label: language === 'en' ? 'Track' : 'ट्रैक', path: '/tracking', color: 'bg-orange-500', description: language === 'en' ? 'Live GPS' : 'लाइव जीपीएस' },
+  ]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      </div>
+    )
+  }
   
   return (
     <div className="p-4 space-y-6 pb-8">
@@ -75,7 +155,7 @@ export default function Dashboard() {
       
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 stagger-children">
-        {stats.map((stat, index) => (
+        {statsConfig.map((stat, index) => (
           <div 
             key={stat.label} 
             className="card card-hover p-4 group cursor-pointer"
@@ -107,7 +187,7 @@ export default function Dashboard() {
       <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Quick Actions
+            {language === 'en' ? 'Quick Actions' : 'त्वरित कार्रवाई'}
           </h3>
           <Zap className="w-5 h-5 text-saffron" />
         </div>
@@ -137,10 +217,10 @@ export default function Dashboard() {
       <div className="animate-slide-up" style={{ animationDelay: '300ms' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Recent Activity
+            {language === 'en' ? 'Recent Activity' : 'हाल की गतिविधि'}
           </h3>
           <button className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-            View all
+            {language === 'en' ? 'View all' : 'सभी देखें'}
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react'
-import { Package, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save } from 'lucide-react'
+import { Package, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, AlertTriangle, Layers } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { cartonsApi } from '../services/api'
+import { cartonsSupabaseApi } from '../services/supabaseApi'
+import { useLanguageStore } from '../stores/languageStore'
 
 interface CartonType {
-  id: number
+  id: string
   name: string
   length: number
   width: number
   height: number
   weight: number
-  category: string
+  fragile: boolean
+  stackable: boolean
 }
 
 export default function CartonsPage() {
   const navigate = useNavigate()
+  const { language } = useLanguageStore()
   const [cartons, setCartons] = useState<CartonType[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -26,7 +29,8 @@ export default function CartonsPage() {
     width: 0,
     height: 0,
     weight: 0,
-    category: 'Standard'
+    fragile: false,
+    stackable: true
   })
 
   useEffect(() => {
@@ -36,8 +40,8 @@ export default function CartonsPage() {
   const fetchCartons = async () => {
     try {
       setLoading(true)
-      const data = await cartonsApi.getAll()
-      setCartons(data)
+      const data = await cartonsSupabaseApi.getAll()
+      setCartons(data as CartonType[])
     } catch (error) {
       console.error('Failed to fetch cartons:', error)
     } finally {
@@ -54,7 +58,8 @@ export default function CartonsPage() {
         width: carton.width,
         height: carton.height,
         weight: carton.weight,
-        category: carton.category
+        fragile: carton.fragile,
+        stackable: carton.stackable
       })
     } else {
       setEditingCarton(null)
@@ -64,7 +69,8 @@ export default function CartonsPage() {
         width: 0,
         height: 0,
         weight: 0,
-        category: 'Standard'
+        fragile: false,
+        stackable: true
       })
     }
     setIsModalOpen(true)
@@ -73,9 +79,9 @@ export default function CartonsPage() {
   const handleSave = async () => {
     try {
       if (editingCarton) {
-        await cartonsApi.update(editingCarton.id, formData)
+        await cartonsSupabaseApi.update(editingCarton.id, formData)
       } else {
-        await cartonsApi.create(formData)
+        await cartonsSupabaseApi.create(formData)
       }
       setIsModalOpen(false)
       fetchCartons()
@@ -84,10 +90,10 @@ export default function CartonsPage() {
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this carton type?')) {
+  const handleDelete = async (id: string) => {
+    if (window.confirm(language === 'en' ? 'Are you sure you want to delete this carton type?' : 'क्या आप वाकई इस कार्टन प्रकार को हटाना चाहते हैं?')) {
       try {
-        await cartonsApi.delete(id)
+        await cartonsSupabaseApi.delete(id)
         fetchCartons()
       } catch (error) {
         console.error('Failed to delete carton:', error)
@@ -96,8 +102,7 @@ export default function CartonsPage() {
   }
 
   const filteredCartons = cartons.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    c.category.toLowerCase().includes(search.toLowerCase())
+    c.name.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -109,7 +114,9 @@ export default function CartonsPage() {
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Carton Types</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          {language === 'en' ? 'Carton Types' : 'कार्टन प्रकार'}
+        </h1>
       </div>
 
       <div className="flex gap-3">
@@ -117,7 +124,7 @@ export default function CartonsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search cartons..."
+            placeholder={language === 'en' ? 'Search cartons...' : 'कार्टन खोजें...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
@@ -150,7 +157,18 @@ export default function CartonsPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 dark:text-white">{carton.name}</h3>
-                    <p className="text-xs text-slate-500">{carton.category}</p>
+                    <div className="flex gap-2 mt-1">
+                      {carton.fragile && (
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full">
+                          <AlertTriangle className="w-3 h-3" /> Fragile
+                        </span>
+                      )}
+                      {carton.stackable && (
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
+                          <Layers className="w-3 h-3" /> Stackable
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -213,19 +231,6 @@ export default function CartonsPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                  >
-                    <option>Standard</option>
-                    <option>Fragile</option>
-                    <option>Heavy Duty</option>
-                    <option>Perishable</option>
-                  </select>
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Weight (kg)</label>
                   <input
                     type="number"
@@ -233,6 +238,26 @@ export default function CartonsPage() {
                     onChange={(e) => setFormData({...formData, weight: Number(e.target.value)})}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.fragile}
+                      onChange={(e) => setFormData({...formData, fragile: e.target.checked})}
+                      className="w-4 h-4 accent-primary-600"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Fragile</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.stackable}
+                      onChange={(e) => setFormData({...formData, stackable: e.target.checked})}
+                      className="w-4 h-4 accent-primary-600"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Stackable</span>
+                  </label>
                 </div>
               </div>
 

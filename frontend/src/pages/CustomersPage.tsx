@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react'
 import { Users, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, MapPin, Phone, Mail } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { customersApi } from '../services/api'
+import { customersSupabaseApi } from '../services/supabaseApi'
+import { useLanguageStore } from '../stores/languageStore'
 
 interface Customer {
-  id: number
+  id: string
   name: string
-  email: string
+  email: string | null
   phone: string
   address: string
   city: string
+  state?: string
+  pincode?: string
+  gst_number?: string | null
 }
 
 export default function CustomersPage() {
   const navigate = useNavigate()
+  const { language } = useLanguageStore()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -24,7 +29,10 @@ export default function CustomersPage() {
     email: '',
     phone: '',
     address: '',
-    city: ''
+    city: '',
+    state: '',
+    pincode: '',
+    gst_number: ''
   })
 
   useEffect(() => {
@@ -34,8 +42,8 @@ export default function CustomersPage() {
   const fetchCustomers = async () => {
     try {
       setLoading(true)
-      const data = await customersApi.getAll()
-      setCustomers(data)
+      const data = await customersSupabaseApi.getAll()
+      setCustomers(data as Customer[])
     } catch (error) {
       console.error('Failed to fetch customers:', error)
     } finally {
@@ -48,10 +56,13 @@ export default function CustomersPage() {
       setEditingCustomer(customer)
       setFormData({
         name: customer.name,
-        email: customer.email,
+        email: customer.email || '',
         phone: customer.phone,
         address: customer.address,
-        city: customer.city
+        city: customer.city,
+        state: customer.state || '',
+        pincode: customer.pincode || '',
+        gst_number: customer.gst_number || ''
       })
     } else {
       setEditingCustomer(null)
@@ -60,7 +71,10 @@ export default function CustomersPage() {
         email: '',
         phone: '',
         address: '',
-        city: ''
+        city: '',
+        state: '',
+        pincode: '',
+        gst_number: ''
       })
     }
     setIsModalOpen(true)
@@ -69,9 +83,9 @@ export default function CustomersPage() {
   const handleSave = async () => {
     try {
       if (editingCustomer) {
-        await customersApi.update(editingCustomer.id, formData)
+        await customersSupabaseApi.update(editingCustomer.id, formData)
       } else {
-        await customersApi.create(formData)
+        await customersSupabaseApi.create(formData)
       }
       setIsModalOpen(false)
       fetchCustomers()
@@ -80,10 +94,10 @@ export default function CustomersPage() {
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
+  const handleDelete = async (id: string) => {
+    if (window.confirm(language === 'en' ? 'Are you sure you want to delete this customer?' : 'क्या आप वाकई इस ग्राहक को हटाना चाहते हैं?')) {
       try {
-        await customersApi.delete(id)
+        await customersSupabaseApi.delete(id)
         fetchCustomers()
       } catch (error) {
         console.error('Failed to delete customer:', error)
@@ -105,7 +119,9 @@ export default function CustomersPage() {
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Customers</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          {language === 'en' ? 'Customers' : 'ग्राहक'}
+        </h1>
       </div>
 
       <div className="flex gap-3">
@@ -113,7 +129,7 @@ export default function CustomersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search customers..."
+            placeholder={language === 'en' ? 'Search customers...' : 'ग्राहक खोजें...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
