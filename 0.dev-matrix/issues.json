@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "metadata": {
+    "project": "Telegram MCP",
+    "lastUpdated": "2026-01-11T18:30:00Z",
+    "version": "2.14.3",
+    "testers": ["HAIKU-001", "HAIKU-002", "OPUS-003"],
+    "latestTestRun": "2026-01-11T18:30:00Z"
+  },
+  "statistics": {
+    "total": 4,
+    "critical": 0,
+    "high": 1,
+    "medium": 1,
+    "low": 0,
+    "open": 2,
+    "resolved": 2
+  },
+  "issues": [
+    {
+      "id": "BUG-001",
+      "severity": "resolved",
+      "priority": 0,
+      "title": "WebApp Server Connection Failure",
+      "component": "test-webapp-server.js",
+      "status": "resolved",
+      "createdAt": "2026-01-11T16:50:00Z",
+      "createdBy": "HAIKU-001",
+      "resolvedAt": "2026-01-11T17:55:00Z",
+      "resolvedBy": "OPUS-003",
+      "description": "Test server starts and displays startup messages but HTTP clients cannot establish connections. All requests fail with ECONNREFUSED.",
+      "reproduction": {
+        "steps": [
+          "cd D:\\Github\\Telegram-MCP",
+          "node test-webapp-server.js",
+          "In another terminal: curl http://localhost:3001/health",
+          "Observe ECONNREFUSED error"
+        ],
+        "frequency": "always",
+        "environment": "Windows 11, Node v22.17.1"
+      },
+      "impact": {
+        "blockedTests": 125,
+        "blockedPhases": ["phase-2", "phase-3", "phase-4", "phase-5", "phase-6", "phase-7", "phase-8", "phase-9", "phase-10", "phase-11"],
+        "productionImpact": "none",
+        "developmentImpact": "critical"
+      },
+      "analysis": {
+        "rootCause": "Terminal output interleaving in VS Code caused apparent connection failures",
+        "actualCause": "Server was working correctly. The issue was VS Code terminal output mixing between background server and curl commands, making it appear the server crashed."
+      },
+      "resolution": {
+        "actualFix": "Use Start-Job in PowerShell to run server in background process, preventing terminal output interleaving",
+        "verifiedWith": "node run-api-tests.js - 23/23 API tests passed",
+        "resolvedAt": "2026-01-11T17:55:00Z"
+      }
+    },
+    {
+      "id": "BUG-002",
+      "severity": "high",
+      "priority": 2,
+      "title": "Missing Environment Variables",
+      "component": "configuration",
+      "status": "open",
+      "createdAt": "2026-01-11T16:42:00Z",
+      "createdBy": "HAIKU-001",
+      "description": "Critical environment variables BOT_TOKEN and SUPABASE_URL are not set in the development environment.",
+      "reproduction": {
+        "steps": [
+          "Open PowerShell",
+          "Run: $env:BOT_TOKEN",
+          "Run: $env:SUPABASE_URL",
+          "Both return empty"
+        ],
+        "frequency": "always",
+        "environment": "Windows 11"
+      },
+      "impact": {
+        "blockedTests": 1,
+        "productionImpact": "critical - bot cannot start",
+        "developmentImpact": "unit tests pass due to mocks"
+      },
+      "resolution": {
+        "suggestedFix": "Create .env file with BOT_TOKEN=xxx and SUPABASE_URL=xxx",
+        "estimatedTime": "5-10 minutes",
+        "assignee": null
+      }
+    },
+    {
+      "id": "BUG-003",
+      "severity": "medium",
+      "priority": 3,
+      "title": "Unmet Optional Dependencies",
+      "component": "package.json",
+      "status": "open",
+      "createdAt": "2026-01-11T16:42:00Z",
+      "createdBy": "HAIKU-001",
+      "description": "Optional dependencies better-sqlite3 and canvas are not installed.",
+      "reproduction": {
+        "steps": [
+          "Run: npm list --depth=0",
+          "Observe UNMET OPTIONAL DEPENDENCY warnings"
+        ],
+        "frequency": "always"
+      },
+      "impact": {
+        "blockedTests": 0,
+        "affectedFeatures": ["Local SQLite operations", "4K image generation", "Image manipulation"],
+        "productionImpact": "features may fail at runtime",
+        "developmentImpact": "low - tests pass"
+      },
+      "resolution": {
+        "suggestedFix": "npm install --save-optional better-sqlite3 canvas",
+        "estimatedTime": "5-10 minutes",
+        "assignee": null
+      }
+    },
+    {
+      "id": "BUG-004",
+      "severity": "resolved",
+      "priority": 0,
+      "title": "Signup Button Not Working on Login Page",
+      "component": "public/login.html",
+      "status": "resolved",
+      "createdAt": "2026-01-11T18:15:00Z",
+      "createdBy": "User",
+      "resolvedAt": "2026-01-11T18:30:00Z",
+      "resolvedBy": "OPUS-003",
+      "description": "Clicking the 'Sign Up' button on the login page did not switch to the signup form. The form remained on the login view.",
+      "reproduction": {
+        "steps": [
+          "Navigate to https://telegram-mcp-unified-ae0f5f5a7b6e.herokuapp.com/login.html",
+          "Click the 'Sign Up' button",
+          "Observe: form does NOT switch to signup view"
+        ],
+        "frequency": "always",
+        "environment": "All browsers"
+      },
+      "impact": {
+        "blockedTests": 0,
+        "productionImpact": "critical - users cannot sign up",
+        "developmentImpact": "none"
+      },
+      "analysis": {
+        "rootCause": "JavaScript error: Identifier 'supabase' has already been declared",
+        "actualCause": "The Supabase SDK (UMD module from CDN) creates a global 'supabase' object. The inline script then tried to declare 'let supabase = null' which conflicts with the global, causing a JavaScript error that prevented all event listeners from being registered."
+      },
+      "resolution": {
+        "actualFix": "Renamed 'let supabase = null' to 'let supabaseClient = null' and updated all references throughout login.html",
+        "commitHash": "b032d2b",
+        "herokuVersion": "v550",
+        "verifiedWith": "Browser testing - tab switching works, signup form submits correctly",
+        "resolvedAt": "2026-01-11T18:30:00Z"
+      }
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "telegram-mcp-test-report-schema",
+  "title": "Test Report Schema",
+  "description": "Standard schema for all test reports in Telegram MCP project",
+  "type": "object",
+  "required": ["meta", "summary", "phases", "issues"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["id", "type", "tester", "startTime", "endTime", "version"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^TR-\\d{4}-\\d{2}-\\d{2}-\\d{3}$" },
+        "type": { "enum": ["unit", "integration", "e2e", "manual", "regression", "smoke"] },
+        "tester": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "model": { "type": "string" }
+          }
+        },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "duration": { "type": "integer", "description": "Duration in seconds" },
+        "version": { "type": "string" },
+        "environment": {
+          "type": "object",
+          "properties": {
+            "os": { "type": "string" },
+            "nodeVersion": { "type": "string" },
+            "npmVersion": { "type": "string" }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "integer" },
+        "passed": { "type": "integer" },
+        "failed": { "type": "integer" },
+        "skipped": { "type": "integer" },
+        "blocked": { "type": "integer" },
+        "passRate": { "type": "number", "minimum": 0, "maximum": 100 },
+        "productionReady": { "type": "boolean" },
+        "recommendation": { "enum": ["deploy", "fix-minor", "fix-critical", "rework"] }
+      }
+    },
+    "phases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "status", "tests"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "enum": ["passed", "failed", "partial", "blocked", "skipped"] },
+          "tests": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/testCase" }
+          }
+        }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "coverage": { "type": "number" },
+        "performance": { "type": "object" },
+        "reliability": { "type": "number" }
+      }
+    }
+  },
+  "$defs": {
+    "testCase": {
+      "type": "object",
+      "required": ["id", "name", "status"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "enum": ["pass", "fail", "skip", "blocked", "partial"] },
+        "command": { "type": "string" },
+        "expected": { "type": "string" },
+        "actual": { "type": "string" },
+        "duration": { "type": "integer" },
+        "error": { "type": "string" },
+        "issueRef": { "type": "string" }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "required": ["id", "severity", "title", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^BUG-\\d{3}$" },
+        "severity": { "enum": ["critical", "high", "medium", "low"] },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "enum": ["open", "in-progress", "resolved", "wont-fix"] },
+        "stepsToReproduce": { "type": "array", "items": { "type": "string" } },
+        "expected": { "type": "string" },
+        "actual": { "type": "string" },
+        "affectedTests": { "type": "array", "items": { "type": "string" } },
+        "suggestedFix": { "type": "string" },
+        "assignee": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

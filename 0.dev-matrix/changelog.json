@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "metadata": {
+    "framework": "Enterprise Dev-Matrix",
+    "version": "3.0.0",
+    "project": "Telegram MCP",
+    "lastUpdated": "2026-01-11T18:45:00Z"
+  },
+  
+  "format": {
+    "version": "semver (MAJOR.MINOR.PATCH)",
+    "types": ["feat", "fix", "docs", "style", "refactor", "perf", "test", "chore", "security"]
+  },
+  
+  "releases": [
+    {
+      "version": "2.14.3",
+      "herokuVersion": "v559",
+      "date": "2026-01-11",
+      "type": "feature",
+      "changes": [
+        {
+          "type": "feat",
+          "scope": "error-prevention",
+          "description": "Add deep error scanner with 8-layer analysis",
+          "files": ["scripts/deep-error-scanner.js"],
+          "author": "OPUS-004"
+        },
+        {
+          "type": "feat",
+          "scope": "error-logging",
+          "description": "Integrate error logging to Supabase for AI resolution",
+          "files": ["autonomous-bot-standalone.js", "lib/error-logger.js"],
+          "author": "OPUS-004"
+        },
+        {
+          "type": "fix",
+          "scope": "callback",
+          "description": "Fix handleCallback should be handleAdminCallback",
+          "files": ["lib/comprehensive-admin-menu.js"],
+          "issueRef": "BUG-003",
+          "author": "OPUS-004"
+        },
+        {
+          "type": "docs",
+          "scope": "dev-matrix",
+          "description": "Update RULES.md with error prevention workflow",
+          "files": ["0.dev-matrix/RULES.md", "0.dev-matrix/FRAMEWORK.md"],
+          "author": "OPUS-004"
+        }
+      ]
+    },
+    {
+      "version": "2.14.2",
+      "herokuVersion": "v555",
+      "date": "2026-01-11",
+      "type": "fix",
+      "changes": [
+        {
+          "type": "fix",
+          "scope": "auth",
+          "description": "Fix signup button - Supabase client variable conflict",
+          "files": ["public/login.html"],
+          "issueRef": "BUG-002",
+          "author": "OPUS-004"
+        }
+      ]
+    },
+    {
+      "version": "2.14.1",
+      "herokuVersion": "v544",
+      "date": "2026-01-11",
+      "type": "docs",
+      "changes": [
+        {
+          "type": "docs",
+          "scope": "dev-matrix",
+          "description": "Universal framework restructure for multi-AI coordination",
+          "files": ["0.dev-matrix/*"],
+          "author": "OPUS-001"
+        },
+        {
+          "type": "chore",
+          "scope": "cleanup",
+          "description": "Migrate test reports to JSON format, consolidate issues",
+          "files": ["test-reports/", "issues.json"],
+          "author": "OPUS-001"
+        }
+      ]
+    },
+    {
+      "version": "2.14.0",
+      "herokuVersion": "v524",
+      "date": "2026-01-10",
+      "type": "feature",
+      "changes": [
+        {
+          "type": "feat",
+          "scope": "scheduler",
+          "description": "Universal content scheduler with custom frequencies",
+          "files": ["lib/universal-content-scheduler.js"],
+          "author": "OPUS-001"
+        },
+        {
+          "type": "feat",
+          "scope": "api",
+          "description": "Complete CRUD APIs for schedules, feeds, channels",
+          "files": ["autonomous-bot-standalone.js"],
+          "author": "OPUS-001"
+        }
+      ]
+    }
+  ],
+  
+  "unreleased": {
+    "description": "Changes not yet released",
+    "changes": []
+  },
+  
+  "deprecations": [
+    {
+      "item": "answerCallbackQuery signature",
+      "deprecatedIn": "v0.27.1",
+      "description": "Method signature answerCallbackQuery(id, text, showAlert) deprecated",
+      "replacement": "answerCallbackQuery(id, { text, show_alert })",
+      "affectedFiles": ["lib/comprehensive-admin-menu.js"]
+    }
+  ],
+  
+  "breakingChanges": [],
+  
+  "migrationsRequired": [
+    {
+      "version": "2.14.3",
+      "migration": "add_enhanced_error_logging",
+      "description": "Add columns to bot_errors table for AI resolution",
+      "script": "temp_error_logging_migration.sql",
+      "status": "applied"
+    }
+  ]
+}
