@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Phone, ArrowRight, MessageCircle, Shield, Truck, Sparkles, Send } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { authApi } from '../../services/api'
+import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 
 const features = [
@@ -16,7 +16,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const { setPendingPhone } = useAuthStore()
   const [phone, setPhone] = useState('')
-  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'telegram'>('telegram')
+  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'telegram'>('sms')
   const [isFocused, setIsFocused] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
   
@@ -29,21 +29,22 @@ export default function LoginPage() {
   }, [])
   
   const sendOTPMutation = useMutation({
-    mutationFn: () => authApi.sendOTP(phone, channel),
-    onSuccess: (data) => {
-      if (data.success) {
-        setPendingPhone(phone)
-        toast.success(`OTP sent via ${channel.toUpperCase()}`, {
-          icon: '📱',
-          duration: 3000
-        })
-        navigate('/otp')
-      } else {
-        toast.error(data.message || 'Failed to send OTP')
-      }
+    mutationFn: async () => {
+      // Format phone with country code for Supabase
+      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`
+      await authSupabaseApi.signInWithPhone(formattedPhone)
+      return { success: true }
+    },
+    onSuccess: () => {
+      setPendingPhone(phone)
+      toast.success(`OTP sent via SMS`, {
+        icon: '📱',
+        duration: 3000
+      })
+      navigate('/otp')
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to send OTP')
+      toast.error(error.message || 'Failed to send OTP')
     }
   })
   
@@ -64,11 +65,8 @@ export default function LoginPage() {
   
   const handleGoogleLogin = async () => {
     try {
-      const { data } = await authApi.getGoogleAuthUrl()
-      if (data.auth_url) {
-        window.location.href = data.auth_url
-      }
-    } catch (error) {
+      await authSupabaseApi.signInWithGoogle()
+    } catch (error: any) {
       toast.error('Failed to initiate Google login')
     }
   }

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Truck, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save } from 'lucide-react'
+import { Truck, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, Database } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { trucksSupabaseApi } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
+import toast from 'react-hot-toast'
+import { supabase } from '../lib/supabase'
 
 interface TruckType {
   id: string
@@ -17,11 +19,92 @@ interface TruckType {
   category?: string
 }
 
+const DEFAULT_INDIAN_TRUCKS = [
+  {
+    name: 'Tata Ace 7.5ft',
+    name_hi: 'टाटा एस 7.5 फुट',
+    length: 228, // 7.5 ft in cm
+    width: 152,  // 5 ft in cm
+    height: 152, // 5 ft in cm
+    capacity: 750,
+    cost_per_km: 12,
+    available: 10,
+    category: 'Mini Truck'
+  },
+  {
+    name: 'Tata 407 9ft',
+    name_hi: 'टाटा 407 9 फुट',
+    length: 274, // 9 ft in cm
+    width: 183,  // 6 ft in cm
+    height: 183, // 6 ft in cm
+    capacity: 2500,
+    cost_per_km: 18,
+    available: 8,
+    category: 'Light Commercial'
+  },
+  {
+    name: 'Eicher 14ft',
+    name_hi: 'आयशर 14 फुट',
+    length: 427, // 14 ft in cm
+    width: 198,  // 6.5 ft in cm
+    height: 198, // 6.5 ft in cm
+    capacity: 4000,
+    cost_per_km: 22,
+    available: 6,
+    category: 'Medium Commercial'
+  },
+  {
+    name: 'Eicher 17ft',
+    name_hi: 'आयशर 17 फुट',
+    length: 518, // 17 ft in cm
+    width: 213,  // 7 ft in cm
+    height: 213, // 7 ft in cm
+    capacity: 6000,
+    cost_per_km: 28,
+    available: 5,
+    category: 'Medium Commercial'
+  },
+  {
+    name: 'Eicher 19ft',
+    name_hi: 'आयशर 19 फुट',
+    length: 579, // 19 ft in cm
+    width: 213,  // 7 ft in cm
+    height: 213, // 7 ft in cm
+    capacity: 7500,
+    cost_per_km: 32,
+    available: 4,
+    category: 'Heavy Commercial'
+  },
+  {
+    name: 'BharatBenz 32ft',
+    name_hi: 'भारतबेंज 32 फुट',
+    length: 975, // 32 ft in cm
+    width: 244,  // 8 ft in cm
+    height: 244, // 8 ft in cm
+    capacity: 15000,
+    cost_per_km: 45,
+    available: 3,
+    category: 'Heavy Commercial'
+  },
+  {
+    name: 'Tata LPT 3718 36ft',
+    name_hi: 'टाटा एलपीटी 3718 36 फुट',
+    length: 1097, // 36 ft in cm
+    width: 259,   // 8.5 ft in cm
+    height: 259,  // 8.5 ft in cm
+    capacity: 20000,
+    cost_per_km: 55,
+    available: 2,
+    category: 'Extra Heavy'
+  }
+]
+
 export default function TrucksPage() {
   const navigate = useNavigate()
   const { language } = useLanguageStore()
   const [trucks, setTrucks] = useState<TruckType[]>([])
   const [loading, setLoading] = useState(true)
+  const [seeding, setSeeding] = useState(false)
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTruck, setEditingTruck] = useState<TruckType | null>(null)
@@ -49,6 +132,47 @@ export default function TrucksPage() {
       console.error('Failed to fetch trucks:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSeedDefaultTrucks = async () => {
+    try {
+      setSeeding(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error('Please login to seed trucks')
+        return
+      }
+
+      // Check if trucks already exist
+      const { data: existingTrucks } = await supabase
+        .from('trucks')
+        .select('name')
+        .in('name', DEFAULT_INDIAN_TRUCKS.map(t => t.name))
+
+      const existingNames = new Set(existingTrucks?.map((t: any) => t.name) || [])
+      const trucksToAdd = DEFAULT_INDIAN_TRUCKS.filter(t => !existingNames.has(t.name))
+
+      if (trucksToAdd.length === 0) {
+        toast.info('All default trucks already exist!')
+        return
+      }
+
+      // Insert trucks
+      const { error } = await supabase
+        .from('trucks')
+        .insert(trucksToAdd)
+
+      if (error) throw error
+
+      toast.success(`Added ${trucksToAdd.length} default Indian trucks!`)
+      fetchTrucks()
+    } catch (error: any) {
+      console.error('Failed to seed trucks:', error)
+      toast.error(error.message || 'Failed to seed trucks')
+    } finally {
+      setSeeding(false)
     }
   }
 
@@ -85,13 +209,16 @@ export default function TrucksPage() {
     try {
       if (editingTruck) {
         await trucksSupabaseApi.update(editingTruck.id, formData)
+        toast.success('Truck updated successfully')
       } else {
         await trucksSupabaseApi.create(formData)
+        toast.success('Truck added successfully')
       }
       setIsModalOpen(false)
       fetchTrucks()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save truck:', error)
+      toast.error(error.message || 'Failed to save truck')
     }
   }
 
@@ -99,9 +226,11 @@ export default function TrucksPage() {
     if (window.confirm('Are you sure you want to delete this truck type?')) {
       try {
         await trucksSupabaseApi.delete(id)
+        toast.success('Truck deleted successfully')
         fetchTrucks()
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to delete truck:', error)
+        toast.error(error.message || 'Failed to delete truck')
       }
     }
   }
@@ -110,6 +239,11 @@ export default function TrucksPage() {
     t.name.toLowerCase().includes(search.toLowerCase()) ||
     (t.name_hi && t.name_hi.toLowerCase().includes(search.toLowerCase()))
   )
+
+  const formatDimension = (cm: number) => {
+    const feet = cm / 30.48
+    return `${Math.round(feet)}ft`
+  }
 
   return (
     <div className="p-4 space-y-6 pb-8">
@@ -125,6 +259,38 @@ export default function TrucksPage() {
         </h1>
       </div>
 
+      {/* Seed Default Trucks Button */}
+      {trucks.length === 0 && !loading && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 text-center">
+          <Database className="w-12 h-12 text-blue-500 mx-auto mb-3" />
+          <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+            {language === 'en' ? 'No Trucks Found' : 'कोई ट्रक नहीं मिला'}
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            {language === 'en' 
+              ? 'Seed the database with 7 standard Indian truck types'
+              : '7 मानक भारतीय ट्रक प्रकारों के साथ डेटाबेस सीड करें'}
+          </p>
+          <button
+            onClick={handleSeedDefaultTrucks}
+            disabled={seeding}
+            className="btn btn-primary"
+          >
+            {seeding ? (
+              <>
+                <div className="spinner w-4 h-4" />
+                {language === 'en' ? 'Seeding...' : 'सीडिंग...'}
+              </>
+            ) : (
+              <>
+                <Database className="w-4 h-4" />
+                {language === 'en' ? 'Seed Default Trucks' : 'डिफॉल्ट ट्रक सीड करें'}
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -136,6 +302,16 @@ export default function TrucksPage() {
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
           />
         </div>
+        {trucks.length > 0 && (
+          <button
+            onClick={handleSeedDefaultTrucks}
+            disabled={seeding}
+            className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl transition-all"
+            title={language === 'en' ? 'Seed default trucks' : 'डिफॉल्ट ट्रक सीड करें'}
+          >
+            {seeding ? <div className="spinner w-5 h-5" /> : <Database className="w-5 h-5" />}
+          </button>
+        )}
         <button 
           onClick={() => handleOpenModal()}
           className="bg-primary-600 hover:bg-primary-700 text-white p-2.5 rounded-xl shadow-lg shadow-primary-600/20 transition-all"
@@ -164,6 +340,11 @@ export default function TrucksPage() {
                   <div>
                     <h3 className="font-bold text-slate-900 dark:text-white">{truck.name}</h3>
                     {truck.name_hi && <p className="text-xs text-slate-500">{truck.name_hi}</p>}
+                    {truck.category && (
+                      <span className="inline-block mt-1 text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full">
+                        {truck.category}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -182,18 +363,22 @@ export default function TrucksPage() {
                 </div>
               </div>
               
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="mt-4 grid grid-cols-4 gap-2">
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Dimensions</p>
-                  <p className="text-sm font-medium">{truck.length}x{truck.width}x{truck.height}</p>
+                  <p className="text-xs font-medium">{formatDimension(truck.length)} × {formatDimension(truck.width)} × {formatDimension(truck.height)}</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Capacity</p>
-                  <p className="text-sm font-medium">{truck.capacity}kg</p>
+                  <p className="text-xs font-medium">{(truck.capacity / 1000).toFixed(1)}T</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Volume</p>
-                  <p className="text-sm font-medium">{(truck.length * truck.width * truck.height / 1000000).toFixed(1)}m³</p>
+                  <p className="text-xs font-medium">{(truck.length * truck.width * truck.height / 1000000).toFixed(1)}m³</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">Cost/km</p>
+                  <p className="text-xs font-medium">₹{truck.cost_per_km || 0}</p>
                 </div>
               </div>
             </div>
@@ -264,6 +449,7 @@ export default function TrucksPage() {
                     value={formData.length}
                     onChange={(e) => setFormData({...formData, length: Number(e.target.value)})}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+                    placeholder="e.g. 427 for 14ft"
                   />
                 </div>
                 <div>

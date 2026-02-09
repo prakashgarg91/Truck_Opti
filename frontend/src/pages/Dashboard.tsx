@@ -4,12 +4,20 @@ import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Be
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
+import { packingJobsSupabaseApi, analyticsSupabaseApi } from '../services/supabaseApi'
 
 interface DashboardStats {
   activeShipments: number
   trucksCount: number
   routesToday: number
   deliveriesDone: number
+}
+
+interface PackingJob {
+  id: string
+  status: string
+  volume_utilization: number
+  created_at: string
 }
 
 export default function Dashboard() {
@@ -24,6 +32,14 @@ export default function Dashboard() {
     deliveriesDone: 0
   })
   const [greeting, setGreeting] = useState('')
+  const [weeklyData, setWeeklyData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0])
+  const [recentActivity, setRecentActivity] = useState<Array<{
+    id: string
+    type: string
+    message: string
+    time: string
+    status: string
+  }>>([])
 
   useEffect(() => {
     const hour = new Date().getHours()
@@ -56,10 +72,61 @@ export default function Dashboard() {
         routesToday: routesRes.count || 0,
         deliveriesDone
       })
+
+      // Fetch weekly packing data
+      const weeklyCounts = await analyticsSupabaseApi.getWeeklyPackingCounts()
+      const data = weeklyCounts.map(d => d.count)
+      // Normalize to percentages for the chart (max 100)
+      const maxCount = Math.max(...data, 1)
+      const normalizedData = data.map(count => Math.round((count / maxCount) * 100))
+      setWeeklyData(normalizedData.length > 0 ? normalizedData : [0, 0, 0, 0, 0, 0, 0])
+
+      // Fetch recent packing jobs for activity
+      const recentJobs = await packingJobsSupabaseApi.getUserJobs(5)
+      const activities = recentJobs.map((job: PackingJob, index: number) => ({
+        id: job.id,
+        type: 'packing',
+        message: language === 'en' 
+          ? `Packing job completed - ${job.volume_utilization}% volume utilized`
+          : `पैकिंग जॉब पूर्ण - ${job.volume_utilization}% वॉल्यूम उपयोग`,
+        time: getRelativeTime(new Date(job.created_at), language),
+        status: job.status === 'completed' ? 'success' : 'info'
+      }))
+
+      // Add default activities if no packing jobs
+      if (activities.length === 0) {
+        activities.push(
+          { id: '1', type: 'packing', message: language === 'en' ? 'System ready for packing' : 'पैकिंग के लिए सिस्टम तैयार', time: language === 'en' ? 'Just now' : 'अभी', status: 'success' },
+          { id: '2', type: 'info', message: language === 'en' ? `${trucksRes.count || 0} trucks loaded in database` : `${trucksRes.count || 0} ट्रक डेटाबेस में लोड`, time: language === 'en' ? '1 min ago' : '1 मिनट पहले', status: 'info' },
+          { id: '3', type: 'route', message: language === 'en' ? 'Route optimization ready' : 'रूट अनुकूलन तैयार', time: language === 'en' ? '5 min ago' : '5 मिनट पहले', status: 'info' }
+        )
+      }
+
+      setRecentActivity(activities)
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const getRelativeTime = (date: Date, lang: string): string => {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (lang === 'en') {
+      if (diffMins < 1) return 'Just now'
+      if (diffMins < 60) return `${diffMins} min ago`
+      if (diffHours < 24) return `${diffHours} hour ago`
+      return `${diffDays} day ago`
+    } else {
+      if (diffMins < 1) return 'अभी'
+      if (diffMins < 60) return `${diffMins} मिनट पहले`
+      if (diffHours < 24) return `${diffHours} घंटे पहले`
+      return `${diffDays} दिन पहले`
     }
   }
 
@@ -92,12 +159,6 @@ export default function Dashboard() {
       color: 'from-purple-500 to-purple-600', 
       change: '+0' 
     },
-  ]
-
-  const recentActivity = [
-    { id: 1, type: 'delivery', message: language === 'en' ? 'System ready for packing' : 'पैकिंग के लिए सिस्टम तैयार', time: language === 'en' ? 'Just now' : 'अभी', status: 'success' },
-    { id: 2, type: 'packing', message: language === 'en' ? `${stats.trucksCount} trucks loaded in database` : `${stats.trucksCount} ट्रक डेटाबेस में लोड`, time: language === 'en' ? '1 min ago' : '1 मिनट पहले', status: 'info' },
-    { id: 3, type: 'route', message: language === 'en' ? 'Route optimization ready' : 'रूट अनुकूलन तैयार', time: language === 'en' ? '5 min ago' : '5 मिनट पहले', status: 'info' },
   ]
 
   const quickActions = [
@@ -241,6 +302,7 @@ export default function Dashboard() {
                 {activity.type === 'packing' && <Truck className="w-5 h-5 text-blue-600" />}
                 {activity.type === 'route' && <Route className="w-5 h-5 text-blue-600" />}
                 {activity.type === 'alert' && <MapPin className="w-5 h-5 text-orange-600" />}
+                {activity.type === 'info' && <Bell className="w-5 h-5 text-blue-600" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-1 font-medium">
@@ -264,11 +326,11 @@ export default function Dashboard() {
             <h3 className="font-semibold text-slate-900 dark:text-white">
               Weekly Performance
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">Delivery efficiency</p>
+            <p className="text-xs text-slate-500 mt-0.5">Packing jobs per day</p>
           </div>
           <span className="badge badge-success flex items-center gap-1.5 px-3 py-1.5">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span className="font-semibold">+12%</span>
+            <span className="font-semibold">Live</span>
           </span>
         </div>
         <div className="h-44 bg-gradient-to-t from-primary-50/80 to-transparent dark:from-primary-900/20 rounded-2xl flex items-end justify-around px-3 pb-4 pt-2 relative">
@@ -278,11 +340,11 @@ export default function Dashboard() {
             <span>50</span>
             <span>0</span>
           </div>
-          {[40, 65, 55, 80, 72, 90, 85].map((height, i) => (
+          {weeklyData.map((height, i) => (
             <div key={i} className="flex flex-col items-center gap-1 flex-1">
               <div
                 className="w-full max-w-[32px] bg-gradient-to-t from-primary-600 to-primary-400 rounded-t-lg transition-all duration-500 hover:from-primary-500 hover:to-primary-300 cursor-pointer relative group"
-                style={{ height: `${height}%` }}
+                style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }}
               >
                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                   {height}%
@@ -292,13 +354,13 @@ export default function Dashboard() {
           ))}
         </div>
         <div className="flex justify-around mt-3 text-xs text-slate-500 font-medium">
+          <span>Sun</span>
           <span>Mon</span>
           <span>Tue</span>
           <span>Wed</span>
           <span className="text-primary-600 font-semibold">Thu</span>
           <span>Fri</span>
           <span>Sat</span>
-          <span>Sun</span>
         </div>
       </div>
       

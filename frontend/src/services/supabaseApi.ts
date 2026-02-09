@@ -442,6 +442,235 @@ export const authSupabaseApi = {
   }
 }
 
+// ============= PACKING JOBS API =============
+export interface PackingJob {
+  id?: string
+  user_id: string
+  truck_id?: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  items: PackingJobItem[]
+  volume_utilization: number
+  weight_utilization: number
+  total_cost: number
+  algorithm: string
+  optimization_goal: string
+  result_data?: object
+  created_at?: string
+  updated_at?: string
+}
+
+export interface PackingJobItem {
+  id?: string
+  job_id?: string
+  name: string
+  length: number
+  width: number
+  height: number
+  weight: number
+  quantity: number
+  fragile: boolean
+  stackable: boolean
+  category?: string
+  position_x?: number
+  position_y?: number
+  position_z?: number
+  rotation?: string
+  is_packed?: boolean
+}
+
+export const packingJobsSupabaseApi = {
+  async createJob(job: Omit<PackingJob, 'id' | 'created_at' | 'updated_at'>): Promise<PackingJob> {
+    const { data, error } = await supabase
+      .from('packing_jobs')
+      .insert(job)
+      .select()
+      .single()
+    if (error) throw error
+    return data as PackingJob
+  },
+
+  async addJobItems(items: Omit<PackingJobItem, 'id'>[]): Promise<PackingJobItem[]> {
+    const { data, error } = await supabase
+      .from('packing_items')
+      .insert(items)
+      .select()
+    if (error) throw error
+    return data as PackingJobItem[]
+  },
+
+  async getUserJobs(limit = 10): Promise<PackingJob[]> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+    
+    const { data, error } = await supabase
+      .from('packing_jobs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return (data as PackingJob[]) || []
+  },
+
+  async getJobItems(jobId: string): Promise<PackingJobItem[]> {
+    const { data, error } = await supabase
+      .from('packing_items')
+      .select('*')
+      .eq('job_id', jobId)
+    if (error) throw error
+    return (data as PackingJobItem[]) || []
+  }
+}
+
+// ============= NOTIFICATIONS API =============
+export interface Notification {
+  id: string
+  user_id: string
+  title: string
+  message: string
+  type: 'info' | 'success' | 'warning' | 'error'
+  is_read: boolean
+  action_url?: string
+  action_label?: string
+  created_at: string
+  read_at?: string
+}
+
+export const notificationsSupabaseApi = {
+  async getUnreadCount(): Promise<number> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return 0
+    
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+    if (error) throw error
+    return count || 0
+  },
+
+  async getNotifications(limit = 20): Promise<Notification[]> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+    
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return (data as Notification[]) || []
+  },
+
+  async markAsRead(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) throw error
+  },
+
+  async markAllAsRead(): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+    if (error) throw error
+  },
+
+  async clearAll(): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', user.id)
+    if (error) throw error
+  },
+
+  subscribeToNotifications(userId: string, callback: (payload: unknown) => void) {
+    return supabase
+      .channel(`notifications:${userId}`)
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, 
+        callback
+      )
+      .subscribe()
+  },
+
+  unsubscribe(channel: ReturnType<typeof supabase.channel>) {
+    supabase.removeChannel(channel)
+  }
+}
+
+// ============= ANALYTICS EVENTS API =============
+export interface AnalyticsEvent {
+  id?: string
+  user_id?: string
+  event_type: string
+  event_data?: object
+  session_id?: string
+  created_at?: string
+}
+
+export const analyticsSupabaseApi = {
+  async trackEvent(event: Omit<AnalyticsEvent, 'id' | 'created_at'>): Promise<void> {
+    const { error } = await supabase
+      .from('analytics_events')
+      .insert(event)
+    if (error) throw error
+  },
+
+  async getWeeklyPackingCounts(): Promise<{ day: string; count: number }[]> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+    
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    
+    const { data, error } = await supabase
+      .from('packing_jobs')
+      .select('created_at')
+      .eq('user_id', user.id)
+      .gte('created_at', sevenDaysAgo.toISOString())
+    
+    if (error) throw error
+    
+    // Group by day
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const counts = days.map(day => ({ day, count: 0 }))
+    
+    data?.forEach((job: any) => {
+      const date = new Date(job.created_at)
+      const dayIndex = date.getDay()
+      counts[dayIndex].count++
+    })
+    
+    return counts
+  },
+
+  async getRecentActivity(limit = 5): Promise<AnalyticsEvent[]> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+    
+    const { data, error } = await supabase
+      .from('analytics_events')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return (data as AnalyticsEvent[]) || []
+  }
+}
+
 // ============= REALTIME SUBSCRIPTIONS =============
 export const realtimeSupabase = {
   subscribeToShipments(callback: (payload: unknown) => void) {

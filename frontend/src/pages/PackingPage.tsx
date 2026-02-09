@@ -1,11 +1,15 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { 
   Package, Truck, Play, Settings, Layers, CheckCircle2, 
   Plus, Trash2, Wand2, AlertTriangle, ChevronDown,
-  Zap, Brain, Target, Calculator, ShoppingCart, ArrowRight, Globe
+  Zap, Brain, Target, Calculator, ShoppingCart, ArrowRight, Globe,
+  Save, Edit2, Check, X
 } from 'lucide-react'
 import TruckViewer from '../components/TruckViewer'
 import toast from 'react-hot-toast'
+import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi } from '../services/supabaseApi'
+import { supabase } from '../lib/supabase'
+import { useNavigate } from 'react-router-dom'
 
 // ============= LANGUAGE =============
 type Language = 'en' | 'hi'
@@ -30,6 +34,7 @@ const t = {
     itemsWontFit: "Items That Won't Fit",
     additionalTruck: 'Consider using an additional truck or larger vehicle',
     book: 'Book',
+    saveJob: 'Save Job',
     noItems: 'No items added',
     addFirstItem: 'Add your first item above',
     selectTruckPrompt: 'Select a truck to see 3D preview',
@@ -45,7 +50,15 @@ const t = {
     itemsFit: 'Items Fit',
     volume: 'Volume',
     best: 'Best',
-    wontFit: "items won't fit"
+    wontFit: "items won't fit",
+    validation: {
+      nameRequired: 'Name is required',
+      lengthPositive: 'Length must be greater than 0',
+      widthPositive: 'Width must be greater than 0',
+      heightPositive: 'Height must be greater than 0',
+      weightPositive: 'Weight must be greater than 0',
+      quantityMin: 'Quantity must be at least 1'
+    }
   },
   hi: {
     title: '3डी बिन पैकिंग',
@@ -67,6 +80,7 @@ const t = {
     itemsWontFit: 'जो आइटम नहीं बैठेंगे',
     additionalTruck: 'अतिरिक्त ट्रक या बड़ा वाहन उपयोग करें',
     book: 'बुक करें',
+    saveJob: 'जॉब सेव करें',
     noItems: 'कोई आइटम नहीं',
     addFirstItem: 'ऊपर पहला आइटम जोड़ें',
     selectTruckPrompt: 'ट्रक चुनें और देखें',
@@ -82,7 +96,15 @@ const t = {
     itemsFit: 'फिट',
     volume: 'वॉल्यूम',
     best: 'बेस्ट',
-    wontFit: 'फिट नहीं होंगे'
+    wontFit: 'फिट नहीं होंगे',
+    validation: {
+      nameRequired: 'नाम आवश्यक है',
+      lengthPositive: 'लंबाई 0 से अधिक होनी चाहिए',
+      widthPositive: 'चौड़ाई 0 से अधिक होनी चाहिए',
+      heightPositive: 'ऊंचाई 0 से अधिक होनी चाहिए',
+      weightPositive: 'वजन 0 से अधिक होना चाहिए',
+      quantityMin: 'मात्रा कम से कम 1 होनी चाहिए'
+    }
   }
 }
 
@@ -90,10 +112,10 @@ const t = {
 interface SaleOrderItem {
   id: string
   name: string
-  length: number  // cm
-  width: number   // cm
-  height: number  // cm
-  weight: number  // kg
+  length: number
+  width: number
+  height: number
+  weight: number
   quantity: number
   fragile: boolean
   stackable: boolean
@@ -103,9 +125,9 @@ interface TruckType {
   id: string
   name: string
   nameHi: string
-  dimensions: { length: number; width: number; height: number } // meters
-  capacity: number // kg
-  costPerKm: number // ₹
+  dimensions: { length: number; width: number; height: number }
+  capacity: number
+  costPerKm: number
   available: number
 }
 
@@ -134,15 +156,6 @@ interface TruckRecommendation {
 }
 
 // ============= CONSTANTS =============
-const TRUCKS: TruckType[] = [
-  { id: 'tata-ace', name: 'Tata Ace', nameHi: 'टाटा एस', dimensions: { length: 2.2, width: 1.5, height: 1.2 }, capacity: 750, costPerKm: 12, available: 5 },
-  { id: 'tata-407', name: 'Tata 407', nameHi: 'टाटा 407', dimensions: { length: 4.0, width: 1.8, height: 1.8 }, capacity: 2500, costPerKm: 18, available: 3 },
-  { id: 'eicher-14', name: 'Eicher 14ft', nameHi: 'आयशर 14 फुट', dimensions: { length: 4.26, width: 1.8, height: 1.8 }, capacity: 4000, costPerKm: 22, available: 4 },
-  { id: 'eicher-17', name: 'Eicher 17ft', nameHi: 'आयशर 17 फुट', dimensions: { length: 5.18, width: 2.1, height: 2.1 }, capacity: 6000, costPerKm: 28, available: 2 },
-  { id: 'bharat-24', name: 'BharatBenz 24ft', nameHi: 'भारत बेंज 24 फुट', dimensions: { length: 7.3, width: 2.3, height: 2.1 }, capacity: 9000, costPerKm: 35, available: 3 },
-  { id: 'bharat-32', name: 'BharatBenz 32ft', nameHi: 'भारत बेंज 32 फुट', dimensions: { length: 9.45, width: 2.4, height: 2.15 }, capacity: 15000, costPerKm: 45, available: 2 },
-]
-
 const ALGORITHMS = [
   { id: 'skyline', name: 'Skyline BL', nameHi: 'स्काईलाइन', icon: Layers, description: 'Fast, good for uniform boxes', speed: 'Fast', quality: 'Good' },
   { id: 'extreme_points', name: 'Extreme Points', nameHi: 'एक्सट्रीम पॉइंट्स', icon: Target, description: 'Balanced performance', speed: 'Medium', quality: 'Better' },
@@ -163,25 +176,20 @@ class AdvancedBinPacker {
     this.algorithm = algorithm
   }
   
-  // Convert cm to meters
   private cmToM(cm: number): number {
     return cm / 100
   }
   
-  // Calculate volume
   private getVolume(l: number, w: number, h: number): number {
     return l * w * h
   }
   
-  // Check if a box fits at a position without collision
   private fitsAt(packed: PackedBox[], x: number, y: number, z: number, l: number, w: number, h: number): boolean {
     const { length, width, height } = this.truck.dimensions
     
-    // Check truck bounds
     if (x + l > length || y + h > height || z + w > width) return false
     if (x < 0 || y < 0 || z < 0) return false
     
-    // Check collision with existing boxes
     for (const box of packed) {
       const overlapX = x < box.x + box.width && x + l > box.x
       const overlapY = y < box.y + box.height && y + h > box.y
@@ -193,13 +201,11 @@ class AdvancedBinPacker {
     return true
   }
   
-  // Skyline Bottom-Left algorithm with improved placement
   private packSkylineBL(): { packed: PackedBox[], unpacked: string[] } {
     const packed: PackedBox[] = []
     const unpacked: string[] = []
     const { length, width, height } = this.truck.dimensions
     
-    // Create expanded item list based on quantity
     const expandedItems: { item: SaleOrderItem, index: number }[] = []
     this.items.forEach(item => {
       for (let i = 0; i < item.quantity; i++) {
@@ -207,7 +213,6 @@ class AdvancedBinPacker {
       }
     })
     
-    // Sort by volume (largest first) and stackability
     expandedItems.sort((a, b) => {
       const volA = this.getVolume(a.item.length, a.item.width, a.item.height)
       const volB = this.getVolume(b.item.length, b.item.width, b.item.height)
@@ -215,7 +220,6 @@ class AdvancedBinPacker {
       return volB - volA
     })
     
-    // Try to place each item
     for (const { item, index } of expandedItems) {
       const itemL = this.cmToM(item.length)
       const itemW = this.cmToM(item.width)
@@ -223,7 +227,6 @@ class AdvancedBinPacker {
       
       let placed = false
       
-      // Try all rotations
       const rotations = [
         { l: itemL, w: itemW, h: itemH },
         { l: itemW, w: itemL, h: itemH },
@@ -233,8 +236,7 @@ class AdvancedBinPacker {
         { l: itemH, w: itemW, h: itemL },
       ]
       
-      // Grid search for position (bottom-left-front first)
-      const step = 0.1 // 10cm grid
+      const step = 0.1
       
       outerLoop:
       for (const rot of rotations) {
@@ -270,13 +272,11 @@ class AdvancedBinPacker {
     return { packed, unpacked }
   }
   
-  // Extreme Points algorithm
   private packExtremePoints(): { packed: PackedBox[], unpacked: string[] } {
     const packed: PackedBox[] = []
     const unpacked: string[] = []
     const { length, width, height } = this.truck.dimensions
     
-    // Extreme points list - start at origin
     let extremePoints: { x: number, y: number, z: number }[] = [{ x: 0, y: 0, z: 0 }]
     
     const expandedItems: { item: SaleOrderItem, index: number }[] = []
@@ -286,7 +286,6 @@ class AdvancedBinPacker {
       }
     })
     
-    // Sort by volume descending
     expandedItems.sort((a, b) => {
       const volA = this.getVolume(a.item.length, a.item.width, a.item.height)
       const volB = this.getVolume(b.item.length, b.item.width, b.item.height)
@@ -315,7 +314,6 @@ class AdvancedBinPacker {
       for (const rot of rotations) {
         for (const ep of extremePoints) {
           if (this.fitsAt(packed, ep.x, ep.y, ep.z, rot.l, rot.w, rot.h)) {
-            // Score: prefer bottom-left-front positions
             const waste = ep.x * 1 + ep.y * 2 + ep.z * 1.5
             if (waste < minWaste) {
               minWaste = waste
@@ -341,19 +339,16 @@ class AdvancedBinPacker {
           itemId: item.id
         })
         
-        // Remove used point
         extremePoints = extremePoints.filter(ep => 
           !(ep.x === bestPoint.x && ep.y === bestPoint.y && ep.z === bestPoint.z)
         )
         
-        // Generate new extreme points
         const newPoints = [
           { x: bestPoint.x + bestRotation.l, y: bestPoint.y, z: bestPoint.z },
           { x: bestPoint.x, y: bestPoint.y + bestRotation.h, z: bestPoint.z },
           { x: bestPoint.x, y: bestPoint.y, z: bestPoint.z + bestRotation.w }
         ]
         
-        // Add only valid points
         for (const np of newPoints) {
           if (np.x < length && np.y < height && np.z < width) {
             const exists = extremePoints.some(ep => 
@@ -363,7 +358,6 @@ class AdvancedBinPacker {
           }
         }
         
-        // Sort by distance from origin
         extremePoints.sort((a, b) => (a.x + a.y * 2 + a.z * 1.5) - (b.x + b.y * 2 + b.z * 1.5))
       } else {
         unpacked.push(`${item.name} #${index + 1}`)
@@ -373,17 +367,14 @@ class AdvancedBinPacker {
     return { packed, unpacked }
   }
   
-  // Genetic Algorithm (simplified with multiple iterations)
   private packGenetic(): { packed: PackedBox[], unpacked: string[] } {
     const iterations = 8
     let bestResult = { packed: [] as PackedBox[], unpacked: [] as string[] }
     let bestCount = 0
     
     for (let i = 0; i < iterations; i++) {
-      // Create shuffled copy of items
       const shuffledItems = [...this.items].sort(() => Math.random() - 0.5)
       
-      // Use extreme points with different item orders
       const tempPacker = new AdvancedBinPacker(this.truck, shuffledItems, 'extreme_points')
       const result = tempPacker.packExtremePoints()
       
@@ -409,12 +400,11 @@ class AdvancedBinPacker {
 }
 
 // ============= SMART TRUCK RECOMMENDATION ENGINE =============
-function recommendTrucks(items: SaleOrderItem[], algorithm: string): TruckRecommendation[] {
+function recommendTrucks(items: SaleOrderItem[], algorithm: string, trucks: TruckType[]): TruckRecommendation[] {
   const recommendations: TruckRecommendation[] = []
   
-  // Calculate total volume and weight needed
   const totalVolume = items.reduce((sum, item) => {
-    return sum + (item.length * item.width * item.height * item.quantity) / 1000000 // cm³ to m³
+    return sum + (item.length * item.width * item.height * item.quantity) / 1000000
   }, 0)
   
   const totalWeight = items.reduce((sum, item) => {
@@ -423,11 +413,9 @@ function recommendTrucks(items: SaleOrderItem[], algorithm: string): TruckRecomm
   
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
   
-  // Test each truck type
-  for (const truck of TRUCKS) {
+  for (const truck of trucks) {
     const truckVolume = truck.dimensions.length * truck.dimensions.width * truck.dimensions.height
     
-    // Skip if truck is clearly too small
     if (truckVolume < totalVolume * 0.2 || truck.capacity < totalWeight * 0.3) continue
     
     const packer = new AdvancedBinPacker(truck, items, algorithm)
@@ -447,40 +435,37 @@ function recommendTrucks(items: SaleOrderItem[], algorithm: string): TruckRecomm
       totalItems,
       volumeUtilization: Math.round((packedVolume / truckVolume) * 100),
       weightUtilization: Math.round((packedWeight / truck.capacity) * 100),
-      estimatedCost: truck.costPerKm * 100, // Assume 100km trip
+      estimatedCost: truck.costPerKm * 100,
       packedBoxes: packed,
       unfitItems: unpacked
     })
   }
   
-  // Sort by best fit (items packed, then utilization, then cost)
   recommendations.sort((a, b) => {
-    // First priority: fit all items if possible
     if (a.itemsFit === a.totalItems && b.itemsFit !== b.totalItems) return -1
     if (b.itemsFit === b.totalItems && a.itemsFit !== a.totalItems) return 1
     
-    // Second priority: more items fit
     if (a.itemsFit !== b.itemsFit) return b.itemsFit - a.itemsFit
     
-    // Third priority: better utilization
     if (Math.abs(a.volumeUtilization - b.volumeUtilization) > 10) {
       return b.volumeUtilization - a.volumeUtilization
     }
     
-    // Fourth: lower cost
     return a.estimatedCost - b.estimatedCost
   })
   
-  return recommendations.slice(0, 3) // Top 3 recommendations
+  return recommendations.slice(0, 3)
 }
 
 // ============= MAIN COMPONENT =============
 export default function PackingPage() {
-  // State
+  const navigate = useNavigate()
   const [lang, setLang] = useState<Language>('en')
   const [mode, setMode] = useState<'manual' | 'smart'>('smart')
   const [selectedTruck, setSelectedTruck] = useState<string | null>(null)
   const [algorithm, setAlgorithm] = useState('extreme_points')
+  const [trucks, setTrucks] = useState<TruckType[]>([])
+  const [loadingTrucks, setLoadingTrucks] = useState(true)
   const [saleOrderItems, setSaleOrderItems] = useState<SaleOrderItem[]>([
     { id: '1', name: 'TV Box', length: 120, width: 80, height: 20, weight: 15, quantity: 3, fragile: true, stackable: false },
     { id: '2', name: 'Refrigerator', length: 70, width: 70, height: 180, weight: 65, quantity: 2, fragile: true, stackable: false },
@@ -490,13 +475,42 @@ export default function PackingPage() {
   const [recommendations, setRecommendations] = useState<TruckRecommendation[]>([])
   const [selectedRecommendation, setSelectedRecommendation] = useState<TruckRecommendation | null>(null)
   const [showItemForm, setShowItemForm] = useState(false)
+  const [editingItem, setEditingItem] = useState<string | null>(null)
   const [newItem, setNewItem] = useState<Partial<SaleOrderItem>>({
     name: '', length: 0, width: 0, height: 0, weight: 0, quantity: 1, fragile: false, stackable: true
   })
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [expandedSection, setExpandedSection] = useState<string | null>('items')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
-  // Computed
+  // Fetch trucks from Supabase on mount
+  useEffect(() => {
+    fetchTrucks()
+  }, [])
+
+  const fetchTrucks = async () => {
+    try {
+      setLoadingTrucks(true)
+      const data = await trucksSupabaseApi.getAll()
+      const mappedTrucks: TruckType[] = data.map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        nameHi: t.name_hi || t.name,
+        dimensions: { length: t.length / 100, width: t.width / 100, height: t.height / 100 },
+        capacity: t.capacity,
+        costPerKm: t.cost_per_km,
+        available: t.available
+      }))
+      setTrucks(mappedTrucks)
+    } catch (error) {
+      console.error('Failed to fetch trucks:', error)
+      toast.error('Failed to load trucks')
+    } finally {
+      setLoadingTrucks(false)
+    }
+  }
+
   const totalStats = useMemo(() => {
     const totalItems = saleOrderItems.reduce((sum, item) => sum + item.quantity, 0)
     const totalWeight = saleOrderItems.reduce((sum, item) => sum + item.weight * item.quantity, 0)
@@ -506,12 +520,39 @@ export default function PackingPage() {
     return { totalItems, totalWeight, totalVolume: totalVolume.toFixed(2) }
   }, [saleOrderItems])
 
-  const currentTruck = TRUCKS.find(t => t.id === selectedTruck)
+  const currentTruck = trucks.find(t => t.id === selectedTruck)
 
-  // Handlers
+  // Validation
+  const validateItem = (item: Partial<SaleOrderItem>): Record<string, string> => {
+    const errors: Record<string, string> = {}
+    
+    if (!item.name || item.name.trim() === '') {
+      errors.name = t[lang].validation.nameRequired
+    }
+    if (!item.length || item.length <= 0) {
+      errors.length = t[lang].validation.lengthPositive
+    }
+    if (!item.width || item.width <= 0) {
+      errors.width = t[lang].validation.widthPositive
+    }
+    if (!item.height || item.height <= 0) {
+      errors.height = t[lang].validation.heightPositive
+    }
+    if (!item.weight || item.weight <= 0) {
+      errors.weight = t[lang].validation.weightPositive
+    }
+    if (!item.quantity || item.quantity < 1) {
+      errors.quantity = t[lang].validation.quantityMin
+    }
+    
+    return errors
+  }
+
   const handleAddItem = useCallback(() => {
-    if (!newItem.name || !newItem.length || !newItem.width || !newItem.height) {
-      toast.error('Please fill all dimensions')
+    const errors = validateItem(newItem)
+    setValidationErrors(errors)
+    
+    if (Object.keys(errors).length > 0) {
       return
     }
     
@@ -530,8 +571,37 @@ export default function PackingPage() {
     setSaleOrderItems(prev => [...prev, item])
     setNewItem({ name: '', length: 0, width: 0, height: 0, weight: 0, quantity: 1, fragile: false, stackable: true })
     setShowItemForm(false)
+    setValidationErrors({})
     toast.success('Item added!')
-  }, [newItem])
+  }, [newItem, lang])
+
+  const handleEditItem = (item: SaleOrderItem) => {
+    setNewItem({ ...item })
+    setEditingItem(item.id)
+    setShowItemForm(true)
+  }
+
+  const handleUpdateItem = useCallback(() => {
+    const errors = validateItem(newItem)
+    setValidationErrors(errors)
+    
+    if (Object.keys(errors).length > 0) {
+      return
+    }
+    
+    if (!editingItem) return
+    
+    setSaleOrderItems(prev => prev.map(item => 
+      item.id === editingItem 
+        ? { ...item, ...newItem } as SaleOrderItem
+        : item
+    ))
+    setNewItem({ name: '', length: 0, width: 0, height: 0, weight: 0, quantity: 1, fragile: false, stackable: true })
+    setShowItemForm(false)
+    setEditingItem(null)
+    setValidationErrors({})
+    toast.success('Item updated!')
+  }, [newItem, editingItem])
 
   const handleRemoveItem = useCallback((id: string) => {
     setSaleOrderItems(prev => prev.filter(item => item.id !== id))
@@ -544,12 +614,16 @@ export default function PackingPage() {
       return
     }
     
+    if (trucks.length === 0) {
+      toast.error('No trucks available')
+      return
+    }
+    
     setIsProcessing(true)
     toast.loading('Analyzing trucks...', { id: 'recommend' })
     
-    // Simulate processing delay for better UX
     setTimeout(() => {
-      const recs = recommendTrucks(saleOrderItems, algorithm)
+      const recs = recommendTrucks(saleOrderItems, algorithm, trucks)
       setRecommendations(recs)
       if (recs.length > 0) {
         setSelectedRecommendation(recs[0])
@@ -560,7 +634,7 @@ export default function PackingPage() {
       }
       setIsProcessing(false)
     }, 800)
-  }, [saleOrderItems, algorithm])
+  }, [saleOrderItems, algorithm, trucks])
 
   const handleManualPack = useCallback(() => {
     if (!selectedTruck || saleOrderItems.length === 0) {
@@ -571,7 +645,7 @@ export default function PackingPage() {
     setIsProcessing(true)
     
     setTimeout(() => {
-      const truck = TRUCKS.find(t => t.id === selectedTruck)!
+      const truck = trucks.find(t => t.id === selectedTruck)!
       const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
       const { packed, unpacked } = packer.pack()
       
@@ -595,9 +669,100 @@ export default function PackingPage() {
       toast.success(`Packed ${packed.length} items!`)
       setIsProcessing(false)
     }, 500)
-  }, [selectedTruck, saleOrderItems, algorithm])
+  }, [selectedTruck, saleOrderItems, algorithm, trucks])
 
-  // Section toggle for mobile accordion
+  const handleSavePackingJob = async () => {
+    if (!selectedRecommendation) {
+      toast.error('No packing result to save')
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error('Please login to save packing job')
+        return
+      }
+
+      // Create packing job
+      const job = await packingJobsSupabaseApi.createJob({
+        user_id: user.id,
+        truck_id: selectedRecommendation.truck.id,
+        status: 'completed',
+        items: [],
+        volume_utilization: selectedRecommendation.volumeUtilization,
+        weight_utilization: selectedRecommendation.weightUtilization,
+        total_cost: selectedRecommendation.estimatedCost,
+        algorithm,
+        optimization_goal: 'space',
+        result_data: {
+          packed_boxes: selectedRecommendation.packedBoxes,
+          unfit_items: selectedRecommendation.unfitItems,
+          items_fit: selectedRecommendation.itemsFit,
+          total_items: selectedRecommendation.totalItems
+        }
+      })
+
+      // Add packing items
+      const packingItems = saleOrderItems.map(item => ({
+        job_id: job.id!,
+        name: item.name,
+        length: item.length,
+        width: item.width,
+        height: item.height,
+        weight: item.weight,
+        quantity: item.quantity,
+        fragile: item.fragile,
+        stackable: item.stackable
+      }))
+
+      await packingJobsSupabaseApi.addJobItems(packingItems)
+
+      toast.success('Packing job saved successfully!')
+    } catch (error: any) {
+      console.error('Failed to save packing job:', error)
+      toast.error(error.message || 'Failed to save packing job')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleBookTruck = async () => {
+    if (!selectedRecommendation) {
+      toast.error('No truck selected')
+      return
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        toast.error('Please login to book truck')
+        return
+      }
+
+      // Create shipment
+      await shipmentsSupabaseApi.create({
+        customer_id: '', // Will need to select customer
+        truck_id: selectedRecommendation.truck.id,
+        origin: '',
+        destination: '',
+        status: 'pending',
+        total_weight: saleOrderItems.reduce((sum, item) => sum + item.weight * item.quantity, 0),
+        total_volume: saleOrderItems.reduce((sum, item) => sum + (item.length * item.width * item.height * item.quantity) / 1000000, 0),
+        estimated_cost: selectedRecommendation.estimatedCost
+      })
+
+      toast.success(`${selectedRecommendation.truck.name} booked successfully!`)
+      navigate('/tracking')
+    } catch (error: any) {
+      console.error('Failed to book truck:', error)
+      toast.error(error.message || 'Failed to book truck')
+    }
+  }
+
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section)
   }
@@ -618,9 +783,7 @@ export default function PackingPage() {
               </p>
             </div>
             
-            {/* Language & Mode Toggle */}
             <div className="flex items-center gap-3">
-              {/* Language Toggle */}
               <button
                 onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
@@ -629,7 +792,6 @@ export default function PackingPage() {
                 {lang === 'en' ? 'हिंदी' : 'English'}
               </button>
 
-              {/* Mode Toggle */}
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <button
                   onClick={() => setMode('smart')}
@@ -641,19 +803,18 @@ export default function PackingPage() {
                 >
                   <Wand2 className="w-4 h-4" />
                   <span className="hidden sm:inline">{t[lang].smartMode}</span>
-                  <span className="sm:hidden">{t[lang].smartMode}</span>
                 </button>
                 <button
                   onClick={() => setMode('manual')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     mode === 'manual' 
                       ? 'bg-slate-700 text-white shadow-md' 
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline">{t[lang].manualMode}</span>
-              </button>
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t[lang].manualMode}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -666,7 +827,7 @@ export default function PackingPage() {
           {/* Left Panel - Items & Controls */}
           <div className="lg:col-span-5 xl:col-span-4 space-y-4">
             
-            {/* Sale Order Items - Collapsible on mobile */}
+            {/* Sale Order Items */}
             <div className="card overflow-hidden">
               <button 
                 onClick={() => toggleSection('items')}
@@ -718,12 +879,20 @@ export default function PackingPage() {
                           {item.length}×{item.width}×{item.height}cm • {item.weight}kg
                         </p>
                       </div>
-                      <button
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          onClick={() => handleEditItem(item)}
+                          className="p-1.5 text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -732,48 +901,79 @@ export default function PackingPage() {
                 {showItemForm ? (
                   <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-4 animate-fade-in">
                     <div className="grid grid-cols-2 gap-2 mb-3">
-                      <input
-                        type="text"
-                        placeholder={t[lang].itemName}
-                        value={newItem.name}
-                        onChange={e => setNewItem(prev => ({ ...prev, name: e.target.value }))}
-                        className="input text-sm col-span-2"
-                      />
-                      <input
-                        type="number"
-                        placeholder={t[lang].length}
-                        value={newItem.length || ''}
-                        onChange={e => setNewItem(prev => ({ ...prev, length: +e.target.value }))}
-                        className="input text-sm"
-                      />
-                      <input
-                        type="number"
-                        placeholder={t[lang].width}
-                        value={newItem.width || ''}
-                        onChange={e => setNewItem(prev => ({ ...prev, width: +e.target.value }))}
-                        className="input text-sm"
-                      />
-                      <input
-                        type="number"
-                        placeholder={t[lang].height}
-                        value={newItem.height || ''}
-                        onChange={e => setNewItem(prev => ({ ...prev, height: +e.target.value }))}
-                        className="input text-sm"
-                      />
-                      <input
-                        type="number"
-                        placeholder={t[lang].weight}
-                        value={newItem.weight || ''}
-                        onChange={e => setNewItem(prev => ({ ...prev, weight: +e.target.value }))}
-                        className="input text-sm"
-                      />
-                      <input
-                        type="number"
-                        placeholder={t[lang].qty}
-                        value={newItem.quantity || ''}
-                        onChange={e => setNewItem(prev => ({ ...prev, quantity: +e.target.value }))}
-                        className="input text-sm"
-                      />
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder={t[lang].itemName}
+                          value={newItem.name}
+                          onChange={e => setNewItem(prev => ({ ...prev, name: e.target.value }))}
+                          className={`input text-sm w-full ${validationErrors.name ? 'border-red-500' : ''}`}
+                        />
+                        {validationErrors.name && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors.name}</p>
+                        )}
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder={t[lang].length}
+                          value={newItem.length || ''}
+                          onChange={e => setNewItem(prev => ({ ...prev, length: +e.target.value }))}
+                          className={`input text-sm w-full ${validationErrors.length ? 'border-red-500' : ''}`}
+                        />
+                        {validationErrors.length && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors.length}</p>
+                        )}
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder={t[lang].width}
+                          value={newItem.width || ''}
+                          onChange={e => setNewItem(prev => ({ ...prev, width: +e.target.value }))}
+                          className={`input text-sm w-full ${validationErrors.width ? 'border-red-500' : ''}`}
+                        />
+                        {validationErrors.width && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors.width}</p>
+                        )}
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder={t[lang].height}
+                          value={newItem.height || ''}
+                          onChange={e => setNewItem(prev => ({ ...prev, height: +e.target.value }))}
+                          className={`input text-sm w-full ${validationErrors.height ? 'border-red-500' : ''}`}
+                        />
+                        {validationErrors.height && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors.height}</p>
+                        )}
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder={t[lang].weight}
+                          value={newItem.weight || ''}
+                          onChange={e => setNewItem(prev => ({ ...prev, weight: +e.target.value }))}
+                          className={`input text-sm w-full ${validationErrors.weight ? 'border-red-500' : ''}`}
+                        />
+                        {validationErrors.weight && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors.weight}</p>
+                        )}
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder={t[lang].qty}
+                          value={newItem.quantity || ''}
+                          onChange={e => setNewItem(prev => ({ ...prev, quantity: +e.target.value }))}
+                          className={`input text-sm w-full ${validationErrors.quantity ? 'border-red-500' : ''}`}
+                          min={1}
+                        />
+                        {validationErrors.quantity && (
+                          <p className="text-xs text-red-500 mt-1">{validationErrors.quantity}</p>
+                        )}
+                      </div>
                       <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                         <input
                           type="checkbox"
@@ -783,10 +983,36 @@ export default function PackingPage() {
                         />
                         {t[lang].stackable}
                       </label>
+                      <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={newItem.fragile}
+                          onChange={e => setNewItem(prev => ({ ...prev, fragile: e.target.checked }))}
+                          className="rounded text-primary-600"
+                        />
+                        {t[lang].fragile}
+                      </label>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => setShowItemForm(false)} className="btn btn-secondary flex-1 py-2">{lang === 'en' ? 'Cancel' : 'रद्द करें'}</button>
-                      <button onClick={handleAddItem} className="btn btn-primary flex-1 py-2">{t[lang].addItem}</button>
+                      <button 
+                        onClick={() => {
+                          setShowItemForm(false)
+                          setEditingItem(null)
+                          setNewItem({ name: '', length: 0, width: 0, height: 0, weight: 0, quantity: 1, fragile: false, stackable: true })
+                          setValidationErrors({})
+                        }} 
+                        className="btn btn-secondary flex-1 py-2"
+                      >
+                        <X className="w-4 h-4" />
+                        {lang === 'en' ? 'Cancel' : 'रद्द करें'}
+                      </button>
+                      <button 
+                        onClick={editingItem ? handleUpdateItem : handleAddItem} 
+                        className="btn btn-primary flex-1 py-2"
+                      >
+                        <Check className="w-4 h-4" />
+                        {editingItem ? (lang === 'en' ? 'Update' : 'अपडेट') : t[lang].addItem}
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -846,38 +1072,44 @@ export default function PackingPage() {
                   <Truck className="w-4 h-4 text-primary-500" />
                   {t[lang].selectTruck}
                 </h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {TRUCKS.map(truck => (
-                    <button
-                      key={truck.id}
-                      onClick={() => setSelectedTruck(truck.id)}
-                      className={`w-full p-3 rounded-xl text-left transition-all border-2 ${
-                        selectedTruck === truck.id
-                          ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500'
-                          : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-slate-900 dark:text-white">{lang === 'en' ? truck.name : truck.nameHi}</p>
-                          <p className="text-xs text-slate-500">
-                            {truck.dimensions.length}×{truck.dimensions.width}×{truck.dimensions.height}m • {truck.capacity}kg
-                          </p>
+                {loadingTrucks ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {trucks.map(truck => (
+                      <button
+                        key={truck.id}
+                        onClick={() => setSelectedTruck(truck.id)}
+                        className={`w-full p-3 rounded-xl text-left transition-all border-2 ${
+                          selectedTruck === truck.id
+                            ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500'
+                            : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-slate-900 dark:text-white">{lang === 'en' ? truck.name : truck.nameHi}</p>
+                            <p className="text-xs text-slate-500">
+                              {truck.dimensions.length}×{truck.dimensions.width}×{truck.dimensions.height}m • {truck.capacity}kg
+                            </p>
+                          </div>
+                          {selectedTruck === truck.id && (
+                            <CheckCircle2 className="w-5 h-5 text-primary-500" />
+                          )}
                         </div>
-                        {selectedTruck === truck.id && (
-                          <CheckCircle2 className="w-5 h-5 text-primary-500" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
             {/* Action Button */}
             <button
               onClick={mode === 'smart' ? handleSmartRecommend : handleManualPack}
-              disabled={saleOrderItems.length === 0 || (mode === 'manual' && !selectedTruck) || isProcessing}
+              disabled={saleOrderItems.length === 0 || (mode === 'manual' && !selectedTruck) || isProcessing || loadingTrucks}
               className={`btn w-full py-4 text-lg shadow-lg ${
                 mode === 'smart' 
                   ? 'bg-gradient-to-r from-primary-600 to-saffron text-white hover:from-primary-700 hover:to-orange-500' 
@@ -1000,55 +1232,68 @@ export default function PackingPage() {
             {/* Packing Details */}
             {selectedRecommendation && (
               <div className="card p-4 animate-fade-in">
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
-                  <Calculator className="w-4 h-4 text-primary-500" />
-                  {t[lang].packingDetails}
-                </h3>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{selectedRecommendation.itemsFit}</p>
-                    <p className="text-xs text-green-700 dark:text-green-500">{t[lang].itemsPacked}</p>
-                  </div>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{selectedRecommendation.volumeUtilization}%</p>
-                    <p className="text-xs text-blue-700 dark:text-blue-500">{t[lang].volumeUsed}</p>
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{selectedRecommendation.weightUtilization}%</p>
-                    <p className="text-xs text-purple-700 dark:text-purple-500">{t[lang].weightUsed}</p>
-                  </div>
-                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">₹{selectedRecommendation.estimatedCost}</p>
-                    <p className="text-xs text-amber-700 dark:text-amber-500">{t[lang].estCost}</p>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <Calculator className="w-4 h-4 text-primary-500" />
+                    {t[lang].packingDetails}
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSavePackingJob}
+                      disabled={isSaving}
+                      className="btn btn-secondary py-2 px-4"
+                    >
+                      {isSaving ? (
+                        <div className="spinner w-4 h-4" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                      {t[lang].saveJob}
+                    </button>
+                    <button
+                      onClick={handleBookTruck}
+                      className="btn btn-primary py-2 px-4"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                      {t[lang].book} {lang === 'en' ? selectedRecommendation.truck.name : selectedRecommendation.truck.nameHi}
+                    </button>
                   </div>
                 </div>
-
-                {selectedRecommendation.unfitItems.length > 0 && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-4">
-                    <h4 className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2 mb-2">
-                      <AlertTriangle className="w-4 h-4" />
-                      {t[lang].itemsWontFit}
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedRecommendation.unfitItems.map((item, idx) => (
-                        <span key={idx} className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs px-2 py-1 rounded-full">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="text-sm text-amber-600 dark:text-amber-500 mt-3">
-                      {t[lang].additionalTruck}
+                
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+                    <p className="text-xs text-slate-500">{t[lang].itemsPacked}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">
+                      {selectedRecommendation.itemsFit}/{selectedRecommendation.totalItems}
                     </p>
                   </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+                    <p className="text-xs text-slate-500">{t[lang].volumeUsed}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">{selectedRecommendation.volumeUtilization}%</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+                    <p className="text-xs text-slate-500">{t[lang].weightUsed}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">{selectedRecommendation.weightUtilization}%</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+                    <p className="text-xs text-slate-500">{t[lang].estCost}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">₹{selectedRecommendation.estimatedCost}</p>
+                  </div>
+                </div>
+                
+                {selectedRecommendation.unfitItems.length > 0 && (
+                  <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      {t[lang].itemsWontFit}
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                      {selectedRecommendation.unfitItems.slice(0, 5).join(', ')}
+                      {selectedRecommendation.unfitItems.length > 5 && ` +${selectedRecommendation.unfitItems.length - 5} more`}
+                    </p>
+                    <p className="text-xs text-amber-500 mt-2">{t[lang].additionalTruck}</p>
+                  </div>
                 )}
-
-                {/* Book Truck Button */}
-                <button className="btn bg-gradient-to-r from-green-500 to-emerald-600 text-white w-full py-4 text-lg shadow-lg hover:from-green-600 hover:to-emerald-700">
-                  <Truck className="w-5 h-5" />
-                  {t[lang].book} {lang === 'en' ? selectedRecommendation.truck.name : selectedRecommendation.truck.nameHi}
-                  <ArrowRight className="w-5 h-5" />
-                </button>
               </div>
             )}
           </div>
@@ -1057,4 +1302,3 @@ export default function PackingPage() {
     </div>
   )
 }
-

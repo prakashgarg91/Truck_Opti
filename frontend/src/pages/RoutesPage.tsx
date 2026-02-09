@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { MapPin, Navigation, Clock, IndianRupee, Plus, X, Search, ChevronRight, Map as MapIcon, TrendingUp, Zap } from 'lucide-react'
-import { routesApi } from '../services/api'
+import { routesSupabaseApi } from '../services/supabaseApi'
 
 interface Route {
-  id: number
+  id: string
   name: string
   start_location: string
   destinations: string[]
@@ -22,10 +22,15 @@ export default function RoutesPage() {
   const [optimizing, setOptimizing] = useState(false)
   
   const [formData, setFormData] = useState({
+    name: '',
     start_location: '',
     destinations: [''],
-    optimization_goal: 'distance' as 'distance' | 'time' | 'cost',
-    return_to_start: false
+    total_distance: 0,
+    total_time: 0,
+    total_cost: 0,
+    toll_cost: 0,
+    fuel_cost: 0,
+    status: 'planned' as 'planned' | 'active' | 'completed'
   })
 
   useEffect(() => {
@@ -35,8 +40,13 @@ export default function RoutesPage() {
   const fetchRoutes = async () => {
     try {
       setLoading(true)
-      const data = await routesApi.getAll()
-      setRoutes(data)
+      const data = await routesSupabaseApi.getAll()
+      // Parse destinations from JSON if stored as string
+      const parsedRoutes = data.map((r: any) => ({
+        ...r,
+        destinations: typeof r.destinations === 'string' ? JSON.parse(r.destinations) : r.destinations || []
+      }))
+      setRoutes(parsedRoutes)
     } catch (error) {
       console.error('Failed to fetch routes:', error)
     } finally {
@@ -63,10 +73,26 @@ export default function RoutesPage() {
   const handleOptimize = async () => {
     try {
       setOptimizing(true)
-      await routesApi.optimize({
-        ...formData,
-        destinations: formData.destinations.filter(d => d.trim() !== '')
+      const validDestinations = formData.destinations.filter(d => d.trim() !== '')
+      
+      // Calculate approximate distance and time (simplified)
+      const distance = validDestinations.length * 150 // Rough estimate: 150km per stop
+      const time = distance * 1.5 // Rough estimate: 1.5 min per km
+      const fuelCost = distance * 25 // Rough estimate: ₹25 per km
+      const tollCost = distance * 3 // Rough estimate: ₹3 per km
+      
+      await routesSupabaseApi.create({
+        name: formData.name || `Route to ${validDestinations[validDestinations.length - 1]}`,
+        start_location: formData.start_location,
+        destinations: validDestinations,
+        total_distance: distance,
+        total_time: time,
+        total_cost: fuelCost + tollCost,
+        toll_cost: tollCost,
+        fuel_cost: fuelCost,
+        status: 'planned'
       })
+      
       setIsModalOpen(false)
       fetchRoutes()
     } catch (error) {
@@ -103,7 +129,7 @@ export default function RoutesPage() {
       
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-        {['all', 'active', 'pending', 'completed'].map((f) => (
+        {['all', 'active', 'planned', 'completed'].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -138,11 +164,11 @@ export default function RoutesPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-slate-900 dark:text-white text-lg">
-                        {route.name || `Route #${route.id}`}
+                        {route.name || `Route #${route.id.slice(0, 8)}`}
                       </h3>
                       <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
                         route.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
-                        route.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                        route.status === 'planned' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
                         'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
                       }`}>
                         {route.status}
@@ -165,19 +191,19 @@ export default function RoutesPage() {
                     <p className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
                       <TrendingUp className="w-3 h-3" /> Distance
                     </p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{route.total_distance} km</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{Math.round(route.total_distance)} km</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
                       <Clock className="w-3 h-3" /> Duration
                     </p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{Math.floor(route.total_time / 60)}h {route.total_time % 60}m</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{Math.floor(route.total_time / 60)}h {Math.round(route.total_time % 60)}m</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
                       <IndianRupee className="w-3 h-3" /> Est. Cost
                     </p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">₹{route.total_cost}</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">₹{Math.round(route.total_cost)}</p>
                   </div>
                 </div>
               </div>
@@ -201,6 +227,17 @@ export default function RoutesPage() {
             </div>
             
             <div className="p-6 space-y-6 overflow-y-auto flex-1">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Route Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none"
+                  placeholder="e.g. Mumbai to Pune Delivery"
+                />
+              </div>
+              
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -252,33 +289,6 @@ export default function RoutesPage() {
                   <Plus className="w-4 h-4" />
                   Add Another Stop
                 </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Optimization Goal</label>
-                  <select
-                    value={formData.optimization_goal}
-                    onChange={(e) => setFormData({...formData, optimization_goal: e.target.value as any})}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm"
-                  >
-                    <option value="distance">Shortest Distance</option>
-                    <option value="time">Fastest Time</option>
-                    <option value="cost">Lowest Cost</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-3 pt-6">
-                  <input
-                    type="checkbox"
-                    id="return_to_start"
-                    checked={formData.return_to_start}
-                    onChange={(e) => setFormData({...formData, return_to_start: e.target.checked})}
-                    className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  <label htmlFor="return_to_start" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Return to start
-                  </label>
-                </div>
               </div>
             </div>
 

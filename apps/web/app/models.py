@@ -7,20 +7,20 @@ from .extensions import db
 
 
 def _generate_shipment_number() -> str:
-    \"\"\"Generate a unique shipment identifier.\"\"\"
-    return f\"SHIP-{uuid.uuid4().hex[:8].upper()}\"
+    """Generate a unique shipment identifier."""
+    return f"SHIP-{uuid.uuid4().hex[:8].upper()}"
 
 
 class BaseModel:
-    \"\"\"Base model class with shared functionality for all models\"\"\"
+    """Base model class with shared functionality for all models"""
 
     def as_dict(self, include_columns=None, exclude_columns=None):
-        \"\"\"Enhanced dictionary serialization with optional column filtering\"\"\"
+        """Enhanced dictionary serialization with optional column filtering"""
         columns = include_columns or [c.name for c in self.__table__.columns]
         exclude_columns = exclude_columns or []
 
         def safe_serialize(column_name):
-            \"\"\"Safely convert complex types to JSON-serializable formats\"\"\"
+            """Safely convert complex types to JSON-serializable formats"""
             value = getattr(self, column_name, None)
             if value is None:
                 return None
@@ -42,6 +42,8 @@ class BaseModel:
 
 
 class TruckType(BaseModel, db.Model):
+    __tablename__ = 'truck_type'
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     length = db.Column(db.Float, nullable=False)
@@ -59,14 +61,20 @@ class TruckType(BaseModel, db.Model):
     # Relationships
     packing_jobs = db.relationship('PackingJob', backref='truck_type', lazy=True)
     
+    # Indexes for performance optimization - use strings, not self references
+    __table_args__ = (
+        db.Index('idx_truck_volume', 'length', 'width', 'height'),  # For volume-based sorting
+        db.Index('idx_truck_availability_category', 'availability', 'truck_category'),
+    )
+    
     def calculate_max_cartons(self, avg_carton_weight=50, safety_factor=0.7):
-        \"\"\"Estimate maximum number of standard cartons this truck can carry\"\"\"
+        """Estimate maximum number of standard cartons this truck can carry"""
         if not self.max_weight:
             return None
         return int((self.max_weight * safety_factor) / avg_carton_weight)
     
     def get_performance_metrics(self):
-        \"\"\"Generate detailed performance metrics for truck type\"\"\"
+        """Generate detailed performance metrics for truck type"""
         return {
             'volume_m3': round(self.length * self.width * self.height / 1_000_000, 2) if self.length and self.width and self.height else None,
             'has_valid_dimensions': all([self.length > 0, self.width > 0, self.height > 0]),
@@ -82,14 +90,11 @@ class TruckType(BaseModel, db.Model):
                 'maintenance_cost_per_km': self.maintenance_cost_per_km
             }
         }
-    
-    # Indexes for performance optimization
-    __table_args__ = (
-        db.Index('idx_truck_volume', self.length, self.width, self.height),  # For volume-based sorting
-        db.Index('idx_truck_availability_category', self.availability, self.truck_category),
-    )
+
 
 class CartonType(BaseModel, db.Model):
+    __tablename__ = 'carton_type'
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     length = db.Column(db.Float, nullable=False)
@@ -105,8 +110,14 @@ class CartonType(BaseModel, db.Model):
     category = db.Column(db.String(50), default='General', index=True)
     description = db.Column(db.Text)
     
+    # Indexes for carton type searches - use strings, not self references
+    __table_args__ = (
+        db.Index('idx_carton_name', 'name'),  # For name-based searches
+        db.Index('idx_carton_dimensions', 'length', 'width', 'height'),  # For dimension-based searches
+    )
+    
     def get_packaging_metrics(self):
-        \"\"\"Compute detailed packaging and handling metrics\"\"\"
+        """Compute detailed packaging and handling metrics"""
         return {
             'volume_m3': round(self.length * self.width * self.height / 1_000_000, 4) if self.length and self.width and self.height else None,
             'has_valid_dimensions': all([self.length > 0, self.width > 0, self.height > 0]),
@@ -122,70 +133,133 @@ class CartonType(BaseModel, db.Model):
                 'category': self.category
             }
         }
-    
-    # Indexes for carton type searches
-    __table_args__ = (
-        db.Index('idx_carton_name', self.name),  # For name-based searches
-        db.Index('idx_carton_dimensions', self.length, self.width, self.height),  # For dimension-based searches
-    )
 
-class Customer(db.Model):
+
+class Customer(BaseModel, db.Model):
+    """Customer model for logistics operations"""
+    __tablename__ = 'customer'
+    
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120))
-    phone = db.Column(db.String(20))
+    name = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(200))
+    phone = db.Column(db.String(50))
     address = db.Column(db.Text)
-    city = db.Column(db.String(50))
-    postal_code = db.Column(db.String(10))
-    country = db.Column(db.String(50))
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    pincode = db.Column(db.String(20))
+    gstin = db.Column(db.String(15))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     shipments = db.relationship('Shipment', backref='customer', lazy=True)
+    invoices = db.relationship('GSTInvoice', backref='customer', lazy=True)
 
-class Route(db.Model):
+
+class Route(BaseModel, db.Model):
+    """Route planning and optimization"""
+    __tablename__ = 'route'
+    
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    origin = db.Column(db.String(100), nullable=False)
-    destination = db.Column(db.String(100), nullable=False)
-    distance_km = db.Column(db.Float, nullable=False)
-    estimated_time_hours = db.Column(db.Float)
-    toll_cost = db.Column(db.Float, default=0.0)
-    fuel_cost = db.Column(db.Float, default=0.0)
+    
+    name = db.Column(db.String(200))
+    status = db.Column(db.String(50), default='pending')  # pending, active, completed
+    
+    # Route details
+    start_location = db.Column(db.Text)
+    end_location = db.Column(db.Text)
+    waypoints = db.Column(db.Text)  # JSON array of waypoints
+    
+    # Distance and time
+    total_distance_km = db.Column(db.Float)
+    estimated_duration_minutes = db.Column(db.Integer)
+    
+    # Assigned resources
+    truck_id = db.Column(db.Integer, db.ForeignKey('truck_type.id'), nullable=True)
+    driver_id = db.Column(db.String(100))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
     
     # Relationships
+    truck = db.relationship('TruckType', backref='routes')
     shipments = db.relationship('Shipment', backref='route', lazy=True)
 
-class Shipment(db.Model):
+
+class Shipment(BaseModel, db.Model):
+    """Shipment tracking model"""
+    __tablename__ = 'shipment'
+    
     id = db.Column(db.Integer, primary_key=True)
-    shipment_number = db.Column(
-        db.String(50),
-        unique=True,
-        nullable=False,
-        default=_generate_shipment_number)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'))
-    route_id = db.Column(db.Integer, db.ForeignKey('route.id'))
+    shipment_number = db.Column(db.String(100), unique=True, nullable=False, default=_generate_shipment_number)
+    
+    # Foreign keys
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
+    truck_id = db.Column(db.Integer, db.ForeignKey('truck_type.id'), nullable=True)
+    route_id = db.Column(db.Integer, db.ForeignKey('route.id'), nullable=True)
+    
+    # Status
+    status = db.Column(db.String(50), default='pending')  # pending, in_transit, delivered, cancelled
     priority = db.Column(db.Integer, default=1)  # 1-5
-    delivery_date = db.Column(db.Date)
-    status = db.Column(db.String(20), default='pending')  # pending, packed, shipped, delivered
+    
+    # Locations
+    origin_address = db.Column(db.Text)
+    destination_address = db.Column(db.Text)
+    
+    # Tracking
+    current_latitude = db.Column(db.Float)
+    current_longitude = db.Column(db.Float)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    pickup_time = db.Column(db.DateTime)
+    delivery_time = db.Column(db.DateTime)
+    estimated_delivery = db.Column(db.DateTime)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Financial
     total_value = db.Column(db.Float, default=0.0)
     total_weight = db.Column(db.Float, default=0.0)
     total_volume = db.Column(db.Float, default=0.0)
     special_instructions = db.Column(db.Text)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    shipment_items = db.relationship('ShipmentItem', backref='shipment', lazy=True, cascade='all, delete-orphan')
+    items = db.relationship('ShipmentItem', backref='shipment', lazy=True, cascade='all, delete-orphan')
+    packing_jobs = db.relationship('PackingJob', backref='shipment', lazy=True)
+    invoice = db.relationship('GSTInvoice', backref='shipment', uselist=False)
 
-class ShipmentItem(db.Model):
+
+class ShipmentItem(BaseModel, db.Model):
+    """Individual items within a shipment"""
+    __tablename__ = 'shipment_item'
+    
     id = db.Column(db.Integer, primary_key=True)
-    shipment_id = db.Column(db.Integer, db.ForeignKey('shipment.id'))
-    carton_type_id = db.Column(db.Integer, db.ForeignKey('carton_type.id'))
-    quantity = db.Column(db.Integer, nullable=False)
+    
+    shipment_id = db.Column(db.Integer, db.ForeignKey('shipment.id'), nullable=False)
+    carton_type_id = db.Column(db.Integer, db.ForeignKey('carton_type.id'), nullable=True)
+    
+    # Item details
+    name = db.Column(db.String(200), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+    
+    # Physical properties
+    length = db.Column(db.Float)
+    width = db.Column(db.Float)
+    height = db.Column(db.Float)
+    weight = db.Column(db.Float)
+    
+    # Special handling
+    is_fragile = db.Column(db.Boolean, default=False)
+    special_instructions = db.Column(db.Text)
     
     # Relationships
     carton_type = db.relationship('CartonType', backref='shipment_items')
 
-class PackingJob(db.Model):
+
+class PackingJob(BaseModel, db.Model):
+    __tablename__ = 'packing_job'
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
@@ -195,10 +269,12 @@ class PackingJob(db.Model):
     optimization_goal = db.Column(db.String(20), default='space')  # space, cost, time
     
     # Relationships
-    shipment = db.relationship('Shipment', backref='packing_jobs')
     packing_results = db.relationship('PackingResult', backref='packing_job', lazy=True)
 
-class PackingResult(db.Model):
+
+class PackingResult(BaseModel, db.Model):
+    __tablename__ = 'packing_result'
+    
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('packing_job.id'))
     truck_count = db.Column(db.Integer)
@@ -212,8 +288,18 @@ class PackingResult(db.Model):
     optimization_score = db.Column(db.Float, default=0.0)
     date_calculated = db.Column(db.DateTime, default=datetime.utcnow)
 
-class Analytics(db.Model):
+
+class Analytics(BaseModel, db.Model):
+    """Analytics data model"""
+    __tablename__ = 'analytics'
+    
     id = db.Column(db.Integer, primary_key=True)
+    
+    metric_type = db.Column(db.String(100), nullable=False)
+    metric_name = db.Column(db.String(200), nullable=False)
+    metric_value = db.Column(db.Float, default=0.0)
+    
+    # Legacy analytics fields
     date = db.Column(db.Date, default=lambda: datetime.utcnow().date())
     total_shipments = db.Column(db.Integer, default=0)
     total_trucks_used = db.Column(db.Integer, default=0)
@@ -221,9 +307,19 @@ class Analytics(db.Model):
     total_cost = db.Column(db.Float, default=0.0)
     total_distance = db.Column(db.Float, default=0.0)
     total_co2_emissions = db.Column(db.Float, default=0.0)
+    
+    # Time period
+    period_start = db.Column(db.DateTime)
+    period_end = db.Column(db.DateTime)
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-class SaleOrder(db.Model):
-    \"\"\"Sale Order model for Excel/CSV upload processing\"\"\"
+
+class SaleOrder(BaseModel, db.Model):
+    """Sale Order model for Excel/CSV upload processing"""
+    __tablename__ = 'sale_order'
+    
     id = db.Column(db.Integer, primary_key=True)
     sale_order_number = db.Column(db.String(100), nullable=False)
     batch_id = db.Column(db.Integer, db.ForeignKey('sale_order_batch.id'))
@@ -246,17 +342,21 @@ class SaleOrder(db.Model):
     # Relationships
     recommended_truck = db.relationship('TruckType', backref='recommended_orders')
     sale_order_items = db.relationship('SaleOrderItem', backref='sale_order', lazy=True, cascade='all, delete-orphan')
+    truck_recommendations = db.relationship('TruckRecommendation', backref='sale_order', lazy=True)
     
     # Indexes for sale order queries
     __table_args__ = (
-        db.Index('idx_sale_order_batch', batch_id),  # For batch filtering
-        db.Index('idx_sale_order_status', status),  # For status filtering
-        db.Index('idx_sale_order_date', date_created),  # For date sorting
-        db.Index('idx_sale_order_number', sale_order_number),  # For order number searches
+        db.Index('idx_sale_order_batch', 'batch_id'),  # For batch filtering
+        db.Index('idx_sale_order_status', 'status'),  # For status filtering
+        db.Index('idx_sale_order_date', 'date_created'),  # For date sorting
+        db.Index('idx_sale_order_number', 'sale_order_number'),  # For order number searches
     )
 
-class SaleOrderItem(db.Model):
-    \"\"\"Individual items within a sale order\"\"\"
+
+class SaleOrderItem(BaseModel, db.Model):
+    """Individual items within a sale order"""
+    __tablename__ = 'sale_order_item'
+    
     id = db.Column(db.Integer, primary_key=True)
     sale_order_id = db.Column(db.Integer, db.ForeignKey('sale_order.id'), nullable=False)
     item_code = db.Column(db.String(100), nullable=False)
@@ -274,8 +374,11 @@ class SaleOrderItem(db.Model):
     total_weight = db.Column(db.Float, default=0.0)
     notes = db.Column(db.Text)
 
-class SaleOrderBatch(db.Model):
-    \"\"\"Batch processing for multiple sale orders from Excel/CSV\"\"\"
+
+class SaleOrderBatch(BaseModel, db.Model):
+    """Batch processing for multiple sale orders from Excel/CSV"""
+    __tablename__ = 'sale_order_batch'
+    
     id = db.Column(db.Integer, primary_key=True)
     batch_name = db.Column(db.String(200), nullable=False)
     filename = db.Column(db.String(200), nullable=False)
@@ -290,8 +393,11 @@ class SaleOrderBatch(db.Model):
     # Relationships
     sale_orders = db.relationship('SaleOrder', backref='batch', lazy=True)
 
-class TruckRecommendation(db.Model):
-    \"\"\"Store truck recommendations for sale orders with detailed analysis\"\"\"
+
+class TruckRecommendation(BaseModel, db.Model):
+    """Store truck recommendations for sale orders with detailed analysis"""
+    __tablename__ = 'truck_recommendation'
+    
     id = db.Column(db.Integer, primary_key=True)
     sale_order_id = db.Column(db.Integer, db.ForeignKey('sale_order.id'), nullable=False)
     truck_type_id = db.Column(db.Integer, db.ForeignKey('truck_type.id'), nullable=False)
@@ -309,11 +415,13 @@ class TruckRecommendation(db.Model):
     date_calculated = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    sale_order = db.relationship('SaleOrder', backref='truck_recommendations')
     truck_type = db.relationship('TruckType', backref='recommendations')
 
-class UserSettings(db.Model):
-    \"\"\"Store user configuration and preferences for logistics operations\"\"\"
+
+class UserSettings(BaseModel, db.Model):
+    """Store user configuration and preferences for logistics operations"""
+    __tablename__ = 'user_settings'
+    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(50), default='default_user')  # For future multi-user support
     
@@ -366,7 +474,7 @@ class UserSettings(db.Model):
     
     @staticmethod
     def get_user_settings(user_id='default_user'):
-        \"\"\"Get user settings, create default if doesn't exist\"\"\"
+        """Get user settings, create default if doesn't exist"""
         settings = UserSettings.query.filter_by(user_id=user_id).first()
         if not settings:
             settings = UserSettings(user_id=user_id)
@@ -375,12 +483,14 @@ class UserSettings(db.Model):
         return settings
     
     def as_dict(self):
-        \"\"\"Convert to dictionary for JSON serialization\"\"\"
+        """Convert to dictionary for JSON serialization"""
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
 class LocationHistory(BaseModel, db.Model):
-    \"\"\"Persisted location history for tracking and audit\"\"\"
+    """Persisted location history for tracking and audit"""
+    __tablename__ = 'location_history'
+    
     id = db.Column(db.Integer, primary_key=True)
     entity_id = db.Column(db.String(50), nullable=False, index=True)
     latitude = db.Column(db.Float, nullable=False)
@@ -393,7 +503,9 @@ class LocationHistory(BaseModel, db.Model):
 
 
 class GSTInvoice(BaseModel, db.Model):
-    \"\"\"GST compliant invoice for logistics services\"\"\"
+    """GST compliant invoice for logistics services"""
+    __tablename__ = 'gst_invoice'
+    
     id = db.Column(db.Integer, primary_key=True)
     invoice_number = db.Column(db.String(50), unique=True, nullable=False)
     shipment_id = db.Column(db.Integer, db.ForeignKey('shipment.id'), nullable=False)
@@ -418,7 +530,3 @@ class GSTInvoice(BaseModel, db.Model):
     
     status = db.Column(db.String(20), default='draft')  # draft, issued, paid, cancelled
     date_issued = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    shipment = db.relationship('Shipment', backref=db.backref('invoice', uselist=False))
-    customer = db.relationship('Customer', backref='invoices')

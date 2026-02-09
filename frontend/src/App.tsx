@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuthStore } from './stores/authStore'
 
 // Layouts
 import MobileLayout from './layouts/MobileLayout'
@@ -21,12 +22,9 @@ import CheckoutPage from './pages/CheckoutPage'
 import PaymentCallbackPage from './pages/PaymentCallbackPage'
 import TestPaymentPage from './pages/TestPaymentPage'
 
-// Protected Route wrapper - BYPASSED FOR TESTING
+// Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // const { isAuthenticated } = useAuthStore()
-  
-  // TEMPORARILY BYPASS AUTH FOR UI TESTING
-  const isAuthenticated = true
+  const { isAuthenticated } = useAuthStore()
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />

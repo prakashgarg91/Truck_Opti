@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, RefreshCw, Shield, CheckCircle2 } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { authApi } from '../../services/api'
+import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 
 const OTP_LENGTH = 6
 
 export default function OTPPage() {
   const navigate = useNavigate()
-  const { pendingPhone, login } = useAuthStore()
+  const { pendingPhone, setUser, setToken } = useAuthStore()
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''))
   const [timer, setTimer] = useState(30)
   const [isError, setIsError] = useState(false)
@@ -33,26 +33,34 @@ export default function OTPPage() {
   }, [timer])
   
   const verifyOTPMutation = useMutation({
-    mutationFn: () => authApi.verifyOTP(pendingPhone!, otp.join('')),
-    onSuccess: (data) => {
-      if (data.success) {
-        setIsSuccess(true)
-        login(data.data.user, data.data.token)
-        toast.success('Login successful! 🎉', { duration: 2000 })
-        setTimeout(() => navigate('/'), 1000)
-      } else {
-        setIsError(true)
-        toast.error(data.message || 'Invalid OTP')
-        setTimeout(() => {
-          setIsError(false)
-          setOtp(Array(OTP_LENGTH).fill(''))
-          inputRefs.current[0]?.focus()
-        }, 600)
+    mutationFn: async () => {
+      const formattedPhone = pendingPhone!.startsWith('+') ? pendingPhone! : `+91${pendingPhone!}`
+      const { session, user } = await authSupabaseApi.verifyOtp(formattedPhone, otp.join(''))
+      return { session, user }
+    },
+    onSuccess: ({ session, user }) => {
+      setIsSuccess(true)
+      if (user) {
+        setUser({
+          id: user.id,
+          email: user.email || '',
+          name: user.user_metadata?.name || null,
+          phone_number: user.phone || pendingPhone || null,
+          phone_verified: true,
+          google_linked: false,
+          profile_picture: user.user_metadata?.avatar_url || null,
+          role: 'user'
+        })
       }
+      if (session?.access_token) {
+        setToken(session.access_token)
+      }
+      toast.success('Login successful! 🎉', { duration: 2000 })
+      setTimeout(() => navigate('/'), 1000)
     },
     onError: (error: any) => {
       setIsError(true)
-      toast.error(error.response?.data?.message || 'Verification failed')
+      toast.error(error.message || 'Invalid OTP')
       setTimeout(() => {
         setIsError(false)
         setOtp(Array(OTP_LENGTH).fill(''))
@@ -62,19 +70,19 @@ export default function OTPPage() {
   })
   
   const resendOTPMutation = useMutation({
-    mutationFn: () => authApi.resendOTP(pendingPhone!),
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success('OTP resent! Check your phone 📱', { duration: 3000 })
-        setTimer(30)
-        setOtp(Array(OTP_LENGTH).fill(''))
-        inputRefs.current[0]?.focus()
-      } else {
-        toast.error(data.message || 'Failed to resend OTP')
-      }
+    mutationFn: async () => {
+      const formattedPhone = pendingPhone!.startsWith('+') ? pendingPhone! : `+91${pendingPhone!}`
+      await authSupabaseApi.signInWithPhone(formattedPhone)
+      return { success: true }
+    },
+    onSuccess: () => {
+      toast.success('OTP resent! Check your phone 📱', { duration: 3000 })
+      setTimer(30)
+      setOtp(Array(OTP_LENGTH).fill(''))
+      inputRefs.current[0]?.focus()
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to resend OTP')
+      toast.error(error.message || 'Failed to resend OTP')
     }
   })
   
