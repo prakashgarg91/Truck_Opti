@@ -3,11 +3,11 @@ import {
   Package, Truck, Play, Settings, Layers, CheckCircle2, 
   Plus, Trash2, Wand2, AlertTriangle, ChevronDown,
   Zap, Brain, Target, Calculator, ShoppingCart, ArrowRight, Globe,
-  Save, Edit2, Check, X
+  Save, Edit2, Check, X, Loader2
 } from 'lucide-react'
 import TruckViewer from '../components/TruckViewer'
 import toast from 'react-hot-toast'
-import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi } from '../services/supabaseApi'
+import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, customersSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
@@ -153,6 +153,16 @@ interface TruckRecommendation {
   estimatedCost: number
   packedBoxes: PackedBox[]
   unfitItems: string[]
+}
+
+interface Customer {
+  id: string
+  name: string
+  phone: string
+  email: string | null
+  address: string
+  city: string
+  state: string
 }
 
 // ============= CONSTANTS =============
@@ -483,6 +493,21 @@ export default function PackingPage() {
   const [expandedSection, setExpandedSection] = useState<string | null>('items')
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Booking modal state
+  const [showBookModal, setShowBookModal] = useState(false)
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [, setLoadingCustomers] = useState(false)
+  const [bookForm, setBookForm] = useState({
+    origin: '',
+    destination: '',
+    customerId: '',
+    driverName: '',
+    driverPhone: '',
+    vehicleNumber: ''
+  })
+  const [bookError, setBookError] = useState('')
+  const [bookingInProgress, setBookingInProgress] = useState(false)
 
   // Fetch trucks from Supabase on mount
   useEffect(() => {
@@ -729,37 +754,88 @@ export default function PackingPage() {
     }
   }
 
-  const handleBookTruck = async () => {
+  const fetchCustomers = async () => {
+    try {
+      setLoadingCustomers(true)
+      const data = await customersSupabaseApi.getAll()
+      setCustomers(data)
+    } catch (error) {
+      console.error('Failed to fetch customers:', error)
+    } finally {
+      setLoadingCustomers(false)
+    }
+  }
+
+  const handleBookTruckClick = () => {
     if (!selectedRecommendation) {
       toast.error('No truck selected')
       return
     }
+    
+    fetchCustomers()
+    setShowBookModal(true)
+  }
+
+  const handleBookTruckSubmit = async () => {
+    if (!selectedRecommendation) {
+      setBookError('No truck selected')
+      return
+    }
+
+    // Validate form
+    if (!bookForm.origin.trim()) {
+      setBookError('Please enter origin city')
+      return
+    }
+    if (!bookForm.destination.trim()) {
+      setBookError('Please enter destination city')
+      return
+    }
+
+    setBookingInProgress(true)
+    setBookError('')
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
-        toast.error('Please login to book truck')
+        setBookError('Please login to book truck')
         return
       }
 
-      // Create shipment
+      // Create shipment with complete data
       await shipmentsSupabaseApi.create({
-        customer_id: '', // Will need to select customer
+        shipment_id: `SHP-${Date.now()}`,
+        customer_id: bookForm.customerId || '',
         truck_id: selectedRecommendation.truck.id,
-        origin: '',
-        destination: '',
+        origin: bookForm.origin,
+        destination: bookForm.destination,
         status: 'pending',
         total_weight: saleOrderItems.reduce((sum, item) => sum + item.weight * item.quantity, 0),
         total_volume: saleOrderItems.reduce((sum, item) => sum + (item.length * item.width * item.height * item.quantity) / 1000000, 0),
-        estimated_cost: selectedRecommendation.estimatedCost
+        estimated_cost: selectedRecommendation.estimatedCost,
+        driver_name: bookForm.driverName || null,
+        vehicle_number: bookForm.vehicleNumber || null,
+        latitude: null,
+        longitude: null
       })
 
       toast.success(`${selectedRecommendation.truck.name} booked successfully!`)
+      setShowBookModal(false)
+      setBookForm({
+        origin: '',
+        destination: '',
+        customerId: '',
+        driverName: '',
+        driverPhone: '',
+        vehicleNumber: ''
+      })
       navigate('/tracking')
     } catch (error: any) {
       console.error('Failed to book truck:', error)
-      toast.error(error.message || 'Failed to book truck')
+      setBookError(error.message || 'Failed to book truck')
+    } finally {
+      setBookingInProgress(false)
     }
   }
 
@@ -1251,7 +1327,7 @@ export default function PackingPage() {
                       {t[lang].saveJob}
                     </button>
                     <button
-                      onClick={handleBookTruck}
+                      onClick={handleBookTruckClick}
                       className="btn btn-primary py-2 px-4"
                     >
                       <ArrowRight className="w-4 h-4" />
@@ -1299,6 +1375,101 @@ export default function PackingPage() {
           </div>
         </div>
       </div>
+
+      {/* Book Truck Modal */}
+      {showBookModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6 animate-scale-in">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                {lang === 'hi' ? 'ट्रक बुक करें' : 'Book Truck'}
+              </h3>
+              <button
+                onClick={() => setShowBookModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {bookError && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600 dark:text-red-400">{bookError}</p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {lang === 'hi' ? 'ग्राहक चुनें' : 'Select Customer'}
+                </label>
+                <select
+                  value={bookForm.customerId}
+                  onChange={e => setBookForm(prev => ({ ...prev, customerId: e.target.value }))}
+                  className="input w-full"
+                >
+                  <option value="">{lang === 'hi' ? 'ग्राहक चुनें' : 'Select Customer'}</option>
+                  {customers.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {lang === 'hi' ? 'प्रस्थान स्थान' : 'Origin'}
+                </label>
+                <input
+                  type="text"
+                  value={bookForm.origin}
+                  onChange={e => setBookForm(prev => ({ ...prev, origin: e.target.value }))}
+                  placeholder={lang === 'hi' ? 'जैसे: मुंबई, महाराष्ट्र' : 'e.g., Mumbai, Maharashtra'}
+                  className="input w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {lang === 'hi' ? 'गंतव्य स्थान' : 'Destination'}
+                </label>
+                <input
+                  type="text"
+                  value={bookForm.destination}
+                  onChange={e => setBookForm(prev => ({ ...prev, destination: e.target.value }))}
+                  placeholder={lang === 'hi' ? 'जैसे: दिल्ली, एनसीआर' : 'e.g., Delhi, NCR'}
+                  className="input w-full"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowBookModal(false)}
+                className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+              >
+                {lang === 'hi' ? 'रद्द करें' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleBookTruckSubmit}
+                disabled={bookingInProgress}
+                className="flex-1 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {bookingInProgress ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {lang === 'hi' ? 'बुकिंग...' : 'Booking...'}
+                  </>
+                ) : (
+                  <>
+                    <Truck className="w-4 h-4" />
+                    {lang === 'hi' ? 'बुक करें' : 'Book Truck'}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

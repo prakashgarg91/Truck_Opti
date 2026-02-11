@@ -4,7 +4,7 @@ import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Be
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
-import { packingJobsSupabaseApi, analyticsSupabaseApi } from '../services/supabaseApi'
+import { packingJobsSupabaseApi, analyticsSupabaseApi, type PackingJob } from '../services/supabaseApi'
 
 interface DashboardStats {
   activeShipments: number
@@ -13,12 +13,7 @@ interface DashboardStats {
   deliveriesDone: number
 }
 
-interface PackingJob {
-  id: string
-  status: string
-  volume_utilization: number
-  created_at: string
-}
+
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -83,13 +78,13 @@ export default function Dashboard() {
 
       // Fetch recent packing jobs for activity
       const recentJobs = await packingJobsSupabaseApi.getUserJobs(5)
-      const activities = recentJobs.map((job: PackingJob, index: number) => ({
-        id: job.id,
+      const activities = recentJobs.map((job: PackingJob) => ({
+        id: job.id || '',
         type: 'packing',
         message: language === 'en' 
           ? `Packing job completed - ${job.volume_utilization}% volume utilized`
           : `पैकिंग जॉब पूर्ण - ${job.volume_utilization}% वॉल्यूम उपयोग`,
-        time: getRelativeTime(new Date(job.created_at), language),
+        time: getRelativeTime(new Date(job.created_at || Date.now()), language),
         status: job.status === 'completed' ? 'success' : 'info'
       }))
 

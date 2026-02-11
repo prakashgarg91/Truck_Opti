@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
-import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Map as MapIcon } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Phone, ChevronRight, Package, Clock, X } from 'lucide-react'
 import { shipmentsSupabaseApi } from '../services/supabaseApi'
+import { supabase } from '../lib/supabase'
+import MapView from '../components/MapView'
+import toast from 'react-hot-toast'
 
 interface ShipmentLocation {
   id: string
@@ -8,28 +12,44 @@ interface ShipmentLocation {
   latitude: number | null
   longitude: number | null
   driver_name: string | null
+  driver_phone?: string | null
   vehicle_number: string | null
   origin: string
   destination: string
   status: string
   updated_at: string
+  customer_id?: string
+  total_weight?: number
+  total_volume?: number
 }
 
 export default function TrackingPage() {
+  const navigate = useNavigate()
   const [shipments, setShipments] = useState<ShipmentLocation[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [selectedShipment, setSelectedShipment] = useState<ShipmentLocation | null>(null)
 
   useEffect(() => {
     fetchActiveShipments()
     
-    // Simulate location updates every 10 seconds
-    const interval = setInterval(() => {
-      updateShipmentLocations()
-    }, 10000)
+    // Subscribe to realtime updates
+    const subscription = supabase
+      .channel('shipments-tracking')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'shipments' },
+        (payload) => {
+          console.log('Realtime update:', payload)
+          fetchActiveShipments()
+        }
+      )
+      .subscribe()
     
-    return () => clearInterval(interval)
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   const fetchActiveShipments = async () => {
@@ -40,15 +60,19 @@ export default function TrackingPage() {
       // Map data to our interface format
       const mappedData: ShipmentLocation[] = data.map((s: any) => ({
         id: s.id,
-        shipment_id: s.shipment_id,
+        shipment_id: s.shipment_id || s.id.slice(0, 8).toUpperCase(),
         latitude: s.latitude,
         longitude: s.longitude,
         driver_name: s.driver_name,
+        driver_phone: s.driver_phone,
         vehicle_number: s.vehicle_number,
         origin: s.origin,
         destination: s.destination,
         status: s.status,
-        updated_at: s.updated_at
+        updated_at: s.updated_at,
+        customer_id: s.customer_id,
+        total_weight: s.total_weight,
+        total_volume: s.total_volume
       }))
       
       // For demo, if no real data, use mock data
@@ -60,11 +84,14 @@ export default function TrackingPage() {
             latitude: 19.0760,
             longitude: 72.8777,
             driver_name: 'Rajesh Kumar',
+            driver_phone: '+919876543210',
             vehicle_number: 'MH-01-AX-1234',
             origin: 'Mumbai',
             destination: 'Pune',
             status: 'in_transit',
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            total_weight: 1500,
+            total_volume: 12.5
           },
           {
             id: 'mock-2',
@@ -72,11 +99,29 @@ export default function TrackingPage() {
             latitude: 28.6139,
             longitude: 77.2090,
             driver_name: 'Amit Singh',
+            driver_phone: '+919876543211',
             vehicle_number: 'DL-01-CZ-5678',
             origin: 'Delhi',
             destination: 'Jaipur',
             status: 'in_transit',
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            total_weight: 2200,
+            total_volume: 18.3
+          },
+          {
+            id: 'mock-3',
+            shipment_id: 'SHP-1003',
+            latitude: 12.9716,
+            longitude: 77.5946,
+            driver_name: 'Kumar Reddy',
+            driver_phone: '+919876543212',
+            vehicle_number: 'KA-01-AB-9876',
+            origin: 'Bangalore',
+            destination: 'Chennai',
+            status: 'in_transit',
+            updated_at: new Date().toISOString(),
+            total_weight: 1800,
+            total_volume: 15.2
           }
         ])
       } else {
@@ -89,19 +134,17 @@ export default function TrackingPage() {
     }
   }
 
-  const updateShipmentLocations = () => {
-    // Simulate location updates
-    setShipments(prev => prev.map(s => {
-      if (s.latitude && s.longitude) {
-        return {
-          ...s,
-          latitude: s.latitude + (Math.random() - 0.5) * 0.01,
-          longitude: s.longitude + (Math.random() - 0.5) * 0.01,
-          updated_at: new Date().toISOString()
-        }
-      }
-      return s
-    }))
+  const handleContactDriver = (phone?: string) => {
+    if (phone) {
+      window.open(`tel:${phone}`, '_self')
+    } else {
+      toast.error('Driver phone number not available')
+    }
+  }
+
+  const handleViewDetails = (shipment: ShipmentLocation) => {
+    setSelectedShipment(shipment)
+    setShowDetailModal(true)
   }
 
   const filteredShipments = shipments.filter(s => 
@@ -109,6 +152,50 @@ export default function TrackingPage() {
     (s.driver_name?.toLowerCase() || '').includes(search.toLowerCase()) ||
     (s.vehicle_number?.toLowerCase() || '').includes(search.toLowerCase())
   )
+
+  // Prepare markers for the map
+  const mapMarkers = shipments
+    .filter(s => s.latitude && s.longitude)
+    .map(s => ({
+      id: s.id,
+      position: [s.latitude!, s.longitude!] as [number, number],
+      label: s.shipment_id,
+      type: 'truck' as const,
+      popupContent: (
+        <div className="space-y-2">
+          <p className="text-sm text-slate-600">
+            <span className="font-medium">Driver:</span> {s.driver_name || 'Unknown'}
+          </p>
+          <p className="text-sm text-slate-600">
+            <span className="font-medium">Vehicle:</span> {s.vehicle_number || 'Unknown'}
+          </p>
+          <p className="text-sm text-slate-600">
+            <span className="font-medium">Route:</span> {s.origin} → {s.destination}
+          </p>
+          <div className="flex gap-2 mt-3">
+            <button 
+              onClick={() => handleViewDetails(s)}
+              className="flex-1 px-3 py-1.5 bg-primary-600 text-white text-xs rounded-lg hover:bg-primary-700"
+            >
+              View Details
+            </button>
+            {s.driver_phone && (
+              <button 
+                onClick={() => handleContactDriver(s.driver_phone || undefined)}
+                className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700"
+              >
+                <Phone className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      )
+    }))
+
+  // Calculate map center based on markers
+  const mapCenter = mapMarkers.length > 0 
+    ? mapMarkers[0].position 
+    : [20.5937, 78.9629] as [number, number]
 
   return (
     <div className="p-4 space-y-6 pb-8">
@@ -150,43 +237,24 @@ export default function TrackingPage() {
         </div>
       </div>
       
-      {/* Map View Placeholder */}
-      <div className="relative h-64 bg-slate-200 dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner">
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-        
-        {/* Simulated Markers */}
-        {shipments.map((s) => (
-          s.latitude && s.longitude && (
-            <div 
-              key={s.id}
-              className="absolute transition-all duration-1000 ease-linear cursor-pointer group"
-              style={{ 
-                left: `${((s.longitude - 70) * 5) % 100}%`, 
-                top: `${((30 - s.latitude) * 5) % 100}%` 
-              }}
-              onClick={() => setSelectedId(s.id)}
-            >
-              <div className={`p-2 rounded-full shadow-lg transition-transform group-hover:scale-125 ${selectedId === s.id ? 'bg-primary-600 scale-110 z-10' : 'bg-white dark:bg-slate-700'}`}>
-                <Truck className={`w-4 h-4 ${selectedId === s.id ? 'text-white' : 'text-primary-600'}`} />
-              </div>
-              {selectedId === s.id && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-xl">
-                  {s.shipment_id}
-                </div>
-              )}
-            </div>
-          )
-        ))}
-
-        <div className="absolute bottom-4 right-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-full text-[10px] font-bold text-slate-500 flex items-center gap-2 border border-white/20">
-          <MapIcon className="w-3 h-3" />
-          LIVE MAP PREVIEW
-        </div>
-      </div>
+      {/* Real Map View */}
+      <MapView
+        markers={mapMarkers}
+        center={mapCenter}
+        zoom={mapMarkers.length > 0 ? 6 : 5}
+        height="350px"
+        showFullscreen={true}
+        onMarkerClick={(marker) => {
+          const shipment = shipments.find(s => s.id === marker.id)
+          if (shipment) {
+            setSelectedId(shipment.id)
+          }
+        }}
+      />
       
       {/* Shipment List */}
       <div className="space-y-4">
+        <h3 className="font-semibold text-slate-900 dark:text-white">Active Shipments</h3>
         {filteredShipments.map((s) => (
           <div 
             key={s.id}
@@ -235,11 +303,24 @@ export default function TrackingPage() {
 
             {selectedId === s.id && (
               <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex gap-2 animate-fade-in">
-                <button className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleViewDetails(s)
+                  }}
+                  className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
+                >
                   View Details
                 </button>
-                <button className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
-                  <Shield className="w-3 h-3" />
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleContactDriver(s.driver_phone || undefined)
+                  }}
+                  disabled={!s.driver_phone}
+                  className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Phone className="w-3 h-3" />
                   Contact Driver
                 </button>
               </div>
@@ -247,6 +328,106 @@ export default function TrackingPage() {
           </div>
         ))}
       </div>
+
+      {/* Shipment Detail Modal */}
+      {showDetailModal && selectedShipment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedShipment.shipment_id}</h2>
+                <p className="text-xs text-slate-500">Shipment Details</p>
+              </div>
+              <button 
+                onClick={() => setShowDetailModal(false)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* Route Info */}
+              <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">From</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.origin}</p>
+                  </div>
+                  <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full">
+                    <ChevronRight className="w-4 h-4 text-primary-600" />
+                  </div>
+                  <div className="flex-1 text-right">
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">To</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.destination}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Driver Info */}
+              <div className="flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-slate-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900 dark:text-white">{selectedShipment.driver_name || 'Unknown Driver'}</p>
+                  <p className="text-sm text-slate-500">{selectedShipment.vehicle_number}</p>
+                </div>
+                {selectedShipment.driver_phone && (
+                  <button
+                    onClick={() => handleContactDriver(selectedShipment.driver_phone || undefined)}
+                    className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-700"
+                  >
+                    <Phone className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Cargo Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
+                  <Package className="w-5 h-5 text-slate-400 mb-2" />
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">Weight</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_weight ? `${selectedShipment.total_weight} kg` : 'N/A'}</p>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
+                  <Clock className="w-5 h-5 text-slate-400 mb-2" />
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">Volume</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_volume ? `${selectedShipment.total_volume} m³` : 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Current Location */}
+              {selectedShipment.latitude && selectedShipment.longitude && (
+                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                  <p className="text-[10px] uppercase text-slate-400 font-bold mb-2">Current Location</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Lat: {selectedShipment.latitude.toFixed(6)}, Lng: {selectedShipment.longitude.toFixed(6)}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
+              <button 
+                onClick={() => setShowDetailModal(false)}
+                className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+              >
+                Close
+              </button>
+              <button 
+                onClick={() => {
+                  setShowDetailModal(false)
+                  navigate(`/tracking`)
+                }}
+                className="flex-[2] px-4 py-3 bg-primary-600 text-white rounded-2xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 transition-all"
+              >
+                Track on Map
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

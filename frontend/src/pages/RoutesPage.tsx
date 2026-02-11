@@ -1,8 +1,64 @@
-import { useState, useEffect } from 'react'
-import { MapPin, Navigation, Clock, IndianRupee, Plus, X, Search, ChevronRight, Map as MapIcon, TrendingUp, Zap } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { MapPin, Navigation, Clock, IndianRupee, Plus, X, Search, ChevronRight, Map as MapIcon, TrendingUp, Zap, Eye } from 'lucide-react'
 import { routesSupabaseApi } from '../services/supabaseApi'
+import MapView from '../components/MapView'
 
-interface Route {
+// Major Indian cities with their coordinates
+const CITY_COORDINATES: Record<string, [number, number]> = {
+  'mumbai': [19.0760, 72.8777],
+  'delhi': [28.6139, 77.2090],
+  'bangalore': [12.9716, 77.5946],
+  'hyderabad': [17.3850, 78.4867],
+  'chennai': [13.0827, 80.2707],
+  'kolkata': [22.5726, 88.3639],
+  'pune': [18.5204, 73.8567],
+  'ahmedabad': [23.0225, 72.5714],
+  'jaipur': [26.9124, 75.7873],
+  'lucknow': [26.8467, 80.9462],
+  'kanpur': [26.4499, 80.3319],
+  'nagpur': [21.1458, 79.0882],
+  'indore': [22.7196, 75.8577],
+  'thane': [19.2183, 72.9781],
+  'bhopal': [23.2599, 77.4126],
+  'visakhapatnam': [17.6868, 83.2185],
+  'vadodara': [22.3072, 73.1812],
+  'firozabad': [27.1592, 78.3952],
+  'ludhiana': [30.9010, 75.8573],
+  'rajkot': [22.3039, 70.8022],
+  'agra': [27.1767, 78.0081],
+  'siliguri': [26.7271, 88.3953],
+  'durgapur': [23.5204, 87.3119],
+  'chandigarh': [30.7333, 76.7794],
+  'coimbatore': [11.0168, 76.9558],
+  'madurai': [9.9252, 78.1198],
+  'mysore': [12.2958, 76.6394],
+  'guwahati': [26.1445, 91.7362],
+  'bhubaneswar': [20.2961, 85.8245],
+  'patna': [25.5941, 85.1376],
+}
+
+// Get approximate coordinates for a location name
+const getLocationCoordinates = (location: string): [number, number] | null => {
+  const normalizedLocation = location.toLowerCase().trim()
+  
+  // Direct match
+  if (CITY_COORDINATES[normalizedLocation]) {
+    return CITY_COORDINATES[normalizedLocation]
+  }
+  
+  // Partial match
+  for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
+    if (normalizedLocation.includes(city) || city.includes(normalizedLocation)) {
+      return coords
+    }
+  }
+  
+  // Add some randomness for unknown locations to show them on map
+  // This is for demo purposes - in production, use a geocoding service
+  return null
+}
+
+interface RouteType {
   id: string
   name: string
   start_location: string
@@ -10,16 +66,20 @@ interface Route {
   total_distance: number
   total_time: number
   total_cost: number
+  toll_cost: number
+  fuel_cost: number
   status: string
   waypoints?: any[]
 }
 
 export default function RoutesPage() {
-  const [routes, setRoutes] = useState<Route[]>([])
+  const [routes, setRoutes] = useState<RouteType[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [optimizing, setOptimizing] = useState(false)
+  const [selectedRoute, setSelectedRoute] = useState<RouteType | null>(null)
+  const [showRouteMap, setShowRouteMap] = useState(false)
   
   const [formData, setFormData] = useState({
     name: '',
@@ -102,6 +162,52 @@ export default function RoutesPage() {
     }
   }
 
+  const handleViewRouteMap = (route: RouteType) => {
+    setSelectedRoute(route)
+    setShowRouteMap(true)
+  }
+
+  // Generate map markers and routes for the selected route
+  const routeMapData = useMemo(() => {
+    if (!selectedRoute) return { markers: [], routes: [] }
+
+    const allLocations = [selectedRoute.start_location, ...selectedRoute.destinations]
+    const markers = []
+    const routePoints: [number, number][] = []
+
+    for (let i = 0; i < allLocations.length; i++) {
+      const location = allLocations[i]
+      const coords = getLocationCoordinates(location)
+      
+      if (coords) {
+        routePoints.push(coords)
+        markers.push({
+          id: `stop-${i}`,
+          position: coords,
+          label: location,
+          type: i === 0 ? 'start' as const : i === allLocations.length - 1 ? 'end' as const : 'waypoint' as const,
+          popupContent: (
+            <div className="space-y-1">
+              <p className="text-sm text-slate-600">
+                {i === 0 ? 'Starting Point' : i === allLocations.length - 1 ? 'Destination' : `Stop ${i}`}
+              </p>
+              {i > 0 && (
+                <p className="text-xs text-slate-400">
+                  ~{Math.round(selectedRoute.total_distance / (allLocations.length - 1))} km from previous
+                </p>
+              )}
+            </div>
+          )
+        })
+      }
+    }
+
+    return {
+      markers,
+      routes: routePoints.length > 1 ? [{ points: routePoints, color: '#3b82f6', weight: 4 }] : []
+    }
+  }, [selectedRoute])
+
   const filteredRoutes = filter === 'all' 
     ? routes 
     : routes.filter(r => r.status === filter)
@@ -143,6 +249,50 @@ export default function RoutesPage() {
           </button>
         ))}
       </div>
+
+      {/* Route Map View (when route selected) */}
+      {showRouteMap && selectedRoute && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white">{selectedRoute.name}</h3>
+              <p className="text-sm text-slate-500">
+                {selectedRoute.start_location} → {selectedRoute.destinations[selectedRoute.destinations.length - 1]}
+              </p>
+            </div>
+            <button 
+              onClick={() => setShowRouteMap(false)}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <MapView
+            markers={routeMapData.markers}
+            routes={routeMapData.routes}
+            height="350px"
+            zoom={6}
+            showFullscreen={true}
+          />
+
+          {/* Distance Labels */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs">
+              <TrendingUp className="w-3 h-3 text-slate-400" />
+              <span className="text-slate-600 dark:text-slate-300">Total: {Math.round(selectedRoute.total_distance)} km</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs">
+              <Clock className="w-3 h-3 text-slate-400" />
+              <span className="text-slate-600 dark:text-slate-300">Est. Time: {Math.floor(selectedRoute.total_time / 60)}h {Math.round(selectedRoute.total_time % 60)}m</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs">
+              <IndianRupee className="w-3 h-3 text-slate-400" />
+              <span className="text-slate-600 dark:text-slate-300">Cost: ₹{Math.round(selectedRoute.total_cost)}</span>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Route Cards */}
       {loading ? (
@@ -180,9 +330,23 @@ export default function RoutesPage() {
                       <ChevronRight className="w-4 h-4" />
                       <span className="font-medium">{route.destinations[route.destinations.length - 1]}</span>
                     </div>
+                    {route.destinations.length > 1 && (
+                      <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
+                        <span>Via: {route.destinations.slice(0, -1).join(', ')}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-xl group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20 transition-colors">
-                    <Navigation className="w-5 h-5 text-primary-500" />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleViewRouteMap(route)}
+                      className="p-2 bg-slate-50 dark:bg-slate-900 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                      title="View on Map"
+                    >
+                      <Eye className="w-5 h-5 text-primary-500" />
+                    </button>
+                    <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-xl group-hover:bg-primary-50 dark:group-hover:bg-primary-900/20 transition-colors">
+                      <Navigation className="w-5 h-5 text-primary-500" />
+                    </div>
                   </div>
                 </div>
                 

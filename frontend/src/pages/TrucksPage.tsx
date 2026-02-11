@@ -155,7 +155,7 @@ export default function TrucksPage() {
       const trucksToAdd = DEFAULT_INDIAN_TRUCKS.filter(t => !existingNames.has(t.name))
 
       if (trucksToAdd.length === 0) {
-        toast.info('All default trucks already exist!')
+        toast('All default trucks already exist!')
         return
       }
 
