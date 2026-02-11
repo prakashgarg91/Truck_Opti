@@ -10,6 +10,7 @@ import * as XLSX from 'xlsx'
 import toast from 'react-hot-toast'
 import { saleOrdersSupabaseApi, type SaleOrder } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
+import { saleOrderItemSchema, validateWithZod, type SaleOrderItemInput } from '../utils/validators'
 
 // Translations
 const t = {
@@ -152,10 +153,8 @@ export default function SaleOrdersPage() {
         return
       }
 
-      // Validate and parse items
+      // Validate and parse items using Zod
       const items: ParsedItem[] = data.map((row, index) => {
-        const errors: string[] = []
-        
         // Extract fields with flexible column names
         const product_name = String(row.product_name || row['Product Name'] || row['product name'] || '').trim()
         const length = parseFloat(String(row.length_cm || row['Length (cm)'] || row.length || 0))
@@ -165,14 +164,25 @@ export default function SaleOrdersPage() {
         const quantity = parseInt(String(row.quantity || row.Qty || row.qty || 1))
         const delivery_city = String(row.delivery_city || row['Delivery City'] || row.city || '').trim()
 
-        // Validation
-        if (!product_name) errors.push('Product name required')
-        if (isNaN(length) || length <= 0) errors.push('Invalid length')
-        if (isNaN(width) || width <= 0) errors.push('Invalid width')
-        if (isNaN(height) || height <= 0) errors.push('Invalid height')
-        if (isNaN(weight) || weight < 0) errors.push('Invalid weight')
-        if (isNaN(quantity) || quantity < 1) errors.push('Invalid quantity')
-        if (!delivery_city) errors.push('Delivery city required')
+        // Prepare data for Zod validation
+        const itemData: Partial<SaleOrderItemInput> = {
+          product_name,
+          length,
+          width,
+          height,
+          weight,
+          quantity,
+          delivery_city
+        }
+
+        // Validate with Zod
+        const validation = validateWithZod(saleOrderItemSchema, itemData)
+        
+        // Format errors for display
+        const errors = validation.errors?.map(err => {
+          // Extract just the message part (remove field path)
+          return err.includes(':') ? err.split(': ')[1] : err
+        }) || []
 
         return {
           product_name,
@@ -184,7 +194,7 @@ export default function SaleOrdersPage() {
           delivery_city,
           row: index + 2, // +2 for header row and 1-based indexing
           errors,
-          isValid: errors.length === 0
+          isValid: validation.success
         }
       })
 

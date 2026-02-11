@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, customersSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
+import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
 
 // ============= LANGUAGE =============
 type Language = 'en' | 'hi'
@@ -547,27 +548,27 @@ export default function PackingPage() {
 
   const currentTruck = trucks.find(t => t.id === selectedTruck)
 
-  // Validation
+  // Validation using Zod
   const validateItem = (item: Partial<SaleOrderItem>): Record<string, string> => {
-    const errors: Record<string, string> = {}
+    // Transform to match Zod schema
+    const itemData: Partial<ItemInput> = {
+      product_name: item.name,
+      length: item.length,
+      width: item.width,
+      height: item.height,
+      weight: item.weight,
+      quantity: item.quantity,
+      fragile: item.fragile,
+      stackable: item.stackable
+    }
     
-    if (!item.name || item.name.trim() === '') {
-      errors.name = t[lang].validation.nameRequired
-    }
-    if (!item.length || item.length <= 0) {
-      errors.length = t[lang].validation.lengthPositive
-    }
-    if (!item.width || item.width <= 0) {
-      errors.width = t[lang].validation.widthPositive
-    }
-    if (!item.height || item.height <= 0) {
-      errors.height = t[lang].validation.heightPositive
-    }
-    if (!item.weight || item.weight <= 0) {
-      errors.weight = t[lang].validation.weightPositive
-    }
-    if (!item.quantity || item.quantity < 1) {
-      errors.quantity = t[lang].validation.quantityMin
+    // Use Zod schema for validation
+    const errors = getFieldErrors(itemSchema, itemData)
+    
+    // Map 'product_name' error back to 'name' for UI compatibility
+    if (errors.product_name && !errors.name) {
+      errors.name = errors.product_name
+      delete errors.product_name
     }
     
     return errors

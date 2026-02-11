@@ -41,8 +41,7 @@ export default function TrackingPage() {
       .channel('shipments-tracking')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'shipments' },
-        (payload) => {
-          console.log('Realtime update:', payload)
+        () => {
           fetchActiveShipments()
         }
       )

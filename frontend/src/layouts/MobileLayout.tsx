@@ -1,4 +1,6 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import OfflineBanner from '../components/OfflineBanner'
+import InstallPrompt from '../components/InstallPrompt'
 import { 
   LayoutDashboard, 
   Package, 
@@ -169,6 +171,12 @@ export default function MobileLayout() {
   
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Offline Banner */}
+      <OfflineBanner />
+      
+      {/* Install Prompt */}
+      <InstallPrompt />
+
       {/* Mobile Header - Hidden on desktop */}
       <header className="glass border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-40 safe-area-inset-top lg:hidden">
         <div className="flex items-center justify-between px-4 h-14">

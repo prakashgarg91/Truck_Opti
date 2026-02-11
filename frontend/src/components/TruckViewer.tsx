@@ -1,4 +1,4 @@
-import { useRef, Suspense, useState } from 'react'
+import { useRef, Suspense, useState, useEffect, useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera, Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
@@ -35,6 +35,46 @@ function Box({ box, onBoxClick, isHovered, onHover }: {
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   
+  // Memoize geometries to prevent recreation on each render
+  const boxGeometry = useMemo(() => {
+    const geom = new THREE.BoxGeometry(box.width * 0.98, box.height * 0.98, box.depth * 0.98)
+    return geom
+  }, [box.width, box.height, box.depth])
+  
+  const edgesGeometry = useMemo(() => {
+    const geom = new THREE.EdgesGeometry(new THREE.BoxGeometry(box.width * 0.98, box.height * 0.98, box.depth * 0.98))
+    return geom
+  }, [box.width, box.height, box.depth])
+  
+  // Memoize materials
+  const boxMaterial = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      color: box.color,
+      opacity: isHovered ? 1 : 0.85,
+      transparent: true,
+      roughness: 0.3,
+      metalness: 0.1
+    })
+  }, [box.color, isHovered])
+  
+  const edgesMaterial = useMemo(() => {
+    return new THREE.LineBasicMaterial({
+      color: isHovered ? '#ffffff' : '#000000',
+      opacity: 0.3,
+      transparent: true
+    })
+  }, [isHovered])
+  
+  // Cleanup geometries and materials on unmount or when dependencies change
+  useEffect(() => {
+    return () => {
+      boxGeometry.dispose()
+      edgesGeometry.dispose()
+      boxMaterial.dispose()
+      edgesMaterial.dispose()
+    }
+  }, [boxGeometry, edgesGeometry, boxMaterial, edgesMaterial])
+  
   return (
     <group>
       <mesh
@@ -53,16 +93,9 @@ function Box({ box, onBoxClick, isHovered, onHover }: {
           onHover(box.id)
         }}
         onPointerOut={() => onHover(null)}
-      >
-        <boxGeometry args={[box.width * 0.98, box.height * 0.98, box.depth * 0.98]} />
-        <meshStandardMaterial 
-          color={box.color} 
-          opacity={isHovered ? 1 : 0.85} 
-          transparent 
-          roughness={0.3}
-          metalness={0.1}
-        />
-      </mesh>
+        geometry={boxGeometry}
+        material={boxMaterial}
+      />
       {/* Box edges for better visibility */}
       <lineSegments
         position={[
@@ -70,40 +103,98 @@ function Box({ box, onBoxClick, isHovered, onHover }: {
           box.y + box.height / 2,
           box.z + box.depth / 2
         ]}
-      >
-        <edgesGeometry args={[new THREE.BoxGeometry(box.width * 0.98, box.height * 0.98, box.depth * 0.98)]} />
-        <lineBasicMaterial color={isHovered ? "#ffffff" : "#000000"} opacity={0.3} transparent />
-      </lineSegments>
+        geometry={edgesGeometry}
+        material={edgesMaterial}
+      />
     </group>
   )
 }
 
 function TruckContainer({ dimensions }: { dimensions: { length: number; width: number; height: number } }) {
+  // Memoize geometries
+  const wireframeGeometry = useMemo(() => {
+    return new THREE.BoxGeometry(dimensions.length, dimensions.height, dimensions.width)
+  }, [dimensions.length, dimensions.height, dimensions.width])
+  
+  const wallGeometry1 = useMemo(() => {
+    return new THREE.PlaneGeometry(dimensions.length, dimensions.height)
+  }, [dimensions.length, dimensions.height])
+  
+  const wallGeometry2 = useMemo(() => {
+    return new THREE.PlaneGeometry(dimensions.width, dimensions.height)
+  }, [dimensions.width, dimensions.height])
+  
+  const floorGeometry = useMemo(() => {
+    return new THREE.PlaneGeometry(dimensions.length, dimensions.width)
+  }, [dimensions.length, dimensions.width])
+  
+  const markerGeometry = useMemo(() => {
+    return new THREE.BoxGeometry(dimensions.length, 0.02, 0.02)
+  }, [dimensions.length])
+  
+  // Memoize materials
+  const wireframeMaterial = useMemo(() => {
+    return new THREE.MeshBasicMaterial({ color: '#64748b', wireframe: true, transparent: true, opacity: 0.4 })
+  }, [])
+  
+  const wallMaterial = useMemo(() => {
+    return new THREE.MeshBasicMaterial({ color: '#1e293b', transparent: true, opacity: 0.1, side: THREE.DoubleSide })
+  }, [])
+  
+  const floorMaterial = useMemo(() => {
+    return new THREE.MeshStandardMaterial({ color: '#334155' })
+  }, [])
+  
+  const markerMaterial = useMemo(() => {
+    return new THREE.MeshBasicMaterial({ color: '#f59e0b' })
+  }, [])
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      wireframeGeometry.dispose()
+      wallGeometry1.dispose()
+      wallGeometry2.dispose()
+      floorGeometry.dispose()
+      markerGeometry.dispose()
+      wireframeMaterial.dispose()
+      wallMaterial.dispose()
+      floorMaterial.dispose()
+      markerMaterial.dispose()
+    }
+  }, [wireframeGeometry, wallGeometry1, wallGeometry2, floorGeometry, markerGeometry, wireframeMaterial, wallMaterial, floorMaterial, markerMaterial])
+  
   return (
     <group>
       {/* Wireframe for the truck */}
-      <mesh position={[dimensions.length / 2, dimensions.height / 2, dimensions.width / 2]}>
-        <boxGeometry args={[dimensions.length, dimensions.height, dimensions.width]} />
-        <meshBasicMaterial color="#64748b" wireframe transparent opacity={0.4} />
-      </mesh>
+      <mesh 
+        position={[dimensions.length / 2, dimensions.height / 2, dimensions.width / 2]}
+        geometry={wireframeGeometry}
+        material={wireframeMaterial}
+      />
       
       {/* Truck walls - semi-transparent */}
-      <mesh position={[dimensions.length / 2, dimensions.height / 2, 0]}>
-        <planeGeometry args={[dimensions.length, dimensions.height]} />
-        <meshBasicMaterial color="#1e293b" transparent opacity={0.1} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh position={[0, dimensions.height / 2, dimensions.width / 2]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[dimensions.width, dimensions.height]} />
-        <meshBasicMaterial color="#1e293b" transparent opacity={0.1} side={THREE.DoubleSide} />
-      </mesh>
+      <mesh 
+        position={[dimensions.length / 2, dimensions.height / 2, 0]}
+        geometry={wallGeometry1}
+        material={wallMaterial}
+      />
+      <mesh 
+        position={[0, dimensions.height / 2, dimensions.width / 2]} 
+        rotation={[0, Math.PI / 2, 0]}
+        geometry={wallGeometry2}
+        material={wallMaterial}
+      />
       
       {/* Floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[dimensions.length / 2, 0.01, dimensions.width / 2]}>
-        <planeGeometry args={[dimensions.length, dimensions.width]} />
-        <meshStandardMaterial color="#334155" />
-      </mesh>
+      <mesh 
+        rotation={[-Math.PI / 2, 0, 0]} 
+        position={[dimensions.length / 2, 0.01, dimensions.width / 2]}
+        geometry={floorGeometry}
+        material={floorMaterial}
+      />
       
-      {/* Grid helper */}
+      {/* Grid helper - Note: gridHelper is not a standard mesh, handled by Three.js internally */}
       <gridHelper 
         args={[Math.max(dimensions.length, dimensions.width) * 1.5, 20, 0x475569, 0x1e293b]} 
         position={[dimensions.length / 2, 0.02, dimensions.width / 2]}
@@ -111,10 +202,10 @@ function TruckContainer({ dimensions }: { dimensions: { length: number; width: n
       
       {/* Dimension markers */}
       <group position={[dimensions.length / 2, -0.1, dimensions.width + 0.2]}>
-        <mesh>
-          <boxGeometry args={[dimensions.length, 0.02, 0.02]} />
-          <meshBasicMaterial color="#f59e0b" />
-        </mesh>
+        <mesh
+          geometry={markerGeometry}
+          material={markerMaterial}
+        />
       </group>
     </group>
   )

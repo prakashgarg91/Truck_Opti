@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Truck, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, Database } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { trucksSupabaseApi } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
+import { queryClient } from '../lib/queryClient'
 
 interface TruckType {
   id: string
@@ -102,9 +104,6 @@ const DEFAULT_INDIAN_TRUCKS = [
 export default function TrucksPage() {
   const navigate = useNavigate()
   const { language } = useLanguageStore()
-  const [trucks, setTrucks] = useState<TruckType[]>([])
-  const [loading, setLoading] = useState(true)
-  const [seeding, setSeeding] = useState(false)
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTruck, setEditingTruck] = useState<TruckType | null>(null)
@@ -119,30 +118,66 @@ export default function TrucksPage() {
     available: 1
   })
 
-  useEffect(() => {
-    fetchTrucks()
-  }, [])
+  // React Query: Fetch trucks data
+  const { 
+    data: trucks = [], 
+    isLoading: loading
+  } = useQuery({
+    queryKey: ['trucks'],
+    queryFn: trucksSupabaseApi.getAll,
+  })
 
-  const fetchTrucks = async () => {
-    try {
-      setLoading(true)
-      const data = await trucksSupabaseApi.getAll()
-      setTrucks(data as TruckType[])
-    } catch (error) {
-      console.error('Failed to fetch trucks:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // React Query: Create truck mutation
+  const createMutation = useMutation({
+    mutationFn: trucksSupabaseApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trucks'] })
+      toast.success('Truck added successfully')
+      setIsModalOpen(false)
+      resetForm()
+    },
+    onError: (error: any) => {
+      console.error('Failed to create truck:', error)
+      toast.error(error.message || 'Failed to create truck')
+    },
+  })
 
-  const handleSeedDefaultTrucks = async () => {
-    try {
-      setSeeding(true)
+  // React Query: Update truck mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<TruckType> }) =>
+      trucksSupabaseApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trucks'] })
+      toast.success('Truck updated successfully')
+      setIsModalOpen(false)
+      resetForm()
+    },
+    onError: (error: any) => {
+      console.error('Failed to update truck:', error)
+      toast.error(error.message || 'Failed to update truck')
+    },
+  })
+
+  // React Query: Delete truck mutation
+  const deleteMutation = useMutation({
+    mutationFn: trucksSupabaseApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trucks'] })
+      toast.success('Truck deleted successfully')
+    },
+    onError: (error: any) => {
+      console.error('Failed to delete truck:', error)
+      toast.error(error.message || 'Failed to delete truck')
+    },
+  })
+
+  // React Query: Seed default trucks mutation
+  const seedMutation = useMutation({
+    mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
-        toast.error('Please login to seed trucks')
-        return
+        throw new Error('Please login to seed trucks')
       }
 
       // Check if trucks already exist
@@ -155,8 +190,7 @@ export default function TrucksPage() {
       const trucksToAdd = DEFAULT_INDIAN_TRUCKS.filter(t => !existingNames.has(t.name))
 
       if (trucksToAdd.length === 0) {
-        toast('All default trucks already exist!')
-        return
+        throw new Error('All default trucks already exist!')
       }
 
       // Insert trucks
@@ -165,15 +199,34 @@ export default function TrucksPage() {
         .insert(trucksToAdd)
 
       if (error) throw error
-
-      toast.success(`Added ${trucksToAdd.length} default Indian trucks!`)
-      fetchTrucks()
-    } catch (error: any) {
+      return trucksToAdd.length
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['trucks'] })
+      toast.success(`Added ${count} default Indian trucks!`)
+    },
+    onError: (error: any) => {
       console.error('Failed to seed trucks:', error)
-      toast.error(error.message || 'Failed to seed trucks')
-    } finally {
-      setSeeding(false)
-    }
+      if (error.message === 'All default trucks already exist!') {
+        toast(error.message)
+      } else {
+        toast.error(error.message || 'Failed to seed trucks')
+      }
+    },
+  })
+
+  const resetForm = () => {
+    setEditingTruck(null)
+    setFormData({
+      name: '',
+      name_hi: '',
+      length: 0,
+      width: 0,
+      height: 0,
+      capacity: 0,
+      cost_per_km: 0,
+      available: 1
+    })
   }
 
   const handleOpenModal = (truck?: TruckType) => {
@@ -190,52 +243,26 @@ export default function TrucksPage() {
         available: truck.available || 1
       })
     } else {
-      setEditingTruck(null)
-      setFormData({
-        name: '',
-        name_hi: '',
-        length: 0,
-        width: 0,
-        height: 0,
-        capacity: 0,
-        cost_per_km: 0,
-        available: 1
-      })
+      resetForm()
     }
     setIsModalOpen(true)
   }
 
-  const handleSave = async () => {
-    try {
-      if (editingTruck) {
-        await trucksSupabaseApi.update(editingTruck.id, formData)
-        toast.success('Truck updated successfully')
-      } else {
-        await trucksSupabaseApi.create(formData)
-        toast.success('Truck added successfully')
-      }
-      setIsModalOpen(false)
-      fetchTrucks()
-    } catch (error: any) {
-      console.error('Failed to save truck:', error)
-      toast.error(error.message || 'Failed to save truck')
+  const handleSave = () => {
+    if (editingTruck) {
+      updateMutation.mutate({ id: editingTruck.id, data: formData })
+    } else {
+      createMutation.mutate(formData)
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this truck type?')) {
-      try {
-        await trucksSupabaseApi.delete(id)
-        toast.success('Truck deleted successfully')
-        fetchTrucks()
-      } catch (error: any) {
-        console.error('Failed to delete truck:', error)
-        toast.error(error.message || 'Failed to delete truck')
-      }
+      deleteMutation.mutate(id)
     }
   }
 
-  const filteredTrucks = trucks.filter(t => 
+  const filteredTrucks = trucks.filter((t: TruckType) => 
     t.name.toLowerCase().includes(search.toLowerCase()) ||
     (t.name_hi && t.name_hi.toLowerCase().includes(search.toLowerCase()))
   )
@@ -244,6 +271,8 @@ export default function TrucksPage() {
     const feet = cm / 30.48
     return `${Math.round(feet)}ft`
   }
+
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending || seedMutation.isPending
 
   return (
     <div className="p-4 space-y-6 pb-8">
@@ -272,11 +301,11 @@ export default function TrucksPage() {
               : '7 मानक भारतीय ट्रक प्रकारों के साथ डेटाबेस सीड करें'}
           </p>
           <button
-            onClick={handleSeedDefaultTrucks}
-            disabled={seeding}
+            onClick={() => seedMutation.mutate()}
+            disabled={seedMutation.isPending}
             className="btn btn-primary"
           >
-            {seeding ? (
+            {seedMutation.isPending ? (
               <>
                 <div className="spinner w-4 h-4" />
                 {language === 'en' ? 'Seeding...' : 'सीडिंग...'}
@@ -304,12 +333,12 @@ export default function TrucksPage() {
         </div>
         {trucks.length > 0 && (
           <button
-            onClick={handleSeedDefaultTrucks}
-            disabled={seeding}
+            onClick={() => seedMutation.mutate()}
+            disabled={seedMutation.isPending}
             className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl transition-all"
             title={language === 'en' ? 'Seed default trucks' : 'डिफॉल्ट ट्रक सीड करें'}
           >
-            {seeding ? <div className="spinner w-5 h-5" /> : <Database className="w-5 h-5" />}
+            {seedMutation.isPending ? <div className="spinner w-5 h-5" /> : <Database className="w-5 h-5" />}
           </button>
         )}
         <button 
@@ -327,7 +356,7 @@ export default function TrucksPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {filteredTrucks.map((truck) => (
+          {filteredTrucks.map((truck: TruckType) => (
             <div 
               key={truck.id}
               className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm"
@@ -350,12 +379,14 @@ export default function TrucksPage() {
                 <div className="flex gap-1">
                   <button 
                     onClick={() => handleOpenModal(truck)}
+                    disabled={isMutating}
                     className="p-2 text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button 
                     onClick={() => handleDelete(truck.id)}
+                    disabled={deleteMutation.isPending}
                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -493,9 +524,14 @@ export default function TrucksPage() {
               </button>
               <button 
                 onClick={handleSave}
-                className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2 transition-all"
+                disabled={createMutation.isPending || updateMutation.isPending}
+                className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
               >
-                <Save className="w-4 h-4" />
+                {(createMutation.isPending || updateMutation.isPending) ? (
+                  <div className="spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
                 Save Truck
               </button>
             </div>

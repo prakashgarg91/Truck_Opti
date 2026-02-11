@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 
@@ -5,24 +6,29 @@ import { useAuthStore } from './stores/authStore'
 import MobileLayout from './layouts/MobileLayout'
 import AuthLayout from './layouts/AuthLayout'
 
-// Pages
+// Pages - Eager loaded (auth pages for fast auth experience)
 import LoginPage from './pages/auth/LoginPage'
 import OTPPage from './pages/auth/OTPPage'
-import Dashboard from './pages/Dashboard'
-import PackingPage from './pages/PackingPage'
-import RoutesPage from './pages/RoutesPage'
-import TrackingPage from './pages/TrackingPage'
-import ProfilePage from './pages/ProfilePage'
-import ManagementPage from './pages/ManagementPage'
-import TrucksPage from './pages/TrucksPage'
-import CartonsPage from './pages/CartonsPage'
-import CustomersPage from './pages/CustomersPage'
-import SaleOrdersPage from './pages/SaleOrdersPage'
-import InvoicePage from './pages/InvoicePage'
-import PricingPage from './pages/PricingPage'
-import CheckoutPage from './pages/CheckoutPage'
-import PaymentCallbackPage from './pages/PaymentCallbackPage'
-import TestPaymentPage from './pages/TestPaymentPage'
+
+// Components
+import PageSkeleton from './components/PageSkeleton'
+
+// Pages - Lazy loaded (code-split for performance)
+const Dashboard = React.lazy(() => import('./pages/Dashboard'))
+const PackingPage = React.lazy(() => import('./pages/PackingPage'))
+const RoutesPage = React.lazy(() => import('./pages/RoutesPage'))
+const TrackingPage = React.lazy(() => import('./pages/TrackingPage'))
+const ProfilePage = React.lazy(() => import('./pages/ProfilePage'))
+const ManagementPage = React.lazy(() => import('./pages/ManagementPage'))
+const TrucksPage = React.lazy(() => import('./pages/TrucksPage'))
+const CartonsPage = React.lazy(() => import('./pages/CartonsPage'))
+const CustomersPage = React.lazy(() => import('./pages/CustomersPage'))
+const SaleOrdersPage = React.lazy(() => import('./pages/SaleOrdersPage'))
+const InvoicePage = React.lazy(() => import('./pages/InvoicePage'))
+const PricingPage = React.lazy(() => import('./pages/PricingPage'))
+const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage'))
+const PaymentCallbackPage = React.lazy(() => import('./pages/PaymentCallbackPage'))
+const TestPaymentPage = React.lazy(() => import('./pages/TestPaymentPage'))
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -37,38 +43,40 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <Routes>
-      {/* Auth routes */}
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/otp" element={<OTPPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/payment/callback" element={<PaymentCallbackPage />} />
-        <Route path="/test-payment" element={<TestPaymentPage />} />
-      </Route>
-      
-      {/* Protected routes with mobile layout */}
-      <Route element={
-        <ProtectedRoute>
-          <MobileLayout />
-        </ProtectedRoute>
-      }>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/packing" element={<PackingPage />} />
-        <Route path="/routes" element={<RoutesPage />} />
-        <Route path="/tracking" element={<TrackingPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/management" element={<ManagementPage />} />
-        <Route path="/management/trucks" element={<TrucksPage />} />
-        <Route path="/management/cartons" element={<CartonsPage />} />
-        <Route path="/management/customers" element={<CustomersPage />} />
-        <Route path="/sale-orders" element={<SaleOrdersPage />} />
-        <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
-      </Route>
-      
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<PageSkeleton />}>
+      <Routes>
+        {/* Auth routes */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/otp" element={<OTPPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/payment/callback" element={<PaymentCallbackPage />} />
+          <Route path="/test-payment" element={<TestPaymentPage />} />
+        </Route>
+        
+        {/* Protected routes with mobile layout */}
+        <Route element={
+          <ProtectedRoute>
+            <MobileLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/packing" element={<PackingPage />} />
+          <Route path="/routes" element={<RoutesPage />} />
+          <Route path="/tracking" element={<TrackingPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/management" element={<ManagementPage />} />
+          <Route path="/management/trucks" element={<TrucksPage />} />
+          <Route path="/management/cartons" element={<CartonsPage />} />
+          <Route path="/management/customers" element={<CustomersPage />} />
+          <Route path="/sale-orders" element={<SaleOrdersPage />} />
+          <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
+        </Route>
+        
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   )
 }

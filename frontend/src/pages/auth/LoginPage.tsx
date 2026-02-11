@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
+import { phoneInputSchema } from '../../utils/validators'
 
 const features = [
   { icon: '📦', text: '3D Smart Packing' },
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const { setPendingPhone } = useAuthStore()
   const [phone, setPhone] = useState('')
+  const [phoneError, setPhoneError] = useState('')
   const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'telegram'>('sms')
   const [isFocused, setIsFocused] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
@@ -51,16 +53,35 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validate phone number
-    const phoneDigits = phone.replace(/\D/g, '')
-    if (phoneDigits.length !== 10) {
-      toast.error('Please enter a valid 10-digit mobile number', {
-        icon: '⚠️'
-      })
+    // Validate phone number with Zod
+    const result = phoneInputSchema.safeParse(phone)
+    if (!result.success) {
+      setPhoneError(result.error.issues[0]?.message || 'Invalid phone number')
       return
     }
     
+    setPhoneError('')
     sendOTPMutation.mutate()
+  }
+
+  const handlePhoneChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10)
+    setPhone(digits)
+    
+    // Clear error when user starts typing
+    if (phoneError && digits.length > 0) {
+      setPhoneError('')
+    }
+    
+    // Validate on complete
+    if (digits.length === 10) {
+      const result = phoneInputSchema.safeParse(digits)
+      if (!result.success) {
+        setPhoneError(result.error.issues[0]?.message || 'Invalid phone number')
+      } else {
+        setPhoneError('')
+      }
+    }
   }
   
   const handleGoogleLogin = async () => {
@@ -116,24 +137,32 @@ export default function LoginPage() {
               type="tel"
               inputMode="numeric"
               value={formatPhone(phone)}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              onChange={(e) => handlePhoneChange(e.target.value)}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder="98765 43210"
-              className="input pl-[105px] text-lg tracking-wide font-medium"
+              className={`input pl-[105px] text-lg tracking-wide font-medium ${phoneError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
               autoFocus
               aria-label="Enter your 10-digit mobile number"
+              aria-invalid={!!phoneError}
             />
-            {phone.length === 10 && (
+            {phone.length === 10 && !phoneError && (
               <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 animate-scale-in">
                 <Shield className="w-5 h-5" />
               </div>
             )}
           </div>
-          <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
-            <Shield className="w-3 h-3" />
-            Your number is secure and never shared
-          </p>
+          {phoneError ? (
+            <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+              <span>⚠️</span>
+              {phoneError}
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+              <Shield className="w-3 h-3" />
+              Your number is secure and never shared
+            </p>
+          )}
         </div>
         
         {/* OTP Channel Selection */}

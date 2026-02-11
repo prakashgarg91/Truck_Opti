@@ -52,6 +52,76 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 // 1 hour
               }
             }
+          },
+          {
+            urlPattern: /^https:\/\/[a-z0-9-]+\.supabase\.co\/rest\/v1\//i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-api-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 // 1 hour
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/[a-z0-9-]+\.supabase\.co\/auth\/v1\//i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-auth-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 // 1 hour
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\//i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-storage-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/[a-z]\.tile\.openstreetmap\.org\//i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'openstreetmap-tiles',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/.*\.tile\.openstreetmap\.org\//i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'openstreetmap-tiles-fallback',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
           }
         ]
       }
