@@ -4,7 +4,7 @@ import {
   Globe, ChevronRight, LogOut, Camera, Unlink
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
+import { useLanguageStore, LANGUAGE_NAMES, type Language } from '../stores/languageStore'
 
 const translations = {
   en: {
@@ -22,7 +22,8 @@ const translations = {
     locationDesc: 'Allow fleet tracking while delivering',
     logout: 'Logout',
     signOut: 'Sign out of your account',
-    user: 'TruckOpti User'
+    user: 'TruckOpti User',
+    selectLanguage: 'Select Language'
   },
   hi: {
     contactInfo: 'संपर्क जानकारी',
@@ -39,14 +40,87 @@ const translations = {
     locationDesc: 'डिलीवरी के दौरान फ्लीट ट्रैकिंग की अनुमति दें',
     logout: 'लॉगआउट',
     signOut: 'अपने खाते से साइन आउट करें',
-    user: 'TruckOpti उपयोगकर्ता'
+    user: 'TruckOpti उपयोगकर्ता',
+    selectLanguage: 'भाषा चुनें'
+  },
+  gu: {
+    contactInfo: 'સંપર્ક માહિતી',
+    phone: 'ફોન',
+    email: 'ઈમેલ',
+    location: 'સ્થાન',
+    verified: 'ચકાસેલ',
+    verifiedAccount: 'ચકાસેલ ખાતું',
+    settings: 'સેટિંગ્સ',
+    language: 'ભાષા',
+    notifications: 'નોટિફિકેશન્સ',
+    notificationDesc: 'નોટિફિકેશન પસંદગીઓ મેનેજ કરો',
+    locationSharing: 'લાઇવ લોકેશન શેરિંગ',
+    locationDesc: 'ડિલિવરી દરમિયાન ફ્લીટ ટ્રેકિંગને મંજૂરી આપો',
+    logout: 'લૉગઆઉટ',
+    signOut: 'તમારા ખાતામાંથી સાઇન આઉટ કરો',
+    user: 'TruckOpti વપરાશકર્તા',
+    selectLanguage: 'ભાષા પસંદ કરો'
+  },
+  mr: {
+    contactInfo: 'संपर्क माहिती',
+    phone: 'फोन',
+    email: 'ईमेल',
+    location: 'स्थान',
+    verified: 'सत्यापित',
+    verifiedAccount: 'सत्यापित खाते',
+    settings: 'सेटिंग्ज',
+    language: 'भाषा',
+    notifications: 'सूचना',
+    notificationDesc: 'सूचना प्राधान्ये व्यवस्थापित करा',
+    locationSharing: 'लाइव लोकेशन शेअरिंग',
+    locationDesc: 'डिलिव्हरी दरम्यान फ्लीट ट्रॅकिंगची परवानगी द्या',
+    logout: 'लॉगआउट',
+    signOut: 'तुमच्या खात्यातून साइन आउट करा',
+    user: 'TruckOpti वापरकर्ता',
+    selectLanguage: 'भाषा निवडा'
+  },
+  ta: {
+    contactInfo: 'தொடர்பு தகவல்',
+    phone: 'தொலைபேசி',
+    email: 'மின்னஞ்சல்',
+    location: 'இடம்',
+    verified: 'சரிபார்க்கப்பட்டது',
+    verifiedAccount: 'சரிபார்க்கப்பட்ட கணக்கு',
+    settings: 'அமைப்புகள்',
+    language: 'மொழி',
+    notifications: 'அறிவிப்புகள்',
+    notificationDesc: 'அறிவிப்பு விருப்பங்களை நிர்வகிக்கவும்',
+    locationSharing: 'நேரடி இடம் பகிர்தல்',
+    locationDesc: 'விநியோகத்தின்போது கடல் கண்காணிப்பை அனுமதிக்கவும்',
+    logout: 'வெளியேறு',
+    signOut: 'உங்கள் கணக்கிலிருந்து வெளியேறவும்',
+    user: 'TruckOpti பயனர்',
+    selectLanguage: 'மொழியைத் தேர்ந்தெடுக்கவும்'
+  },
+  te: {
+    contactInfo: 'సంప్రదింపు సమాచారం',
+    phone: 'ఫోన్',
+    email: 'ఇమెయిల్',
+    location: 'స్థానం',
+    verified: 'ధృవీకరించబడింది',
+    verifiedAccount: 'ధృవీకరించబడిన ఖాతా',
+    settings: 'సెట్టింగ్స్',
+    language: 'భాష',
+    notifications: 'నోటిఫికేషన్లు',
+    notificationDesc: 'నోటిఫికేషన్ ప్రాధాన్యతలను నిర్వహించండి',
+    locationSharing: 'లైవ్ లొకేషన్ షేరింగ్',
+    locationDesc: 'డెలివరీ సమయంలో ఫ్లీట్ ట్రాకింగ్‌ను అనుమతించండి',
+    logout: 'లాగౌట్',
+    signOut: 'మీ ఖాతా నుండి సైన్ అవుట్ చేయండి',
+    user: 'TruckOpti వినియోగదారు',
+    selectLanguage: 'భాషను ఎంచుకోండి'
   }
 }
 
 export default function ProfilePage() {
   const { user, logout } = useAuthStore()
-  const { language, toggleLanguage } = useLanguageStore()
-  const t = translations[language]
+  const { language, setLanguage } = useLanguageStore()
+  const t = translations[language as keyof typeof translations] || translations.en
   const [isLocationSharing, setIsLocationSharing] = useState(true)
   const [notifications, setNotifications] = useState({
     sms: true,
@@ -213,20 +287,33 @@ export default function ProfilePage() {
         ))}
       </div>
       
+      {/* Language Selector */}
+      <div className="card p-4">
+        <h2 className="font-semibold text-slate-900 dark:text-white mb-3">
+          {t.selectLanguage}
+        </h2>
+        <div className="grid grid-cols-2 gap-2">
+          {(Object.keys(LANGUAGE_NAMES) as Language[]).map((lang) => (
+            <button
+              key={lang}
+              onClick={() => setLanguage(lang)}
+              className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                language === lang 
+                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 border-2 border-primary-500' 
+                  : 'bg-slate-50 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-2 border-transparent hover:bg-slate-100'
+              }`}
+            >
+              {LANGUAGE_NAMES[lang]}
+            </button>
+          ))}
+        </div>
+      </div>
+      
       {/* App Info */}
       <div className="card p-4 space-y-3">
         <div className="flex items-center justify-between text-sm">
           <span className="text-slate-500">{language === 'en' ? 'App Version' : 'ऐप संस्करण'}</span>
           <span className="text-slate-700 dark:text-slate-300">2.0.0-beta</span>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">{t.language}</span>
-          <button 
-            onClick={toggleLanguage}
-            className="text-primary-600 dark:text-primary-400 hover:underline"
-          >
-            {language === 'en' ? 'English → हिंदी' : 'हिंदी → English'}
-          </button>
         </div>
       </div>
       

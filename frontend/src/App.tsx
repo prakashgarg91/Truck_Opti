@@ -17,6 +17,8 @@ import ManagementPage from './pages/ManagementPage'
 import TrucksPage from './pages/TrucksPage'
 import CartonsPage from './pages/CartonsPage'
 import CustomersPage from './pages/CustomersPage'
+import SaleOrdersPage from './pages/SaleOrdersPage'
+import InvoicePage from './pages/InvoicePage'
 import PricingPage from './pages/PricingPage'
 import CheckoutPage from './pages/CheckoutPage'
 import PaymentCallbackPage from './pages/PaymentCallbackPage'
@@ -61,6 +63,8 @@ export default function App() {
         <Route path="/management/trucks" element={<TrucksPage />} />
         <Route path="/management/cartons" element={<CartonsPage />} />
         <Route path="/management/customers" element={<CustomersPage />} />
+        <Route path="/sale-orders" element={<SaleOrdersPage />} />
+        <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
       </Route>
       
       {/* Catch all */}

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, Loader2 } from 'lucide-react'
+import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, Loader2, FileText, Calculator, Upload } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
-import { packingJobsSupabaseApi, analyticsSupabaseApi, type PackingJob } from '../services/supabaseApi'
+import { packingJobsSupabaseApi, analyticsSupabaseApi, saleOrdersSupabaseApi, type PackingJob, type SaleOrder } from '../services/supabaseApi'
+import { calculateShipmentCost, formatCost } from '../utils/costEngine'
 
 interface DashboardStats {
   activeShipments: number
@@ -12,6 +13,13 @@ interface DashboardStats {
   routesToday: number
   deliveriesDone: number
 }
+
+const TRUCK_TYPES = [
+  'Tata Ace',
+  'Eicher 14ft', 
+  'Eicher 19ft',
+  'BharatBenz 32ft'
+]
 
 
 
@@ -35,6 +43,13 @@ export default function Dashboard() {
     time: string
     status: string
   }>>([])
+  const [recentSaleOrders, setRecentSaleOrders] = useState<SaleOrder[]>([])
+  const [costEstimate, setCostEstimate] = useState({
+    distance: 500,
+    truckType: TRUCK_TYPES[1],
+    weight: 1000,
+    result: calculateShipmentCost({ distanceKm: 500, truckType: 'Eicher 14ft', weightKg: 1000, volumeM3: 10 })
+  })
 
   useEffect(() => {
     const hour = new Date().getHours()
@@ -98,6 +113,10 @@ export default function Dashboard() {
       }
 
       setRecentActivity(activities)
+      
+      // Fetch recent sale orders
+      const saleOrders = await saleOrdersSupabaseApi.getRecent(3)
+      setRecentSaleOrders(saleOrders)
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
     } finally {
@@ -160,7 +179,18 @@ export default function Dashboard() {
     { icon: Package, label: language === 'en' ? '3D Pack' : 'पैकिंग', path: '/packing', color: 'bg-blue-500', description: language === 'en' ? 'Optimize loading' : 'लोडिंग अनुकूलित करें' },
     { icon: Route, label: language === 'en' ? 'Routes' : 'रूट', path: '/routes', color: 'bg-green-500', description: language === 'en' ? 'Plan delivery' : 'डिलीवरी प्लान' },
     { icon: MapPin, label: language === 'en' ? 'Track' : 'ट्रैक', path: '/tracking', color: 'bg-orange-500', description: language === 'en' ? 'Live GPS' : 'लाइव जीपीएस' },
+    { icon: Upload, label: language === 'en' ? 'Import' : 'आयात', path: '/sale-orders', color: 'bg-purple-500', description: language === 'en' ? 'Sale orders' : 'सेल ऑर्डर्स' },
   ]
+  
+  const updateCostEstimate = () => {
+    const result = calculateShipmentCost({
+      distanceKm: costEstimate.distance,
+      truckType: costEstimate.truckType,
+      weightKg: costEstimate.weight,
+      volumeM3: costEstimate.weight / 100
+    })
+    setCostEstimate(prev => ({ ...prev, result }))
+  }
 
   if (loading) {
     return (
@@ -269,6 +299,141 @@ export default function Dashboard() {
         </div>
       </div>
       
+      {/* Quick Cost Estimate */}
+      <div className="card p-5 animate-slide-up" style={{ animationDelay: '250ms' }}>
+        <div className="flex items-center gap-2 mb-4">
+          <Calculator className="w-5 h-5 text-primary-600" />
+          <h3 className="font-semibold text-slate-900 dark:text-white">
+            {language === 'en' ? 'Quick Cost Estimate' : 'त्वरित लागत अनुमान'}
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div>
+            <label className="text-xs text-slate-500 block mb-1">{language === 'en' ? 'Distance (km)' : 'दूरी (किमी)'}</label>
+            <input
+              type="number"
+              value={costEstimate.distance}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 0
+                setCostEstimate(prev => ({ ...prev, distance: val }))
+              }}
+              onBlur={updateCostEstimate}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500 block mb-1">{language === 'en' ? 'Truck Type' : 'ट्रक प्रकार'}</label>
+            <select
+              value={costEstimate.truckType}
+              onChange={(e) => {
+                setCostEstimate(prev => ({ ...prev, truckType: e.target.value }))
+                setTimeout(updateCostEstimate, 0)
+              }}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg text-sm"
+            >
+              {TRUCK_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-slate-500 block mb-1">{language === 'en' ? 'Weight (kg)' : 'वजन (किलो)'}</label>
+            <input
+              type="number"
+              value={costEstimate.weight}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 0
+                setCostEstimate(prev => ({ ...prev, weight: val }))
+              }}
+              onBlur={updateCostEstimate}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg text-sm"
+            />
+          </div>
+        </div>
+        
+        <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-slate-600 dark:text-slate-400">{language === 'en' ? 'Total Estimate' : 'कुल अनुमान'}</span>
+            <span className="text-2xl font-bold text-primary-600">{formatCost(costEstimate.result.totalCost)}</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-xs">
+            <div className="text-center">
+              <p className="text-slate-500">{language === 'en' ? 'Fuel' : 'ईंधन'}</p>
+              <p className="font-medium">{formatCost(costEstimate.result.fuelCost)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-slate-500">{language === 'en' ? 'Toll' : 'टोल'}</p>
+              <p className="font-medium">{formatCost(costEstimate.result.tollCost)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-slate-500">{language === 'en' ? 'Driver' : 'ड्राइवर'}</p>
+              <p className="font-medium">{formatCost(costEstimate.result.driverCost)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-slate-500">{language === 'en' ? 'Loading' : 'लोडिंग'}</p>
+              <p className="font-medium">{formatCost(costEstimate.result.loadingCost)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Recent Sale Orders */}
+      <div className="animate-slide-up" style={{ animationDelay: '275ms' }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            {language === 'en' ? 'Recent Sale Orders' : 'हाल के सेल ऑर्डर्स'}
+          </h3>
+          <button 
+            onClick={() => navigate('/sale-orders')}
+            className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+          >
+            {language === 'en' ? 'View all' : 'सभी देखें'}
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+        
+        {recentSaleOrders.length === 0 ? (
+          <div className="card p-6 text-center">
+            <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm text-slate-500">
+              {language === 'en' ? 'No sale orders yet' : 'अभी तक कोई सेल ऑर्डर नहीं'}
+            </p>
+            <button
+              onClick={() => navigate('/sale-orders')}
+              className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
+            >
+              {language === 'en' ? 'Import orders →' : 'ऑर्डर्स आयात करें →'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentSaleOrders.map(order => (
+              <div 
+                key={order.id}
+                onClick={() => navigate('/sale-orders')}
+                className="card p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-900 dark:text-white">{order.order_number}</p>
+                    <p className="text-xs text-slate-500">{order.total_items} items • {order.delivery_city}</p>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                  order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                  'bg-amber-100 text-amber-700'
+                }`}>
+                  {order.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Recent Activity */}
       <div className="animate-slide-up" style={{ animationDelay: '300ms' }}>
         <div className="flex items-center justify-between mb-4">

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Phone, ChevronRight, Package, Clock, X } from 'lucide-react'
+import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText } from 'lucide-react'
 import { shipmentsSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
 import MapView from '../components/MapView'
 import toast from 'react-hot-toast'
+import { shareTrackingLink } from '../utils/whatsappShare'
 
 interface ShipmentLocation {
   id: string
@@ -145,6 +146,14 @@ export default function TrackingPage() {
   const handleViewDetails = (shipment: ShipmentLocation) => {
     setSelectedShipment(shipment)
     setShowDetailModal(true)
+  }
+
+  const handleShareWhatsApp = (shipment: ShipmentLocation) => {
+    shareTrackingLink(shipment as any)
+  }
+
+  const handleGenerateInvoice = (shipmentId: string) => {
+    navigate(`/invoice/${shipmentId}`)
   }
 
   const filteredShipments = shipments.filter(s => 
@@ -302,27 +311,51 @@ export default function TrackingPage() {
             </div>
 
             {selectedId === s.id && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex gap-2 animate-fade-in">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleViewDetails(s)
-                  }}
-                  className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
-                >
-                  View Details
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleContactDriver(s.driver_phone || undefined)
-                  }}
-                  disabled={!s.driver_phone}
-                  className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Phone className="w-3 h-3" />
-                  Contact Driver
-                </button>
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2 animate-fade-in">
+                <div className="flex gap-2">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleViewDetails(s)
+                    }}
+                    className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
+                  >
+                    View Details
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleContactDriver(s.driver_phone || undefined)
+                    }}
+                    disabled={!s.driver_phone}
+                    className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Phone className="w-3 h-3" />
+                    Contact Driver
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleShareWhatsApp(s)
+                    }}
+                    className="flex-1 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    Share
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleGenerateInvoice(s.id)
+                    }}
+                    className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-3 h-3" />
+                    Invoice
+                  </button>
+                </div>
               </div>
             )}
           </div>

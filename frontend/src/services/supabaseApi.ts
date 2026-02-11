@@ -671,6 +671,123 @@ export const analyticsSupabaseApi = {
   }
 }
 
+// ============= SALE ORDER TYPES =============
+export interface SaleOrder {
+  id: string
+  order_number: string
+  customer_id: string | null
+  customer_name?: string
+  status: 'pending' | 'processing' | 'completed' | 'cancelled'
+  total_items: number
+  total_weight: number
+  total_volume: number
+  delivery_city: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface SaleOrderItem {
+  id: string
+  sale_order_id: string
+  product_name: string
+  length: number
+  width: number
+  height: number
+  weight: number
+  quantity: number
+  created_at?: string
+}
+
+// ============= SALE ORDERS API =============
+export const saleOrdersSupabaseApi = {
+  async getAll(): Promise<SaleOrder[]> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+    
+    const { data, error } = await supabase
+      .from('sale_orders')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data as SaleOrder[]) || []
+  },
+
+  async getById(id: string): Promise<(SaleOrder & { items: SaleOrderItem[] }) | null> {
+    const { data: order, error: orderError } = await supabase
+      .from('sale_orders')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (orderError) throw orderError
+    
+    const { data: items, error: itemsError } = await supabase
+      .from('sale_order_items')
+      .select('*')
+      .eq('sale_order_id', id)
+    if (itemsError) throw itemsError
+    
+    return { ...order, items: items || [] } as SaleOrder & { items: SaleOrderItem[] }
+  },
+
+  async create(order: Omit<SaleOrder, 'id' | 'created_at' | 'updated_at'>, items: Omit<SaleOrderItem, 'id' | 'created_at' | 'sale_order_id'>[]): Promise<SaleOrder> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+    
+    // Create order
+    const { data: newOrder, error: orderError } = await supabase
+      .from('sale_orders')
+      .insert({ ...order, user_id: user.id })
+      .select()
+      .single()
+    if (orderError) throw orderError
+    
+    // Create items
+    if (items.length > 0) {
+      const { error: itemsError } = await supabase
+        .from('sale_order_items')
+        .insert(items.map(item => ({ ...item, sale_order_id: newOrder.id })))
+      if (itemsError) throw itemsError
+    }
+    
+    return newOrder as SaleOrder
+  },
+
+  async updateStatus(id: string, status: SaleOrder['status']): Promise<SaleOrder> {
+    const { data, error } = await supabase
+      .from('sale_orders')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as SaleOrder
+  },
+
+  async delete(id: string): Promise<void> {
+    // Items will be deleted via cascade
+    const { error } = await supabase
+      .from('sale_orders')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  },
+
+  async getRecent(limit = 3): Promise<SaleOrder[]> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+    
+    const { data, error } = await supabase
+      .from('sale_orders')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return (data as SaleOrder[]) || []
+  }
+}
+
 // ============= REALTIME SUBSCRIPTIONS =============
 export const realtimeSupabase = {
   subscribeToShipments(callback: (payload: unknown) => void) {

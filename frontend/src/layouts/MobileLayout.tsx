@@ -4,7 +4,6 @@ import {
   Package, 
   Route, 
   MapPin, 
-  User,
   Menu,
   X,
   Bell,
@@ -16,7 +15,8 @@ import {
   CreditCard,
   Check,
   Trash2,
-  Loader2
+  Loader2,
+  FileText
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
@@ -27,11 +27,10 @@ import toast from 'react-hot-toast'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home', labelHi: 'होम' },
+  { path: '/sale-orders', icon: FileText, label: 'Orders', labelHi: 'ऑर्डर्स' },
   { path: '/packing', icon: Package, label: 'Pack', labelHi: 'पैकिंग' },
   { path: '/routes', icon: Route, label: 'Routes', labelHi: 'रूट' },
   { path: '/tracking', icon: MapPin, label: 'Track', labelHi: 'ट्रैक' },
-  { path: '/management', icon: Settings, label: 'Manage', labelHi: 'मैनेज' },
-  { path: '/profile', icon: User, label: 'Profile', labelHi: 'प्रोफाइल' },
 ]
 
 interface Notification {
