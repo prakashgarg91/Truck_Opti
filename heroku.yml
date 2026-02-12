@@ -1,0 +1,6 @@
+# Heroku Docker deployment configuration
+build:
+  docker:
+    web: Dockerfile
+run:
+  web: cd frontend/dist && npx serve -s -l $PORT
