@@ -1,0 +1,42 @@
+{
+  "name": "TruckOpti",
+  "description": "3D Smart Packing & Route Optimization for Indian Logistics",
+  "repository": "https://github.com/yourusername/truckopti",
+  "logo": "https://raw.githubusercontent.com/yourusername/truckopti/main/frontend/public/pwa-192x192.png",
+  "keywords": [
+    "react",
+    "supabase",
+    "logistics",
+    "3d-packing",
+    "truck",
+    "india"
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "VITE_SUPABASE_URL": {
+      "description": "Supabase Project URL",
+      "value": "https://jbxncejtcbpcronndqlx.supabase.co",
+      "required": true
+    },
+    "VITE_SUPABASE_ANON_KEY": {
+      "description": "Supabase Anon Key",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpieG5jZWp0Y2JwY3Jvbm5kcWx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4MDk2MjIsImV4cCI6MjA4MzM4NTYyMn0.8GHh-LAeBx9RyQVjcJFbBiZrumfiqtUhe-NUedY3vqo",
+      "required": true
+    },
+    "VITE_APP_URL": {
+      "description": "Heroku App URL (update after deploy)",
+      "value": "https://your-app-name.herokuapp.com",
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  }
+}
