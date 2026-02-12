@@ -10,6 +10,13 @@
 import { lazy, Suspense } from 'react'
 import type { MapMarker, MapRoute, GoogleMapViewProps } from './GoogleMapView'
 
+function hasUsableGoogleMapsKey(key?: string): boolean {
+  if (!key) return false
+  const normalized = key.trim().toUpperCase()
+  if (!normalized) return false
+  return !normalized.includes('REPLACE_ME') && !normalized.includes('YOUR_')
+}
+
 // Lazy load both map components
 const GoogleMapView = lazy(() => import('./GoogleMapView'))
 const LeafletMapView = lazy(() => import('./MapView'))
@@ -27,9 +34,10 @@ export default function MapViewWrapper({
   ...props 
 }: MapViewWrapperProps) {
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  const googleConfigured = hasUsableGoogleMapsKey(googleMapsApiKey)
   
   // Determine which provider to use
-  const useGoogle = forceProvider === 'google' || (forceProvider === 'auto' && googleMapsApiKey)
+  const useGoogle = forceProvider === 'google' || (forceProvider === 'auto' && googleConfigured)
   
   return (
     <Suspense 
@@ -59,12 +67,12 @@ export default function MapViewWrapper({
  */
 export function useMapProvider(): 'google' | 'leaflet' {
   const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  return googleMapsApiKey ? 'google' : 'leaflet'
+  return hasUsableGoogleMapsKey(googleMapsApiKey) ? 'google' : 'leaflet'
 }
 
 /**
  * Check if Google Maps is configured
  */
 export function isGoogleMapsConfigured(): boolean {
-  return !!import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  return hasUsableGoogleMapsKey(import.meta.env.VITE_GOOGLE_MAPS_API_KEY)
 }

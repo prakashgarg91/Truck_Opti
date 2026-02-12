@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "description": "3D Smart Packing & Logistics for India",
   "scripts": {
-    "heroku-postbuild": "cd frontend && npm install && npm run build",
+    "heroku-postbuild": "cd frontend && npm install --include=dev && npm run build",
     "start": "cd frontend/dist && npx serve -s -l $PORT"
   },
   "engines": {

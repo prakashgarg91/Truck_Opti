@@ -11,11 +11,45 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     document.title = 'Authenticating... - TruckOpti'
+    const timeoutId = window.setTimeout(() => {
+      window.location.replace('/login')
+    }, 8000)
     
     const handleAuthCallback = async () => {
       try {
-        // Extract session from URL hash (Supabase handles this automatically)
-        const { data, error } = await supabase.auth.getSession()
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
+
+        if (accessToken && refreshToken) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+
+          if (setSessionError) {
+            throw setSessionError
+          }
+        }
+
+        const queryParams = new URLSearchParams(window.location.search)
+        const code = queryParams.get('code')
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          if (exchangeError) {
+            throw exchangeError
+          }
+        }
+
+        let data: any = null
+        let error: any = null
+        for (let i = 0; i < 5; i++) {
+          const result = await supabase.auth.getSession()
+          data = result.data
+          error = result.error
+          if (data?.session) break
+          await new Promise(resolve => setTimeout(resolve, 250))
+        }
         
         if (error) {
           console.error('Auth callback error:', error)
@@ -26,30 +60,37 @@ export default function AuthCallbackPage() {
         }
 
         if (data.session) {
+          if (window.location.hash || window.location.search) {
+            window.history.replaceState({}, document.title, '/auth/callback')
+          }
+
           // Session successfully extracted
           toast.success('Successfully signed in!', {
             icon: '✅',
             duration: 2000
           })
           
-          // Redirect to dashboard
-          navigate('/', { replace: true })
+          window.clearTimeout(timeoutId)
+          window.location.replace('/')
         } else {
           // No session found - might be a direct visit to this page
           console.warn('No session found in callback')
-          navigate('/login', { replace: true })
+          window.clearTimeout(timeoutId)
+          window.location.replace('/login')
         }
       } catch (err: any) {
         console.error('Unexpected error during auth callback:', err)
         setError(err.message || 'An unexpected error occurred')
         toast.error('Authentication failed. Please try again.')
-        navigate('/login', { replace: true })
+        window.clearTimeout(timeoutId)
+        window.location.replace('/login')
       } finally {
         setIsProcessing(false)
       }
     }
 
     handleAuthCallback()
+    return () => window.clearTimeout(timeoutId)
   }, [navigate])
 
   if (error) {

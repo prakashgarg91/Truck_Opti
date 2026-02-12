@@ -126,8 +126,8 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'starter',
     name: 'Starter',
     nameHi: 'स्टार्टर',
-    monthlyPrice: 499, // Cost ₹325 + 60% = ₹520, priced at ₹499 for market appeal
-    yearlyPrice: 4999, // ~17% discount
+    monthlyPrice: 500, // Launch pricing
+    yearlyPrice: 5000, // Launch pricing
     features: [
       '3D Bin Packing Optimization',
       'Basic Truck Catalog (8 types)',

@@ -1,0 +1,6 @@
+product_name,length_cm,width_cm,height_cm,weight_kg,quantity,delivery_city
+TV Box,120,80,20,15,3,Mumbai
+Refrigerator,70,70,180,65,2,Pune
+Carton Small,40,30,30,5,20,Delhi
+Carton Medium,60,40,40,12,10,Bangalore
+Carton Large,80,60,50,20,5,Chennai

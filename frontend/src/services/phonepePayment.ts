@@ -1,17 +1,34 @@
 import { supabase } from '../lib/supabase';
 import CryptoJS from 'crypto-js';
 
+function isUnset(value?: string): boolean {
+  if (!value) return true;
+  const normalized = value.trim();
+  return (
+    normalized.length === 0 ||
+    normalized.toUpperCase().includes('REPLACE_ME') ||
+    normalized.toUpperCase().includes('YOUR_')
+  );
+}
+
 // PhonePe Configuration
 const PHONEPE_CONFIG = {
-  // Use test credentials for development, production for live
-  merchantId: import.meta.env.VITE_PHONEPE_MERCHANT_ID || 'PGTESTPAYUAT',
-  saltKey: import.meta.env.VITE_PHONEPE_SALT_KEY || '099eb0cd-02cf-4e2a-8aca-3e6c6aff0399',
-  saltIndex: import.meta.env.VITE_PHONEPE_SALT_INDEX || '1',
+  merchantId: import.meta.env.VITE_PHONEPE_MERCHANT_ID,
+  saltKey: import.meta.env.VITE_PHONEPE_SALT_KEY,
+  saltIndex: import.meta.env.VITE_PHONEPE_SALT_INDEX,
   // UAT: https://api-preprod.phonepe.com/apis/pg-sandbox
   // Production: https://api.phonepe.com/apis/hermes
-  apiUrl: import.meta.env.VITE_PHONEPE_API_URL || 'https://api-preprod.phonepe.com/apis/pg-sandbox',
+  apiUrl: import.meta.env.VITE_PHONEPE_API_URL,
   redirectUrl: import.meta.env.VITE_APP_URL || window.location.origin,
 };
+
+function getPhonePeConfigError(): string | null {
+  if (isUnset(PHONEPE_CONFIG.merchantId)) return 'Missing VITE_PHONEPE_MERCHANT_ID';
+  if (isUnset(PHONEPE_CONFIG.saltKey)) return 'Missing VITE_PHONEPE_SALT_KEY';
+  if (isUnset(PHONEPE_CONFIG.saltIndex)) return 'Missing VITE_PHONEPE_SALT_INDEX';
+  if (isUnset(PHONEPE_CONFIG.apiUrl)) return 'Missing VITE_PHONEPE_API_URL';
+  return null;
+}
 
 export interface PhonePePaymentRequest {
   amount: number; // in paise
@@ -43,17 +60,26 @@ export interface PhonePePaymentResponse {
 // Generate SHA256 hash for PhonePe
 function generateChecksum(payload: string, endpoint: string): string {
   const base64Payload = btoa(payload);
-  const string = base64Payload + endpoint + PHONEPE_CONFIG.saltKey;
+  const string = base64Payload + endpoint + PHONEPE_CONFIG.saltKey!;
   const sha256Hash = CryptoJS.SHA256(string).toString();
-  return sha256Hash + '###' + PHONEPE_CONFIG.saltIndex;
+  return sha256Hash + '###' + PHONEPE_CONFIG.saltIndex!;
 }
 
 // Initiate PhonePe UPI Payment
 export async function initiatePhonePePayment(request: PhonePePaymentRequest): Promise<PhonePePaymentResponse> {
+  const configError = getPhonePeConfigError();
+  if (configError) {
+    return {
+      success: false,
+      code: 'CONFIG_ERROR',
+      message: `PhonePe is not configured: ${configError}`,
+    };
+  }
+
   const merchantTransactionId = `TRK${Date.now()}${Math.random().toString(36).substring(7)}`;
   
   const payload = {
-    merchantId: PHONEPE_CONFIG.merchantId,
+    merchantId: PHONEPE_CONFIG.merchantId!,
     merchantTransactionId,
     merchantUserId: request.userId.substring(0, 36),
     amount: request.amount,
@@ -86,7 +112,7 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
       },
     });
 
-    const response = await fetch(`${PHONEPE_CONFIG.apiUrl}${endpoint}`, {
+    const response = await fetch(`${PHONEPE_CONFIG.apiUrl!}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -114,18 +140,27 @@ export async function checkPaymentStatus(merchantTransactionId: string): Promise
   message: string;
   data?: any;
 }> {
-  const endpoint = `/pg/v1/status/${PHONEPE_CONFIG.merchantId}/${merchantTransactionId}`;
-  const string = endpoint + PHONEPE_CONFIG.saltKey;
+  const configError = getPhonePeConfigError();
+  if (configError) {
+    return {
+      success: false,
+      status: 'FAILED',
+      message: `PhonePe is not configured: ${configError}`,
+    };
+  }
+
+  const endpoint = `/pg/v1/status/${PHONEPE_CONFIG.merchantId!}/${merchantTransactionId}`;
+  const string = endpoint + PHONEPE_CONFIG.saltKey!;
   const sha256Hash = CryptoJS.SHA256(string).toString();
-  const checksum = sha256Hash + '###' + PHONEPE_CONFIG.saltIndex;
+  const checksum = sha256Hash + '###' + PHONEPE_CONFIG.saltIndex!;
 
   try {
-    const response = await fetch(`${PHONEPE_CONFIG.apiUrl}${endpoint}`, {
+    const response = await fetch(`${PHONEPE_CONFIG.apiUrl!}${endpoint}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'X-VERIFY': checksum,
-        'X-MERCHANT-ID': PHONEPE_CONFIG.merchantId,
+        'X-MERCHANT-ID': PHONEPE_CONFIG.merchantId!,
       },
     });
 
@@ -200,6 +235,7 @@ export async function verifyAndActivateSubscription(
 
 // Export payment config for UI
 export const getPaymentConfig = () => ({
-  merchantId: PHONEPE_CONFIG.merchantId,
-  isTestMode: PHONEPE_CONFIG.apiUrl.includes('sandbox'),
+  merchantId: PHONEPE_CONFIG.merchantId || '',
+  isConfigured: !getPhonePeConfigError(),
+  isTestMode: (PHONEPE_CONFIG.apiUrl || '').includes('sandbox'),
 });

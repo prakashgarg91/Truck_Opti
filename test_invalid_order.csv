@@ -1,0 +1,5 @@
+product_name,length_cm,width_cm,height_cm,weight_kg,quantity,delivery_city
+Invalid Box 1,0,40,30,5,10,Mumbai
+Invalid Box 2,60,-5,40,8,5,Delhi
+Invalid Box 3,30,20,15,0,20,Bangalore
+,60,50,40,8,5,Chennai

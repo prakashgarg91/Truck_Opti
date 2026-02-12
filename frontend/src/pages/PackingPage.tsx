@@ -11,6 +11,7 @@ import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, custom
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
+import { usePackingWorker } from '../hooks/usePackingWorker'
 
 // ============= LANGUAGE =============
 type Language = 'en' | 'hi'
@@ -477,12 +478,7 @@ export default function PackingPage() {
   const [algorithm, setAlgorithm] = useState('extreme_points')
   const [trucks, setTrucks] = useState<TruckType[]>([])
   const [loadingTrucks, setLoadingTrucks] = useState(true)
-  const [saleOrderItems, setSaleOrderItems] = useState<SaleOrderItem[]>([
-    { id: '1', name: 'TV Box', length: 120, width: 80, height: 20, weight: 15, quantity: 3, fragile: true, stackable: false },
-    { id: '2', name: 'Refrigerator', length: 70, width: 70, height: 180, weight: 65, quantity: 2, fragile: true, stackable: false },
-    { id: '3', name: 'Carton Small', length: 40, width: 30, height: 30, weight: 5, quantity: 20, fragile: false, stackable: true },
-    { id: '4', name: 'Carton Medium', length: 60, width: 40, height: 40, weight: 12, quantity: 10, fragile: false, stackable: true },
-  ])
+  const [saleOrderItems, setSaleOrderItems] = useState<SaleOrderItem[]>([])
   const [recommendations, setRecommendations] = useState<TruckRecommendation[]>([])
   const [selectedRecommendation, setSelectedRecommendation] = useState<TruckRecommendation | null>(null)
   const [showItemForm, setShowItemForm] = useState(false)
@@ -509,6 +505,9 @@ export default function PackingPage() {
   })
   const [bookError, setBookError] = useState('')
   const [bookingInProgress, setBookingInProgress] = useState(false)
+
+  // Web Worker for client-side algorithm processing
+  const { runPacking, runRecommendation, isSupported: workerSupported } = usePackingWorker()
 
   // Set document title based on language
   useEffect(() => {
@@ -639,7 +638,7 @@ export default function PackingPage() {
     toast.success('Item removed')
   }, [])
 
-  const handleSmartRecommend = useCallback(() => {
+  const handleSmartRecommend = useCallback(async () => {
     if (saleOrderItems.length === 0) {
       toast.error('Add items to get recommendations')
       return
@@ -651,23 +650,57 @@ export default function PackingPage() {
     }
     
     setIsProcessing(true)
-    toast.loading('Analyzing trucks...', { id: 'recommend' })
+    toast.loading('Processing on your device...', { id: 'recommend', icon: '💻' })
     
-    setTimeout(() => {
+    try {
+      if (workerSupported) {
+        // Use Web Worker (runs on user's CPU, not server)
+        const recs = await runRecommendation(saleOrderItems, trucks, algorithm)
+        const mappedRecs: TruckRecommendation[] = recs.map((r: any) => ({
+          truck: r.truck,
+          itemsFit: r.itemsFit,
+          totalItems: r.totalItems,
+          volumeUtilization: r.volumeUtilization,
+          weightUtilization: r.weightUtilization,
+          estimatedCost: r.costEstimate,
+          packedBoxes: r.packed,
+          unfitItems: r.unpacked
+        }))
+        setRecommendations(mappedRecs.slice(0, 3))
+        if (mappedRecs.length > 0) {
+          setSelectedRecommendation(mappedRecs[0])
+          setSelectedTruck(mappedRecs[0].truck.id)
+          toast.success(`Found ${Math.min(mappedRecs.length, 3)} truck options! (processed locally)`, { id: 'recommend' })
+        } else {
+          toast.error('No suitable truck found.', { id: 'recommend' })
+        }
+      } else {
+        // Fallback: run on main thread  
+        const recs = recommendTrucks(saleOrderItems, algorithm, trucks)
+        setRecommendations(recs)
+        if (recs.length > 0) {
+          setSelectedRecommendation(recs[0])
+          setSelectedTruck(recs[0].truck.id)
+          toast.success(`Found ${recs.length} truck options!`, { id: 'recommend' })
+        } else {
+          toast.error('No suitable truck found.', { id: 'recommend' })
+        }
+      }
+    } catch (err) {
+      // Fallback to main thread on error
       const recs = recommendTrucks(saleOrderItems, algorithm, trucks)
       setRecommendations(recs)
       if (recs.length > 0) {
         setSelectedRecommendation(recs[0])
         setSelectedTruck(recs[0].truck.id)
         toast.success(`Found ${recs.length} truck options!`, { id: 'recommend' })
-      } else {
-        toast.error('No suitable truck found. Try smaller items.', { id: 'recommend' })
       }
+    } finally {
       setIsProcessing(false)
-    }, 800)
-  }, [saleOrderItems, algorithm, trucks])
+    }
+  }, [saleOrderItems, algorithm, trucks, workerSupported, runRecommendation])
 
-  const handleManualPack = useCallback(() => {
+  const handleManualPack = useCallback(async () => {
     if (!selectedTruck || saleOrderItems.length === 0) {
       toast.error('Select truck and add items')
       return
@@ -675,10 +708,25 @@ export default function PackingPage() {
     
     setIsProcessing(true)
     
-    setTimeout(() => {
-      const truck = trucks.find(t => t.id === selectedTruck)!
-      const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
-      const { packed, unpacked } = packer.pack()
+    const truck = trucks.find(t => t.id === selectedTruck)!
+    
+    try {
+      let packed: PackedBox[], unpacked: string[]
+      
+      if (workerSupported) {
+        // Use Web Worker (runs on user's CPU)
+        const result = await runPacking(truck, saleOrderItems, algorithm)
+        packed = result.packed
+        unpacked = result.unpacked
+        toast.success(`Packed ${packed.length} items in ${result.duration}ms (on your device)`, { icon: '💻' })
+      } else {
+        // Fallback: main thread
+        const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
+        const result = packer.pack()
+        packed = result.packed
+        unpacked = result.unpacked
+        toast.success(`Packed ${packed.length} items!`)
+      }
       
       const truckVolume = truck.dimensions.length * truck.dimensions.width * truck.dimensions.height
       const packedVolume = packed.reduce((sum, box) => sum + box.width * box.height * box.depth, 0)
@@ -697,10 +745,29 @@ export default function PackingPage() {
       
       setSelectedRecommendation(rec)
       setRecommendations([rec])
+    } catch (err) {
+      // Fallback
+      const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
+      const { packed, unpacked } = packer.pack()
+      const truckVolume = truck.dimensions.length * truck.dimensions.width * truck.dimensions.height
+      const packedVolume = packed.reduce((sum, box) => sum + box.width * box.height * box.depth, 0)
+      const packedWeight = saleOrderItems.reduce((sum, item) => sum + item.weight * item.quantity, 0)
+      
+      setSelectedRecommendation({
+        truck,
+        itemsFit: packed.length,
+        totalItems: saleOrderItems.reduce((sum, item) => sum + item.quantity, 0),
+        volumeUtilization: Math.round((packedVolume / truckVolume) * 100),
+        weightUtilization: Math.round((packedWeight / truck.capacity) * 100),
+        estimatedCost: truck.costPerKm * 100,
+        packedBoxes: packed,
+        unfitItems: unpacked
+      })
       toast.success(`Packed ${packed.length} items!`)
+    } finally {
       setIsProcessing(false)
-    }, 500)
-  }, [selectedTruck, saleOrderItems, algorithm, trucks])
+    }
+  }, [selectedTruck, saleOrderItems, algorithm, trucks, workerSupported, runPacking])
 
   const handleSavePackingJob = async () => {
     if (!selectedRecommendation) {

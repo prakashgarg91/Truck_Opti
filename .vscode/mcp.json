@@ -2,8 +2,18 @@
 	"servers": {
 		"supabase": {
 			"type": "http",
-			"url": "https://mcp.supabase.com/mcp?project_ref=jbxncejtcbpcronndqlx"
+			"url": "https://mcp.supabase.com/mcp?project_ref=jbxncejtcbpcronndqlx",
+			"headers": {
+				"Authorization": "Bearer ${input:supabase_pat}"
+			}
 		}
 	},
-	"inputs": []
+	"inputs": [
+		{
+			"id": "supabase_pat",
+			"type": "promptString",
+			"description": "Supabase Personal Access Token",
+			"password": true
+		}
+	]
 }

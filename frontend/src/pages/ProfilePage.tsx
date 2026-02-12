@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { 
   Phone, Mail, MapPin, Shield, Bell, 
-  Globe, ChevronRight, LogOut, Camera, Unlink
+  Globe, ChevronRight, LogOut, Camera, Edit3, Save, X
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore, LANGUAGE_NAMES, type Language } from '../stores/languageStore'
+import { supabase } from '../lib/supabase'
 
 const translations = {
   en: {
@@ -118,7 +120,7 @@ const translations = {
 }
 
 export default function ProfilePage() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, updateUser } = useAuthStore()
   const { language, setLanguage } = useLanguageStore()
   
   // Set document title based on language
@@ -134,6 +136,39 @@ export default function ProfilePage() {
     email: false
   })
   
+  // Edit profile state
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState(user?.name || '')
+  const [editPhone, setEditPhone] = useState(user?.phone?.replace('+91', '') || '')
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: editName,
+          name: editName,
+          phone: editPhone ? `+91${editPhone}` : undefined
+        }
+      })
+      if (error) throw error
+      
+      // Update local store
+      updateUser({
+        name: editName || null,
+        phone: editPhone ? `+91${editPhone}` : null
+      })
+      
+      setIsEditing(false)
+      toast.success(language === 'en' ? 'Profile updated!' : 'प्रोफ़ाइल अपडेट!')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleLogout = () => {
     logout()
     window.location.href = '/login'
@@ -144,24 +179,101 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <div className="card p-6 text-center">
         <div className="relative inline-block mb-4">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-500 to-saffron-500 flex items-center justify-center text-white text-3xl font-bold">
-            {user?.name?.charAt(0) || 'U'}
-          </div>
+          {user?.profile_picture ? (
+            <img 
+              src={user.profile_picture} 
+              alt={user?.name || 'Profile'} 
+              className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+            />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-500 to-saffron-500 flex items-center justify-center text-white text-3xl font-bold">
+              {user?.name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+          )}
           <button className="absolute bottom-0 right-0 w-8 h-8 bg-white dark:bg-slate-700 rounded-full shadow-lg flex items-center justify-center text-slate-600 dark:text-slate-300">
             <Camera className="w-4 h-4" />
           </button>
         </div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-          {user?.name || 'Guest User'}
+          {user?.name || user?.email?.split('@')[0] || 'TruckOpti User'}
         </h1>
-        <p className="text-slate-500 dark:text-slate-400">
-          {t.user}
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          {user?.email || ''}
         </p>
         <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600">
           <Shield className="w-4 h-4" />
           <span>{t.verifiedAccount}</span>
         </div>
+        {/* Edit Profile Button */}
+        <button
+          onClick={() => {
+            setIsEditing(!isEditing)
+            setEditName(user?.name || '')
+            setEditPhone(user?.phone?.replace('+91', '') || '')
+          }}
+          className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
+        >
+          <Edit3 className="w-4 h-4" />
+          {isEditing ? (language === 'en' ? 'Cancel' : 'रद्द करें') : (language === 'en' ? 'Edit Profile' : 'प्रोफ़ाइल संपादित करें')}
+        </button>
       </div>
+
+      {/* Edit Profile Form */}
+      {isEditing && (
+        <div className="card p-4 space-y-4 border-2 border-primary-200 dark:border-primary-800">
+          <h2 className="font-semibold text-slate-900 dark:text-white">
+            {language === 'en' ? 'Edit Profile' : 'प्रोफ़ाइल संपादित करें'}
+          </h2>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {language === 'en' ? 'Full Name' : 'पूरा नाम'}
+            </label>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="input w-full"
+              placeholder={language === 'en' ? 'Enter your name' : 'अपना नाम दर्ज करें'}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {language === 'en' ? 'Phone Number' : 'फोन नंबर'}
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500 font-medium">+91</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                className="input flex-1"
+                placeholder="98765 43210"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleSaveProfile}
+              disabled={isSaving}
+              className="btn btn-primary flex-1"
+            >
+              {isSaving ? (
+                <div className="spinner w-4 h-4" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>{language === 'en' ? 'Save' : 'सहेजें'}</span>
+            </button>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="btn btn-secondary"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Contact Info */}
       <div className="card divide-y divide-slate-100 dark:divide-slate-700">
@@ -175,10 +287,14 @@ export default function ProfilePage() {
           <div className="flex-1">
             <p className="text-sm text-slate-500">{t.phone}</p>
             <p className="font-medium text-slate-900 dark:text-white">
-              +91 98765 43210
+              {user?.phone || (language === 'en' ? 'Not added yet' : 'अभी तक नहीं जोड़ा')}
             </p>
           </div>
-          <span className="badge badge-success">{t.verified}</span>
+          {user?.phone_verified ? (
+            <span className="badge badge-success">{t.verified}</span>
+          ) : (
+            <span className="text-xs text-slate-400">{language === 'en' ? 'Add phone' : 'फोन जोड़ें'}</span>
+          )}
         </div>
         <div className="p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
@@ -187,10 +303,14 @@ export default function ProfilePage() {
           <div className="flex-1">
             <p className="text-sm text-slate-500">{t.email}</p>
             <p className="font-medium text-slate-900 dark:text-white">
-              {user?.email || 'user@truckopti.in'}
+              {user?.email || (language === 'en' ? 'Not added yet' : 'अभी तक नहीं जोड़ा')}
             </p>
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-400" />
+          {user?.email ? (
+            <span className="badge badge-success">{t.verified}</span>
+          ) : (
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          )}
         </div>
         <div className="p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
@@ -199,7 +319,7 @@ export default function ProfilePage() {
           <div className="flex-1">
             <p className="text-sm text-slate-500">{t.location}</p>
             <p className="font-medium text-slate-900 dark:text-white">
-              Mumbai, Maharashtra
+              {language === 'en' ? 'Tap to set location' : 'स्थान सेट करें'}
             </p>
           </div>
           <ChevronRight className="w-5 h-5 text-slate-400" />
@@ -207,6 +327,7 @@ export default function ProfilePage() {
       </div>
       
       {/* Google Account */}
+      {user?.google_linked && (
       <div className="card divide-y divide-slate-100 dark:divide-slate-700">
         <h2 className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
           Connected Accounts
@@ -223,18 +344,13 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1">
               <p className="font-medium text-slate-900 dark:text-white">Google Account</p>
-              <p className="text-sm text-slate-500">Location sharing enabled</p>
+              <p className="text-sm text-slate-500">{user?.email || 'Connected'}</p>
             </div>
-            <button className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700">
-              <Unlink className="w-4 h-4" />
-              <span>Unlink</span>
-            </button>
+            <span className="badge badge-success text-xs">Linked</span>
           </div>
-          <p className="mt-3 text-xs text-slate-500 pl-13">
-            Your location is shared with fleet managers for delivery tracking
-          </p>
         </div>
       </div>
+      )}
       
       {/* Location Sharing */}
       <div className="card p-4">
@@ -335,7 +451,7 @@ export default function ProfilePage() {
       {/* Footer */}
       <div className="text-center text-xs text-slate-400 pb-4">
         <p>TruckOpti India • Made with ❤️ in India</p>
-        <p className="mt-1">© 2025 All Rights Reserved</p>
+        <p className="mt-1">© 2026 All Rights Reserved</p>
       </div>
     </div>
   )

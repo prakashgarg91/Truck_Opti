@@ -1,11 +1,20 @@
 import { supabase } from '../lib/supabase';
 
+function isUnset(value?: string): boolean {
+  if (!value) return true;
+  const normalized = value.trim();
+  return (
+    normalized.length === 0 ||
+    normalized.toUpperCase().includes('REPLACE_ME') ||
+    normalized.toUpperCase().includes('YOUR_')
+  );
+}
+
 // Razorpay Configuration
 const RAZORPAY_CONFIG = {
-  // Test key - for testing only
-  keyId: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_1DP5mmOlF5G5ag',
-  keySecret: import.meta.env.VITE_RAZORPAY_KEY_SECRET || '',
-  isTestMode: !import.meta.env.VITE_RAZORPAY_KEY_ID || import.meta.env.VITE_RAZORPAY_KEY_ID.includes('test'),
+  keyId: import.meta.env.VITE_RAZORPAY_KEY_ID,
+  keySecret: import.meta.env.VITE_RAZORPAY_KEY_SECRET,
+  isTestMode: (import.meta.env.VITE_RAZORPAY_KEY_ID || '').includes('test'),
 };
 
 export interface RazorpayPaymentRequest {
@@ -48,7 +57,8 @@ function loadRazorpayScript(): Promise<boolean> {
 // Get Razorpay configuration info
 export function getRazorpayConfig() {
   return {
-    keyId: RAZORPAY_CONFIG.keyId,
+    keyId: RAZORPAY_CONFIG.keyId || '',
+    isConfigured: !isUnset(RAZORPAY_CONFIG.keyId),
     isTestMode: RAZORPAY_CONFIG.isTestMode,
   };
 }
@@ -57,6 +67,13 @@ export function getRazorpayConfig() {
 export async function initiateRazorpayPayment(
   request: RazorpayPaymentRequest
 ): Promise<RazorpayPaymentResult> {
+  if (isUnset(RAZORPAY_CONFIG.keyId)) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured. Missing VITE_RAZORPAY_KEY_ID.',
+    };
+  }
+
   // Load Razorpay script
   const loaded = await loadRazorpayScript();
   if (!loaded) {

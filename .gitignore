@@ -3,9 +3,46 @@
 __pycache__/
 *.pyc
 *.pyo
-# Build output - too large for GitHub
+*.egg-info/
+
+# Build output
 frontend/release/
 frontend/release/**
+frontend/dist/
+dist/
 
-# node modules
+# Node modules
 node_modules/
+
+# Heroku deploy repo (separate git repo)
+_heroku_deploy/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OAuth/Cloud client secrets
+client_secret_*.json
+
+# Logs
+logs/
+*.log
+
+# Screenshots and test images
+screenshots/
+*.png
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Virtual environment
+.venv/
+venv/
+
+# Temp files
+_gitstatus.txt
+
+# Supabase local
+supabase/.temp/

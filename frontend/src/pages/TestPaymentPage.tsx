@@ -15,7 +15,7 @@ const TestPaymentPage: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [amount, setAmount] = useState(1); // Default ₹1 for testing
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('phonepe');
 
   const phonePeConfig = getPaymentConfig();
   const razorpayConfig = getRazorpayConfig();

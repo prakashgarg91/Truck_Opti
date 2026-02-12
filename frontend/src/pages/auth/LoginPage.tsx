@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Phone, ArrowRight, MessageCircle, Shield, Truck, Sparkles, Send } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Phone, ArrowRight, MessageCircle, Shield, Truck, Sparkles, Send, LogIn } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
-import { phoneInputSchema } from '../../utils/validators'
+import { phoneInputSchema, emailSchema } from '../../utils/validators'
 
 const features = [
   { icon: '📦', text: '3D Smart Packing' },
@@ -18,7 +18,7 @@ export default function LoginPage() {
   const { setPendingPhone } = useAuthStore()
   const [phone, setPhone] = useState('')
   const [phoneError, setPhoneError] = useState('')
-  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'telegram'>('sms')
+  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>('email')
   const [isFocused, setIsFocused] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
   
@@ -34,20 +34,32 @@ export default function LoginPage() {
     document.title = 'Login - TruckOpti'
   }, [])
   
+  // Clear input when channel changes
+  useEffect(() => {
+    setPhone('')
+    setPhoneError('')
+  }, [channel])
+  
   const sendOTPMutation = useMutation({
     mutationFn: async () => {
-      // Format phone with country code for Supabase
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`
-      await authSupabaseApi.signInWithPhone(formattedPhone)
-      return { success: true }
+      if (channel === 'email') {
+        await authSupabaseApi.signInWithEmail(phone) // phone variable holds email in this case
+        return { success: true, channel: 'email' }
+      } else {
+        // Format phone with country code for Supabase
+        const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`
+        await authSupabaseApi.signInWithPhone(formattedPhone, channel as 'sms' | 'whatsapp')
+        return { success: true, channel }
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setPendingPhone(phone)
-      toast.success(`OTP sent via SMS`, {
-        icon: '📱',
+      const channelLabel = data.channel === 'email' ? 'Email' : data.channel === 'whatsapp' ? 'WhatsApp' : 'SMS'
+      toast.success(`OTP sent via ${channelLabel}`, {
+        icon: data.channel === 'email' ? '📧' : '📱',
         duration: 3000
       })
-      navigate('/otp')
+      navigate('/otp', { state: { channel, contact: phone } })
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to send OTP')
@@ -57,11 +69,20 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validate phone number with Zod
-    const result = phoneInputSchema.safeParse(phone)
-    if (!result.success) {
-      setPhoneError(result.error.issues[0]?.message || 'Invalid phone number')
-      return
+    // Validate based on channel
+    if (channel === 'email') {
+      const result = emailSchema.safeParse(phone)
+      if (!result.success) {
+        setPhoneError(result.error.issues[0]?.message || 'Invalid email address')
+        return
+      }
+    } else {
+      // Validate phone number with Zod
+      const result = phoneInputSchema.safeParse(phone)
+      if (!result.success) {
+        setPhoneError(result.error.issues[0]?.message || 'Invalid phone number')
+        return
+      }
     }
     
     setPhoneError('')
@@ -69,6 +90,15 @@ export default function LoginPage() {
   }
 
   const handlePhoneChange = (value: string) => {
+    if (channel === 'email') {
+      setPhone(value)
+      // Clear error when user starts typing
+      if (phoneError && value.length > 0) {
+        setPhoneError('')
+      }
+      return
+    }
+    
     const digits = value.replace(/\D/g, '').slice(0, 10)
     setPhone(digits)
     
@@ -89,6 +119,10 @@ export default function LoginPage() {
   }
   
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+
+  const isContactValid = channel === 'email'
+    ? emailSchema.safeParse(phone).success
+    : phoneInputSchema.safeParse(phone).success
   
   const handleGoogleLogin = async () => {
     try {
@@ -101,8 +135,9 @@ export default function LoginPage() {
     }
   }
   
-  // Format phone number for display
+  // Format phone number for display (only for phone inputs)
   const formatPhone = (value: string) => {
+    if (channel === 'email') return value
     if (value.length <= 5) return value
     return `${value.slice(0, 5)} ${value.slice(5)}`
   }
@@ -121,38 +156,43 @@ export default function LoginPage() {
       
       {/* Header */}
       <div className="text-center mb-8">
+        <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/30">
+          <LogIn className="w-7 h-7 text-white" />
+        </div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Welcome to <span className="text-gradient">TruckOpti</span>
+          Welcome Back
         </h2>
         <p className="text-slate-500 dark:text-slate-400">
-          India's smartest logistics solution 🇮🇳
+          Log in to your <span className="text-gradient font-semibold">TruckOpti</span> account
         </p>
       </div>
       
       {/* Phone Input Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Phone Number Input */}
+        {/* Phone/Email Input */}
         <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Mobile Number
+            {channel === 'email' ? 'Email Address' : 'Mobile Number'}
           </label>
           <div className={`relative transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-500 pointer-events-none">
-              <span className="text-lg">🇮🇳</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">+91</span>
-              <div className="w-px h-5 bg-slate-300 dark:bg-slate-600" />
-            </div>
+            {channel !== 'email' && (
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-500 pointer-events-none">
+                <span className="text-lg">🇮🇳</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">+91</span>
+                <div className="w-px h-5 bg-slate-300 dark:bg-slate-600" />
+              </div>
+            )}
             <input
-              type="tel"
-              inputMode="numeric"
-              value={formatPhone(phone)}
+              type={channel === 'email' ? 'email' : 'tel'}
+              inputMode={channel === 'email' ? 'email' : 'numeric'}
+              value={channel === 'email' ? phone : formatPhone(phone)}
               onChange={(e) => handlePhoneChange(e.target.value)}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder="98765 43210"
-              className={`input pl-[105px] text-lg tracking-wide font-medium ${phoneError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+              placeholder={channel === 'email' ? 'your@email.com' : '98765 43210'}
+              className={`input ${channel !== 'email' ? 'pl-[105px]' : ''} text-lg tracking-wide font-medium ${phoneError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
               autoFocus
-              aria-label="Enter your 10-digit mobile number"
+              aria-label={channel === 'email' ? 'Enter your email address' : 'Enter your 10-digit mobile number'}
               aria-invalid={!!phoneError}
             />
             {phone.length === 10 && !phoneError && (
@@ -182,17 +222,17 @@ export default function LoginPage() {
           <div className="grid grid-cols-3 gap-3">
             <button
               type="button"
-              onClick={() => setChannel('telegram')}
+              onClick={() => setChannel('email')}
               className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${
-                channel === 'telegram'
+                channel === 'email'
                   ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
-              aria-pressed={channel === 'telegram'}
+              aria-pressed={channel === 'email'}
             >
-              <Send className={`w-4 h-4 ${channel === 'telegram' ? 'animate-bounce-subtle' : ''}`} />
-              <span className="font-medium text-sm">Telegram</span>
-              {channel === 'telegram' && (
+              <Send className={`w-4 h-4 ${channel === 'email' ? 'animate-bounce-subtle' : ''}`} />
+              <span className="font-medium text-sm">Email</span>
+              {channel === 'email' && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center animate-scale-in">
                   <span className="text-white text-xs">✓</span>
                 </span>
@@ -240,7 +280,7 @@ export default function LoginPage() {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={phone.length !== 10 || sendOTPMutation.isPending}
+          disabled={!isContactValid || sendOTPMutation.isPending}
           className="btn btn-primary w-full text-base shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all duration-300 animate-slide-up disabled:shadow-none"
           style={{ animationDelay: '300ms' }}
         >
@@ -251,7 +291,7 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <span>Get OTP</span>
+              <span>{channel === 'email' ? 'Send Email OTP' : 'Get OTP'}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </>
           )}
@@ -322,9 +362,19 @@ export default function LoginPage() {
           <span>Made in India</span>
         </div>
       </div>
+
+      {/* Signup Link */}
+      <div className="mt-6 text-center animate-fade-in" style={{ animationDelay: '650ms' }}>
+        <p className="text-slate-500 dark:text-slate-400">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-semibold hover:underline">
+            Create Account
+          </Link>
+        </p>
+      </div>
       
       {/* Terms */}
-      <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 animate-fade-in" style={{ animationDelay: '700ms' }}>
+      <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 animate-fade-in" style={{ animationDelay: '700ms' }}>
         By continuing, you agree to our{' '}
         <a href="#" className="text-primary-600 hover:underline font-medium">Terms</a>
         {' '}and{' '}

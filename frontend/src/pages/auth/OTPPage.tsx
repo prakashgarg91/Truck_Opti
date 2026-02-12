@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, RefreshCw, Shield, CheckCircle2 } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
@@ -10,6 +10,7 @@ const OTP_LENGTH = 6
 
 export default function OTPPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { pendingPhone, login } = useAuthStore()
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''))
   const [timer, setTimer] = useState(30)
@@ -17,12 +18,16 @@ export default function OTPPage() {
   const [isSuccess, setIsSuccess] = useState(false)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
   
-  // Redirect if no pending phone
+  // Get channel from navigation state
+  const channel = (location.state as { channel?: string })?.channel || 'sms'
+  const contact = (location.state as { contact?: string })?.contact || pendingPhone
+  
+  // Redirect if no pending phone/email
   useEffect(() => {
-    if (!pendingPhone) {
+    if (!contact) {
       navigate('/login')
     }
-  }, [pendingPhone, navigate])
+  }, [contact, navigate])
 
   useEffect(() => {
     document.title = 'Verify OTP - TruckOpti'
@@ -38,9 +43,14 @@ export default function OTPPage() {
   
   const verifyOTPMutation = useMutation({
     mutationFn: async () => {
-      const formattedPhone = pendingPhone!.startsWith('+') ? pendingPhone! : `+91${pendingPhone!}`
-      const { session, user } = await authSupabaseApi.verifyOtp(formattedPhone, otp.join(''))
-      return { session, user }
+      if (channel === 'email') {
+        const { session, user } = await authSupabaseApi.verifyEmailOtp(contact!, otp.join(''))
+        return { session, user }
+      } else {
+        const formattedPhone = contact!.startsWith('+') ? contact! : `+91${contact!}`
+        const { session, user } = await authSupabaseApi.verifyPhoneOtp(formattedPhone, otp.join(''))
+        return { session, user }
+      }
     },
     onSuccess: ({ session, user }) => {
       setIsSuccess(true)
@@ -49,8 +59,8 @@ export default function OTPPage() {
           id: user.id,
           email: user.email || '',
           name: user.user_metadata?.name || null,
-          phone: user.phone || pendingPhone || null,
-          phone_verified: true,
+          phone: user.phone || (channel !== 'email' ? contact : null),
+          phone_verified: channel !== 'email',
           google_linked: false,
           profile_picture: user.user_metadata?.avatar_url || null,
           role: 'user'
@@ -72,12 +82,17 @@ export default function OTPPage() {
   
   const resendOTPMutation = useMutation({
     mutationFn: async () => {
-      const formattedPhone = pendingPhone!.startsWith('+') ? pendingPhone! : `+91${pendingPhone!}`
-      await authSupabaseApi.signInWithPhone(formattedPhone)
+      if (channel === 'email') {
+        await authSupabaseApi.signInWithEmail(contact!)
+      } else {
+        const formattedPhone = contact!.startsWith('+') ? contact! : `+91${contact!}`
+        await authSupabaseApi.signInWithPhone(formattedPhone, channel as 'sms' | 'whatsapp')
+      }
       return { success: true }
     },
     onSuccess: () => {
-      toast.success('OTP resent! Check your phone 📱', { duration: 3000 })
+      const channelLabel = channel === 'email' ? 'email' : 'phone'
+      toast.success(`OTP resent! Check your ${channelLabel} ${channel === 'email' ? '📧' : '📱'}`, { duration: 3000 })
       setTimer(30)
       setOtp(Array(OTP_LENGTH).fill(''))
       inputRefs.current[0]?.focus()
@@ -122,9 +137,12 @@ export default function OTPPage() {
     }
   }
   
-  const maskedPhone = pendingPhone 
-    ? `+91 ${pendingPhone.slice(0, 5)} ****${pendingPhone.slice(-2)}`
-    : ''
+  // Mask contact info for display
+  const maskedContact = channel === 'email' 
+    ? contact?.replace(/(.{2}).*@/, '$1***@') || ''
+    : contact 
+      ? `+91 ${contact.slice(0, 5)} ****${contact.slice(-2)}`
+      : ''
   
   const filledCount = otp.filter(d => d).length
   const progress = (filledCount / OTP_LENGTH) * 100
@@ -146,13 +164,13 @@ export default function OTPPage() {
           <Shield className="w-8 h-8 text-white" />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Verify Your Number
+          {channel === 'email' ? 'Verify Your Email' : 'Verify Your Number'}
         </h2>
         <p className="text-slate-500 dark:text-slate-400">
           We sent a 6-digit code to
         </p>
         <p className="font-semibold text-slate-900 dark:text-white mt-1 text-lg">
-          {maskedPhone}
+          {maskedContact}
         </p>
       </div>
       
@@ -264,18 +282,37 @@ export default function OTPPage() {
           <span>💡</span> Didn't receive the code?
         </p>
         <ul className="mt-3 text-sm text-slate-500 dark:text-slate-400 space-y-2">
-          <li className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
-            Check your SMS inbox & spam folder
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
-            Verify your mobile number is correct
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-            <span className="text-green-600 dark:text-green-400 font-medium">Try WhatsApp for instant delivery</span>
-          </li>
+          {channel === 'email' ? (
+            <>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                Check your email inbox & spam/junk folder
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                Verify your email address is correct
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                The code expires in 10 minutes
+              </li>
+            </>
+          ) : (
+            <>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
+                Check your SMS inbox & spam folder
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
+                Verify your mobile number is correct
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                <span className="text-green-600 dark:text-green-400 font-medium">Try WhatsApp for instant delivery</span>
+              </li>
+            </>
+          )}
         </ul>
       </div>
     </div>

@@ -139,10 +139,15 @@ export default function GoogleMapView({
 }: GoogleMapViewProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [openMarkerId, setOpenMarkerId] = useState<string | null>(null)
+  const rawGoogleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
+  const googleMapsApiKey = rawGoogleMapsApiKey.trim()
+  const googleMapsConfigured = googleMapsApiKey.length > 0
+    && !googleMapsApiKey.toUpperCase().includes('REPLACE_ME')
+    && !googleMapsApiKey.toUpperCase().includes('YOUR_')
   
   // Load Google Maps API
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    googleMapsApiKey: googleMapsConfigured ? googleMapsApiKey : '',
     libraries: GOOGLE_MAPS_LIBRARIES,
     language: 'en',
     region: 'IN'
@@ -192,7 +197,7 @@ export default function GoogleMapView({
   }
 
   // Check if API key is configured
-  if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+  if (!googleMapsConfigured) {
     return (
       <div 
         className={`flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 ${className}`}

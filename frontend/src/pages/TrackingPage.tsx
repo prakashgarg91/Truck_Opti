@@ -48,55 +48,9 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
     total_volume: s.total_volume
   }))
   
-  // For demo, if no real data, use mock data
+  // Return empty array if no real data (no mock/fake data)
   if (mappedData.length === 0) {
-    return [
-      {
-        id: 'mock-1',
-        shipment_id: 'SHP-1001',
-        latitude: 19.0760,
-        longitude: 72.8777,
-        driver_name: 'Rajesh Kumar',
-        driver_phone: '+919876543210',
-        vehicle_number: 'MH-01-AX-1234',
-        origin: 'Mumbai',
-        destination: 'Pune',
-        status: 'in_transit',
-        updated_at: new Date().toISOString(),
-        total_weight: 1500,
-        total_volume: 12.5
-      },
-      {
-        id: 'mock-2',
-        shipment_id: 'SHP-1002',
-        latitude: 28.6139,
-        longitude: 77.2090,
-        driver_name: 'Amit Singh',
-        driver_phone: '+919876543211',
-        vehicle_number: 'DL-01-CZ-5678',
-        origin: 'Delhi',
-        destination: 'Jaipur',
-        status: 'in_transit',
-        updated_at: new Date().toISOString(),
-        total_weight: 2200,
-        total_volume: 18.3
-      },
-      {
-        id: 'mock-3',
-        shipment_id: 'SHP-1003',
-        latitude: 12.9716,
-        longitude: 77.5946,
-        driver_name: 'Kumar Reddy',
-        driver_phone: '+919876543212',
-        vehicle_number: 'KA-01-AB-9876',
-        origin: 'Bangalore',
-        destination: 'Chennai',
-        status: 'in_transit',
-        updated_at: new Date().toISOString(),
-        total_weight: 1800,
-        total_volume: 15.2
-      }
-    ]
+    return []
   }
   
   return mappedData

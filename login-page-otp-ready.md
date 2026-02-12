@@ -1,0 +1,67 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - heading "TruckOpti" [level=1] [ref=e12]
+    - paragraph [ref=e13]: Smart Logistics for India
+  - main [ref=e14]:
+    - generic [ref=e17]:
+      - generic [ref=e19]:
+        - img [ref=e20]
+        - generic [ref=e22]: 📦 3D Smart Packing
+      - generic [ref=e23]:
+        - heading "Welcome to TruckOpti" [level=2] [ref=e24]
+        - paragraph [ref=e25]: India's smartest logistics solution 🇮🇳
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - generic [ref=e28]: Mobile Number
+          - generic [ref=e29]:
+            - generic:
+              - generic: 🇮🇳
+              - generic: "+91"
+            - textbox "Enter your 10-digit mobile number" [active] [ref=e30]:
+              - /placeholder: 98765 43210
+              - text: 98765 43210
+            - img [ref=e89]
+          - paragraph [ref=e31]:
+            - img [ref=e32]
+            - text: Your number is secure and never shared
+        - generic [ref=e34]:
+          - generic [ref=e35]: Receive OTP via
+          - generic [ref=e36]:
+            - button "Telegram" [ref=e37] [cursor=pointer]:
+              - img [ref=e38]
+              - generic [ref=e41]: Telegram
+            - button "WhatsApp" [ref=e42] [cursor=pointer]:
+              - img [ref=e43]
+              - generic [ref=e45]: WhatsApp
+            - button "SMS ✓" [pressed] [ref=e46] [cursor=pointer]:
+              - img [ref=e47]
+              - generic [ref=e49]: SMS
+              - generic [ref=e51]: ✓
+        - button "Get OTP" [ref=e52] [cursor=pointer]:
+          - generic [ref=e53]: Get OTP
+          - img [ref=e54]
+      - generic [ref=e60]: Or continue with
+      - button "Continue with Google" [ref=e61] [cursor=pointer]:
+        - img [ref=e62]
+        - generic [ref=e67]: Continue with Google
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - img [ref=e70]
+          - generic [ref=e72]: Secure
+        - generic [ref=e73]:
+          - img [ref=e74]
+          - generic [ref=e79]: 1000+ Trucks
+        - generic [ref=e80]:
+          - generic [ref=e81]: 🇮🇳
+          - generic [ref=e82]: Made in India
+      - paragraph [ref=e83]:
+        - text: By continuing, you agree to our
+        - link "Terms" [ref=e84] [cursor=pointer]:
+          - /url: "#"
+        - text: and
+        - link "Privacy Policy" [ref=e85] [cursor=pointer]:
+          - /url: "#"
+  - contentinfo [ref=e86]:
+    - paragraph [ref=e87]: 🇮🇳 Made for Indian Logistics

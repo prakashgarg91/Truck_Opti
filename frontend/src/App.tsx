@@ -8,6 +8,7 @@ import AuthLayout from './layouts/AuthLayout'
 
 // Pages - Eager loaded (auth pages for fast auth experience)
 import LoginPage from './pages/auth/LoginPage'
+import SignupPage from './pages/auth/SignupPage'
 import OTPPage from './pages/auth/OTPPage'
 import AuthCallbackPage from './pages/auth/AuthCallbackPage'
 
@@ -46,6 +47,7 @@ function AppContent() {
         {/* Auth routes - accessible without authentication */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/pricing" element={<PricingPage />} />

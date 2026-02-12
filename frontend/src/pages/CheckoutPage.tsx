@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Loader2, CreditCard, Smartphone, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { initiateRazorpayPayment, getRazorpayConfig, RazorpayPaymentResult } from '../services/razorpayPayment';
+import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
 import toast from 'react-hot-toast';
 
 interface Plan {
@@ -30,7 +31,8 @@ const CheckoutPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
 
-  const paymentConfig = getRazorpayConfig();
+  const razorpayConfig = getRazorpayConfig();
+  const phonePeConfig = getPaymentConfig();
 
   useEffect(() => {
     document.title = 'Checkout - TruckOpti'
@@ -95,6 +97,24 @@ const CheckoutPage: React.FC = () => {
       const taxAmount = Math.round(amount * 0.18); // 18% GST
       const totalAmount = amount + taxAmount;
 
+      const phonePeResult = await initiatePhonePePayment({
+        amount: totalAmount,
+        orderId: `ORD${Date.now()}`,
+        userId: user.id,
+        planId: plan.id,
+        billingCycle: billingCycle === 'yearly' ? 'yearly' : 'monthly',
+        customerPhone: phone,
+        customerEmail: email,
+      });
+
+      if (phonePeResult.success && phonePeResult.data?.instrumentResponse?.redirectInfo?.url) {
+        toast.success(language === 'en' ? 'Redirecting to PhonePe...' : 'PhonePe पर रीडायरेक्ट किया जा रहा है...');
+        window.location.href = phonePeResult.data.instrumentResponse.redirectInfo.url;
+        return;
+      }
+
+      toast.error(language === 'en' ? 'PhonePe unavailable. Switching to Razorpay...' : 'PhonePe उपलब्ध नहीं है। Razorpay पर स्विच हो रहा है...');
+
       const result: RazorpayPaymentResult = await initiateRazorpayPayment({
         amount: totalAmount, // Already in paise from database
         description: `TruckOpti ${plan.name} - ${billingCycle === 'yearly' ? 'Annual' : 'Monthly'}`,
@@ -110,7 +130,7 @@ const CheckoutPage: React.FC = () => {
         toast.success(language === 'en' ? 'Payment successful!' : 'भुगतान सफल!');
         navigate('/payment/success?payment_id=' + result.paymentId);
       } else {
-        toast.error(result.error || 'Payment failed');
+        toast.error(result.error || (language === 'en' ? 'Payment failed on both gateways' : 'दोनों पेमेंट गेटवे पर भुगतान विफल हुआ'));
       }
     } catch (error) {
       console.error('Payment error:', error);
@@ -165,12 +185,12 @@ const CheckoutPage: React.FC = () => {
         </div>
 
         {/* Test Mode Banner */}
-        {paymentConfig.isTestMode && (
+        {(phonePeConfig.isTestMode || razorpayConfig.isTestMode) && (
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
             <span>
               {language === 'en' 
-                ? 'Test Mode: No real payment will be processed' 
+                ? 'Test Mode: PhonePe primary, Razorpay fallback. No real payment will be processed in sandbox.' 
                 : 'टेस्ट मोड: कोई वास्तविक भुगतान नहीं होगा'}
             </span>
           </div>
@@ -325,7 +345,7 @@ const CheckoutPage: React.FC = () => {
               {/* Security Note */}
               <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
                 🔒 {language === 'en' 
-                  ? 'Secured by PhonePe. Your payment information is encrypted.' 
+                  ? 'Secured by PhonePe (fallback Razorpay). Your payment information is encrypted.' 
                   : 'फोनपे द्वारा सुरक्षित। आपकी भुगतान जानकारी एन्क्रिप्टेड है।'}
               </p>
             </div>

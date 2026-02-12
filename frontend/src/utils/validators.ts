@@ -17,6 +17,12 @@ export const phoneInputSchema = z.string().regex(
   'Please enter a valid 10-digit mobile number'
 )
 
+// Email validation
+export const emailSchema = z.string()
+  .email('Please enter a valid email address')
+  .min(5, 'Email is too short')
+  .max(100, 'Email is too long')
+
 // GSTIN: 15-char GST number (Standard Indian GST format)
 // Format: 2 digits (state) + 5 letters (PAN entity) + 4 digits + 1 letter + 1 char (Z) + 1 check digit
 export const gstinSchema = z.string().regex(

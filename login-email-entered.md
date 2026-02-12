@@ -1,0 +1,62 @@
+- generic [ref=e72]:
+  - banner [ref=e73]:
+    - generic [ref=e74]:
+      - img [ref=e76]
+      - heading "TruckOpti" [level=1] [ref=e81]
+    - paragraph [ref=e82]: Smart Logistics for India
+  - main [ref=e83]:
+    - generic [ref=e86]:
+      - generic [ref=e88]:
+        - img [ref=e89]
+        - generic [ref=e91]: 📍 Live GPS Tracking
+      - generic [ref=e92]:
+        - heading "Welcome to TruckOpti" [level=2] [ref=e93]
+        - paragraph [ref=e94]: India's smartest logistics solution 🇮🇳
+      - generic [ref=e95]:
+        - generic [ref=e96]:
+          - generic [ref=e97]: Email Address
+          - textbox "Enter your email address" [active] [ref=e157]:
+            - /placeholder: your@email.com
+            - text: test@example.com
+          - paragraph [ref=e100]:
+            - img [ref=e101]
+            - text: Your number is secure and never shared
+        - generic [ref=e103]:
+          - generic [ref=e104]: Receive OTP via
+          - generic [ref=e105]:
+            - button "Email ✓" [pressed] [ref=e158] [cursor=pointer]:
+              - img [ref=e107]
+              - generic [ref=e110]: Email
+              - generic [ref=e160]: ✓
+            - button "WhatsApp" [ref=e161] [cursor=pointer]:
+              - img [ref=e112]
+              - generic [ref=e114]: WhatsApp
+            - button "SMS" [ref=e117] [cursor=pointer]:
+              - img [ref=e118]
+              - generic [ref=e120]: SMS
+        - button "Get OTP" [disabled] [ref=e121]:
+          - generic [ref=e122]: Get OTP
+          - img [ref=e123]
+      - generic [ref=e129]: Or continue with
+      - button "Continue with Google" [ref=e130] [cursor=pointer]:
+        - img [ref=e131]
+        - generic [ref=e136]: Continue with Google
+      - generic [ref=e137]:
+        - generic [ref=e138]:
+          - img [ref=e139]
+          - generic [ref=e141]: Secure
+        - generic [ref=e142]:
+          - img [ref=e143]
+          - generic [ref=e148]: 1000+ Trucks
+        - generic [ref=e149]:
+          - generic [ref=e150]: 🇮🇳
+          - generic [ref=e151]: Made in India
+      - paragraph [ref=e152]:
+        - text: By continuing, you agree to our
+        - link "Terms" [ref=e153] [cursor=pointer]:
+          - /url: "#"
+        - text: and
+        - link "Privacy Policy" [ref=e154] [cursor=pointer]:
+          - /url: "#"
+  - contentinfo [ref=e155]:
+    - paragraph [ref=e156]: 🇮🇳 Made for Indian Logistics

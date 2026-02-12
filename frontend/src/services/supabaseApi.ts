@@ -389,21 +389,52 @@ export const packingSupabaseApi = {
 
 // ============= AUTH API (Supabase Auth) =============
 export const authSupabaseApi = {
-  async signInWithPhone(phone: string): Promise<void> {
+  async signInWithPhone(phone: string, channel: 'sms' | 'whatsapp' = 'sms'): Promise<void> {
     const { error } = await supabase.auth.signInWithOtp({
       phone,
       options: {
-        channel: 'sms'
+        channel
       }
     })
     if (error) throw error
   },
 
-  async verifyOtp(phone: string, token: string) {
+  async signInWithEmail(email: string): Promise<void> {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false // Login only - don't create new users
+      }
+    })
+    if (error) throw error
+  },
+
+  async signUpWithEmail(email: string, name?: string): Promise<void> {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        data: name ? { full_name: name, name } : undefined
+      }
+    })
+    if (error) throw error
+  },
+
+  async verifyPhoneOtp(phone: string, token: string) {
     const { data, error } = await supabase.auth.verifyOtp({
       phone,
       token,
       type: 'sms'
+    })
+    if (error) throw error
+    return data
+  },
+
+  async verifyEmailOtp(email: string, token: string) {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email'
     })
     if (error) throw error
     return data
