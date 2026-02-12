@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { trucksSupabaseApi } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
+import { truckTypeSchema, validateWithZod } from '../utils/validators'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
@@ -254,7 +255,29 @@ export default function TrucksPage() {
     setIsModalOpen(true)
   }
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
   const handleSave = () => {
+    // Validate with Zod
+    const result = validateWithZod(truckTypeSchema, {
+      name: formData.name,
+      length: formData.length,
+      width: formData.width,
+      height: formData.height,
+      capacity: formData.capacity,
+    })
+
+    if (!result.success) {
+      const errors = result.errors?.reduce((acc: Record<string, string>, err: string) => {
+        const [field, msg] = err.split(': ')
+        acc[field] = msg
+        return acc
+      }, {}) || {}
+      setFormErrors(errors)
+      return
+    }
+
+    setFormErrors({})
     if (editingTruck) {
       updateMutation.mutate({ id: editingTruck.id, data: formData })
     } else {
@@ -464,6 +487,7 @@ export default function TrucksPage() {
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   placeholder="e.g. Tata 407, Eicher 10.50"
                 />
+                {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
               </div>
               
               <div>
@@ -486,6 +510,7 @@ export default function TrucksPage() {
                     onChange={(e) => setFormData({...formData, capacity: Number(e.target.value)})}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   />
+                  {formErrors.capacity && <p className="text-red-500 text-xs mt-1">{formErrors.capacity}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cost per km (₹)</label>
@@ -508,6 +533,7 @@ export default function TrucksPage() {
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                     placeholder="e.g. 427 for 14ft"
                   />
+                  {formErrors.length && <p className="text-red-500 text-xs mt-1">{formErrors.length}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Width (cm)</label>
@@ -517,6 +543,7 @@ export default function TrucksPage() {
                     onChange={(e) => setFormData({...formData, width: Number(e.target.value)})}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   />
+                  {formErrors.width && <p className="text-red-500 text-xs mt-1">{formErrors.width}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Height (cm)</label>
@@ -526,6 +553,7 @@ export default function TrucksPage() {
                     onChange={(e) => setFormData({...formData, height: Number(e.target.value)})}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   />
+                  {formErrors.height && <p className="text-red-500 text-xs mt-1">{formErrors.height}</p>}
                 </div>
               </div>
               

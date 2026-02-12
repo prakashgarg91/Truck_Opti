@@ -97,6 +97,19 @@ export const shipmentSchema = z.object({
   status: z.enum(['pending', 'in_transit', 'delivered', 'cancelled'])
 })
 
+// Truck type schema (for fleet management)
+export const truckTypeSchema = z.object({
+  name: z.string()
+    .min(1, 'Truck name is required')
+    .max(100, 'Truck name too long'),
+  length: dimensionSchema,
+  width: dimensionSchema,
+  height: dimensionSchema,
+  capacity: z.number()
+    .positive('Capacity must be greater than 0')
+    .max(50000, 'Maximum 50,000 kg allowed'),
+})
+
 // Truck booking form schema
 export const truckBookingSchema = z.object({
   origin: z.string()

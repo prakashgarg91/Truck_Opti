@@ -493,9 +493,9 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-white">
-              Weekly Performance
+              {language === 'en' ? 'Weekly Performance' : 'साप्ताहिक प्रदर्शन'}
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">Packing jobs per day</p>
+            <p className="text-xs text-slate-500 mt-0.5">{language === 'en' ? 'Packing jobs per day' : 'प्रति दिन पैकिंग कार्य'}</p>
           </div>
           <span className="badge badge-success flex items-center gap-1.5 px-3 py-1.5">
             <TrendingUp className="w-3.5 h-3.5" />
@@ -540,9 +540,11 @@ export default function Dashboard() {
             <span className="text-xl">💡</span>
           </div>
           <div>
-            <h4 className="font-semibold text-slate-900 dark:text-white text-sm">Pro Tip</h4>
+            <h4 className="font-semibold text-slate-900 dark:text-white text-sm">{language === 'en' ? 'Pro Tip' : 'सुझाव'}</h4>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-              Use 3D bin packing to maximize truck utilization by up to 40% and reduce shipping costs.
+              {language === 'en'
+                ? 'Use 3D bin packing to maximize truck utilization by up to 40% and reduce shipping costs.'
+                : '3D बिन पैकिंग का उपयोग करके ट्रक उपयोग को 40% तक बढ़ाएं और शिपिंग लागत कम करें।'}
             </p>
           </div>
         </div>
