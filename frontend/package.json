@@ -40,6 +40,7 @@
     }
   },
   "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
     "@supabase/supabase-js": "^2.90.0",

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
 import { MapPin, Navigation, Clock, IndianRupee, Plus, X, Search, ChevronRight, Map as MapIcon, TrendingUp, Zap, Eye } from 'lucide-react'
 import { routesSupabaseApi } from '../services/supabaseApi'
-import MapView from '../components/MapView'
+import MapViewWrapper from '../components/MapViewWrapper'
 
 // Major Indian cities with their coordinates
 const CITY_COORDINATES: Record<string, [number, number]> = {
@@ -274,7 +274,7 @@ export default function RoutesPage() {
             </button>
           </div>
           
-          <MapView
+          <MapViewWrapper
             markers={routeMapData.markers}
             routes={routeMapData.routes}
             height="350px"

@@ -5,7 +5,7 @@ import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Phone, 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { shipmentsSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
-import MapView from '../components/MapView'
+import MapViewWrapper from '../components/MapViewWrapper'
 import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import { shareTrackingLink } from '../utils/whatsappShare'
@@ -257,7 +257,7 @@ export default function TrackingPage() {
       </div>
       
       {/* Real Map View */}
-      <MapView
+      <MapViewWrapper
         markers={mapMarkers}
         center={mapCenter}
         zoom={mapMarkers.length > 0 ? 6 : 5}
