@@ -10,7 +10,7 @@ const OTP_LENGTH = 6
 
 export default function OTPPage() {
   const navigate = useNavigate()
-  const { pendingPhone, setUser, setToken } = useAuthStore()
+  const { pendingPhone, login } = useAuthStore()
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''))
   const [timer, setTimer] = useState(30)
   const [isError, setIsError] = useState(false)
@@ -44,20 +44,17 @@ export default function OTPPage() {
     },
     onSuccess: ({ session, user }) => {
       setIsSuccess(true)
-      if (user) {
-        setUser({
+      if (user && session) {
+        login({
           id: user.id,
           email: user.email || '',
           name: user.user_metadata?.name || null,
-          phone_number: user.phone || pendingPhone || null,
+          phone: user.phone || pendingPhone || null,
           phone_verified: true,
           google_linked: false,
           profile_picture: user.user_metadata?.avatar_url || null,
           role: 'user'
-        })
-      }
-      if (session?.access_token) {
-        setToken(session.access_token)
+        }, session)
       }
       toast.success('Login successful! 🎉', { duration: 2000 })
       setTimeout(() => navigate('/'), 1000)

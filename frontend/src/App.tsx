@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 
@@ -9,9 +9,11 @@ import AuthLayout from './layouts/AuthLayout'
 // Pages - Eager loaded (auth pages for fast auth experience)
 import LoginPage from './pages/auth/LoginPage'
 import OTPPage from './pages/auth/OTPPage'
+import AuthCallbackPage from './pages/auth/AuthCallbackPage'
 
 // Components
 import PageSkeleton from './components/PageSkeleton'
+import ProtectedRoute from './components/ProtectedRoute'
 
 // Pages - Lazy loaded (code-split for performance)
 const Dashboard = React.lazy(() => import('./pages/Dashboard'))
@@ -30,32 +32,29 @@ const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage'))
 const PaymentCallbackPage = React.lazy(() => import('./pages/PaymentCallbackPage'))
 const TestPaymentPage = React.lazy(() => import('./pages/TestPaymentPage'))
 
-// Protected Route wrapper
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore()
+function AppContent() {
+  const { initialize } = useAuthStore()
   
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
+  // Initialize auth state on app mount
+  useEffect(() => {
+    initialize()
+  }, [initialize])
   
-  return <>{children}</>
-}
-
-export default function App() {
   return (
     <Suspense fallback={<PageSkeleton />}>
       <Routes>
-        {/* Auth routes */}
+        {/* Auth routes - accessible without authentication */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/otp" element={<OTPPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/payment/callback" element={<PaymentCallbackPage />} />
           <Route path="/test-payment" element={<TestPaymentPage />} />
         </Route>
         
-        {/* Protected routes with mobile layout */}
+        {/* Protected routes - require authentication */}
         <Route element={
           <ProtectedRoute>
             <MobileLayout />
@@ -74,9 +73,13 @@ export default function App() {
           <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
         </Route>
         
-        {/* Catch all */}
+        {/* Catch all - redirect to home or login based on auth state */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   )
+}
+
+export default function App() {
+  return <AppContent />
 }
