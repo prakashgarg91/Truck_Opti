@@ -115,6 +115,7 @@ export default function TrackingPage() {
   const { 
     data: shipments = [], 
     isLoading: loading,
+    isError: loadError,
     refetch
   } = useQuery({
     queryKey: ['shipments'],
@@ -273,7 +274,13 @@ export default function TrackingPage() {
       {/* Shipment List */}
       <div className="space-y-4">
         <h3 className="font-semibold text-slate-900 dark:text-white">Active Shipments</h3>
-        {filteredShipments.length === 0 ? (
+        {loadError ? (
+          <EmptyState
+            icon={MapPinOff}
+            title="Failed to load shipments"
+            description="Please check your connection and try again"
+          />
+        ) : filteredShipments.length === 0 ? (
           <EmptyState
             icon={MapPinOff}
             title="No active shipments"

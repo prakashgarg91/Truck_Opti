@@ -44,7 +44,8 @@ export default function CartonsPage() {
   // React Query: Fetch cartons data
   const { 
     data: cartons = [], 
-    isLoading: loading
+    isLoading: loading,
+    isError: loadError
   } = useQuery({
     queryKey: ['cartons'],
     queryFn: cartonsSupabaseApi.getAll,
@@ -213,6 +214,14 @@ export default function CartonsPage() {
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-500">Loading carton data...</p>
         </div>
+      ) : loadError ? (
+        <EmptyState
+          icon={Package}
+          title={language === 'en' ? 'Failed to load cartons' : 'कार्टन लोड करने में विफल'}
+          description={language === 'en' ? 'Please check your connection and try again' : 'कृपया अपना कनेक्शन जांचें और पुनः प्रयास करें'}
+          actionLabel={language === 'en' ? 'Add Carton Type' : 'कार्टन प्रकार जोड़ें'}
+          onAction={() => handleOpenModal()}
+        />
       ) : filteredCartons.length === 0 ? (
         <EmptyState
           icon={Package}

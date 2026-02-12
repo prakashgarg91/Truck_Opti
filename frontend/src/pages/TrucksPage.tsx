@@ -126,7 +126,8 @@ export default function TrucksPage() {
   // React Query: Fetch trucks data
   const { 
     data: trucks = [], 
-    isLoading: loading
+    isLoading: loading,
+    isError: loadError
   } = useQuery({
     queryKey: ['trucks'],
     queryFn: trucksSupabaseApi.getAll,
@@ -359,6 +360,14 @@ export default function TrucksPage() {
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-500">Loading fleet data...</p>
         </div>
+      ) : loadError ? (
+        <EmptyState
+          icon={Truck}
+          title={language === 'en' ? 'Failed to load trucks' : 'ट्रक लोड करने में विफल'}
+          description={language === 'en' ? 'Please check your connection and try again' : 'कृपया अपना कनेक्शन जांचें और पुनः प्रयास करें'}
+          actionLabel={language === 'en' ? 'Add Truck' : 'ट्रक जोड़ें'}
+          onAction={() => handleOpenModal()}
+        />
       ) : filteredTrucks.length === 0 ? (
         <EmptyState
           icon={Truck}

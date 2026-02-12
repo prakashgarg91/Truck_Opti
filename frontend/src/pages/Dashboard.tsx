@@ -136,7 +136,8 @@ export default function Dashboard() {
   // React Query: Fetch dashboard data
   const { 
     data: dashboardData, 
-    isLoading: loading
+    isLoading: loading,
+    isError: loadError
   } = useQuery({
     queryKey: ['dashboard-stats', language],
     queryFn: () => fetchDashboardData(language),
@@ -200,7 +201,7 @@ export default function Dashboard() {
     setCostEstimate(prev => ({ ...prev, result }))
   }
 
-  if (loading) {
+  if (loading && !loadError) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary-600" />

@@ -46,7 +46,8 @@ export default function CustomersPage() {
   // React Query: Fetch customers data
   const { 
     data: customers = [], 
-    isLoading: loading
+    isLoading: loading,
+    isError: loadError
   } = useQuery({
     queryKey: ['customers'],
     queryFn: customersSupabaseApi.getAll,
@@ -218,6 +219,14 @@ export default function CustomersPage() {
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-500">Loading customer directory...</p>
         </div>
+      ) : loadError ? (
+        <EmptyState
+          icon={Users}
+          title={language === 'en' ? 'Failed to load customers' : 'ग्राहक लोड करने में विफल'}
+          description={language === 'en' ? 'Please check your connection and try again' : 'कृपया अपना कनेक्शन जांचें और पुनः प्रयास करें'}
+          actionLabel={language === 'en' ? 'Add Customer' : 'ग्राहक जोड़ें'}
+          onAction={() => handleOpenModal()}
+        />
       ) : filteredCustomers.length === 0 ? (
         <EmptyState
           icon={Users}
