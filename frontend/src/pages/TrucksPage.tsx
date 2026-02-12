@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Truck, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, Database } from 'lucide-react'
+import EmptyState from '../components/EmptyState'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { trucksSupabaseApi } from '../services/supabaseApi'
@@ -354,6 +355,18 @@ export default function TrucksPage() {
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-500">Loading fleet data...</p>
         </div>
+      ) : filteredTrucks.length === 0 ? (
+        <EmptyState
+          icon={Truck}
+          title={language === 'en' ? 'No trucks found' : 'कोई ट्रक नहीं मिला'}
+          description={
+            language === 'en'
+              ? 'Add your first truck to get started with fleet management'
+              : 'बेड़ा प्रबंधन शुरू करने के लिए अपना पहला ट्रक जोड़ें'
+          }
+          actionLabel={language === 'en' ? 'Add Truck' : 'ट्रक जोड़ें'}
+          onAction={() => handleOpenModal()}
+        />
       ) : (
         <div className="grid gap-4">
           {filteredTrucks.map((truck: TruckType) => (

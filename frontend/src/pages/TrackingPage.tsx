@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText } from 'lucide-react'
+import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { shipmentsSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
 import MapView from '../components/MapView'
+import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import { shareTrackingLink } from '../utils/whatsappShare'
 
@@ -24,25 +26,107 @@ interface ShipmentLocation {
   total_volume?: number
 }
 
+const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
+  const data = await shipmentsSupabaseApi.getAll({ status: 'in_transit' })
+  
+  // Map data to our interface format
+  const mappedData: ShipmentLocation[] = data.map((s: any) => ({
+    id: s.id,
+    shipment_id: s.shipment_id || s.id.slice(0, 8).toUpperCase(),
+    latitude: s.latitude,
+    longitude: s.longitude,
+    driver_name: s.driver_name,
+    driver_phone: s.driver_phone,
+    vehicle_number: s.vehicle_number,
+    origin: s.origin,
+    destination: s.destination,
+    status: s.status,
+    updated_at: s.updated_at,
+    customer_id: s.customer_id,
+    total_weight: s.total_weight,
+    total_volume: s.total_volume
+  }))
+  
+  // For demo, if no real data, use mock data
+  if (mappedData.length === 0) {
+    return [
+      {
+        id: 'mock-1',
+        shipment_id: 'SHP-1001',
+        latitude: 19.0760,
+        longitude: 72.8777,
+        driver_name: 'Rajesh Kumar',
+        driver_phone: '+919876543210',
+        vehicle_number: 'MH-01-AX-1234',
+        origin: 'Mumbai',
+        destination: 'Pune',
+        status: 'in_transit',
+        updated_at: new Date().toISOString(),
+        total_weight: 1500,
+        total_volume: 12.5
+      },
+      {
+        id: 'mock-2',
+        shipment_id: 'SHP-1002',
+        latitude: 28.6139,
+        longitude: 77.2090,
+        driver_name: 'Amit Singh',
+        driver_phone: '+919876543211',
+        vehicle_number: 'DL-01-CZ-5678',
+        origin: 'Delhi',
+        destination: 'Jaipur',
+        status: 'in_transit',
+        updated_at: new Date().toISOString(),
+        total_weight: 2200,
+        total_volume: 18.3
+      },
+      {
+        id: 'mock-3',
+        shipment_id: 'SHP-1003',
+        latitude: 12.9716,
+        longitude: 77.5946,
+        driver_name: 'Kumar Reddy',
+        driver_phone: '+919876543212',
+        vehicle_number: 'KA-01-AB-9876',
+        origin: 'Bangalore',
+        destination: 'Chennai',
+        status: 'in_transit',
+        updated_at: new Date().toISOString(),
+        total_weight: 1800,
+        total_volume: 15.2
+      }
+    ]
+  }
+  
+  return mappedData
+}
+
 export default function TrackingPage() {
   const navigate = useNavigate()
-  const [shipments, setShipments] = useState<ShipmentLocation[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedShipment, setSelectedShipment] = useState<ShipmentLocation | null>(null)
 
+  // React Query: Fetch shipments data
+  const { 
+    data: shipments = [], 
+    isLoading: loading,
+    refetch
+  } = useQuery({
+    queryKey: ['shipments'],
+    queryFn: fetchActiveShipments,
+  })
+
+  // Subscribe to realtime updates
   useEffect(() => {
-    fetchActiveShipments()
-    
-    // Subscribe to realtime updates
     const subscription = supabase
       .channel('shipments-tracking')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'shipments' },
         () => {
-          fetchActiveShipments()
+          queryClient.invalidateQueries({ queryKey: ['shipments'] })
         }
       )
       .subscribe()
@@ -50,89 +134,7 @@ export default function TrackingPage() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
-
-  const fetchActiveShipments = async () => {
-    try {
-      setLoading(true)
-      const data = await shipmentsSupabaseApi.getAll({ status: 'in_transit' })
-      
-      // Map data to our interface format
-      const mappedData: ShipmentLocation[] = data.map((s: any) => ({
-        id: s.id,
-        shipment_id: s.shipment_id || s.id.slice(0, 8).toUpperCase(),
-        latitude: s.latitude,
-        longitude: s.longitude,
-        driver_name: s.driver_name,
-        driver_phone: s.driver_phone,
-        vehicle_number: s.vehicle_number,
-        origin: s.origin,
-        destination: s.destination,
-        status: s.status,
-        updated_at: s.updated_at,
-        customer_id: s.customer_id,
-        total_weight: s.total_weight,
-        total_volume: s.total_volume
-      }))
-      
-      // For demo, if no real data, use mock data
-      if (mappedData.length === 0) {
-        setShipments([
-          {
-            id: 'mock-1',
-            shipment_id: 'SHP-1001',
-            latitude: 19.0760,
-            longitude: 72.8777,
-            driver_name: 'Rajesh Kumar',
-            driver_phone: '+919876543210',
-            vehicle_number: 'MH-01-AX-1234',
-            origin: 'Mumbai',
-            destination: 'Pune',
-            status: 'in_transit',
-            updated_at: new Date().toISOString(),
-            total_weight: 1500,
-            total_volume: 12.5
-          },
-          {
-            id: 'mock-2',
-            shipment_id: 'SHP-1002',
-            latitude: 28.6139,
-            longitude: 77.2090,
-            driver_name: 'Amit Singh',
-            driver_phone: '+919876543211',
-            vehicle_number: 'DL-01-CZ-5678',
-            origin: 'Delhi',
-            destination: 'Jaipur',
-            status: 'in_transit',
-            updated_at: new Date().toISOString(),
-            total_weight: 2200,
-            total_volume: 18.3
-          },
-          {
-            id: 'mock-3',
-            shipment_id: 'SHP-1003',
-            latitude: 12.9716,
-            longitude: 77.5946,
-            driver_name: 'Kumar Reddy',
-            driver_phone: '+919876543212',
-            vehicle_number: 'KA-01-AB-9876',
-            origin: 'Bangalore',
-            destination: 'Chennai',
-            status: 'in_transit',
-            updated_at: new Date().toISOString(),
-            total_weight: 1800,
-            total_volume: 15.2
-          }
-        ])
-      } else {
-        setShipments(mappedData)
-      }
-    } catch (error) {
-      console.error('Failed to fetch shipments:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [queryClient])
 
   const handleContactDriver = (phone?: string) => {
     if (phone) {
@@ -218,7 +220,8 @@ export default function TrackingPage() {
           </p>
         </div>
         <button 
-          onClick={fetchActiveShipments}
+          onClick={() => refetch()}
+          disabled={loading}
           className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all"
         >
           <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
@@ -263,102 +266,110 @@ export default function TrackingPage() {
       {/* Shipment List */}
       <div className="space-y-4">
         <h3 className="font-semibold text-slate-900 dark:text-white">Active Shipments</h3>
-        {filteredShipments.map((s) => (
-          <div 
-            key={s.id}
-            onClick={() => setSelectedId(s.id)}
-            className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all cursor-pointer ${
-              selectedId === s.id 
-                ? 'border-primary-500 ring-1 ring-primary-500 shadow-md' 
-                : 'border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-300'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl ${selectedId === s.id ? 'bg-primary-100 text-primary-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
-                  <Truck className="w-5 h-5" />
+        {filteredShipments.length === 0 ? (
+          <EmptyState
+            icon={MapPinOff}
+            title="No active shipments"
+            description={search ? 'Try adjusting your search filters' : 'Create a shipment from the Packing or Routes page to start tracking'}
+          />
+        ) : (
+          filteredShipments.map((s) => (
+            <div 
+              key={s.id}
+              onClick={() => setSelectedId(s.id)}
+              className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all cursor-pointer ${
+                selectedId === s.id 
+                  ? 'border-primary-500 ring-1 ring-primary-500 shadow-md' 
+                  : 'border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${selectedId === s.id ? 'bg-primary-100 text-primary-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                    <Truck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white">{s.shipment_id}</h3>
+                    <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white">{s.shipment_id}</h3>
-                  <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-1 text-emerald-600 font-bold text-sm">
-                  <Activity className="w-3 h-3" />
-                  {s.latitude ? '65' : '0'} km/h
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Updated {new Date(s.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-              </div>
-            </div>
-            
-            <div className="mt-4 flex items-center gap-3">
-              <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary-500" />
-                <div className="overflow-hidden">
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">Origin</p>
-                  <p className="text-xs font-medium truncate">{s.origin || 'Unknown'}</p>
+                <div className="text-right">
+                  <div className="flex items-center gap-1 text-emerald-600 font-bold text-sm">
+                    <Activity className="w-3 h-3" />
+                    {s.latitude ? '65' : '0'} km/h
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Updated {new Date(s.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
               </div>
-              <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
-                <Navigation className="w-4 h-4 text-emerald-500" />
-                <div className="overflow-hidden">
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">Destination</p>
-                  <p className="text-xs font-medium truncate">{s.destination || 'Unknown'}</p>
+              
+              <div className="mt-4 flex items-center gap-3">
+                <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary-500" />
+                  <div className="overflow-hidden">
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">Origin</p>
+                    <p className="text-xs font-medium truncate">{s.origin || 'Unknown'}</p>
+                  </div>
+                </div>
+                <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-emerald-500" />
+                  <div className="overflow-hidden">
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">Destination</p>
+                    <p className="text-xs font-medium truncate">{s.destination || 'Unknown'}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {selectedId === s.id && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2 animate-fade-in">
-                <div className="flex gap-2">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleViewDetails(s)
-                    }}
-                    className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
-                  >
-                    View Details
-                  </button>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleContactDriver(s.driver_phone || undefined)
-                    }}
-                    disabled={!s.driver_phone}
-                    className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Phone className="w-3 h-3" />
-                    Contact Driver
-                  </button>
+              {selectedId === s.id && (
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2 animate-fade-in">
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleViewDetails(s)
+                      }}
+                      className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
+                    >
+                      View Details
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleContactDriver(s.driver_phone || undefined)
+                      }}
+                      disabled={!s.driver_phone}
+                      className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Phone className="w-3 h-3" />
+                      Contact Driver
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleShareWhatsApp(s)
+                      }}
+                      className="flex-1 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="w-3 h-3" />
+                      Share
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleGenerateInvoice(s.id)
+                      }}
+                      className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
+                    >
+                      <FileText className="w-3 h-3" />
+                      Invoice
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleShareWhatsApp(s)
-                    }}
-                    className="flex-1 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
-                  >
-                    <MessageCircle className="w-3 h-3" />
-                    Share
-                  </button>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleGenerateInvoice(s.id)
-                    }}
-                    className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
-                  >
-                    <FileText className="w-3 h-3" />
-                    Invoice
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Shipment Detail Modal */}

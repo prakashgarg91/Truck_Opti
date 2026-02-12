@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, Loader2, FileText, Calculator, Upload } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
@@ -14,6 +15,19 @@ interface DashboardStats {
   deliveriesDone: number
 }
 
+interface DashboardData {
+  stats: DashboardStats
+  weeklyData: number[]
+  recentActivity: Array<{
+    id: string
+    type: string
+    message: string
+    time: string
+    status: string
+  }>
+  recentSaleOrders: SaleOrder[]
+}
+
 const TRUCK_TYPES = [
   'Tata Ace',
   'Eicher 14ft', 
@@ -21,29 +35,89 @@ const TRUCK_TYPES = [
   'BharatBenz 32ft'
 ]
 
+const fetchDashboardData = async (language: string): Promise<DashboardData> => {
+  // Fetch counts from Supabase
+  const [trucksRes, shipmentsRes, routesRes] = await Promise.all([
+    supabase.from('trucks').select('id', { count: 'exact' }),
+    supabase.from('shipments').select('id, status', { count: 'exact' }),
+    supabase.from('routes').select('id', { count: 'exact' })
+  ])
 
+  const activeShipments = shipmentsRes.data?.filter(s => s.status === 'in_transit').length || 0
+  const deliveriesDone = shipmentsRes.data?.filter(s => s.status === 'delivered').length || 0
+
+  const stats = {
+    activeShipments,
+    trucksCount: trucksRes.count || 0,
+    routesToday: routesRes.count || 0,
+    deliveriesDone
+  }
+
+  // Fetch weekly packing data
+  const weeklyCounts = await analyticsSupabaseApi.getWeeklyPackingCounts()
+  const data = weeklyCounts.map(d => d.count)
+  // Normalize to percentages for the chart (max 100)
+  const maxCount = Math.max(...data, 1)
+  const normalizedData = data.map(count => Math.round((count / maxCount) * 100))
+  const weeklyData = normalizedData.length > 0 ? normalizedData : [0, 0, 0, 0, 0, 0, 0]
+
+  // Fetch recent packing jobs for activity
+  const recentJobs = await packingJobsSupabaseApi.getUserJobs(5)
+  let activities = recentJobs.map((job: PackingJob) => ({
+    id: job.id || '',
+    type: 'packing',
+    message: language === 'en' 
+      ? `Packing job completed - ${job.volume_utilization}% volume utilized`
+      : `पैकिंग जॉब पूर्ण - ${job.volume_utilization}% वॉल्यूम उपयोग`,
+    time: getRelativeTime(new Date(job.created_at || Date.now()), language),
+    status: job.status === 'completed' ? 'success' : 'info'
+  }))
+
+  // Add default activities if no packing jobs
+  if (activities.length === 0) {
+    activities.push(
+      { id: '1', type: 'packing', message: language === 'en' ? 'System ready for packing' : 'पैकिंग के लिए सिस्टम तैयार', time: language === 'en' ? 'Just now' : 'अभी', status: 'success' },
+      { id: '2', type: 'info', message: language === 'en' ? `${trucksRes.count || 0} trucks loaded in database` : `${trucksRes.count || 0} ट्रक डेटाबेस में लोड`, time: language === 'en' ? '1 min ago' : '1 मिनट पहले', status: 'info' },
+      { id: '3', type: 'route', message: language === 'en' ? 'Route optimization ready' : 'रूट अनुकूलन तैयार', time: language === 'en' ? '5 min ago' : '5 मिनट पहले', status: 'info' }
+    )
+  }
+
+  // Fetch recent sale orders
+  const recentSaleOrders = await saleOrdersSupabaseApi.getRecent(3)
+
+  return {
+    stats,
+    weeklyData,
+    recentActivity: activities,
+    recentSaleOrders
+  }
+}
+
+const getRelativeTime = (date: Date, lang: string): string => {
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (lang === 'en') {
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} min ago`
+    if (diffHours < 24) return `${diffHours} hour ago`
+    return `${diffDays} day ago`
+  } else {
+    if (diffMins < 1) return 'अभी'
+    if (diffMins < 60) return `${diffMins} मिनट पहले`
+    if (diffHours < 24) return `${diffHours} घंटे पहले`
+    return `${diffDays} दिन पहले`
+  }
+}
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { language } = useLanguageStore()
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<DashboardStats>({
-    activeShipments: 0,
-    trucksCount: 0,
-    routesToday: 0,
-    deliveriesDone: 0
-  })
   const [greeting, setGreeting] = useState('')
-  const [weeklyData, setWeeklyData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0])
-  const [recentActivity, setRecentActivity] = useState<Array<{
-    id: string
-    type: string
-    message: string
-    time: string
-    status: string
-  }>>([])
-  const [recentSaleOrders, setRecentSaleOrders] = useState<SaleOrder[]>([])
   const [costEstimate, setCostEstimate] = useState({
     distance: 500,
     truckType: TRUCK_TYPES[1],
@@ -58,91 +132,24 @@ export default function Dashboard() {
     else setGreeting(language === 'en' ? 'Good Evening' : 'शुभ संध्या')
   }, [language])
 
-  useEffect(() => {
-    fetchDashboardData()
-  }, [])
+  // React Query: Fetch dashboard data
+  const { 
+    data: dashboardData, 
+    isLoading: loading
+  } = useQuery({
+    queryKey: ['dashboard-stats', language],
+    queryFn: () => fetchDashboardData(language),
+  })
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true)
-      
-      // Fetch counts from Supabase
-      const [trucksRes, shipmentsRes, routesRes] = await Promise.all([
-        supabase.from('trucks').select('id', { count: 'exact' }),
-        supabase.from('shipments').select('id, status', { count: 'exact' }),
-        supabase.from('routes').select('id', { count: 'exact' })
-      ])
-
-      const activeShipments = shipmentsRes.data?.filter(s => s.status === 'in_transit').length || 0
-      const deliveriesDone = shipmentsRes.data?.filter(s => s.status === 'delivered').length || 0
-
-      setStats({
-        activeShipments,
-        trucksCount: trucksRes.count || 0,
-        routesToday: routesRes.count || 0,
-        deliveriesDone
-      })
-
-      // Fetch weekly packing data
-      const weeklyCounts = await analyticsSupabaseApi.getWeeklyPackingCounts()
-      const data = weeklyCounts.map(d => d.count)
-      // Normalize to percentages for the chart (max 100)
-      const maxCount = Math.max(...data, 1)
-      const normalizedData = data.map(count => Math.round((count / maxCount) * 100))
-      setWeeklyData(normalizedData.length > 0 ? normalizedData : [0, 0, 0, 0, 0, 0, 0])
-
-      // Fetch recent packing jobs for activity
-      const recentJobs = await packingJobsSupabaseApi.getUserJobs(5)
-      const activities = recentJobs.map((job: PackingJob) => ({
-        id: job.id || '',
-        type: 'packing',
-        message: language === 'en' 
-          ? `Packing job completed - ${job.volume_utilization}% volume utilized`
-          : `पैकिंग जॉब पूर्ण - ${job.volume_utilization}% वॉल्यूम उपयोग`,
-        time: getRelativeTime(new Date(job.created_at || Date.now()), language),
-        status: job.status === 'completed' ? 'success' : 'info'
-      }))
-
-      // Add default activities if no packing jobs
-      if (activities.length === 0) {
-        activities.push(
-          { id: '1', type: 'packing', message: language === 'en' ? 'System ready for packing' : 'पैकिंग के लिए सिस्टम तैयार', time: language === 'en' ? 'Just now' : 'अभी', status: 'success' },
-          { id: '2', type: 'info', message: language === 'en' ? `${trucksRes.count || 0} trucks loaded in database` : `${trucksRes.count || 0} ट्रक डेटाबेस में लोड`, time: language === 'en' ? '1 min ago' : '1 मिनट पहले', status: 'info' },
-          { id: '3', type: 'route', message: language === 'en' ? 'Route optimization ready' : 'रूट अनुकूलन तैयार', time: language === 'en' ? '5 min ago' : '5 मिनट पहले', status: 'info' }
-        )
-      }
-
-      setRecentActivity(activities)
-      
-      // Fetch recent sale orders
-      const saleOrders = await saleOrdersSupabaseApi.getRecent(3)
-      setRecentSaleOrders(saleOrders)
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error)
-    } finally {
-      setLoading(false)
-    }
+  const stats = dashboardData?.stats || {
+    activeShipments: 0,
+    trucksCount: 0,
+    routesToday: 0,
+    deliveriesDone: 0
   }
-
-  const getRelativeTime = (date: Date, lang: string): string => {
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMins / 60)
-    const diffDays = Math.floor(diffHours / 24)
-
-    if (lang === 'en') {
-      if (diffMins < 1) return 'Just now'
-      if (diffMins < 60) return `${diffMins} min ago`
-      if (diffHours < 24) return `${diffHours} hour ago`
-      return `${diffDays} day ago`
-    } else {
-      if (diffMins < 1) return 'अभी'
-      if (diffMins < 60) return `${diffMins} मिनट पहले`
-      if (diffHours < 24) return `${diffHours} घंटे पहले`
-      return `${diffDays} दिन पहले`
-    }
-  }
+  const weeklyData = dashboardData?.weeklyData || [0, 0, 0, 0, 0, 0, 0]
+  const recentActivity = dashboardData?.recentActivity || []
+  const recentSaleOrders = dashboardData?.recentSaleOrders || []
 
   const statsConfig = [
     { 

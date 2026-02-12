@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Package, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, AlertTriangle, Layers } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { cartonsSupabaseApi } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
+import { itemSchema, validateWithZod } from '../utils/validators'
+import { queryClient } from '../lib/queryClient'
+import EmptyState from '../components/EmptyState'
+import toast from 'react-hot-toast'
 
 interface CartonType {
   id: string
@@ -18,8 +23,6 @@ interface CartonType {
 export default function CartonsPage() {
   const navigate = useNavigate()
   const { language } = useLanguageStore()
-  const [cartons, setCartons] = useState<CartonType[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCarton, setEditingCarton] = useState<CartonType | null>(null)
@@ -32,21 +35,70 @@ export default function CartonsPage() {
     fragile: false,
     stackable: true
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    fetchCartons()
-  }, [])
+  // React Query: Fetch cartons data
+  const { 
+    data: cartons = [], 
+    isLoading: loading
+  } = useQuery({
+    queryKey: ['cartons'],
+    queryFn: cartonsSupabaseApi.getAll,
+  })
 
-  const fetchCartons = async () => {
-    try {
-      setLoading(true)
-      const data = await cartonsSupabaseApi.getAll()
-      setCartons(data as CartonType[])
-    } catch (error) {
-      console.error('Failed to fetch cartons:', error)
-    } finally {
-      setLoading(false)
-    }
+  // React Query: Create carton mutation
+  const createMutation = useMutation({
+    mutationFn: cartonsSupabaseApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cartons'] })
+      toast.success(language === 'en' ? 'Carton type added' : 'कार्टन प्रकार जोड़ा गया')
+      setIsModalOpen(false)
+      resetForm()
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to create carton')
+    },
+  })
+
+  // React Query: Update carton mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<CartonType> }) =>
+      cartonsSupabaseApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cartons'] })
+      toast.success(language === 'en' ? 'Carton type updated' : 'कार्टन प्रकार अपडेट किया गया')
+      setIsModalOpen(false)
+      resetForm()
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update carton')
+    },
+  })
+
+  // React Query: Delete carton mutation
+  const deleteMutation = useMutation({
+    mutationFn: cartonsSupabaseApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cartons'] })
+      toast.success(language === 'en' ? 'Carton type deleted' : 'कार्टन प्रकार हटा दिया गया')
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete carton')
+    },
+  })
+
+  const resetForm = () => {
+    setEditingCarton(null)
+    setFormData({
+      name: '',
+      length: 0,
+      width: 0,
+      height: 0,
+      weight: 0,
+      fragile: false,
+      stackable: true
+    })
+    setErrors({})
   }
 
   const handleOpenModal = (carton?: CartonType) => {
@@ -62,48 +114,62 @@ export default function CartonsPage() {
         stackable: carton.stackable
       })
     } else {
-      setEditingCarton(null)
-      setFormData({
-        name: '',
-        length: 0,
-        width: 0,
-        height: 0,
-        weight: 0,
-        fragile: false,
-        stackable: true
-      })
+      resetForm()
     }
     setIsModalOpen(true)
   }
 
-  const handleSave = async () => {
-    try {
-      if (editingCarton) {
-        await cartonsSupabaseApi.update(editingCarton.id, formData)
-      } else {
-        await cartonsSupabaseApi.create(formData)
-      }
-      setIsModalOpen(false)
-      fetchCartons()
-    } catch (error) {
-      console.error('Failed to save carton:', error)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Map form data to schema format (name -> product_name, add quantity default)
+    const validationData = {
+      product_name: formData.name,
+      length: formData.length,
+      width: formData.width,
+      height: formData.height,
+      weight: formData.weight,
+      quantity: 1, // Default quantity for carton types
+      fragile: formData.fragile,
+      stackable: formData.stackable
+    }
+    
+    const result = validateWithZod(itemSchema, validationData)
+    
+    if (!result.success) {
+      // Map schema field names back to form field names for display
+      const formattedErrors = result.errors?.reduce((acc: Record<string, string>, err: string) => {
+        const [field, msg] = err.split(': ')
+        // Map product_name back to name for display
+        const formField = field === 'product_name' ? 'name' : field
+        acc[formField] = msg
+        return acc
+      }, {}) || {}
+      setErrors(formattedErrors)
+      return
+    }
+    
+    // Clear errors and proceed with save
+    setErrors({})
+    
+    if (editingCarton) {
+      updateMutation.mutate({ id: editingCarton.id, data: formData })
+    } else {
+      createMutation.mutate(formData)
     }
   }
 
   const handleDelete = async (id: string) => {
     if (window.confirm(language === 'en' ? 'Are you sure you want to delete this carton type?' : 'क्या आप वाकई इस कार्टन प्रकार को हटाना चाहते हैं?')) {
-      try {
-        await cartonsSupabaseApi.delete(id)
-        fetchCartons()
-      } catch (error) {
-        console.error('Failed to delete carton:', error)
-      }
+      deleteMutation.mutate(id)
     }
   }
 
-  const filteredCartons = cartons.filter(c => 
+  const filteredCartons = cartons.filter((c: CartonType) => 
     c.name.toLowerCase().includes(search.toLowerCase())
   )
+
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
 
   return (
     <div className="p-4 space-y-6 pb-8">
@@ -143,9 +209,21 @@ export default function CartonsPage() {
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-500">Loading carton data...</p>
         </div>
+      ) : filteredCartons.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title={language === 'en' ? 'No carton types found' : 'कोई कार्टन प्रकार नहीं मिला'}
+          description={
+            search 
+              ? (language === 'en' ? 'Try adjusting your search' : 'अपनी खोज समायोजित करने का प्रयास करें')
+              : (language === 'en' ? 'Add your first carton type to get started' : 'शुरू करने के लिए अपना पहला कार्टन प्रकार जोड़ें')
+          }
+          actionLabel={!search ? (language === 'en' ? 'Add Carton Type' : 'कार्टन प्रकार जोड़ें') : undefined}
+          onAction={!search ? () => handleOpenModal() : undefined}
+        />
       ) : (
         <div className="grid gap-4">
-          {filteredCartons.map((carton) => (
+          {filteredCartons.map((carton: CartonType) => (
             <div 
               key={carton.id}
               className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm"
@@ -180,7 +258,8 @@ export default function CartonsPage() {
                   </button>
                   <button 
                     onClick={() => handleDelete(carton.id)}
-                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                    disabled={deleteMutation.isPending}
+                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -194,11 +273,11 @@ export default function CartonsPage() {
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Weight</p>
-                  <p className="text-sm font-medium">{carton.weight}kg</p>
+                  <p className="text-sm font-medium">{carton.weight} kg</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Volume</p>
-                  <p className="text-sm font-medium">{(carton.length * carton.width * carton.height / 1000).toFixed(1)}L</p>
+                  <p className="text-sm font-medium">{((carton.length * carton.width * carton.height) / 1000000).toFixed(3)} m³</p>
                 </div>
               </div>
             </div>
@@ -206,107 +285,139 @@ export default function CartonsPage() {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <h2 className="text-xl font-bold">{editingCarton ? 'Edit Carton' : 'Add New Carton'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                {editingCarton 
+                  ? (language === 'en' ? 'Edit Carton Type' : 'कार्टन प्रकार संपादित करें')
+                  : (language === 'en' ? 'Add Carton Type' : 'कार्टन प्रकार जोड़ें')
+                }
+              </h2>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Carton Name</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'en' ? 'Name' : 'नाम'}
+                </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                  placeholder="e.g. Small Box, Large Crate"
+                  className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
+                  placeholder={language === 'en' ? 'e.g., Standard Box' : 'जैसे, स्टैंडर्ड बॉक्स'}
                 />
+                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Weight (kg)</label>
-                  <input
-                    type="number"
-                    value={formData.weight}
-                    onChange={(e) => setFormData({...formData, weight: Number(e.target.value)})}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.fragile}
-                      onChange={(e) => setFormData({...formData, fragile: e.target.checked})}
-                      className="w-4 h-4 accent-primary-600"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Fragile</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.stackable}
-                      onChange={(e) => setFormData({...formData, stackable: e.target.checked})}
-                      className="w-4 h-4 accent-primary-600"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Stackable</span>
-                  </label>
-                </div>
-              </div>
-
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Length (cm)</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {language === 'en' ? 'Length (cm)' : 'लंबाई (सेमी)'}
+                  </label>
                   <input
                     type="number"
-                    value={formData.length}
+                    value={formData.length || ''}
                     onChange={(e) => setFormData({...formData, length: Number(e.target.value)})}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+                    className={`w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.length ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
                   />
+                  {errors.length && <p className="mt-1 text-xs text-red-500">{errors.length}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Width (cm)</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {language === 'en' ? 'Width (cm)' : 'चौड़ाई (सेमी)'}
+                  </label>
                   <input
                     type="number"
-                    value={formData.width}
+                    value={formData.width || ''}
                     onChange={(e) => setFormData({...formData, width: Number(e.target.value)})}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+                    className={`w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.width ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
                   />
+                  {errors.width && <p className="mt-1 text-xs text-red-500">{errors.width}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Height (cm)</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {language === 'en' ? 'Height (cm)' : 'ऊंचाई (सेमी)'}
+                  </label>
                   <input
                     type="number"
-                    value={formData.height}
+                    value={formData.height || ''}
                     onChange={(e) => setFormData({...formData, height: Number(e.target.value)})}
-                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+                    className={`w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.height ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
                   />
+                  {errors.height && <p className="mt-1 text-xs text-red-500">{errors.height}</p>}
                 </div>
               </div>
-            </div>
-
-            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleSave}
-                className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2 transition-all"
-              >
-                <Save className="w-4 h-4" />
-                Save Carton
-              </button>
-            </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'en' ? 'Weight (kg)' : 'वजन (किलो)'}
+                </label>
+                <input
+                  type="number"
+                  value={formData.weight || ''}
+                  onChange={(e) => setFormData({...formData, weight: Number(e.target.value)})}
+                  className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.weight ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
+                />
+                {errors.weight && <p className="mt-1 text-xs text-red-500">{errors.weight}</p>}
+              </div>
+              
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.fragile}
+                    onChange={(e) => setFormData({...formData, fragile: e.target.checked})}
+                    className="w-4 h-4 text-primary-600 rounded"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'Fragile' : 'नाजुक'}
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.stackable}
+                    onChange={(e) => setFormData({...formData, stackable: e.target.checked})}
+                    className="w-4 h-4 text-primary-600 rounded"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    {language === 'en' ? 'Stackable' : 'स्टैकेबल'}
+                  </span>
+                </label>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                >
+                  {language === 'en' ? 'Cancel' : 'रद्द करें'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isMutating}
+                  className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isMutating ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  {language === 'en' ? 'Save' : 'सहेजें'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

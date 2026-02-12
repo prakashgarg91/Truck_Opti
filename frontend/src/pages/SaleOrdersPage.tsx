@@ -5,6 +5,7 @@ import {
   Package, Trash2, ArrowRight, Loader2,
   FileText, Download, RefreshCw
 } from 'lucide-react'
+import EmptyState from '../components/EmptyState'
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 import toast from 'react-hot-toast'
@@ -434,10 +435,17 @@ Carton C,30,20,15,2,20,Bangalore`
             <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
           </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-            <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500">{t[lang].noOrders}</p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title={lang === 'en' ? 'No orders found' : 'कोई ऑर्डर नहीं मिला'}
+            description={
+              lang === 'en'
+                ? 'Import your first sale order from CSV or Excel file'
+                : 'CSV या Excel फाइल से अपना पहला सेल ऑर्डर आयात करें'
+            }
+            actionLabel={lang === 'en' ? 'Upload File' : 'फाइल अपलोड करें'}
+            onAction={() => fileInputRef.current?.click()}
+          />
         ) : (
           <div className="space-y-3">
             {orders.map(order => (
