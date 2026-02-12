@@ -19,7 +19,7 @@ function encodeForWhatsApp(text: string): string {
  */
 function openWhatsApp(text: string): void {
   const url = `https://wa.me/?text=${encodeForWhatsApp(text)}`
-  window.open(url, '_blank')
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 /**

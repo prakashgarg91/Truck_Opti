@@ -510,6 +510,11 @@ export default function PackingPage() {
   const [bookError, setBookError] = useState('')
   const [bookingInProgress, setBookingInProgress] = useState(false)
 
+  // Set document title based on language
+  useEffect(() => {
+    document.title = lang === 'en' ? '3D Packing - TruckOpti' : '3D पैकिंग - TruckOpti'
+  }, [lang])
+
   // Fetch trucks from Supabase on mount
   useEffect(() => {
     fetchTrucks()

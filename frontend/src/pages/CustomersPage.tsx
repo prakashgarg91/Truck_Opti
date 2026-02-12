@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Users, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, MapPin, Phone, Mail } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -38,6 +38,10 @@ export default function CustomersPage() {
     gst_number: ''
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    document.title = language === 'en' ? 'Customers - TruckOpti' : 'ग्राहक - TruckOpti'
+  }, [language])
 
   // React Query: Fetch customers data
   const { 

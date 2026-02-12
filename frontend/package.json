@@ -50,7 +50,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.2",
+    "jspdf": "^4.1.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.460.0",
     "papaparse": "^5.5.3",
@@ -63,7 +63,7 @@
     "socket.io-client": "^4.8.0",
     "tailwind-merge": "^2.5.0",
     "three": "^0.169.0",
-    "xlsx": "^0.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.3.6",
     "zustand": "^4.5.0"
   },
@@ -92,5 +92,9 @@
     "truck-loading",
     "route-optimization",
     "india"
-  ]
+  ],
+  "overrides": {
+    "dompurify": "^3.2.4",
+    "esbuild": "^0.25.0"
+  }
 }

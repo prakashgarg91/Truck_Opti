@@ -115,6 +115,10 @@ export default function SaleOrdersPage() {
     fetchOrders()
   }, [])
 
+  useEffect(() => {
+    document.title = language === 'en' ? 'Sale Orders - TruckOpti' : 'सेल ऑर्डर्स - TruckOpti'
+  }, [language])
+
   const fetchOrders = async () => {
     try {
       setLoading(true)

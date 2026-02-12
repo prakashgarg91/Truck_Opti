@@ -23,6 +23,10 @@ export default function OTPPage() {
       navigate('/login')
     }
   }, [pendingPhone, navigate])
+
+  useEffect(() => {
+    document.title = 'Verify OTP - TruckOpti'
+  }, [])
   
   // Timer countdown
   useEffect(() => {

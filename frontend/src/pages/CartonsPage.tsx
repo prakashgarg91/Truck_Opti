@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Package, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, AlertTriangle, Layers } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -36,6 +36,10 @@ export default function CartonsPage() {
     stackable: true
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    document.title = language === 'en' ? 'Carton Types - TruckOpti' : 'कार्टन प्रकार - TruckOpti'
+  }, [language])
 
   // React Query: Fetch cartons data
   const { 

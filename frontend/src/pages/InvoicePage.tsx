@@ -118,6 +118,12 @@ export default function InvoicePage() {
     }
   }, [shipmentId])
 
+  useEffect(() => {
+    document.title = invoiceData?.invoiceNumber 
+      ? `Invoice ${invoiceData.invoiceNumber} - TruckOpti` 
+      : 'Invoice - TruckOpti'
+  }, [invoiceData])
+
   const fetchShipment = async () => {
     try {
       setLoading(true)

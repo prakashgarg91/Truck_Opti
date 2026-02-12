@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useLanguageStore } from '../stores/languageStore'
 import { MapPin, Navigation, Clock, IndianRupee, Plus, X, Search, ChevronRight, Map as MapIcon, TrendingUp, Zap, Eye } from 'lucide-react'
 import { routesSupabaseApi } from '../services/supabaseApi'
 import MapView from '../components/MapView'
@@ -73,6 +74,7 @@ interface RouteType {
 }
 
 export default function RoutesPage() {
+  const { language } = useLanguageStore()
   const [routes, setRoutes] = useState<RouteType[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -92,6 +94,10 @@ export default function RoutesPage() {
     fuel_cost: 0,
     status: 'planned' as 'planned' | 'active' | 'completed'
   })
+
+  useEffect(() => {
+    document.title = language === 'en' ? 'Routes - TruckOpti' : 'रूट - TruckOpti'
+  }, [language])
 
   useEffect(() => {
     fetchRoutes()

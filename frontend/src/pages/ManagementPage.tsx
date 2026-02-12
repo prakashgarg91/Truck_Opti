@@ -20,6 +20,10 @@ export default function ManagementPage() {
     fetchCounts()
   }, [])
 
+  useEffect(() => {
+    document.title = language === 'en' ? 'Management - TruckOpti' : 'मैनेजमेंट - TruckOpti'
+  }, [language])
+
   const fetchCounts = async () => {
     try {
       setLoading(true)

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -102,6 +103,7 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
 }
 
 export default function TrackingPage() {
+  const { language } = useLanguageStore()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
@@ -118,6 +120,11 @@ export default function TrackingPage() {
     queryKey: ['shipments'],
     queryFn: fetchActiveShipments,
   })
+
+  // Set document title based on language
+  useEffect(() => {
+    document.title = language === 'en' ? 'Live Tracking - TruckOpti' : 'लाइव ट्रैकिंग - TruckOpti'
+  }, [language])
 
   // Subscribe to realtime updates
   useEffect(() => {

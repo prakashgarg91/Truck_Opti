@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Truck, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, Database } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import { useNavigate } from 'react-router-dom'
@@ -118,6 +118,10 @@ export default function TrucksPage() {
     cost_per_km: 0,
     available: 1
   })
+
+  useEffect(() => {
+    document.title = language === 'en' ? 'Truck Types - TruckOpti' : 'ट्रक प्रकार - TruckOpti'
+  }, [language])
 
   // React Query: Fetch trucks data
   const { 

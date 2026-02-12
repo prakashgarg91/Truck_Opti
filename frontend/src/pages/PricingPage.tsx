@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Check, Zap, Crown, Building2, Rocket, Star, Globe } from 'lucide-react'
 import { PRICING_TIERS } from '../config/pricing'
 
@@ -90,6 +90,10 @@ const tierColors: Record<string, string> = {
 }
 
 export default function PricingPage() {
+  useEffect(() => {
+    document.title = 'Pricing - TruckOpti'
+  }, [])
+
   const [lang, setLang] = useState<Language>('en')
   const [isYearly, setIsYearly] = useState(false)
   const labels = t[lang]

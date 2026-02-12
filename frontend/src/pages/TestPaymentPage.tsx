@@ -21,6 +21,10 @@ const TestPaymentPage: React.FC = () => {
   const razorpayConfig = getRazorpayConfig();
 
   useEffect(() => {
+    document.title = 'Test Payment - TruckOpti'
+  }, [])
+
+  useEffect(() => {
     checkUser();
   }, []);
 

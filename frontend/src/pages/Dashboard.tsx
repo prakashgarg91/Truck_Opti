@@ -126,6 +126,7 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
+    document.title = language === 'en' ? 'Dashboard - TruckOpti' : 'डैशबोर्ड - TruckOpti'
     const hour = new Date().getHours()
     if (hour < 12) setGreeting(language === 'en' ? 'Good Morning' : 'सुप्रभात')
     else if (hour < 17) setGreeting(language === 'en' ? 'Good Afternoon' : 'नमस्कार')

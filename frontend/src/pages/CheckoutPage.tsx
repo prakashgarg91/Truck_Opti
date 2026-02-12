@@ -33,6 +33,10 @@ const CheckoutPage: React.FC = () => {
   const paymentConfig = getRazorpayConfig();
 
   useEffect(() => {
+    document.title = 'Checkout - TruckOpti'
+  }, [])
+
+  useEffect(() => {
     loadData();
   }, [planId]);
 

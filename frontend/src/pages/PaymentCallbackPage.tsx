@@ -14,6 +14,10 @@ const PaymentCallbackPage: React.FC = () => {
   const [message, setMessage] = useState('Verifying payment...');
 
   useEffect(() => {
+    document.title = 'Payment Status - TruckOpti'
+  }, [])
+
+  useEffect(() => {
     if (txnId) {
       verifyPayment();
     } else {

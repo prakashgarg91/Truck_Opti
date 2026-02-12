@@ -29,6 +29,10 @@ export default function LoginPage() {
     }, 3000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    document.title = 'Login - TruckOpti'
+  }, [])
   
   const sendOTPMutation = useMutation({
     mutationFn: async () => {

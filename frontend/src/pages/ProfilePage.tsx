@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Phone, Mail, MapPin, Shield, Bell, 
   Globe, ChevronRight, LogOut, Camera, Unlink
@@ -120,6 +120,12 @@ const translations = {
 export default function ProfilePage() {
   const { user, logout } = useAuthStore()
   const { language, setLanguage } = useLanguageStore()
+  
+  // Set document title based on language
+  useEffect(() => {
+    document.title = language === 'en' ? 'Profile - TruckOpti' : 'प्रोफाइल - TruckOpti'
+  }, [language])
+  
   const t = translations[language as keyof typeof translations] || translations.en
   const [isLocationSharing, setIsLocationSharing] = useState(true)
   const [notifications, setNotifications] = useState({
