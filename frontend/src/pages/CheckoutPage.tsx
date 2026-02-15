@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { initiateRazorpayPayment, getRazorpayConfig, RazorpayPaymentResult } from '../services/razorpayPayment';
 import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
 import toast from 'react-hot-toast';
+import { logger } from '../utils/logger';
 
 interface Plan {
   id: string;
@@ -75,7 +76,7 @@ const CheckoutPage: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error loading checkout data:', error);
+      logger.error('Error loading checkout data:', error);
       toast.error('Failed to load checkout');
     } finally {
       setLoading(false);
@@ -133,7 +134,7 @@ const CheckoutPage: React.FC = () => {
         toast.error(result.error || (language === 'en' ? 'Payment failed on both gateways' : 'दोनों पेमेंट गेटवे पर भुगतान विफल हुआ'));
       }
     } catch (error) {
-      console.error('Payment error:', error);
+      logger.error('Payment error:', error);
       toast.error('Payment failed. Please try again.');
     } finally {
       setProcessing(false);

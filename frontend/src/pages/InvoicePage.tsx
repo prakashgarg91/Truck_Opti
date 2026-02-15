@@ -18,6 +18,7 @@ import {
 } from '../utils/invoiceGenerator'
 import { shareInvoice } from '../utils/whatsappShare'
 import { useLanguageStore } from '../stores/languageStore'
+import { logger } from '../utils/logger'
 
 // Translations
 const t = {
@@ -162,7 +163,7 @@ export default function InvoicePage() {
         setInvoiceData(calculateInvoice(invoiceInput))
       }
     } catch (error) {
-      console.error('Failed to fetch shipment:', error)
+      logger.error('Failed to fetch shipment:', error)
       toast.error('Failed to load shipment')
     } finally {
       setLoading(false)

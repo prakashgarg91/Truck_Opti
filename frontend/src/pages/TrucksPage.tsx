@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { useDebouncedCallback } from '../hooks/useDebounce'
+import { logger } from '../utils/logger'
 
 interface TruckType {
   id: string
@@ -145,7 +146,7 @@ export default function TrucksPage() {
       resetForm()
     },
     onError: (error: any) => {
-      console.error('Failed to create truck:', error)
+      logger.error('Failed to create truck:', error)
       toast.error(error.message || 'Failed to create truck')
     },
   })
@@ -161,7 +162,7 @@ export default function TrucksPage() {
       resetForm()
     },
     onError: (error: any) => {
-      console.error('Failed to update truck:', error)
+      logger.error('Failed to update truck:', error)
       toast.error(error.message || 'Failed to update truck')
     },
   })
@@ -174,7 +175,7 @@ export default function TrucksPage() {
       toast.success('Truck deleted successfully')
     },
     onError: (error: any) => {
-      console.error('Failed to delete truck:', error)
+      logger.error('Failed to delete truck:', error)
       toast.error(error.message || 'Failed to delete truck')
     },
   })
@@ -214,7 +215,7 @@ export default function TrucksPage() {
       toast.success(`Added ${count} default Indian trucks!`)
     },
     onError: (error: any) => {
-      console.error('Failed to seed trucks:', error)
+      logger.error('Failed to seed trucks:', error)
       if (error.message === 'All default trucks already exist!') {
         toast(error.message)
       } else {

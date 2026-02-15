@@ -12,6 +12,8 @@ import toast from 'react-hot-toast'
 import { saleOrdersSupabaseApi, type SaleOrder } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
 import { saleOrderItemSchema, validateWithZod, type SaleOrderItemInput } from '../utils/validators'
+import { logger } from '../utils/logger'
+import { useSubscription } from '../hooks/useSubscription'
 
 // Translations
 const t = {
@@ -102,6 +104,7 @@ export default function SaleOrdersPage() {
   const navigate = useNavigate()
   const { language } = useLanguageStore()
   const lang = (language === 'hi' ? 'hi' : 'en') as 'en' | 'hi'
+  const { checkLimit, showUpgradePrompt } = useSubscription()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [orders, setOrders] = useState<SaleOrder[]>([])
@@ -125,7 +128,7 @@ export default function SaleOrdersPage() {
       const data = await saleOrdersSupabaseApi.getAll()
       setOrders(data)
     } catch (error) {
-      console.error('Failed to fetch orders:', error)
+      logger.error('Failed to fetch orders:', error)
       toast.error('Failed to load orders')
     } finally {
       setLoading(false)
@@ -219,7 +222,7 @@ export default function SaleOrdersPage() {
       const validCount = items.filter(i => i.isValid).length
       toast.success(`Parsed ${validCount} valid items`)
     } catch (error) {
-      console.error('Parse error:', error)
+      logger.error('Parse error:', error)
       toast.error('Failed to parse file')
     } finally {
       setUploading(false)
@@ -231,6 +234,13 @@ export default function SaleOrdersPage() {
     const validItems = parsedItems.filter(i => i.isValid)
     if (validItems.length === 0) {
       toast.error('No valid items to import')
+      return
+    }
+
+    // Check subscription limit before importing
+    const allowed = await checkLimit('sale_order_imports')
+    if (!allowed) {
+      showUpgradePrompt('sale order imports')
       return
     }
 
@@ -285,7 +295,7 @@ export default function SaleOrdersPage() {
       
       navigate('/packing', { state: { saleOrderItems: packingItems, saleOrderId: order.id } })
     } catch (error) {
-      console.error('Import error:', error)
+      logger.error('Import error:', error)
       toast.error(t[lang].importError)
     } finally {
       setImporting(false)

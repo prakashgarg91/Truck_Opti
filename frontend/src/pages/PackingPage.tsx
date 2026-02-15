@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom'
 import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
 import { usePackingWorker } from '../hooks/usePackingWorker'
 import { useSubscription } from '../hooks/useSubscription'
+import { logger } from '../utils/logger'
 
 // ============= LANGUAGE =============
 type Language = 'en' | 'hi'
@@ -658,7 +659,7 @@ export default function PackingPage() {
       }))
       setTrucks(mappedTrucks)
     } catch (error) {
-      console.error('Failed to fetch trucks:', error)
+      logger.error('Failed to fetch trucks:', error)
       toast.error('Failed to load trucks')
     } finally {
       setLoadingTrucks(false)
@@ -951,7 +952,7 @@ export default function PackingPage() {
 
       toast.success('Packing job saved successfully!')
     } catch (error: any) {
-      console.error('Failed to save packing job:', error)
+      logger.error('Failed to save packing job:', error)
       toast.error(error.message || 'Failed to save packing job')
     } finally {
       setIsSaving(false)
@@ -964,7 +965,7 @@ export default function PackingPage() {
       const data = await customersSupabaseApi.getAll()
       setCustomers(data)
     } catch (error) {
-      console.error('Failed to fetch customers:', error)
+      logger.error('Failed to fetch customers:', error)
     } finally {
       setLoadingCustomers(false)
     }
@@ -1036,7 +1037,7 @@ export default function PackingPage() {
       })
       navigate('/tracking')
     } catch (error: any) {
-      console.error('Failed to book truck:', error)
+      logger.error('Failed to book truck:', error)
       setBookError(error.message || 'Failed to book truck')
     } finally {
       setBookingInProgress(false)

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Sitemap: https://truck-opti-app-efabf95bd306.herokuapp.com/sitemap.xml

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 
 function isUnset(value?: string): boolean {
   if (!value) return true;
@@ -98,7 +99,7 @@ export async function initiateRazorpayPayment(
       },
     });
   } catch (error) {
-    console.warn('Could not store pending payment:', error);
+    logger.warn('Could not store pending payment:', error);
   }
 
   return new Promise((resolve) => {
@@ -134,7 +135,7 @@ export async function initiateRazorpayPayment(
             })
             .eq('razorpay_order_id', orderId);
         } catch (error) {
-          console.warn('Could not update payment status:', error);
+          logger.warn('Could not update payment status:', error);
         }
 
         resolve({
@@ -163,7 +164,7 @@ export async function initiateRazorpayPayment(
             })
             .eq('razorpay_order_id', orderId);
         } catch (error) {
-          console.warn('Could not update payment status:', error);
+          logger.warn('Could not update payment status:', error);
         }
 
         resolve({

@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { logger } from '../utils/logger'
 
 interface Props {
   children: ReactNode
@@ -40,7 +41,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     })
 
     // Log error to console in all environments
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    logger.error('ErrorBoundary caught an error:', error, errorInfo)
 
     // Here you could also send error to an error reporting service like Sentry
     // if (import.meta.env.PROD) {

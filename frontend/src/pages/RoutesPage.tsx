@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
 import { MapPin, Navigation, Clock, IndianRupee, Plus, X, Search, ChevronRight, Map as MapIcon, TrendingUp, Zap, Eye } from 'lucide-react'
 import { routesSupabaseApi } from '../services/supabaseApi'
+import { logger } from '../utils/logger'
+import { useSubscription } from '../hooks/useSubscription'
 import MapViewWrapper from '../components/MapViewWrapper'
 
 // Major Indian cities with their coordinates
@@ -110,6 +112,7 @@ interface RouteType {
 
 export default function RoutesPage() {
   const { language } = useLanguageStore()
+  const { checkLimit, showUpgradePrompt } = useSubscription()
   const [routes, setRoutes] = useState<RouteType[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -149,7 +152,7 @@ export default function RoutesPage() {
       }))
       setRoutes(parsedRoutes)
     } catch (error) {
-      console.error('Failed to fetch routes:', error)
+      logger.error('Failed to fetch routes:', error)
     } finally {
       setLoading(false)
     }
@@ -172,6 +175,13 @@ export default function RoutesPage() {
   }
 
   const handleOptimize = async () => {
+    // Check subscription limit before route optimization
+    const allowed = await checkLimit('route_optimizations')
+    if (!allowed) {
+      showUpgradePrompt('route optimizations')
+      return
+    }
+
     try {
       setOptimizing(true)
       const validDestinations = formData.destinations.filter(d => d.trim() !== '')
@@ -199,7 +209,7 @@ export default function RoutesPage() {
       setIsModalOpen(false)
       fetchRoutes()
     } catch (error) {
-      console.error('Optimization failed:', error)
+      logger.error('Optimization failed:', error)
     } finally {
       setOptimizing(false)
     }

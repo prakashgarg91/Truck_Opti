@@ -36,3 +36,9 @@ Thumbs.db
 # Vite
 *.local
 .vite/
+
+# Environment files (never commit real credentials)
+.env
+.env.*
+.env.local
+.env.production

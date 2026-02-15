@@ -27,6 +27,7 @@ import { useLanguageStore } from '../stores/languageStore'
 import { useAuthStore } from '../stores/authStore'
 import { notificationsSupabaseApi } from '../services/supabaseApi'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home', labelHi: 'होम' },
@@ -109,7 +110,7 @@ export default function MobileLayout() {
         setNotifications(data)
       }
     } catch (error) {
-      console.error('Failed to fetch notifications:', error)
+      logger.error('Failed to fetch notifications:', error)
     }
   }
 
@@ -123,7 +124,7 @@ export default function MobileLayout() {
       const unreadCount = data.filter(n => !n.is_read).length
       setNotificationCount(unreadCount)
     } catch (error) {
-      console.error('Failed to load notifications:', error)
+      logger.error('Failed to load notifications:', error)
     } finally {
       setLoadingNotifications(false)
     }
@@ -137,7 +138,7 @@ export default function MobileLayout() {
       ))
       setNotificationCount(prev => Math.max(0, prev - 1))
     } catch (error) {
-      console.error('Failed to mark as read:', error)
+      logger.error('Failed to mark as read:', error)
     }
   }
 
@@ -148,7 +149,7 @@ export default function MobileLayout() {
       setNotificationCount(0)
       toast.success(language === 'en' ? 'All notifications marked as read' : 'सभी सूचनाएं पढ़ी गई')
     } catch (error) {
-      console.error('Failed to mark all as read:', error)
+      logger.error('Failed to mark all as read:', error)
     }
   }
 
@@ -159,7 +160,7 @@ export default function MobileLayout() {
       setNotificationCount(0)
       toast.success(language === 'en' ? 'All notifications cleared' : 'सभी सूचनाएं हटा दी गईं')
     } catch (error) {
-      console.error('Failed to clear notifications:', error)
+      logger.error('Failed to clear notifications:', error)
     }
   }
 

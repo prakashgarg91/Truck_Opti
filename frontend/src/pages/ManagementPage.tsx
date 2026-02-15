@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Truck, Package, Users, ChevronRight, Settings, Database, ShieldCheck, Loader2 } from 'lucide-react'
 import { useLanguageStore } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
+import { logger } from '../utils/logger'
 
 interface ManagementCounts {
   trucks: number
@@ -39,7 +40,7 @@ export default function ManagementPage() {
         customers: customersResult.count || 0
       })
     } catch (error) {
-      console.error('Failed to fetch counts:', error)
+      logger.error('Failed to fetch counts:', error)
     } finally {
       setLoading(false)
     }

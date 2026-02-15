@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase';
-import CryptoJS from 'crypto-js';
 
 function isUnset(value?: string): boolean {
   if (!value) return true;
@@ -12,10 +11,9 @@ function isUnset(value?: string): boolean {
 }
 
 // PhonePe Configuration
+// Payment checksum generation must happen server-side via Supabase Edge Function
 const PHONEPE_CONFIG = {
   merchantId: import.meta.env.VITE_PHONEPE_MERCHANT_ID,
-  saltKey: import.meta.env.VITE_PHONEPE_SALT_KEY,
-  saltIndex: import.meta.env.VITE_PHONEPE_SALT_INDEX,
   // UAT: https://api-preprod.phonepe.com/apis/pg-sandbox
   // Production: https://api.phonepe.com/apis/hermes
   apiUrl: import.meta.env.VITE_PHONEPE_API_URL,
@@ -24,8 +22,6 @@ const PHONEPE_CONFIG = {
 
 function getPhonePeConfigError(): string | null {
   if (isUnset(PHONEPE_CONFIG.merchantId)) return 'Missing VITE_PHONEPE_MERCHANT_ID';
-  if (isUnset(PHONEPE_CONFIG.saltKey)) return 'Missing VITE_PHONEPE_SALT_KEY';
-  if (isUnset(PHONEPE_CONFIG.saltIndex)) return 'Missing VITE_PHONEPE_SALT_INDEX';
   if (isUnset(PHONEPE_CONFIG.apiUrl)) return 'Missing VITE_PHONEPE_API_URL';
   return null;
 }
@@ -57,15 +53,7 @@ export interface PhonePePaymentResponse {
   };
 }
 
-// Generate SHA256 hash for PhonePe
-function generateChecksum(payload: string, endpoint: string): string {
-  const base64Payload = btoa(payload);
-  const string = base64Payload + endpoint + PHONEPE_CONFIG.saltKey!;
-  const sha256Hash = CryptoJS.SHA256(string).toString();
-  return sha256Hash + '###' + PHONEPE_CONFIG.saltIndex!;
-}
-
-// Initiate PhonePe UPI Payment
+// Initiate PhonePe UPI Payment via Edge Function
 export async function initiatePhonePePayment(request: PhonePePaymentRequest): Promise<PhonePePaymentResponse> {
   const configError = getPhonePeConfigError();
   if (configError) {
@@ -77,24 +65,6 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
   }
 
   const merchantTransactionId = `TRK${Date.now()}${Math.random().toString(36).substring(7)}`;
-  
-  const payload = {
-    merchantId: PHONEPE_CONFIG.merchantId!,
-    merchantTransactionId,
-    merchantUserId: request.userId.substring(0, 36),
-    amount: request.amount,
-    redirectUrl: `${PHONEPE_CONFIG.redirectUrl}/payment/callback?txnId=${merchantTransactionId}`,
-    redirectMode: 'REDIRECT',
-    callbackUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phonepe-webhook`,
-    mobileNumber: request.customerPhone.replace(/\D/g, '').slice(-10),
-    paymentInstrument: {
-      type: 'PAY_PAGE',
-    },
-  };
-
-  const base64Payload = btoa(JSON.stringify(payload));
-  const endpoint = '/pg/v1/pay';
-  const checksum = generateChecksum(JSON.stringify(payload), endpoint);
 
   try {
     // Store pending transaction in Supabase
@@ -112,19 +82,37 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
       },
     });
 
-    const response = await fetch(`${PHONEPE_CONFIG.apiUrl!}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-VERIFY': checksum,
+    // Call Supabase Edge Function to generate checksum and get redirect URL
+    const { data, error } = await supabase.functions.invoke('phonepe-checkout', {
+      body: {
+        merchantId: PHONEPE_CONFIG.merchantId,
+        merchantTransactionId,
+        merchantUserId: request.userId.substring(0, 36),
+        amount: request.amount,
+        redirectUrl: `${PHONEPE_CONFIG.redirectUrl}/payment/callback?txnId=${merchantTransactionId}`,
+        redirectMode: 'REDIRECT',
+        callbackUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phonepe-webhook`,
+        mobileNumber: request.customerPhone.replace(/\D/g, '').slice(-10),
       },
-      body: JSON.stringify({ request: base64Payload }),
     });
 
-    const result = await response.json();
-    return result;
+    if (error) throw error;
+
+    // Redirect to PhonePe payment page
+    if (data?.redirectUrl) {
+      window.location.href = data.redirectUrl;
+    }
+
+    return {
+      success: true,
+      code: 'PAYMENT_INITIATED',
+      message: 'Redirecting to PhonePe...',
+      data: {
+        merchantId: PHONEPE_CONFIG.merchantId || '',
+        merchantTransactionId,
+      },
+    };
   } catch (error) {
-    console.error('PhonePe payment initiation failed:', error);
     return {
       success: false,
       code: 'PAYMENT_ERROR',
@@ -133,54 +121,38 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
   }
 }
 
-// Check payment status
+// Check payment status via Edge Function
 export async function checkPaymentStatus(merchantTransactionId: string): Promise<{
   success: boolean;
   status: 'PENDING' | 'SUCCESS' | 'FAILED';
   message: string;
   data?: any;
 }> {
-  const configError = getPhonePeConfigError();
-  if (configError) {
-    return {
-      success: false,
-      status: 'FAILED',
-      message: `PhonePe is not configured: ${configError}`,
-    };
-  }
-
-  const endpoint = `/pg/v1/status/${PHONEPE_CONFIG.merchantId!}/${merchantTransactionId}`;
-  const string = endpoint + PHONEPE_CONFIG.saltKey!;
-  const sha256Hash = CryptoJS.SHA256(string).toString();
-  const checksum = sha256Hash + '###' + PHONEPE_CONFIG.saltIndex!;
-
   try {
-    const response = await fetch(`${PHONEPE_CONFIG.apiUrl!}${endpoint}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-VERIFY': checksum,
-        'X-MERCHANT-ID': PHONEPE_CONFIG.merchantId!,
+    // Call Supabase Edge Function for status check
+    const { data, error } = await supabase.functions.invoke('phonepe-status', {
+      body: {
+        merchantId: PHONEPE_CONFIG.merchantId,
+        merchantTransactionId,
       },
     });
 
-    const result = await response.json();
-    
+    if (error) throw error;
+
     let status: 'PENDING' | 'SUCCESS' | 'FAILED' = 'PENDING';
-    if (result.code === 'PAYMENT_SUCCESS') {
+    if (data?.code === 'PAYMENT_SUCCESS') {
       status = 'SUCCESS';
-    } else if (result.code === 'PAYMENT_ERROR' || result.code === 'PAYMENT_DECLINED') {
+    } else if (data?.code === 'PAYMENT_ERROR' || data?.code === 'PAYMENT_DECLINED') {
       status = 'FAILED';
     }
 
     return {
-      success: result.success,
+      success: data?.success ?? false,
       status,
-      message: result.message,
-      data: result.data,
+      message: data?.message || '',
+      data: data?.data,
     };
   } catch (error) {
-    console.error('Payment status check failed:', error);
     return {
       success: false,
       status: 'PENDING',
@@ -197,7 +169,7 @@ export async function verifyAndActivateSubscription(
   billingCycle: 'monthly' | 'yearly'
 ): Promise<{ success: boolean; message: string }> {
   const statusResult = await checkPaymentStatus(merchantTransactionId);
-  
+
   if (statusResult.status !== 'SUCCESS') {
     return {
       success: false,
@@ -225,7 +197,6 @@ export async function verifyAndActivateSubscription(
       message: 'Subscription activated successfully!',
     };
   } catch (error) {
-    console.error('Subscription activation failed:', error);
     return {
       success: false,
       message: 'Payment successful but subscription activation failed. Please contact support.',

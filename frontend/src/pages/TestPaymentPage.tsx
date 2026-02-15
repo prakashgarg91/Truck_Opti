@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
 import { initiateRazorpayPayment, getRazorpayConfig } from '../services/razorpayPayment';
 import toast from 'react-hot-toast';
+import { logger } from '../utils/logger';
 
 type PaymentMethod = 'phonepe' | 'razorpay';
 
@@ -81,11 +82,11 @@ const TestPaymentPage: React.FC = () => {
           window.location.href = result.data.instrumentResponse.redirectInfo.url;
         } else {
           toast.error(result.message || 'Payment initiation failed');
-          console.error('Payment error:', result);
+          logger.error('Payment error:', result);
         }
       }
     } catch (error) {
-      console.error('Payment error:', error);
+      logger.error('Payment error:', error);
       toast.error('Failed to initiate payment');
     } finally {
       setProcessing(false);
@@ -94,16 +95,19 @@ const TestPaymentPage: React.FC = () => {
 
   // Quick login for testing
   const handleQuickLogin = async () => {
+    const testEmail = import.meta.env.VITE_TEST_EMAIL || 'test@example.com'
+    const testPassword = import.meta.env.VITE_TEST_PASSWORD || ''
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: 'test@example.com',
-      password: 'test123456',
+      email: testEmail,
+      password: testPassword,
     });
-    
+
     if (error) {
       // Create test user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: `test${Date.now()}@example.com`,
-        password: 'test123456',
+        password: testPassword || 'test123456',
       });
       if (!signUpError && signUpData.user) {
         setUser(signUpData.user);

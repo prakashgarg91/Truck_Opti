@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Loader2, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
+import { logger } from '../../utils/logger'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -52,7 +53,7 @@ export default function AuthCallbackPage() {
         }
         
         if (error) {
-          console.error('Auth callback error:', error)
+          logger.error('Auth callback error:', error)
           setError(error.message)
           toast.error('Authentication failed: ' + error.message)
           navigate('/login', { replace: true })
@@ -74,12 +75,12 @@ export default function AuthCallbackPage() {
           window.location.replace('/')
         } else {
           // No session found - might be a direct visit to this page
-          console.warn('No session found in callback')
+          logger.warn('No session found in callback')
           window.clearTimeout(timeoutId)
           window.location.replace('/login')
         }
       } catch (err: any) {
-        console.error('Unexpected error during auth callback:', err)
+        logger.error('Unexpected error during auth callback:', err)
         setError(err.message || 'An unexpected error occurred')
         toast.error('Authentication failed. Please try again.')
         window.clearTimeout(timeoutId)

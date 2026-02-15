@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2, Home, RefreshCw } from 'lucide-react';
 import { checkPaymentStatus, verifyAndActivateSubscription } from '../services/phonepePayment';
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 
 const PaymentCallbackPage: React.FC = () => {
   const navigate = useNavigate();
@@ -70,7 +71,7 @@ const PaymentCallbackPage: React.FC = () => {
         setMessage('Payment is being processed. Please wait...');
       }
     } catch (error) {
-      console.error('Payment verification error:', error);
+      logger.error('Payment verification error:', error);
       setStatus('failed');
       setMessage('Unable to verify payment. Please contact support.');
     }
