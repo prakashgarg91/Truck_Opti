@@ -9,6 +9,7 @@ import { truckTypeSchema, validateWithZod } from '../utils/validators'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
+import { useDebouncedCallback } from '../hooks/useDebounce'
 
 interface TruckType {
   id: string
@@ -235,6 +236,27 @@ export default function TrucksPage() {
       available: 1
     })
   }
+
+  // Debounced update functions for dimension inputs to improve performance
+  const debouncedSetLength = useDebouncedCallback((value: number) => {
+    setFormData(prev => ({ ...prev, length: value }))
+  }, 300)
+
+  const debouncedSetWidth = useDebouncedCallback((value: number) => {
+    setFormData(prev => ({ ...prev, width: value }))
+  }, 300)
+
+  const debouncedSetHeight = useDebouncedCallback((value: number) => {
+    setFormData(prev => ({ ...prev, height: value }))
+  }, 300)
+
+  const debouncedSetCapacity = useDebouncedCallback((value: number) => {
+    setFormData(prev => ({ ...prev, capacity: value }))
+  }, 300)
+
+  const debouncedSetCostPerKm = useDebouncedCallback((value: number) => {
+    setFormData(prev => ({ ...prev, cost_per_km: value }))
+  }, 300)
 
   const handleOpenModal = (truck?: TruckType) => {
     if (truck) {
@@ -506,8 +528,8 @@ export default function TrucksPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Capacity (kg)</label>
                   <input
                     type="number"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({...formData, capacity: Number(e.target.value)})}
+                    defaultValue={formData.capacity}
+                    onChange={(e) => debouncedSetCapacity(Number(e.target.value))}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   />
                   {formErrors.capacity && <p className="text-red-500 text-xs mt-1">{formErrors.capacity}</p>}
@@ -516,8 +538,8 @@ export default function TrucksPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cost per km (₹)</label>
                   <input
                     type="number"
-                    value={formData.cost_per_km}
-                    onChange={(e) => setFormData({...formData, cost_per_km: Number(e.target.value)})}
+                    defaultValue={formData.cost_per_km}
+                    onChange={(e) => debouncedSetCostPerKm(Number(e.target.value))}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   />
                 </div>
@@ -528,8 +550,8 @@ export default function TrucksPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Length (cm)</label>
                   <input
                     type="number"
-                    value={formData.length}
-                    onChange={(e) => setFormData({...formData, length: Number(e.target.value)})}
+                    defaultValue={formData.length}
+                    onChange={(e) => debouncedSetLength(Number(e.target.value))}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                     placeholder="e.g. 427 for 14ft"
                   />
@@ -539,8 +561,8 @@ export default function TrucksPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Width (cm)</label>
                   <input
                     type="number"
-                    value={formData.width}
-                    onChange={(e) => setFormData({...formData, width: Number(e.target.value)})}
+                    defaultValue={formData.width}
+                    onChange={(e) => debouncedSetWidth(Number(e.target.value))}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   />
                   {formErrors.width && <p className="text-red-500 text-xs mt-1">{formErrors.width}</p>}
@@ -549,8 +571,8 @@ export default function TrucksPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Height (cm)</label>
                   <input
                     type="number"
-                    value={formData.height}
-                    onChange={(e) => setFormData({...formData, height: Number(e.target.value)})}
+                    defaultValue={formData.height}
+                    onChange={(e) => debouncedSetHeight(Number(e.target.value))}
                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   />
                   {formErrors.height && <p className="text-red-500 text-xs mt-1">{formErrors.height}</p>}

@@ -72,10 +72,24 @@ export default function MobileLayout() {
   useEffect(() => {
     if (!user?.id) return
     
+    // Initial fetch
+    fetchNotifications()
+    
     const subscription = notificationsSupabaseApi.subscribeToNotifications(
       user.id,
-      () => {
-        fetchNotifications()
+      (payload: any) => {
+        // When a new notification is received, immediately update the count
+        if (payload.eventType === 'INSERT') {
+          setNotificationCount(prev => prev + 1)
+          // Also fetch full list to keep data fresh
+          fetchNotifications()
+        } else if (payload.eventType === 'DELETE') {
+          setNotificationCount(prev => Math.max(0, prev - 1))
+          fetchNotifications()
+        } else {
+          // UPDATE or other events
+          fetchNotifications()
+        }
       }
     )
     
@@ -104,6 +118,9 @@ export default function MobileLayout() {
     try {
       const data = await notificationsSupabaseApi.getNotifications(20)
       setNotifications(data)
+      // Recalculate unread count from fetched data to ensure accuracy
+      const unreadCount = data.filter(n => !n.is_read).length
+      setNotificationCount(unreadCount)
     } catch (error) {
       console.error('Failed to load notifications:', error)
     } finally {

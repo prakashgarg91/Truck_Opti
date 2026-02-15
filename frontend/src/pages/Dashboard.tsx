@@ -1,12 +1,52 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, Loader2, FileText, Calculator, Upload } from 'lucide-react'
+import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, FileText, Calculator, Upload } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
 import { packingJobsSupabaseApi, analyticsSupabaseApi, saleOrdersSupabaseApi, type PackingJob, type SaleOrder } from '../services/supabaseApi'
 import { calculateShipmentCost, formatCost } from '../utils/costEngine'
+
+// Skeleton loader for stats cards
+const StatsSkeleton = memo(() => (
+  <div className="grid grid-cols-2 gap-3">
+    {Array.from({ length: 4 }).map((_, index) => (
+      <div 
+        key={index} 
+        className="card p-4 animate-pulse"
+        style={{ animationDelay: `${index * 100}ms` }}
+      >
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+            <div className="h-8 w-12 bg-slate-200 dark:bg-slate-700 rounded" />
+          </div>
+          <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+        </div>
+      </div>
+    ))}
+  </div>
+))
+
+StatsSkeleton.displayName = 'StatsSkeleton'
+
+// Skeleton loader for recent activity
+const ActivitySkeleton = memo(() => (
+  <div className="card overflow-hidden animate-pulse">
+    {Array.from({ length: 3 }).map((_, index) => (
+      <div key={index} className="p-4 flex items-start gap-4">
+        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-xl flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded" />
+          <div className="h-3 w-1/4 bg-slate-200 dark:bg-slate-700 rounded" />
+        </div>
+      </div>
+    ))}
+  </div>
+))
+
+ActivitySkeleton.displayName = 'ActivitySkeleton'
 
 interface DashboardStats {
   activeShipments: number
@@ -203,8 +243,28 @@ export default function Dashboard() {
 
   if (loading && !loadError) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      <div className="p-4 space-y-6 pb-8">
+        {/* Welcome Section Skeleton */}
+        <div className="bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700 rounded-3xl p-6 h-40 animate-pulse" />
+        
+        {/* Stats Skeleton */}
+        <StatsSkeleton />
+        
+        {/* Quick Actions Skeleton */}
+        <div className="grid grid-cols-3 gap-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="card p-4 text-center animate-pulse">
+              <div className="w-14 h-14 bg-slate-200 dark:bg-slate-700 rounded-2xl mx-auto mb-3" />
+              <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded mx-auto" />
+            </div>
+          ))}
+        </div>
+        
+        {/* Recent Activity Skeleton */}
+        <div>
+          <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded mb-4" />
+          <ActivitySkeleton />
+        </div>
       </div>
     )
   }
@@ -249,34 +309,38 @@ export default function Dashboard() {
       </div>
       
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 stagger-children">
-        {statsConfig.map((stat, index) => (
-          <div 
-            key={stat.label} 
-            className="card card-hover p-4 group cursor-pointer"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                  {stat.label}
-                </p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white">
-                    {stat.value}
+      {loading ? (
+        <StatsSkeleton />
+      ) : (
+        <div className="grid grid-cols-2 gap-3 stagger-children">
+          {statsConfig.map((stat, index) => (
+            <div 
+              key={stat.label} 
+              className="card card-hover p-4 group cursor-pointer"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    {stat.label}
                   </p>
-                  <span className="text-xs font-medium text-green-600 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full">
-                    {stat.change}
-                  </span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <p className="text-3xl font-bold text-slate-900 dark:text-white">
+                      {stat.value}
+                    </p>
+                    <span className="text-xs font-medium text-green-600 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full">
+                      {stat.change}
+                    </span>
+                  </div>
+                </div>
+                <div className={`bg-gradient-to-br ${stat.color} p-2.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <stat.icon className="w-5 h-5" />
                 </div>
               </div>
-              <div className={`bg-gradient-to-br ${stat.color} p-2.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                <stat.icon className="w-5 h-5" />
-              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       
       {/* Quick Actions */}
       <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>

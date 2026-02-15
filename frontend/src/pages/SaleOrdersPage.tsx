@@ -159,7 +159,17 @@ export default function SaleOrdersPage() {
       }
 
       // Validate and parse items using Zod
-      const items: ParsedItem[] = data.map((row, index) => {
+      // Filter out completely empty rows (all fields empty/null/undefined)
+      const nonEmptyRows = data.filter((row) => {
+        // Check if row has any non-empty value
+        return Object.values(row).some(val => {
+          if (val === null || val === undefined) return false
+          const strVal = String(val).trim()
+          return strVal !== '' && strVal !== '0'
+        })
+      })
+      
+      const items: ParsedItem[] = nonEmptyRows.map((row, index) => {
         // Extract fields with flexible column names
         const product_name = String(row.product_name || row['Product Name'] || row['product name'] || '').trim()
         const length = parseFloat(String(row.length_cm || row['Length (cm)'] || row.length || 0))

@@ -14,11 +14,15 @@ interface UsePackingWorkerReturn {
   progress: number
   isProcessing: boolean
   isSupported: boolean
+  terminate: () => void
 }
 
 /**
  * Hook to run packing algorithms in a Web Worker (off main thread)
  * Falls back to main thread if Web Workers aren't supported
+ * 
+ * IMPORTANT: Always call terminate() when the component unmounts or
+ * when you're done using the worker to prevent memory leaks.
  */
 export function usePackingWorker(): UsePackingWorkerReturn {
   const workerRef = useRef<Worker | null>(null)
@@ -26,21 +30,51 @@ export function usePackingWorker(): UsePackingWorkerReturn {
   const [isProcessing, setIsProcessing] = useState(false)
   const isSupported = typeof Worker !== 'undefined'
 
+  // Initialize worker on mount
   useEffect(() => {
-    if (isSupported) {
+    if (isSupported && !workerRef.current) {
       workerRef.current = new Worker(
         new URL('../workers/packingWorker.ts', import.meta.url),
         { type: 'module' }
       )
     }
 
+    // Cleanup: terminate worker on unmount
     return () => {
-      workerRef.current?.terminate()
+      terminate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSupported])
+
+  /**
+   * Terminate the Web Worker to free up memory
+   * Call this when the component unmounts or when done with packing operations
+   */
+  const terminate = useCallback(() => {
+    if (workerRef.current) {
+      workerRef.current.terminate()
+      workerRef.current = null
+    }
+    setIsProcessing(false)
+    setProgress(0)
+  }, [])
+
+  /**
+   * Recreate the worker if it was terminated
+   */
+  const ensureWorker = useCallback(() => {
+    if (isSupported && !workerRef.current) {
+      workerRef.current = new Worker(
+        new URL('../workers/packingWorker.ts', import.meta.url),
+        { type: 'module' }
+      )
     }
   }, [isSupported])
 
   const runPacking = useCallback((truck: any, items: any[], algorithm: string): Promise<PackingWorkerResult> => {
     return new Promise((resolve, reject) => {
+      ensureWorker()
+      
       if (!workerRef.current) {
         reject(new Error('Web Worker not available'))
         return
@@ -67,10 +101,12 @@ export function usePackingWorker(): UsePackingWorkerReturn {
       workerRef.current.addEventListener('message', handler)
       workerRef.current.postMessage({ type: 'pack', truck, items, algorithm })
     })
-  }, [])
+  }, [ensureWorker])
 
   const runRecommendation = useCallback((items: any[], trucks: any[], algorithm: string): Promise<any[]> => {
     return new Promise((resolve, reject) => {
+      ensureWorker()
+      
       if (!workerRef.current) {
         reject(new Error('Web Worker not available'))
         return
@@ -95,7 +131,7 @@ export function usePackingWorker(): UsePackingWorkerReturn {
       workerRef.current.addEventListener('message', handler)
       workerRef.current.postMessage({ type: 'recommend', items, trucks, algorithm })
     })
-  }, [])
+  }, [ensureWorker])
 
-  return { runPacking, runRecommendation, progress, isProcessing, isSupported }
+  return { runPacking, runRecommendation, progress, isProcessing, isSupported, terminate }
 }

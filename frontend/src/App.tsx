@@ -15,6 +15,7 @@ import AuthCallbackPage from './pages/auth/AuthCallbackPage'
 // Components
 import PageSkeleton from './components/PageSkeleton'
 import ProtectedRoute from './components/ProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 
 // Pages - Lazy loaded (code-split for performance)
 const Dashboard = React.lazy(() => import('./pages/Dashboard'))
@@ -42,8 +43,9 @@ function AppContent() {
   }, [initialize])
   
   return (
-    <Suspense fallback={<PageSkeleton />}>
-      <Routes>
+    <ErrorBoundary>
+      <Suspense fallback={<PageSkeleton />}>
+        <Routes>
         {/* Auth routes - accessible without authentication */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
@@ -79,6 +81,7 @@ function AppContent() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+    </ErrorBoundary>
   )
 }
 

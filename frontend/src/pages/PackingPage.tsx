@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, memo } from 'react'
 import { 
   Package, Truck, Play, Settings, Layers, CheckCircle2, 
   Plus, Trash2, Wand2, AlertTriangle, ChevronDown,
@@ -469,6 +469,121 @@ function recommendTrucks(items: SaleOrderItem[], algorithm: string, trucks: Truc
   return recommendations.slice(0, 3)
 }
 
+// Memoized Packing Stats Component to prevent unnecessary re-renders
+const PackingStats = memo(({ 
+  selectedRecommendation, 
+  lang 
+}: { 
+  selectedRecommendation: TruckRecommendation
+  lang: Language 
+}) => {
+  const stats = useMemo(() => ({
+    itemsPacked: `${selectedRecommendation.itemsFit}/${selectedRecommendation.totalItems}`,
+    volumeUsed: `${selectedRecommendation.volumeUtilization}%`,
+    weightUsed: `${selectedRecommendation.weightUtilization}%`,
+    estCost: `₹${selectedRecommendation.estimatedCost}`,
+    unfitItems: selectedRecommendation.unfitItems
+  }), [selectedRecommendation])
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+        <p className="text-xs text-slate-500">{t[lang].itemsPacked}</p>
+        <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.itemsPacked}</p>
+      </div>
+      <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+        <p className="text-xs text-slate-500">{t[lang].volumeUsed}</p>
+        <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.volumeUsed}</p>
+      </div>
+      <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+        <p className="text-xs text-slate-500">{t[lang].weightUsed}</p>
+        <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.weightUsed}</p>
+      </div>
+      <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
+        <p className="text-xs text-slate-500">{t[lang].estCost}</p>
+        <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.estCost}</p>
+      </div>
+    </div>
+  )
+})
+
+PackingStats.displayName = 'PackingStats'
+
+// Memoized recommendation cards to prevent unnecessary re-renders
+const RecommendationCard = memo(({
+  rec,
+  index,
+  isSelected,
+  onSelect,
+  lang
+}: {
+  rec: TruckRecommendation
+  index: number
+  isSelected: boolean
+  onSelect: () => void
+  lang: Language
+}) => {
+  return (
+    <button
+      onClick={onSelect}
+      className={`p-4 rounded-xl text-left transition-all border-2 relative ${
+        isSelected
+          ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 shadow-lg'
+          : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
+      }`}
+    >
+      {index === 0 && (
+        <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
+          {t[lang].best}
+        </div>
+      )}
+      <div className="flex items-center gap-2 mb-2">
+        <Truck className={`w-5 h-5 ${index === 0 ? 'text-amber-500' : 'text-slate-400'}`} />
+        <span className="font-semibold text-slate-900 dark:text-white">{lang === 'en' ? rec.truck.name : rec.truck.nameHi}</span>
+      </div>
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-500">{t[lang].itemsFit}</span>
+          <span className={`font-medium ${
+            rec.itemsFit === rec.totalItems ? 'text-green-600' : 'text-amber-600'
+          }`}>
+            {rec.itemsFit}/{rec.totalItems}
+          </span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-500">{t[lang].volume}</span>
+          <div className="flex items-center gap-2">
+            <div className="w-16 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full ${
+                  rec.volumeUtilization > 70 ? 'bg-green-500' : 
+                  rec.volumeUtilization > 40 ? 'bg-amber-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${Math.min(rec.volumeUtilization, 100)}%` }}
+              />
+            </div>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{rec.volumeUtilization}%</span>
+          </div>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-500">{t[lang].estCost}</span>
+          <span className="font-medium text-slate-900 dark:text-white">₹{rec.estimatedCost}</span>
+        </div>
+      </div>
+      {rec.unfitItems.length > 0 && (
+        <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+          <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            {rec.unfitItems.length} {t[lang].wontFit}
+          </p>
+        </div>
+      )}
+    </button>
+  )
+})
+
+RecommendationCard.displayName = 'RecommendationCard'
+
 // ============= MAIN COMPONENT =============
 export default function PackingPage() {
   const navigate = useNavigate()
@@ -507,7 +622,14 @@ export default function PackingPage() {
   const [bookingInProgress, setBookingInProgress] = useState(false)
 
   // Web Worker for client-side algorithm processing
-  const { runPacking, runRecommendation, isSupported: workerSupported } = usePackingWorker()
+  const { runPacking, runRecommendation, isSupported: workerSupported, terminate } = usePackingWorker()
+  
+  // Cleanup: Terminate worker on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      terminate()
+    }
+  }, [terminate])
 
   // Set document title based on language
   useEffect(() => {
@@ -1293,65 +1415,17 @@ export default function PackingPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {recommendations.map((rec, idx) => (
-                    <button
+                    <RecommendationCard
                       key={rec.truck.id}
-                      onClick={() => {
+                      rec={rec}
+                      index={idx}
+                      isSelected={selectedRecommendation?.truck.id === rec.truck.id}
+                      onSelect={() => {
                         setSelectedRecommendation(rec)
                         setSelectedTruck(rec.truck.id)
                       }}
-                      className={`p-4 rounded-xl text-left transition-all border-2 relative ${
-                        selectedRecommendation?.truck.id === rec.truck.id
-                          ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 shadow-lg'
-                          : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
-                      }`}
-                    >
-                      {idx === 0 && (
-                        <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
-                          {t[lang].best}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 mb-2">
-                        <Truck className={`w-5 h-5 ${idx === 0 ? 'text-amber-500' : 'text-slate-400'}`} />
-                        <span className="font-semibold text-slate-900 dark:text-white">{lang === 'en' ? rec.truck.name : rec.truck.nameHi}</span>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">{t[lang].itemsFit}</span>
-                          <span className={`font-medium ${
-                            rec.itemsFit === rec.totalItems ? 'text-green-600' : 'text-amber-600'
-                          }`}>
-                            {rec.itemsFit}/{rec.totalItems}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">{t[lang].volume}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full ${
-                                  rec.volumeUtilization > 70 ? 'bg-green-500' : 
-                                  rec.volumeUtilization > 40 ? 'bg-amber-500' : 'bg-red-500'
-                                }`}
-                                style={{ width: `${Math.min(rec.volumeUtilization, 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{rec.volumeUtilization}%</span>
-                          </div>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">{t[lang].estCost}</span>
-                          <span className="font-medium text-slate-900 dark:text-white">₹{rec.estimatedCost}</span>
-                        </div>
-                      </div>
-                      {rec.unfitItems.length > 0 && (
-                        <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                          <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            {rec.unfitItems.length} {t[lang].wontFit}
-                          </p>
-                        </div>
-                      )}
-                    </button>
+                      lang={lang}
+                    />
                   ))}
                 </div>
               </div>
@@ -1409,26 +1483,8 @@ export default function PackingPage() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-                    <p className="text-xs text-slate-500">{t[lang].itemsPacked}</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">
-                      {selectedRecommendation.itemsFit}/{selectedRecommendation.totalItems}
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-                    <p className="text-xs text-slate-500">{t[lang].volumeUsed}</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">{selectedRecommendation.volumeUtilization}%</p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-                    <p className="text-xs text-slate-500">{t[lang].weightUsed}</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">{selectedRecommendation.weightUtilization}%</p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-                    <p className="text-xs text-slate-500">{t[lang].estCost}</p>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">₹{selectedRecommendation.estimatedCost}</p>
-                  </div>
-                </div>
+                {/* Memoized packing stats for better performance */}
+                <PackingStats selectedRecommendation={selectedRecommendation} lang={lang} />
                 
                 {selectedRecommendation.unfitItems.length > 0 && (
                   <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
