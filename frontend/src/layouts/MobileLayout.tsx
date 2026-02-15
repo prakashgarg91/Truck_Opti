@@ -1,11 +1,11 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import OfflineBanner from '../components/OfflineBanner'
 import InstallPrompt from '../components/InstallPrompt'
-import { 
-  LayoutDashboard, 
-  Package, 
-  Route, 
-  MapPin, 
+import {
+  LayoutDashboard,
+  Package,
+  Route,
+  MapPin,
   Menu,
   X,
   Bell,
@@ -18,7 +18,8 @@ import {
   Check,
   Trash2,
   Loader2,
-  FileText
+  FileText,
+  Wrench
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
@@ -385,7 +386,7 @@ export default function MobileLayout() {
                 </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setSidebarOpen(false)}
               className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl lg:hidden transition-colors"
               aria-label="Close menu"
@@ -393,6 +394,38 @@ export default function MobileLayout() {
               <X className="w-5 h-5" />
             </button>
           </div>
+
+          {/* User Profile Section */}
+          {user && (
+            <div
+              onClick={() => { navigate('/profile'); setSidebarOpen(false) }}
+              className="px-5 py-3 border-b border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                {user.user_metadata?.avatar_url ? (
+                  <img
+                    src={user.user_metadata.avatar_url}
+                    alt="Profile"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                    <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
+                      {(user.user_metadata?.full_name || user.email || 'U').charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Desktop Notification Bell */}
           <div className="hidden lg:flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700">
@@ -435,7 +468,18 @@ export default function MobileLayout() {
                 <span className="font-medium">{language === 'en' ? item.label : item.labelHi}</span>
               </NavLink>
             ))}
-            
+
+            <button
+              onClick={() => {
+                navigate('/management')
+                setSidebarOpen(false)
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+            >
+              <Wrench className="w-5 h-5" />
+              <span className="font-medium">{language === 'en' ? 'Management' : 'प्रबंधन'}</span>
+            </button>
+
             <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-3">
                 {language === 'en' ? 'Settings' : 'सेटिंग्स'}

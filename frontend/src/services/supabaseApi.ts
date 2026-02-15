@@ -310,6 +310,25 @@ export const shipmentsSupabaseApi = {
       .single()
     if (error) throw error
     return data as Shipment
+  },
+
+  async update(id: string, data: Partial<Shipment>): Promise<Shipment> {
+    const { data: result, error } = await supabase
+      .from('shipments')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return result as Shipment
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('shipments')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }
 }
 
@@ -550,6 +569,26 @@ export const packingJobsSupabaseApi = {
       .eq('job_id', jobId)
     if (error) throw error
     return (data as PackingJobItem[]) || []
+  },
+
+  async updateJob(id: string, data: Partial<PackingJob>): Promise<PackingJob> {
+    const { data: result, error } = await supabase
+      .from('packing_jobs')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return result as PackingJob
+  },
+
+  async deleteJob(id: string): Promise<void> {
+    await supabase.from('packing_items').delete().eq('job_id', id)
+    const { error } = await supabase
+      .from('packing_jobs')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }
 }
 

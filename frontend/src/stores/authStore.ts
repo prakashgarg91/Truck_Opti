@@ -15,6 +15,10 @@ interface AppUser {
   google_linked: boolean
   profile_picture: string | null
   role: string
+  user_metadata?: {
+    avatar_url?: string
+    full_name?: string
+  }
 }
 
 interface AuthState {

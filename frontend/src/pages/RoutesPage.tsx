@@ -38,6 +38,41 @@ const CITY_COORDINATES: Record<string, [number, number]> = {
   'patna': [25.5941, 85.1376],
 }
 
+// Haversine formula to calculate distance between two coordinates in km
+const haversine = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371 // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+// Calculate total route distance using Haversine formula
+const calculateRouteDistance = (
+  startLocation: string,
+  destinations: string[]
+): number => {
+  const allLocations = [startLocation, ...destinations].filter(d => d.trim() !== '')
+  let totalDistance = 0
+
+  for (let i = 0; i < allLocations.length - 1; i++) {
+    const coords1 = getLocationCoordinates(allLocations[i])
+    const coords2 = getLocationCoordinates(allLocations[i + 1])
+
+    if (coords1 && coords2) {
+      totalDistance += haversine(coords1[0], coords1[1], coords2[0], coords2[1])
+    } else {
+      // Fall back to 200km per unknown stop
+      totalDistance += 200
+    }
+  }
+
+  return totalDistance
+}
+
 // Get approximate coordinates for a location name
 const getLocationCoordinates = (location: string): [number, number] | null => {
   const normalizedLocation = location.toLowerCase().trim()
@@ -140,12 +175,14 @@ export default function RoutesPage() {
     try {
       setOptimizing(true)
       const validDestinations = formData.destinations.filter(d => d.trim() !== '')
-      
-      // Calculate approximate distance and time (simplified)
-      const distance = validDestinations.length * 150 // Rough estimate: 150km per stop
-      const time = distance * 1.5 // Rough estimate: 1.5 min per km
-      const fuelCost = distance * 25 // Rough estimate: ₹25 per km
-      const tollCost = distance * 3 // Rough estimate: ₹3 per km
+
+      // Calculate real distance using Haversine formula
+      const distance = calculateRouteDistance(formData.start_location, validDestinations)
+
+      // Use realistic Indian logistics estimates
+      const time = distance / 40 // Average 40 km/h for trucks (result in hours)
+      const fuelCost = distance * 12 // ₹12/km diesel cost
+      const tollCost = distance * 1.5 // ₹1.5/km avg toll
       
       await routesSupabaseApi.create({
         name: formData.name || `Route to ${validDestinations[validDestinations.length - 1]}`,

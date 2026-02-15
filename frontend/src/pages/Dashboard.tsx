@@ -66,6 +66,7 @@ interface DashboardData {
     status: string
   }>
   recentSaleOrders: SaleOrder[]
+  pendingOptimizations: number
 }
 
 const TRUCK_TYPES = [
@@ -77,10 +78,11 @@ const TRUCK_TYPES = [
 
 const fetchDashboardData = async (language: string): Promise<DashboardData> => {
   // Fetch counts from Supabase
-  const [trucksRes, shipmentsRes, routesRes] = await Promise.all([
+  const [trucksRes, shipmentsRes, routesRes, pendingJobsRes] = await Promise.all([
     supabase.from('trucks').select('id', { count: 'exact' }),
     supabase.from('shipments').select('id, status', { count: 'exact' }),
-    supabase.from('routes').select('id', { count: 'exact' })
+    supabase.from('routes').select('id', { count: 'exact' }),
+    supabase.from('packing_jobs').select('id', { count: 'exact' }).eq('status', 'draft')
   ])
 
   const activeShipments = shipmentsRes.data?.filter(s => s.status === 'in_transit').length || 0
@@ -129,7 +131,8 @@ const fetchDashboardData = async (language: string): Promise<DashboardData> => {
     stats,
     weeklyData,
     recentActivity: activities,
-    recentSaleOrders
+    recentSaleOrders,
+    pendingOptimizations: pendingJobsRes.count || 0
   }
 }
 
@@ -192,6 +195,7 @@ export default function Dashboard() {
   const weeklyData = dashboardData?.weeklyData || [0, 0, 0, 0, 0, 0, 0]
   const recentActivity = dashboardData?.recentActivity || []
   const recentSaleOrders = dashboardData?.recentSaleOrders || []
+  const pendingOptimizations = dashboardData?.pendingOptimizations || 0
 
   const statsConfig = [
     { 
@@ -284,10 +288,12 @@ export default function Dashboard() {
           </h1>
           
           {/* Notification Badge */}
-          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur rounded-full text-sm">
-            <Bell className="w-4 h-4 text-saffron animate-pulse" />
-            <span>3 pending optimizations</span>
-          </div>
+          {pendingOptimizations > 0 && (
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur rounded-full text-sm">
+              <Bell className="w-4 h-4 text-saffron animate-pulse" />
+              <span>{pendingOptimizations} pending {pendingOptimizations === 1 ? 'optimization' : 'optimizations'}</span>
+            </div>
+          )}
           
           <div className="mt-5 flex gap-3">
             <button 
@@ -513,7 +519,7 @@ export default function Dashboard() {
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
             {language === 'en' ? 'Recent Activity' : 'हाल की गतिविधि'}
           </h3>
-          <button className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+          <button onClick={() => navigate('/packing')} className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
             {language === 'en' ? 'View all' : 'सभी देखें'}
             <ChevronRight className="w-4 h-4" />
           </button>

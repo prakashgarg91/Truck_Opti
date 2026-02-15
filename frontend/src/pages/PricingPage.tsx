@@ -1,6 +1,43 @@
 import { useState, useEffect } from 'react'
 import { Check, Zap, Crown, Building2, Rocket, Star, Globe } from 'lucide-react'
-import { PRICING_TIERS } from '../config/pricing'
+import { useQuery } from '@tanstack/react-query'
+import { PRICING_TIERS, type PricingTier } from '../config/pricing'
+import { supabase } from '../lib/supabase'
+
+// Fetch pricing plans from database
+const fetchPricingPlans = async (): Promise<PricingTier[]> => {
+  const { data, error } = await supabase
+    .from('subscription_plans')
+    .select('*')
+    .order('monthly_price', { ascending: true })
+
+  if (error || !data || data.length === 0) {
+    // Fall back to static pricing tiers
+    return PRICING_TIERS
+  }
+
+  // Map database rows to PricingTier interface
+  return data.map((plan) => ({
+    id: plan.id,
+    name: plan.name,
+    nameHi: plan.name_hi || plan.name,
+    monthlyPrice: plan.monthly_price,
+    yearlyPrice: plan.yearly_price,
+    features: plan.features || [],
+    limits: {
+      users: plan.limits_users || 1,
+      trucksManaged: plan.limits_trucks || 1,
+      shipmentsPerMonth: plan.limits_shipments || 0,
+      packingOptimizations: plan.limits_packing || 0,
+      routeOptimizations: plan.limits_routes || 0,
+      storageGB: plan.limits_storage || 1,
+      apiCallsPerMonth: plan.limits_api_calls || 0,
+      smsOtpPerMonth: plan.limits_sms || 0,
+      supportLevel: plan.limits_support || 'community'
+    },
+    targetAudience: plan.target_audience || ''
+  }))
+}
 
 type Language = 'en' | 'hi'
 
@@ -37,7 +74,7 @@ const t = {
     enterprise: 'Need Custom Solution?',
     enterpriseDesc: 'Get a tailored plan for your organization',
     talkToUs: 'Talk to Us',
-    trustedBy: 'Trusted by 500+ logistics companies across India',
+    trustedBy: 'Smart logistics optimization for Indian businesses',
   },
   hi: {
     title: 'सरल, पारदर्शी मूल्य निर्धारण',
@@ -71,7 +108,7 @@ const t = {
     enterprise: 'कस्टम समाधान चाहिए?',
     enterpriseDesc: 'अपने संगठन के लिए टेलर्ड प्लान पाएं',
     talkToUs: 'हमसे बात करें',
-    trustedBy: 'भारत भर में 500+ लॉजिस्टिक्स कंपनियों द्वारा विश्वसनीय',
+    trustedBy: 'भारतीय व्यवसायों के लिए स्मार्ट लॉजिस्टिक्स ऑप्टिमाइज़ेशन',
   }
 }
 
@@ -97,6 +134,14 @@ export default function PricingPage() {
   const [lang, setLang] = useState<Language>('en')
   const [isYearly, setIsYearly] = useState(false)
   const labels = t[lang]
+
+  // Fetch pricing plans from database with fallback to static
+  const { data: pricingTiers, isLoading } = useQuery<PricingTier[]>({
+    queryKey: ['pricing-plans'],
+    queryFn: fetchPricingPlans,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    initialData: PRICING_TIERS
+  })
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -181,7 +226,22 @@ export default function PricingPage() {
 
       {/* Pricing Cards */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        {PRICING_TIERS.map((tier) => {
+        {isLoading ? (
+          // Loading skeleton
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 animate-pulse">
+              <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded mb-4" />
+              <div className="h-8 w-32 bg-slate-200 dark:bg-slate-700 rounded mb-6" />
+              <div className="h-10 w-full bg-slate-200 dark:bg-slate-700 rounded mb-6" />
+              <div className="space-y-2">
+                <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded" />
+              </div>
+            </div>
+          ))
+        ) : (
+          pricingTiers.map((tier: PricingTier) => {
           const Icon = tierIcons[tier.id] || Zap
           const colorClass = tierColors[tier.id] || 'from-blue-500 to-blue-600'
           const isPopular = tier.id === 'growth'
@@ -297,7 +357,8 @@ export default function PricingPage() {
               </div>
             </div>
           )
-        })}
+        })
+        )}
       </div>
 
       {/* Enterprise CTA */}

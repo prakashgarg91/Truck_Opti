@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node run-research-system.js:*)"
+      "Bash(node run-research-system.js:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite build)"
     ],
     "deny": [],
     "ask": []
