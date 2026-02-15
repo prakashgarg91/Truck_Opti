@@ -59,6 +59,7 @@ function AppContent() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/payment/callback" element={<PaymentCallbackPage />} />
+          <Route path="/payment/success" element={<PaymentCallbackPage />} />
           {import.meta.env.DEV && (
             <Route path="/test-payment" element={<TestPaymentPage />} />
           )}

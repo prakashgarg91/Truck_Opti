@@ -9,7 +9,7 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
   const { data, error } = await supabase
     .from('subscription_plans')
     .select('*')
-    .order('monthly_price', { ascending: true })
+    .order('price_monthly', { ascending: true })
 
   if (error || !data || data.length === 0) {
     // Fall back to static pricing tiers
@@ -21,8 +21,8 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
     id: plan.id,
     name: plan.name,
     nameHi: plan.name_hi || plan.name,
-    monthlyPrice: plan.monthly_price,
-    yearlyPrice: plan.yearly_price,
+    monthlyPrice: plan.price_monthly,
+    yearlyPrice: plan.price_yearly,
     features: plan.features || [],
     limits: {
       users: plan.limits_users || 1,

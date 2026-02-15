@@ -64,6 +64,43 @@ export function getRazorpayConfig() {
   };
 }
 
+// Create order on server (Edge Function)
+async function createServerOrder(request: RazorpayPaymentRequest): Promise<{ orderId: string; error?: string }> {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/create-razorpay-order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify({
+        amount: request.amount,
+        currency: request.currency || 'INR',
+        receipt: `rcpt_${Date.now()}`,
+        notes: {
+          user_id: request.userId,
+          plan_id: request.planId,
+          billing_cycle: request.billingCycle,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      return { orderId: '', error: error.error || 'Failed to create order' };
+    }
+
+    const order = await response.json();
+    return { orderId: order.id };
+  } catch (error) {
+    logger.error('Error creating server order:', error);
+    return { orderId: '', error: 'Failed to create payment order' };
+  }
+}
+
 // Initiate Razorpay Payment
 export async function initiateRazorpayPayment(
   request: RazorpayPaymentRequest
@@ -81,7 +118,14 @@ export async function initiateRazorpayPayment(
     return { success: false, error: 'Failed to load Razorpay SDK' };
   }
 
-  const orderId = request.orderId || `order_${Date.now()}`;
+  // Create order on server for security
+  const { orderId: serverOrderId, error: orderError } = await createServerOrder(request);
+  if (orderError || !serverOrderId) {
+    // Fallback to client-side order if server fails
+    logger.warn('Server order failed, using client-side order');
+  }
+
+  const orderId = serverOrderId || request.orderId || `order_${Date.now()}`;
   
   // Store pending transaction in Supabase
   try {

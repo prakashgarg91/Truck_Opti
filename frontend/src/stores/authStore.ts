@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 import type { Session, Subscription } from '@supabase/supabase-js'
+import { logger } from '../utils/logger'
 
 // Store the auth subscription for potential cleanup
 let authSubscription: Subscription | null = null
@@ -80,10 +81,10 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
       })
     
     if (error) {
-      if (import.meta.env.DEV) console.error('Failed to sync user profile:', error)
+      logger.error('Failed to sync user profile:', error)
     }
   } catch (err) {
-    if (import.meta.env.DEV) console.error('Error syncing user profile:', err)
+    logger.error('Error syncing user profile:', err)
   }
   
   return userData
@@ -106,7 +107,7 @@ export const useAuthStore = create<AuthState>()(
           const { data: { session }, error } = await supabase.auth.getSession()
           
           if (error) {
-            if (import.meta.env.DEV) console.error('Error getting session:', error)
+            logger.error('Error getting session:', error)
             set({ isLoading: false, isAuthenticated: false })
             return
           }
@@ -133,7 +134,7 @@ export const useAuthStore = create<AuthState>()(
           if (!authSubscription) {
             const { data: { subscription } } = supabase.auth.onAuthStateChange(
               async (event, session) => {
-                if (import.meta.env.DEV) console.log('Auth state changed:', event)
+                logger.log('Auth state changed:', event)
 
                 if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                   if (session) {
@@ -161,7 +162,7 @@ export const useAuthStore = create<AuthState>()(
             authSubscription = subscription
           }
         } catch (err) {
-          if (import.meta.env.DEV) console.error('Error initializing auth:', err)
+          logger.error('Error initializing auth:', err)
           set({ isLoading: false, isAuthenticated: false })
         }
       },
@@ -193,7 +194,7 @@ export const useAuthStore = create<AuthState>()(
             pendingPhone: null
           })
         } catch (err) {
-          if (import.meta.env.DEV) console.error('Error signing out:', err)
+          logger.error('Error signing out:', err)
           throw err
         }
       },
