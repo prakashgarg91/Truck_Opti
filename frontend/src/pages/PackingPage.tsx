@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
 import { usePackingWorker } from '../hooks/usePackingWorker'
+import { useSubscription } from '../hooks/useSubscription'
 
 // ============= LANGUAGE =============
 type Language = 'en' | 'hi'
@@ -605,6 +606,7 @@ export default function PackingPage() {
   const [expandedSection, setExpandedSection] = useState<string | null>('items')
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const { checkLimit, showUpgradePrompt } = useSubscription()
   
   // Booking modal state
   const [showBookModal, setShowBookModal] = useState(false)
@@ -765,9 +767,16 @@ export default function PackingPage() {
       toast.error('Add items to get recommendations')
       return
     }
-    
+
     if (trucks.length === 0) {
       toast.error('No trucks available')
+      return
+    }
+
+    // Check subscription limit before running optimization
+    const allowed = await checkLimit('packing_optimizations')
+    if (!allowed) {
+      showUpgradePrompt('packing optimizations')
       return
     }
     

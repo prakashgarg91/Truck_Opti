@@ -320,10 +320,12 @@ export default function Dashboard() {
       ) : (
         <div className="grid grid-cols-2 gap-3 stagger-children">
           {statsConfig.map((stat, index) => (
-            <div 
-              key={stat.label} 
+            <div
+              key={stat.label}
               className="card card-hover p-4 group cursor-pointer"
               style={{ animationDelay: `${index * 100}ms` }}
+              role="status"
+              aria-label={stat.label}
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -358,9 +360,10 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-3 gap-3">
           {quickActions.map((action, index) => (
-            <button 
+            <button
               key={action.label}
               onClick={() => navigate(action.path)}
+              aria-label={action.label}
               className="card card-hover p-4 text-center group active:scale-95 transition-all duration-200"
               style={{ animationDelay: `${(index + 4) * 50}ms` }}
             >

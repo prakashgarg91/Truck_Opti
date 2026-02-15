@@ -11,9 +11,9 @@ function isUnset(value?: string): boolean {
 }
 
 // Razorpay Configuration
+// Payment verification must happen via Supabase Edge Function
 const RAZORPAY_CONFIG = {
   keyId: import.meta.env.VITE_RAZORPAY_KEY_ID,
-  keySecret: import.meta.env.VITE_RAZORPAY_KEY_SECRET,
   isTestMode: (import.meta.env.VITE_RAZORPAY_KEY_ID || '').includes('test'),
 };
 

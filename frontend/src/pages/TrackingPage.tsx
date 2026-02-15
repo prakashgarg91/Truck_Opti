@@ -25,6 +25,7 @@ interface ShipmentLocation {
   customer_id?: string
   total_weight?: number
   total_volume?: number
+  speed?: number
 }
 
 const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
@@ -264,7 +265,7 @@ export default function TrackingPage() {
                 <div className="text-right">
                   <div className="flex items-center gap-1 text-emerald-600 font-bold text-sm">
                     <Activity className="w-3 h-3" />
-                    {s.latitude ? '65' : '0'} km/h
+                    {s.latitude ? (s.speed ? `${s.speed}` : '—') : '0'} km/h
                   </div>
                   <p className="text-[10px] text-slate-400 mt-0.5">Updated {new Date(s.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>

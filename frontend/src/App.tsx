@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 
 // Layouts
@@ -32,7 +32,11 @@ const InvoicePage = React.lazy(() => import('./pages/InvoicePage'))
 const PricingPage = React.lazy(() => import('./pages/PricingPage'))
 const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage'))
 const PaymentCallbackPage = React.lazy(() => import('./pages/PaymentCallbackPage'))
-const TestPaymentPage = React.lazy(() => import('./pages/TestPaymentPage'))
+const TestPaymentPage = import.meta.env.DEV
+  ? React.lazy(() => import('./pages/TestPaymentPage'))
+  : () => null
+
+const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'))
 
 function AppContent() {
   const { initialize } = useAuthStore()
@@ -55,7 +59,9 @@ function AppContent() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/payment/callback" element={<PaymentCallbackPage />} />
-          <Route path="/test-payment" element={<TestPaymentPage />} />
+          {import.meta.env.DEV && (
+            <Route path="/test-payment" element={<TestPaymentPage />} />
+          )}
         </Route>
         
         {/* Protected routes - require authentication */}
@@ -77,8 +83,8 @@ function AppContent() {
           <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
         </Route>
         
-        {/* Catch all - redirect to home or login based on auth state */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch all - show 404 page */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
     </ErrorBoundary>

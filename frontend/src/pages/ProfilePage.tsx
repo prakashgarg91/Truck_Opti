@@ -129,12 +129,40 @@ export default function ProfilePage() {
   }, [language])
   
   const t = translations[language as keyof typeof translations] || translations.en
-  const [isLocationSharing, setIsLocationSharing] = useState(true)
-  const [notifications, setNotifications] = useState({
-    sms: true,
-    push: true,
-    email: false
+
+  // Initialize notification preferences from user metadata
+  const [isLocationSharing, setIsLocationSharing] = useState(() => {
+    return user?.user_metadata?.location_sharing ?? true
   })
+  const [notifications, setNotifications] = useState(() => {
+    const prefs = user?.user_metadata?.notification_prefs
+    return prefs || { sms: true, push: true, email: false }
+  })
+
+  // Persist location sharing preference to user_metadata
+  const handleLocationSharingChange = async (enabled: boolean) => {
+    setIsLocationSharing(enabled)
+    try {
+      await supabase.auth.updateUser({
+        data: { location_sharing: enabled }
+      })
+    } catch (err) {
+      toast.error('Failed to update preference')
+    }
+  }
+
+  // Persist notification preference to user_metadata
+  const handleNotificationChange = async (key: string, enabled: boolean) => {
+    const newPrefs = { ...notifications, [key]: enabled }
+    setNotifications(newPrefs)
+    try {
+      await supabase.auth.updateUser({
+        data: { notification_prefs: newPrefs }
+      })
+    } catch (err) {
+      toast.error('Failed to update preference')
+    }
+  }
   
   // Edit profile state
   const [isEditing, setIsEditing] = useState(false)
@@ -369,11 +397,11 @@ export default function ProfilePage() {
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={isLocationSharing}
-              onChange={(e) => setIsLocationSharing(e.target.checked)}
-              className="sr-only peer" 
+              onChange={(e) => handleLocationSharingChange(e.target.checked)}
+              className="sr-only peer"
             />
             <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary-600"></div>
           </label>
@@ -389,19 +417,16 @@ export default function ProfilePage() {
         {Object.entries(notifications).map(([key, value]) => (
           <div key={key} className="p-4 flex items-center justify-between">
             <span className="text-slate-700 dark:text-slate-300 capitalize">
-              {key === 'sms' ? (language === 'en' ? 'SMS Alerts' : 'एसएमएस अलर्ट') : 
-               key === 'push' ? (language === 'en' ? 'Push Notifications' : 'पुश नोटिफिकेशन') : 
+              {key === 'sms' ? (language === 'en' ? 'SMS Alerts' : 'एसएमएस अलर्ट') :
+               key === 'push' ? (language === 'en' ? 'Push Notifications' : 'पुश नोटिफिकेशन') :
                (language === 'en' ? 'Email Updates' : 'ईमेल अपडेट')}
             </span>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={value}
-                onChange={(e) => setNotifications(prev => ({
-                  ...prev,
-                  [key]: e.target.checked
-                }))}
-                className="sr-only peer" 
+              <input
+                type="checkbox"
+                checked={value as boolean}
+                onChange={(e) => handleNotificationChange(key, e.target.checked)}
+                className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary-600"></div>
             </label>

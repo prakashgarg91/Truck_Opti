@@ -18,6 +18,12 @@ interface AppUser {
   user_metadata?: {
     avatar_url?: string
     full_name?: string
+    location_sharing?: boolean
+    notification_prefs?: {
+      sms: boolean
+      push: boolean
+      email: boolean
+    }
   }
 }
 
@@ -74,13 +80,10 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
       })
     
     if (error) {
-      console.error('Failed to sync user profile:', error)
-      // Don't throw - we still want to log the user in even if profile sync fails
-    } else {
-      console.log('User profile synced:', authUser.id)
+      if (import.meta.env.DEV) console.error('Failed to sync user profile:', error)
     }
   } catch (err) {
-    console.error('Error syncing user profile:', err)
+    if (import.meta.env.DEV) console.error('Error syncing user profile:', err)
   }
   
   return userData
@@ -103,7 +106,7 @@ export const useAuthStore = create<AuthState>()(
           const { data: { session }, error } = await supabase.auth.getSession()
           
           if (error) {
-            console.error('Error getting session:', error)
+            if (import.meta.env.DEV) console.error('Error getting session:', error)
             set({ isLoading: false, isAuthenticated: false })
             return
           }
@@ -130,8 +133,8 @@ export const useAuthStore = create<AuthState>()(
           if (!authSubscription) {
             const { data: { subscription } } = supabase.auth.onAuthStateChange(
               async (event, session) => {
-                console.log('Auth state changed:', event)
-                
+                if (import.meta.env.DEV) console.log('Auth state changed:', event)
+
                 if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                   if (session) {
                     const appUser = await syncUserProfile(session)
@@ -158,7 +161,7 @@ export const useAuthStore = create<AuthState>()(
             authSubscription = subscription
           }
         } catch (err) {
-          console.error('Error initializing auth:', err)
+          if (import.meta.env.DEV) console.error('Error initializing auth:', err)
           set({ isLoading: false, isAuthenticated: false })
         }
       },
@@ -190,7 +193,7 @@ export const useAuthStore = create<AuthState>()(
             pendingPhone: null
           })
         } catch (err) {
-          console.error('Error signing out:', err)
+          if (import.meta.env.DEV) console.error('Error signing out:', err)
           throw err
         }
       },
