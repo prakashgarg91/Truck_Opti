@@ -11,6 +11,12 @@ import { supabase } from '../lib/supabase'
 const translations = {
   en: {
     contactInfo: 'Contact Information',
+    companyInfo: 'Company Information',
+    companyName: 'Company Name',
+    gstin: 'GSTIN',
+    gstinPlaceholder: 'e.g., 27AABCU9603R1ZX',
+    companyAddress: 'Company Address',
+    companyAddressPlaceholder: 'e.g., Mumbai, Maharashtra - 400001',
     phone: 'Phone',
     email: 'Email',
     location: 'Location',
@@ -25,10 +31,18 @@ const translations = {
     logout: 'Logout',
     signOut: 'Sign out of your account',
     user: 'TruckOpti User',
-    selectLanguage: 'Select Language'
+    selectLanguage: 'Select Language',
+    notAdded: 'Not added yet',
+    tapToSet: 'Tap to set'
   },
   hi: {
     contactInfo: 'संपर्क जानकारी',
+    companyInfo: 'कंपनी जानकारी',
+    companyName: 'कंपनी का नाम',
+    gstin: 'GSTIN',
+    gstinPlaceholder: 'जैसे, 27AABCU9603R1ZX',
+    companyAddress: 'कंपनी का पता',
+    companyAddressPlaceholder: 'जैसे, मुंबई, महाराष्ट्र - 400001',
     phone: 'फोन',
     email: 'ईमेल',
     location: 'स्थान',
@@ -43,10 +57,18 @@ const translations = {
     logout: 'लॉगआउट',
     signOut: 'अपने खाते से साइन आउट करें',
     user: 'TruckOpti उपयोगकर्ता',
-    selectLanguage: 'भाषा चुनें'
+    selectLanguage: 'भाषा चुनें',
+    notAdded: 'अभी तक नहीं जोड़ा',
+    tapToSet: 'सेट करें'
   },
   gu: {
     contactInfo: 'સંપર્ક માહિતી',
+    companyInfo: 'કંપની માહિતી',
+    companyName: 'કંપનીનું નામ',
+    gstin: 'GSTIN',
+    gstinPlaceholder: 'દા.ત., 27AABCU9603R1ZX',
+    companyAddress: 'કંપનીનું સરનામું',
+    companyAddressPlaceholder: 'દા.ત., મુંબઈ, મહારાષ્ટ્ર - 400001',
     phone: 'ફોન',
     email: 'ઈમેલ',
     location: 'સ્થાન',
@@ -61,10 +83,18 @@ const translations = {
     logout: 'લૉગઆઉટ',
     signOut: 'તમારા ખાતામાંથી સાઇન આઉટ કરો',
     user: 'TruckOpti વપરાશકર્તા',
-    selectLanguage: 'ભાષા પસંદ કરો'
+    selectLanguage: 'ભાષા પસંદ કરો',
+    notAdded: 'હજુ સુધી ઉમેરાયું નથી',
+    tapToSet: 'સેટ કરો'
   },
   mr: {
     contactInfo: 'संपर्क माहिती',
+    companyInfo: 'कंपनी माहिती',
+    companyName: 'कंपनीचे नाव',
+    gstin: 'GSTIN',
+    gstinPlaceholder: 'उदा., 27AABCU9603R1ZX',
+    companyAddress: 'कंपनीचा पत्ता',
+    companyAddressPlaceholder: 'उदा., मुंबई, महाराष्ट्र - 400001',
     phone: 'फोन',
     email: 'ईमेल',
     location: 'स्थान',
@@ -79,10 +109,18 @@ const translations = {
     logout: 'लॉगआउट',
     signOut: 'तुमच्या खात्यातून साइन आउट करा',
     user: 'TruckOpti वापरकर्ता',
-    selectLanguage: 'भाषा निवडा'
+    selectLanguage: 'भाषा निवडा',
+    notAdded: 'अद्याप जोडले नाही',
+    tapToSet: 'सेट करा'
   },
   ta: {
     contactInfo: 'தொடர்பு தகவல்',
+    companyInfo: 'நிறுவன தகவல்',
+    companyName: 'நிறுவனத்தின் பெயர்',
+    gstin: 'GSTIN',
+    gstinPlaceholder: 'எ.கா., 27AABCU9603R1ZX',
+    companyAddress: 'நிறுவன முகவரி',
+    companyAddressPlaceholder: 'எ.கா., சென்னை, தமிழ்நாடு - 600001',
     phone: 'தொலைபேசி',
     email: 'மின்னஞ்சல்',
     location: 'இடம்',
@@ -97,7 +135,9 @@ const translations = {
     logout: 'வெளியேறு',
     signOut: 'உங்கள் கணக்கிலிருந்து வெளியேறவும்',
     user: 'TruckOpti பயனர்',
-    selectLanguage: 'மொழியைத் தேர்ந்தெடுக்கவும்'
+    selectLanguage: 'மொழியைத் தேர்ந்தெடுக்கவும்',
+    notAdded: 'இன்னும் சேர்க்கப்படவில்லை',
+    tapToSet: 'அமைக்கவும்'
   },
   te: {
     contactInfo: 'సంప్రదింపు సమాచారం',
@@ -128,7 +168,7 @@ export default function ProfilePage() {
     document.title = language === 'en' ? 'Profile - TruckOpti' : 'प्रोफाइल - TruckOpti'
   }, [language])
   
-  const t = translations[language as keyof typeof translations] || translations.en
+  const t = (translations[language as keyof typeof translations] || translations.en) as any
 
   // Initialize notification preferences from user metadata
   const [isLocationSharing, setIsLocationSharing] = useState(() => {
@@ -164,10 +204,17 @@ export default function ProfilePage() {
     }
   }
   
+  // Company info from user metadata
+  const companyInfo = (user?.user_metadata as any)?.company || {}
+
   // Edit profile state
   const [isEditing, setIsEditing] = useState(false)
+  const [isEditingCompany, setIsEditingCompany] = useState(false)
   const [editName, setEditName] = useState(user?.name || '')
   const [editPhone, setEditPhone] = useState(user?.phone?.replace('+91', '') || '')
+  const [editCompanyName, setEditCompanyName] = useState(companyInfo.name || '')
+  const [editGstin, setEditGstin] = useState(companyInfo.gstin || '')
+  const [editCompanyAddress, setEditCompanyAddress] = useState(companyInfo.address || '')
   const [isSaving, setIsSaving] = useState(false)
 
   const handleSaveProfile = async () => {
@@ -192,6 +239,29 @@ export default function ProfilePage() {
       toast.success(language === 'en' ? 'Profile updated!' : 'प्रोफ़ाइल अपडेट!')
     } catch (err: any) {
       toast.error(err.message || 'Failed to update profile')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveCompany = async () => {
+    setIsSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          company: {
+            name: editCompanyName,
+            gstin: editGstin.toUpperCase(),
+            address: editCompanyAddress
+          }
+        }
+      })
+      if (error) throw error
+
+      setIsEditingCompany(false)
+      toast.success(language === 'en' ? 'Company info updated!' : 'कंपनी जानकारी अपडेट!')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update company')
     } finally {
       setIsSaving(false)
     }
@@ -353,7 +423,133 @@ export default function ProfilePage() {
           <ChevronRight className="w-5 h-5 text-slate-400" />
         </div>
       </div>
-      
+
+      {/* Company Information */}
+      <div className="card divide-y divide-slate-100 dark:divide-slate-700">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <h2 className="font-semibold text-slate-900 dark:text-white">
+            {t.companyInfo}
+          </h2>
+          <button
+            onClick={() => {
+              setIsEditingCompany(!isEditingCompany)
+              if (!isEditingCompany) {
+                const company = (user?.user_metadata as any)?.company || {}
+                setEditCompanyName(company.name || '')
+                setEditGstin(company.gstin || '')
+                setEditCompanyAddress(company.address || '')
+              }
+            }}
+            className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+          >
+            <Edit3 className="w-4 h-4" />
+            {isEditingCompany ? (language === 'en' ? 'Cancel' : 'रद्द करें') : (language === 'en' ? 'Edit' : 'संपादित करें')}
+          </button>
+        </div>
+
+        {/* Company Info Display */}
+        {!isEditingCompany && (
+          <>
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+                <Globe className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-slate-500">{t.companyName}</p>
+                <p className="font-medium text-slate-900 dark:text-white">
+                  {companyInfo.name || t.notAdded}
+                </p>
+              </div>
+            </div>
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-slate-500">{t.gstin}</p>
+                <p className="font-medium text-slate-900 dark:text-white">
+                  {companyInfo.gstin || t.notAdded}
+                </p>
+              </div>
+            </div>
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-slate-500">{t.companyAddress}</p>
+                <p className="font-medium text-slate-900 dark:text-white">
+                  {companyInfo.address || t.notAdded}
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Company Info Edit Form */}
+        {isEditingCompany && (
+          <div className="p-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {t.companyName}
+              </label>
+              <input
+                type="text"
+                value={editCompanyName}
+                onChange={(e) => setEditCompanyName(e.target.value)}
+                className="input w-full"
+                placeholder={language === 'en' ? 'Enter company name' : 'कंपनी का नाम दर्ज करें'}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {t.gstin}
+              </label>
+              <input
+                type="text"
+                value={editGstin}
+                onChange={(e) => setEditGstin(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15))}
+                className="input w-full font-mono"
+                placeholder={t.gstinPlaceholder}
+              />
+              <p className="text-xs text-slate-500 mt-1">15 characters (e.g., 27AABCU9603R1ZX)</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {t.companyAddress}
+              </label>
+              <textarea
+                value={editCompanyAddress}
+                onChange={(e) => setEditCompanyAddress(e.target.value)}
+                className="input w-full"
+                rows={2}
+                placeholder={t.companyAddressPlaceholder}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleSaveCompany}
+                disabled={isSaving}
+                className="btn btn-primary flex-1"
+              >
+                {isSaving ? (
+                  <div className="spinner w-4 h-4" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                <span>{language === 'en' ? 'Save' : 'सहेजें'}</span>
+              </button>
+              <button
+                onClick={() => setIsEditingCompany(false)}
+                className="btn btn-secondary"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Google Account */}
       {user?.google_linked && (
       <div className="card divide-y divide-slate-100 dark:divide-slate-700">
