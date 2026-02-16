@@ -1,5 +1,19 @@
 import { supabase } from '../lib/supabase'
 
+const getAuthErrorMessage = (error: any, fallback: string): string => {
+  const code = error?.code
+
+  if (code === 'otp_disabled') {
+    return 'Email OTP is not enabled for this project. Please use Google sign-in or ask admin to enable OTP signups.'
+  }
+
+  if (code === 'email_address_invalid') {
+    return 'Please enter a valid deliverable email address.'
+  }
+
+  return error?.message || fallback
+}
+
 // ============= TYPES =============
 export interface Truck {
   id: string
@@ -425,7 +439,7 @@ export const authSupabaseApi = {
         shouldCreateUser: false // Login only - don't create new users
       }
     })
-    if (error) throw error
+    if (error) throw new Error(getAuthErrorMessage(error, 'Failed to send email OTP'))
   },
 
   async signUpWithEmail(email: string, name?: string): Promise<void> {
@@ -436,7 +450,7 @@ export const authSupabaseApi = {
         data: name ? { full_name: name, name } : undefined
       }
     })
-    if (error) throw error
+    if (error) throw new Error(getAuthErrorMessage(error, 'Failed to create account'))
   },
 
   async verifyPhoneOtp(phone: string, token: string) {

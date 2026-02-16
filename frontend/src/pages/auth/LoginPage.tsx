@@ -13,12 +13,14 @@ const features = [
   { icon: '📍', text: 'Live GPS Tracking' },
 ]
 
+const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED === 'true'
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const { setPendingPhone } = useAuthStore()
   const [phone, setPhone] = useState('')
   const [phoneError, setPhoneError] = useState('')
-  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>('email')
+  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>(isEmailOtpEnabled ? 'email' : 'sms')
   const [isFocused, setIsFocused] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
   
@@ -33,6 +35,12 @@ export default function LoginPage() {
   useEffect(() => {
     document.title = 'Login - TruckOpti'
   }, [])
+
+  useEffect(() => {
+    if (!isEmailOtpEnabled && channel === 'email') {
+      setChannel('sms')
+    }
+  }, [channel, isEmailOtpEnabled])
   
   // Clear input when channel changes
   useEffect(() => {
@@ -43,6 +51,9 @@ export default function LoginPage() {
   const sendOTPMutation = useMutation({
     mutationFn: async () => {
       if (channel === 'email') {
+        if (!isEmailOtpEnabled) {
+          throw new Error('Email OTP is disabled. Please use SMS/WhatsApp or Google sign-in.')
+        }
         await authSupabaseApi.signInWithEmail(phone) // phone variable holds email in this case
         return { success: true, channel: 'email' }
       } else {
@@ -219,25 +230,27 @@ export default function LoginPage() {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Receive OTP via
           </label>
-          <div className="grid grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={() => setChannel('email')}
-              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${
-                channel === 'email'
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}
-              aria-pressed={channel === 'email'}
-            >
-              <Send className={`w-4 h-4 ${channel === 'email' ? 'animate-bounce-subtle' : ''}`} />
-              <span className="font-medium text-sm">Email</span>
-              {channel === 'email' && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center animate-scale-in">
-                  <span className="text-white text-xs">✓</span>
-                </span>
+          <div className={`grid ${isEmailOtpEnabled ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
+              {isEmailOtpEnabled && (
+                <button
+                  type="button"
+                  onClick={() => setChannel('email')}
+                  className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${
+                    channel === 'email'
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                  aria-pressed={channel === 'email'}
+                >
+                  <Send className={`w-4 h-4 ${channel === 'email' ? 'animate-bounce-subtle' : ''}`} />
+                  <span className="font-medium text-sm">Email</span>
+                  {channel === 'email' && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center animate-scale-in">
+                      <span className="text-white text-xs">✓</span>
+                    </span>
+                  )}
+                </button>
               )}
-            </button>
             <button
               type="button"
               onClick={() => setChannel('whatsapp')}
@@ -275,6 +288,11 @@ export default function LoginPage() {
               )}
             </button>
           </div>
+          {!isEmailOtpEnabled && (
+            <p className="mt-2 text-xs text-slate-500">
+              Email OTP is disabled in this environment. Use SMS, WhatsApp, or Google login.
+            </p>
+          )}
         </div>
         
         {/* Submit Button */}

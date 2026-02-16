@@ -7,6 +7,17 @@ import { queryClient } from './lib/queryClient'
 import App from './App'
 import './index.css'
 
+const canonicalAppUrl = import.meta.env.VITE_APP_URL?.trim()
+const isHerokuHost = window.location.hostname.endsWith('herokuapp.com')
+
+if (canonicalAppUrl && isHerokuHost) {
+  const canonicalUrl = new URL(canonicalAppUrl)
+  canonicalUrl.pathname = window.location.pathname
+  canonicalUrl.search = window.location.search
+  canonicalUrl.hash = window.location.hash
+  window.location.replace(canonicalUrl.toString())
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

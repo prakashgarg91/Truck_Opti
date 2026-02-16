@@ -13,6 +13,8 @@ const features = [
   { icon: '📍', text: 'Live GPS Tracking' },
 ]
 
+const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED === 'true'
+
 export default function SignupPage() {
   const navigate = useNavigate()
   const { setPendingPhone } = useAuthStore()
@@ -36,6 +38,9 @@ export default function SignupPage() {
 
   const signupMutation = useMutation({
     mutationFn: async () => {
+      if (!isEmailOtpEnabled) {
+        throw new Error('Email signup is disabled. Please use Google sign up.')
+      }
       await authSupabaseApi.signUpWithEmail(email, name)
       return { success: true }
     },
@@ -51,6 +56,11 @@ export default function SignupPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!isEmailOtpEnabled) {
+      toast.error('Email signup is disabled. Please use Google sign up.')
+      return
+    }
 
     const result = emailSchema.safeParse(email)
     if (!result.success) {
@@ -167,7 +177,7 @@ export default function SignupPage() {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={!isEmailValid || signupMutation.isPending}
+          disabled={!isEmailValid || signupMutation.isPending || !isEmailOtpEnabled}
           className="btn btn-primary w-full text-base shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all duration-300 animate-slide-up disabled:shadow-none"
           style={{ animationDelay: '300ms' }}
         >
@@ -178,11 +188,16 @@ export default function SignupPage() {
             </>
           ) : (
             <>
-              <span>Create Account</span>
+              <span>{isEmailOtpEnabled ? 'Create Account' : 'Email Signup Disabled'}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </>
           )}
         </button>
+        {!isEmailOtpEnabled && (
+          <p className="mt-2 text-xs text-slate-500">
+            Email OTP signup is disabled in this environment. Use Google signup below.
+          </p>
+        )}
       </form>
 
       {/* Divider */}
