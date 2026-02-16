@@ -182,6 +182,23 @@ export async function initiateRazorpayPayment(
           logger.warn('Could not update payment status:', error);
         }
 
+        // Verify payment and activate subscription server-side
+        try {
+          await supabase.functions.invoke('verify-razorpay-payment', {
+            body: {
+              razorpay_order_id: orderId,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              plan_id: request.planId || '',
+              billing_cycle: request.billingCycle || 'monthly',
+              customer_phone: request.customerPhone,
+              customer_email: request.customerEmail,
+            },
+          });
+        } catch (verifyError) {
+          logger.warn('Could not verify payment server-side:', verifyError);
+        }
+
         resolve({
           success: true,
           paymentId: response.razorpay_payment_id,

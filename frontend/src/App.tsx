@@ -34,7 +34,7 @@ const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage'))
 const PaymentCallbackPage = React.lazy(() => import('./pages/PaymentCallbackPage'))
 const TestPaymentPage = import.meta.env.DEV
   ? React.lazy(() => import('./pages/TestPaymentPage'))
-  : () => null
+  : React.lazy(() => import('./pages/NotFoundPage'))
 
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'))
 

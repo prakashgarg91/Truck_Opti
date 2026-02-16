@@ -1,24 +1,41 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { 
+import {
   Download, ArrowLeft, MessageCircle,
   Truck, MapPin, Package
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { shipmentsSupabaseApi, type Shipment } from '../services/supabaseApi'
-import { 
-  calculateInvoice, 
-  generateInvoiceNumber, 
+import { supabase } from '../lib/supabase'
+import {
+  calculateInvoice,
+  generateInvoiceNumber,
   generateLRNumber,
   generateInvoicePDF,
   formatCurrency,
   getSacDescription,
   SAC_CODE,
-  type InvoiceData 
+  type InvoiceData
 } from '../utils/invoiceGenerator'
 import { shareInvoice } from '../utils/whatsappShare'
 import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
+
+// City to state mapping for GST detection
+const getState = (location: string): string => {
+  const stateMap: Record<string, string> = {
+    'mumbai': 'MH', 'pune': 'MH', 'nagpur': 'MH', 'nashik': 'MH', 'thane': 'MH',
+    'delhi': 'DL', 'new delhi': 'DL', 'noida': 'UP', 'gurgaon': 'HR', 'gurugram': 'HR',
+    'bangalore': 'KA', 'bengaluru': 'KA', 'mysore': 'KA', 'mysuru': 'KA',
+    'chennai': 'TN', 'coimbatore': 'TN', 'madurai': 'TN',
+    'hyderabad': 'TS', 'kolkata': 'WB', 'ahmedabad': 'GJ', 'surat': 'GJ',
+    'jaipur': 'RJ', 'lucknow': 'UP', 'kanpur': 'UP', 'patna': 'BR',
+    'bhopal': 'MP', 'indore': 'MP', 'chandigarh': 'CH', 'kochi': 'KL',
+    'trivandrum': 'KL', 'thiruvananthapuram': 'KL', 'visakhapatnam': 'AP',
+  };
+  const city = location.toLowerCase().trim();
+  return stateMap[city] || city;
+};
 
 // Translations
 const t = {
@@ -130,16 +147,20 @@ export default function InvoicePage() {
       setLoading(true)
       const data = await shipmentsSupabaseApi.getById(shipmentId!)
       setShipment(data)
-      
+
       if (data) {
+        // Get user profile for company info
+        const { data: { user } } = await supabase.auth.getUser();
+        const companyInfo = user?.user_metadata?.company || {};
+
         // Generate invoice from shipment data
         const invoiceInput: InvoiceData = {
           invoiceNumber: generateInvoiceNumber(),
           lrNumber: generateLRNumber(),
           date: new Date().toISOString(),
-          companyName: 'TruckOpti Logistics Pvt Ltd',
-          companyGstin: '27AABCU9603R1ZX',
-          companyAddress: 'Mumbai, Maharashtra - 400001',
+          companyName: companyInfo.name || 'Your Company Name',
+          companyGstin: companyInfo.gstin || '',
+          companyAddress: companyInfo.address || '',
           shipperName: data.origin || 'Unknown',
           shipperAddress: data.origin || '',
           consigneeName: data.destination || 'Unknown',
@@ -154,12 +175,12 @@ export default function InvoicePage() {
             dimensions: `${data.total_volume.toFixed(2)} m³`
           }],
           freightCharges: data.estimated_cost || 0,
-          loadingCharges: 500,
-          unloadingCharges: 500,
-          isInterState: data.origin?.toLowerCase() !== data.destination?.toLowerCase(),
+          loadingCharges: (data as any).loading_charges || 0,
+          unloadingCharges: (data as any).unloading_charges || 0,
+          isInterState: getState(data.origin || '') !== getState(data.destination || ''),
           gstRate: 18
         }
-        
+
         setInvoiceData(calculateInvoice(invoiceInput))
       }
     } catch (error) {

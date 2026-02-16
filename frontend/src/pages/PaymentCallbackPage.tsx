@@ -8,9 +8,11 @@ import { logger } from '../utils/logger';
 const PaymentCallbackPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+
   const txnId = searchParams.get('txnId');
-  
+  const paymentId = searchParams.get('payment_id');
+  const callbackStatus = searchParams.get('status');
+
   const [status, setStatus] = useState<'checking' | 'success' | 'failed' | 'pending'>('checking');
   const [message, setMessage] = useState('Verifying payment...');
 
@@ -19,13 +21,23 @@ const PaymentCallbackPage: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    if (txnId) {
+    if (paymentId) {
+      // Razorpay flow — payment already verified in razorpayPayment.ts
+      if (callbackStatus === 'success' || !callbackStatus) {
+        setStatus('success');
+        setMessage('Payment successful! Your subscription is now active.');
+      } else {
+        setStatus('failed');
+        setMessage('Payment failed. Please try again.');
+      }
+    } else if (txnId) {
+      // PhonePe flow — verify via Edge Function
       verifyPayment();
     } else {
       setStatus('failed');
       setMessage('Invalid payment callback');
     }
-  }, [txnId]);
+  }, [txnId, paymentId, callbackStatus]);
 
   const verifyPayment = async () => {
     try {
@@ -124,10 +136,10 @@ const PaymentCallbackPage: React.FC = () => {
         </p>
 
         {/* Transaction ID */}
-        {txnId && (
+        {(txnId || paymentId) && (
           <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-6">
             <p className="text-xs text-gray-500 dark:text-gray-400">Transaction ID</p>
-            <p className="text-sm font-mono text-gray-900 dark:text-white">{txnId}</p>
+            <p className="text-sm font-mono text-gray-900 dark:text-white">{txnId || paymentId}</p>
           </div>
         )}
 
