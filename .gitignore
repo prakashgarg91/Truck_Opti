@@ -46,3 +46,4 @@ _gitstatus.txt
 
 # Supabase local
 supabase/.temp/
+apps/web/app_data/
