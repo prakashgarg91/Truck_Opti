@@ -11,7 +11,7 @@
 
 | ID | Task | Priority | Claimed By | Started | Status |
 |----|------|----------|------------|---------|--------|
-| | No active tasks | | | | |
+| T-101 | Launch readiness continuation batch | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 
 ---
 
@@ -21,7 +21,12 @@
 
 | ID | Task | Priority | Complexity | Est. Time | Files |
 |----|------|----------|------------|-----------|-------|
-| | Queue empty - system ready | | | | |
+| T-102 | Build `useSubscription` hook + trial/expiry logic | P0 | M | 2-4h | frontend/src/hooks/**, auth/subscription consumers |
+| T-103 | Pricing page DB source of truth + fallback | P1 | M | 1-2h | frontend/src/pages/PricingPage.tsx |
+| T-104 | Profile auth data cleanup (remove stale hardcoded UX) | P1 | M | 1-2h | frontend/src/pages/ProfilePage.tsx |
+| T-105 | Supabase integration script + run report | P1 | M | 1-2h | scripts/test-supabase-connection.mjs |
+| T-106 | Full smoke + launch tracker completion | P1 | M | 2-3h | 0.dev-matrix/LAUNCH_TEST_TRACKER.md |
+| T-107 | Production OAuth/domain canonical verification | P2 | S | 30-60m | frontend/src/main.tsx, auth callback config |
 
 ### Priority Levels
 - 🔴 **P0** - Critical (blocking production)
@@ -76,6 +81,7 @@ Move task from QUEUE to ACTIVE TASKS:
 
 | ID | Task | Completed By | Date | Notes |
 |----|------|--------------|------|-------|
+| T-100 | Cloudflare + Heroku dual-domain SSL validation | GPT-5.3-Codex | 2026-02-22 | `truckopti.in` + `www` live |
 | T-001 | Update folder reference | OPUS-002 | 2026-01-11 | Framework test ✅ |
 | T-000 | Universal framework setup | OPUS-001 | 2026-01-11 | Multi-agent ready |
 

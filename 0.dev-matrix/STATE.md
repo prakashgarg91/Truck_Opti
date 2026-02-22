@@ -120,28 +120,29 @@ Remove your row when done editing
 
 | Field | Value |
 |-------|-------|
-| **Project** | Telegram MCP Server |
-| **Type** | Complex (SaaS Platform) |
-| **Version** | 2.15.0 |
-| **Tests** | 338/338 ✅ |
-| **Status** | ✅ HEALTHY |
+| **Project** | TruckOpti |
+| **Type** | Complex (SaaS Logistics Platform) |
+| **Version** | 2.0.0 |
+| **Tests** | Live interaction + build checks passing |
+| **Status** | ✅ DEPLOYED |
 
 ---
 
 ## 🎯 CURRENT SPRINT
 
 ```
-SPRINT: Universal Framework Implementation
-GOAL: Make development system work for any project/any AI
+SPRINT: Launch Readiness + Subscription Completion
+GOAL: Complete launch blockers, production auth/domain hardening, and subscription lifecycle
 STATUS: 🟡 IN PROGRESS
 ```
 
 ### Sprint Tasks
-- [x] Restructure INDEX.md for universal use
-- [x] Add multi-agent coordination
-- [x] Create agent registry (this file)
-- [ ] Update PATTERNS.md for transfer
-- [ ] Update TASK.md for multi-agent
+- [x] Production deploy on Heroku
+- [x] Custom domains configured (`truckopti.in`, `www.truckopti.in`)
+- [x] SSL certificates issued via Heroku ACM for both domains
+- [x] Added live button audit scripts and npm runner
+- [ ] Complete subscription lifecycle hook + expiry/usage UX
+- [ ] Complete launch checklist Phase 4/5/6 remaining items
 
 ---
 
@@ -149,10 +150,10 @@ STATUS: 🟡 IN PROGRESS
 
 | Date | Agent | Task | Result |
 |------|-------|------|--------|
-| Jan 11 | OPUS-001 | Universal framework | ✅ Complete |
-| Jan 11 | OPUS-001 | Multi-agent coordination | ✅ Complete |
-| Jan 11 | OPUS-001 | File consolidation | ✅ Complete |
-| Jan 11 | OPUS-001 | Button testing | ✅ 338 tests |
+| Feb 22 | GPT-5.3-Codex | Cloudflare + Heroku domain validation | ✅ Complete |
+| Feb 22 | GPT-5.3-Codex | GitHub updates (3 clean commits) | ✅ Complete |
+| Feb 18 | GPT-5.3-Codex | Live button interaction audits | ✅ Complete |
+| Feb 16 | GPT-5.3-Codex | Auth OTP fallback + UX hardening | ✅ Complete |
 
 ---
 
@@ -160,22 +161,21 @@ STATUS: 🟡 IN PROGRESS
 
 | Component | Status | Last Check | Deep Scan |
 |-----------|--------|------------|-----------|
-| Unit Tests | 338/338 ✅ | 16:42 | Passing |
-| Deep Scan | 706 warnings ⚠️ | Latest | Need review |
-| WebApp Server | ❌ Connection issue | 17:00 | - |
-| Integration | ⚠️ Partial | 16:42 | - |
-| Database | ⚠️ Unverified | 16:42 | - |
-| Production | ⚠️ Missing env vars | 16:42 | - |
-| Error Logger | ✅ Active | Latest | Supabase connected |
+| Domain DNS | ✅ Active | 2026-02-22 | Cloudflare NS live |
+| SSL (Heroku ACM) | ✅ Active | 2026-02-22 | Both domains cert issued |
+| Live App Reachability | ✅ 200/200 | 2026-02-22 | `truckopti.in` + `www` |
+| Frontend Build | ✅ Passing | 2026-02-18 | `npm --prefix frontend run build` |
+| Button Audit | ✅ Script passing | 2026-02-18 | `npm run test:live-buttons` |
+| Launch Checklist | ⚠️ Partial | 2026-02-22 | Phase 4/5/6 pending |
 
 ### Quality Metrics Dashboard
 | Metric | Current | Target | Status |
 |--------|---------|--------|--------|
-| Test Pass Rate | 100% | 100% | ✅ |
-| Deep Scan Errors | 0 | 0 | ✅ |
-| Deep Scan Warnings | 706 | <200 | ⚠️ |
-| Runtime Errors (24h) | 0 | 0 | ✅ |
-| Deploy Success Rate | 100% | >99% | ✅ |
+| Apex Domain HTTPS | 200 | 200 | ✅ |
+| WWW Domain HTTPS | 200 | 200 | ✅ |
+| Heroku ACM Coverage | 2/2 | 2/2 | ✅ |
+| Launch Checklist Completion | 16/40 | 40/40 | ⚠️ |
+| Build Health | Passing | Passing | ✅ |
 
 ---
 
@@ -185,9 +185,9 @@ STATUS: 🟡 IN PROGRESS
 
 | ID | Severity | Description | Status |
 |----|----------|-------------|--------|
-| BUG-001 | 🔴 CRITICAL | Test WebApp Server connection failure | Open |
-| BUG-002 | 🟠 HIGH | Missing environment variables | Open |
-| BUG-003 | 🟡 MEDIUM | Unmet optional dependencies | Open |
+| BUG-001 | 🟠 HIGH | Subscription lifecycle incomplete (trial/expiry/usage) | Open |
+| BUG-002 | 🟡 MEDIUM | Pricing page still mixed static/DB sources | Open |
+| BUG-003 | 🟡 MEDIUM | Launch checklist + test tracker not fully completed | Open |
 
 📋 **See:** [issues.json](issues.json) for full details
 
@@ -197,30 +197,30 @@ STATUS: 🟡 IN PROGRESS
 
 ```yaml
 # Project Config
-project: telegram-mcp
+project: truckopti
 type: complex
-language: javascript
-runtime: node 22.x
+language: typescript + python
+runtime: node 20.x
 database: postgresql (supabase)
-hosting: heroku
+hosting: heroku + cloudflare dns
 
 # Test Config
-framework: vitest
-tests: 338
-coverage: ~80%
+framework: vitest + live browser audit scripts
+tests: build + route + button interaction checks
+coverage: pending formal refresh
 
 # Deploy Config
-github: prakashgarg91/Telegram-MCP
-heroku: telegram-mcp-unified
-production: https://telegram-mcp-unified-ae0f5f5a7b6e.herokuapp.com/
+github: prakashgarg91/Truck_Opti
+heroku: truck-opti-app
+production: https://www.truckopti.in/
 ```
 
 ### Validation Commands
 ```bash
-npm test              # 338+ unit tests
-npm run analyze       # Basic static analysis
-npm run deep-scan     # 8-layer deep analysis (finds hidden bugs)
-npm run pre-deploy    # Complete validation suite
+npm --prefix frontend run build
+npm run test:live-buttons
+python test_e2e.py
+python interactive_webapp_test.py
 ```
 
 ---
@@ -229,9 +229,9 @@ npm run pre-deploy    # Complete validation suite
 
 | Version | Date | Deployer | Status | Notes |
 |---------|------|----------|--------|-------|
-| v559 | 2026-01-11 | OPUS-001 | ✅ Success | Error logger integration |
-| v558 | 2026-01-11 | OPUS-001 | ✅ Success | Deep scanner added |
-| v555 | 2026-01-11 | OPUS-001 | ✅ Success | handleCallback fix |
+| 9fa22858 | 2026-02-22 | GPT-5.3-Codex | ✅ Success | Added bug-mapper utilities |
+| 212c5325 | 2026-02-22 | GPT-5.3-Codex | ✅ Success | Profile page company info enhancements |
+| 4aaac9d7 | 2026-02-22 | GPT-5.3-Codex | ✅ Success | Auth/domain flow + live button audits |
 
 ---
 
@@ -240,12 +240,12 @@ npm run pre-deploy    # Complete validation suite
 > **Leave notes here for the next AI taking over.**
 
 ```
-[2026-01-11] OPUS-001 → Next AI:
-- Framework is now universal (works for any project type)
-- Multi-agent coordination is set up
-- Please complete PATTERNS.md update for transferable learnings
-- All 338 tests passing
-- Ready for any new tasks
+[2026-02-22] GPT-5.3-Codex → Next AI:
+- Production app is reachable on both `truckopti.in` and `www.truckopti.in`
+- Heroku ACM certificates are issued for both custom domains
+- Launch readiness still blocked by incomplete subscription lifecycle and checklist items
+- Use `0.dev-matrix/BATCH7_AGENT_CONTINUATION_PROMPT.md` as the execution prompt
+- Keep commits clean: avoid local DB and machine-specific files
 ```
 
 ---

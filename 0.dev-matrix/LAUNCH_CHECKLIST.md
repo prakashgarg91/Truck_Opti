@@ -67,7 +67,7 @@
 | 6.1 | Razorpay production keys | ❌ | P0 — blocks payments |
 | 6.2 | Google OAuth production credentials | ❌ | P0 — blocks login |
 | 6.3 | Google Maps API key | ❌ | P1 — Leaflet fallback works |
-| 6.4 | Custom domain + SSL | ❌ | P0 — needed for OAuth redirect |
+| 6.4 | Custom domain + SSL | ✅ | P0 — `truckopti.in` + `www.truckopti.in` live |
 | 6.5 | PWA icons (missing from public/) | ❌ | P1 — install prompt fails |
 | 6.6 | Error tracking (Sentry or similar) | ❌ | P1 |
 | 6.7 | Terms of Service / Privacy Policy pages | ❌ | P0 — legal requirement |
@@ -86,8 +86,8 @@
 | 3. Frontend Wiring | 6 | 3 | 3 |
 | 4. Subscriptions | 7 | 0 | 7 |
 | 5. Testing | 5 | 0 | 5 |
-| 6. Production | 10 | 0 | 10 |
-| **TOTAL** | **40** | **15** | **25** |
+| 6. Production | 10 | 1 | 9 |
+| **TOTAL** | **40** | **16** | **24** |
 
 ---
 
