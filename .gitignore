@@ -46,3 +46,10 @@ _gitstatus.txt
 
 # Supabase local
 supabase/.temp/
+
+# Local AI/tooling settings
+.claude/settings.local.json
+
+# Local SQLite artifacts
+*.db
+*.db-journal

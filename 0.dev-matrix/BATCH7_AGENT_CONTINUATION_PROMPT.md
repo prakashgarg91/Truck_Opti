@@ -8,6 +8,7 @@ You are continuing the TruckOpti launch-readiness effort in an existing codebase
 
 ## Context You Must Assume
 - Repo: `d:/Github/Truck_Opti`
+- Database must be either **Supabase** or **Neon** (no local SQLite as primary app database).
 - Production app is live on:
   - `https://www.truckopti.in`
   - `https://truckopti.in`
@@ -45,6 +46,7 @@ Complete the remaining launch blockers with production-safe, test-verified chang
 - Do not rewrite unrelated modules.
 - Keep changes minimal and surgical.
 - No hardcoded secrets.
+- Keep database work on Supabase or Neon only.
 - Preserve existing UX unless fixing a confirmed bug.
 - Do not commit local machine artifacts or DB files.
 
