@@ -26,6 +26,7 @@ import clsx from 'clsx'
 import { useLanguageStore } from '../stores/languageStore'
 import { useAuthStore } from '../stores/authStore'
 import { notificationsSupabaseApi } from '../services/supabaseApi'
+import { useSubscription } from '../hooks/useSubscription'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 
@@ -58,13 +59,14 @@ export default function MobileLayout() {
   const navigate = useNavigate()
   const { language, toggleLanguage } = useLanguageStore()
   const { logout, user } = useAuthStore()
-  
+  const { isActive, isTrial, isExpired, trialDaysRemaining, plan, isLoading: subLoading } = useSubscription()
+
   const currentPage = navItems.find(item => item.path === location.pathname)
 
   // Fetch notifications on mount and periodically
   useEffect(() => {
     fetchNotifications()
-    
+
     // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
@@ -73,10 +75,10 @@ export default function MobileLayout() {
   // Subscribe to real-time notifications
   useEffect(() => {
     if (!user?.id) return
-    
+
     // Initial fetch
     fetchNotifications()
-    
+
     const subscription = notificationsSupabaseApi.subscribeToNotifications(
       user.id,
       (payload: any) => {
@@ -94,7 +96,7 @@ export default function MobileLayout() {
         }
       }
     )
-    
+
     return () => {
       notificationsSupabaseApi.unsubscribe(subscription)
     }
@@ -104,7 +106,7 @@ export default function MobileLayout() {
     try {
       const count = await notificationsSupabaseApi.getUnreadCount()
       setNotificationCount(count)
-      
+
       if (notificationsOpen) {
         const data = await notificationsSupabaseApi.getNotifications(20)
         setNotifications(data)
@@ -133,7 +135,7 @@ export default function MobileLayout() {
   const handleMarkAsRead = async (id: string) => {
     try {
       await notificationsSupabaseApi.markAsRead(id)
-      setNotifications(prev => prev.map(n => 
+      setNotifications(prev => prev.map(n =>
         n.id === id ? { ...n, is_read: true } : n
       ))
       setNotificationCount(prev => Math.max(0, prev - 1))
@@ -182,31 +184,31 @@ export default function MobileLayout() {
       document.documentElement.classList.remove('dark')
     }
   }, [isDark])
-  
+
   // Close sidebar on route change
   useEffect(() => {
     setSidebarOpen(false)
   }, [location.pathname])
-  
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Offline Banner */}
       <OfflineBanner />
-      
+
       {/* Install Prompt */}
       <InstallPrompt />
 
       {/* Mobile Header - Hidden on desktop */}
       <header className="glass border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-40 safe-area-inset-top lg:hidden">
         <div className="flex items-center justify-between px-4 h-14">
-          <button 
+          <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors active:scale-95"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
           </button>
-          
+
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
               <Package className="w-4 h-4 text-white" />
@@ -215,8 +217,8 @@ export default function MobileLayout() {
               {currentPage?.label || 'TruckOpti'}
             </h1>
           </div>
-          
-          <button 
+
+          <button
             onClick={handleOpenNotifications}
             className="p-2 -mr-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl relative transition-colors active:scale-95"
             aria-label={`${notificationCount} notifications`}
@@ -230,9 +232,9 @@ export default function MobileLayout() {
           </button>
         </div>
       </header>
-      
+
       {/* Sidebar Overlay */}
-      <div 
+      <div
         className={clsx(
           "fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden transition-opacity duration-300",
           sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -242,7 +244,7 @@ export default function MobileLayout() {
       />
 
       {/* Notifications Drawer Overlay */}
-      <div 
+      <div
         className={clsx(
           "fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300",
           notificationsOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -272,7 +274,7 @@ export default function MobileLayout() {
                 </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setNotificationsOpen(false)}
               className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
               aria-label="Close notifications"
@@ -300,7 +302,7 @@ export default function MobileLayout() {
               {language === 'en' ? 'Clear all' : 'सभी हटाएं'}
             </button>
           </div>
-          
+
           {/* Notifications List */}
           <div className="flex-1 overflow-y-auto">
             {loadingNotifications ? (
@@ -365,7 +367,7 @@ export default function MobileLayout() {
           </div>
         </div>
       </aside>
-      
+
       {/* Sidebar */}
       <aside className={clsx(
         "fixed top-0 left-0 bottom-0 w-80 bg-white dark:bg-slate-800 z-50 transform transition-transform duration-300 ease-out shadow-2xl",
@@ -425,9 +427,41 @@ export default function MobileLayout() {
                   </p>
                 </div>
               </div>
+
+              {/* Subscription status pill */}
+              {!subLoading && (
+                <div className="mt-2">
+                  {isTrial && trialDaysRemaining !== null && (
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium">
+                      ⏳ Trial · {trialDaysRemaining}d left
+                    </span>
+                  )}
+                  {isActive && plan && (
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium">
+                      ✓ {plan.name} Plan
+                    </span>
+                  )}
+                  {isExpired && (
+                    <span
+                      onClick={(e) => { e.stopPropagation(); navigate('/pricing'); setSidebarOpen(false) }}
+                      className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium cursor-pointer hover:opacity-80"
+                    >
+                      ⚠ Subscription expired · Upgrade
+                    </span>
+                  )}
+                  {!isActive && !isTrial && !isExpired && !subLoading && (
+                    <span
+                      onClick={(e) => { e.stopPropagation(); navigate('/pricing'); setSidebarOpen(false) }}
+                      className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-medium cursor-pointer hover:opacity-80"
+                    >
+                      Free Plan · Upgrade
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
-          
+
           {/* Desktop Notification Bell */}
           <div className="hidden lg:flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700">
             <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -445,7 +479,7 @@ export default function MobileLayout() {
               )}
             </button>
           </div>
-          
+
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-3">
@@ -457,7 +491,7 @@ export default function MobileLayout() {
                 to={item.path}
                 className={({ isActive }) => clsx(
                   "flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group",
-                  isActive 
+                  isActive
                     ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30"
                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50"
                 )}
@@ -485,7 +519,7 @@ export default function MobileLayout() {
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-3">
                 {language === 'en' ? 'Settings' : 'सेटिंग्स'}
               </p>
-              <button 
+              <button
                 onClick={() => {
                   navigate('/pricing')
                   setSidebarOpen(false)
@@ -495,7 +529,7 @@ export default function MobileLayout() {
                 <CreditCard className="w-5 h-5" />
                 <span className="font-medium">{language === 'en' ? 'Subscription' : 'सदस्यता'}</span>
               </button>
-              <button 
+              <button
                 onClick={() => {
                   navigate('/profile')
                   setSidebarOpen(false)
@@ -505,7 +539,7 @@ export default function MobileLayout() {
                 <Settings className="w-5 h-5" />
                 <span className="font-medium">{language === 'en' ? 'Settings' : 'सेटिंग्स'}</span>
               </button>
-              <button 
+              <button
                 onClick={() => {
                   toast.success(language === 'en' ? 'Support: support@truckopti.in' : 'सहायता: support@truckopti.in')
                 }}
@@ -516,13 +550,13 @@ export default function MobileLayout() {
               </button>
             </div>
           </nav>
-          
+
           {/* Theme Toggle & Language */}
           <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
             {/* Theme Toggle */}
             <div className="flex items-center justify-between px-2">
               <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Dark Mode</span>
-              <button 
+              <button
                 onClick={() => setIsDark(!isDark)}
                 className={clsx(
                   "w-12 h-7 rounded-full transition-colors duration-300 relative",
@@ -538,26 +572,26 @@ export default function MobileLayout() {
                 </span>
               </button>
             </div>
-            
+
             {/* Language Toggle */}
             <div className="bg-slate-100 dark:bg-slate-700 rounded-xl p-1.5 flex gap-1.5">
-              <button 
+              <button
                 onClick={() => language !== 'en' && toggleLanguage()}
                 className={clsx(
                   "flex-1 py-2.5 text-sm font-medium rounded-lg transition-all",
-                  language === 'en' 
-                    ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm" 
+                  language === 'en'
+                    ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm"
                     : "text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50"
                 )}
               >
                 English
               </button>
-              <button 
+              <button
                 onClick={() => language !== 'hi' && toggleLanguage()}
                 className={clsx(
                   "flex-1 py-2.5 text-sm font-medium rounded-lg transition-all",
-                  language === 'hi' 
-                    ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm" 
+                  language === 'hi'
+                    ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm"
                     : "text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50"
                 )}
               >
@@ -565,10 +599,10 @@ export default function MobileLayout() {
               </button>
             </div>
           </div>
-          
+
           {/* Logout */}
           <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-            <button 
+            <button
               onClick={() => {
                 logout()
                 toast.success(language === 'en' ? 'Logged out successfully' : 'सफलतापूर्वक लॉगआउट')
@@ -582,12 +616,12 @@ export default function MobileLayout() {
           </div>
         </div>
       </aside>
-      
+
       {/* Main Content */}
       <main className="flex-1 pb-24 lg:pb-6 lg:ml-64 overflow-x-hidden min-h-screen">
         <Outlet />
       </main>
-      
+
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 glass border-t border-slate-200/50 dark:border-slate-700/50 px-2 py-2 lg:hidden safe-area-inset-bottom z-40">
         <div className="flex items-center justify-around max-w-md mx-auto">
@@ -599,8 +633,8 @@ export default function MobileLayout() {
                 to={item.path}
                 className={clsx(
                   "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-300 min-w-[60px]",
-                  isActive 
-                    ? "text-primary-600 dark:text-primary-400" 
+                  isActive
+                    ? "text-primary-600 dark:text-primary-400"
                     : "text-slate-500 dark:text-slate-400"
                 )}
                 aria-current={isActive ? 'page' : undefined}
