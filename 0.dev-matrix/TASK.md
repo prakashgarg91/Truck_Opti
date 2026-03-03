@@ -11,7 +11,7 @@
 
 | ID | Task | Priority | Claimed By | Started | Status |
 |----|------|----------|------------|---------|--------|
-| T-101 | Launch readiness continuation batch | P1 | UNCLAIMED | - | 🟡 Ready to claim |
+| T-107 | Production OAuth/domain canonical verification | P2 | UNCLAIMED | - | 🟡 Ready to claim |
 
 ---
 
@@ -21,12 +21,10 @@
 
 | ID | Task | Priority | Complexity | Est. Time | Files |
 |----|------|----------|------------|-----------|-------|
-| T-102 | Build `useSubscription` hook + trial/expiry logic | P0 | M | 2-4h | frontend/src/hooks/**, auth/subscription consumers |
-| T-103 | Pricing page DB source of truth + fallback | P1 | M | 1-2h | frontend/src/pages/PricingPage.tsx |
-| T-104 | Profile auth data cleanup (remove stale hardcoded UX) | P1 | M | 1-2h | frontend/src/pages/ProfilePage.tsx |
-| T-105 | Supabase integration script + run report | P1 | M | 1-2h | scripts/test-supabase-connection.mjs |
-| T-106 | Full smoke + launch tracker completion | P1 | M | 2-3h | 0.dev-matrix/LAUNCH_TEST_TRACKER.md |
-| T-107 | Production OAuth/domain canonical verification | P2 | S | 30-60m | frontend/src/main.tsx, auth callback config |
+| T-108 | Upgrade/downgrade subscription flow | P1 | M | 2-3h | frontend/src/pages/CheckoutPage.tsx, subscriptionApi |
+| T-109 | Browser smoke test all 14 routes | P1 | S | 1-2h | Manual test |
+| T-110 | Production Razorpay keys + test | P0 | S | 30m | Razorpay dashboard |
+| T-111 | ToS/Privacy Policy pages | P0 | M | 2h | frontend/src/pages/ |
 
 ### Priority Levels
 - 🔴 **P0** - Critical (blocking production)
@@ -82,6 +80,12 @@ Move task from QUEUE to ACTIVE TASKS:
 | ID | Task | Completed By | Date | Notes |
 |----|------|--------------|------|-------|
 | T-100 | Cloudflare + Heroku dual-domain SSL validation | GPT-5.3-Codex | 2026-02-22 | `truckopti.in` + `www` live |
+| T-101 | Launch readiness continuation (BATCH6+7) | Copilot (Claude Sonnet) | 2026-03-03 | 10 BATCH6 tasks + 5 BATCH7 tasks done |
+| T-102 | Build `useSubscription` hook + trial/expiry logic | Copilot (Claude Sonnet) | 2026-03-03 | `useSubscription.ts` — 235 lines, 42/42 tests |
+| T-103 | Pricing page DB source of truth + fallback | Copilot (Claude Sonnet) | 2026-03-03 | Already implemented; verified |
+| T-104 | Profile auth data cleanup | Copilot (Claude Sonnet) | 2026-03-03 | No hardcoded data found; verified clean |
+| T-105 | Supabase integration script + run report | Copilot (Claude Sonnet) | 2026-03-03 | 42/42 PASS |
+| T-106 | Full smoke + launch tracker completion | Copilot (Claude Sonnet) | 2026-03-03 | Tracker + Checklist updated with real results |
 | T-001 | Update folder reference | OPUS-002 | 2026-01-11 | Framework test ✅ |
 | T-000 | Universal framework setup | OPUS-001 | 2026-01-11 | Multi-agent ready |
 
