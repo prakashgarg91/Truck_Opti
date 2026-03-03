@@ -21,6 +21,7 @@ _heroku_deploy/
 .env
 .env.*
 !.env.example
+apps/web/.env
 
 # OAuth/Cloud client secrets
 client_secret_*.json
