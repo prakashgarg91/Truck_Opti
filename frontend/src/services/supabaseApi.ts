@@ -429,7 +429,21 @@ export const authSupabaseApi = {
         channel
       }
     })
-    if (error) throw error
+    if (error) {
+      // Provide user-friendly message when phone/SMS provider is not configured
+      if (
+        error.message?.toLowerCase().includes('provider') ||
+        error.message?.toLowerCase().includes('sms') ||
+        (error as any).code === 'phone_provider_disabled' ||
+        error.message?.toLowerCase().includes('not set up') ||
+        error.message?.toLowerCase().includes('phone sign')
+      ) {
+        throw new Error(
+          'Phone OTP is currently unavailable. Please use Email OTP or Google sign-in instead.'
+        )
+      }
+      throw error
+    }
   },
 
   async signInWithEmail(email: string): Promise<void> {

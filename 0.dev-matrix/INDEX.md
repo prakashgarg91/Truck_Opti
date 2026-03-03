@@ -13,11 +13,12 @@
 ║  🚀 QUICK START - Do these in order:                                          ║
 ║                                                                               ║
 ║  1. SIGN IN     →  Add yourself to DISCUSSION.md                             ║
-║  2. CHECK STATE →  Read STATE.md (conflicts? locks?)                         ║
-║  3. CLAIM TASK  →  Pick from TASK.md, mark as yours                          ║
-║  4. WORK        →  Small changes, test after each                            ║
-║  5. VALIDATE    →  npm test && npm run deep-scan                             ║
-║  6. COMMIT      →  git push origin main                                      ║
+║  2. CHECK STATE →  Read STATE.md (conflicts? bugs? known issues?)            ║
+║  3. READ RULES  →  Read TESTING_PRINCIPLES.md (mandatory)                   ║
+║  4. CLAIM TASK  →  Pick from TASK.md, mark as yours                          ║
+║  5. WORK        →  Small changes, test after each                            ║
+║  6. VALIDATE    →  npm test && npm run deep-scan                             ║
+║  7. COMMIT      →  git push origin main                                      ║
 ║  7. SIGN OUT    →  Update DISCUSSION.md                                      ║
 ║                                                                               ║
 ║  📖 Full docs: Read this entire file once                                    ║
@@ -53,6 +54,7 @@
 │   └── MENU-CHART.md         ← UI structure (if applicable)
 │
 ├── 🧪 QUALITY
+│   ├── TESTING_PRINCIPLES.md ← ⚠️ MANDATORY: testing rules, audit checklist, known bugs
 │   ├── TEST.md               ← Testing strategy & guides
 │   ├── test-reports/         ← JSON test results
 │   └── error-logs/           ← Runtime error logs

@@ -11,7 +11,10 @@
 
 | ID | Task | Priority | Claimed By | Started | Status |
 |----|------|----------|------------|---------|--------|
-| T-107 | Production OAuth/domain canonical verification | P2 | UNCLAIMED | - | 🟡 Ready to claim |
+| T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
+| T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
+| T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
+| T-115 | Upgrade/downgrade subscription flow | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 
 ---
 
@@ -21,10 +24,10 @@
 
 | ID | Task | Priority | Complexity | Est. Time | Files |
 |----|------|----------|------------|-----------|-------|
-| T-108 | Upgrade/downgrade subscription flow | P1 | M | 2-3h | frontend/src/pages/CheckoutPage.tsx, subscriptionApi |
-| T-109 | Browser smoke test all 14 routes | P1 | S | 1-2h | Manual test |
-| T-110 | Production Razorpay keys + test | P0 | S | 30m | Razorpay dashboard |
-| T-111 | ToS/Privacy Policy pages | P0 | M | 2h | frontend/src/pages/ |
+| T-107 | Production OAuth/domain canonical verification | P2 | S | 1h | Supabase dashboard |
+| T-116 | Set `VITE_RAZORPAY_KEY_ID` to live production key | P0 | S | 30m | frontend/.env.production, Razorpay dashboard |
+| T-117 | Create contact/sales inquiry form or page | P2 | M | 2h | frontend/src/pages/ContactPage.tsx |
+| T-118 | Add Razorpay production webhook + order verification | P1 | L | 4h | supabase/functions/ |
 
 ### Priority Levels
 - 🔴 **P0** - Critical (blocking production)
@@ -79,6 +82,11 @@ Move task from QUEUE to ACTIVE TASKS:
 
 | ID | Task | Completed By | Date | Notes |
 |----|------|--------------|------|-------|
+| T-111 | ToS/Privacy Policy pages | SONNET-001 | 2026-03-03 | TermsPage.tsx + PrivacyPage.tsx created; routes added; links fixed in Login/Signup |
+| T-109 | Browser smoke test all public pages | SONNET-001 | 2026-03-03 | B1-B8 bugs found and documented; see KNOWN ISSUES in STATE.md |
+| T-112 | Enable Email OTP | SONNET-001 | 2026-03-03 | VITE_AUTH_EMAIL_OTP_ENABLED=true in .env + .env.production |
+| T-119 | Fix silent phone OTP failure (no error shown) | SONNET-001 | 2026-03-03 | supabaseApi.ts signInWithPhone: added phone_provider_disabled friendly error |
+| T-120 | Fix PricingPage dead CTA buttons (Start Free, Get Started ×4, Contact Sales, Talk to Us) | SONNET-001 | 2026-03-03 | All 6 CTA buttons now have onClick; navigate('/signup') or mailto: |
 | T-100 | Cloudflare + Heroku dual-domain SSL validation | GPT-5.3-Codex | 2026-02-22 | `truckopti.in` + `www` live |
 | T-101 | Launch readiness continuation (BATCH6+7) | Copilot (Claude Sonnet) | 2026-03-03 | 10 BATCH6 tasks + 5 BATCH7 tasks done |
 | T-102 | Build `useSubscription` hook + trial/expiry logic | Copilot (Claude Sonnet) | 2026-03-03 | `useSubscription.ts` — 235 lines, 42/42 tests |

@@ -37,6 +37,8 @@ const TestPaymentPage = import.meta.env.DEV
   : React.lazy(() => import('./pages/NotFoundPage'))
 
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'))
+const TermsPage = React.lazy(() => import('./pages/TermsPage'))
+const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'))
 
 function AppContent() {
   const { initialize } = useAuthStore()
@@ -60,6 +62,8 @@ function AppContent() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/payment/callback" element={<PaymentCallbackPage />} />
           <Route path="/payment/success" element={<PaymentCallbackPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           {import.meta.env.DEV && (
             <Route path="/test-payment" element={<TestPaymentPage />} />
           )}

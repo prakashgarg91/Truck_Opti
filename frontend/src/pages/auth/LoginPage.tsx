@@ -394,9 +394,9 @@ export default function LoginPage() {
       {/* Terms */}
       <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 animate-fade-in" style={{ animationDelay: '700ms' }}>
         By continuing, you agree to our{' '}
-        <a href="#" className="text-primary-600 hover:underline font-medium">Terms</a>
+        <a href="/terms" className="text-primary-600 hover:underline font-medium">Terms</a>
         {' '}and{' '}
-        <a href="#" className="text-primary-600 hover:underline font-medium">Privacy Policy</a>
+        <a href="/privacy" className="text-primary-600 hover:underline font-medium">Privacy Policy</a>
       </p>
     </div>
   )

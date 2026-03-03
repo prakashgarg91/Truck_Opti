@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Check, Zap, Crown, Building2, Rocket, Star, Globe } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { PRICING_TIERS, type PricingTier } from '../config/pricing'
@@ -127,6 +128,8 @@ const tierColors: Record<string, string> = {
 }
 
 export default function PricingPage() {
+  const navigate = useNavigate()
+
   useEffect(() => {
     document.title = 'Pricing - TruckOpti'
   }, [])
@@ -217,7 +220,10 @@ export default function PricingPage() {
               </h3>
               <p className="text-slate-600 dark:text-slate-400">{labels.freeFeatures}</p>
             </div>
-            <button className="px-6 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            <button
+              onClick={() => navigate('/signup')}
+              className="px-6 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
               {labels.startFree}
             </button>
           </div>
@@ -298,6 +304,11 @@ export default function PricingPage() {
 
                 {/* CTA Button */}
                 <button
+                  onClick={() =>
+                    tier.id === 'enterprise'
+                      ? (window.location.href = 'mailto:sales@truckopti.in')
+                      : navigate('/signup')
+                  }
                   className={`w-full py-3 rounded-xl font-medium transition-all ${
                     tier.id === 'enterprise'
                       ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100'
@@ -367,7 +378,10 @@ export default function PricingPage() {
           <Building2 className="w-12 h-12 text-orange-400 mx-auto mb-4" />
           <h3 className="text-2xl font-bold text-white mb-2">{labels.enterprise}</h3>
           <p className="text-slate-300 mb-6">{labels.enterpriseDesc}</p>
-          <button className="px-8 py-3 bg-white text-slate-900 rounded-xl font-medium hover:bg-slate-100 transition-colors">
+          <button
+            onClick={() => (window.location.href = 'mailto:sales@truckopti.in')}
+            className="px-8 py-3 bg-white text-slate-900 rounded-xl font-medium hover:bg-slate-100 transition-colors"
+          >
             {labels.talkToUs}
           </button>
         </div>
