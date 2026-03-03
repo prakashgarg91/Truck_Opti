@@ -11,7 +11,8 @@
 
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
-| - | - | No critical alerts | - |
+| HEROKU-STALE | 🔴 CRITICAL | Heroku deployment is stale — code from Feb 16 deployed; BATCH5/6/7 never pushed to Heroku. Run: `heroku login && git push heroku main` | Human action required |
+| SUPABASE-SITE-URL | 🔴 CRITICAL | Supabase Site URL is still set to Heroku URL in dashboard. Auth emails (OTP/magic-link) send users to Heroku, not truckopti.in. Must update in Supabase Dashboard → Auth → URL Configuration | Human action required |
 
 ---
 
@@ -21,8 +22,9 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|--------|
-| `OPUS-002` | LEAD | Claude Opus 4.5 | Full-stack | Framework testing | 2026-01-11 16:24 | ✅ Active |
-| `HAIKU-002` | TEST | Claude Haiku 4.5 | End-User Testing | Phase 1-11 Testing | 2026-01-11 17:25 | 🟢 Online |
+| `SONNET-001` | LEAD | Claude Sonnet 4.6 | Full-stack + Testing | Browser smoke test + domain fix | 2026-03-03 | ✅ Active |
+| `OPUS-002` | LEAD | Claude Opus 4.5 | Full-stack | Framework testing | 2026-01-11 16:24 | 🔴 Offline |
+| `HAIKU-002` | TEST | Claude Haiku 4.5 | End-User Testing | Phase 1-11 Testing | 2026-01-11 17:25 | 🔴 Offline |
 | `HAIKU-001` | TEST | Claude Haiku 4.5 | End-User Testing | Test Execution | 2026-01-11 16:35 | 🔴 Offline |
 
 ### How to Register
@@ -43,6 +45,33 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-03 14:00] SONNET-001: 🔍 DOMAIN + BROWSER AUDIT COMPLETE
+                             ROOT CAUSE FOUND: Heroku URL still appearing because:
+                             1. Heroku deployment is STALE (last deployed Feb-16; BATCH5/6/7 never pushed)
+                             2. Supabase Dashboard Site URL still = Heroku URL (auth emails go to Heroku)
+                             3. index.html og:url/og:image had Heroku URL (now fixed)
+                             4. app.json VITE_APP_URL had wrong placeholder (now fixed)
+                             
+                             FIXES APPLIED (committed + pushed to GitHub):
+                             ✅ frontend/index.html: og:url + og:image → https://www.truckopti.in
+                             ✅ frontend/index.html: added mobile-web-app-capable meta tag
+                             ✅ app.json: VITE_APP_URL → https://www.truckopti.in
+                             ✅ All BATCH6/7 commits pushed to origin/main
+                             
+                             BROWSER SMOKE TEST RESULTS (www.truckopti.in):
+                             ✅ F1 /login — Loads OK, no JS errors
+                             ✅ F2 / → /login redirect — Auth guard working
+                             ✅ F12 /pricing — DB-backed plans load correctly
+                             ✅ F13 /checkout → /login redirect — Auth guard working
+                             ✅ F14 /auth/callback → /login — Correct without token
+                             ✅ 404 /nonexistent — NotFoundPage renders correctly
+                             
+                             BLOCKERS REQUIRING HUMAN ACTION:
+                             🔴 Run `heroku login && git push heroku main` to deploy 6-commit backlog
+                             🔴 Supabase Dashboard → https://supabase.com/dashboard/project/jbxncejtcbpcronndqlx/auth/url-configuration
+                                 Set Site URL: https://www.truckopti.in
+                                 Add Redirect URLs: https://www.truckopti.in/**, https://truckopti.in/**
+───────────────────────────────────────────────────────────────────────
 [2026-01-11 17:35] HAIKU-002: 🧪 Phase 1 Testing Complete (4/5 PASS)
                              ✅ Environment Setup: Node v22.17.1, npm, 338 tests passing
                              ❌ Phase 2-11 BLOCKED: test-webapp-server.js crashes on startup
@@ -141,8 +170,15 @@ STATUS: 🟡 IN PROGRESS
 - [x] Custom domains configured (`truckopti.in`, `www.truckopti.in`)
 - [x] SSL certificates issued via Heroku ACM for both domains
 - [x] Added live button audit scripts and npm runner
-- [ ] Complete subscription lifecycle hook + expiry/usage UX
-- [ ] Complete launch checklist Phase 4/5/6 remaining items
+- [x] Complete subscription lifecycle hook + expiry/usage UX
+- [x] `useSubscription` hook 235 lines — trial/expiry/usage count
+- [x] MobileLayout integrates plan badge
+- [x] PricingPage DB-backed (Supabase subscription_plans)
+- [x] Supabase integration test script 42/42 PASS
+- [x] BATCH6 all 10 tasks: Razorpay fix, PaymentCallback, OG tags, robots, InvoicePage GST, security
+- [ ] **[HUMAN]** Re-deploy Heroku: `heroku login && git push heroku main`
+- [ ] **[HUMAN]** Update Supabase Site URL to `https://www.truckopti.in` in dashboard
+- [ ] Complete launch checklist Phase 6 (production keys, ToS, privacy policy)
 
 ---
 
@@ -150,6 +186,10 @@ STATUS: 🟡 IN PROGRESS
 
 | Date | Agent | Task | Result |
 |------|-------|------|--------|
+| Mar 03 | SONNET-001 | BATCH6 + BATCH7 full implementation | ✅ Complete; committed + pushed to GitHub |
+| Mar 03 | SONNET-001 | Browser smoke test + domain audit | ✅ Heroku stale deploy root cause found |
+| Mar 03 | SONNET-001 | index.html OG tags + app.json URL fix | ✅ Fixed; committed |
+| Mar 03 | SONNET-001 | Supabase test 42/42 | ✅ Complete |
 | Feb 22 | GPT-5.3-Codex | Cloudflare + Heroku domain validation | ✅ Complete |
 | Feb 22 | GPT-5.3-Codex | GitHub updates (3 clean commits) | ✅ Complete |
 | Feb 18 | GPT-5.3-Codex | Live button interaction audits | ✅ Complete |
@@ -161,12 +201,16 @@ STATUS: 🟡 IN PROGRESS
 
 | Component | Status | Last Check | Deep Scan |
 |-----------|--------|------------|-----------|
-| Domain DNS | ✅ Active | 2026-02-22 | Cloudflare NS live |
-| SSL (Heroku ACM) | ✅ Active | 2026-02-22 | Both domains cert issued |
-| Live App Reachability | ✅ 200/200 | 2026-02-22 | `truckopti.in` + `www` |
-| Frontend Build | ✅ Passing | 2026-02-18 | `npm --prefix frontend run build` |
-| Button Audit | ✅ Script passing | 2026-02-18 | `npm run test:live-buttons` |
-| Launch Checklist | ⚠️ Partial | 2026-02-22 | Phase 4/5/6 pending |
+| Domain DNS | ✅ Active | 2026-03-03 | Cloudflare NS live |
+| SSL (Heroku ACM) | ✅ Active | 2026-03-03 | Both domains cert issued |
+| Live App (truckopti.in) | ✅ 200 OK | 2026-03-03 | Login/Pricing/404 all load |
+| Heroku Deployment | ❌ STALE | 2026-03-03 | Last deploy Feb-16; 6 commits behind |
+| Heroku Redirect (to truckopti.in) | ❌ NOT WORKING | 2026-03-03 | JS redirect code not in deployed bundle |
+| Supabase Site URL | ❌ WRONG | 2026-03-03 | Still Heroku URL — auth emails broken |
+| Frontend Build | ✅ Passing | 2026-03-03 | Built in 6.57s, 0 TS errors |
+| Supabase Integration | ✅ 42/42 | 2026-03-03 | All 17 tables, RLS, realtime |
+| OG Meta Tags | ✅ Fixed | 2026-03-03 | Now www.truckopti.in (was Heroku) |
+| Launch Checklist | ⚠️ 29/40 | 2026-03-03 | Phase 3/4/5 done; Phase 6 pending |
 
 ### Quality Metrics Dashboard
 | Metric | Current | Target | Status |
@@ -174,8 +218,10 @@ STATUS: 🟡 IN PROGRESS
 | Apex Domain HTTPS | 200 | 200 | ✅ |
 | WWW Domain HTTPS | 200 | 200 | ✅ |
 | Heroku ACM Coverage | 2/2 | 2/2 | ✅ |
-| Launch Checklist Completion | 16/40 | 40/40 | ⚠️ |
-| Build Health | Passing | Passing | ✅ |
+| Heroku Code Sync | 0% (stale) | 100% | ❌ Needs deploy |
+| Supabase Auth Site URL | Wrong | truckopti.in | ❌ Needs manual fix |
+| OG Tags Domain | truckopti.in | truckopti.in | ✅ |
+| Launch Checklist Completion | 29/40 | 40/40 | ⚠️ |
 
 ---
 
@@ -185,9 +231,9 @@ STATUS: 🟡 IN PROGRESS
 
 | ID | Severity | Description | Status |
 |----|----------|-------------|--------|
-| BUG-001 | 🟠 HIGH | Subscription lifecycle incomplete (trial/expiry/usage) | Open |
-| BUG-002 | 🟡 MEDIUM | Pricing page still mixed static/DB sources | Open |
-| BUG-003 | 🟡 MEDIUM | Launch checklist + test tracker not fully completed | Open |
+| BUG-004 | 🔴 CRITICAL | Heroku deployment stale (6 commits behind) — run `heroku login && git push heroku main` | Open |
+| BUG-005 | 🔴 CRITICAL | Supabase Site URL = Heroku URL — auth emails send OTP links to Heroku, not truckopti.in | Open |
+| BUG-006 | 🟡 LOW | apple-mobile-web-app-capable meta tag deprecated (mobile-web-app-capable added as fallback) | Fixed |
 
 📋 **See:** [issues.json](issues.json) for full details
 
