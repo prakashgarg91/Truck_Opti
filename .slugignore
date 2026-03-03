@@ -1,0 +1,51 @@
+# Heroku .slugignore — exclude non-production files from slug
+# (Heroku runs npm install and vite build from frontend/ via heroku-postbuild)
+
+# Parallel dev projects — NOT used by Heroku build
+apps/
+0.dev-matrix/
+0.development-matrix/
+.claude/
+
+# Screenshots / docs
+screenshots/
+docs/
+
+# Python / test tooling
+*.py
+*.pyc
+__pycache__/
+.venv/
+pytest.ini
+sitecustomize.py
+
+# Test scripts at root
+comprehensive_user_test.py
+execute_every_function_test.py
+feature_by_feature_test.py
+function_by_function_test.py
+interactive_webapp_test.py
+quick_functionality_test.py
+simple_function_validator.py
+simple_webapp_test.py
+webapp_button_click_test.py
+test_e2e.py
+
+# Markdown docs at root (not needed for runtime)
+*.md
+
+# Local build artefacts
+dist/
+*.tgz
+
+# CI / deploy helper scripts (not needed in slug)
+deploy-heroku.sh
+scripts/
+
+# Log files
+logs/
+*.log
+
+# Test data CSVs
+test_invalid_order.csv
+test_sale_order.csv
