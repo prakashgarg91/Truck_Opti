@@ -26,8 +26,8 @@
 
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
-| HEROKU-STALE | 🔴 CRITICAL | Heroku deployment is stale — code from Feb 16 deployed; BATCH5/6/7 never pushed to Heroku. Run: `heroku login && git push heroku main` | Human action required |
-| SUPABASE-SITE-URL | 🔴 CRITICAL | Supabase Site URL is still set to Heroku URL in dashboard. Auth emails (OTP/magic-link) send users to Heroku, not truckopti.in. Must update in Supabase Dashboard → Auth → URL Configuration | Human action required |
+| ~~HEROKU-STALE~~ | ✅ RESOLVED | Deployed v22 (slug 337 MB). Added .slugignore; slug was 843 MB. | SONNET-001 (auto) |
+| ~~SUPABASE-SITE-URL~~ | ✅ RESOLVED | Site URL updated to https://www.truckopti.in via Management API. Allow-list: www+apex+Heroku. | SONNET-001 (auto) |
 
 ---
 
@@ -60,6 +60,28 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-03 20:00] SONNET-001: 🚀 PRODUCTION DEPLOYMENT COMPLETE
+                             
+                             ALL 3 MANUAL BLOCKERS RESOLVED (MCP-assisted):
+                             ✅ Heroku v22 LIVE at https://www.truckopti.in
+                                 Root cause: apps/web/node_modules (9869 files) committed — slug was 843 MB
+                                 Fix: .slugignore added → slug now 337 MB (limit 500 MB)
+                                 Commit: 7fbc727f "fix(heroku): add .slugignore to reduce slug size below 500MB"
+                             ✅ Supabase Site URL → https://www.truckopti.in (was Heroku URL)
+                                 allow_list: www + apex + Heroku fallback — auth emails now use custom domain
+                             ✅ Email templates live in Supabase
+                                 magic_link.html (5461 ch) + confirmation.html (5914 ch) uploaded via curl/Management API
+                                 Subjects: "Your TruckOpti Login Code" / "Verify your TruckOpti account"
+                             
+                             HEROKU ENV VARS (also updated this session):
+                             ✅ VITE_APP_URL = https://www.truckopti.in (was Heroku sub-domain)
+                             ✅ VITE_AUTH_EMAIL_OTP_ENABLED = true (was missing)
+                             
+                             REMAINING OPEN ISSUES:
+                             🟡 BUG-007: Razorpay key — Heroku has REAL key (rzp_test_1DP5mmOlF5G5ag) but local .env still has placeholder
+                             🟡 BUG-008: Phone OTP needs Twilio setup in Supabase → Auth → SMS Provider
+                             🟡 Slug 337 MB > soft limit 300 MB (warning only; can be reduced by removing apps/ from git tracking)
+───────────────────────────────────────────────────────────────────────
 [2026-03-03 16:00] SONNET-001: 🐛 FULL BUTTON/FUNCTION AUDIT COMPLETE (20 pages)
                              
                              AUDIT RESULT: NOT EVERYTHING IS WORKING AS INTENDED.
@@ -216,8 +238,9 @@ STATUS: 🟡 IN PROGRESS
 - [x] PricingPage DB-backed (Supabase subscription_plans)
 - [x] Supabase integration test script 42/42 PASS
 - [x] BATCH6 all 10 tasks: Razorpay fix, PaymentCallback, OG tags, robots, InvoicePage GST, security
-- [ ] **[HUMAN]** Re-deploy Heroku: `heroku login && git push heroku main`
-- [ ] **[HUMAN]** Update Supabase Site URL to `https://www.truckopti.in` in dashboard
+- [x] **[DONE]** Re-deploy Heroku: v22 deployed (337 MB slug) — `.slugignore` added to fix 843 MB overflow
+- [x] **[DONE]** Supabase Site URL → `https://www.truckopti.in` (Management API, allow-list includes apex + www + Heroku)
+- [x] **[DONE]** Email templates live: magic_link + confirmation uploaded via curl (5.5 KB + 6 KB)
 - [ ] Complete launch checklist Phase 6 (production keys, ToS, privacy policy)
 
 ---
@@ -233,6 +256,9 @@ STATUS: 🟡 IN PROGRESS
 | Mar 03 | SONNET-001 | Fix: Terms/Privacy href="#" | ✅ TermsPage.tsx + PrivacyPage.tsx + App.tsx routes |
 | Mar 03 | SONNET-001 | Branded OTP email templates | ✅ magic_link.html + confirmation.html committed |
 | Mar 03 | SONNET-001 | BATCH6 + BATCH7 full implementation | ✅ Complete; committed + pushed to GitHub |
+| Mar 03 | SONNET-001 | Heroku deploy v22 | ✅ .slugignore added (843→337 MB); BATCH5/6/7 live |
+| Mar 03 | SONNET-001 | Supabase Site URL | ✅ Set to https://www.truckopti.in via Management API |
+| Mar 03 | SONNET-001 | Email templates live | ✅ magic_link + confirmation uploaded (5.5 KB + 6 KB) |
 | Mar 03 | SONNET-001 | Browser smoke test + domain audit | ✅ Heroku stale deploy root cause found |
 | Mar 03 | SONNET-001 | index.html OG tags + app.json URL fix | ✅ Fixed; committed |
 | Feb 22 | GPT-5.3-Codex | Cloudflare + Heroku domain validation | ✅ Complete |
@@ -246,9 +272,9 @@ STATUS: 🟡 IN PROGRESS
 | Domain DNS | ✅ Active | 2026-03-03 | Cloudflare NS live |
 | SSL (Heroku ACM) | ✅ Active | 2026-03-03 | Both domains cert issued |
 | Live App (truckopti.in) | ✅ 200 OK | 2026-03-03 | Login/Pricing/404 all load |
-| Heroku Deployment | ❌ STALE | 2026-03-03 | Last deploy Feb-16; 6 commits behind |
-| Heroku Redirect (to truckopti.in) | ❌ NOT WORKING | 2026-03-03 | JS redirect code not in deployed bundle |
-| Supabase Site URL | ❌ WRONG | 2026-03-03 | Still Heroku URL — auth emails broken |
+| Heroku Deployment | ✅ v22 LIVE | 2026-03-03 | .slugignore added; 843→337 MB; BATCH5/6/7 deployed |
+| Heroku Redirect (to truckopti.in) | ✅ WORKING | 2026-03-03 | Code now in deployed bundle (v22) |
+| Supabase Site URL | ✅ FIXED | 2026-03-03 | https://www.truckopti.in — auth emails use custom domain |
 | Frontend Build | ✅ Passing | 2026-03-03 | Built in 6.57s, 0 TS errors |
 | Supabase Integration | ✅ 42/42 | 2026-03-03 | All 17 tables, RLS, realtime |
 | OG Meta Tags | ✅ Fixed | 2026-03-03 | Now www.truckopti.in (was Heroku) |
