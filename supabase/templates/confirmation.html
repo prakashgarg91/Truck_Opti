@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirm Your TruckOpti Account</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f4f4f5;
+      color: #18181b;
+      padding: 40px 16px;
+    }
+    .wrapper {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+      padding: 36px 40px 32px;
+      text-align: center;
+    }
+    .brand-icon {
+      font-size: 40px;
+      line-height: 1;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .brand-name {
+      color: #ffffff;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .brand-tagline {
+      color: rgba(255,255,255,0.75);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .body {
+      padding: 40px 40px 32px;
+    }
+    .greeting {
+      font-size: 20px;
+      font-weight: 600;
+      color: #18181b;
+      margin-bottom: 12px;
+    }
+    .intro-text {
+      color: #52525b;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    .otp-box {
+      background: #f0fdf4;
+      border: 2px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 28px 24px;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .otp-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #16a34a;
+      margin-bottom: 14px;
+    }
+    .otp-code {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: 12px;
+      color: #14532d;
+      font-family: 'Courier New', 'Menlo', monospace;
+      line-height: 1;
+      padding-left: 12px;
+    }
+    .otp-expiry {
+      font-size: 13px;
+      color: #71717a;
+      margin-top: 14px;
+    }
+    .otp-expiry strong {
+      color: #18181b;
+    }
+    .fallback-label {
+      font-size: 13px;
+      color: #71717a;
+      margin-bottom: 10px;
+    }
+    .fallback-btn {
+      display: inline-block;
+      background: #16a34a;
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .features-list {
+      margin: 28px 0;
+      padding: 0;
+      list-style: none;
+    }
+    .features-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      font-size: 14px;
+      color: #52525b;
+      border-bottom: 1px solid #f4f4f5;
+    }
+    .features-list li:last-child {
+      border-bottom: none;
+    }
+    .feature-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .security-box {
+      background: #fefce8;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 24px;
+      font-size: 13px;
+      color: #713f12;
+      line-height: 1.5;
+    }
+    .security-box strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+    .footer {
+      background: #fafafa;
+      border-top: 1px solid #e4e4e7;
+      padding: 24px 40px;
+      text-align: center;
+    }
+    .footer-logo {
+      font-size: 14px;
+      font-weight: 700;
+      color: #18181b;
+      margin-bottom: 8px;
+    }
+    .footer-text {
+      font-size: 12px;
+      color: #a1a1aa;
+      line-height: 1.6;
+    }
+    .footer-text a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <!-- Header -->
+      <div class="header">
+        <span class="brand-icon">🚛</span>
+        <div class="brand-name">TruckOpti</div>
+        <div class="brand-tagline">Smart Truck Fleet Management</div>
+      </div>
+
+      <!-- Body -->
+      <div class="body">
+        <div class="greeting">Welcome to TruckOpti! 🎉</div>
+        <p class="intro-text">
+          You're one step away from optimising your fleet operations.
+          Enter the code below to verify your email and activate your account.
+        </p>
+
+        <!-- OTP Code -->
+        <div class="otp-box">
+          <div class="otp-label">Email Verification Code</div>
+          <div class="otp-code">{{ .Token }}</div>
+          <div class="otp-expiry">Expires in <strong>60 minutes</strong></div>
+        </div>
+
+        <!-- Fallback link -->
+        <p class="fallback-label">Or click the button to verify automatically:</p>
+        <a href="{{ .ConfirmationURL }}" class="fallback-btn">Verify My Account</a>
+
+        <!-- What you get -->
+        <ul class="features-list">
+          <li><span class="feature-icon">🗺️</span> Smart route planning & optimisation</li>
+          <li><span class="feature-icon">📦</span> Order & dispatch management</li>
+          <li><span class="feature-icon">📊</span> Real-time fleet tracking</li>
+          <li><span class="feature-icon">🧾</span> Automated GST invoicing</li>
+          <li><span class="feature-icon">💰</span> 14-day free trial — no credit card needed</li>
+        </ul>
+
+        <!-- Security notice -->
+        <div class="security-box">
+          <strong>🔒 Security Notice</strong>
+          If you didn't sign up for TruckOpti, please ignore this email.
+          Never share this code with anyone.
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-logo">🚛 TruckOpti</div>
+        <p class="footer-text">
+          Sent to <strong>{{ .Email }}</strong><br />
+          &copy; 2026 TruckOpti. All rights reserved.<br />
+          <a href="https://www.truckopti.in">www.truckopti.in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
