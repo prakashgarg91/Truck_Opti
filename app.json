@@ -28,8 +28,8 @@
       "required": true
     },
     "VITE_APP_URL": {
-      "description": "Heroku App URL (update after deploy)",
-      "value": "https://your-app-name.herokuapp.com",
+      "description": "Canonical production URL for Heroku → truckopti.in redirect",
+      "value": "https://www.truckopti.in",
       "required": true
     }
   },
