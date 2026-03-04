@@ -6,12 +6,13 @@ import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 
-const OTP_LENGTH = 6
-
 export default function OTPPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { pendingPhone, login } = useAuthStore()
+  // Supabase now sends 8-digit OTPs for email, 6 for SMS
+  const channel_pre = (location.state as { channel?: string })?.channel || 'sms'
+  const OTP_LENGTH = channel_pre === 'email' ? 8 : 6
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''))
   const [timer, setTimer] = useState(30)
   const [isError, setIsError] = useState(false)
@@ -19,7 +20,7 @@ export default function OTPPage() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
   
   // Get channel from navigation state
-  const channel = (location.state as { channel?: string })?.channel || 'sms'
+  const channel = channel_pre
   const contact = (location.state as { contact?: string })?.contact || pendingPhone
   
   // Redirect if no pending phone/email
@@ -167,7 +168,7 @@ export default function OTPPage() {
           {channel === 'email' ? 'Verify Your Email' : 'Verify Your Number'}
         </h2>
         <p className="text-slate-500 dark:text-slate-400">
-          We sent a 6-digit code to
+          We sent a {OTP_LENGTH}-digit code to
         </p>
         <p className="font-semibold text-slate-900 dark:text-white mt-1 text-lg">
           {maskedContact}
@@ -186,7 +187,7 @@ export default function OTPPage() {
       
       {/* OTP Input */}
       <div 
-        className={`flex justify-center gap-2 sm:gap-3 mb-8 transition-all duration-300 ${
+        className={`flex justify-center ${OTP_LENGTH >= 8 ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-3'} mb-8 transition-all duration-300 ${
           isError ? 'animate-shake' : ''
         } ${isSuccess ? 'scale-95 opacity-50' : ''}`}
         onPaste={handlePaste}
@@ -202,7 +203,7 @@ export default function OTPPage() {
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             disabled={isSuccess || verifyOTPMutation.isPending}
-            className={`otp-input ${digit ? 'filled' : ''} ${
+            className={`${OTP_LENGTH >= 8 ? 'otp-input-sm' : 'otp-input'} ${digit ? 'filled' : ''} ${
               isError ? 'border-red-500 bg-red-50 dark:bg-red-900/30' : ''
             } ${isSuccess ? 'border-green-500 bg-green-50 dark:bg-green-900/30' : ''}`}
             autoFocus={index === 0}

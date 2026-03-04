@@ -160,6 +160,21 @@
     @apply transition-all duration-200;
     @apply focus:scale-105;
   }
+
+  /* Compact variant for 8-digit OTPs */
+  .otp-input-sm {
+    @apply w-9 h-12 sm:w-11 sm:h-14;
+    @apply text-center text-xl font-semibold;
+    @apply bg-slate-100 dark:bg-slate-800;
+    @apply border-2 border-slate-200 dark:border-slate-700;
+    @apply rounded-xl;
+    @apply focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20;
+    @apply transition-all duration-200;
+    @apply focus:scale-105;
+  }
+  .otp-input-sm.filled {
+    @apply bg-primary-50 border-primary-300 dark:bg-primary-900/30 dark:border-primary-600;
+  }
   
   .otp-input.filled {
     @apply bg-primary-50 border-primary-300 dark:bg-primary-900/30 dark:border-primary-600;

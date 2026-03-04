@@ -60,18 +60,8 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
   const isGoogleAuth = authUser.app_metadata?.provider === 'google' || 
                        authUser.identities?.some(i => i.provider === 'google')
   
-  // Preserve existing role from DB — never downgrade admin back to 'user'
-  let existingRole: string = 'user'
-  try {
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', authUser.id)
-      .maybeSingle()
-    if (existingUser?.role) existingRole = existingUser.role
-  } catch { /* new user — default to 'user' */ }
-
-  const userData = {
+  // Upsert user profile WITHOUT role (never overwrite role via sync)
+  const upsertData = {
     id: authUser.id,
     email: authUser.email || '',
     name: metadata.full_name || metadata.name || null,
@@ -79,14 +69,13 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
     phone_verified: !!authUser.phone_confirmed_at,
     google_linked: !!isGoogleAuth,
     profile_picture: metadata.avatar_url || metadata.picture || null,
-    role: existingRole
   }
   
   try {
-    // Upsert user profile to public.users table (preserves role)
+    // Upsert user profile to public.users — role column is NOT included so it is preserved
     const { error } = await supabase
       .from('users')
-      .upsert(userData, { 
+      .upsert(upsertData, { 
         onConflict: 'id',
         ignoreDuplicates: false
       })
@@ -96,6 +85,28 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
     }
   } catch (err) {
     logger.error('Error syncing user profile:', err)
+  }
+
+  // Fetch the current role from DB (separately, after upsert)
+  let role: string = 'user'
+  try {
+    const { data: roleData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', authUser.id)
+      .maybeSingle()
+    if (roleData?.role) role = roleData.role
+  } catch { /* default to 'user' */ }
+
+  const userData = {
+    id: authUser.id,
+    email: authUser.email || '',
+    name: metadata.full_name || metadata.name || null,
+    phone: authUser.phone || metadata.phone || null,
+    phone_verified: !!authUser.phone_confirmed_at,
+    google_linked: !!isGoogleAuth,
+    profile_picture: metadata.avatar_url || metadata.picture || null,
+    role
   }
   
   return userData
