@@ -87,16 +87,19 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
     logger.error('Error syncing user profile:', err)
   }
 
-  // Fetch the current role from DB (separately, after upsert)
-  let role: string = 'user'
-  try {
-    const { data: roleData } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', authUser.id)
-      .maybeSingle()
-    if (roleData?.role) role = roleData.role
-  } catch { /* default to 'user' */ }
+  // Read role from JWT user_metadata first (set via admin API, never overwritten by sync)
+  // Fall back to DB lookup, then default to 'user'
+  let role: string = authUser.user_metadata?.role || 'user'
+  if (role === 'user') {
+    try {
+      const { data: roleData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', authUser.id)
+        .maybeSingle()
+      if (roleData?.role && roleData.role !== 'user') role = roleData.role
+    } catch { /* keep default */ }
+  }
 
   const userData = {
     id: authUser.id,
