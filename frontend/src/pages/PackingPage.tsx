@@ -9,7 +9,7 @@ import TruckViewer from '../components/TruckViewer'
 import toast from 'react-hot-toast'
 import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, customersSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
 import { usePackingWorker } from '../hooks/usePackingWorker'
 import { useSubscription } from '../hooks/useSubscription'
@@ -589,6 +589,7 @@ RecommendationCard.displayName = 'RecommendationCard'
 // ============= MAIN COMPONENT =============
 export default function PackingPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [lang, setLang] = useState<Language>('en')
   const [mode, setMode] = useState<'manual' | 'smart'>('smart')
   const [selectedTruck, setSelectedTruck] = useState<string | null>(null)
@@ -638,6 +639,18 @@ export default function PackingPage() {
   useEffect(() => {
     document.title = lang === 'en' ? '3D Packing - TruckOpti' : '3D पैकिंग - TruckOpti'
   }, [lang])
+
+  // Pre-populate items if navigated from SaleOrdersPage
+  useEffect(() => {
+    const state = location.state as { saleOrderItems?: SaleOrderItem[]; saleOrderId?: string } | null
+    if (state?.saleOrderItems && state.saleOrderItems.length > 0) {
+      setSaleOrderItems(state.saleOrderItems)
+      toast.success(`${state.saleOrderItems.length} items loaded from sale order`)
+      // Clear location state to prevent re-loading on internal navigation
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Fetch trucks from Supabase on mount
   useEffect(() => {
