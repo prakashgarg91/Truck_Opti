@@ -636,6 +636,16 @@ export interface Notification {
 }
 
 export const notificationsSupabaseApi = {
+  async create(notification: { title: string; message: string; type: Notification['type']; action_url?: string; action_label?: string }): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    
+    const { error } = await supabase
+      .from('notifications')
+      .insert({ ...notification, user_id: user.id, is_read: false })
+    if (error) throw error
+  },
+
   async getUnreadCount(): Promise<number> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 0

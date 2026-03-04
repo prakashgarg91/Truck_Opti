@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import TruckViewer from '../components/TruckViewer'
 import toast from 'react-hot-toast'
-import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, customersSupabaseApi } from '../services/supabaseApi'
+import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, customersSupabaseApi, notificationsSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
@@ -1040,6 +1040,16 @@ export default function PackingPage() {
       })
 
       toast.success(`${selectedRecommendation.truck.name} booked successfully!`)
+      // Create booking notification
+      try {
+        await notificationsSupabaseApi.create({
+          title: 'Truck Booked',
+          message: `${selectedRecommendation.truck.name} booked for ${bookForm.origin} → ${bookForm.destination}`,
+          type: 'success',
+          action_url: '/tracking',
+          action_label: 'Track Shipment'
+        })
+      } catch { /* non-critical */ }
       setShowBookModal(false)
       setBookForm({
         origin: '',

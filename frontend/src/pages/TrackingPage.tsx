@@ -3,7 +3,7 @@ import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, PlayCircle } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { shipmentsSupabaseApi } from '../services/supabaseApi'
+import { shipmentsSupabaseApi, notificationsSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
 import MapViewWrapper from '../components/MapViewWrapper'
 import EmptyState from '../components/EmptyState'
@@ -130,6 +130,18 @@ export default function TrackingPage() {
       await shipmentsSupabaseApi.updateStatus(shipment.id, newStatus)
       queryClient.invalidateQueries({ queryKey: ['shipments'] })
       toast.success(newStatus === 'in_transit' ? 'Delivery started!' : 'Marked as delivered!')
+      // Create in-app notification
+      const notifTitle = newStatus === 'in_transit' ? 'Delivery Started' : 'Delivery Completed'
+      const notifMsg = newStatus === 'in_transit'
+        ? `Shipment ${shipment.shipment_id} is now in transit to ${shipment.destination}`
+        : `Shipment ${shipment.shipment_id} delivered to ${shipment.destination} ✓`
+      await notificationsSupabaseApi.create({
+        title: notifTitle,
+        message: notifMsg,
+        type: newStatus === 'delivered' ? 'success' : 'info',
+        action_url: `/tracking`,
+        action_label: 'View Tracking'
+      })
     } catch (err: any) {
       toast.error(err.message || 'Failed to update status')
     } finally {
