@@ -405,22 +405,22 @@ export default function MobileLayout() {
               className="px-5 py-3 border-b border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                {user.user_metadata?.avatar_url ? (
+                {user.profile_picture || user.user_metadata?.avatar_url ? (
                   <img
-                    src={user.user_metadata.avatar_url}
+                    src={user.profile_picture || user.user_metadata?.avatar_url}
                     alt="Profile"
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
                     <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
-                      {(user.user_metadata?.full_name || user.email || 'U').charAt(0).toUpperCase()}
+                      {(user.name || user.user_metadata?.full_name || user.email || 'U').charAt(0).toUpperCase()}
                     </span>
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                    {user.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                     {user.email}

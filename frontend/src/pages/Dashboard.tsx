@@ -284,7 +284,7 @@ export default function Dashboard() {
         <div className="relative">
           <p className="text-primary-200 text-sm font-medium">{greeting} 👋</p>
           <h1 className="text-2xl font-bold mt-1">
-            {user?.name || 'User'}
+            {user?.name || user?.email?.split('@')[0] || 'User'}
           </h1>
           
           {/* Notification Badge */}

@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 
 // Layouts
@@ -64,6 +64,7 @@ function AppContent() {
           <Route path="/payment/success" element={<PaymentCallbackPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/subscription" element={<Navigate to="/pricing" replace />} />
           {import.meta.env.DEV && (
             <Route path="/test-payment" element={<TestPaymentPage />} />
           )}
