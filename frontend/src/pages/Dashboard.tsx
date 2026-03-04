@@ -596,13 +596,11 @@ export default function Dashboard() {
           ))}
         </div>
         <div className="flex justify-around mt-3 text-xs text-slate-500 font-medium">
-          <span>Sun</span>
-          <span>Mon</span>
-          <span>Tue</span>
-          <span>Wed</span>
-          <span className="text-primary-600 font-semibold">Thu</span>
-          <span>Fri</span>
-          <span>Sat</span>
+          {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day, i) => (
+            <span key={day} className={i === new Date().getDay() ? 'text-primary-600 font-bold' : ''}>
+              {day}
+            </span>
+          ))}
         </div>
       </div>
       

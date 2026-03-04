@@ -113,6 +113,7 @@ export default function SaleOrdersPage() {
   const [parsedItems, setParsedItems] = useState<ParsedItem[]>([])
   const [showPreview, setShowPreview] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [reoptimizing, setReoptimizing] = useState<string | null>(null)
 
   useEffect(() => {
     fetchOrders()
@@ -299,6 +300,34 @@ export default function SaleOrdersPage() {
       toast.error(t[lang].importError)
     } finally {
       setImporting(false)
+    }
+  }
+
+  const handleReoptimize = async (orderId: string) => {
+    setReoptimizing(orderId)
+    try {
+      const orderWithItems = await saleOrdersSupabaseApi.getById(orderId)
+      if (!orderWithItems || !orderWithItems.items?.length) {
+        toast.error('No items found for this order')
+        return
+      }
+      const packingItems = orderWithItems.items.map((item: any) => ({
+        id: `item-${Date.now()}-${Math.random()}`,
+        name: item.product_name,
+        length: item.length,
+        width: item.width,
+        height: item.height,
+        weight: item.weight,
+        quantity: item.quantity,
+        stackable: true,
+        fragile: false
+      }))
+      navigate('/packing', { state: { saleOrderItems: packingItems, saleOrderId: orderId } })
+    } catch (error) {
+      logger.error('Re-optimize error:', error)
+      toast.error('Failed to load order items')
+    } finally {
+      setReoptimizing(null)
     }
   }
 
@@ -497,12 +526,24 @@ Carton C,30,20,15,2,20,Bangalore`
                       {new Date(order.created_at || '').toLocaleDateString()}
                     </p>
                   </div>
-                  <button
-                    onClick={() => handleDelete(order.id)}
-                    className="p-2 text-red-400 hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleReoptimize(order.id)}
+                      disabled={reoptimizing === order.id}
+                      title="Re-optimize packing"
+                      className="p-2 text-primary-500 hover:text-primary-700 disabled:opacity-50"
+                    >
+                      {reoptimizing === order.id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <RefreshCw className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(order.id)}
+                      className="p-2 text-red-400 hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
