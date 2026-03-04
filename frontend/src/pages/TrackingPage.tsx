@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, PlayCircle } from 'lucide-react'
+import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, PlayCircle, Trash2 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { shipmentsSupabaseApi, notificationsSupabaseApi } from '../services/supabaseApi'
+import { shipmentsSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
 import MapViewWrapper from '../components/MapViewWrapper'
 import EmptyState from '../components/EmptyState'
@@ -26,6 +26,7 @@ interface ShipmentLocation {
   total_weight?: number
   total_volume?: number
   speed?: number
+  sale_order_id?: string | null
 }
 
 const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
@@ -48,7 +49,8 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
     updated_at: s.updated_at,
     customer_id: s.customer_id,
     total_weight: s.total_weight,
-    total_volume: s.total_volume
+    total_volume: s.total_volume,
+    sale_order_id: s.sale_order_id || null
   }))
   
   // Return empty array if no real data (no mock/fake data)
@@ -124,6 +126,21 @@ export default function TrackingPage() {
     navigate(`/invoice/${shipmentId}`)
   }
 
+  const handleCancelShipment = async (shipment: ShipmentLocation) => {
+    if (!confirm(`Cancel shipment ${shipment.shipment_id}? This cannot be undone.`)) return
+    setUpdatingStatus(shipment.id)
+    try {
+      await shipmentsSupabaseApi.delete(shipment.id)
+      queryClient.invalidateQueries({ queryKey: ['shipments'] })
+      setSelectedId(null)
+      toast.success('Shipment cancelled')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to cancel shipment')
+    } finally {
+      setUpdatingStatus(null)
+    }
+  }
+
   const handleUpdateStatus = async (shipment: ShipmentLocation, newStatus: 'in_transit' | 'delivered') => {
     setUpdatingStatus(shipment.id)
     try {
@@ -142,6 +159,12 @@ export default function TrackingPage() {
         action_url: `/tracking`,
         action_label: 'View Tracking'
       })
+      // Auto-complete linked sale order when shipment is delivered
+      if (newStatus === 'delivered' && shipment.sale_order_id) {
+        try {
+          await saleOrdersSupabaseApi.updateStatus(shipment.sale_order_id, 'completed')
+        } catch { /* non-critical */ }
+      }
     } catch (err: any) {
       toast.error(err.message || 'Failed to update status')
     } finally {
@@ -420,6 +443,16 @@ export default function TrackingPage() {
                       Invoice
                     </button>
                   </div>
+                  {(s.status === 'pending' || s.status === 'in_transit') && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleCancelShipment(s) }}
+                      disabled={updatingStatus === s.id}
+                      className="w-full py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-200 dark:border-red-800/50 disabled:opacity-50"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Cancel Shipment
+                    </button>
+                  )}
                 </div>
               )}
             </div>

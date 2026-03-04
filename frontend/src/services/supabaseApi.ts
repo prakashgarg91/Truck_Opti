@@ -72,6 +72,7 @@ export interface Shipment {
   vehicle_number: string | null
   latitude: number | null
   longitude: number | null
+  sale_order_id?: string | null
   created_at?: string
   updated_at?: string
 }

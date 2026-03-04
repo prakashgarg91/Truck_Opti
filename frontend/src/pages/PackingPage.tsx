@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import TruckViewer from '../components/TruckViewer'
 import toast from 'react-hot-toast'
-import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, customersSupabaseApi, notificationsSupabaseApi } from '../services/supabaseApi'
+import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, customersSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
@@ -597,6 +597,7 @@ export default function PackingPage() {
   const [trucks, setTrucks] = useState<TruckType[]>([])
   const [loadingTrucks, setLoadingTrucks] = useState(true)
   const [saleOrderItems, setSaleOrderItems] = useState<SaleOrderItem[]>([])
+  const [linkedSaleOrderId, setLinkedSaleOrderId] = useState<string | null>(null)
   const [recommendations, setRecommendations] = useState<TruckRecommendation[]>([])
   const [selectedRecommendation, setSelectedRecommendation] = useState<TruckRecommendation | null>(null)
   const [showItemForm, setShowItemForm] = useState(false)
@@ -645,6 +646,7 @@ export default function PackingPage() {
     const state = location.state as { saleOrderItems?: SaleOrderItem[]; saleOrderId?: string } | null
     if (state?.saleOrderItems && state.saleOrderItems.length > 0) {
       setSaleOrderItems(state.saleOrderItems)
+      if (state.saleOrderId) setLinkedSaleOrderId(state.saleOrderId)
       toast.success(`${state.saleOrderItems.length} items loaded from sale order`)
       // Clear location state to prevent re-loading on internal navigation
       window.history.replaceState({}, '', window.location.pathname)
@@ -1036,8 +1038,16 @@ export default function PackingPage() {
         driver_phone: bookForm.driverPhone ? `+91${bookForm.driverPhone.replace(/^\+91/, '')}` : null,
         vehicle_number: bookForm.vehicleNumber || null,
         latitude: null,
-        longitude: null
+        longitude: null,
+        sale_order_id: linkedSaleOrderId || null
       })
+
+      // Update sale order status to processing
+      if (linkedSaleOrderId) {
+        try {
+          await saleOrdersSupabaseApi.updateStatus(linkedSaleOrderId, 'processing')
+        } catch { /* non-critical */ }
+      }
 
       toast.success(`${selectedRecommendation.truck.name} booked successfully!`)
       // Create booking notification
