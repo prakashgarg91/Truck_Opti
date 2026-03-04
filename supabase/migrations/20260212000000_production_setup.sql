@@ -386,6 +386,7 @@ CREATE POLICY IF NOT EXISTS "Authenticated users can insert packing_results" ON 
 -- USERS: Own profile only
 CREATE POLICY IF NOT EXISTS "Users can view own profile" ON public.users FOR SELECT TO authenticated USING (auth.uid() = id);
 CREATE POLICY IF NOT EXISTS "Users can update own profile" ON public.users FOR UPDATE TO authenticated USING (auth.uid() = id);
+CREATE POLICY users_insert_own ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 
 -- SUBSCRIPTION PLANS: Public read
 CREATE POLICY IF NOT EXISTS "Anyone can read plans" ON public.subscription_plans FOR SELECT USING (true);

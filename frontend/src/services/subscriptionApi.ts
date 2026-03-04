@@ -126,7 +126,7 @@ export const subscriptionsApi = {
       .in('status', ['active', 'trial'])
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
     
     if (error) return null;
     return data;
