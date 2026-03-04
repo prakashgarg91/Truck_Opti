@@ -68,6 +68,7 @@ export interface Shipment {
   total_volume: number
   estimated_cost: number
   driver_name: string | null
+  driver_phone: string | null
   vehicle_number: string | null
   latitude: number | null
   longitude: number | null

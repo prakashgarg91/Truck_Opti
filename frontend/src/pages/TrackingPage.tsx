@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Truck, RefreshCw, Navigation, Search, Activity, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff } from 'lucide-react'
+import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, PlayCircle } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { shipmentsSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
@@ -29,10 +29,12 @@ interface ShipmentLocation {
 }
 
 const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
-  const data = await shipmentsSupabaseApi.getAll({ status: 'in_transit' })
+  // Fetch all non-cancelled shipments so pending ones are visible too
+  const data = await shipmentsSupabaseApi.getAll()
   
-  // Map data to our interface format
-  const mappedData: ShipmentLocation[] = data.map((s: any) => ({
+  const mappedData: ShipmentLocation[] = data
+    .filter((s: any) => s.status !== 'cancelled')
+    .map((s: any) => ({
     id: s.id,
     shipment_id: s.shipment_id || s.id.slice(0, 8).toUpperCase(),
     latitude: s.latitude,
@@ -62,9 +64,11 @@ export default function TrackingPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_transit' | 'delivered'>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedShipment, setSelectedShipment] = useState<ShipmentLocation | null>(null)
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
 
   // React Query: Fetch shipments data
   const { 
@@ -120,11 +124,26 @@ export default function TrackingPage() {
     navigate(`/invoice/${shipmentId}`)
   }
 
-  const filteredShipments = shipments.filter(s => 
-    s.shipment_id.toLowerCase().includes(search.toLowerCase()) ||
-    (s.driver_name?.toLowerCase() || '').includes(search.toLowerCase()) ||
-    (s.vehicle_number?.toLowerCase() || '').includes(search.toLowerCase())
-  )
+  const handleUpdateStatus = async (shipment: ShipmentLocation, newStatus: 'in_transit' | 'delivered') => {
+    setUpdatingStatus(shipment.id)
+    try {
+      await shipmentsSupabaseApi.updateStatus(shipment.id, newStatus)
+      queryClient.invalidateQueries({ queryKey: ['shipments'] })
+      toast.success(newStatus === 'in_transit' ? 'Delivery started!' : 'Marked as delivered!')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update status')
+    } finally {
+      setUpdatingStatus(null)
+    }
+  }
+
+  const filteredShipments = shipments.filter(s => {
+    const matchesSearch = s.shipment_id.toLowerCase().includes(search.toLowerCase()) ||
+      (s.driver_name?.toLowerCase() || '').includes(search.toLowerCase()) ||
+      (s.vehicle_number?.toLowerCase() || '').includes(search.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || s.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
   // Prepare markers for the map
   const mapMarkers = shipments
@@ -190,6 +209,31 @@ export default function TrackingPage() {
           <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
+
+      {/* Status Filter Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+        {(['all', 'pending', 'in_transit', 'delivered'] as const).map((s) => {
+          const count = s === 'all' ? shipments.length : shipments.filter(sh => sh.status === s).length
+          const labels: Record<string, string> = { all: 'All', pending: 'Pending', in_transit: 'In Transit', delivered: 'Delivered' }
+          const colors: Record<string, string> = { all: 'bg-primary-600', pending: 'bg-amber-500', in_transit: 'bg-emerald-500', delivered: 'bg-blue-500' }
+          return (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
+                statusFilter === s
+                  ? `${colors[s]} text-white shadow-md`
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+              }`}
+            >
+              {labels[s]}
+              {count > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                statusFilter === s ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+              }`}>{count}</span>}
+            </button>
+          )
+        })}
+      </div>
       
       {/* Search & Stats */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -228,7 +272,7 @@ export default function TrackingPage() {
       
       {/* Shipment List */}
       <div className="space-y-4">
-        <h3 className="font-semibold text-slate-900 dark:text-white">Active Shipments</h3>
+        <h3 className="font-semibold text-slate-900 dark:text-white">Shipments ({filteredShipments.length})</h3>
         {loadError ? (
           <EmptyState
             icon={MapPinOff}
@@ -254,20 +298,29 @@ export default function TrackingPage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl ${selectedId === s.id ? 'bg-primary-100 text-primary-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                  <div className={`p-2.5 rounded-xl ${
+                    s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
+                    s.status === 'pending' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
+                    'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
+                  }`}>
                     <Truck className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 dark:text-white">{s.shipment_id}</h3>
-                    <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name}</p>
+                    <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name || 'No driver'}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="flex items-center gap-1 text-emerald-600 font-bold text-sm">
-                    <Activity className="w-3 h-3" />
-                    {s.latitude ? (s.speed ? `${s.speed}` : '—') : '0'} km/h
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Updated {new Date(s.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
+                    s.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                    'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
+                  }`}>{s.status.replace('_', ' ')}</span>
+                  {s.status === 'in_transit' && (
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {s.latitude ? (s.speed ? `${s.speed}` : '—') : '0'} km/h
+                    </p>
+                  )}
                 </div>
               </div>
               
@@ -290,6 +343,27 @@ export default function TrackingPage() {
 
               {selectedId === s.id && (
                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2 animate-fade-in">
+                  {/* Status Actions */}
+                  {s.status === 'pending' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(s, 'in_transit') }}
+                      disabled={updatingStatus === s.id}
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <PlayCircle className="w-4 h-4" />
+                      {updatingStatus === s.id ? 'Updating...' : 'Start Delivery'}
+                    </button>
+                  )}
+                  {s.status === 'in_transit' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(s, 'delivered') }}
+                      disabled={updatingStatus === s.id}
+                      className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {updatingStatus === s.id ? 'Updating...' : 'Mark Delivered'}
+                    </button>
+                  )}
                   <div className="flex gap-2">
                     <button 
                       onClick={(e) => {

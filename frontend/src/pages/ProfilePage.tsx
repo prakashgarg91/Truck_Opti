@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { 
   Phone, Mail, MapPin, Shield, Bell, 
-  Globe, ChevronRight, LogOut, Camera, Edit3, Save, X
+  Globe, ChevronRight, LogOut, Camera, Edit3, Save, X, RefreshCw
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
@@ -216,6 +216,33 @@ export default function ProfilePage() {
   const [editGstin, setEditGstin] = useState(companyInfo.gstin || '')
   const [editCompanyAddress, setEditCompanyAddress] = useState(companyInfo.address || '')
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Image must be under 2 MB'); return }
+    setIsUploadingAvatar(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${user.id}/avatar.${ext}`
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      const publicUrl = data.publicUrl + '?t=' + Date.now()
+      const { error: metaErr } = await supabase.auth.updateUser({ data: { avatar_url: publicUrl, profile_picture: publicUrl } })
+      if (metaErr) throw metaErr
+      updateUser({ profile_picture: publicUrl })
+      toast.success('Profile photo updated!')
+    } catch (err: any) {
+      toast.error(err?.message?.includes('bucket') ? 'Storage not configured' : 'Upload failed')
+    } finally {
+      setIsUploadingAvatar(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const handleSaveProfile = async () => {
     setIsSaving(true)
@@ -288,9 +315,22 @@ export default function ProfilePage() {
               {user?.name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
             </div>
           )}
-          <button className="absolute bottom-0 right-0 w-8 h-8 bg-white dark:bg-slate-700 rounded-full shadow-lg flex items-center justify-center text-slate-600 dark:text-slate-300">
-            <Camera className="w-4 h-4" />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploadingAvatar}
+            className="absolute bottom-0 right-0 w-8 h-8 bg-white dark:bg-slate-700 rounded-full shadow-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+          >
+            {isUploadingAvatar
+              ? <RefreshCw className="w-4 h-4 animate-spin" />
+              : <Camera className="w-4 h-4" />}
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarUpload}
+          />
         </div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-white">
           {user?.name || user?.email?.split('@')[0] || 'TruckOpti User'}

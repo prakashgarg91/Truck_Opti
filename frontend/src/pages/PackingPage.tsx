@@ -1020,6 +1020,7 @@ export default function PackingPage() {
         total_volume: saleOrderItems.reduce((sum, item) => sum + (item.length * item.width * item.height * item.quantity) / 1000000, 0),
         estimated_cost: selectedRecommendation.estimatedCost,
         driver_name: bookForm.driverName || null,
+        driver_phone: bookForm.driverPhone ? `+91${bookForm.driverPhone.replace(/^\+91/, '')}` : null,
         vehicle_number: bookForm.vehicleNumber || null,
         latitude: null,
         longitude: null
