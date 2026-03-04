@@ -798,7 +798,8 @@ export interface SaleOrder {
 
 export interface SaleOrderItem {
   id: string
-  sale_order_id: string
+  order_id: string
+  product_code?: string
   product_name: string
   length: number
   width: number
@@ -834,13 +835,13 @@ export const saleOrdersSupabaseApi = {
     const { data: items, error: itemsError } = await supabase
       .from('sale_order_items')
       .select('*')
-      .eq('sale_order_id', id)
+      .eq('order_id', id)
     if (itemsError) throw itemsError
     
     return { ...order, items: items || [] } as SaleOrder & { items: SaleOrderItem[] }
   },
 
-  async create(order: Omit<SaleOrder, 'id' | 'created_at' | 'updated_at'>, items: Omit<SaleOrderItem, 'id' | 'created_at' | 'sale_order_id'>[]): Promise<SaleOrder> {
+  async create(order: Omit<SaleOrder, 'id' | 'created_at' | 'updated_at'>, items: Omit<SaleOrderItem, 'id' | 'created_at' | 'order_id'>[]): Promise<SaleOrder> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
     
@@ -856,7 +857,11 @@ export const saleOrdersSupabaseApi = {
     if (items.length > 0) {
       const { error: itemsError } = await supabase
         .from('sale_order_items')
-        .insert(items.map(item => ({ ...item, sale_order_id: newOrder.id })))
+        .insert(items.map(item => ({
+          ...item,
+          order_id: newOrder.id,
+          product_code: item.product_name.toUpperCase().replace(/\s+/g, '-').slice(0, 20)
+        })))
       if (itemsError) throw itemsError
     }
     
