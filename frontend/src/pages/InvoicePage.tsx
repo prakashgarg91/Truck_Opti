@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Download, ArrowLeft, MessageCircle,
-  Truck, MapPin, Package
+  Truck, MapPin, Package, AlertCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { shipmentsSupabaseApi, type Shipment } from '../services/supabaseApi'
@@ -277,6 +277,17 @@ export default function InvoicePage() {
           </div>
         </div>
       </div>
+
+      {/* Company Profile Incomplete Banner */}
+      {invoiceData.companyName === 'Your Company Name' && (
+        <div className="mx-4 mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 print:hidden">
+          <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-800">Company profile incomplete</p>
+            <p className="text-xs text-amber-600 mt-0.5">Your company name, GSTIN and address will appear on all invoices. <button onClick={() => navigate('/settings')} className="underline font-medium">Complete your profile →</button></p>
+          </div>
+        </div>
+      )}
 
       {/* Invoice Content */}
       <div className="p-4 max-w-5xl mx-auto">

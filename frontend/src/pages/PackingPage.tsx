@@ -807,8 +807,8 @@ export default function PackingPage() {
           truck: r.truck,
           itemsFit: r.itemsFit,
           totalItems: r.totalItems,
-          volumeUtilization: r.volumeUtilization,
-          weightUtilization: r.weightUtilization,
+          volumeUtilization: Math.round(r.volumeUtilization),
+          weightUtilization: Math.round(r.weightUtilization),
           estimatedCost: r.costEstimate,
           packedBoxes: r.packed,
           unfitItems: r.unpacked

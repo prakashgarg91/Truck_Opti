@@ -337,7 +337,7 @@ export default function RoutesPage() {
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs">
               <Clock className="w-3 h-3 text-slate-400" />
-              <span className="text-slate-600 dark:text-slate-300">Est. Time: {Math.floor(selectedRoute.total_time / 60)}h {Math.round(selectedRoute.total_time % 60)}m</span>
+              <span className="text-slate-600 dark:text-slate-300">Est. Time: {Math.floor(selectedRoute.total_time)}h {Math.round((selectedRoute.total_time % 1) * 60)}m</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs">
               <IndianRupee className="w-3 h-3 text-slate-400" />
@@ -414,7 +414,7 @@ export default function RoutesPage() {
                     <p className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
                       <Clock className="w-3 h-3" /> Duration
                     </p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{Math.floor(route.total_time / 60)}h {Math.round(route.total_time % 60)}m</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{Math.floor(route.total_time)}h {Math.round((route.total_time % 1) * 60)}m</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
