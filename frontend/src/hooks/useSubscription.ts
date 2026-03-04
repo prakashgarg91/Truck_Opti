@@ -12,6 +12,7 @@ import {
   type SubscriptionPlan,
   type UsageTracking,
 } from '../services/subscriptionApi'
+import { useAuthStore } from '../stores/authStore'
 
 // ────────────────────────────────────────────────────────────
 // Derived state helpers
@@ -93,6 +94,8 @@ const FEATURE_RESOURCE_MAP: Record<FeatureKey, 'shipments' | 'api_calls' | 'sms'
 
 export function useSubscription(): SubscriptionStatus {
   const queryClient = useQueryClient()
+  const { user } = useAuthStore()
+  const isAdmin = user?.role === 'admin'
 
   // 1. Fetch subscription + plan
   const {
@@ -173,6 +176,8 @@ export function useSubscription(): SubscriptionStatus {
 
   // ── checkLimit ────────────────────────────────────────────
   const checkLimit = async (feature: FeatureKey): Promise<boolean> => {
+    // Admin always has full access — no limits apply
+    if (isAdmin) return true
     // If no active/trial subscription, deny
     if (!isActive && !isTrial) {
       showUpgradePrompt(feature)

@@ -449,12 +449,17 @@ export default function MobileLayout() {
                       ⚠ Subscription expired · Upgrade
                     </span>
                   )}
-                  {!isActive && !isTrial && !isExpired && !subLoading && (
+                  {!isActive && !isTrial && !isExpired && !subLoading && user?.role !== 'admin' && (
                     <span
                       onClick={(e) => { e.stopPropagation(); navigate('/pricing'); setSidebarOpen(false) }}
                       className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-medium cursor-pointer hover:opacity-80"
                     >
                       Free Plan · Upgrade
+                    </span>
+                  )}
+                  {user?.role === 'admin' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-semibold">
+                      ⚡ Admin
                     </span>
                   )}
                 </div>
