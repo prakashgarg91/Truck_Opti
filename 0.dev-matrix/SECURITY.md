@@ -16,8 +16,15 @@ AI-generated code has well-documented failure modes around security. Claude 3.x,
 - File-upload handlers that trust the `Content-Type` header sent by the client
 - Constants that are defined but then silently bypassed with hardcoded literals (the BUG-020 pattern)
 - Error messages that leak stack traces or raw DB errors to the frontend
+- SQL queries assembled by string concatenation instead of parameterized inputs
+- Weak cryptographic algorithms (MD5, SHA-1) instead of modern alternatives
+- Unvetted third-party package imports with unknown CVE records
+- Invented function signatures that "look right" but don't exist, plus unsafe defaults like disabled TLS
+- Refactors that silently touch unrelated security checks across many files
 
-**Every one of these has already occurred in this codebase.** This document is the mandatory checklist that prevents recurrence.
+**Several of these have already occurred in this codebase.** This document is the mandatory checklist that prevents recurrence.
+
+> Source: Checkmarx / DevOps.com — "When AI Gets It Wrong: The Insecure Defaults Lurking in Your Code"
 
 ---
 
@@ -330,6 +337,200 @@ function calculateTax(amount: number) {
 
 ---
 
+### 3.9 SQL Injection Prevention
+
+**Context**: This project uses the Supabase JS client which parameterizes queries by default. However, `supabase.rpc()` calls, Supabase Edge Functions with raw `pg` connections, and any future server-side code can still be vulnerable.
+
+#### ❌ FORBIDDEN — string-concatenated queries
+
+```typescript
+// Direct string interpolation = SQL injection
+const { data } = await supabase.rpc('exec_sql', {
+  query: `SELECT * FROM users WHERE email = '${userInput}'`
+});
+
+// In a Supabase Edge Function with postgres client:
+const result = await client.query(`SELECT * FROM users WHERE id = ${userId}`);
+```
+
+#### ✅ REQUIRED — parameterized queries always
+
+```typescript
+// Supabase JS client — parameterized by default:
+const { data } = await supabase
+  .from('users')
+  .select('*')
+  .eq('email', userInput);     // ← library handles escaping
+
+// In Edge Functions with postgres:
+const result = await client.query(
+  'SELECT * FROM users WHERE id = $1',
+  [userId]                       // ← parameterized
+);
+
+// For dynamic column/table names — use an allowlist, NEVER interpolate:
+const ALLOWED_SORT_COLUMNS = ['created_at', 'fare', 'status'] as const;
+if (!ALLOWED_SORT_COLUMNS.includes(sortColumn)) throw new Error('Invalid sort column');
+```
+
+**Rule**: Never interpolate user-supplied values into SQL strings. Validate dynamic identifiers (column names, table names) against an allowlist before use.
+
+---
+
+### 3.10 Cryptography Standards
+
+AI models trained on legacy code frequently suggest broken algorithms because they are statistically common in training data.
+
+#### ❌ FORBIDDEN — broken/weak algorithms
+
+```typescript
+// MD5 and SHA-1 are cryptographically broken — never use for security
+import { createHash } from 'crypto';
+const hash = createHash('md5').update(password).digest('hex');   // ❌
+const hash = createHash('sha1').update(password).digest('hex');  // ❌
+
+// Plain SHA-256 is also insufficient for password storage
+const hash = createHash('sha256').update(password).digest('hex'); // ❌ for passwords
+```
+
+#### ✅ REQUIRED — modern alternatives by use case
+
+| Use case | Required algorithm | Notes |
+|---|---|---|
+| Password storage | bcrypt / argon2 | Supabase Auth handles this — never store raw passwords |
+| HMAC signatures (webhooks) | `crypto.createHmac('sha256', secret)` | Already required in §3.3 |
+| File/data integrity checksums | SHA-256 minimum | `createHash('sha256')` |
+| Token generation | `crypto.randomBytes(32)` | Never use `Math.random()` for security tokens |
+| UUID generation | `crypto.randomUUID()` or Postgres `gen_random_uuid()` | Already used ✅ |
+
+```typescript
+// ✅ Secure random token
+const token = require('crypto').randomBytes(32).toString('hex');
+
+// ✅ Timing-safe comparison (already in §3.3, repeat here for visibility)
+import { timingSafeEqual } from 'crypto';
+const isValid = timingSafeEqual(
+  Buffer.from(receivedSig, 'hex'),
+  Buffer.from(expectedSig, 'hex')
+);
+```
+
+**Rule**: Any cryptography suggestion from an AI should be immediately cross-checked. If the algorithm name is MD5, SHA-1, DES, 3DES, or RC4 — reject it unconditionally.
+
+---
+
+### 3.11 Supply Chain — Package Vetting
+
+AI assistants suggest packages to solve problems without checking CVE records, maintenance status, or download integrity. A single unvetted import can pull in a tree of compromised transitive dependencies.
+
+#### ❌ FORBIDDEN
+
+```bash
+# Installing a package because the AI suggested it, without checking:
+npm install some-utility-library   # Did you check its CVEs? Last publish date? Maintainer?
+```
+
+#### ✅ REQUIRED — before adding any new npm/pip dependency
+
+1. **Check the CVE record**: `npm audit` after install; search the package on [https://osv.dev](https://osv.dev)
+2. **Check maintenance status**: Last publish date should be within 2 years; open issues/PRs should be acknowledged
+3. **Check download count**: Packages with <10k weekly downloads are higher risk
+4. **Prefer established ecosystem packages** over single-purpose micro-libraries:
+   - Date handling → `date-fns` (already in use ✅) — not an unknown alternative
+   - HTTP requests → `fetch` (native) or `axios` — not an unfamiliar wrapper
+   - Validation → `zod` — not an AI-suggested alternative
+5. **Pin versions** in `package.json` — avoid `^` or `~` for security-critical packages
+6. **Check `package-lock.json`** after install — unexpected transitive deps are a red flag
+
+```bash
+# After every new install:
+npm audit --audit-level=high
+# Fix HIGH and CRITICAL before committing
+```
+
+**Rule**: No new package may be added unless the developer (or agent judge) has explicitly verified its CVE status and maintenance health. "The AI suggested it" is not sufficient justification.
+
+---
+
+### 3.12 Hallucinated APIs and Unsafe Defaults
+
+AI models invent plausible-looking function signatures that do not exist in the actual SDK. They also suggest permissive configurations as "quick-start" defaults that should never reach production.
+
+#### ❌ FORBIDDEN — hallucinated or unsafe patterns
+
+```typescript
+// Invented Supabase function that doesn't exist:
+const { data } = await supabase.auth.getUserByEmail(email); // ← not a real method
+
+// Disabled TLS verification (AI "quick fix" for cert errors)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';  // ❌ disables ALL cert validation
+
+// Wildcard CORS — AI default for "just get it working"
+app.use(cors({ origin: '*' }));  // ❌ allows any domain to call the API
+
+// Permissive regex used as input sanitization
+const clean = input.replace(/[<>]/g, '');  // ❌ incomplete — does not prevent injection
+```
+
+#### ✅ REQUIRED
+
+```typescript
+// Verify SDK methods exist before using — check official docs, not AI output
+// Supabase admin operations use service role client:
+const { data } = await supabaseAdmin.auth.admin.listUsers(); // ← real method
+
+// TLS errors must be fixed by fixing the certificate, never by disabling verification
+// (Contact infra team if cert issues arise in production)
+
+// CORS — allowlist specific origins
+const ALLOWED_ORIGINS = [
+  'https://www.truckopti.in',
+  'https://truckopti.in',
+  ...(process.env.NODE_ENV === 'development' ? ['http://localhost:5173'] : []),
+];
+app.use(cors({ origin: (origin, cb) => {
+  if (!origin || ALLOWED_ORIGINS.includes(origin)) cb(null, true);
+  else cb(new Error('CORS blocked'));
+}}));
+
+// Input sanitization must be purpose-specific and comprehensive, not ad-hoc regex
+// Use a library like DOMPurify for HTML, validator.js for format checks
+```
+
+**Rule**: Before using any function the AI generated, confirm it exists in the official SDK documentation. Never accept "just add this flag" suggestions that disable security checks.
+
+---
+
+### 3.13 Blast-Radius Refactors
+
+AI models lack application-wide context. When asked to refactor a small function, they may generate changes that touch unrelated security logic, strip guards, or alter dependency versions across multiple files.
+
+#### Rules for agents performing refactors
+
+1. **Scope the change to exactly what was asked.** If the task says "rename this function", do not reorganize surrounding imports or restructure related modules.
+2. **Never remove error handling or validation while refactoring**, even if it looks redundant. Check with the judge first.
+3. **After any multi-file change, explicitly verify**:
+   - Auth guards (`useRequireAuth`, `ProtectedRoute`) are still in place
+   - Input validation on mutating endpoints is unchanged
+   - RLS-relevant column names have not been silently renamed
+4. **Do not upgrade dependency versions** as part of a feature task. Dependency upgrades are their own task requiring `npm audit` + regression testing.
+5. **The judge must diff every changed file** in a refactor PR, not just the primary target.
+
+#### ❌ FORBIDDEN refactor anti-patterns
+
+```typescript
+// Removing auth check "because the component handles it at route level"
+export async function updateFare(jobId: string, fare: number) {
+  // ← agent removed: const user = requireAuth();
+  return supabase.from('agency_jobs').update({ fare }).eq('id', jobId);
+}
+
+// Silently changing a security-relevant constant while renaming a file
+const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;  // ← was 5 MB, AI "normalized" to 50 MB
+```
+
+---
+
 ## 4. SCHEMA SECURITY — ARCHITECTURE RULES
 
 ### 4.1 Every user-data table MUST have an ownership column
@@ -414,6 +615,11 @@ Print this mentally before every code generation:
 | 8 | Does any backend file contain a live API secret? | ❌ Stop | Move to Heroku Config Vars |
 | 9 | Is RLS enabled on every new table? | Check | Run `ALTER TABLE … ENABLE ROW LEVEL SECURITY` |
 | 10 | Does a new table store user data but have no `user_id`/`agency_id` column? | ❌ Stop | Add ownership FK before writing policies |
+| 11 | Does any SQL query concatenate user input into a string? | ❌ Stop | Use parameterized queries (`$1`, `.eq()`) |
+| 12 | Does AI-suggested code use MD5, SHA-1, or `Math.random()` for security? | ❌ Stop | Use SHA-256 for checksums, bcrypt/argon2 for passwords, `crypto.randomBytes` for tokens |
+| 13 | Was a new npm package added without checking its CVE record? | ❌ Stop | Run `npm audit`; verify on osv.dev before committing |
+| 14 | Does the code call an SDK function you cannot find in the official docs? | ❌ Stop | AI may have hallucinated it — verify against Supabase/Razorpay/PhonePe docs |
+| 15 | Does a refactor task touch files or functions beyond the stated scope? | ❌ Stop | Revert out-of-scope changes; blast-radius refactors break security checks |
 
 ---
 
@@ -421,23 +627,51 @@ Print this mentally before every code generation:
 
 Before any BATCH is marked complete, the judge must verify:
 
+**Access Control**
 - [ ] No new `USING (true)` on user-owned tables
-- [ ] No new external URL redirect without domain validation
-- [ ] New webhooks include HMAC verification
-- [ ] New file uploads enforce MIME type allowlist and size limit
-- [ ] No raw Supabase errors returned to the client
+- [ ] Every new table has `ENABLE ROW LEVEL SECURITY` + ownership-scoped policies
+- [ ] Role checks use database data, not localStorage/client state
+
+**Injection**
+- [ ] No SQL string concatenation with user input — parameterized queries only
+- [ ] No `dangerouslySetInnerHTML`, `eval()`, or `new Function()` introduced
+- [ ] No new `window.location.href` / `router.replace` pointing at external or user-supplied URLs without domain allowlist
+
+**Cryptography**
+- [ ] No MD5, SHA-1, or `Math.random()` used for any security purpose
+- [ ] New webhooks include HMAC-SHA256 verification with `timingSafeEqual`
+
+**Secrets & Configuration**
 - [ ] No secrets in source files or `VITE_` environment variables
-- [ ] Every new table has `ENABLE ROW LEVEL SECURITY` + scoped policies
+- [ ] No `NODE_TLS_REJECT_UNAUTHORIZED = '0'` or wildcard CORS `origin: '*'`
+
+**File Handling**
+- [ ] New file uploads enforce MIME type allowlist and 5 MB size limit
+- [ ] Storage paths are constructed from `auth.uid()`, never from user input
+
+**Dependencies**
+- [ ] Any new npm package has been vetted: `npm audit` clean at HIGH+CRITICAL level
+- [ ] No dependency version bumps snuck in as part of a feature task
+
+**Error Handling**
+- [ ] No raw Supabase/Postgres error messages returned to the client
+
+**Refactor Discipline**
+- [ ] Refactor PRs only touch the files stated in the task spec
+- [ ] Auth guards and input validation are confirmed still present after any restructure
 
 ---
 
 ## 8. REFERENCES
 
 - OWASP Top 10 (2021): A01 Broken Access Control, A03 Injection, A05 Security Misconfiguration, A07 Identification and Authentication Failures
+- Checkmarx / DevOps.com: "When AI Gets It Wrong: The Insecure Defaults Lurking in Your Code" — source for §3.9–3.13
 - [Supabase RLS docs](https://supabase.com/docs/guides/database/postgres/row-level-security)
 - [Razorpay Webhook Signature Verification](https://razorpay.com/docs/webhooks/validate-test/)
 - [PhonePe Payment Gateway Integration](https://developer.phonepe.com/v1/docs)
+- [OSV.dev — Open Source Vulnerability Database](https://osv.dev)
+- [Node.js crypto module docs](https://nodejs.org/api/crypto.html)
 
 ---
 
-*Last updated: BATCH12 prep — security audit by judge (Claude Sonnet 4.6)*
+*Last updated: 2026-03-05 — added §3.9 SQL injection, §3.10 cryptography, §3.11 supply chain, §3.12 hallucinated APIs, §3.13 blast-radius refactors; expanded checklist to 15 items (Claude Sonnet 4.6)*
