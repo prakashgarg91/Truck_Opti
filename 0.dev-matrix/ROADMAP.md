@@ -106,20 +106,20 @@
 
 ---
 
-## 🏢 PHASE 3 — AGENCY PORTAL (v39 foundation ✔)
+## 🏢 PHASE 3 — AGENCY PORTAL (v40 full DB ✔)
 **Goal:** Complete transport agency management experience
 
-### 3.1 Agency Dashboard (`/agency/dashboard`) ✔ (**v39 skeleton**)
-- [x] Active jobs today (**v39** — placeholder, awaits agency_jobs table)
-- [x] Fleet utilization display (**v39** — fleet_size from transport_agencies)
-- [x] Revenue this month (**v39** — placeholder)
-- [ ] Full data: requires agency_jobs table (Phase 3 full impl)
+### 3.1 Agency Dashboard (`/agency/dashboard`) ✔ (**v40 live data**)
+- [x] Active jobs today (**v40** — real query from agency_jobs table)
+- [x] Fleet utilization display (**v40** — fleet_size from transport_agencies)
+- [x] Revenue this month (**v40** — real fare SUM from agency_jobs)
+- [x] Full data: agency_jobs table created + RLS (**v40**)
 
-### 3.2 Fleet Management (`/agency/fleet`) ✔ (**v39 skeleton**)
-- [x] Add truck (type, RC, insurance, fitness cert) (**v39** — saves fleet_size count)
-- [x] Document expiry alerts (30/7 days before) (**v39** — UI with date comparison)
+### 3.2 Fleet Management (`/agency/fleet`) ✔ (**v40 full DB**)
+- [x] Add truck (type, RC, insurance, fitness cert) (**v40** — inserts into agency_trucks table)
+- [x] Document expiry alerts (30/7 days before) (**v40** — UI with date comparison)
 - [ ] Truck assignment to driver
-- [ ] agency_trucks table in DB (Phase 3 full impl)
+- [x] agency_trucks table in DB + RLS (**v40**)
 
 ### 3.3 Driver Management (`/agency/drivers`)
 - [ ] Invite driver (SMS with registration link)
@@ -133,15 +133,16 @@
 - [ ] Seasonal pricing rules
 - [ ] Rate visibility toggle (public/private)
 
-### 3.5 Job Management (`/agency/jobs`) ✔ (**v39 skeleton**)
-- [x] Job list with filter tabs (all/active/pending/completed/cancelled) (**v39**)
-- [ ] Accept/decline (with reason) — full impl needs agency_jobs table
+### 3.5 Job Management (`/agency/jobs`) ✔ (**v40 full DB**)
+- [x] Job list with filter tabs (all/active/pending/completed/cancelled) (**v40**)
+- [x] Accept/decline with DB status update (**v40**)
 - [ ] Assign to specific driver
 - [ ] Track all active jobs
 - [ ] Job history
 
-### 3.6 Billing (`/agency/billing`) ✔ (**v39 skeleton**)
-- [x] Revenue overview cards + GSTR-1 export placeholder (**v39**)
+### 3.6 Billing (`/agency/billing`) ✔ (**v40 real data**)
+- [x] Revenue overview cards — real fare data from agency_jobs (**v40**)
+- [x] GST Due calculated at 5% on this-month revenue (**v40**)
 - [ ] Generate invoice to customer (full GST invoice)
 - [ ] GST invoice: GSTIN, SAC 996511, tax rates
 - [ ] Bulk billing (month-end)

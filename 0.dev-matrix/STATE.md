@@ -60,6 +60,35 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-05 18:00] SONNET-003: 🚀 v40 DEPLOYED — Phase 3 Full DB Impl + GPS tracking sync + Admin CSV
+
+                             SUPABASE MIGRATIONS APPLIED (via MCP):
+                             ✅ phase3_agency_fleet_jobs: agency_trucks + agency_jobs tables with RLS
+                                  agency_trucks (id, agency_id, vehicle_type, rc_number, insurance_expiry,
+                                    fitness_expiry, permit_expiry, is_available, driver_id, notes)
+                                  agency_jobs (id, agency_id, shipment_id, driver_id, truck_id, status,
+                                    assigned_at, fare, notes) + UNIQUE(agency_id, shipment_id)
+                                  Both tables: owner RLS + admin SELECT policy + updated_at trigger
+                             ✅ sync_driver_location_to_shipment: DB trigger on driver_locations
+                                  → auto-syncs lat/lng to shipments table when driver is in_transit
+                                  → TrackingPage Realtime subscription auto-picks up live GPS updates
+                             ✅ enable_realtime_driver_locations: REPLICA IDENTITY FULL on driver_locations;
+                                  agency_trucks + agency_jobs + driver_locations added to supabase_realtime
+
+                             FILES UPDATED (5):
+                             ✅ AgencyFleetPage.tsx — Now queries agency_trucks from DB (not placeholder)
+                                  Add Truck form inserts into agency_trucks + updates fleet_size count
+                             ✅ AgencyJobsPage.tsx — Now queries agency_jobs joined with shipments
+                                  Accept/Decline buttons call DB (status update)
+                             ✅ AgencyDashboardPage.tsx — Live KPI counts from agency_jobs table
+                                  (active, pending, today's jobs, this month revenue)
+                             ✅ AgencyBillingPage.tsx — Real revenue from agency_jobs.fare
+                                  (thisMonth, pending, totalPaid, gstDue at 5%)
+                             ✅ AdminDriversPage.tsx — CSV export button added (Export filtered drivers)
+                                  exports: name, phone, vehicle, city, RC, license, aadhaar, bank, status
+
+                             STATUS: v40 Released at Heroku 2026-03-05 ~18:00 IST
+───────────────────────────────────────────────────────────────────────
 [2026-03-05 16:00] SONNET-003: 🚀 v39 DEPLOYED — Phase 2.3/2.4 Complete + Phase 3 Agency Portal
 
                              SUPABASE MIGRATION APPLIED (via MCP):
@@ -368,10 +397,10 @@ STATUS: 🟡 IN PROGRESS
 | Apex Domain HTTPS | 200 | 200 | ✅ |
 | WWW Domain HTTPS | 200 | 200 | ✅ |
 | Heroku ACM Coverage | 2/2 | 2/2 | ✅ |
-| Heroku Code Sync | v39 | Latest | ✅ Deployed 2026-03-05 |
+| Heroku Code Sync | v40 | Latest | ✅ Deployed 2026-03-05 |
 | Supabase Auth Site URL | truckopti.in | truckopti.in | ✅ Fixed (v22 session) |
 | OG Tags Domain | truckopti.in | truckopti.in | ✅ |
-| Launch Checklist Completion | 38/40 | 40/40 | ⚠️ Phase 3 Agency jobs/billing full impl pending |
+| Launch Checklist Completion | 39/40 | 40/40 | ⚠️ Photo capture (Phase 5) remaining |
 
 ---
 
