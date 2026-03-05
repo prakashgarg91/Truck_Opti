@@ -20,7 +20,7 @@
 
 ### 3.5 Agency Jobs — Assign Driver to Job (P1)
 - [x] Job list with accept/decline (**v40**)
-- [ ] **Assign driver to accepted job** — modal in AgencyJobsPage for accepted jobs
+- [x] **Assign driver to accepted job** — modal in AgencyJobsPage for accepted jobs (**v43**)
 - [ ] Track active jobs on map
 
 ### 3.6 Agency Billing — Nav Access (P2 — acceptable workaround exists)
