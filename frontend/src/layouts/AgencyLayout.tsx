@@ -1,11 +1,12 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Truck, Briefcase,
-  LogOut, Building2, ChevronRight, Users, Tag
+  LogOut, Building2, ChevronRight, Users, Tag, Bell
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
+import { useState, useEffect } from 'react'
 
 const NAV = [
   { to: '/agency/dashboard', icon: LayoutDashboard, label: 'Home' },
@@ -18,11 +19,51 @@ const NAV = [
 export default function AgencyLayout() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
+  const [newJobCount, setNewJobCount] = useState(0)
+
+  // Subscribe to new jobs for this agency
+  useEffect(() => {
+    async function subscribeToJobs() {
+      if (!user?.id) return
+
+      // Get agency ID
+      const { data: agency } = await supabase
+        .from('transport_agencies')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!agency?.id) return
+
+      // Subscribe to new jobs for this agency
+      const channel = supabase.channel('agency-new-jobs')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'agency_jobs',
+          filter: `agency_id=eq.${agency.id}`
+        }, () => {
+          setNewJobCount(c => c + 1)
+        })
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    }
+
+    subscribeToJobs()
+  }, [user?.id])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     navigate('/login')
     toast.success('Signed out')
+  }
+
+  const handleBellClick = () => {
+    setNewJobCount(0)
+    navigate('/agency/jobs')
   }
 
   return (
@@ -43,6 +84,19 @@ export default function AgencyLayout() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Notification Bell */}
+          <button
+            onClick={handleBellClick}
+            className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            title="New Jobs"
+          >
+            <Bell size={18} className="text-slate-500" />
+            {newJobCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center animate-scale-in">
+                {newJobCount > 9 ? '9+' : newJobCount}
+              </span>
+            )}
+          </button>
           <NavLink
             to="/agency/profile"
             className="text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1"

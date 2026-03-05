@@ -44,6 +44,7 @@ const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'))
 const DriverRegisterPage = React.lazy(() => import('./pages/DriverRegisterPage'))
 const CompanyProfilePage = React.lazy(() => import('./pages/CompanyProfilePage'))
 const AdminDriversPage = React.lazy(() => import('./pages/AdminDriversPage'))
+const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage'))
 const AdminAgenciesPage = React.lazy(() => import('./pages/AdminAgenciesPage'))
 const AgencyRegisterPage = React.lazy(() => import('./pages/AgencyRegisterPage'))
 const DriverDashboardPage = React.lazy(() => import('./pages/DriverDashboardPage'))
@@ -58,6 +59,7 @@ const AgencyBillingPage = React.lazy(() => import('./pages/AgencyBillingPage'))
 const AgencyDriversPage = React.lazy(() => import('./pages/AgencyDriversPage'))
 const AgencyRatesPage = React.lazy(() => import('./pages/AgencyRatesPage'))
 const NewShipmentPage = React.lazy(() => import('./pages/NewShipmentPage'))
+const ShipmentHistoryPage = React.lazy(() => import('./pages/ShipmentHistoryPage'))
 
 // Role-based home: redirects drivers/agencies to their portal, customers to Dashboard
 function RoleHome() {
@@ -118,9 +120,11 @@ function AppContent() {
           <Route path="/sale-orders" element={<SaleOrdersPage />} />
           <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
           <Route path="/settings/company" element={<CompanyProfilePage />} />
+          <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/drivers" element={<AdminDriversPage />} />
           <Route path="/admin/drivers/:id" element={<DriverDetailPage />} />
           <Route path="/admin/agencies" element={<AdminAgenciesPage />} />
+          <Route path="/history" element={<ShipmentHistoryPage />} />
         </Route>
 
         {/* Driver Portal — separate layout with driver bottom nav */}

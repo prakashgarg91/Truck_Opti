@@ -29,6 +29,8 @@ interface FormData {
   license_number: string
   // Step 3
   bank_account: string
+  licence_url: string
+  rc_url: string
   ifsc_code: string
   upi_id: string
 }
@@ -43,7 +45,7 @@ const STEPS = [
 const INITIAL: FormData = {
   full_name: '', phone: '', aadhaar_last4: '', home_city: '',
   vehicle_type: '', rc_number: '', license_number: '',
-  bank_account: '', ifsc_code: '', upi_id: '',
+  bank_account: '', licence_url: '', rc_url: '', ifsc_code: '', upi_id: '',
 }
 
 export default function DriverRegisterPage() {
@@ -96,6 +98,8 @@ export default function DriverRegisterPage() {
         bank_account: form.bank_account.trim(),
         ifsc_code: form.ifsc_code.toUpperCase().trim(),
         upi_id: form.upi_id.trim() || null,
+        licence_url: form.licence_url.trim() || null,
+        rc_url: form.rc_url.trim() || null,
         status: 'pending',
       })
       if (error) throw error

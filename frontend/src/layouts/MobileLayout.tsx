@@ -21,7 +21,8 @@ import {
   FileText,
   Wrench,
   Building2,
-  ShieldCheck
+  ShieldCheck,
+  History
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
@@ -38,6 +39,7 @@ const navItems = [
   { path: '/packing', icon: Package, label: 'Pack', labelHi: 'पैकिंग' },
   { path: '/routes', icon: Route, label: 'Routes', labelHi: 'रूट' },
   { path: '/tracking', icon: MapPin, label: 'Track', labelHi: 'ट्रैक' },
+  { path: '/history', icon: History, label: 'History', labelHi: 'इतिहास' },
 ]
 
 interface Notification {

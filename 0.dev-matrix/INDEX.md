@@ -1,8 +1,9 @@
-# 🏢 ENTERPRISE DEV-MATRIX
+# TruckOpti — Dev Matrix Index
 
-> **Production-Grade AI Development Framework v3.0**
-> From Solo Dev to Billion-Dollar Enterprise
-> Battle-tested on 90+ files, 74K+ lines, 338+ tests
+> **Start here. This folder is the source of truth for every AI agent working on TruckOpti.**
+> Repo: `d:/Github/Truck_Opti` | Production: `https://www.truckopti.in`
+> Heroku app: `truck-opti-app` | Supabase: `jbxncejtcbpcronndqlx.supabase.co`
+> Current version: **v50** (as of 2026-03-05)
 
 ---
 
@@ -27,419 +28,170 @@
 
 ---
 
-## 📁 FILE MAP
+## 📁 FILE MAP — TruckOpti Dev Matrix
 
 ```
 0.dev-matrix/
 │
-├── 🚀 START HERE
-│   └── INDEX.md              ← YOU ARE HERE (read once)
+├── 🚀 ENTRY POINTS
+│   ├── INDEX.md                          ← YOU ARE HERE
+│   └── BATCHxx_AGENT_CONTINUATION_PROMPT.md ← Use this to start working
 │
-├── 📋 COORDINATION (Check every session)
-│   ├── STATE.md              ← Live state, file locks, who's working
-│   ├── TASK.md               ← Task queue, claim before working
-│   └── DISCUSSION.md         ← Sign in/out, AI communication
+├── 📋 LIVE COORDINATION (read every session)
+│   ├── STATE.md              ← Current version, active agents, known issues
+│   ├── TASK.md               ← All pending tasks; claim before starting
+│   └── DISCUSSION.md         ← Agent sign-in/out; handoff notes
 │
-├── 📊 TRACKING (Machine-readable)
-│   ├── features.json         ← Feature/milestone tracking
-│   ├── issues.json           ← Bug/issue tracking (JSON format)
-│   ├── metrics.json          ← Quality metrics (NEW!)
-│   └── changelog.json        ← Version history (NEW!)
+├── 📖 PROJECT KNOWLEDGE (read once)
+│   ├── PRODUCT_VISION.md     ← What TruckOpti is building (4 portals, mission)
+│   ├── REQUIREMENTS.md       ← Feature specs and completion status
+│   ├── ROADMAP.md            ← Phase-by-phase progress + open items
+│   ├── DEPENDENCIES.md       ← Frontend architecture, DB tables, data flow
+│   ├── RULES.md              ← TruckOpti-specific coding rules
+│   ├── PATTERNS.md           ← React/Supabase/TypeScript patterns for this app
+│   └── MENU-CHART.md         ← UI navigation structure, all routes
 │
-├── 📖 KNOWLEDGE (Read once, reference as needed)
-│   ├── RULES.md              ← Project rules, anti-patterns, error prevention
-│   ├── PATTERNS.md           ← Reusable code patterns (TRANSFER TO NEW PROJECTS!)
-│   ├── DEPENDENCIES.md       ← Architecture, data flow, module relationships
-│   ├── REQUIREMENTS.md       ← User requirements, feature specs
-│   └── MENU-CHART.md         ← UI structure (if applicable)
+├── 🔒 SECURITY (mandatory)
+│   └── SECURITY.md           ← AI insecure-defaults checklist + 15-item pre-commit gate
+│
+├── 🚀 LAUNCH
+│   └── LAUNCH_CHECKLIST.md   ← Go-live checklist (Phases 1-6)
 │
 ├── 🧪 QUALITY
-│   ├── TESTING_PRINCIPLES.md ← ⚠️ MANDATORY: testing rules, audit checklist, known bugs
-│   ├── TEST.md               ← Testing strategy & guides
-│   ├── test-reports/         ← JSON test results
-│   └── error-logs/           ← Runtime error logs
+│   ├── TESTING_PRINCIPLES.md ← ⚠️ MANDATORY before any task is marked done
+│   └── TEST.md               ← How to run tests, what to test per portal
 │
-└── 📚 FRAMEWORK
-    └── FRAMEWORK.md          ← Framework documentation, setup guide
+└── 📚 HISTORY
+    └── BATCHxx_AGENT_CONTINUATION_PROMPT.md ← Per-batch history and task specs
 ```
 
 ---
 
-## 🔄 THE UNIVERSAL LOOP
+## 🔄 AGENT WORKFLOW
 
 ```
-    ┌───────────────────────────────────────────────────────────────┐
-    │                                                               │
-    │   ┌──────────┐                                               │
-    │   │ SIGN IN  │  DISCUSSION.md (Always first!)                │
-    │   └────┬─────┘                                               │
-    │        ▼                                                     │
-    │   ┌──────────┐     ┌──────────┐     ┌──────────┐            │
-    │   │ ANNOUNCE │────▶│   CLAIM  │────▶│    DO    │            │
-    │   │(Discuss) │     │  (Task)  │     │(1 change)│            │
-    │   └──────────┘     └──────────┘     └────┬─────┘            │
-    │        ▲                                  │                   │
-    │        │                                  ▼                   │
-    │   ┌────┴─────┐     ┌──────────┐     ┌──────────┐            │
-    │   │  LEARN   │◀────│  COMMIT  │◀────│ VALIDATE │            │
-    │   │(Patterns)│     │  + PUSH  │     │deep-scan │            │
-    │   └────┬─────┘     └──────────┘     └────┬─────┘            │
-    │        │                                  │                   │
-    │        ▼                             FAIL │                   │
-    │   ┌──────────┐                           ▼                   │
-    │   │ SIGN OUT │                     ┌──────────┐              │
-    │   │(Summary) │                     │   FIX    │              │
-    │   └──────────┘                     │  + Retry │              │
-    │                                    └──────────┘              │
-    └───────────────────────────────────────────────────────────────┘
+  1. Read STATE.md          → know current version, active agents, open bugs
+  2. Read TASK.md           → pick an unclaimed task, register your agent ID
+  3. Read TESTING_PRINCIPLES.md → mandatory before ANY code change
+  4. Read SECURITY.md §6    → 15-item AI safety checklist
+  5. Work the task          → small commits, build after each TS change
+  6. Validate               → cd frontend && npm run build (must be 0 errors)
+  7. Commit                 → git add -A && git commit -m "feat: ..."
+  8. Push & deploy          → git push origin main && git push heroku main
+  9. Post result            → STATE.md → ## 📝 AGENT MESSAGES (newest at top)
+  10. Update TASK.md        → move task to COMPLETED
+```
+
+### Build command (mandatory before any push)
+```powershell
+cd d:\Github\Truck_Opti\frontend ; npm run build
+# Must complete with 0 TypeScript errors
+```
+
+### Deploy commands
+```powershell
+cd d:\Github\Truck_Opti
+git add -A
+git commit -m "feat: description"
+git push origin main     # GitHub first
+git push heroku main     # Heroku second
 ```
 
 ---
 
-## 🛡️ 8-LAYER ERROR PREVENTION SYSTEM
+## 🛡️ ERROR PREVENTION — TruckOpti
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                     ERROR PREVENTION PYRAMID                                 │
-│                                                                              │
-│  LAYER 8   ┌─────────────┐   Runtime errors → Supabase                     │
-│  RUNTIME   │ERROR LOGGER │   AI queries & auto-fixes                        │
-│            └──────┬──────┘                                                   │
-│                   │                                                          │
-│  LAYER 7   ┌──────┴──────┐   npm run deep-scan                              │
-│  DEEP SCAN │ 706 CHECKS  │   Finds: undefined methods, unhandled callbacks │
-│            └──────┬──────┘                                                   │
-│                   │                                                          │
-│  LAYER 6   ┌──────┴──────┐   npm test                                       │
-│  UNIT TEST │ 338+ TESTS  │   Prevents regressions                           │
-│            └──────┬──────┘                                                   │
-│                   │                                                          │
-│  LAYER 5   ┌──────┴──────┐   npm run analyze                                │
-│  STATIC    │   ANALYZE   │   Syntax, obvious bugs                           │
-│            └──────┬──────┘                                                   │
-│                   │                                                          │
-│  LAYER 4   ┌──────┴──────┐   STATE.md file locks                            │
-│  LOCKING   │ FILE LOCKS  │   Prevents AI conflicts                          │
-│            └──────┬──────┘                                                   │
-│                   │                                                          │
-│  LAYER 3   ┌──────┴──────┐   RULES.md + PATTERNS.md                         │
-│  KNOWLEDGE │   PATTERNS  │   Anti-patterns documented                       │
-│            └──────┬──────┘                                                   │
-│                   │                                                          │
-│  LAYER 2   ┌──────┴──────┐   TASK.md small tasks                            │
-│  SCOPE     │ ATOMIC WORK │   Easy to rollback                               │
-│            └──────┬──────┘                                                   │
-│                   │                                                          │
-│  LAYER 1   ┌──────┴──────┐   DISCUSSION.md sign-in                          │
-│  COORDINATE│ AI REGISTRY │   Prevents duplicate work                        │
-│            └─────────────┘                                                   │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Validation Commands
-
-```bash
-npm run analyze     # Layer 5: Basic static analysis
-npm test            # Layer 6: Unit tests (338+ must pass)
-npm run deep-scan   # Layer 7: Deep 8-layer analysis
-npm run pre-deploy  # ALL: analyze + test + deep-scan
-```
+| Check | Command | When |
+|---|---|---|
+| TypeScript errors | `cd frontend && npm run build` | Before every commit |
+| Lint | `cd frontend && npm run lint` | Before every commit |
+| Security checklist | Read `SECURITY.md §6` | Before generating any code |
+| RLS policy audit | Check `SECURITY.md §2` open bugs | When touching DB schema |
 
 ---
 
 ## 🚨 MANDATORY GIT PUSH PROTOCOL
 
 ```
-⚠️  NEVER PUSH WITHOUT VALIDATION!
-
 BEFORE GIT PUSH:
-┌──────────────────────────────────────────────────────────────┐
-│ 1. npm test          → ALL 338+ tests must pass              │
-│ 2. npm run deep-scan → Review warnings, fix critical issues  │
-│ 3. git add -A                                                │
-│ 4. git commit -m "type(scope): description"                  │
-│ 5. git push origin main    ← GitHub FIRST                    │
-│ 6. git push heroku main    ← Heroku SECOND (if applicable)   │
-│ 7. Update DISCUSSION.md   → "Pushed vXXX: summary"           │
-└──────────────────────────────────────────────────────────────┘
+  1. cd frontend && npm run build  → 0 TypeScript errors required
+  2. git add -A
+  3. git commit -m "feat: description"
+  4. git push origin main    ← GitHub FIRST
+  5. git push heroku main    ← Heroku SECOND
+  6. Post in STATE.md → ## 📝 AGENT MESSAGES with version bump and task summary
 
-COMMIT MESSAGE FORMAT:
-  feat(scope): add new feature
-  fix(scope): fix bug description
-  docs(scope): update documentation
-  refactor(scope): code improvement
-  test(scope): add/update tests
-  chore(scope): maintenance task
+COMMIT TYPES:
+  feat:     New feature
+  fix:      Bug fix
+  security: Security improvement
+  refactor: Code restructure (no new behaviour)
+  chore:    Package/config updates
+  docs:     Documentation only
 ```
 
 ---
 
-## 👥 MULTI-AI COORDINATION
-
-### Hierarchy Model
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    AI TEAM HIERARCHY                        │
-│                                                             │
-│                   ┌─────────────┐                          │
-│                   │  LEAD AI    │                          │
-│                   │(Coordinator)│                          │
-│                   └──────┬──────┘                          │
-│                          │                                  │
-│        ┌─────────────────┼─────────────────┐               │
-│        ▼                 ▼                 ▼               │
-│  ┌───────────┐    ┌───────────┐    ┌───────────┐          │
-│  │SPECIALIST │    │SPECIALIST │    │SPECIALIST │          │
-│  │ Frontend  │    │ Backend   │    │  Testing  │          │
-│  └─────┬─────┘    └─────┬─────┘    └─────┬─────┘          │
-│        │                │                │                  │
-│        ▼                ▼                ▼                  │
-│  ┌───────────┐    ┌───────────┐    ┌───────────┐          │
-│  │  WORKER   │    │  WORKER   │    │  WORKER   │          │
-│  │   AIs     │    │   AIs     │    │   AIs     │          │
-│  └───────────┘    └───────────┘    └───────────┘          │
-└─────────────────────────────────────────────────────────────┘
-```
+## 👥 MULTI-AI COORDINATION — TRUCKOPTI
 
 ### Agent Types
 
-| Type | Role | Responsibilities |
-|------|------|------------------|
-| **LEAD** | Coordinator | Task breakdown, assignment, conflict resolution |
-| **SPECIALIST** | Domain Expert | Architecture, complex decisions, code review |
-| **WORKER** | Implementer | Feature development, bug fixes, tests |
-| **REVIEWER** | Quality | Code review, test verification |
+| Type | Role | Example ID |
+|------|------|------------|
+| **LEAD** | Implements batch tasks | `SONNET-005`, `GPT-004` |
+| **JUDGE** | Verifies LEAD output, fixes bugs, deploys | `SONNET-004` (current judge) |
 
 ### Communication Protocol
 
 ```
-1. REGISTER   → Add to STATE.md [Active Agents]
-2. ANNOUNCE   → Add message to STATE.md [Agent Messages]
-3. CLAIM      → Mark task as claimed in TASK.md
-4. UPDATE     → Update progress in STATE.md
-5. HANDOFF    → Leave notes for next agent
-6. DEPART     → Remove from Active Agents when done
+1. Register   → Add row to STATE.md → ## 🤖 ACTIVE AGENTS
+2. Announce   → Post to STATE.md → ## 📝 AGENT MESSAGES
+3. Claim task → Move from TASK.md queue to Active Tasks section
+4. Complete   → Move to TASK.md COMPLETED, bump Heroku version
+5. Message    → Post judgment/result in STATE.md AGENT MESSAGES
+6. Deregister → Remove from ACTIVE AGENTS
 ```
 
-### Conflict Prevention
-
+### Agent ID Format
 ```
-BEFORE EDITING FILE:
-1. Check STATE.md → Is another AI editing this file?
-2. If YES → Work on different file or wait
-3. If NO  → Claim the file in STATE.md
-4. After done → Release the file claim
+{MODEL}-{NUMBER}
+Examples: SONNET-005, GPT-004, GEMINI-002, LLAMA-003
 ```
 
 ---
 
-## 🎯 PROJECT TYPES (Examples)
+## ✅ SUCCESS CRITERIA FOR EACH BATCH
 
-### Simple Project (Todo App)
 ```
-Complexity: LOW
-Agents: 1 AI sufficient
-Files: ~10-20
-Duration: Hours
-```
-
-### Medium Project (Blog CMS, E-commerce)
-```
-Complexity: MEDIUM
-Agents: 1-3 AIs
-Files: ~50-100
-Duration: Days
-```
-
-### Complex Project (Uber Clone, SaaS Platform)
-```
-Complexity: HIGH
-Agents: 3-5 AIs (Lead + Specialists)
-Files: ~200-500
-Duration: Weeks
-```
-
-### Enterprise Project (Trading System, ERP)
-```
-Complexity: VERY HIGH
-Agents: 5-10 AIs (Full hierarchy)
-Files: ~1000+
-Duration: Months
+✅ BATCH DONE =
+  - Build passes (0 TS errors)
+  - Each task manually verified in running app (see TESTING_PRINCIPLES.md)
+  - Security checklist passed (SECURITY.md §6)
+  - STATE.md updated with agent message
+  - TASK.md updated (tasks moved to COMPLETED)
+  - Heroku deployment confirmed (heroku logs --tail shows no startup errors)
 ```
 
 ---
 
-## 📏 UNIVERSAL RULES
+## 🔮 CURRENT FOCUS — BATCH 12 (unclaimed)
 
-### Rule 1: Atomic Changes
-```
-ONE change at a time
-VERIFY before next change
-UNDO if verification fails
-```
+See `BATCH12_AGENT_CONTINUATION_PROMPT.md` for full task specs.
 
-### Rule 2: Test Everything
-```
-WRITE tests before/with code
-RUN tests after every change
-NEVER commit broken tests
-```
+| Task | File | Priority |
+|------|------|----------|
+| T1: Razorpay webhook Edge Function + HMAC verify | `supabase/functions/razorpay-webhook/index.ts` | P1 |
+| T2: Admin dashboard real analytics | `frontend/src/pages/AdminDashboardPage.tsx` | P2 |
+| T3: Driver registration document upload | `frontend/src/pages/DriverRegisterPage.tsx` | P2 |
+| T4: Customer shipment history page | `frontend/src/pages/ShipmentHistoryPage.tsx` (new) | P2 |
+| T5: Agency notification bell | `frontend/src/components/AgencyLayout.tsx` | P2 |
 
-### Rule 3: Document Learning
+**HUMAN ACTION REQUIRED before T1 works:**
 ```
-CAPTURE patterns that work → PATTERNS.md
-CAPTURE anti-patterns → PATTERNS.md
-SHARE knowledge across projects
-```
-
-### Rule 4: Coordinate Always
-```
-REGISTER when starting work
-CLAIM before editing
-UPDATE progress regularly
-HANDOFF with clear notes
-```
-
-### Rule 5: Quality First
-```
-WORKING code > Fast code
-SIMPLE code > Clever code
-TESTED code > Untested code
+heroku config:set VITE_RAZORPAY_KEY_ID=rzp_live_XXXXXXXX --app truck-opti-app
+supabase secrets set RAZORPAY_KEY_SECRET=your_live_secret --project-ref jbxncejtcbpcronndqlx
 ```
 
 ---
 
-## 🔧 VERIFICATION (Universal)
-
-```bash
-# For any project, define these in TEST.md:
-test:unit      # Unit tests
-test:int       # Integration tests  
-test:e2e       # End-to-end tests
-lint           # Code quality
-build          # Build verification
-```
-
----
-
-## 📊 DECISION TREES
-
-### Starting Work
-```
-ARRIVING AT PROJECT?
-    │
-    ▼
-Read INDEX.md (this file)
-    │
-    ▼
-Register in STATE.md
-    │
-    ▼
-Check for active tasks in TASK.md
-    │
-    ├── Unclaimed task exists → Claim it → Work
-    │
-    └── All claimed → Check STATE.md for waiting tasks
-                      OR ask Lead AI for assignment
-```
-
-### Making Changes
-```
-NEED TO CHANGE CODE?
-    │
-    ▼
-Check STATE.md → File claimed by another?
-    │
-    ├── YES → Work on different file
-    │
-    └── NO → Claim file → Make change → Test
-                │
-                ├── PASS → Commit → Release claim
-                │
-                └── FAIL → Undo → Try different approach
-```
-
-### Completing Work
-```
-TASK COMPLETE?
-    │
-    ▼
-All tests passing?
-    │
-    ├── NO → Fix until passing
-    │
-    └── YES → Update STATE.md
-              │
-              ▼
-        Add learnings to PATTERNS.md
-              │
-              ▼
-        Clear task from TASK.md
-              │
-              ▼
-        Leave handoff notes if needed
-```
-
----
-
-## 💡 TIPS BY AI SIZE
-
-### Small LLMs (7B-13B)
-```
-✓ Focus on ONE file at a time
-✓ Copy existing patterns exactly
-✓ Make changes <10 lines
-✓ Test after EVERY change
-✓ Ask for help if stuck
-```
-
-### Medium LLMs (30B-70B)
-```
-✓ Can handle multiple related files
-✓ Can adapt patterns to new contexts
-✓ Can write comprehensive tests
-✓ Good for Specialist roles
-```
-
-### Large LLMs (100B+)
-```
-✓ Can serve as Lead AI
-✓ Can architect complex systems
-✓ Can resolve conflicts
-✓ Can mentor smaller AIs
-```
-
----
-
-## 🔄 TRANSFERRING TO NEW PROJECT
-
-```
-TO START NEW PROJECT WITH THIS FRAMEWORK:
-
-1. Copy 0.development-matrix/ folder
-2. Clear STATE.md (fresh state)
-3. Clear TASK.md (fresh tasks)
-4. Update REQUIREMENTS.md (new requirements)
-5. Update DEPENDENCIES.md (new architecture)
-6. Keep PATTERNS.md (learnings transfer!)
-7. Update RULES.md (project-specific rules)
-8. Update TEST.md (project test strategy)
-9. Start working!
-```
-
----
-
-## ✅ SUCCESS CRITERIA
-
-```
-SUCCESS = Tests Pass
-        + State Updated  
-        + Patterns Documented
-        + Team Coordinated
-```
-
----
-
-**Framework Version: 2.0 | Universal | Multi-Agent Ready**
+*Last updated: 2026-03-05 | v50 | SONNET-004 (judge)*
