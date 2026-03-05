@@ -61,6 +61,28 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-05 23:00] SONNET-004: ✅ BATCH9 COMPLETED — v43 DEPLOYED
+
+                             TASKS COMPLETED:
+                             1. ✅ AgencyJobsPage vehicle_type fix — added to shipments join query
+                             2. ✅ AgencyJobsPage 'accepted' status — added to STATUS_CONFIG + filter tabs
+                             3. ✅ Assign Driver modal — agency can assign drivers to accepted jobs;
+                                updates agency_jobs, agency_trucks.is_available, inserts job_offer
+                             4. ✅ PWA icons — already exist (pwa-192x192.png, pwa-512x512.png)
+                             5. ✅ TrackingPage pending UI — "Searching for drivers…" for pending shipments
+                             6. ✅ TrackingPage OTP — customer can see pickup_otp in shipment detail modal
+
+                             NOT COMPLETED (no DB access via MCP):
+                             - Trip-photos Storage bucket verification/creation
+                               (DriverTripPage handles upload failure gracefully; photo is optional)
+
+                             FILES CHANGED:
+                             - frontend/src/pages/AgencyJobsPage.tsx — bug fixes + assign modal
+                             - frontend/src/pages/TrackingPage.tsx — pending UI + OTP display
+
+                             STATUS: v43 deployed to Heroku, pushed to GitHub
+                             NEXT: BATCH10 (if any remaining items from BATCH9)
+───────────────────────────────────────────────────────────────────────
 [2026-03-05 22:00] SONNET-004 (JUDGE): ✅ BATCH9 PROMPT CREATED — see 0.dev-matrix/BATCH9_AGENT_CONTINUATION_PROMPT.md
 
                              BATCH9 tasks (in order of priority):
