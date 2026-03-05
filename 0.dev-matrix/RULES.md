@@ -1,213 +1,165 @@
-# 📜 RULES
+# 📜 RULES — TruckOpti
 
-> **AI Development Rules & Anti-Patterns**
-> Read this ONCE before starting work.
+> **TruckOpti-specific coding rules and anti-patterns.**
+> Read once before starting any task. Security rules are in SECURITY.md.
 
 ---
 
 ## 🔴 CRITICAL RULES
 
-### 1. Single Bot Instance
-```
-❌ NEVER run two bots with same token
-✅ Use: npm start (prod) OR npm run mcp (dev) - NOT BOTH
-```
-
-### 2. Push Order
-```
-git push origin main   ← FIRST (GitHub)
-git push heroku main   ← SECOND (Heroku)
+### 1. Build Must Be Clean Before Every Push
+```powershell
+cd d:\Github\Truck_Opti\frontend ; npm run build
+# Must show 0 TypeScript errors
+# Do NOT push if build fails
 ```
 
-### 3. Menu Text = Template Literals
-```javascript
-// ❌ WRONG - shows literal \n
-const text = "Line 1\nLine 2";
-
-// ✅ RIGHT - actual line breaks
-const text = `Line 1
-Line 2`;
+### 2. Git Push Order
+```powershell
+git push origin main    ← FIRST (GitHub)
+git push heroku main    ← SECOND (Heroku deploy)
 ```
 
-### 4. Every Module Needs initialize()
-```javascript
-export default class MyModule {
-  constructor() { this.initialized = false; }
-  async initialize() { this.initialized = true; }
-}
+### 3. Never Mark a Task Done Without Testing the User Flow
+See `TESTING_PRINCIPLES.md`. Code that compiles is NOT done. The button must work.
+
+### 4. Register in STATE.md and Post a Summary Message
+Before starting: add yourself to `## 🤖 ACTIVE AGENTS`.
+After finishing: post to `## 📝 AGENT MESSAGES` (newest at top).
+
+### 5. Security Checklist Before Any Code Generation
+Run through `SECURITY.md §6` (15-item checklist). Known violations: `SECURITY.md §2`.
+
+---
+
+## 🟠 TECH STACK RULES
+
+### 6. State Management — Zustand Only
+```typescript
+// ❌ WRONG — local state for auth
+const [user, setUser] = useState(null)
+
+// ✅ RIGHT — use authStore
+import { useAuthStore } from '../store/authStore'
+const { user, agencyId, driverId } = useAuthStore()
 ```
 
-### 5. Test Before Commit
-```bash
-npm test           # Must pass 338+ tests
-npm run analyze    # Static analysis for hidden bugs
+### 7. Database Access — Supabase Client Only
+```typescript
+// All DB access goes through the shared client:
+import { supabase } from '../lib/supabase'
+
+// NEVER create a second client in a component
+// NEVER use supabaseAdmin in frontend code
+```
+
+### 8. Error Handling — Never Expose Raw DB Errors
+```typescript
+// ❌ WRONG — raw Supabase error to user
+toast.error(error.message)  // may leak table/column names
+
+// ✅ RIGHT — log internally, show generic message
+console.error('[context]', error)
+toast.error('Something went wrong. Please try again.')
+```
+
+### 9. Realtime Subscriptions Must Clean Up
+```typescript
+useEffect(() => {
+  const channel = supabase.channel('name').on(...).subscribe()
+  return () => { supabase.removeChannel(channel) }  // ← REQUIRED
+}, [dependency])
+```
+
+### 10. No TODO Comments in Shipped Code
+```typescript
+// ❌ WRONG — placeholder left in
+async handleWithdrawal() { /* TODO: implement */ }
+
+// ✅ RIGHT — toast placeholder OR full implementation
+async handleWithdrawal() { toast('Withdrawal coming soon') }
 ```
 
 ---
 
-## 🔴 HIDDEN BUG PREVENTION
+## 🟡 REACT / UI RULES
 
-### 6. Run Static Analysis
-```bash
-# Find bugs that unit tests miss
-node scripts/static-analysis.js
+### 11. Every Page Must Set document.title
+```typescript
+useEffect(() => { document.title = 'Page Name - TruckOpti' }, [])
 ```
 
-### 7. Method Name Verification
-```javascript
-// ❌ WRONG - typo in method name
-await this.handleCallback(query);  // Does this method exist?
+### 12. Bilingual Labels (English + Hindi)
+All user-facing strings that appear on buttons/toasts/headings must have `language === 'en' ? 'English' : 'Hindi'` variants.
 
-// ✅ RIGHT - verify method exists
-await this.handleAdminCallback(query);  // Exact method name
+### 13. Mobile-First — Bottom Nav Limited to 5 Items
+The mobile bottom nav is crowded at 5 items already. New nav items go in a page (e.g. settings or a “more” sheet), not in the bottom nav.
+
+### 14. Don't Hardcode Business Values (BUG-020 pattern)
+```typescript
+// ❌ WRONG — ignores the constant
+const GST_RATE = 0.05
+return amount * 0.18  // ← caused real bug in v49
+
+// ✅ RIGHT
+return amount * GST_RATE
 ```
 
-### 8. Error Logging is MANDATORY
-```javascript
-// All catch blocks MUST log to Supabase
-catch (error) {
-  await errorLogger.log(error, {
-    module: 'module-name',
-    function: 'function-name',
-    severity: 'error'
-  });
-}
-```
+---
 
-### 9. Check Errors in Supabase
+## 🟢 DB / MIGRATION RULES
+
+### 15. New Migration File Naming
+```
+supabase/migrations/YYYYMMDD000000_description.sql
+```
+Use today's date. Never reuse a filename that exists.
+
+### 16. Always Enable RLS on New Tables
 ```sql
--- Before ANY deployment, check:
-SELECT * FROM bot_errors WHERE NOT resolved ORDER BY occurred_at DESC;
+ALTER TABLE new_table ENABLE ROW LEVEL SECURITY;
+-- Then create explicit policies (see SECURITY.md §3.1)
+```
+
+### 17. Alter Existing Tables via Migration, Not Direct Edit
+Never modify `base_schema.sql` directly. Always add a new migration file for schema changes.
+
+### 18. Storage Bucket Paths Must Use auth.uid()
+```typescript
+// ❌ WRONG — user-supplied name
+const path = `uploads/${filename}`
+
+// ✅ RIGHT — deterministic, ownership-scoped
+const path = `driver-docs/${driverId}/${docType}.jpg`
+//                          ^^^^^^^^ = auth.uid()
 ```
 
 ---
 
-## 🟡 IMPORTANT RULES
+## 💫 COMMIT CONVENTIONS
 
-### 6. Return Format
-```javascript
-// Always return { success, data?, error? }
-return { success: true, data: result };
-return { success: false, error: 'message' };
+```
+feat:      New user-visible feature
+fix:       Bug fix
+security:  Security patch
+refactor:  Code restructure (no behaviour change)
+migration: DB schema change
+chore:     Config, dependencies
+docs:      Documentation only
 ```
 
-### 10. No TODO in Production
-```javascript
-// ❌ Left placeholder
-async save() { /* TODO: implement */ }
-
-// ✅ Actually implement
-async save() { return await db.insert(this.data); }
+Examples:
 ```
-
----
-
-## 🔬 DEEP ERROR PREVENTION (CRITICAL!)
-
-### 11. Run Deep Scan Before EVERY Commit
-```bash
-npm run deep-scan   # Find ALL hidden bugs
-npm run pre-deploy  # Full check: tests + scan
-```
-
-### 12. Error Types to Fix
-
-| Type | Severity | Must Fix? |
-|------|----------|-----------|
-| UNDEFINED_METHOD | 🔴 High | YES - Will crash at runtime |
-| UNDEFINED_VARIABLE | 🔴 High | YES - Will crash at runtime |
-| UNHANDLED_CALLBACK | 🔴 High | YES - Button won't work |
-| IMPORT_NOT_EXPORTED | 🔴 High | YES - Import will fail |
-| ASYNC_NO_ERROR_HANDLING | 🟡 Medium | Should fix |
-| EMPTY_CATCH | 🟡 Medium | Should fix |
-| DEAD_CODE | 🟢 Low | Nice to fix |
-
-### 13. Query Errors from Database
-```sql
--- Check Supabase for runtime errors
-SELECT * FROM bot_errors 
-WHERE NOT resolved 
-ORDER BY occurred_at DESC;
-
--- Critical errors first
-SELECT * FROM bot_errors 
-WHERE severity = 'critical' AND NOT resolved;
-```
-
-### 14. Fix Error Workflow
-```
-1. Run deep-scan → Find warnings
-2. Check Supabase → Find runtime errors  
-3. Fix errors (highest severity first)
-4. Run tests → Verify fix
-5. Run deep-scan again → Confirm warnings reduced
-6. Commit + Push
+feat: add shipment history page for customer portal
+fix: BUG-020 GST rate uses constant not hardcoded value
+security: BUG-REDIRECT-001 PhonePe URL domain validation
+migration: add licence_url and rc_url columns to drivers table
 ```
 
 ---
 
-## 🟡 IMPORTANT RULES
-
-### 15. Database Check
-```javascript
-// Local: SQLite (data/*.db)
-// Heroku: PostgreSQL (DATABASE_URL)
-// Cloud: Supabase (SUPABASE_URL)
-```
-
-### 16. No Duplicate Handlers
-```javascript
-// ❌ Two handlers for same callback
-case 'rss_add': ...
-case 'rss_add': ... // DUPLICATE!
-
-// ✅ One handler per callback
-```
-
-### 17. Health Endpoint Required
-```
-GET /health → { status: 'ok', uptime: X }
-GET /status → { modules: [...], database: 'connected' }
-```
+*Last updated: 2026-03-05 | v50 | SONNET-004*
 
 ---
 
-## 🟢 BEST PRACTICES
-
-### 18. File Naming
-- Classes: `PascalCase` → `ChannelManager`
-- Files: `kebab-case` → `channel-manager.js`
-- Methods: `camelCase` → `addChannel()`
-
-### 12. Error Messages Include Context
-```javascript
-throw new Error(`Channel ${channelId} not found in DB`);
-// NOT: throw new Error('Not found');
-```
-
-### 13. Log Important Actions
-```javascript
-console.log(`[RSS] Added feed: ${feedUrl} → ${channelId}`);
-```
-
-### 14. Cleanup Test Data
-```javascript
-afterEach(async () => {
-  await db.query('DELETE FROM test_channels');
-});
-```
-
-### 15. Environment Variables
-```bash
-# Required
-TELEGRAM_BOT_TOKEN=xxx
-ADMIN_TELEGRAM_ID=1443609804
-
-# Optional
-GEMINI_API_KEY=xxx
-SUPABASE_URL=xxx
-```
-
----
-
-**Version:** 2.14.3 | **Rules Count:** 15
+*Last updated: 2026-03-05 | v50 | SONNET-004*
