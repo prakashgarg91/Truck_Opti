@@ -586,6 +586,17 @@ export default function TrackingPage() {
               )}
             </div>
 
+            {/* Book Another Truck CTA for delivered shipments */}
+              {selectedShipment.status === 'delivered' && (
+                <button
+                  onClick={() => { setShowDetailModal(false); navigate('/booking/new') }}
+                  className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 mb-3"
+                >
+                  <Truck className="w-4 h-4" />
+                  {language === 'en' ? 'Book Another Truck' : 'एक और ट्रक बुक करें'}
+                </button>
+              )}
+
             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
               <button
                 onClick={() => setShowDetailModal(false)}

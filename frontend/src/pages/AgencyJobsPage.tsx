@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Briefcase, CheckCircle2, XCircle,
-  RefreshCw, AlertTriangle, MapPin, Truck, UserPlus, X
+  RefreshCw, AlertTriangle, MapPin, Truck, UserPlus, X, UserCheck
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
+import MapViewWrapper, { MapMarker, MapRoute } from '../components/MapViewWrapper'
 
 type JobFilter = 'all' | 'active' | 'pending' | 'accepted' | 'completed' | 'cancelled'
 
@@ -23,6 +24,7 @@ interface AgencyJob {
   shipment_ref?: string
   driver_id?: string
   driver_name?: string
+  driver_phone?: string
 }
 
 interface AvailableDriver {
@@ -33,6 +35,13 @@ interface AvailableDriver {
   driver_name: string
   driver_phone: string
   rating: number
+}
+
+interface DriverLocation {
+  latitude: number
+  longitude: number
+  updated_at: string
+  speed_kmh: number | null
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -55,6 +64,11 @@ export default function AgencyJobsPage() {
   const [selectedJob, setSelectedJob] = useState<AgencyJob | null>(null)
   const [availableDrivers, setAvailableDrivers] = useState<AvailableDriver[]>([])
   const [assigning, setAssigning] = useState(false)
+
+  // Track Live Modal State
+  const [showTrackModal, setShowTrackModal] = useState(false)
+  const [trackingJob, setTrackingJob] = useState<AgencyJob | null>(null)
+  const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null)
 
   const fetchAgency = useCallback(async () => {
     if (!user?.id) return
@@ -83,6 +97,11 @@ export default function AgencyJobsPage() {
             total_weight,
             estimated_cost,
             vehicle_type
+          ),
+          drivers!agency_jobs_driver_id_fkey (
+            id,
+            full_name,
+            phone
           )
         `)
         .eq('agency_id', data.id)
@@ -90,6 +109,7 @@ export default function AgencyJobsPage() {
 
       const mapped: AgencyJob[] = (jobData ?? []).map((j: Record<string, unknown>) => {
         const s = (Array.isArray(j.shipments) ? j.shipments[0] : j.shipments) as Record<string, unknown> | null
+        const d = Array.isArray(j.drivers) ? j.drivers[0] : j.drivers as { id?: string; full_name?: string; phone?: string } | null
         return {
           id: j.id as string,
           shipment_id: j.shipment_id as string,
@@ -103,6 +123,8 @@ export default function AgencyJobsPage() {
           weight_kg: Number(s?.total_weight ?? 0),
           estimated_fare: Number(j.fare ?? s?.estimated_cost ?? 0),
           driver_id: j.driver_id as string | undefined,
+          driver_name: d?.full_name ?? undefined,
+          driver_phone: d?.phone ?? undefined,
         }
       })
       setJobs(mapped)
@@ -231,6 +253,48 @@ export default function AgencyJobsPage() {
     toast.success('Job declined')
   }
 
+  // Track Live functions
+  const openTrackModal = async (job: AgencyJob) => {
+    setTrackingJob(job)
+    setShowTrackModal(true)
+
+    // Fetch initial location
+    if (job.driver_id) {
+      const { data: loc } = await supabase
+        .from('driver_locations')
+        .select('latitude, longitude, updated_at, speed_kmh')
+        .eq('driver_id', job.driver_id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      setDriverLocation(loc)
+    }
+  }
+
+  // Subscribe to real-time location updates
+  useEffect(() => {
+    if (!showTrackModal || !trackingJob?.driver_id) return
+
+    const channel = supabase.channel(`driver-loc-${trackingJob.driver_id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'driver_locations',
+        filter: `driver_id=eq.${trackingJob.driver_id}`
+      }, (payload) => {
+        if (payload.new) {
+          const newLoc = payload.new as DriverLocation
+          setDriverLocation(newLoc)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [showTrackModal, trackingJob?.driver_id])
+
   const filteredJobs = filter === 'all'
     ? jobs
     : jobs.filter(j => j.status === filter)
@@ -253,6 +317,18 @@ export default function AgencyJobsPage() {
       </div>
     )
   }
+
+  // Build markers and routes for tracking map
+  const trackingMarkers: MapMarker[] = driverLocation ? [
+    {
+      id: 'driver',
+      position: [driverLocation.latitude, driverLocation.longitude],
+      label: '🚚',
+      type: 'truck'
+    }
+  ] : []
+
+  const trackingRoutes: MapRoute[] = []
 
   return (
     <div className="p-4 space-y-4 max-w-md mx-auto">
@@ -378,17 +454,20 @@ export default function AgencyJobsPage() {
               </button>
             )}
 
-            {/* Accepted with driver assigned */}
+            {/* Accepted with driver assigned - show driver name */}
             {job.status === 'accepted' && job.driver_id && (
-              <div className="mt-3 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-xs">
-                <span className="text-indigo-600 dark:text-indigo-400">Driver assigned</span>
+              <div className="mt-3 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-xs flex items-center gap-2">
+                <UserCheck size={14} className="text-indigo-600 dark:text-indigo-400" />
+                <span className="text-indigo-600 dark:text-indigo-400">
+                  Assigned: {job.driver_name || 'Driver assigned'}
+                </span>
               </div>
             )}
 
-            {/* Active Actions */}
+            {/* Active Actions - Track Live */}
             {job.status === 'active' && (
               <button
-                onClick={() => toast('Track job flow coming soon', { icon: 'ℹ️' })}
+                onClick={() => openTrackModal(job)}
                 className="w-full mt-3 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold"
               >
                 <MapPin size={14} />
@@ -440,6 +519,75 @@ export default function AgencyJobsPage() {
                       </div>
                     </button>
                   ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Track Live Modal */}
+      {showTrackModal && trackingJob && (
+        <div className="fixed inset-0 bg-black/50 flex items-end z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-h-[85vh] overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Live Tracking</h2>
+                <p className="text-xs text-slate-500">
+                  {trackingJob.origin} → {trackingJob.destination}
+                </p>
+              </div>
+              <button
+                onClick={() => { setShowTrackModal(false); setTrackingJob(null) }}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Driver Info */}
+            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    {trackingJob.driver_name || 'Driver'}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {trackingJob.driver_phone || 'Phone not available'}
+                  </p>
+                </div>
+                {driverLocation && (
+                  <div className="text-right">
+                    <p className="text-xs text-green-600 font-medium">● Live</p>
+                    <p className="text-xs text-slate-400">
+                      Updated: {new Date(driverLocation.updated_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Map */}
+            <div className="h-[50vh] bg-slate-100 dark:bg-slate-900">
+              {driverLocation ? (
+                <MapViewWrapper
+                  markers={trackingMarkers}
+                  routes={trackingRoutes}
+                  center={[driverLocation.latitude, driverLocation.longitude]}
+                  zoom={14}
+                  height="100%"
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <RefreshCw className="w-8 h-8 text-slate-400 animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-slate-500">
+                      Waiting for driver location...
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Driver hasn't started sharing location yet
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
