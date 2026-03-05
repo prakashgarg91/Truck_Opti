@@ -8,7 +8,7 @@ import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import MapViewWrapper, { MapMarker, MapRoute } from '../components/MapViewWrapper'
 
-type JobFilter = 'all' | 'active' | 'pending' | 'accepted' | 'completed' | 'cancelled'
+type JobFilter = 'all' | 'in_transit' | 'pending' | 'accepted' | 'delivered' | 'cancelled'
 
 interface AgencyJob {
   id: string
@@ -47,8 +47,8 @@ interface DriverLocation {
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending:   { label: 'Pending',   color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   accepted:  { label: 'Accepted',  color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-  active:    { label: 'Active',    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  completed: { label: 'Done',      color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  in_transit:{ label: 'In Transit',color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+  delivered: { label: 'Delivered', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 }
 
@@ -253,6 +253,16 @@ export default function AgencyJobsPage() {
     toast.success('Job declined')
   }
 
+  const confirmDelivery = async (job: AgencyJob) => {
+    const { error } = await supabase
+      .from('agency_jobs')
+      .update({ status: 'delivered', updated_at: new Date().toISOString() })
+      .eq('id', job.id)
+    if (error) { toast.error('Failed to confirm delivery'); return }
+    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'delivered' } : j))
+    toast.success('Job marked as delivered')
+  }
+
   // Track Live functions
   const openTrackModal = async (job: AgencyJob) => {
     setTrackingJob(job)
@@ -340,7 +350,7 @@ export default function AgencyJobsPage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {(['all', 'pending', 'accepted', 'active', 'completed', 'cancelled'] as JobFilter[]).map(f => (
+        {(['all', 'pending', 'accepted', 'in_transit', 'delivered', 'cancelled'] as JobFilter[]).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -350,7 +360,7 @@ export default function AgencyJobsPage() {
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
             }`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {f === 'in_transit' ? 'In Transit' : f.charAt(0).toUpperCase() + f.slice(1)}
             {f !== 'all' && (
               <span className="ml-1 opacity-70">
                 ({jobs.filter(j => j.status === f).length})
@@ -464,15 +474,24 @@ export default function AgencyJobsPage() {
               </div>
             )}
 
-            {/* Active Actions - Track Live */}
-            {job.status === 'active' && (
-              <button
-                onClick={() => openTrackModal(job)}
-                className="w-full mt-3 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold"
-              >
-                <MapPin size={14} />
-                Track Live
-              </button>
+            {/* In Transit Actions - Track Live + Confirm Delivery */}
+            {job.status === 'in_transit' && (
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => openTrackModal(job)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold"
+                >
+                  <MapPin size={14} />
+                  Track Live
+                </button>
+                <button
+                  onClick={() => confirmDelivery(job)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold"
+                >
+                  <CheckCircle2 size={14} />
+                  Confirm Delivery
+                </button>
+              </div>
             )}
           </div>
         )

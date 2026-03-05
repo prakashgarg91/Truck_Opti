@@ -37,6 +37,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `MINIMAX-001` | LEAD | MiniMax-M2.5 | Full-stack | BATCH11 tasks | 2026-03-05 | ✅ Active |
 | `SONNET-004` | LEAD | Claude Sonnet 4.6 | Full-stack | BATCH10 judge → v47 | 2026-03-05 | 🔴 Offline |
 | `SONNET-003` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 2 driver app, Phase 3 agency portal | 2026-03-05 | 🔴 Offline |
 | `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Gaps+bugs audit, v37-v38 complete | 2026-03-05 | 🔴 Offline |

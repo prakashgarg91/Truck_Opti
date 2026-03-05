@@ -43,6 +43,7 @@ interface TripHistory {
   offered_at: string
   responded_at: string | null
   status: string
+  fare: number | null
   shipments?: {
     origin_address: string
     destination_address: string
@@ -70,6 +71,9 @@ export default function DriverDashboardPage() {
   const [todayEarnings, setTodayEarnings] = useState(0)
   const [todayTrips, setTodayTrips] = useState(0)
   const [respondingJob, setRespondingJob] = useState(false)
+  const [walletBalance, setWalletBalance] = useState(0)
+  const [totalEarned, setTotalEarned] = useState(0)
+  const [completedTrips, setCompletedTrips] = useState<TripHistory[]>([])
 
   const fetchDriver = useCallback(async () => {
     if (!user?.id) return
@@ -88,9 +92,9 @@ export default function DriverDashboardPage() {
   const fetchHistory = useCallback(async (driverId: string) => {
     const { data } = await supabase
       .from('job_offers')
-      .select('id, offered_at, responded_at, status, shipments(origin_address, destination_address)')
+      .select('id, offered_at, responded_at, status, fare, shipments(origin_address, destination_address)')
       .eq('driver_id', driverId)
-      .in('status', ['accepted', 'declined', 'expired'])
+      .in('status', ['accepted', 'declined', 'expired', 'delivered'])
       .order('offered_at', { ascending: false })
       .limit(10)
     setTripHistory((data as unknown as TripHistory[]) || [])
@@ -103,6 +107,13 @@ export default function DriverDashboardPage() {
     )
     setTodayTrips(todayAccepted.length)
     setTodayEarnings(todayAccepted.length * 1200) // Placeholder ₹1200 per trip
+
+    // Calculate wallet earnings from delivered trips
+    const delivered = rawData.filter((j: TripHistory) => j.status === 'delivered')
+    const total = delivered.reduce((sum: number, j: TripHistory) => sum + (j.fare ?? 0), 0)
+    setTotalEarned(total)
+    setWalletBalance(total) // Available = total (no withdrawals yet)
+    setCompletedTrips(delivered.slice(0, 5))
   }, [])
 
   useEffect(() => {
@@ -384,6 +395,67 @@ export default function DriverDashboardPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400">Rating</p>
           </div>
         </div>
+
+        {/* Wallet Card */}
+        {driver.status === 'approved' && (
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Wallet size={24} className="text-white" />
+                <h3 className="text-lg font-bold text-white">My Wallet</h3>
+              </div>
+              <button
+                onClick={() => toast.success('Withdrawal requests coming soon — contact support')}
+                className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-full transition-colors"
+              >
+                Request Withdrawal →
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-emerald-100 text-sm">Available Balance</p>
+                <p className="text-2xl font-bold text-white">{formatCurrency(walletBalance)}</p>
+              </div>
+              <div>
+                <p className="text-emerald-100 text-sm">Total Earned</p>
+                <p className="text-2xl font-bold text-white">{formatCurrency(totalEarned)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Completed Trips Mini Ledger */}
+        {driver.status === 'approved' && completedTrips.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Wallet size={16} className="text-green-500" />
+                Recent Earnings
+              </h3>
+            </div>
+            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+              {completedTrips.map((trip) => (
+                <div key={trip.id} className="px-4 py-3 flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                      {trip.shipments?.origin_address
+                        ? `${trip.shipments.origin_address} → ${trip.shipments.destination_address}`
+                        : 'Trip completed'}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {new Date(trip.offered_at).toLocaleDateString('en-IN', {
+                        day: '2-digit', month: 'short'
+                      })}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-green-600">
+                    +{formatCurrency(trip.fare ?? 0)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Driver Vehicle Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
