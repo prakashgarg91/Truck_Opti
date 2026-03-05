@@ -37,7 +37,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `SONNET-004` | LEAD | Claude Sonnet 4.6 | Full-stack | BATCH8 - Booking flow (Task 1) | 2026-03-05 | ✅ Active |
+| `SONNET-004` | LEAD | Claude Sonnet 4.6 | Full-stack | BATCH10 judge → v47 | 2026-03-05 | 🔴 Offline |
 | `SONNET-003` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 2 driver app, Phase 3 agency portal | 2026-03-05 | 🔴 Offline |
 | `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Gaps+bugs audit, v37-v38 complete | 2026-03-05 | 🔴 Offline |
 | `SONNET-001` | LEAD | Claude Sonnet 4.6 | Full-stack + Testing | v35 deploy + UI/UX fixes | 2026-03-04 | 🔴 Offline |
@@ -61,6 +61,41 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-05 END-OF-DAY] SONNET-004 (JUDGE): ✅ v46 BATCH10 VERIFIED + 1 FIX APPLIED → v47 DEPLOYED
+
+                             JUDGMENT: v46 PASSES — All BATCH10 tasks verified.
+                             1 skipped task found and fixed by judge.
+
+                             V46 CODE VERIFIED (all pass):
+                             ✅ TASK 1: AgencyJobsPage "Track Live" modal — correct
+                                  Fetches driver_locations, Realtime subscription with cleanup,
+                                  MapViewWrapper with live marker, loading spinner fallback, driver info bar.
+                             ✅ TASK 2: AgencyJobsPage driver name on card — correct
+                                  fetchAgency joins `drivers!agency_jobs_driver_id_fkey (id, full_name, phone)`
+                                  UserCheck icon chip shows driver name on accepted+assigned jobs.
+                             ✅ TASK 3: TrackingPage "Book Another Truck" CTA — correct
+                                  Shown when selectedShipment.status === 'delivered' inside detail modal.
+                                  Navigates to /booking/new. Bilingual (en/hi).
+                             ✅ TASK 5: DriverTripPage photo upload path — correct
+                                  Bucket: trip-photos, path: trip-photos/{driver_id}/{job_id}/{field}.{ext}
+                                  No leading slash. Correct bucket name. getPublicUrl used and saved to DB.
+
+                             TASK FIXED BY JUDGE:
+                             ✅ TASK 4 (AgencyDashboardPage 30-day earnings) — AGENT SKIPPED; JUDGE IMPLEMENTED
+                                  Changed from calendar-month to 30-day rolling window.
+                                  Added thirtyDayJobs count (N jobs completed) below revenue.
+                                  Stat card label: "Last 30 Days" (was "This Month").
+                                  FILE: frontend/src/pages/AgencyDashboardPage.tsx
+
+                             BUILD STATUS: npm run build — ✓ built cleanly (no TS errors)
+                             DEPLOY: Heroku v47 | GitHub: main pushed
+                             COMMIT: 00881025
+
+                             READINESS SCORE (post v47):
+                             Customer ✅ READY  |  Driver ✅ READY  |  Agency ✅ READY
+
+                             NEXT: BATCH11 — see 0.dev-matrix/BATCH11_AGENT_CONTINUATION_PROMPT.md
+───────────────────────────────────────────────────────────────────────
 [2026-03-05 23:30] SONNET-004 (JUDGE): ✅ v43 VERIFIED + 2 CRITICAL BUGS FIXED + DB BUCKET CREATED
 
                              JUDGMENT: v43 PASSES — All BATCH9 code changes verified correct.
