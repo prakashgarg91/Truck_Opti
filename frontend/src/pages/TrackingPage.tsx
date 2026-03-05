@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, PlayCircle, Trash2 } from 'lucide-react'
+import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, PlayCircle, Trash2, Loader2 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { shipmentsSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
@@ -29,10 +29,16 @@ interface ShipmentLocation {
   sale_order_id?: string | null
 }
 
+interface JobOffer {
+  pickup_otp: string | null
+  delivery_otp: string | null
+  status: string
+  drivers?: { full_name: string }
+}
+
 const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
-  // Fetch all non-cancelled shipments so pending ones are visible too
   const data = await shipmentsSupabaseApi.getAll()
-  
+
   const mappedData: ShipmentLocation[] = data
     .filter((s: any) => s.status !== 'cancelled')
     .map((s: any) => ({
@@ -52,12 +58,11 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
     total_volume: s.total_volume,
     sale_order_id: s.sale_order_id || null
   }))
-  
-  // Return empty array if no real data (no mock/fake data)
+
   if (mappedData.length === 0) {
     return []
   }
-  
+
   return mappedData
 }
 
@@ -71,10 +76,11 @@ export default function TrackingPage() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedShipment, setSelectedShipment] = useState<ShipmentLocation | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+  const [jobOffer, setJobOffer] = useState<JobOffer | null>(null)
+  const [loadingOTP, setLoadingOTP] = useState(false)
 
-  // React Query: Fetch shipments data
-  const { 
-    data: shipments = [], 
+  const {
+    data: shipments = [],
     isLoading: loading,
     isError: loadError,
     refetch
@@ -83,7 +89,6 @@ export default function TrackingPage() {
     queryFn: fetchActiveShipments,
   })
 
-  // Set document title based on language
   useEffect(() => {
     document.title = language === 'en' ? 'Live Tracking - TruckOpti' : 'लाइव ट्रैकिंग - TruckOpti'
   }, [language])
@@ -92,18 +97,38 @@ export default function TrackingPage() {
   useEffect(() => {
     const subscription = supabase
       .channel('shipments-tracking')
-      .on('postgres_changes', 
+      .on('postgres_changes',
         { event: '*', schema: 'public', table: 'shipments' },
         () => {
           queryClient.invalidateQueries({ queryKey: ['shipments'] })
         }
       )
       .subscribe()
-    
+
     return () => {
       subscription.unsubscribe()
     }
   }, [queryClient])
+
+  // Fetch job offer OTP when modal opens
+  useEffect(() => {
+    if (showDetailModal && selectedShipment) {
+      setLoadingOTP(true)
+      supabase
+        .from('job_offers')
+        .select('pickup_otp, delivery_otp, status, drivers(full_name)')
+        .eq('shipment_id', selectedShipment.id)
+        .in('status', ['pending', 'accepted', 'pickup_arrived', 'in_transit', 'delivery_arrived'])
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          setJobOffer(data as JobOffer | null)
+          setLoadingOTP(false)
+        })
+    } else {
+      setJobOffer(null)
+    }
+  }, [showDetailModal, selectedShipment])
 
   const handleContactDriver = (phone?: string) => {
     if (phone) {
@@ -147,7 +172,6 @@ export default function TrackingPage() {
       await shipmentsSupabaseApi.updateStatus(shipment.id, newStatus)
       queryClient.invalidateQueries({ queryKey: ['shipments'] })
       toast.success(newStatus === 'in_transit' ? 'Delivery started!' : 'Marked as delivered!')
-      // Create in-app notification
       const notifTitle = newStatus === 'in_transit' ? 'Delivery Started' : 'Delivery Completed'
       const notifMsg = newStatus === 'in_transit'
         ? `Shipment ${shipment.shipment_id} is now in transit to ${shipment.destination}`
@@ -159,7 +183,6 @@ export default function TrackingPage() {
         action_url: `/tracking`,
         action_label: 'View Tracking'
       })
-      // Auto-complete linked sale order when shipment is delivered
       if (newStatus === 'delivered' && shipment.sale_order_id) {
         try {
           await saleOrdersSupabaseApi.updateStatus(shipment.sale_order_id, 'completed')
@@ -180,9 +203,8 @@ export default function TrackingPage() {
     return matchesSearch && matchesStatus
   })
 
-  // Prepare markers for the map
   const mapMarkers = shipments
-    .filter(s => s.latitude && s.longitude)
+    .filter(s => s.latitude && s.longitude && s.status === 'in_transit')
     .map(s => ({
       id: s.id,
       position: [s.latitude!, s.longitude!] as [number, number],
@@ -199,29 +221,12 @@ export default function TrackingPage() {
           <p className="text-sm text-slate-600">
             <span className="font-medium">Route:</span> {s.origin} → {s.destination}
           </p>
-          <div className="flex gap-2 mt-3">
-            <button 
-              onClick={() => handleViewDetails(s)}
-              className="flex-1 px-3 py-1.5 bg-primary-600 text-white text-xs rounded-lg hover:bg-primary-700"
-            >
-              View Details
-            </button>
-            {s.driver_phone && (
-              <button 
-                onClick={() => handleContactDriver(s.driver_phone || undefined)}
-                className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700"
-              >
-                <Phone className="w-3 h-3" />
-              </button>
-            )}
-          </div>
         </div>
       )
     }))
 
-  // Calculate map center based on markers
-  const mapCenter = mapMarkers.length > 0 
-    ? mapMarkers[0].position 
+  const mapCenter = mapMarkers.length > 0
+    ? mapMarkers[0].position
     : [20.5937, 78.9629] as [number, number]
 
   return (
@@ -236,7 +241,7 @@ export default function TrackingPage() {
             Real-time GPS fleet monitoring
           </p>
         </div>
-        <button 
+        <button
           onClick={() => refetch()}
           disabled={loading}
           className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all"
@@ -269,7 +274,7 @@ export default function TrackingPage() {
           )
         })}
       </div>
-      
+
       {/* Search & Stats */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -289,8 +294,8 @@ export default function TrackingPage() {
           </div>
         </div>
       </div>
-      
-      {/* Real Map View */}
+
+      {/* Real Map View - only for in_transit shipments */}
       <MapViewWrapper
         markers={mapMarkers}
         center={mapCenter}
@@ -304,7 +309,7 @@ export default function TrackingPage() {
           }
         }}
       />
-      
+
       {/* Shipment List */}
       <div className="space-y-4">
         <h3 className="font-semibold text-slate-900 dark:text-white">Shipments ({filteredShipments.length})</h3>
@@ -322,15 +327,32 @@ export default function TrackingPage() {
           />
         ) : (
           filteredShipments.map((s) => (
-            <div 
+            <div
               key={s.id}
               onClick={() => setSelectedId(s.id)}
               className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all cursor-pointer ${
-                selectedId === s.id 
-                  ? 'border-primary-500 ring-1 ring-primary-500 shadow-md' 
+                selectedId === s.id
+                  ? 'border-primary-500 ring-1 ring-primary-500 shadow-md'
                   : 'border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-300'
               }`}
             >
+              {/* Pending Status Card - Special UI */}
+              {s.status === 'pending' && (
+                <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
+                    <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                      {language === 'en' ? 'Searching for drivers...' : 'ड्राइवर खोज रहे हैं...'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    {language === 'en'
+                      ? 'We are looking for available drivers for your shipment.'
+                      : 'आपकी शिपमेंट के लिए उपलब्ध ड्राइवर खोज रहे हैं।'}
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl ${
@@ -342,7 +364,7 @@ export default function TrackingPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 dark:text-white">{s.shipment_id}</h3>
-                    <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name || 'No driver'}</p>
+                    <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name || (s.status === 'pending' ? (language === 'en' ? 'Searching...' : 'खोज रहे हैं...') : (language === 'en' ? 'No driver' : 'कोई ड्राइवर नहीं'))}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -358,7 +380,7 @@ export default function TrackingPage() {
                   )}
                 </div>
               </div>
-              
+
               <div className="mt-4 flex items-center gap-3">
                 <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary-500" />
@@ -378,7 +400,15 @@ export default function TrackingPage() {
 
               {selectedId === s.id && (
                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2 animate-fade-in">
-                  {/* Status Actions */}
+                  {s.status === 'pending' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate('/booking/new') }}
+                      className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2"
+                    >
+                      <Truck className="w-4 h-4" />
+                      {language === 'en' ? 'Modify Booking' : 'बुकिंग बदलें'}
+                    </button>
+                  )}
                   {s.status === 'pending' && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleUpdateStatus(s, 'in_transit') }}
@@ -386,7 +416,7 @@ export default function TrackingPage() {
                       className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <PlayCircle className="w-4 h-4" />
-                      {updatingStatus === s.id ? 'Updating...' : 'Start Delivery'}
+                      {updatingStatus === s.id ? (language === 'en' ? 'Updating...' : 'अपडेट हो रहा है...') : (language === 'en' ? 'Start Delivery' : 'डिलीवरी शुरू करें')}
                     </button>
                   )}
                   {s.status === 'in_transit' && (
@@ -396,33 +426,33 @@ export default function TrackingPage() {
                       className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      {updatingStatus === s.id ? 'Updating...' : 'Mark Delivered'}
+                      {updatingStatus === s.id ? (language === 'en' ? 'Updating...' : 'अपडेट हो रहा है...') : (language === 'en' ? 'Mark Delivered' : 'डिलीवर हो गया')}
                     </button>
                   )}
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleViewDetails(s)
                       }}
                       className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
                     >
-                      View Details
+                      {language === 'en' ? 'View Details' : 'विवरण देखें'}
                     </button>
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleContactDriver(s.driver_phone || undefined)
                       }}
-                      disabled={!s.driver_phone}
+                      disabled={!s.driver_phone || s.status === 'pending'}
                       className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Phone className="w-3 h-3" />
-                      Contact Driver
+                      {language === 'en' ? 'Contact' : 'संपर्क'}
                     </button>
                   </div>
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleShareWhatsApp(s)
@@ -430,9 +460,9 @@ export default function TrackingPage() {
                       className="flex-1 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
                     >
                       <MessageCircle className="w-3 h-3" />
-                      Share
+                      {language === 'en' ? 'Share' : 'शेयर'}
                     </button>
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleGenerateInvoice(s.id)
@@ -440,7 +470,7 @@ export default function TrackingPage() {
                       className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
                     >
                       <FileText className="w-3 h-3" />
-                      Invoice
+                      {language === 'en' ? 'Invoice' : 'चालान'}
                     </button>
                   </div>
                   {(s.status === 'pending' || s.status === 'in_transit') && (
@@ -450,7 +480,7 @@ export default function TrackingPage() {
                       className="w-full py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-200 dark:border-red-800/50 disabled:opacity-50"
                     >
                       <Trash2 className="w-3 h-3" />
-                      Cancel Shipment
+                      {language === 'en' ? 'Cancel Shipment' : 'शिपमेंट रद्द करें'}
                     </button>
                   )}
                 </div>
@@ -467,29 +497,61 @@ export default function TrackingPage() {
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedShipment.shipment_id}</h2>
-                <p className="text-xs text-slate-500">Shipment Details</p>
+                <p className="text-xs text-slate-500">{language === 'en' ? 'Shipment Details' : 'शिपमेंट विवरण'}</p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowDetailModal(false)}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-4">
+              {/* Pickup OTP - Show for pending/accepted/in_transit */}
+              {selectedShipment.status !== 'delivered' && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 p-4 rounded-2xl">
+                  <p className="text-xs font-medium text-green-700 dark:text-green-300 mb-2">
+                    {language === 'en' ? '📋 Pickup OTP' : '📋 पिकअप OTP'}
+                  </p>
+                  {loadingOTP ? (
+                    <div className="flex items-center gap-2 text-green-600">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm">{language === 'en' ? 'Loading...' : 'लोड हो रहा है...'}</span>
+                    </div>
+                  ) : jobOffer?.pickup_otp ? (
+                    <>
+                      <p className="text-3xl font-bold text-green-700 dark:text-green-300 tracking-widest text-center">
+                        {jobOffer.pickup_otp}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400 text-center mt-2">
+                        {language === 'en'
+                          ? 'Share this with the driver when they arrive'
+                          : 'जब ड्राइवर आए तो इसे उनके साथ शेयर करें'}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-green-600 dark:text-green-400 text-center">
+                      {language === 'en'
+                        ? 'OTP will be generated when a driver accepts'
+                        : 'जब ड्राइवर स्वीकार करेगा तब OTP बनाया जाएगा'}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Route Info */}
               <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl">
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <p className="text-[10px] uppercase text-slate-400 font-bold">From</p>
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'From' : 'से'}</p>
                     <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.origin}</p>
                   </div>
                   <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full">
                     <ChevronRight className="w-4 h-4 text-primary-600" />
                   </div>
                   <div className="flex-1 text-right">
-                    <p className="text-[10px] uppercase text-slate-400 font-bold">To</p>
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'To' : 'तक'}</p>
                     <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.destination}</p>
                   </div>
                 </div>
@@ -501,10 +563,14 @@ export default function TrackingPage() {
                   <Shield className="w-6 h-6 text-slate-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-slate-900 dark:text-white">{selectedShipment.driver_name || 'Unknown Driver'}</p>
-                  <p className="text-sm text-slate-500">{selectedShipment.vehicle_number}</p>
+                  <p className="font-medium text-slate-900 dark:text-white">
+                    {selectedShipment.status === 'pending'
+                      ? (language === 'en' ? 'Searching for driver...' : 'ड्राइवर खोज रहे हैं...')
+                      : (jobOffer?.drivers?.full_name || selectedShipment.driver_name || (language === 'en' ? 'Unknown Driver' : 'अज्ञात ड्राइवर'))}
+                  </p>
+                  <p className="text-sm text-slate-500">{selectedShipment.vehicle_number || '—'}</p>
                 </div>
-                {selectedShipment.driver_phone && (
+                {selectedShipment.driver_phone && selectedShipment.status !== 'pending' && (
                   <button
                     onClick={() => handleContactDriver(selectedShipment.driver_phone || undefined)}
                     className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-700"
@@ -518,20 +584,20 @@ export default function TrackingPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
                   <Package className="w-5 h-5 text-slate-400 mb-2" />
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">Weight</p>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'Weight' : 'वजन'}</p>
                   <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_weight ? `${selectedShipment.total_weight} kg` : 'N/A'}</p>
                 </div>
                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
                   <Clock className="w-5 h-5 text-slate-400 mb-2" />
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">Volume</p>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'Volume' : 'वॉल्यूम'}</p>
                   <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_volume ? `${selectedShipment.total_volume} m³` : 'N/A'}</p>
                 </div>
               </div>
 
               {/* Current Location */}
-              {selectedShipment.latitude && selectedShipment.longitude && (
+              {selectedShipment.latitude && selectedShipment.longitude && selectedShipment.status === 'in_transit' && (
                 <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl">
-                  <p className="text-[10px] uppercase text-slate-400 font-bold mb-2">Current Location</p>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold mb-2">{language === 'en' ? 'Current Location' : 'वर्तमान स्थान'}</p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     Lat: {selectedShipment.latitude.toFixed(6)}, Lng: {selectedShipment.longitude.toFixed(6)}
                   </p>
@@ -540,20 +606,20 @@ export default function TrackingPage() {
             </div>
 
             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
-              <button 
+              <button
                 onClick={() => setShowDetailModal(false)}
                 className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
               >
-                Close
+                {language === 'en' ? 'Close' : 'बंद करें'}
               </button>
-              <button 
+              <button
                 onClick={() => {
                   setShowDetailModal(false)
                   navigate(`/tracking`)
                 }}
                 className="flex-[2] px-4 py-3 bg-primary-600 text-white rounded-2xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 transition-all"
               >
-                Track on Map
+                {language === 'en' ? 'Track on Map' : 'मैप पर ट्रैक करें'}
               </button>
             </div>
           </div>

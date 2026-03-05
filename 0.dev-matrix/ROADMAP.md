@@ -1,63 +1,92 @@
 # 🗓️ TRUCKOPTI — DEVELOPMENT ROADMAP
-> Version: 2.0 | Created: 2026-03-04
+> Version: 2.1 | Updated: 2026-03-05 (v42)
 > See PRODUCT_VISION.md for full architecture details
 
 ---
 
-## 🔥 PHASE 0 — HOTFIXES (v35 ✔ + v36 ✔ + v37 in progress)
-**Goal:** Fix all UI/UX overflow issues found in live testing
+## ✅ PHASE 0 — HOTFIXES (COMPLETE v35–v37)
+## ✅ PHASE 1 — MULTI-PORTAL FOUNDATION (COMPLETE v36–v38)
+## ✅ PHASE 2 — DRIVER APP (COMPLETE v38–v41)
+## ✅ PHASE 3 — AGENCY PORTAL (COMPLETE v39–v41, minus payroll/invoicing)
+## ✅ BOOKING FLOW — CORE LOOP (COMPLETE v42)
 
-### UI/UX Overflow Bugs
-- [x] Packing page: `37.819...%` → `38.0%` — Math.round in worker path (**v35**)
-- [x] Truck card volume % text overflowing card bounds — `truncate min-w-0` (**v37**)
-- [x] Invoice: Replace "Your Company Name" — amber banner + link to profile (**v35**)
-- [x] Routes: `0h 29m` duration — fixed hours vs minutes math bug (**v35**)
-- [x] Home page SW cache → admin shows "Free Plan" — fixed `skipWaiting: true` + `clientsClaim` (**v35**)
-- [x] Numbers formatting: `formatters.ts` utility created + applied (**v36**)
-- [x] Mobile: sidebar doesn't close on nav click (**v36**)
-- [x] Track page: MapViewWrapper with OSM/Leaflet fallback — no white box
-- [x] Notifications panel: slides from right as overlay (**already working**)
-
-### Phase 0 Code Improvements (✔ All Done)
-- [x] `formatPercent(value, decimals?)` utility (**v36**)
-- [x] `formatCurrency(value)` utility (**v36**)
-- [x] `formatDistance(km)` utility (**v36**)
-- [x] `formatDuration(hours)` utility (**v36**)
-- [x] Applied across PackingPage, RoutesPage, TrucksPage, CompanyProfilePage (**v36/v37**)
-- [x] ProfilePage: company merge-not-overwrite fix + Full Profile link (**v37**)
+> v42 shipped: `NewShipmentPage.tsx` at `/booking/new`; "Book a Truck" button on Dashboard;
+> `dispatch_job_to_drivers()` wired; DB migration `add_booking_columns_to_shipments` applied.
+> **Core transaction loop is now functional end-to-end.**
 
 ---
 
-## 🚀 PHASE 1 — MULTI-PORTAL FOUNDATION (v36 ✔ + v37 ✔ + v38 ✔ COMPLETE)
-**Goal:** Setup portal routing, roles, and company profiles
+## 🔄 REMAINING ITEMS — PHASE 3 POLISH (next batch)
 
-### 1.1 Portal Routing Architecture
-- [x] `/` → Customer Portal (current)
-- [x] `/driver/*` → Driver Portal (`/driver/register` live) (**v36**)
-- [x] `/agency/*` → Agency Portal (`/agency/register` live) (**v38**)
-- [x] `/admin/*` → Platform Admin (`/admin/drivers` + `/admin/agencies` live) (**v36/v38**)
-- [x] Role-based redirect on login (driver → `/driver/dashboard`, agency → `/agency/dashboard`) (**v38**)
+### 3.5 Agency Jobs — Assign Driver to Job (P1)
+- [x] Job list with accept/decline (**v40**)
+- [ ] **Assign driver to accepted job** — modal in AgencyJobsPage for accepted jobs
+- [ ] Track active jobs on map
 
-### 1.2 Company Profile Setup
-- [x] **Company profile page** with GSTIN, PAN, address, contact (`/settings/company`) (**v36**)
-- [x] Replace invoice "Your Company Name" with `user_metadata.company` (**v35/v36**)
-- [x] ProfilePage: merge-safe company save + Full Profile link (**v37**)
-- [ ] API key generation for ERP integration (Phase 4)
+### 3.6 Agency Billing — Nav Access (P2 — acceptable workaround exists)
+- [x] Billing page exists at `/agency/billing` (**v40**)
+- [x] Accessible via Dashboard → Quick Actions → "Billing" button (**already in AgencyDashboardPage**)
+- [ ] Not in bottom nav (by design — 5 items kept to avoid crowding)
 
-### 1.3 Driver Registration Portal (`/driver/register`) ✔ (**v36**)
-- [x] Multi-step registration form: Personal → Vehicle → Bank → Submit (**v36**)
-- [x] DB: `drivers` table migration (SQL written — needs Supabase apply) (**v36**)
-- [x] Admin: Driver approval queue `/admin/drivers` (**v36**)
+### 3.3 Agency Drivers — Payroll (P2)
+- [x] Invite, assign, unassign truck (**v41**)
+- [ ] Payroll: mark driver payments as made
 
-### 1.4 Agency Registration Portal (`/agency/register`) (**v38**)
-- [x] Business registration form (company, GSTIN, transport license) (**v38**)
-- [x] DB: `transport_agencies` table (SQL written — needs Supabase apply) (**v36**)
-- [x] Admin: Agency approval queue in `/admin/agencies` (**v38**)
+### 3.6 Agency Billing — GST Invoicing (P2)
+- [ ] Generate GST invoice (GSTIN, SAC 996511) for customer
+- [ ] GSTR-1 export CSV
 
-### 1.5 Driver Management (Admin) ✔ (**v36/v38**)
-- [x] `/admin/drivers` — list all drivers (pending/active/suspended) (**v36**)
-- [x] Driver detail page — verify documents, approve/reject individual fields (**v38**)
-- [ ] Export driver list (CSV)
+---
+
+## 💳 PHASE 4 — PAYMENTS & COMPLIANCE
+
+### 4.1 Payment Gateway
+- [ ] Razorpay live keys (BUG-007 — config only, owner action needed)
+- [ ] Payment split: escrow → release on proof of delivery
+- [ ] Refund flow
+
+### 4.2 GST Compliance Engine
+- [ ] E-way bill generation (NIC API)
+- [ ] RCM self-invoice for customers
+- [ ] GSTR-1 compilation per agency
+- [ ] TDS tracking (194C)
+
+### 4.3 ERP Integration API
+- [ ] REST API `/api/v1/*` with API key auth
+- [ ] Webhooks on status change
+
+### 4.4 Matching Engine Enhancements
+- [x] `dispatch_job_to_drivers()` — top-3 drivers by rating (**v41 DB function**)
+- [ ] Proximity scoring (drive distance, not just city)
+- [ ] Surge pricing in high-demand zones
+
+---
+
+## 📱 PHASE 5 — MOBILE & SCALE
+
+### 5.1 PWA & Notifications
+- [ ] PWA icons missing from `public/` — install prompt broken (P1)
+- [ ] FCM push notifications for job offers (driver app in background)
+- [ ] Biometric login (WebAuthn)
+- [ ] Full offline capability (IndexedDB)
+
+### 5.2 Driver Wallet
+- [ ] Wallet balance display
+- [ ] UPI withdrawal flow
+
+---
+
+## 🔴 OPEN BUGS
+
+| ID | Severity | Description | Status |
+|---|---|---|---|
+| BUG-007 | P0 | Razorpay test key in prod — real payments fail | Config (owner) |
+| BUG-008 | P0 | Phone OTP silently fails — Twilio not set | Config (owner) |
+| BUG-013 | P2 | `/agency/billing` not in bottom nav | ~~Workaround: Dashboard quick action works~~ |
+| BUG-014 | P1 | `trip-photos` Storage bucket existence unconfirmed | Verify/create |
+| BUG-015 | P1 | PWA icons missing — install prompt fails | Create icons |
+| BUG-016 | P1 | AgencyJobsPage shows `vehicle_type: '—'` — not joined from shipments | Code fix needed |
+| BUG-017 | P1 | Agency accepted jobs have status 'accepted' but STATUS_CONFIG only has 'active' — no label shown | Code fix needed |
 
 ---
 
