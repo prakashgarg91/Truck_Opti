@@ -83,19 +83,19 @@
 - [x] "Navigate to Pickup" → opens Google Maps / Waze (**v39**)
 - [x] "Arrived at Pickup" button (**v39**)
 - [x] OTP entry (customer gives OTP to driver for verification) (**v39** — auto-generated via DB trigger on accept)
-- [ ] Photo capture (loading photo) — UI placeholder in place, camera capture Phase 5
+- [x] Photo capture (loading photo) — real `<input capture="environment">` + Supabase Storage (**v41**)
 - [x] "Start Journey" (**v39**)
 - [x] Live location sharing begins (**v39** — GPS watchPosition while in_transit)
 - [x] "Arrived at Destination" (**v39**)
-- [ ] Photo capture (delivery photo) — UI placeholder in place
+- [x] Photo capture (delivery photo) — real camera capture + Storage upload (**v41**)
 - [x] Recipient OTP/signature (**v39**)
 - [x] "Complete Delivery" (**v39** — clears active_job_id, increments total_trips)
 
-### 2.4 Driver Live Location ✔ (**v39**)
+### 2.4 Driver Live Location ✔ (**v39/v40**)
 - [x] `navigator.geolocation.watchPosition()` when on active trip (**v39**)
 - [x] Supabase upsert to `driver_locations` every update (**v39**)
-- [ ] Customer portal subscribes via Supabase Realtime
-- [ ] Map marker moves in real-time for customer
+- [x] Customer portal subscribes via Supabase Realtime (**v40** — sync_driver_location_to_shipment DB trigger + TrackingPage Realtime sub)
+- [x] Map marker moves in real-time for customer (**v40** — TrackingPage invalidates query on every shipment change)
 
 ### 2.5 Driver Earnings & Wallet (**v38 partial**)
 - [x] Earnings breakdown per trip (**v38**)
@@ -121,22 +121,25 @@
 - [ ] Truck assignment to driver
 - [x] agency_trucks table in DB + RLS (**v40**)
 
-### 3.3 Driver Management (`/agency/drivers`)
-- [ ] Invite driver (SMS with registration link)
-- [ ] View assigned trucks
-- [ ] Driver performance (trips, rating, earnings)
+### 3.3 Driver Management (`/agency/drivers`) (**v41 partial**)
+- [x] Invite driver (clipboard copy of `/driver/register?ref={agencyId}`) (**v41**)
+- [x] View assigned trucks + assign/unassign modal (**v41**)
+- [x] Driver performance (trips, rating, online status) (**v41**)
 - [ ] Payroll: mark payments as made
+- [ ] SMS invite (Twilio — blocked by BUG-008)
 
-### 3.4 Rate Card Management (`/agency/rates`)
-- [ ] Add rate: route + truck type + price
-- [ ] List all active rates
+### 3.4 Rate Card Management (`/agency/rates`) ✔ (**v41**)
+- [x] Add rate: route + truck type + price (**v41**)
+- [x] List all active rates (**v41**)
+- [x] Active/inactive toggle per rate card (**v41**)
+- [x] agency_rate_cards table in DB + RLS (**v41**)
 - [ ] Seasonal pricing rules
-- [ ] Rate visibility toggle (public/private)
+- [ ] Rate visibility toggle (public/private) — currently all active rates are public read
 
-### 3.5 Job Management (`/agency/jobs`) ✔ (**v40 full DB**)
+### 3.5 Job Management (`/agency/jobs`) (**v40 full DB; assign pending**)
 - [x] Job list with filter tabs (all/active/pending/completed/cancelled) (**v40**)
 - [x] Accept/decline with DB status update (**v40**)
-- [ ] Assign to specific driver
+- [ ] Assign to specific driver (**BATCH8 P1**)
 - [ ] Track all active jobs
 - [ ] Job history
 

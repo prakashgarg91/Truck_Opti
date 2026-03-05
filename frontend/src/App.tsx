@@ -57,6 +57,7 @@ const AgencyJobsPage = React.lazy(() => import('./pages/AgencyJobsPage'))
 const AgencyBillingPage = React.lazy(() => import('./pages/AgencyBillingPage'))
 const AgencyDriversPage = React.lazy(() => import('./pages/AgencyDriversPage'))
 const AgencyRatesPage = React.lazy(() => import('./pages/AgencyRatesPage'))
+const NewShipmentPage = React.lazy(() => import('./pages/NewShipmentPage'))
 
 // Role-based home: redirects drivers/agencies to their portal, customers to Dashboard
 function RoleHome() {
@@ -68,12 +69,12 @@ function RoleHome() {
 
 function AppContent() {
   const { initialize } = useAuthStore()
-  
+
   // Initialize auth state on app mount
   useEffect(() => {
     initialize()
   }, [initialize])
-  
+
   return (
     <ErrorBoundary>
       <Suspense fallback={<PageSkeleton />}>
@@ -97,7 +98,7 @@ function AppContent() {
             <Route path="/test-payment" element={<TestPaymentPage />} />
           )}
         </Route>
-        
+
         {/* Protected routes - require authentication */}
         <Route element={
           <ProtectedRoute>
@@ -108,6 +109,7 @@ function AppContent() {
           <Route path="/packing" element={<PackingPage />} />
           <Route path="/routes" element={<RoutesPage />} />
           <Route path="/tracking" element={<TrackingPage />} />
+          <Route path="/booking/new" element={<NewShipmentPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/management" element={<ManagementPage />} />
           <Route path="/management/trucks" element={<TrucksPage />} />
@@ -146,7 +148,7 @@ function AppContent() {
           <Route path="/agency/drivers" element={<AgencyDriversPage />} />
           <Route path="/agency/rates" element={<AgencyRatesPage />} />
         </Route>
-        
+
         {/* Catch all - show 404 page */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

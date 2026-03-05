@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, FileText, Calculator, Upload } from 'lucide-react'
+import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, FileText, Calculator } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
@@ -12,8 +12,8 @@ import { calculateShipmentCost, formatCost } from '../utils/costEngine'
 const StatsSkeleton = memo(() => (
   <div className="grid grid-cols-2 gap-3">
     {Array.from({ length: 4 }).map((_, index) => (
-      <div 
-        key={index} 
+      <div
+        key={index}
         className="card p-4 animate-pulse"
         style={{ animationDelay: `${index * 100}ms` }}
       >
@@ -71,7 +71,7 @@ interface DashboardData {
 
 const TRUCK_TYPES = [
   'Tata Ace',
-  'Eicher 14ft', 
+  'Eicher 14ft',
   'Eicher 19ft',
   'BharatBenz 32ft'
 ]
@@ -108,7 +108,7 @@ const fetchDashboardData = async (language: string): Promise<DashboardData> => {
   let activities = recentJobs.map((job: PackingJob) => ({
     id: job.id || '',
     type: 'packing',
-    message: language === 'en' 
+    message: language === 'en'
       ? `Packing job completed - ${job.volume_utilization}% volume utilized`
       : `पैकिंग जॉब पूर्ण - ${job.volume_utilization}% वॉल्यूम उपयोग`,
     time: getRelativeTime(new Date(job.created_at || Date.now()), language),
@@ -177,8 +177,8 @@ export default function Dashboard() {
   }, [language])
 
   // React Query: Fetch dashboard data
-  const { 
-    data: dashboardData, 
+  const {
+    data: dashboardData,
     isLoading: loading,
     isError: loadError
   } = useQuery({
@@ -198,33 +198,33 @@ export default function Dashboard() {
   const pendingOptimizations = dashboardData?.pendingOptimizations || 0
 
   const statsConfig = [
-    { 
-      label: language === 'en' ? 'Active Shipments' : 'सक्रिय शिपमेंट', 
-      value: stats.activeShipments.toString(), 
-      icon: Package, 
-      color: 'from-blue-500 to-blue-600', 
-      change: '+0' 
+    {
+      label: language === 'en' ? 'Active Shipments' : 'सक्रिय शिपमेंट',
+      value: stats.activeShipments.toString(),
+      icon: Package,
+      color: 'from-blue-500 to-blue-600',
+      change: '+0'
     },
-    { 
-      label: language === 'en' ? 'Trucks Available' : 'उपलब्ध ट्रक', 
-      value: stats.trucksCount.toString(), 
-      icon: Truck, 
-      color: 'from-green-500 to-green-600', 
-      change: `+${stats.trucksCount}` 
+    {
+      label: language === 'en' ? 'Trucks Available' : 'उपलब्ध ट्रक',
+      value: stats.trucksCount.toString(),
+      icon: Truck,
+      color: 'from-green-500 to-green-600',
+      change: `+${stats.trucksCount}`
     },
-    { 
-      label: language === 'en' ? 'Routes Today' : 'आज के रूट', 
-      value: stats.routesToday.toString(), 
-      icon: Route, 
-      color: 'from-orange-500 to-orange-600', 
-      change: '+0' 
+    {
+      label: language === 'en' ? 'Routes Today' : 'आज के रूट',
+      value: stats.routesToday.toString(),
+      icon: Route,
+      color: 'from-orange-500 to-orange-600',
+      change: '+0'
     },
-    { 
-      label: language === 'en' ? 'Deliveries Done' : 'डिलीवरी पूर्ण', 
-      value: stats.deliveriesDone.toString(), 
-      icon: MapPin, 
-      color: 'from-purple-500 to-purple-600', 
-      change: '+0' 
+    {
+      label: language === 'en' ? 'Deliveries Done' : 'डिलीवरी पूर्ण',
+      value: stats.deliveriesDone.toString(),
+      icon: MapPin,
+      color: 'from-purple-500 to-purple-600',
+      change: '+0'
     },
   ]
 
@@ -232,9 +232,9 @@ export default function Dashboard() {
     { icon: Package, label: language === 'en' ? '3D Pack' : 'पैकिंग', path: '/packing', color: 'bg-blue-500', description: language === 'en' ? 'Optimize loading' : 'लोडिंग अनुकूलित करें' },
     { icon: Route, label: language === 'en' ? 'Routes' : 'रूट', path: '/routes', color: 'bg-green-500', description: language === 'en' ? 'Plan delivery' : 'डिलीवरी प्लान' },
     { icon: MapPin, label: language === 'en' ? 'Track' : 'ट्रैक', path: '/tracking', color: 'bg-orange-500', description: language === 'en' ? 'Live GPS' : 'लाइव जीपीएस' },
-    { icon: Upload, label: language === 'en' ? 'Import' : 'आयात', path: '/sale-orders', color: 'bg-purple-500', description: language === 'en' ? 'Sale orders' : 'सेल ऑर्डर्स' },
+    { icon: Truck, label: language === 'en' ? 'Book Truck' : 'ट्रक बुक', path: '/booking/new', color: 'bg-indigo-500', description: language === 'en' ? 'New booking' : 'नई बुकिंग' },
   ]
-  
+
   const updateCostEstimate = () => {
     const result = calculateShipmentCost({
       distanceKm: costEstimate.distance,
@@ -250,10 +250,10 @@ export default function Dashboard() {
       <div className="p-4 space-y-6 pb-8">
         {/* Welcome Section Skeleton */}
         <div className="bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700 rounded-3xl p-6 h-40 animate-pulse" />
-        
+
         {/* Stats Skeleton */}
         <StatsSkeleton />
-        
+
         {/* Quick Actions Skeleton */}
         <div className="grid grid-cols-3 gap-3">
           {Array.from({ length: 3 }).map((_, index) => (
@@ -263,7 +263,7 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-        
+
         {/* Recent Activity Skeleton */}
         <div>
           <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded mb-4" />
@@ -272,7 +272,7 @@ export default function Dashboard() {
       </div>
     )
   }
-  
+
   return (
     <div className="p-4 space-y-6 pb-8">
       {/* Welcome Section */}
@@ -280,13 +280,13 @@ export default function Dashboard() {
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-saffron/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-xl" />
-        
+
         <div className="relative">
           <p className="text-primary-200 text-sm font-medium">{greeting} 👋</p>
           <h1 className="text-2xl font-bold mt-1">
             {user?.name || user?.email?.split('@')[0] || 'User'}
           </h1>
-          
+
           {/* Notification Badge */}
           {pendingOptimizations > 0 && (
             <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur rounded-full text-sm">
@@ -294,18 +294,25 @@ export default function Dashboard() {
               <span>{pendingOptimizations} pending {pendingOptimizations === 1 ? 'optimization' : 'optimizations'}</span>
             </div>
           )}
-          
-          <div className="mt-5 flex gap-3">
-            <button 
+
+          <div className="mt-5 flex gap-3 flex-wrap">
+            <button
+              onClick={() => navigate('/booking/new')}
+              className="btn bg-white text-primary-700 hover:bg-primary-50 shadow-lg shadow-primary-900/30"
+            >
+              <Truck className="w-4 h-4" />
+              Book a Truck
+            </button>
+            <button
               onClick={() => navigate('/packing')}
               className="btn bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/20 shadow-lg"
             >
               <Package className="w-4 h-4" />
               New Packing
             </button>
-            <button 
+            <button
               onClick={() => navigate('/routes')}
-              className="btn bg-white text-primary-700 hover:bg-primary-50 shadow-lg shadow-primary-900/30"
+              className="btn bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border border-white/20 shadow-lg"
             >
               <Route className="w-4 h-4" />
               Plan Route
@@ -313,7 +320,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      
+
       {/* Stats Grid */}
       {loading ? (
         <StatsSkeleton />
@@ -349,7 +356,7 @@ export default function Dashboard() {
           ))}
         </div>
       )}
-      
+
       {/* Quick Actions */}
       <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
         <div className="flex items-center justify-between mb-4">
@@ -358,7 +365,7 @@ export default function Dashboard() {
           </h3>
           <Zap className="w-5 h-5 text-saffron" />
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {quickActions.map((action, index) => (
             <button
               key={action.label}
@@ -380,7 +387,7 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
-      
+
       {/* Quick Cost Estimate */}
       <div className="card p-5 animate-slide-up" style={{ animationDelay: '250ms' }}>
         <div className="flex items-center gap-2 mb-4">
@@ -389,7 +396,7 @@ export default function Dashboard() {
             {language === 'en' ? 'Quick Cost Estimate' : 'त्वरित लागत अनुमान'}
           </h3>
         </div>
-        
+
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div>
             <label className="text-xs text-slate-500 block mb-1">{language === 'en' ? 'Distance (km)' : 'दूरी (किमी)'}</label>
@@ -431,7 +438,7 @@ export default function Dashboard() {
             />
           </div>
         </div>
-        
+
         <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-slate-600 dark:text-slate-400">{language === 'en' ? 'Total Estimate' : 'कुल अनुमान'}</span>
@@ -457,14 +464,14 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      
+
       {/* Recent Sale Orders */}
       <div className="animate-slide-up" style={{ animationDelay: '275ms' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
             {language === 'en' ? 'Recent Sale Orders' : 'हाल के सेल ऑर्डर्स'}
           </h3>
-          <button 
+          <button
             onClick={() => navigate('/sale-orders')}
             className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
           >
@@ -472,7 +479,7 @@ export default function Dashboard() {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        
+
         {recentSaleOrders.length === 0 ? (
           <div className="card p-6 text-center">
             <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
@@ -489,7 +496,7 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-3">
             {recentSaleOrders.map(order => (
-              <div 
+              <div
                 key={order.id}
                 onClick={() => navigate('/sale-orders')}
                 className="card p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50"
@@ -529,8 +536,8 @@ export default function Dashboard() {
         </div>
         <div className="card overflow-hidden">
           {recentActivity.map((activity, index) => (
-            <div 
-              key={activity.id} 
+            <div
+              key={activity.id}
               className={`p-4 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer ${
                 index !== recentActivity.length - 1 ? 'border-b border-slate-100 dark:border-slate-700' : ''
               }`}
@@ -560,7 +567,7 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
-      
+
       {/* Performance Chart */}
       <div className="card p-5 animate-slide-up" style={{ animationDelay: '400ms' }}>
         <div className="flex items-center justify-between mb-4">
@@ -603,7 +610,7 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
-      
+
       {/* Pro Tip Card */}
       <div className="card p-4 bg-gradient-to-r from-saffron/10 to-orange-50 dark:from-saffron/20 dark:to-orange-900/20 border-saffron/30 animate-fade-in">
         <div className="flex items-start gap-3">

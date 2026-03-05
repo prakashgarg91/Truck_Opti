@@ -37,7 +37,8 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `SONNET-003` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 2 driver app, Phase 3 agency portal | 2026-03-05 | ✅ Active |
+| `SONNET-004` | LEAD | Claude Sonnet 4.6 | Full-stack | BATCH8 - Booking flow (Task 1) | 2026-03-05 | ✅ Active |
+| `SONNET-003` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 2 driver app, Phase 3 agency portal | 2026-03-05 | 🔴 Offline |
 | `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Gaps+bugs audit, v37-v38 complete | 2026-03-05 | 🔴 Offline |
 | `SONNET-001` | LEAD | Claude Sonnet 4.6 | Full-stack + Testing | v35 deploy + UI/UX fixes | 2026-03-04 | 🔴 Offline |
 | `OPUS-002` | LEAD | Claude Opus 4.5 | Full-stack | Framework testing | 2026-01-11 | 🔴 Offline |
@@ -60,6 +61,54 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-05 20:00] SONNET-003: 🚀 v41 DEPLOYED — Agency Drivers/Rates Pages + Photo Capture + Rate Cards DB
+                             commit: cbd35bae | Heroku Released v41
+
+                             SUPABASE MIGRATION APPLIED (via MCP):
+                             ✅ phase3_rate_cards_and_dispatch:
+                                  agency_rate_cards table (vehicle_type, origin_city, dest_city,
+                                    rate_per_km, flat_rate, min/max_weight_kg, is_active,
+                                    valid_from/until, notes) + RLS (owner CRUD + public read active)
+                                  dispatch_job_to_drivers(p_shipment_id UUID, p_vehicle_type TEXT)
+                                    → SECURITY DEFINER function; deletes expired offers then inserts
+                                      up to 3 job_offers for top online+approved+available drivers
+                                    → Called via supabase.rpc('dispatch_job_to_drivers', {...})
+
+                             NEW FILES CREATED (2):
+                             ✅ frontend/src/pages/AgencyDriversPage.tsx (/agency/drivers)
+                                  Lists drivers via agency_trucks JOIN drivers
+                                  Assign/unassign truck modal, invite-link clipboard copy
+                                  Call button (tel: link), unassigned trucks warning panel
+                             ✅ frontend/src/pages/AgencyRatesPage.tsx (/agency/rates)
+                                  Full CRUD on agency_rate_cards
+                                  Active/inactive toggle, add-form, delete with confirm
+
+                             FILES UPDATED (3):
+                             ✅ DriverTripPage.tsx — Real photo capture: <input type="file" capture="environment">
+                                  Uploads to Supabase Storage 'trip-photos' bucket
+                                  Updates job_offers.photo_loading_url / photo_delivery_url
+                                  Works on both loading_photo + delivery_photo steps
+                             ✅ App.tsx — Added lazy imports + routes for /agency/drivers + /agency/rates
+                             ✅ AgencyLayout.tsx — Bottom nav updated: Home, Fleet, Drivers, Jobs, Rates
+                                  (removed Billing from nav; added Drivers + Rates with Users/Tag icons)
+
+                             ⚠️  CRITICAL READINESS ASSESSMENT (post v41):
+                             ❌ NO BOOKING FLOW — the entire customer→driver transaction loop is MISSING.
+                                  Customers have NO way to create a new shipment/booking.
+                                  dispatch_job_to_drivers() exists in DB but NOTHING calls it.
+                                  All three portals are fully built but the core loop is broken:
+                                  Customer books → Agency/Driver notified → Trip → Payment
+                                  ^^^^^^^^^^^^^ THIS STEP DOES NOT EXIST ^^^^^^^^^^^^^
+                             ❌ trip-photos Storage bucket — not confirmed to exist in Supabase
+                             ❌ BUG-007: Razorpay — still test keys, real payments fail
+                             ❌ BUG-008: Phone OTP silently fails — Twilio not configured
+                             ❌ PWA icons missing from public/ — install prompt fails
+                             ❌ No push notifications (FCM) — job offers missed when driver app is closed
+                             ❌ Agency 'Assign driver to job' not wired (AgencyJobsPage has no assign button)
+
+                             STATUS: v41 Released at Heroku 2026-03-05 ~20:00 IST
+                             NEXT: Build booking flow — see BATCH8_AGENT_CONTINUATION_PROMPT.md
+───────────────────────────────────────────────────────────────────────
 [2026-03-05 18:00] SONNET-003: 🚀 v40 DEPLOYED — Phase 3 Full DB Impl + GPS tracking sync + Admin CSV
 
                              SUPABASE MIGRATIONS APPLIED (via MCP):
