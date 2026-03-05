@@ -19,7 +19,9 @@ import {
   Trash2,
   Loader2,
   FileText,
-  Wrench
+  Wrench,
+  Building2,
+  ShieldCheck
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
@@ -494,6 +496,7 @@ export default function MobileLayout() {
               <NavLink
                 key={item.path}
                 to={item.path}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) => clsx(
                   "flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group",
                   isActive
@@ -520,6 +523,19 @@ export default function MobileLayout() {
               <span className="font-medium">{language === 'en' ? 'Management' : 'प्रबंधन'}</span>
             </button>
 
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => {
+                  navigate('/admin/drivers')
+                  setSidebarOpen(false)
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+              >
+                <ShieldCheck className="w-5 h-5" />
+                <span className="font-medium">{language === 'en' ? 'Driver Approvals' : 'ड्राइवर अनुमोदन'}</span>
+              </button>
+            )}
+
             <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-3">
                 {language === 'en' ? 'Settings' : 'सेटिंग्स'}
@@ -533,6 +549,16 @@ export default function MobileLayout() {
               >
                 <CreditCard className="w-5 h-5" />
                 <span className="font-medium">{language === 'en' ? 'Subscription' : 'सदस्यता'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/settings/company')
+                  setSidebarOpen(false)
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <Building2 className="w-5 h-5" />
+                <span className="font-medium">{language === 'en' ? 'Company Profile' : 'कंपनी प्रोफाइल'}</span>
               </button>
               <button
                 onClick={() => {

@@ -4,30 +4,30 @@
 
 ---
 
-## 🔥 PHASE 0 — HOTFIXES (This Week)
+## 🔥 PHASE 0 — HOTFIXES (v35 ✔ Shipped + v36 in progress)
 **Goal:** Fix all UI/UX overflow issues found in live testing
 
-### UI/UX Overflow Bugs (v35)
-- [ ] Packing page: `37.819...%` → `38.0%` (all long decimals truncated)
-- [ ] Truck card volume % text overflowing card bounds
-- [ ] Invoice: Replace "Your Company Name" with company profile lookup
-- [ ] Routes: `0h 29m` duration — compute realistically (avg 60km/h)
-- [ ] Home page SW cache → admin shows "Free Plan" — fix SW skip-waiting
-- [ ] Numbers formatting: create `formatters.ts` utility used everywhere
-- [ ] Mobile: sidebar doesn't close on nav click (mobile UX)
-- [ ] Track page: Google Maps error shown as large white box — graceful fallback
-- [ ] Notifications panel: should slide from right as overlay, not push content
+### UI/UX Overflow Bugs
+- [x] Packing page: `37.819...%` → `38.0%` — Math.round in worker path (**v35**)
+- [ ] Truck card volume % text overflowing card bounds (minor — v36)
+- [x] Invoice: Replace "Your Company Name" — amber banner + link to profile (**v35**)
+- [x] Routes: `0h 29m` duration — fixed hours vs minutes math bug (**v35**)
+- [x] Home page SW cache → admin shows "Free Plan" — fixed `skipWaiting: true` + `clientsClaim` (**v35**)
+- [ ] Numbers formatting: create `formatters.ts` utility (**v36 in progress**)
+- [ ] Mobile: sidebar doesn't close on nav click (**v36 in progress**)
+- [x] Track page: MapViewWrapper with OSM/Leaflet fallback — no white box
+- [x] Notifications panel: slides from right as overlay (translate-x-full → translate-x-0) (**already working**)
 
-### Immediate Code Improvements
-- [ ] `formatPercent(value: number, decimals = 1)` utility
-- [ ] `formatCurrency(value: number)` utility  
-- [ ] `formatDistance(km: number)` utility
-- [ ] `formatDuration(minutes: number)` utility
+### Phase 0 Code Improvements (v36)
+- [ ] `formatPercent(value, decimals?)` utility
+- [ ] `formatCurrency(value)` utility
+- [ ] `formatDistance(km)` utility
+- [ ] `formatDuration(hours)` utility
 - [ ] Apply across Pack, Invoice, Routes, Home pages
 
 ---
 
-## 🚀 PHASE 1 — MULTI-PORTAL FOUNDATION (Weeks 1–4)
+## 🚀 PHASE 1 — MULTI-PORTAL FOUNDATION (v36 — in progress)
 **Goal:** Setup portal routing, roles, and company profiles
 
 ### 1.1 Portal Routing Architecture
@@ -38,22 +38,20 @@
 - [ ] Role-based redirect on login (driver → `/driver/dashboard`, agency → `/agency/dashboard`)
 
 ### 1.2 Company Profile Setup
-- [ ] **Onboarding wizard** for new customers (company name, GSTIN, address)
-- [ ] **Company profile page** (`/settings/company`)
-- [ ] Replace invoice "Your Company Name" with actual company data
+- [ ] **Onboarding wizard** for new customers (`/settings/company`)
+- [ ] Company profile page with GSTIN, address, logo
+- [ ] Replace invoice "Your Company Name" with actual company data (DB lookup)
 - [ ] API key generation for ERP integration
 
-### 1.3 Driver Registration Portal (`/driver/register`)
+### 1.3 Driver Registration Portal (`/driver/register`) — **v36 in progress**
 - [ ] Multi-step registration form:
-  - Step 1: Phone OTP verification (primary auth)
+  - Step 1: Phone OTP verification
   - Step 2: Personal details (name, Aadhaar last 4)
   - Step 3: Vehicle details (type, RC number, capacity)
-  - Step 4: Document upload (DL, RC, Insurance, Fitness)
-  - Step 5: Bank details (account + IFSC)
-  - Step 6: Selfie photo
-  - Step 7: Submission → "Under Review" state
-- [ ] DB: `drivers` table + initial migration
-- [ ] Admin: Driver approval queue in `/admin/drivers`
+  - Step 4: Bank details (account + IFSC)
+  - Step 5: Submission → "Under Review" state
+- [ ] DB: `drivers` table migration (Supabase)
+- [ ] Admin: Driver approval queue `/admin/drivers` **v36 in progress**
 
 ### 1.4 Agency Registration Portal (`/agency/register`)
 - [ ] Business registration form (company, GSTIN, transport license)
@@ -63,7 +61,6 @@
 ### 1.5 Driver Management (Admin)
 - [ ] `/admin/drivers` — list all drivers (pending/active/suspended)
 - [ ] Driver detail page — verify documents, approve/reject
-- [ ] Driver edit — suspend, reactivate
 - [ ] Export driver list (CSV)
 
 ---

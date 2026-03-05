@@ -14,6 +14,7 @@ import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
 import { usePackingWorker } from '../hooks/usePackingWorker'
 import { useSubscription } from '../hooks/useSubscription'
 import { logger } from '../utils/logger'
+import { formatPercent, formatCurrency } from '../utils/formatters'
 
 // ============= LANGUAGE =============
 type Language = 'en' | 'hi'
@@ -481,9 +482,9 @@ const PackingStats = memo(({
 }) => {
   const stats = useMemo(() => ({
     itemsPacked: `${selectedRecommendation.itemsFit}/${selectedRecommendation.totalItems}`,
-    volumeUsed: `${selectedRecommendation.volumeUtilization}%`,
-    weightUsed: `${selectedRecommendation.weightUtilization}%`,
-    estCost: `₹${selectedRecommendation.estimatedCost}`,
+    volumeUsed: formatPercent(selectedRecommendation.volumeUtilization),
+    weightUsed: formatPercent(selectedRecommendation.weightUtilization),
+    estCost: formatCurrency(selectedRecommendation.estimatedCost),
     unfitItems: selectedRecommendation.unfitItems
   }), [selectedRecommendation])
 
@@ -564,12 +565,12 @@ const RecommendationCard = memo(({
                 style={{ width: `${Math.min(rec.volumeUtilization, 100)}%` }}
               />
             </div>
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{rec.volumeUtilization}%</span>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{formatPercent(rec.volumeUtilization)}</span>
           </div>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-slate-500">{t[lang].estCost}</span>
-          <span className="font-medium text-slate-900 dark:text-white">₹{rec.estimatedCost}</span>
+          <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(rec.estimatedCost)}</span>
         </div>
       </div>
       {rec.unfitItems.length > 0 && (

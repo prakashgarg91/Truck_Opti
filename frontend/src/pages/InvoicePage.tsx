@@ -160,7 +160,9 @@ export default function InvoicePage() {
           date: new Date().toISOString(),
           companyName: companyInfo.name || 'Your Company Name',
           companyGstin: companyInfo.gstin || '',
-          companyAddress: companyInfo.address || '',
+          companyAddress: companyInfo.address ||
+            [companyInfo.address_line1, companyInfo.address_line2, companyInfo.city, companyInfo.state, companyInfo.pincode]
+              .filter(Boolean).join(', ') || '',
           shipperName: data.origin || 'Unknown',
           shipperAddress: data.origin || '',
           consigneeName: data.destination || 'Unknown',
@@ -284,7 +286,7 @@ export default function InvoicePage() {
           <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-amber-800">Company profile incomplete</p>
-            <p className="text-xs text-amber-600 mt-0.5">Your company name, GSTIN and address will appear on all invoices. <button onClick={() => navigate('/settings')} className="underline font-medium">Complete your profile →</button></p>
+            <p className="text-xs text-amber-600 mt-0.5">Your company name, GSTIN and address will appear on all invoices. <button onClick={() => navigate('/settings/company')} className="underline font-medium">Complete your profile →</button></p>
           </div>
         </div>
       )}

@@ -39,6 +39,9 @@ const TestPaymentPage = import.meta.env.DEV
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'))
 const TermsPage = React.lazy(() => import('./pages/TermsPage'))
 const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'))
+const DriverRegisterPage = React.lazy(() => import('./pages/DriverRegisterPage'))
+const CompanyProfilePage = React.lazy(() => import('./pages/CompanyProfilePage'))
+const AdminDriversPage = React.lazy(() => import('./pages/AdminDriversPage'))
 
 function AppContent() {
   const { initialize } = useAuthStore()
@@ -65,6 +68,7 @@ function AppContent() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/subscription" element={<Navigate to="/pricing" replace />} />
+          <Route path="/driver/register" element={<DriverRegisterPage />} />
           {import.meta.env.DEV && (
             <Route path="/test-payment" element={<TestPaymentPage />} />
           )}
@@ -87,6 +91,8 @@ function AppContent() {
           <Route path="/management/customers" element={<CustomersPage />} />
           <Route path="/sale-orders" element={<SaleOrdersPage />} />
           <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
+          <Route path="/settings/company" element={<CompanyProfilePage />} />
+          <Route path="/admin/drivers" element={<AdminDriversPage />} />
         </Route>
         
         {/* Catch all - show 404 page */}

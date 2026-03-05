@@ -36,11 +36,10 @@
 > **Register here when you start working. Remove when you leave.**
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
-|----------|------|-------|-----------|------------|-------|--------|
-| `SONNET-001` | LEAD | Claude Sonnet 4.6 | Full-stack + Testing | Browser smoke test + domain fix | 2026-03-03 | ✅ Active |
-| `OPUS-002` | LEAD | Claude Opus 4.5 | Full-stack | Framework testing | 2026-01-11 16:24 | 🔴 Offline |
-| `HAIKU-002` | TEST | Claude Haiku 4.5 | End-User Testing | Phase 1-11 Testing | 2026-01-11 17:25 | 🔴 Offline |
-| `HAIKU-001` | TEST | Claude Haiku 4.5 | End-User Testing | Test Execution | 2026-01-11 16:35 | 🔴 Offline |
+|----------|------|-------|-----------|------------|-------|---------|
+| `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 0 fixes + Phase 1 driver module | 2026-03-05 | ✅ Active |
+| `SONNET-001` | LEAD | Claude Sonnet 4.6 | Full-stack + Testing | v35 deploy + UI/UX fixes | 2026-03-04 | 🔴 Offline |
+| `OPUS-002` | LEAD | Claude Opus 4.5 | Full-stack | Framework testing | 2026-01-11 | 🔴 Offline |
 
 ### How to Register
 ```markdown
@@ -60,6 +59,22 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-05 00:00] SONNET-002: 🚀 v35 DEPLOYED — Phase 0 UI Fixes Complete
+                             
+                             FIXES SHIPPED IN v35:
+                             ✅ SW skipWaiting + clientsClaim → no more stale JS served after deploy
+                             ✅ RoutesPage duration math: total_time stored in hours, was treated as minutes
+                                 Fixed: 0h 29m → 28h 42m (correct for 1148 km @ 40 km/h)
+                             ✅ PackingPage worker path: volumeUtilization/weightUtilization now Math.round()
+                             ✅ InvoicePage: amber banner + 'Complete your profile →' link when company name missing
+                             ✅ PRODUCT_VISION.md + ROADMAP.md created (350+ + 250+ lines)
+                             
+                             CURRENTLY WORKING ON (v36):
+                             🔄 formatters.ts utility (formatPercent, formatCurrency, formatDistance, formatDuration)
+                             🔄 Sidebar NavLink: doesn't call setSidebarOpen(false) on click — fixing now
+                             🔄 Phase 1: Driver registration multi-step page
+                             🔄 Phase 1: Company profile onboarding wizard
+───────────────────────────────────────────────────────────────────────
 [2026-03-03 20:00] SONNET-001: 🚀 PRODUCTION DEPLOYMENT COMPLETE
                              
                              ALL 3 MANUAL BLOCKERS RESOLVED (MCP-assisted):
@@ -286,10 +301,10 @@ STATUS: 🟡 IN PROGRESS
 | Apex Domain HTTPS | 200 | 200 | ✅ |
 | WWW Domain HTTPS | 200 | 200 | ✅ |
 | Heroku ACM Coverage | 2/2 | 2/2 | ✅ |
-| Heroku Code Sync | 0% (stale) | 100% | ❌ Needs deploy |
-| Supabase Auth Site URL | Wrong | truckopti.in | ❌ Needs manual fix |
+| Heroku Code Sync | v35 | Latest | ✅ Deployed 2026-03-04 |
+| Supabase Auth Site URL | truckopti.in | truckopti.in | ✅ Fixed (v22 session) |
 | OG Tags Domain | truckopti.in | truckopti.in | ✅ |
-| Launch Checklist Completion | 29/40 | 40/40 | ⚠️ |
+| Launch Checklist Completion | 32/40 | 40/40 | ⚠️ Phase 1 in progress |
 
 ---
 
@@ -299,8 +314,8 @@ STATUS: 🟡 IN PROGRESS
 
 | ID | Severity | Description | Status |
 |----|----------|-------------|--------|
-| BUG-004 | 🔴 CRITICAL | Heroku deployment stale (7 commits behind) — run `heroku login && git push heroku main` | Open |
-| BUG-005 | 🔴 CRITICAL | Supabase Site URL = Heroku URL — auth emails send OTP links to Heroku, not truckopti.in | Open |
+| BUG-004 | ✅ FIXED | Heroku v35 deployed 2026-03-04 — all Phase 0 fixes live | Fixed |
+| BUG-005 | ✅ FIXED | Supabase Site URL = https://www.truckopti.in — fixed in v22 session | Fixed |
 | BUG-007 | 🔴 CRITICAL | `VITE_RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXX` placeholder — payment flow non-functional | Open |
 | BUG-008 | 🟠 HIGH | SMS/WhatsApp OTP non-functional — Twilio not configured in Supabase. Error now shown to user (fixed), but Twilio setup needed | Partial |
 | BUG-006 | 🟡 LOW | apple-mobile-web-app-capable meta tag deprecated (mobile-web-app-capable added as fallback) | Fixed |
@@ -348,9 +363,12 @@ python interactive_webapp_test.py
 
 | Version | Date | Deployer | Status | Notes |
 |---------|------|----------|--------|-------|
+| v35 (9a3de66d) | 2026-03-04 | SONNET-001/002 | ✅ Success | SW skipWaiting, route duration fix, packing vol%, invoice company banner |
+| v34 (780bd70a) | 2026-03-04 | SONNET-001 | ✅ Success | sale_order_items order_id fix, auto product_code |
+| v33 | 2026-03-04 | SONNET-001 | ✅ Success | JWT admin role detection |
+| v22 | 2026-03-03 | SONNET-001 | ✅ Success | .slugignore (843→337 MB), BATCH5/6/7 live |
 | 9fa22858 | 2026-02-22 | GPT-5.3-Codex | ✅ Success | Added bug-mapper utilities |
 | 212c5325 | 2026-02-22 | GPT-5.3-Codex | ✅ Success | Profile page company info enhancements |
-| 4aaac9d7 | 2026-02-22 | GPT-5.3-Codex | ✅ Success | Auth/domain flow + live button audits |
 
 ---
 
@@ -381,4 +399,4 @@ If stuck:
 
 ---
 
-**Last Updated:** 2026-01-11 17:00 by HAIKU-001 (End-User Testing Phase)
+**Last Updated:** 2026-03-05 by SONNET-002 (Phase 0 fixes complete; Phase 1 driver module in progress)

@@ -5,6 +5,7 @@ import { routesSupabaseApi } from '../services/supabaseApi'
 import { logger } from '../utils/logger'
 import { useSubscription } from '../hooks/useSubscription'
 import MapViewWrapper from '../components/MapViewWrapper'
+import { formatDistance, formatDuration, formatCurrency } from '../utils/formatters'
 
 // Major Indian cities with their coordinates
 const CITY_COORDINATES: Record<string, [number, number]> = {
@@ -333,15 +334,15 @@ export default function RoutesPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs">
               <TrendingUp className="w-3 h-3 text-slate-400" />
-              <span className="text-slate-600 dark:text-slate-300">Total: {Math.round(selectedRoute.total_distance)} km</span>
+              <span className="text-slate-600 dark:text-slate-300">Total: {formatDistance(selectedRoute.total_distance)}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs">
               <Clock className="w-3 h-3 text-slate-400" />
-              <span className="text-slate-600 dark:text-slate-300">Est. Time: {Math.floor(selectedRoute.total_time)}h {Math.round((selectedRoute.total_time % 1) * 60)}m</span>
+              <span className="text-slate-600 dark:text-slate-300">Est. Time: {formatDuration(selectedRoute.total_time)}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs">
               <IndianRupee className="w-3 h-3 text-slate-400" />
-              <span className="text-slate-600 dark:text-slate-300">Cost: ₹{Math.round(selectedRoute.total_cost)}</span>
+              <span className="text-slate-600 dark:text-slate-300">Cost: {formatCurrency(selectedRoute.total_cost)}</span>
             </div>
           </div>
         </div>
@@ -408,19 +409,19 @@ export default function RoutesPage() {
                     <p className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
                       <TrendingUp className="w-3 h-3" /> Distance
                     </p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{Math.round(route.total_distance)} km</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{formatDistance(route.total_distance)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
                       <Clock className="w-3 h-3" /> Duration
                     </p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{Math.floor(route.total_time)}h {Math.round((route.total_time % 1) * 60)}m</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{formatDuration(route.total_time)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1">
                       <IndianRupee className="w-3 h-3" /> Est. Cost
                     </p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">₹{Math.round(route.total_cost)}</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{formatCurrency(route.total_cost)}</p>
                   </div>
                 </div>
               </div>
