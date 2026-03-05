@@ -25,7 +25,8 @@ interface JobSummary {
   active: number
   today: number
   pending: number
-  thisMonthRevenue: number
+  thirtyDayRevenue: number
+  thirtyDayJobs: number
 }
 
 export default function AgencyDashboardPage() {
@@ -34,7 +35,7 @@ export default function AgencyDashboardPage() {
   const [agency, setAgency] = useState<AgencyRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<JobSummary>({
-    active: 0, today: 0, pending: 0, thisMonthRevenue: 0
+    active: 0, today: 0, pending: 0, thirtyDayRevenue: 0, thirtyDayJobs: 0
   })
 
   const fetchAgency = useCallback(async () => {
@@ -51,7 +52,7 @@ export default function AgencyDashboardPage() {
 
   const fetchSummary = useCallback(async (agencyId: string) => {
     const today = new Date().toISOString().split('T')[0]
-    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
     const [activeRes, todayRes, pendingRes, revenueRes] = await Promise.all([
       supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
@@ -61,17 +62,19 @@ export default function AgencyDashboardPage() {
       supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
         .eq('agency_id', agencyId).eq('status', 'pending'),
       supabase.from('agency_jobs').select('fare')
-        .eq('agency_id', agencyId).eq('status', 'delivered').gte('updated_at', monthStart),
+        .eq('agency_id', agencyId).eq('status', 'delivered').gte('updated_at', thirtyDaysAgo),
     ])
 
-    const monthRevenue = (revenueRes.data ?? []).reduce(
+    const thirtyDayJobs = revenueRes.data?.length ?? 0
+    const thirtyDayRevenue = (revenueRes.data ?? []).reduce(
       (acc: number, j: { fare: number | null }) => acc + (j.fare ?? 0), 0
     )
     setSummary({
       active: activeRes.count ?? 0,
       today: todayRes.count ?? 0,
       pending: pendingRes.count ?? 0,
-      thisMonthRevenue: monthRevenue,
+      thirtyDayRevenue,
+      thirtyDayJobs,
     })
   }, [])
 
@@ -188,11 +191,12 @@ export default function AgencyDashboardPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp size={16} className="text-emerald-500" />
-            <span className="text-xs text-slate-500 dark:text-slate-400">This Month</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">Last 30 Days</span>
           </div>
           <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-            {formatCurrency(summary.thisMonthRevenue)}
+            {formatCurrency(summary.thirtyDayRevenue)}
           </p>
+          <p className="text-xs text-slate-400 mt-0.5">{summary.thirtyDayJobs} jobs completed</p>
         </div>
       </div>
 
