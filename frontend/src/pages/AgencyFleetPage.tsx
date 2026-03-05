@@ -66,9 +66,12 @@ export default function AgencyFleetPage() {
     setAgency(agencyData)
 
     if (agencyData?.id) {
-      // For now agencies don't have a fleet table — show placeholder
-      // In Phase 3 full impl, this would query agency_trucks
-      setTrucks([])
+      const { data: truckData } = await supabase
+        .from('agency_trucks')
+        .select('*')
+        .eq('agency_id', agencyData.id)
+        .order('created_at', { ascending: false })
+      setTrucks((truckData ?? []) as FleetTruck[])
     }
     setLoading(false)
   }, [user?.id])
@@ -81,28 +84,26 @@ export default function AgencyFleetPage() {
       return
     }
     setSaving(true)
-    // Placeholder: In Phase 3 this inserts into agency_trucks table
-    // For now just update fleet_size count
-    const newSize = (agency.fleet_size || 0) + 1
-    const { error } = await supabase
-      .from('transport_agencies')
-      .update({ fleet_size: newSize })
-      .eq('id', agency.id)
-    if (error) {
-      toast.error('Failed to add truck')
-    } else {
-      setAgency(a => a ? { ...a, fleet_size: newSize } : a)
-      setTrucks(prev => [...prev, {
-        id: crypto.randomUUID(),
+    const { data: newTruck, error } = await supabase
+      .from('agency_trucks')
+      .insert({
         agency_id: agency.id,
         vehicle_type: addForm.vehicle_type,
-        rc_number: addForm.rc_number,
+        rc_number: addForm.rc_number.trim(),
         insurance_expiry: addForm.insurance_expiry || null,
         fitness_expiry: addForm.fitness_expiry || null,
         permit_expiry: addForm.permit_expiry || null,
-        is_available: true,
-        driver_id: null,
-      }])
+      })
+      .select()
+      .single()
+    if (error || !newTruck) {
+      toast.error('Failed to add truck')
+    } else {
+      // Also keep fleet_size count in sync
+      const newSize = (agency.fleet_size || 0) + 1
+      await supabase.from('transport_agencies').update({ fleet_size: newSize }).eq('id', agency.id)
+      setAgency(a => a ? { ...a, fleet_size: newSize } : a)
+      setTrucks(prev => [...prev, newTruck as FleetTruck])
       setShowAdd(false)
       setAddForm({ vehicle_type: 'eicher_14ft', rc_number: '', insurance_expiry: '', fitness_expiry: '', permit_expiry: '' })
       toast.success('Truck added to fleet')

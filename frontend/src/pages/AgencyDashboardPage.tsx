@@ -53,12 +53,26 @@ export default function AgencyDashboardPage() {
     const today = new Date().toISOString().split('T')[0]
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
 
-    // For now, show placeholder data; in Phase 3 full implementation
-    // this would query agency_jobs table once it's created
-    setSummary({ active: 0, today: 0, pending: 0, thisMonthRevenue: 0 })
-    void agencyId // suppress unused warning
-    void today
-    void monthStart
+    const [activeRes, todayRes, pendingRes, revenueRes] = await Promise.all([
+      supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
+        .eq('agency_id', agencyId).in('status', ['accepted', 'in_transit']),
+      supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
+        .eq('agency_id', agencyId).gte('created_at', today),
+      supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
+        .eq('agency_id', agencyId).eq('status', 'pending'),
+      supabase.from('agency_jobs').select('fare')
+        .eq('agency_id', agencyId).eq('status', 'delivered').gte('updated_at', monthStart),
+    ])
+
+    const monthRevenue = (revenueRes.data ?? []).reduce(
+      (acc: number, j: { fare: number | null }) => acc + (j.fare ?? 0), 0
+    )
+    setSummary({
+      active: activeRes.count ?? 0,
+      today: todayRes.count ?? 0,
+      pending: pendingRes.count ?? 0,
+      thisMonthRevenue: monthRevenue,
+    })
   }, [])
 
   useEffect(() => {

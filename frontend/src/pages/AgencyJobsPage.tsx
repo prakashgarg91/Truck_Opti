@@ -20,6 +20,7 @@ interface AgencyJob {
   completed_at: string | null
   weight_kg: number
   estimated_fare: number
+  shipment_ref?: string
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -44,10 +45,47 @@ export default function AgencyJobsPage() {
       .eq('user_id', user.id)
       .maybeSingle()
     setAgencyId(data?.id || null)
+
+    if (data?.id) {
+      const { data: jobData } = await supabase
+        .from('agency_jobs')
+        .select(`
+          id,
+          shipment_id,
+          status,
+          fare,
+          created_at,
+          updated_at,
+          shipments (
+            shipment_id,
+            origin,
+            destination,
+            total_weight,
+            estimated_cost
+          )
+        `)
+        .eq('agency_id', data.id)
+        .order('created_at', { ascending: false })
+
+      const mapped: AgencyJob[] = (jobData ?? []).map((j: Record<string, unknown>) => {
+        const s = (Array.isArray(j.shipments) ? j.shipments[0] : j.shipments) as Record<string, unknown> | null
+        return {
+          id: j.id as string,
+          shipment_id: j.shipment_id as string,
+          shipment_ref: s?.shipment_id as string ?? '',
+          status: j.status as string,
+          origin: s?.origin as string ?? '—',
+          destination: s?.destination as string ?? '—',
+          vehicle_type: '—',
+          offered_at: j.created_at as string,
+          completed_at: j.status === 'delivered' ? (j.updated_at as string) : null,
+          weight_kg: Number(s?.total_weight ?? 0),
+          estimated_fare: Number(j.fare ?? s?.estimated_cost ?? 0),
+        }
+      })
+      setJobs(mapped)
+    }
     setLoading(false)
-    // In Phase 3, we'd then fetch agency_jobs where agency_id = data.id
-    // For now jobs list is empty (placeholder)
-    setJobs([])
   }, [user?.id])
 
   useEffect(() => { fetchAgency() }, [fetchAgency])
@@ -171,14 +209,30 @@ export default function AgencyJobsPage() {
             {job.status === 'pending' && (
               <div className="flex gap-2 mt-3">
                 <button
-                  onClick={() => toast('Accept job flow coming soon', { icon: 'ℹ️' })}
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from('agency_jobs')
+                      .update({ status: 'accepted', assigned_at: new Date().toISOString() })
+                      .eq('id', job.id)
+                    if (error) { toast.error('Failed to accept job'); return }
+                    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'accepted' } : j))
+                    toast.success('Job accepted!')
+                  }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-600 text-white rounded-xl text-xs font-semibold"
                 >
                   <CheckCircle2 size={14} />
                   Accept
                 </button>
                 <button
-                  onClick={() => toast('Decline job flow coming soon', { icon: 'ℹ️' })}
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from('agency_jobs')
+                      .update({ status: 'cancelled' })
+                      .eq('id', job.id)
+                    if (error) { toast.error('Failed to decline job'); return }
+                    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'cancelled' } : j))
+                    toast.success('Job declined')
+                  }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold"
                 >
                   <XCircle size={14} />

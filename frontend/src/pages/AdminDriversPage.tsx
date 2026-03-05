@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Users, CheckCircle2, XCircle, Clock, Search,
-  Phone, Truck, Calendar, AlertTriangle, RefreshCw, ShieldCheck
+  Phone, Truck, Calendar, AlertTriangle, RefreshCw, ShieldCheck, Download
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
@@ -158,6 +158,37 @@ export default function AdminDriversPage() {
     d.phone.includes(search) || (d.home_city ?? '').toLowerCase().includes(search.toLowerCase())
   )
 
+  const exportCSV = () => {
+    const headers = ['Name', 'Phone', 'Vehicle Type', 'Home City', 'RC Number', 'License Number', 'Aadhaar Last4', 'Bank Account', 'IFSC', 'UPI', 'Status', 'Rating', 'Total Trips', 'Registered On']
+    const rows = filtered.map(d => [
+      d.full_name,
+      d.phone,
+      vehicleLabel(d.vehicle_type),
+      d.home_city ?? '',
+      d.rc_number ?? '',
+      d.license_number ?? '',
+      d.aadhaar_last4 ?? '',
+      d.bank_account ?? '',
+      d.ifsc_code ?? '',
+      d.upi_id ?? '',
+      d.status,
+      d.rating?.toString() ?? '',
+      d.total_trips?.toString() ?? '',
+      formatDate(d.created_at),
+    ])
+    const csv = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `drivers_${tab}_${new Date().toISOString().slice(0,10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success(`Exported ${filtered.length} drivers`)
+  }
+
   const tabs: Tab[] = ['pending', 'approved', 'rejected', 'suspended']
 
   return (
@@ -170,10 +201,19 @@ export default function AdminDriversPage() {
           </h1>
           <p className="text-sm text-slate-500 mt-1">Approve or reject driver registrations</p>
         </div>
-        <button onClick={fetchDrivers} disabled={loading}
-          className="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-          <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {filtered.length > 0 && (
+            <button onClick={exportCSV}
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors">
+              <Download className="w-4 h-4" />
+              CSV
+            </button>
+          )}
+          <button onClick={fetchDrivers} disabled={loading}
+            className="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
