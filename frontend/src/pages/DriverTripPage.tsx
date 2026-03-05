@@ -1,0 +1,623 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
+import {
+  Navigation, MapPin, CheckCircle2, Truck, PhoneCall,
+  KeyRound, Camera, AlertTriangle, RefreshCw, ArrowLeft,
+  Package, Flag
+} from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { useAuthStore } from '../stores/authStore'
+import { useParams, useNavigate } from 'react-router-dom'
+import { formatCurrency } from '../utils/formatters'
+import toast from 'react-hot-toast'
+
+interface ShipmentInfo {
+  shipment_id: string
+  origin: string
+  destination: string
+  total_weight: number
+  estimated_cost: number
+  customer_id: string | null
+}
+
+interface TripJob {
+  id: string
+  shipment_id: string
+  status: string
+  pickup_otp: string | null
+  delivery_otp: string | null
+  photo_loading_url: string | null
+  photo_delivery_url: string | null
+  pickup_arrived_at: string | null
+  journey_started_at: string | null
+  delivery_arrived_at: string | null
+  delivered_at: string | null
+  shipments: ShipmentInfo | null
+}
+
+interface DriverRecord {
+  id: string
+  full_name: string
+  active_job_id: string | null
+}
+
+type TripStep = 'navigate' | 'pickup_otp' | 'loading_photo' | 'in_transit' | 'destination_otp' | 'delivery_photo' | 'complete'
+
+const STEPS: { key: TripStep; label: string }[] = [
+  { key: 'navigate', label: 'Navigate' },
+  { key: 'pickup_otp', label: 'Pickup OTP' },
+  { key: 'loading_photo', label: 'Load Photo' },
+  { key: 'in_transit', label: 'In Transit' },
+  { key: 'destination_otp', label: 'Delivery OTP' },
+  { key: 'delivery_photo', label: 'Proof Photo' },
+  { key: 'complete', label: 'Done' },
+]
+
+function statusToStep(status: string): TripStep {
+  switch (status) {
+    case 'accepted':       return 'navigate'
+    case 'pickup_arrived': return 'pickup_otp'
+    case 'in_transit':     return 'in_transit'
+    case 'delivery_arrived': return 'destination_otp'
+    case 'delivered':      return 'complete'
+    default:               return 'navigate'
+  }
+}
+
+export default function DriverTripPage() {
+  const { jobId } = useParams<{ jobId: string }>()
+  const { user } = useAuthStore()
+  const navigate = useNavigate()
+
+  const [job, setJob] = useState<TripJob | null>(null)
+  const [driver, setDriver] = useState<DriverRecord | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [step, setStep] = useState<TripStep>('navigate')
+  const [otpInput, setOtpInput] = useState('')
+  const [otpError, setOtpError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  // GPS tracking refs
+  const watchIdRef = useRef<number | null>(null)
+
+  const fetchTrip = useCallback(async () => {
+    if (!jobId || !user?.id) return
+    const { data: driverData } = await supabase
+      .from('drivers')
+      .select('id, full_name, active_job_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    setDriver(driverData)
+
+    const { data: jobData, error } = await supabase
+      .from('job_offers')
+      .select(`
+        id, shipment_id, status, pickup_otp, delivery_otp,
+        photo_loading_url, photo_delivery_url,
+        pickup_arrived_at, journey_started_at, delivery_arrived_at, delivered_at,
+        shipments(shipment_id, origin, destination, total_weight, estimated_cost, customer_id)
+      `)
+      .eq('id', jobId)
+      .maybeSingle()
+
+    if (error) {
+      toast.error('Failed to load trip details')
+      setLoading(false)
+      return
+    }
+    if (jobData) {
+      const safeJob = {
+        ...jobData,
+        shipments: Array.isArray(jobData.shipments)
+          ? (jobData.shipments[0] as ShipmentInfo) || null
+          : (jobData.shipments as unknown as ShipmentInfo) || null,
+      }
+      setJob(safeJob as TripJob)
+      setStep(statusToStep(jobData.status))
+    }
+    setLoading(false)
+  }, [jobId, user?.id])
+
+  useEffect(() => {
+    fetchTrip()
+  }, [fetchTrip])
+
+  // GPS tracking when in_transit
+  useEffect(() => {
+    if (step !== 'in_transit' || !driver?.id) return
+    if (!navigator.geolocation) return
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      async (pos) => {
+        await supabase.from('driver_locations').upsert({
+          driver_id: driver.id,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          heading: pos.coords.heading ?? null,
+          speed_kmh: pos.coords.speed != null ? pos.coords.speed * 3.6 : null,
+          accuracy_m: pos.coords.accuracy,
+          updated_at: new Date().toISOString(),
+        })
+      },
+      () => { /* silently fail location errors */ },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 30000 }
+    )
+
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+        watchIdRef.current = null
+      }
+    }
+  }, [step, driver?.id])
+
+  const updateJobStatus = async (newStatus: string, extra?: Record<string, unknown>) => {
+    if (!job?.id) return false
+    setSubmitting(true)
+    const { error } = await supabase
+      .from('job_offers')
+      .update({ status: newStatus, ...extra })
+      .eq('id', job.id)
+    setSubmitting(false)
+    if (error) {
+      toast.error(`Failed to update trip status: ${error.message}`)
+      return false
+    }
+    return true
+  }
+
+  const handleArrivedAtPickup = async () => {
+    const ok = await updateJobStatus('pickup_arrived', {
+      pickup_arrived_at: new Date().toISOString(),
+    })
+    if (ok) {
+      setJob(j => j ? { ...j, status: 'pickup_arrived' } : j)
+      setStep('pickup_otp')
+      toast.success('Arrived at pickup — enter customer OTP')
+    }
+  }
+
+  const handlePickupOTP = async () => {
+    setOtpError('')
+    if (!job?.pickup_otp) {
+      toast.error('OTP not available — contact support')
+      return
+    }
+    if (otpInput.trim() !== job.pickup_otp.trim()) {
+      setOtpError('Incorrect OTP. Ask the customer for the correct code.')
+      return
+    }
+    setStep('loading_photo')
+    setOtpInput('')
+    toast.success('OTP verified ✓')
+  }
+
+  const handleStartJourney = async () => {
+    const ok = await updateJobStatus('in_transit', {
+      journey_started_at: new Date().toISOString(),
+    })
+    if (ok) {
+      setJob(j => j ? { ...j, status: 'in_transit' } : j)
+      setStep('in_transit')
+      toast.success('Journey started — GPS tracking active')
+    }
+  }
+
+  const handleArrivedAtDestination = async () => {
+    const ok = await updateJobStatus('delivery_arrived', {
+      delivery_arrived_at: new Date().toISOString(),
+    })
+    if (ok) {
+      // Stop GPS
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+        watchIdRef.current = null
+      }
+      setJob(j => j ? { ...j, status: 'delivery_arrived' } : j)
+      setStep('destination_otp')
+      toast.success('Arrived at destination — enter recipient OTP')
+    }
+  }
+
+  const handleDeliveryOTP = async () => {
+    setOtpError('')
+    if (!job?.delivery_otp) {
+      toast.error('Delivery OTP not available — contact support')
+      return
+    }
+    if (otpInput.trim() !== job.delivery_otp.trim()) {
+      setOtpError('Incorrect OTP. Ask the recipient for the correct code.')
+      return
+    }
+    setStep('delivery_photo')
+    setOtpInput('')
+    toast.success('Delivery OTP verified ✓')
+  }
+
+  const handleCompleteDelivery = async () => {
+    if (!driver?.id) return
+    const ok = await updateJobStatus('delivered', {
+      delivered_at: new Date().toISOString(),
+    })
+    if (ok) {
+      // Clear active_job_id on driver
+      await supabase
+        .from('drivers')
+        .update({ active_job_id: null, total_trips: (driver as unknown as { total_trips: number }).total_trips + 1 })
+        .eq('id', driver.id)
+      toast.success('🎉 Delivery complete! Great job.')
+      navigate('/driver/dashboard')
+    }
+  }
+
+  const openMaps = (address: string) => {
+    const encoded = encodeURIComponent(address)
+    window.open(`https://maps.google.com/?q=${encoded}`, '_blank')
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <RefreshCw className="animate-spin text-blue-600" size={32} />
+      </div>
+    )
+  }
+
+  if (!job) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-50 dark:bg-slate-900">
+        <AlertTriangle size={48} className="text-amber-400 mb-4" />
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Trip Not Found</h2>
+        <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">This job may have been cancelled or expired.</p>
+        <button
+          onClick={() => navigate('/driver/dashboard')}
+          className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold"
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    )
+  }
+
+  const currentStepIdx = STEPS.findIndex(s => s.key === step)
+  const shipment = job.shipments
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center gap-3">
+        <button
+          onClick={() => navigate('/driver/dashboard')}
+          className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700"
+        >
+          <ArrowLeft size={20} className="text-slate-600 dark:text-slate-400" />
+        </button>
+        <div className="flex-1">
+          <h1 className="text-base font-bold text-slate-800 dark:text-slate-100">Active Trip</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+            {shipment?.shipment_id || job.id.slice(-8)}
+          </p>
+        </div>
+        <a
+          href="tel:18001234567"
+          className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-xl text-xs font-semibold"
+        >
+          <PhoneCall size={14} />
+          Support
+        </a>
+      </div>
+
+      {/* Progress Steps */}
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 px-4 py-3 overflow-x-auto">
+        <div className="flex items-center gap-1 min-w-max">
+          {STEPS.map((s, idx) => (
+            <div key={s.key} className="flex items-center gap-1">
+              <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors ${
+                idx < currentStepIdx
+                  ? 'bg-green-500 text-white'
+                  : idx === currentStepIdx
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+              }`}>
+                {idx < currentStepIdx ? '✓' : idx + 1}
+              </div>
+              <span className={`text-xs ${
+                idx === currentStepIdx
+                  ? 'text-blue-600 dark:text-blue-400 font-semibold'
+                  : 'text-slate-400'
+              }`}>
+                {s.label}
+              </span>
+              {idx < STEPS.length - 1 && (
+                <div className={`w-4 h-0.5 rounded ${idx < currentStepIdx ? 'bg-green-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-4 space-y-4 max-w-md mx-auto">
+        {/* Shipment Info Card */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Package size={16} className="text-slate-400" />
+            <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Shipment Details</span>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-slate-400">Pickup</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {shipment?.origin || 'N/A'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-slate-400">Destination</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {shipment?.destination || 'N/A'}
+                </p>
+              </div>
+            </div>
+            {shipment?.total_weight != null && (
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700">
+                <Truck size={12} />
+                <span>{shipment.total_weight} kg</span>
+                {shipment.estimated_cost > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="text-green-600 font-semibold">{formatCurrency(shipment.estimated_cost)}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ====== STEP: Navigate to Pickup ====== */}
+        {step === 'navigate' && (
+          <div className="space-y-3">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 border border-blue-200 dark:border-blue-800/40">
+              <div className="flex items-center gap-2 mb-3">
+                <Navigation size={18} className="text-blue-600" />
+                <span className="font-semibold text-blue-800 dark:text-blue-300">Navigate to Pickup</span>
+              </div>
+              <p className="text-sm text-blue-700 dark:text-blue-400 mb-4">
+                Drive to the pickup location and tap "Arrived at Pickup" when you reach there.
+              </p>
+              {shipment?.origin && (
+                <button
+                  onClick={() => openMaps(shipment.origin)}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm"
+                >
+                  <Navigation size={16} />
+                  Open in Google Maps
+                </button>
+              )}
+            </div>
+            <button
+              disabled={submitting}
+              onClick={handleArrivedAtPickup}
+              className="w-full flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
+            >
+              <MapPin size={20} />
+              {submitting ? 'Updating...' : 'Arrived at Pickup'}
+            </button>
+          </div>
+        )}
+
+        {/* ====== STEP: Pickup OTP ====== */}
+        {step === 'pickup_otp' && (
+          <div className="space-y-3">
+            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-200 dark:border-amber-800/40">
+              <div className="flex items-center gap-2 mb-2">
+                <KeyRound size={18} className="text-amber-600" />
+                <span className="font-semibold text-amber-800 dark:text-amber-300">Enter Pickup OTP</span>
+              </div>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                Ask the sender for the 4-digit OTP shown in their TruckOpti app.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                4-Digit OTP from Sender
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="0000"
+                value={otpInput}
+                onChange={e => {
+                  setOtpError('')
+                  if (e.target.value.length <= 4) setOtpInput(e.target.value)
+                }}
+                className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${
+                  otpError
+                    ? 'border-red-400 focus:border-red-500'
+                    : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
+                }`}
+              />
+              {otpError && (
+                <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                  <AlertTriangle size={12} />
+                  {otpError}
+                </p>
+              )}
+              <button
+                disabled={otpInput.length !== 4}
+                onClick={handlePickupOTP}
+                className="w-full mt-4 py-3.5 bg-green-600 text-white rounded-2xl font-bold disabled:opacity-40"
+              >
+                Verify OTP
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ====== STEP: Loading Photo ====== */}
+        {step === 'loading_photo' && (
+          <div className="space-y-3">
+            <div className="bg-violet-50 dark:bg-violet-900/20 rounded-2xl p-4 border border-violet-200 dark:border-violet-800/40">
+              <div className="flex items-center gap-2 mb-2">
+                <Camera size={18} className="text-violet-600" />
+                <span className="font-semibold text-violet-800 dark:text-violet-300">Capture Loading Photo</span>
+              </div>
+              <p className="text-sm text-violet-700 dark:text-violet-400">
+                Take a clear photo of the goods being loaded onto your vehicle. This protects you in case of disputes.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm text-center">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+                <Camera size={32} className="text-slate-400" />
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Photo capture requires camera access
+              </p>
+              <p className="text-xs text-slate-400 mb-4">(Photo upload coming soon — tap below to skip for now)</p>
+            </div>
+            <button
+              disabled={submitting}
+              onClick={handleStartJourney}
+              className="w-full flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
+            >
+              <Truck size={20} />
+              {submitting ? 'Starting...' : 'Start Journey 🚛'}
+            </button>
+          </div>
+        )}
+
+        {/* ====== STEP: In Transit ====== */}
+        {step === 'in_transit' && (
+          <div className="space-y-3">
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-5 border border-green-200 dark:border-green-800/40 text-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center mx-auto mb-3">
+                <Truck size={32} className="text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="text-lg font-bold text-green-800 dark:text-green-300 mb-1">Journey in Progress</h3>
+              <p className="text-sm text-green-700 dark:text-green-400">
+                GPS location is being shared with the customer in real-time.
+              </p>
+            </div>
+            {shipment?.destination && (
+              <button
+                onClick={() => openMaps(shipment.destination)}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-semibold text-sm shadow-sm"
+              >
+                <Navigation size={16} />
+                Navigate to Destination
+              </button>
+            )}
+            <button
+              disabled={submitting}
+              onClick={handleArrivedAtDestination}
+              className="w-full flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
+            >
+              <Flag size={20} />
+              {submitting ? 'Updating...' : 'Arrived at Destination'}
+            </button>
+          </div>
+        )}
+
+        {/* ====== STEP: Destination OTP ====== */}
+        {step === 'destination_otp' && (
+          <div className="space-y-3">
+            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-200 dark:border-amber-800/40">
+              <div className="flex items-center gap-2 mb-2">
+                <KeyRound size={18} className="text-amber-600" />
+                <span className="font-semibold text-amber-800 dark:text-amber-300">Enter Delivery OTP</span>
+              </div>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                Ask the recipient for the 4-digit OTP shown in their TruckOpti app to confirm delivery.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                4-Digit OTP from Recipient
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="0000"
+                value={otpInput}
+                onChange={e => {
+                  setOtpError('')
+                  if (e.target.value.length <= 4) setOtpInput(e.target.value)
+                }}
+                className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${
+                  otpError
+                    ? 'border-red-400 focus:border-red-500'
+                    : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
+                }`}
+              />
+              {otpError && (
+                <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                  <AlertTriangle size={12} />
+                  {otpError}
+                </p>
+              )}
+              <button
+                disabled={otpInput.length !== 4}
+                onClick={handleDeliveryOTP}
+                className="w-full mt-4 py-3.5 bg-green-600 text-white rounded-2xl font-bold disabled:opacity-40"
+              >
+                Verify OTP
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ====== STEP: Delivery Photo ====== */}
+        {step === 'delivery_photo' && (
+          <div className="space-y-3">
+            <div className="bg-violet-50 dark:bg-violet-900/20 rounded-2xl p-4 border border-violet-200 dark:border-violet-800/40">
+              <div className="flex items-center gap-2 mb-2">
+                <Camera size={18} className="text-violet-600" />
+                <span className="font-semibold text-violet-800 dark:text-violet-300">Proof of Delivery</span>
+              </div>
+              <p className="text-sm text-violet-700 dark:text-violet-400">
+                Take a photo of the delivered goods at the destination. This is your proof of delivery.
+              </p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm text-center">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+                <Camera size={32} className="text-slate-400" />
+              </div>
+              <p className="text-xs text-slate-400 mb-4">(Photo upload coming soon — tap below to complete delivery)</p>
+            </div>
+            <button
+              disabled={submitting}
+              onClick={handleCompleteDelivery}
+              className="w-full flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
+            >
+              <CheckCircle2 size={20} />
+              {submitting ? 'Completing...' : 'Complete Delivery ✓'}
+            </button>
+          </div>
+        )}
+
+        {/* ====== STEP: Complete ====== */}
+        {step === 'complete' && (
+          <div className="text-center py-8">
+            <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 size={44} className="text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Delivery Complete!</h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">
+              Great work! Your earnings will be credited within 24 hours.
+            </p>
+            <button
+              onClick={() => navigate('/driver/dashboard')}
+              className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

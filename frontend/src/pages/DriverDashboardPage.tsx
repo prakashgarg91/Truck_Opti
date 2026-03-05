@@ -419,10 +419,10 @@ export default function DriverDashboardPage() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 className="flex items-center justify-center gap-2 py-2.5 bg-green-600 text-white rounded-xl font-medium text-sm"
-                onClick={() => toast.success('Opening maps...')}
+                onClick={() => navigate(`/driver/trip/${driver.active_job_id}`)}
               >
                 <Navigation size={16} />
-                Navigate
+                View Trip
               </button>
               <button
                 className="flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm"

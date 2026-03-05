@@ -6,6 +6,7 @@ import { useAuthStore } from './stores/authStore'
 import MobileLayout from './layouts/MobileLayout'
 import AuthLayout from './layouts/AuthLayout'
 import DriverLayout from './layouts/DriverLayout'
+import AgencyLayout from './layouts/AgencyLayout'
 
 // Pages - Eager loaded (auth pages for fast auth experience)
 import LoginPage from './pages/auth/LoginPage'
@@ -46,14 +47,20 @@ const AdminDriversPage = React.lazy(() => import('./pages/AdminDriversPage'))
 const AdminAgenciesPage = React.lazy(() => import('./pages/AdminAgenciesPage'))
 const AgencyRegisterPage = React.lazy(() => import('./pages/AgencyRegisterPage'))
 const DriverDashboardPage = React.lazy(() => import('./pages/DriverDashboardPage'))
+const DriverTripPage = React.lazy(() => import('./pages/DriverTripPage'))
 const DriverEarningsPage = React.lazy(() => import('./pages/DriverEarningsPage'))
 const DriverHistoryPage = React.lazy(() => import('./pages/DriverHistoryPage'))
 const DriverDetailPage = React.lazy(() => import('./pages/DriverDetailPage'))
+const AgencyDashboardPage = React.lazy(() => import('./pages/AgencyDashboardPage'))
+const AgencyFleetPage = React.lazy(() => import('./pages/AgencyFleetPage'))
+const AgencyJobsPage = React.lazy(() => import('./pages/AgencyJobsPage'))
+const AgencyBillingPage = React.lazy(() => import('./pages/AgencyBillingPage'))
 
 // Role-based home: redirects drivers/agencies to their portal, customers to Dashboard
 function RoleHome() {
   const { user } = useAuthStore()
   if (user?.role === 'driver') return <Navigate to="/driver/dashboard" replace />
+  if (user?.role === 'agency') return <Navigate to="/agency/dashboard" replace />
   return <Dashboard />
 }
 
@@ -119,8 +126,21 @@ function AppContent() {
           </ProtectedRoute>
         }>
           <Route path="/driver/dashboard" element={<DriverDashboardPage />} />
+          <Route path="/driver/trip/:jobId" element={<DriverTripPage />} />
           <Route path="/driver/earnings" element={<DriverEarningsPage />} />
           <Route path="/driver/history" element={<DriverHistoryPage />} />
+        </Route>
+
+        {/* Agency Portal — separate layout with agency bottom nav */}
+        <Route element={
+          <ProtectedRoute>
+            <AgencyLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/agency/dashboard" element={<AgencyDashboardPage />} />
+          <Route path="/agency/fleet" element={<AgencyFleetPage />} />
+          <Route path="/agency/jobs" element={<AgencyJobsPage />} />
+          <Route path="/agency/billing" element={<AgencyBillingPage />} />
         </Route>
         
         {/* Catch all - show 404 page */}

@@ -37,7 +37,8 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Gaps+bugs audit, v37 fixes | 2026-03-05 | ✅ Active |
+| `SONNET-003` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 2 driver app, Phase 3 agency portal | 2026-03-05 | ✅ Active |
+| `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Gaps+bugs audit, v37-v38 complete | 2026-03-05 | 🔴 Offline |
 | `SONNET-001` | LEAD | Claude Sonnet 4.6 | Full-stack + Testing | v35 deploy + UI/UX fixes | 2026-03-04 | 🔴 Offline |
 | `OPUS-002` | LEAD | Claude Opus 4.5 | Full-stack | Framework testing | 2026-01-11 | 🔴 Offline |
 
@@ -59,6 +60,28 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-05 15:00] SONNET-003: 🚀 v38 DEPLOYED — Phase 1 COMPLETE + Phase 2 Core Done
+
+                             SUPABASE MIGRATIONS APPLIED (via MCP):
+                             ✅ phase1_drivers: drivers, transport_agencies, driver_locations, job_offers tables + RLS + Realtime
+                             ✅ add_driver_online_status: is_online, fleet_size, operating_routes, active_job_id columns
+
+                             NEW FILES CREATED (7):
+                             ✅ frontend/src/layouts/DriverLayout.tsx — Driver portal shell (header + bottom nav)
+                             ✅ frontend/src/pages/DriverDashboardPage.tsx — Online toggle, Realtime job offers, 30s countdown
+                             ✅ frontend/src/pages/AgencyRegisterPage.tsx — 3-step agency registration (public)
+                             ✅ frontend/src/pages/AdminAgenciesPage.tsx — Agency approval queue (admin)
+                             ✅ frontend/src/pages/DriverDetailPage.tsx — Driver detail + approve/reject (admin)
+                             ✅ frontend/src/pages/DriverEarningsPage.tsx — Earnings summary with period selector
+                             ✅ frontend/src/pages/DriverHistoryPage.tsx — Trip history with filters
+
+                             FILES UPDATED (3):
+                             ✅ App.tsx — RoleHome redirect, 6 new lazy routes, DriverLayout block
+                             ✅ MobileLayout.tsx — Agency Approvals link in admin sidebar
+                             ✅ AdminDriversPage.tsx — Details button → /admin/drivers/:id
+
+                             STATUS: v38 live at https://www.truckopti.in (Heroku Released 2026-03-05 13:17:27)
+───────────────────────────────────────────────────────────────────────
 [2026-03-05 14:00] SONNET-002: 🔍 GAPS+BUGS AUDIT → v37 fixes
                              
                              BUGS FOUND & FIXED:
@@ -319,10 +342,10 @@ STATUS: 🟡 IN PROGRESS
 | Apex Domain HTTPS | 200 | 200 | ✅ |
 | WWW Domain HTTPS | 200 | 200 | ✅ |
 | Heroku ACM Coverage | 2/2 | 2/2 | ✅ |
-| Heroku Code Sync | v37 | Latest | ✅ Deployed 2026-03-05 |
+| Heroku Code Sync | v38 | Latest | ✅ Deployed 2026-03-05 |
 | Supabase Auth Site URL | truckopti.in | truckopti.in | ✅ Fixed (v22 session) |
 | OG Tags Domain | truckopti.in | truckopti.in | ✅ |
-| Launch Checklist Completion | 32/40 | 40/40 | ⚠️ Phase 1 in progress |
+| Launch Checklist Completion | 35/40 | 40/40 | ⚠️ Phase 2 active trip + Phase 3 pending |
 
 ---
 
@@ -381,6 +404,7 @@ python interactive_webapp_test.py
 
 | Version | Date | Deployer | Status | Notes |
 |---------|------|----------|--------|-------|
+| v38 (62f56dab) | 2026-03-05 | SONNET-002/003 | ✅ Success | Phase 1 complete + Phase 2 core: Driver portal, Agency reg, Admin agencies, DriverLayout |
 | v37 (8d62d725) | 2026-03-05 | SONNET-002 | ✅ Success | ProfilePage merge bug, TrucksPage overflow, formatCurrency, ROADMAP updates |
 | v36 (671834b5) | 2026-03-05 | SONNET-002 | ✅ Success | Phase 1: driver module, company profile, admin queue, formatters |
 | v35 (9a3de66d) | 2026-03-04 | SONNET-001/002 | ✅ Success | SW skipWaiting, route duration fix, packing vol%, invoice company banner |
@@ -419,4 +443,4 @@ If stuck:
 
 ---
 
-**Last Updated:** 2026-03-05 by SONNET-002 (Phase 0 fixes complete; Phase 1 driver module in progress)
+**Last Updated:** 2026-03-05 by SONNET-003 (v38: Phase 1 COMPLETE + Phase 2 core deployed; Phase 2.3 Active Trip + Phase 3 Agency Portal in progress)

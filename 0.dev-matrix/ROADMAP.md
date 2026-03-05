@@ -28,15 +28,15 @@
 
 ---
 
-## 🚀 PHASE 1 — MULTI-PORTAL FOUNDATION (v36 ✔ + v37 in progress)
+## 🚀 PHASE 1 — MULTI-PORTAL FOUNDATION (v36 ✔ + v37 ✔ + v38 ✔ COMPLETE)
 **Goal:** Setup portal routing, roles, and company profiles
 
 ### 1.1 Portal Routing Architecture
 - [x] `/` → Customer Portal (current)
 - [x] `/driver/*` → Driver Portal (`/driver/register` live) (**v36**)
-- [ ] `/agency/*` → Agency Portal (Phase 2)
-- [x] `/admin/*` → Platform Admin (`/admin/drivers` live) (**v36**)
-- [ ] Role-based redirect on login (driver → `/driver/dashboard`, agency → `/agency/dashboard`)
+- [x] `/agency/*` → Agency Portal (`/agency/register` live) (**v38**)
+- [x] `/admin/*` → Platform Admin (`/admin/drivers` + `/admin/agencies` live) (**v36/v38**)
+- [x] Role-based redirect on login (driver → `/driver/dashboard`, agency → `/agency/dashboard`) (**v38**)
 
 ### 1.2 Company Profile Setup
 - [x] **Company profile page** with GSTIN, PAN, address, contact (`/settings/company`) (**v36**)
@@ -49,42 +49,42 @@
 - [x] DB: `drivers` table migration (SQL written — needs Supabase apply) (**v36**)
 - [x] Admin: Driver approval queue `/admin/drivers` (**v36**)
 
-### 1.4 Agency Registration Portal (`/agency/register`) — Phase 2
-- [ ] Business registration form (company, GSTIN, transport license)
+### 1.4 Agency Registration Portal (`/agency/register`) (**v38**)
+- [x] Business registration form (company, GSTIN, transport license) (**v38**)
 - [x] DB: `transport_agencies` table (SQL written — needs Supabase apply) (**v36**)
-- [ ] Admin: Agency approval queue in `/admin/agencies`
+- [x] Admin: Agency approval queue in `/admin/agencies` (**v38**)
 
-### 1.5 Driver Management (Admin) ✔ (**v36**)
+### 1.5 Driver Management (Admin) ✔ (**v36/v38**)
 - [x] `/admin/drivers` — list all drivers (pending/active/suspended) (**v36**)
-- [ ] Driver detail page — verify documents, approve/reject individual fields
+- [x] Driver detail page — verify documents, approve/reject individual fields (**v38**)
 - [ ] Export driver list (CSV)
 
 ---
 
-## 🛻 PHASE 2 — DRIVER APP (Weeks 4–8)
+## 🛻 PHASE 2 — DRIVER APP (v38 core ✔)
 **Goal:** Complete functional driver experience
 
-### 2.1 Driver Dashboard (`/driver/dashboard`)
-- [ ] Today's earnings
-- [ ] Online/Offline toggle (prominent)
-- [ ] Active job card (if on trip)
-- [ ] Available jobs nearby (if online + no active job)
-- [ ] Trip history (last 10)
-- [ ] Rating display
+### 2.1 Driver Dashboard (`/driver/dashboard`) ✔ (**v38**)
+- [x] Today's earnings (**v38**)
+- [x] Online/Offline toggle (prominent) (**v38**)
+- [x] Active job card (if on trip) (**v38**)
+- [x] Available jobs nearby (if online + no active job) (**v38** — Realtime subscription)
+- [x] Trip history (last 10) (**v38**)
+- [x] Rating display (**v38**)
 
-### 2.2 Job Offer Flow
-- [ ] New job push notification (Supabase Realtime)
-- [ ] Job offer card (30-second countdown timer)
-- [ ] Accept → job assigned, navigation begins
-- [ ] Decline → job goes to next driver
-- [ ] Offer expiry → auto-move to next driver
+### 2.2 Job Offer Flow ✔ (**v38**)
+- [x] New job push notification (Supabase Realtime) (**v38**)
+- [x] Job offer card (30-second countdown timer) (**v38**)
+- [x] Accept → job assigned, navigation begins (**v38**)
+- [x] Decline → job goes to next driver (**v38**)
+- [x] Offer expiry → auto-move to next driver (**v38**)
 
 ### 2.3 Active Trip Flow
 - [ ] "Navigate to Pickup" → opens Google Maps / Waze
 - [ ] "Arrived at Pickup" button
 - [ ] OTP entry (customer gives OTP to driver for verification)
 - [ ] Photo capture (loading photo)
-- [ ] "Start Journey" 
+- [ ] "Start Journey"
 - [ ] Live location sharing begins
 - [ ] "Arrived at Destination"
 - [ ] Photo capture (delivery photo)
@@ -97,9 +97,9 @@
 - [ ] Customer portal subscribes via Supabase Realtime
 - [ ] Map marker moves in real-time for customer
 
-### 2.5 Driver Earnings & Wallet
-- [ ] Earnings breakdown per trip
-- [ ] Weekly/monthly summary
+### 2.5 Driver Earnings & Wallet (**v38 partial**)
+- [x] Earnings breakdown per trip (**v38**)
+- [x] Weekly/monthly summary (**v38**)
 - [ ] Wallet balance
 - [ ] Withdrawal request flow (UPI/bank transfer)
 - [ ] Trip-wise invoice (for driver's tax purposes)
