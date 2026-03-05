@@ -97,7 +97,10 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
                              FILES CHANGED BY JUDGE (not in v43 commit):
                              - frontend/src/pages/TrackingPage.tsx — BUG-018 + BUG-019 fixes
 
-                             READINESS SCORE (post v43-judge):
+                             DEPLOY: Heroku v44 (rebase over v43 agent work), GitHub force-aligned to match.
+                             COMMIT: bec3b571
+
+                             READINESS SCORE (post v44):
                              Customer ✅ READY  |  Driver ✅ READY  |  Agency ✅ READY
                              All 3 portals fully functional end-to-end.
 
