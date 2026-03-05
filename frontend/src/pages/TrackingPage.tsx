@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, PlayCircle, Trash2, Loader2 } from 'lucide-react'
+import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, Trash2, Loader2 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { shipmentsSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
@@ -155,7 +155,7 @@ export default function TrackingPage() {
     if (!confirm(`Cancel shipment ${shipment.shipment_id}? This cannot be undone.`)) return
     setUpdatingStatus(shipment.id)
     try {
-      await shipmentsSupabaseApi.delete(shipment.id)
+      await shipmentsSupabaseApi.updateStatus(shipment.id, 'cancelled')
       queryClient.invalidateQueries({ queryKey: ['shipments'] })
       setSelectedId(null)
       toast.success('Shipment cancelled')
@@ -400,25 +400,6 @@ export default function TrackingPage() {
 
               {selectedId === s.id && (
                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2 animate-fade-in">
-                  {s.status === 'pending' && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); navigate('/booking/new') }}
-                      className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2"
-                    >
-                      <Truck className="w-4 h-4" />
-                      {language === 'en' ? 'Modify Booking' : 'बुकिंग बदलें'}
-                    </button>
-                  )}
-                  {s.status === 'pending' && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(s, 'in_transit') }}
-                      disabled={updatingStatus === s.id}
-                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <PlayCircle className="w-4 h-4" />
-                      {updatingStatus === s.id ? (language === 'en' ? 'Updating...' : 'अपडेट हो रहा है...') : (language === 'en' ? 'Start Delivery' : 'डिलीवरी शुरू करें')}
-                    </button>
-                  )}
                   {s.status === 'in_transit' && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleUpdateStatus(s, 'delivered') }}

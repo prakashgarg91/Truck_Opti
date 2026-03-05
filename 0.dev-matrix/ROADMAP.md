@@ -1,5 +1,5 @@
 # 🗓️ TRUCKOPTI — DEVELOPMENT ROADMAP
-> Version: 2.1 | Updated: 2026-03-05 (v42)
+> Version: 2.2 | Updated: 2026-03-05 (v43)
 > See PRODUCT_VISION.md for full architecture details
 
 ---
@@ -7,12 +7,21 @@
 ## ✅ PHASE 0 — HOTFIXES (COMPLETE v35–v37)
 ## ✅ PHASE 1 — MULTI-PORTAL FOUNDATION (COMPLETE v36–v38)
 ## ✅ PHASE 2 — DRIVER APP (COMPLETE v38–v41)
-## ✅ PHASE 3 — AGENCY PORTAL (COMPLETE v39–v41, minus payroll/invoicing)
+## ✅ PHASE 3 — AGENCY PORTAL (COMPLETE v39–v43, minus payroll/invoicing)
 ## ✅ BOOKING FLOW — CORE LOOP (COMPLETE v42)
 
 > v42 shipped: `NewShipmentPage.tsx` at `/booking/new`; "Book a Truck" button on Dashboard;
 > `dispatch_job_to_drivers()` wired; DB migration `add_booking_columns_to_shipments` applied.
 > **Core transaction loop is now functional end-to-end.**
+
+## ✅ BATCH 9 POLISH (COMPLETE v43)
+
+> v43 shipped: AgencyJobsPage bug fixes (vehicle_type display, accepted status badge);
+> Assign Driver modal for accepted jobs; TrackingPage pending UI ("Searching for drivers…");
+> Customer OTP display in shipment detail modal.
+> Judge fixes (v43-judge): trip-photos Storage bucket created via Supabase MCP;
+> BUG-018 fixed (cancel = status update, not hard delete);
+> BUG-019 fixed (removed customer-facing "Start Delivery" + "Modify Booking" buttons).
 
 ---
 
@@ -65,7 +74,7 @@
 ## 📱 PHASE 5 — MOBILE & SCALE
 
 ### 5.1 PWA & Notifications
-- [ ] PWA icons missing from `public/` — install prompt broken (P1)
+- [x] PWA icons — `pwa-192x192.png`, `pwa-512x512.png`, `apple-touch-icon.png` all present (**v43**)
 - [ ] FCM push notifications for job offers (driver app in background)
 - [ ] Biometric login (WebAuthn)
 - [ ] Full offline capability (IndexedDB)
@@ -82,11 +91,13 @@
 |---|---|---|---|
 | BUG-007 | P0 | Razorpay test key in prod — real payments fail | Config (owner) |
 | BUG-008 | P0 | Phone OTP silently fails — Twilio not set | Config (owner) |
-| BUG-013 | P2 | `/agency/billing` not in bottom nav | ~~Workaround: Dashboard quick action works~~ |
-| BUG-014 | P1 | `trip-photos` Storage bucket existence unconfirmed | Verify/create |
-| BUG-015 | P1 | PWA icons missing — install prompt fails | Create icons |
-| BUG-016 | P1 | AgencyJobsPage shows `vehicle_type: '—'` — not joined from shipments | Code fix needed |
-| BUG-017 | P1 | Agency accepted jobs have status 'accepted' but STATUS_CONFIG only has 'active' — no label shown | Code fix needed |
+| BUG-013 | P2 | `/agency/billing` not in bottom nav | Workaround: Dashboard quick action works |
+| BUG-014 | P1 | `trip-photos` Storage bucket existence unconfirmed | ✅ FIXED v43-judge — bucket created via MCP |
+| BUG-015 | P1 | PWA icons missing — install prompt fails | ✅ FIXED — icons present (verified v43) |
+| BUG-016 | P1 | AgencyJobsPage shows `vehicle_type: '—'` — not joined from shipments | ✅ FIXED v43 |
+| BUG-017 | P1 | Agency accepted jobs status 'accepted' missing from STATUS_CONFIG — no badge | ✅ FIXED v43 |
+| BUG-018 | P1 | `handleCancelShipment` hard-DELETEs shipment row — orphans job_offers, unrecoverable | ✅ FIXED v43-judge — now calls `updateStatus('cancelled')` |
+| BUG-019 | P1 | Customer TrackingPage showed "Start Delivery" + "Modify Booking" buttons — bypasses driver OTP flow | ✅ FIXED v43-judge — buttons removed |
 
 ---
 
