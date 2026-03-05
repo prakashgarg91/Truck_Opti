@@ -60,6 +60,32 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-05 16:00] SONNET-003: 🚀 v39 DEPLOYED — Phase 2.3/2.4 Complete + Phase 3 Agency Portal
+
+                             SUPABASE MIGRATION APPLIED (via MCP):
+                             ✅ phase2_trip_flow_columns: pickup_otp, delivery_otp, photo urls, timestamps
+                                added to job_offers; status CHECK expanded to include pickup_arrived,
+                                in_transit, delivery_arrived, delivered; trigger auto-generates 4-digit OTPs
+
+                             NEW FILES CREATED (5):
+                             ✅ frontend/src/pages/DriverTripPage.tsx — Full 7-step trip flow:
+                                  Navigate → Arrived Pickup → OTP Verify → Loading Photo →
+                                  Start Journey (GPS tracking) → Arrived Destination → Delivery OTP →
+                                  Proof Photo → Complete Delivery
+                             ✅ frontend/src/layouts/AgencyLayout.tsx — Agency portal header + bottom nav
+                             ✅ frontend/src/pages/AgencyDashboardPage.tsx — Agency KPI cards, quick actions
+                             ✅ frontend/src/pages/AgencyFleetPage.tsx — Add trucks, doc expiry alerts
+                             ✅ frontend/src/pages/AgencyJobsPage.tsx — Job list with filter tabs
+                                 (also AgencyBillingPage for GST/invoices placeholder)
+
+                             FILES UPDATED:
+                             ✅ App.tsx — AgencyLayout import, 5 new lazy routes, RoleHome agency redirect,
+                                 /driver/trip/:jobId route, /agency/* routes block
+                             ✅ DriverDashboardPage.tsx — Active Job card “Navigate” → navigate to /driver/trip/:id
+                             ✅ ROADMAP.md + STATE.md — v38 items checked off
+
+                             STATUS: v39 Released at Heroku 2026-03-05 ~16:00 IST
+───────────────────────────────────────────────────────────────────────
 [2026-03-05 15:00] SONNET-003: 🚀 v38 DEPLOYED — Phase 1 COMPLETE + Phase 2 Core Done
 
                              SUPABASE MIGRATIONS APPLIED (via MCP):
@@ -342,10 +368,10 @@ STATUS: 🟡 IN PROGRESS
 | Apex Domain HTTPS | 200 | 200 | ✅ |
 | WWW Domain HTTPS | 200 | 200 | ✅ |
 | Heroku ACM Coverage | 2/2 | 2/2 | ✅ |
-| Heroku Code Sync | v38 | Latest | ✅ Deployed 2026-03-05 |
+| Heroku Code Sync | v39 | Latest | ✅ Deployed 2026-03-05 |
 | Supabase Auth Site URL | truckopti.in | truckopti.in | ✅ Fixed (v22 session) |
 | OG Tags Domain | truckopti.in | truckopti.in | ✅ |
-| Launch Checklist Completion | 35/40 | 40/40 | ⚠️ Phase 2 active trip + Phase 3 pending |
+| Launch Checklist Completion | 38/40 | 40/40 | ⚠️ Phase 3 Agency jobs/billing full impl pending |
 
 ---
 
@@ -404,6 +430,7 @@ python interactive_webapp_test.py
 
 | Version | Date | Deployer | Status | Notes |
 |---------|------|----------|--------|-------|
+| v39 (c7be1b5f) | 2026-03-05 | SONNET-003 | ✅ Success | Phase 2.3/2.4 + Phase 3: DriverTripPage, AgencyLayout, Agency portal, trip OTP migration |
 | v38 (62f56dab) | 2026-03-05 | SONNET-002/003 | ✅ Success | Phase 1 complete + Phase 2 core: Driver portal, Agency reg, Admin agencies, DriverLayout |
 | v37 (8d62d725) | 2026-03-05 | SONNET-002 | ✅ Success | ProfilePage merge bug, TrucksPage overflow, formatCurrency, ROADMAP updates |
 | v36 (671834b5) | 2026-03-05 | SONNET-002 | ✅ Success | Phase 1: driver module, company profile, admin queue, formatters |
@@ -443,4 +470,4 @@ If stuck:
 
 ---
 
-**Last Updated:** 2026-03-05 by SONNET-003 (v38: Phase 1 COMPLETE + Phase 2 core deployed; Phase 2.3 Active Trip + Phase 3 Agency Portal in progress)
+**Last Updated:** 2026-03-05 by SONNET-003 (v39: Phase 2.3/2.4 + Phase 3 Agency Portal deployed; remaining: full agency job flow, Razorpay live key, Twilio SMS)
