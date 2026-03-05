@@ -90,12 +90,8 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
                              ✅ InvoicePage: composite address from profile fields, /settings/company link
                              ✅ App.tsx: 3 new lazy routes added
                              ✅ dev-matrix: REQUIREMENTS.md rewritten, ROADMAP.md Phase 0 checked, STATE.md updated
-                             
-                             CURRENTLY WORKING ON (v36):
-                             🔄 formatters.ts utility (formatPercent, formatCurrency, formatDistance, formatDuration)
-                             🔄 Sidebar NavLink: doesn't call setSidebarOpen(false) on click — fixing now
-                             🔄 Phase 1: Driver registration multi-step page
-                             🔄 Phase 1: Company profile onboarding wizard
+
+[2026-03-05 14:00] SONNET-002: ✅ v37 deployed — BUG-009/010/011/012 fixed
 ───────────────────────────────────────────────────────────────────────
 [2026-03-03 20:00] SONNET-001: 🚀 PRODUCTION DEPLOYMENT COMPLETE
                              
@@ -323,7 +319,7 @@ STATUS: 🟡 IN PROGRESS
 | Apex Domain HTTPS | 200 | 200 | ✅ |
 | WWW Domain HTTPS | 200 | 200 | ✅ |
 | Heroku ACM Coverage | 2/2 | 2/2 | ✅ |
-| Heroku Code Sync | v36 | Latest | ✅ Deployed 2026-03-05 |
+| Heroku Code Sync | v37 | Latest | ✅ Deployed 2026-03-05 |
 | Supabase Auth Site URL | truckopti.in | truckopti.in | ✅ Fixed (v22 session) |
 | OG Tags Domain | truckopti.in | truckopti.in | ✅ |
 | Launch Checklist Completion | 32/40 | 40/40 | ⚠️ Phase 1 in progress |
@@ -385,6 +381,7 @@ python interactive_webapp_test.py
 
 | Version | Date | Deployer | Status | Notes |
 |---------|------|----------|--------|-------|
+| v37 (8d62d725) | 2026-03-05 | SONNET-002 | ✅ Success | ProfilePage merge bug, TrucksPage overflow, formatCurrency, ROADMAP updates |
 | v36 (671834b5) | 2026-03-05 | SONNET-002 | ✅ Success | Phase 1: driver module, company profile, admin queue, formatters |
 | v35 (9a3de66d) | 2026-03-04 | SONNET-001/002 | ✅ Success | SW skipWaiting, route duration fix, packing vol%, invoice company banner |
 | v34 (780bd70a) | 2026-03-04 | SONNET-001 | ✅ Success | sale_order_items order_id fix, auto product_code |
