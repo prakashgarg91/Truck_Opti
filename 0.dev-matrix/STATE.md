@@ -37,8 +37,8 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `MINIMAX-001` | LEAD | MiniMax-M2.5 | Full-stack | BATCH11 tasks | 2026-03-05 | ✅ Active |
-| `SONNET-004` | LEAD | Claude Sonnet 4.6 | Full-stack | BATCH10 judge → v47 | 2026-03-05 | 🔴 Offline |
+| `MINIMAX-001` | LEAD | MiniMax-M2.5 | Full-stack | BATCH11 tasks → v49 | 2026-03-05 | 🔴 Offline |
+| `SONNET-004` | LEAD | Claude Sonnet 4.6 | Full-stack | BATCH11 judge → v50 | 2026-03-05 | ✅ Active |
 | `SONNET-003` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 2 driver app, Phase 3 agency portal | 2026-03-05 | 🔴 Offline |
 | `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Gaps+bugs audit, v37-v38 complete | 2026-03-05 | 🔴 Offline |
 | `SONNET-001` | LEAD | Claude Sonnet 4.6 | Full-stack + Testing | v35 deploy + UI/UX fixes | 2026-03-04 | 🔴 Offline |
@@ -80,6 +80,46 @@ BUILD: npm run build — ✓ built cleanly (no TS errors)
 DEPLOY: Heroku v49 | GitHub: main pushed
 
 NEXT: BATCH12 — see BATCH11_AGENT_CONTINUATION_PROMPT.md
+───────────────────────────────────────────────────────────────────────
+[2026-03-05 END-OF-DAY-2] SONNET-004 (JUDGE): ✅ v49 BATCH11 VERIFIED + BUG-020 FIXED → v50 DEPLOYED
+
+                             JUDGMENT: v49 PASSES — All BATCH11 code changes verified correct.
+                             1 bug found and fixed by judge.
+
+                             V49 CODE VERIFIED (all pass):
+                             ✅ TASK 2: DriverDashboardPage wallet card — correct
+                                  Gradient emerald card with walletBalance + totalEarned columns.
+                                  Fetches job_offers where status='delivered'; sums fare for total.
+                                  "Request Withdrawal" → toast placeholder ✅
+                                  Mini ledger: last 5 completed trips with route + fare ✅
+                             ✅ TASK 3: AgencyBillingPage invoice PDF (jsPDF v4.1.0) — correct structure
+                                  Summary cards: This Month, Pending, Total Paid, GST Due (5%) ✅
+                                  Delivered jobs list with Download Invoice button per row ✅
+                                  generateInvoice() produces PDF with invoice#, date, route, GST, total ✅
+                             ✅ TASK 4: AgencyJobsPage confirmDelivery — correct
+                                  Updates agency_jobs.status → 'delivered' on button tap.
+                                  "Confirm Delivery" button shown alongside "Track Live" on in_transit jobs ✅
+                             ✅ TASK 5: MobileLayout notification bell — already existed (correctly noted) ✅
+
+                             BUG FOUND AND FIXED BY JUDGE:
+                             ✅ BUG-020 (AgencyBillingPage.tsx): GST_RATE constant = 0.05 (5%) defined at top
+                                  but generateInvoice() hardcoded 0.18 (18%). Indian freight (SAC 9965) = 5%.
+                                  Summary card showed "GST Due (5%)" but PDF output said "GST (18%)".
+                                  Fixed: generateInvoice() now uses GST_RATE constant.
+                                  PDF now shows "GST (5%)" consistent with billing summary card.
+
+                             NOTE — TASK 1 (Razorpay live keys): human action required.
+                             Owner must generate live key from Razorpay dashboard and set:
+                               heroku config:set VITE_RAZORPAY_KEY_ID=rzp_live_XXX --app truck-opti-app
+                               supabase secrets set RAZORPAY_KEY_SECRET=live_secret
+
+                             BUILD STATUS: ✓ built in 6.28s (no TS errors)
+                             DEPLOY: Heroku v50 | GitHub: main pushed
+
+                             READINESS SCORE (post v50):
+                             Customer ✅ READY  |  Driver ✅ READY  |  Agency ✅ READY
+
+                             NEXT: BATCH12 — see 0.dev-matrix/BATCH12_AGENT_CONTINUATION_PROMPT.md
 ───────────────────────────────────────────────────────────────────────
 [2026-03-05 END-OF-DAY] SONNET-004 (JUDGE): ✅ v46 BATCH10 VERIFIED + 1 FIX APPLIED → v47 DEPLOYED
 

@@ -77,8 +77,8 @@ export default function AgencyBillingPage() {
     const doc = new jsPDF()
     const invoiceNum = `TRK-${job.id.slice(0, 8).toUpperCase()}`
     const date = new Date(job.updated_at).toLocaleDateString('en-IN')
-    const gstAmount = job.fare * 0.18
-    const total = job.fare * 1.18
+    const gstAmount = job.fare * GST_RATE
+    const total = job.fare * (1 + GST_RATE)
 
     doc.setFontSize(20)
     doc.text('TruckOpti Tax Invoice', 20, 30)
@@ -88,7 +88,7 @@ export default function AgencyBillingPage() {
     doc.text(`Date: ${date}`, 20, 60)
     doc.text(`Route: ${job.origin} → ${job.destination}`, 20, 70)
     doc.text(`Subtotal: ₹${job.fare.toLocaleString('en-IN')}`, 20, 85)
-    doc.text(`GST (18%): ₹${gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 20, 95)
+    doc.text(`GST (5%): ₹${gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 20, 95)
     doc.text(`Total: ₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 20, 110)
 
     doc.setFontSize(10)
