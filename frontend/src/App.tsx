@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/authStore'
 // Layouts
 import MobileLayout from './layouts/MobileLayout'
 import AuthLayout from './layouts/AuthLayout'
+import DriverLayout from './layouts/DriverLayout'
 
 // Pages - Eager loaded (auth pages for fast auth experience)
 import LoginPage from './pages/auth/LoginPage'
@@ -42,6 +43,19 @@ const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'))
 const DriverRegisterPage = React.lazy(() => import('./pages/DriverRegisterPage'))
 const CompanyProfilePage = React.lazy(() => import('./pages/CompanyProfilePage'))
 const AdminDriversPage = React.lazy(() => import('./pages/AdminDriversPage'))
+const AdminAgenciesPage = React.lazy(() => import('./pages/AdminAgenciesPage'))
+const AgencyRegisterPage = React.lazy(() => import('./pages/AgencyRegisterPage'))
+const DriverDashboardPage = React.lazy(() => import('./pages/DriverDashboardPage'))
+const DriverEarningsPage = React.lazy(() => import('./pages/DriverEarningsPage'))
+const DriverHistoryPage = React.lazy(() => import('./pages/DriverHistoryPage'))
+const DriverDetailPage = React.lazy(() => import('./pages/DriverDetailPage'))
+
+// Role-based home: redirects drivers/agencies to their portal, customers to Dashboard
+function RoleHome() {
+  const { user } = useAuthStore()
+  if (user?.role === 'driver') return <Navigate to="/driver/dashboard" replace />
+  return <Dashboard />
+}
 
 function AppContent() {
   const { initialize } = useAuthStore()
@@ -69,6 +83,7 @@ function AppContent() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/subscription" element={<Navigate to="/pricing" replace />} />
           <Route path="/driver/register" element={<DriverRegisterPage />} />
+          <Route path="/agency/register" element={<AgencyRegisterPage />} />
           {import.meta.env.DEV && (
             <Route path="/test-payment" element={<TestPaymentPage />} />
           )}
@@ -80,7 +95,7 @@ function AppContent() {
             <MobileLayout />
           </ProtectedRoute>
         }>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<RoleHome />} />
           <Route path="/packing" element={<PackingPage />} />
           <Route path="/routes" element={<RoutesPage />} />
           <Route path="/tracking" element={<TrackingPage />} />
@@ -93,6 +108,19 @@ function AppContent() {
           <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
           <Route path="/settings/company" element={<CompanyProfilePage />} />
           <Route path="/admin/drivers" element={<AdminDriversPage />} />
+          <Route path="/admin/drivers/:id" element={<DriverDetailPage />} />
+          <Route path="/admin/agencies" element={<AdminAgenciesPage />} />
+        </Route>
+
+        {/* Driver Portal — separate layout with driver bottom nav */}
+        <Route element={
+          <ProtectedRoute>
+            <DriverLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/driver/dashboard" element={<DriverDashboardPage />} />
+          <Route path="/driver/earnings" element={<DriverEarningsPage />} />
+          <Route path="/driver/history" element={<DriverHistoryPage />} />
         </Route>
         
         {/* Catch all - show 404 page */}

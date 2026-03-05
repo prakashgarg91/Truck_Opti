@@ -524,16 +524,28 @@ export default function MobileLayout() {
             </button>
 
             {user?.role === 'admin' && (
-              <button
-                onClick={() => {
-                  navigate('/admin/drivers')
-                  setSidebarOpen(false)
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-              >
-                <ShieldCheck className="w-5 h-5" />
-                <span className="font-medium">{language === 'en' ? 'Driver Approvals' : 'ड्राइवर अनुमोदन'}</span>
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    navigate('/admin/drivers')
+                    setSidebarOpen(false)
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  <span className="font-medium">{language === 'en' ? 'Driver Approvals' : 'ड्राइवर अनुमोदन'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/admin/agencies')
+                    setSidebarOpen(false)
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                >
+                  <Building2 className="w-5 h-5" />
+                  <span className="font-medium">{language === 'en' ? 'Agency Approvals' : 'एजेंसी अनुमोदन'}</span>
+                </button>
+              </>
             )}
 
             <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
