@@ -1,17 +1,18 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Truck, Briefcase, FileText,
-  LogOut, Building2, ChevronRight
+  LayoutDashboard, Truck, Briefcase,
+  LogOut, Building2, ChevronRight, Users, Tag
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 
 const NAV = [
-  { to: '/agency/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/agency/dashboard', icon: LayoutDashboard, label: 'Home' },
   { to: '/agency/fleet',     icon: Truck,           label: 'Fleet' },
+  { to: '/agency/drivers',   icon: Users,           label: 'Drivers' },
   { to: '/agency/jobs',      icon: Briefcase,       label: 'Jobs' },
-  { to: '/agency/billing',   icon: FileText,        label: 'Billing' },
+  { to: '/agency/rates',     icon: Tag,             label: 'Rates' },
 ]
 
 export default function AgencyLayout() {

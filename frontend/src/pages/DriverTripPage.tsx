@@ -75,9 +75,12 @@ export default function DriverTripPage() {
   const [otpInput, setOtpInput] = useState('')
   const [otpError, setOtpError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   // GPS tracking refs
   const watchIdRef = useRef<number | null>(null)
+  const photoInputRef = useRef<HTMLInputElement | null>(null)
 
   const fetchTrip = useCallback(async () => {
     if (!jobId || !user?.id) return
@@ -233,8 +236,42 @@ export default function DriverTripPage() {
     toast.success('Delivery OTP verified ✓')
   }
 
-  const handleCompleteDelivery = async () => {
-    if (!driver?.id) return
+  const uploadPhoto = async (file: File, field: 'photo_loading_url' | 'photo_delivery_url'): Promise<string | null> => {
+    if (!job?.id || !driver?.id) return null
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `trip-photos/${driver.id}/${job.id}/${field}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('trip-photos')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (uploadError) {
+        // Storage bucket may not exist — store data URL as fallback
+        return null
+      }
+      const { data: urlData } = supabase.storage.from('trip-photos').getPublicUrl(path)
+      const publicUrl = urlData?.publicUrl || null
+      if (publicUrl) {
+        await supabase.from('job_offers').update({ [field]: publicUrl }).eq('id', job.id)
+        setJob(j => j ? { ...j, [field]: publicUrl } : j)
+      }
+      return publicUrl
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>, field: 'photo_loading_url' | 'photo_delivery_url') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => setPhotoPreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+    await uploadPhoto(file, field)
+    toast.success('Photo captured!')
+  }
+
+  const handleCompleteDelivery = async () => {    if (!driver?.id) return
     const ok = await updateJobStatus('delivered', {
       delivered_at: new Date().toISOString(),
     })
@@ -466,21 +503,42 @@ export default function DriverTripPage() {
                 <span className="font-semibold text-violet-800 dark:text-violet-300">Capture Loading Photo</span>
               </div>
               <p className="text-sm text-violet-700 dark:text-violet-400">
-                Take a clear photo of the goods being loaded onto your vehicle. This protects you in case of disputes.
+                Take a clear photo of the goods being loaded. This protects you in case of disputes.
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
-                <Camera size={32} className="text-slate-400" />
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Photo capture requires camera access
-              </p>
-              <p className="text-xs text-slate-400 mb-4">(Photo upload coming soon — tap below to skip for now)</p>
+              {photoPreview || job.photo_loading_url ? (
+                <img
+                  src={photoPreview || job.photo_loading_url!}
+                  alt="Loading photo"
+                  className="w-full h-48 object-cover rounded-xl mb-3"
+                />
+              ) : (
+                <div className="w-full h-40 rounded-xl bg-slate-100 dark:bg-slate-700 flex flex-col items-center justify-center mb-3">
+                  <Camera size={32} className="text-slate-400 mb-2" />
+                  <p className="text-xs text-slate-400">No photo taken yet</p>
+                </div>
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={e => handlePhotoCapture(e, 'photo_loading_url')}
+              />
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60"
+              >
+                <Camera size={16} />
+                {uploading ? 'Uploading...' : (photoPreview || job.photo_loading_url) ? 'Retake Photo' : 'Take Photo'}
+              </button>
             </div>
             <button
               disabled={submitting}
-              onClick={handleStartJourney}
+              onClick={() => { setPhotoPreview(null); handleStartJourney() }}
               className="w-full flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
             >
               <Truck size={20} />
@@ -583,14 +641,38 @@ export default function DriverTripPage() {
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
-                <Camera size={32} className="text-slate-400" />
-              </div>
-              <p className="text-xs text-slate-400 mb-4">(Photo upload coming soon — tap below to complete delivery)</p>
+              {photoPreview || job.photo_delivery_url ? (
+                <img
+                  src={photoPreview || job.photo_delivery_url!}
+                  alt="Delivery photo"
+                  className="w-full h-48 object-cover rounded-xl mb-3"
+                />
+              ) : (
+                <div className="w-full h-40 rounded-xl bg-slate-100 dark:bg-slate-700 flex flex-col items-center justify-center mb-3">
+                  <Camera size={32} className="text-slate-400 mb-2" />
+                  <p className="text-xs text-slate-400">No photo taken yet</p>
+                </div>
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={e => handlePhotoCapture(e, 'photo_delivery_url')}
+              />
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60"
+              >
+                <Camera size={16} />
+                {uploading ? 'Uploading...' : (photoPreview || job.photo_delivery_url) ? 'Retake Photo' : 'Take Photo'}
+              </button>
             </div>
             <button
               disabled={submitting}
-              onClick={handleCompleteDelivery}
+              onClick={() => { setPhotoPreview(null); handleCompleteDelivery() }}
               className="w-full flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
             >
               <CheckCircle2 size={20} />

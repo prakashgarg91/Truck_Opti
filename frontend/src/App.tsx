@@ -55,6 +55,8 @@ const AgencyDashboardPage = React.lazy(() => import('./pages/AgencyDashboardPage
 const AgencyFleetPage = React.lazy(() => import('./pages/AgencyFleetPage'))
 const AgencyJobsPage = React.lazy(() => import('./pages/AgencyJobsPage'))
 const AgencyBillingPage = React.lazy(() => import('./pages/AgencyBillingPage'))
+const AgencyDriversPage = React.lazy(() => import('./pages/AgencyDriversPage'))
+const AgencyRatesPage = React.lazy(() => import('./pages/AgencyRatesPage'))
 
 // Role-based home: redirects drivers/agencies to their portal, customers to Dashboard
 function RoleHome() {
@@ -141,6 +143,8 @@ function AppContent() {
           <Route path="/agency/fleet" element={<AgencyFleetPage />} />
           <Route path="/agency/jobs" element={<AgencyJobsPage />} />
           <Route path="/agency/billing" element={<AgencyBillingPage />} />
+          <Route path="/agency/drivers" element={<AgencyDriversPage />} />
+          <Route path="/agency/rates" element={<AgencyRatesPage />} />
         </Route>
         
         {/* Catch all - show 404 page */}
