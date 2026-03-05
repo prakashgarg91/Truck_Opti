@@ -109,8 +109,25 @@ const CheckoutPage: React.FC = () => {
       });
 
       if (phonePeResult.success && phonePeResult.data?.instrumentResponse?.redirectInfo?.url) {
+        const redirectUrl = phonePeResult.data.instrumentResponse.redirectInfo.url;
+        // Security: validate redirect URL is on an allowed PhonePe domain (BUG-REDIRECT-001 fix)
+        const ALLOWED_PHONEPE_DOMAINS = ['api.phonepe.com', 'mercury.phonepe.com', 'api-preprod.phonepe.com'];
+        let isSafeUrl = false;
+        try {
+          const parsed = new URL(redirectUrl);
+          isSafeUrl = parsed.protocol === 'https:' &&
+            ALLOWED_PHONEPE_DOMAINS.some(d => parsed.hostname === d || parsed.hostname.endsWith(`.${d}`));
+        } catch {
+          isSafeUrl = false;
+        }
+        if (!isSafeUrl) {
+          logger.error('PhonePe redirect URL failed domain validation:', redirectUrl);
+          toast.error(language === 'en' ? 'Payment redirect validation failed. Please try again.' : 'भुगतान पुनर्निर्देशन मान्यता विफल हुई। कृपया पुनः प्रयास करें।');
+          setProcessing(false);
+          return;
+        }
         toast.success(language === 'en' ? 'Redirecting to PhonePe...' : 'PhonePe पर रीडायरेक्ट किया जा रहा है...');
-        window.location.href = phonePeResult.data.instrumentResponse.redirectInfo.url;
+        window.location.href = redirectUrl;
         return;
       }
 
