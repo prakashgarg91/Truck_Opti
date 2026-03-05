@@ -68,9 +68,9 @@
 | 6.2 | Google OAuth production credentials | ❌ | P0 — blocks login |
 | 6.3 | Google Maps API key | ❌ | P1 — Leaflet fallback works |
 | 6.4 | Custom domain + SSL | ✅ | P0 — `truckopti.in` + `www.truckopti.in` live |
-| 6.5 | PWA icons (missing from public/) | ❌ | P1 — install prompt fails |
+| 6.5 | PWA icons (missing from public/) | ✅ | BATCH9 verified — pwa-192x192.png, pwa-512x512.png, apple-touch-icon.png exist |
 | 6.6 | Error tracking (Sentry or similar) | ❌ | P1 |
-| 6.7 | Terms of Service / Privacy Policy pages | ❌ | P0 — legal requirement |
+| 6.7 | Terms of Service / Privacy Policy pages | ✅ | BATCH6 T9 — `/terms` and `/privacy` pages live |
 | 6.8 | Admin panel for subscriber management | ❌ | P1 |
 | 6.9 | Database backups (PITR) | ❌ | P1 |
 | 6.10 | Remove socket.io-client dead dep | ❌ | P2 |
@@ -86,8 +86,8 @@
 | 3. Frontend Wiring | 6 | 6 | 0 |
 | 4. Subscriptions | 7 | 6 | 1 |
 | 5. Testing | 5 | 4 | 1 |
-| 6. Production | 10 | 1 | 9 |
-| **TOTAL** | **40** | **29** | **11** |
+| 6. Production | 10 | 3 | 7 |
+| **TOTAL** | **40** | **31** | **9** |
 
 ---
 

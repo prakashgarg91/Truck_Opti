@@ -15,6 +15,11 @@
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-115 | Upgrade/downgrade subscription flow | P1 | UNCLAIMED | - | 🟡 Ready to claim |
+| **BATCH12-T1** | **Razorpay webhook Edge Function (HMAC-SHA256)** | **P1** | UNCLAIMED | - | 🟡 Ready to claim |
+| **BATCH12-T2** | **Admin dashboard real analytics** | **P2** | UNCLAIMED | - | 🟡 Ready to claim |
+| **BATCH12-T3** | **Driver document upload (licence + RC)** | **P2** | UNCLAIMED | - | 🟡 Ready to claim |
+| **BATCH12-T4** | **Customer shipment history page** | **P2** | UNCLAIMED | - | 🟡 Ready to claim |
+| **BATCH12-T5** | **Agency notification bell (Realtime)** | **P2** | UNCLAIMED | - | 🟡 Ready to claim |
 
 ---
 
@@ -28,6 +33,11 @@
 | T-116 | Set `VITE_RAZORPAY_KEY_ID` to live production key | P0 | S | 30m | frontend/.env.production, Razorpay dashboard |
 | T-117 | Create contact/sales inquiry form or page | P2 | M | 2h | frontend/src/pages/ContactPage.tsx |
 | T-118 | Add Razorpay production webhook + order verification | P1 | L | 4h | supabase/functions/ |
+| BATCH12-T1 | Razorpay webhook Edge Function `supabase/functions/razorpay-webhook/index.ts` — HMAC-SHA256, update subscription to active | P1 | L | 4h | `supabase/functions/razorpay-webhook/` |
+| BATCH12-T2 | AdminDashboardPage real analytics — query `agency_jobs`, `transport_agencies`, `drivers` | P2 | M | 2h | `frontend/src/pages/AdminDashboardPage.tsx` |
+| BATCH12-T3 | DriverRegisterPage doc upload — add licence + RC photo upload to `driver-docs` bucket, save URLs to `drivers` table | P2 | M | 2h | `frontend/src/pages/DriverRegisterPage.tsx` |
+| BATCH12-T4 | Customer ShipmentHistoryPage — `/shipment-history` route showing all shipments for auth user | P2 | M | 2h | `frontend/src/pages/ShipmentHistoryPage.tsx` (create) |
+| BATCH12-T5 | AgencyLayout notification bell — Supabase Realtime subscription to `agency_jobs` INSERT | P2 | S | 1h | `frontend/src/layouts/AgencyLayout.tsx` |
 
 ### Priority Levels
 - 🔴 **P0** - Critical (blocking production)

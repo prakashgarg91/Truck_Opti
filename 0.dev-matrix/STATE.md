@@ -38,7 +38,7 @@
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
 | `MINIMAX-001` | LEAD | MiniMax-M2.5 | Full-stack | BATCH11 tasks → v49 | 2026-03-05 | 🔴 Offline |
-| `SONNET-004` | LEAD | Claude Sonnet 4.6 | Full-stack | BATCH11 judge → v50 | 2026-03-05 | ✅ Active |
+| `SONNET-004` | JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH11 judge → v50 + 0.dev-matrix rewrite | 2026-03-05 | 🔴 Offline |
 | `SONNET-003` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 2 driver app, Phase 3 agency portal | 2026-03-05 | 🔴 Offline |
 | `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Gaps+bugs audit, v37-v38 complete | 2026-03-05 | 🔴 Offline |
 | `SONNET-001` | LEAD | Claude Sonnet 4.6 | Full-stack + Testing | v35 deploy + UI/UX fixes | 2026-03-04 | 🔴 Offline |
@@ -722,6 +722,11 @@ python interactive_webapp_test.py
 
 | Version | Date | Deployer | Status | Notes |
 |---------|------|----------|--------|-------|
+| v50 | 2026-03-05 | SONNET-004 | ✅ Live | BUG-020 GST fix + BUG-REDIRECT-001 PhonePe fix + SECURITY.md created |
+| v49 | 2026-03-05 | MINIMAX-001 | ✅ Success | BATCH11: wallet card, billing PDF, confirm delivery |
+| v47 | 2026-03-05 | SONNET-004 | ✅ Success | BATCH10 judge: AgencyDashboard 30d earnings fix |
+| v44 | 2026-03-05 | SONNET-004 | ✅ Success | BATCH9 judge: trip-photos bucket + BUG-018/019 fixes |
+| v43 | 2026-03-05 | SONNET-004 | ✅ Success | BATCH9: AgencyJobsPage + TrackingPage + PWA icons |
 | v39 (c7be1b5f) | 2026-03-05 | SONNET-003 | ✅ Success | Phase 2.3/2.4 + Phase 3: DriverTripPage, AgencyLayout, Agency portal, trip OTP migration |
 | v38 (62f56dab) | 2026-03-05 | SONNET-002/003 | ✅ Success | Phase 1 complete + Phase 2 core: Driver portal, Agency reg, Admin agencies, DriverLayout |
 | v37 (8d62d725) | 2026-03-05 | SONNET-002 | ✅ Success | ProfilePage merge bug, TrucksPage overflow, formatCurrency, ROADMAP updates |
@@ -762,4 +767,4 @@ If stuck:
 
 ---
 
-**Last Updated:** 2026-03-05 by SONNET-003 (v39: Phase 2.3/2.4 + Phase 3 Agency Portal deployed; remaining: full agency job flow, Razorpay live key, Twilio SMS)
+**Last Updated:** 2026-03-05 by SONNET-004 (v50 live: all 3 portals ready; BATCH12 unclaimed — 5 tasks: Razorpay webhook, admin analytics, driver docs, shipment history, notification bell)

@@ -160,6 +160,3 @@ migration: add licence_url and rc_url columns to drivers table
 
 *Last updated: 2026-03-05 | v50 | SONNET-004*
 
----
-
-*Last updated: 2026-03-05 | v50 | SONNET-004*
