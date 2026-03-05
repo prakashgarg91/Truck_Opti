@@ -59,15 +59,19 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
-[2026-03-05 00:00] SONNET-002: 🚀 v35 DEPLOYED — Phase 0 UI Fixes Complete
+[2026-03-05 12:00] SONNET-002: 🚀 v36 DEPLOYED — Phase 1 Driver Module + Company Profile
                              
-                             FIXES SHIPPED IN v35:
-                             ✅ SW skipWaiting + clientsClaim → no more stale JS served after deploy
-                             ✅ RoutesPage duration math: total_time stored in hours, was treated as minutes
-                                 Fixed: 0h 29m → 28h 42m (correct for 1148 km @ 40 km/h)
-                             ✅ PackingPage worker path: volumeUtilization/weightUtilization now Math.round()
-                             ✅ InvoicePage: amber banner + 'Complete your profile →' link when company name missing
-                             ✅ PRODUCT_VISION.md + ROADMAP.md created (350+ + 250+ lines)
+                             SHIPPED IN v36:
+                             ✅ DriverRegisterPage: 4-step driver onboarding (/driver/register)
+                             ✅ CompanyProfilePage: company info → user_metadata (/settings/company)
+                             ✅ AdminDriversPage: approve/reject queue, admin-only (/admin/drivers)
+                             ✅ DB migration: drivers, transport_agencies, driver_locations, job_offers
+                             ✅ formatters.ts: formatPercent/formatCurrency/formatDistance/formatDuration
+                             ✅ RoutesPage + PackingPage: formatter utilities applied
+                             ✅ MobileLayout: sidebar NavLink close fix + Company Profile + Driver Approvals links
+                             ✅ InvoicePage: composite address from profile fields, /settings/company link
+                             ✅ App.tsx: 3 new lazy routes added
+                             ✅ dev-matrix: REQUIREMENTS.md rewritten, ROADMAP.md Phase 0 checked, STATE.md updated
                              
                              CURRENTLY WORKING ON (v36):
                              🔄 formatters.ts utility (formatPercent, formatCurrency, formatDistance, formatDuration)
@@ -301,7 +305,7 @@ STATUS: 🟡 IN PROGRESS
 | Apex Domain HTTPS | 200 | 200 | ✅ |
 | WWW Domain HTTPS | 200 | 200 | ✅ |
 | Heroku ACM Coverage | 2/2 | 2/2 | ✅ |
-| Heroku Code Sync | v35 | Latest | ✅ Deployed 2026-03-04 |
+| Heroku Code Sync | v36 | Latest | ✅ Deployed 2026-03-05 |
 | Supabase Auth Site URL | truckopti.in | truckopti.in | ✅ Fixed (v22 session) |
 | OG Tags Domain | truckopti.in | truckopti.in | ✅ |
 | Launch Checklist Completion | 32/40 | 40/40 | ⚠️ Phase 1 in progress |
@@ -363,6 +367,7 @@ python interactive_webapp_test.py
 
 | Version | Date | Deployer | Status | Notes |
 |---------|------|----------|--------|-------|
+| v36 (671834b5) | 2026-03-05 | SONNET-002 | ✅ Success | Phase 1: driver module, company profile, admin queue, formatters |
 | v35 (9a3de66d) | 2026-03-04 | SONNET-001/002 | ✅ Success | SW skipWaiting, route duration fix, packing vol%, invoice company banner |
 | v34 (780bd70a) | 2026-03-04 | SONNET-001 | ✅ Success | sale_order_items order_id fix, auto product_code |
 | v33 | 2026-03-04 | SONNET-001 | ✅ Success | JWT admin role detection |
