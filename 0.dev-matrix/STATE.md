@@ -37,7 +37,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 0 fixes + Phase 1 driver module | 2026-03-05 | ✅ Active |
+| `SONNET-002` | LEAD | Claude Sonnet 4.6 | Full-stack | Gaps+bugs audit, v37 fixes | 2026-03-05 | ✅ Active |
 | `SONNET-001` | LEAD | Claude Sonnet 4.6 | Full-stack + Testing | v35 deploy + UI/UX fixes | 2026-03-04 | 🔴 Offline |
 | `OPUS-002` | LEAD | Claude Opus 4.5 | Full-stack | Framework testing | 2026-01-11 | 🔴 Offline |
 
@@ -59,7 +59,25 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
-[2026-03-05 12:00] SONNET-002: 🚀 v36 DEPLOYED — Phase 1 Driver Module + Company Profile
+[2026-03-05 14:00] SONNET-002: 🔍 GAPS+BUGS AUDIT → v37 fixes
+                             
+                             BUGS FOUND & FIXED:
+                             ❌ BUG-009: ProfilePage handleSaveCompany overwrites entire company object
+                                 → Any save in Profile destroyed address_line1/city/state/pincode/phone/email
+                                    that CompanyProfilePage had saved. FIXED: now merges with existing.
+                             ❌ BUG-010: TrucksPage volume cell overflow in 4-column grid (no truncate)
+                                 → FIXED: `truncate min-w-0` added to Volume + Cost/km cells
+                             ❌ BUG-011: TrucksPage cost_per_km shown as raw `₹{value}` (no formatting)
+                                 → FIXED: `formatCurrency(truck.cost_per_km || 0)` using formatters.ts
+                             ❌ BUG-012: ProfilePage company section showed only `company.address` (old format)
+                                 → FIXED: now falls back to composed address from address_line1/city/state/pincode
+                             
+                             IMPROVEMENTS ADDED:
+                             ✅ ProfilePage: "Full Profile →" link added to Company section → /settings/company
+                             ✅ ProfilePage: `useNavigate` + `ExternalLink` icon imported
+                             ✅ ROADMAP: Phase 0 all items checked off, Phase 1 items updated
+                             
+                             STATUS: v37 build in progress
                              
                              SHIPPED IN v36:
                              ✅ DriverRegisterPage: 4-step driver onboarding (/driver/register)

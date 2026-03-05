@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { useDebouncedCallback } from '../hooks/useDebounce'
 import { logger } from '../utils/logger'
+import { formatCurrency } from '../utils/formatters'
 
 interface TruckType {
   id: string
@@ -475,13 +476,13 @@ export default function TrucksPage() {
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Capacity</p>
                   <p className="text-xs font-medium">{(truck.capacity / 1000).toFixed(1)}T</p>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center min-w-0">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Volume</p>
-                  <p className="text-xs font-medium">{(truck.length * truck.width * truck.height / 1000000).toFixed(1)}m³</p>
+                  <p className="text-xs font-medium truncate">{(truck.length * truck.width * truck.height / 1000000).toFixed(1)}m³</p>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center min-w-0">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Cost/km</p>
-                  <p className="text-xs font-medium">₹{truck.cost_per_km || 0}</p>
+                  <p className="text-xs font-medium truncate">{formatCurrency(truck.cost_per_km || 0)}</p>
                 </div>
               </div>
             </div>

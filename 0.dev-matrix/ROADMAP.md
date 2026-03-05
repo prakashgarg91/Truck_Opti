@@ -4,63 +4,59 @@
 
 ---
 
-## 🔥 PHASE 0 — HOTFIXES (v35 ✔ Shipped + v36 in progress)
+## 🔥 PHASE 0 — HOTFIXES (v35 ✔ + v36 ✔ + v37 in progress)
 **Goal:** Fix all UI/UX overflow issues found in live testing
 
 ### UI/UX Overflow Bugs
 - [x] Packing page: `37.819...%` → `38.0%` — Math.round in worker path (**v35**)
-- [ ] Truck card volume % text overflowing card bounds (minor — v36)
+- [x] Truck card volume % text overflowing card bounds — `truncate min-w-0` (**v37**)
 - [x] Invoice: Replace "Your Company Name" — amber banner + link to profile (**v35**)
 - [x] Routes: `0h 29m` duration — fixed hours vs minutes math bug (**v35**)
 - [x] Home page SW cache → admin shows "Free Plan" — fixed `skipWaiting: true` + `clientsClaim` (**v35**)
-- [ ] Numbers formatting: create `formatters.ts` utility (**v36 in progress**)
-- [ ] Mobile: sidebar doesn't close on nav click (**v36 in progress**)
+- [x] Numbers formatting: `formatters.ts` utility created + applied (**v36**)
+- [x] Mobile: sidebar doesn't close on nav click (**v36**)
 - [x] Track page: MapViewWrapper with OSM/Leaflet fallback — no white box
-- [x] Notifications panel: slides from right as overlay (translate-x-full → translate-x-0) (**already working**)
+- [x] Notifications panel: slides from right as overlay (**already working**)
 
-### Phase 0 Code Improvements (v36)
-- [ ] `formatPercent(value, decimals?)` utility
-- [ ] `formatCurrency(value)` utility
-- [ ] `formatDistance(km)` utility
-- [ ] `formatDuration(hours)` utility
-- [ ] Apply across Pack, Invoice, Routes, Home pages
+### Phase 0 Code Improvements (✔ All Done)
+- [x] `formatPercent(value, decimals?)` utility (**v36**)
+- [x] `formatCurrency(value)` utility (**v36**)
+- [x] `formatDistance(km)` utility (**v36**)
+- [x] `formatDuration(hours)` utility (**v36**)
+- [x] Applied across PackingPage, RoutesPage, TrucksPage, CompanyProfilePage (**v36/v37**)
+- [x] ProfilePage: company merge-not-overwrite fix + Full Profile link (**v37**)
 
 ---
 
-## 🚀 PHASE 1 — MULTI-PORTAL FOUNDATION (v36 — in progress)
+## 🚀 PHASE 1 — MULTI-PORTAL FOUNDATION (v36 ✔ + v37 in progress)
 **Goal:** Setup portal routing, roles, and company profiles
 
 ### 1.1 Portal Routing Architecture
-- [ ] `/` → Customer Portal (current)
-- [ ] `/driver/*` → Driver Portal (new, mobile-first)
-- [ ] `/agency/*` → Agency Portal (new)
-- [ ] `/admin/*` → Platform Admin (current `/management` expanded)
+- [x] `/` → Customer Portal (current)
+- [x] `/driver/*` → Driver Portal (`/driver/register` live) (**v36**)
+- [ ] `/agency/*` → Agency Portal (Phase 2)
+- [x] `/admin/*` → Platform Admin (`/admin/drivers` live) (**v36**)
 - [ ] Role-based redirect on login (driver → `/driver/dashboard`, agency → `/agency/dashboard`)
 
 ### 1.2 Company Profile Setup
-- [ ] **Onboarding wizard** for new customers (`/settings/company`)
-- [ ] Company profile page with GSTIN, address, logo
-- [ ] Replace invoice "Your Company Name" with actual company data (DB lookup)
-- [ ] API key generation for ERP integration
+- [x] **Company profile page** with GSTIN, PAN, address, contact (`/settings/company`) (**v36**)
+- [x] Replace invoice "Your Company Name" with `user_metadata.company` (**v35/v36**)
+- [x] ProfilePage: merge-safe company save + Full Profile link (**v37**)
+- [ ] API key generation for ERP integration (Phase 4)
 
-### 1.3 Driver Registration Portal (`/driver/register`) — **v36 in progress**
-- [ ] Multi-step registration form:
-  - Step 1: Phone OTP verification
-  - Step 2: Personal details (name, Aadhaar last 4)
-  - Step 3: Vehicle details (type, RC number, capacity)
-  - Step 4: Bank details (account + IFSC)
-  - Step 5: Submission → "Under Review" state
-- [ ] DB: `drivers` table migration (Supabase)
-- [ ] Admin: Driver approval queue `/admin/drivers` **v36 in progress**
+### 1.3 Driver Registration Portal (`/driver/register`) ✔ (**v36**)
+- [x] Multi-step registration form: Personal → Vehicle → Bank → Submit (**v36**)
+- [x] DB: `drivers` table migration (SQL written — needs Supabase apply) (**v36**)
+- [x] Admin: Driver approval queue `/admin/drivers` (**v36**)
 
-### 1.4 Agency Registration Portal (`/agency/register`)
+### 1.4 Agency Registration Portal (`/agency/register`) — Phase 2
 - [ ] Business registration form (company, GSTIN, transport license)
-- [ ] DB: `transport_agencies` table
+- [x] DB: `transport_agencies` table (SQL written — needs Supabase apply) (**v36**)
 - [ ] Admin: Agency approval queue in `/admin/agencies`
 
-### 1.5 Driver Management (Admin)
-- [ ] `/admin/drivers` — list all drivers (pending/active/suspended)
-- [ ] Driver detail page — verify documents, approve/reject
+### 1.5 Driver Management (Admin) ✔ (**v36**)
+- [x] `/admin/drivers` — list all drivers (pending/active/suspended) (**v36**)
+- [ ] Driver detail page — verify documents, approve/reject individual fields
 - [ ] Export driver list (CSV)
 
 ---

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { 
   Phone, Mail, MapPin, Shield, Bell, 
-  Globe, ChevronRight, LogOut, Camera, Edit3, Save, X, RefreshCw
+  Globe, ChevronRight, LogOut, Camera, Edit3, Save, X, RefreshCw, ExternalLink
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
@@ -206,6 +207,7 @@ export default function ProfilePage() {
   
   // Company info from user metadata
   const companyInfo = (user?.user_metadata as any)?.company || {}
+  const navigate = useNavigate()
 
   // Edit profile state
   const [isEditing, setIsEditing] = useState(false)
@@ -274,12 +276,16 @@ export default function ProfilePage() {
   const handleSaveCompany = async () => {
     setIsSaving(true)
     try {
+      // Read current user data to MERGE (not overwrite) CompanyProfilePage fields
+      const { data: { user: freshUser } } = await supabase.auth.getUser()
+      const existingCompany = (freshUser?.user_metadata as any)?.company || {}
       const { error } = await supabase.auth.updateUser({
         data: {
           company: {
+            ...existingCompany,          // Preserve address_line1/city/state/pincode etc.
             name: editCompanyName,
             gstin: editGstin.toUpperCase(),
-            address: editCompanyAddress
+            address: editCompanyAddress  // legacy flat-string field
           }
         }
       })
@@ -470,21 +476,30 @@ export default function ProfilePage() {
           <h2 className="font-semibold text-slate-900 dark:text-white">
             {t.companyInfo}
           </h2>
-          <button
-            onClick={() => {
-              setIsEditingCompany(!isEditingCompany)
-              if (!isEditingCompany) {
-                const company = (user?.user_metadata as any)?.company || {}
-                setEditCompanyName(company.name || '')
-                setEditGstin(company.gstin || '')
-                setEditCompanyAddress(company.address || '')
-              }
-            }}
-            className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
-          >
-            <Edit3 className="w-4 h-4" />
-            {isEditingCompany ? (language === 'en' ? 'Cancel' : 'रद्द करें') : (language === 'en' ? 'Edit' : 'संपादित करें')}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/settings/company')}
+              className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              {language === 'en' ? 'Full Profile' : 'पूर्ण प्रोफ़ाइल'}
+            </button>
+            <button
+              onClick={() => {
+                setIsEditingCompany(!isEditingCompany)
+                if (!isEditingCompany) {
+                  const company = (user?.user_metadata as any)?.company || {}
+                  setEditCompanyName(company.name || '')
+                  setEditGstin(company.gstin || '')
+                  setEditCompanyAddress(company.address || '')
+                }
+              }}
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+            >
+              <Edit3 className="w-4 h-4" />
+              {isEditingCompany ? (language === 'en' ? 'Cancel' : 'रद्द करें') : (language === 'en' ? 'Edit' : 'संपादित करें')}
+            </button>
+          </div>
         </div>
 
         {/* Company Info Display */}
@@ -519,7 +534,10 @@ export default function ProfilePage() {
               <div className="flex-1">
                 <p className="text-sm text-slate-500">{t.companyAddress}</p>
                 <p className="font-medium text-slate-900 dark:text-white">
-                  {companyInfo.address || t.notAdded}
+                  {companyInfo.address ||
+                    [companyInfo.address_line1, companyInfo.city, companyInfo.state, companyInfo.pincode]
+                      .filter(Boolean).join(', ') ||
+                    t.notAdded}
                 </p>
               </div>
             </div>
