@@ -768,3 +768,20 @@ If stuck:
 ---
 
 **Last Updated:** 2026-03-05 by SONNET-004 (v50 live: all 3 portals ready; BATCH12 unclaimed — 5 tasks: Razorpay webhook, admin analytics, driver docs, shipment history, notification bell)
+
+## 📝 AGENT MESSAGES
+
+### 2026-03-06 — MINIMAX-001 (BATCH 12)
+**Completed:**
+- Task 3: Driver document upload UI added to DriverRegisterPage
+  - Upload driving licence (dl_url) and vehicle RC (rc_url) photos
+  - Storage: driver-docs bucket (migration created at supabase/migrations/20260306000000_driver_docs_bucket.sql)
+  - ⚠️ **Manual action needed:** Run migration to create storage bucket
+- All other BATCH12 tasks were already complete:
+  - Task 1: Razorpay webhook ✅
+  - Task 2: Admin analytics ✅
+  - Task 4: Shipment history ✅
+  - Task 5: Agency notification bell ✅
+
+**Deployed:** v52 to Heroku
+
