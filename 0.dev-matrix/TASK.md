@@ -14,6 +14,11 @@
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
+| ~~BATCH15-T1~~ | ~~Admin payout management UI~~ | ~~P1~~ | MINIMAX-M2.5 | 2026-03-06 | ✅ DONE |
+| ~~BATCH15-T2~~ | ~~BUG-023: vite-plugin-pwa downgrade + serialize-javascript override~~ | ~~P2~~ | MINIMAX-M2.5 | 2026-03-06 | ✅ DONE |
+| ~~BATCH15-T3~~ | ~~Add created_by to shipment inserts (RLS)~~ | ~~P0~~ | MINIMAX-M2.5 | 2026-03-06 | ✅ DONE |
+| ~~BATCH15-T4~~ | ~~Add created_by to routes/packing inserts (RLS)~~ | ~~P0~~ | MINIMAX-M2.5 | 2026-03-06 | ✅ DONE |
+| ~~BATCH15-T5~~ | ~~Add created_by to customer inserts (RLS)~~ | ~~P0~~ | MINIMAX-M2.5 | 2026-03-06 | ✅ DONE |
 | ~~BATCH14-T1~~ | ~~BUG-REDIRECT-001 PhonePe domain validation~~ | ~~P0~~ | MINIMAX-003 | 2026-03-06 | ✅ DONE |
 | ~~BATCH14-T2~~ | ~~npm audit fix (40+ vulns)~~ | ~~P0~~ | MINIMAX-003 | 2026-03-06 | ✅ DONE — 4 high remain (build-time only, BUG-023) |
 | ~~BATCH14-T3~~ | ~~Driver withdrawal → driver_payouts table~~ | ~~P1~~ | MINIMAX-003 | 2026-03-06 | ✅ DONE |
