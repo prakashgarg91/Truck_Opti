@@ -50,12 +50,11 @@
 |----|------|----------|------------|-----------|-------|
 | T-107 | Production OAuth/domain canonical verification | P2 | S | 1h | Supabase dashboard |
 | T-117 | Create contact/sales inquiry form or page | P2 | M | 2h | `frontend/src/pages/ContactPage.tsx` |
-| **BATCH15-T1** | **Admin payout management** — AdminDashboard or new `/admin/payouts` page to view pending driver_payouts and mark approved/paid/rejected | P1 | M | 2h | `frontend/src/pages/AdminDashboardPage.tsx` or new page |
-| **BATCH15-T2** | **Fix BUG-023 (build vuln)** — downgrade `vite-plugin-pwa` to `0.19.8` (`npm audit fix --force`), verify PWA still works, fix any breaking changes | P2 | S | 1h | `frontend/package.json` |
-| **BATCH15-T3** | **Customer new shipment: save `created_by`** — `NewShipmentPage.tsx` inserts to `shipments` without setting `created_by = auth.uid()`. Without this the new RLS policy (BATCH13 migration) will block the insert | P0 | S | 1h | `frontend/src/pages/NewShipmentPage.tsx` |
-| **BATCH15-T4** | **Customer routes/packing: save `created_by`** — same as T3 for `routes` and `packing_results` tables | P0 | S | 1h | `frontend/src/pages/RoutesPage.tsx`, `frontend/src/pages/PackingPage.tsx` |
-| **BATCH15-T5** | **Customer management page: save `created_by`** — any page that inserts into `customers` table must set `created_by = auth.uid()` | P0 | S | 1h | `frontend/src/pages/NewShipmentPage.tsx` (customer lookup/create) |
-| **BATCH15-T6** | **E2E smoke test** (human or agent) — log in as customer, create shipment, create route, run packing — verify data saves and loads back correctly with new RLS policies | P0 | M | 2h | All customer pages |
+| **BATCH16-T1** | **Admin payouts nav card** — `/admin/payouts` is routed but not linked from the admin dashboard; add a clickable nav card at `AdminDashboardPage.tsx` alongside the existing Drivers and Agencies cards | P1 | S | 30m | `frontend/src/pages/AdminDashboardPage.tsx` |
+| **BATCH16-T2** | **E2E smoke test for RLS** — login as agency user, create shipment, route, and packing; verify data saves + loads back correctly under new `created_by` RLS policies | P0 | M | 2h | `frontend/src/pages/NewShipmentPage.tsx`, RoutesPage, PackingPage |
+| **BATCH16-T3** | **Supabase migration push (human)** — run `supabase db push` to apply 3 pending migrations to production: `20260307000000_fix_rls_ownership.sql`, `20260308000000_driver_payouts.sql`. ⚠️ Human action required — needs production Supabase access | P0 | S | 15m | `supabase/migrations/` |
+| **BATCH16-T4** | **Heroku env vars (human)** — `heroku config:set VITE_RAZORPAY_KEY_ID=rzp_live_XXX RAZORPAY_KEY_SECRET=XXX --app truck-opti-app`. ⚠️ Human action required | P0 | S | 15m | Heroku dashboard |
+| **BATCH16-T5** | **Contact/Sales page** — create `ContactPage.tsx` at `/contact` with a form (name, email, phone, message) that saves to Supabase `contact_inquiries` table + sends email notification | P2 | M | 2h | `frontend/src/pages/ContactPage.tsx` |
 
 ### Priority Levels
 - 🔴 **P0** - Critical (blocking production)

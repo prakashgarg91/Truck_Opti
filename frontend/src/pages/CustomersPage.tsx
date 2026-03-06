@@ -65,8 +65,8 @@ export default function CustomersPage() {
       setIsModalOpen(false)
       resetForm()
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create customer')
+    onError: () => {
+      toast.error(language === 'en' ? 'Failed to create customer' : 'ग्राहक बनाने में त्रुटि')
     },
   })
 
@@ -80,8 +80,8 @@ export default function CustomersPage() {
       setIsModalOpen(false)
       resetForm()
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update customer')
+    onError: () => {
+      toast.error(language === 'en' ? 'Failed to update customer' : 'ग्राहक अपडेट करने में त्रुटि')
     },
   })
 
@@ -92,8 +92,8 @@ export default function CustomersPage() {
       queryClient.invalidateQueries({ queryKey: ['customers'] })
       toast.success(language === 'en' ? 'Customer deleted successfully' : 'ग्राहक सफलतापूर्वक हटा दिया गया')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete customer')
+    onError: () => {
+      toast.error(language === 'en' ? 'Failed to delete customer' : 'ग्राहक हटाने में त्रुटि')
     },
   })
 
