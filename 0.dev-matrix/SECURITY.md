@@ -40,12 +40,13 @@ These have been found but are NOT yet fixed in migration files. Any agent workin
 | ~~BUG-RLS-004~~ | ~~`packing_results`~~ | ~~`USING (true)` on SELECT~~ | ~~🟠 High~~ — **✅ FIXED (BATCH13)** |
 | ~~BUG-RLS-005~~ | ~~`trucks`~~ | ~~`USING (true)` on UPDATE, DELETE~~ | ~~🟠 High~~ — **✅ FIXED (BATCH13) — trucks is global reference catalog; all writes removed, public SELECT kept** |
 | ~~BUG-RLS-006~~ | ~~`cartons`~~ | ~~`USING (true)` on UPDATE, DELETE~~ | ~~🟠 High~~ — **✅ FIXED (BATCH13) — same as trucks** |
-| BUG-REDIRECT-001 | `CheckoutPage.tsx:113` | `window.location.href = phonePeResult.data.instrumentResponse.redirectInfo.url` — open redirect; no domain validation on URL from payment API response | 🟠 High |
+| ~~BUG-REDIRECT-001~~ | ~~`CheckoutPage.tsx:113`~~ | ~~Open redirect — no PhonePe domain validation~~ | ~~🟠 High~~ — **✅ FIXED (BATCH14) — ALLOWED_PHONEPE_DOMAINS allowlist + isSafeUrl() added** |
+| BUG-023 | `frontend/node_modules/serialize-javascript` (build dep chain) | `serialize-javascript <=7.0.2` RCE via RegExp/Date — GHSA-5c6j-r48x-rmvq. Affects build-time only (Rollup/Terser). NOT in production bundle. Fix = downgrade `vite-plugin-pwa` to `@0.19.8` (breaking change). | 🟡 Medium (build-time only) |
 | ~~BUG-WEBHOOK-001~~ | ~~(Razorpay webhook)~~ | ~~No HMAC-SHA256 verification~~ | ~~🔴 Critical~~ — **✅ FIXED (BATCH12)** |
 | ~~BUG-021~~ | ~~`20260306000000_driver_docs_bucket.sql`~~ | ~~Admin policy OR clause granted ALL auth users admin rights~~ | ~~🟠 High~~ — **✅ FIXED (BATCH12 judge)** |
 | ~~BUG-022~~ | ~~`razorpay-webhook/index.ts`~~ | ~~No guard for empty RAZORPAY_KEY_SECRET~~ | ~~🟠 High~~ — **✅ FIXED (BATCH12 judge)** |
 
-**Only open vulnerability as of BATCH13**: BUG-REDIRECT-001 — PhonePe redirect URL domain validation missing in `CheckoutPage.tsx`.
+**Only open vulnerability as of BATCH14**: BUG-023 — `serialize-javascript` chain in build dependencies (build-time only, not user-facing).
 
 ---
 

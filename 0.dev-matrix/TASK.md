@@ -14,7 +14,11 @@
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| ~~T-115~~ | ~~Upgrade/downgrade subscription flow~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH14-T1~~ | ~~BUG-REDIRECT-001 PhonePe domain validation~~ | ~~P0~~ | MINIMAX-003 | 2026-03-06 | ✅ DONE |
+| ~~BATCH14-T2~~ | ~~npm audit fix (40+ vulns)~~ | ~~P0~~ | MINIMAX-003 | 2026-03-06 | ✅ DONE — 4 high remain (build-time only, BUG-023) |
+| ~~BATCH14-T3~~ | ~~Driver withdrawal → driver_payouts table~~ | ~~P1~~ | MINIMAX-003 | 2026-03-06 | ✅ DONE |
+| ~~BATCH14-T4~~ | ~~Admin approve/reject agencies~~ | ~~P1~~ | MINIMAX-003 | 2026-03-06 | ✅ DONE |
+| ~~BATCH14-T5~~ | ~~Admin approve/reject drivers~~ | ~~P1~~ | MINIMAX-003 | 2026-03-06 | ✅ DONE |
 | ~~BATCH14-T1~~ | ~~BUG-REDIRECT-001 PhonePe domain validation~~ | ~~P0~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
 | ~~BATCH14-T2~~ | ~~npm audit fix for 45 vulnerabilities~~ | ~~P0~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
 | ~~BATCH14-T3~~ | ~~Driver withdrawal writes to driver_payouts~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
@@ -41,12 +45,12 @@
 |----|------|----------|------------|-----------|-------|
 | T-107 | Production OAuth/domain canonical verification | P2 | S | 1h | Supabase dashboard |
 | T-117 | Create contact/sales inquiry form or page | P2 | M | 2h | `frontend/src/pages/ContactPage.tsx` |
-| **BATCH14-T1** | **Fix BUG-REDIRECT-001** — add domain allowlist validation before PhonePe redirect in CheckoutPage.tsx | **P0** | S | 1h | `frontend/src/pages/CheckoutPage.tsx` |
-| **BATCH14-T2** | **`npm audit fix`** — resolve 44 Dependabot vulnerabilities (2 critical, 25 high) | **P0** | M | 2h | `frontend/package.json`, `package-lock.json` |
-| **BATCH14-T3** | **Driver withdrawal flow** — "Request Withdrawal" button on DriverDashboardPage is a toast placeholder; implement actual payout request to a `driver_payouts` table | P1 | M | 3h | `frontend/src/pages/DriverDashboardPage.tsx`, new migration |
-| **BATCH14-T4** | **Admin: approve/reject pending agencies** — AdminAgenciesPage shows agencies but lacks approve/reject action; `transport_agencies.status` exists but no UI to change it | P1 | M | 2h | `frontend/src/pages/AdminAgenciesPage.tsx` |
-| **BATCH14-T5** | **Admin: approve/reject pending drivers** — same pattern as T4 but for AdminDriversPage | P1 | M | 2h | `frontend/src/pages/AdminDriversPage.tsx` |
-| **BATCH14-T6** | **Supabase migration push** (human) — run `supabase db push` for migrations 20260306 and 20260307; verify RLS policies live | P0 | S | 30m | Supabase dashboard / CLI |
+| **BATCH15-T1** | **Admin payout management** — AdminDashboard or new `/admin/payouts` page to view pending driver_payouts and mark approved/paid/rejected | P1 | M | 2h | `frontend/src/pages/AdminDashboardPage.tsx` or new page |
+| **BATCH15-T2** | **Fix BUG-023 (build vuln)** — downgrade `vite-plugin-pwa` to `0.19.8` (`npm audit fix --force`), verify PWA still works, fix any breaking changes | P2 | S | 1h | `frontend/package.json` |
+| **BATCH15-T3** | **Customer new shipment: save `created_by`** — `NewShipmentPage.tsx` inserts to `shipments` without setting `created_by = auth.uid()`. Without this the new RLS policy (BATCH13 migration) will block the insert | P0 | S | 1h | `frontend/src/pages/NewShipmentPage.tsx` |
+| **BATCH15-T4** | **Customer routes/packing: save `created_by`** — same as T3 for `routes` and `packing_results` tables | P0 | S | 1h | `frontend/src/pages/RoutesPage.tsx`, `frontend/src/pages/PackingPage.tsx` |
+| **BATCH15-T5** | **Customer management page: save `created_by`** — any page that inserts into `customers` table must set `created_by = auth.uid()` | P0 | S | 1h | `frontend/src/pages/NewShipmentPage.tsx` (customer lookup/create) |
+| **BATCH15-T6** | **E2E smoke test** (human or agent) — log in as customer, create shipment, create route, run packing — verify data saves and loads back correctly with new RLS policies | P0 | M | 2h | All customer pages |
 
 ### Priority Levels
 - 🔴 **P0** - Critical (blocking production)
