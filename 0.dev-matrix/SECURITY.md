@@ -34,18 +34,18 @@ These have been found but are NOT yet fixed in migration files. Any agent workin
 
 | ID | Table / File | Vulnerability | Severity |
 |----|------|------|----------|
-| BUG-RLS-001 | `customers` (base_schema.sql:158) | `USING (true)` on SELECT, UPDATE, DELETE — every authenticated user can read and modify every other user's customers | 🔴 Critical |
-| BUG-RLS-002 | `shipments` (base_schema.sql:164) | `USING (true)` on SELECT, UPDATE — cross-tenant shipment exposure | 🔴 Critical |
-| BUG-RLS-003 | `routes` (base_schema.sql:169) | `USING (true)` on SELECT, UPDATE, DELETE — cross-tenant route exposure | 🔴 Critical |
-| BUG-RLS-004 | `packing_results` (base_schema.sql:175) | `USING (true)` on SELECT — any user can see any user's packing calculations | 🟠 High |
-| BUG-RLS-005 | `trucks` (base_schema.sql + production_setup.sql) | `USING (true)` on UPDATE, DELETE — any authenticated user deletes any truck record | 🟠 High |
-| BUG-RLS-006 | `cartons` (base_schema.sql + production_setup.sql) | `USING (true)` on UPDATE, DELETE — any authenticated user deletes any carton record | 🟠 High |
+| ~~BUG-RLS-001~~ | ~~`customers`~~ | ~~`USING (true)` on SELECT, UPDATE, DELETE~~ | ~~🔴 Critical~~ — **✅ FIXED (BATCH13 — migration 20260307000000_fix_rls_ownership.sql)** |
+| ~~BUG-RLS-002~~ | ~~`shipments`~~ | ~~`USING (true)` on SELECT, UPDATE~~ | ~~🔴 Critical~~ — **✅ FIXED (BATCH13)** |
+| ~~BUG-RLS-003~~ | ~~`routes`~~ | ~~`USING (true)` on SELECT, UPDATE, DELETE~~ | ~~🔴 Critical~~ — **✅ FIXED (BATCH13)** |
+| ~~BUG-RLS-004~~ | ~~`packing_results`~~ | ~~`USING (true)` on SELECT~~ | ~~🟠 High~~ — **✅ FIXED (BATCH13)** |
+| ~~BUG-RLS-005~~ | ~~`trucks`~~ | ~~`USING (true)` on UPDATE, DELETE~~ | ~~🟠 High~~ — **✅ FIXED (BATCH13) — trucks is global reference catalog; all writes removed, public SELECT kept** |
+| ~~BUG-RLS-006~~ | ~~`cartons`~~ | ~~`USING (true)` on UPDATE, DELETE~~ | ~~🟠 High~~ — **✅ FIXED (BATCH13) — same as trucks** |
 | BUG-REDIRECT-001 | `CheckoutPage.tsx:113` | `window.location.href = phonePeResult.data.instrumentResponse.redirectInfo.url` — open redirect; no domain validation on URL from payment API response | 🟠 High |
-| ~~BUG-WEBHOOK-001~~ | ~~(Razorpay webhook — not yet implemented)~~ | ~~No HMAC-SHA256 `x-razorpay-signature` verification~~ | ~~🔴 Critical~~ |
-| BUG-021 | `supabase/migrations/20260306000000_driver_docs_bucket.sql` | **FIXED (BATCH12 judge)** — "Admins can manage all driver documents" policy had an OR clause (`OR (auth.jwt() ->> 'role') = 'authenticated'`) that granted ALL authenticated users admin rights over ALL driver docs. Fixed: removed OR clause, requires `user_metadata.role = 'admin'` only. | ✅ Fixed |
-| BUG-022 | `supabase/functions/razorpay-webhook/index.ts` | **FIXED (BATCH12 judge)** — No guard for empty `RAZORPAY_KEY_SECRET` env var. A missing secret would silently compute HMAC with empty key instead of rejecting the request. Fixed: early return with HTTP 500 when secret is unset. | ✅ Fixed |
+| ~~BUG-WEBHOOK-001~~ | ~~(Razorpay webhook)~~ | ~~No HMAC-SHA256 verification~~ | ~~🔴 Critical~~ — **✅ FIXED (BATCH12)** |
+| ~~BUG-021~~ | ~~`20260306000000_driver_docs_bucket.sql`~~ | ~~Admin policy OR clause granted ALL auth users admin rights~~ | ~~🟠 High~~ — **✅ FIXED (BATCH12 judge)** |
+| ~~BUG-022~~ | ~~`razorpay-webhook/index.ts`~~ | ~~No guard for empty RAZORPAY_KEY_SECRET~~ | ~~🟠 High~~ — **✅ FIXED (BATCH12 judge)** |
 
-**Root cause of BUG-RLS-001 through -004**: The `customers`, `shipments`, `routes`, and `packing_results` tables have no ownership column (`user_id`, `agency_id`, `created_by`). Before RLS can be scoped correctly, a `created_by UUID REFERENCES auth.users(id)` column must be added and backfilled. See Section 4 for the correct pattern.
+**Only open vulnerability as of BATCH13**: BUG-REDIRECT-001 — PhonePe redirect URL domain validation missing in `CheckoutPage.tsx`.
 
 ---
 

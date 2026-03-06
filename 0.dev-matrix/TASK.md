@@ -35,14 +35,13 @@
 | ID | Task | Priority | Complexity | Est. Time | Files |
 |----|------|----------|------------|-----------|-------|
 | T-107 | Production OAuth/domain canonical verification | P2 | S | 1h | Supabase dashboard |
-| T-116 | Set `VITE_RAZORPAY_KEY_ID` to live production key | P0 | S | 30m | frontend/.env.production, Razorpay dashboard |
-| T-117 | Create contact/sales inquiry form or page | P2 | M | 2h | frontend/src/pages/ContactPage.tsx |
-| T-118 | Add Razorpay production webhook + order verification | P1 | L | 4h | supabase/functions/ |
-| BATCH12-T1 | Razorpay webhook Edge Function `supabase/functions/razorpay-webhook/index.ts` — HMAC-SHA256, update subscription to active | P1 | L | 4h | `supabase/functions/razorpay-webhook/` |
-| BATCH12-T2 | AdminDashboardPage real analytics — query `agency_jobs`, `transport_agencies`, `drivers` | P2 | M | 2h | `frontend/src/pages/AdminDashboardPage.tsx` |
-| BATCH12-T3 | DriverRegisterPage doc upload — add licence + RC photo upload to `driver-docs` bucket, save URLs to `drivers` table | P2 | M | 2h | `frontend/src/pages/DriverRegisterPage.tsx` |
-| BATCH12-T4 | Customer ShipmentHistoryPage — `/shipment-history` route showing all shipments for auth user | P2 | M | 2h | `frontend/src/pages/ShipmentHistoryPage.tsx` (create) |
-| BATCH12-T5 | AgencyLayout notification bell — Supabase Realtime subscription to `agency_jobs` INSERT | P2 | S | 1h | `frontend/src/layouts/AgencyLayout.tsx` |
+| T-117 | Create contact/sales inquiry form or page | P2 | M | 2h | `frontend/src/pages/ContactPage.tsx` |
+| **BATCH14-T1** | **Fix BUG-REDIRECT-001** — add domain allowlist validation before PhonePe redirect in CheckoutPage.tsx | **P0** | S | 1h | `frontend/src/pages/CheckoutPage.tsx` |
+| **BATCH14-T2** | **`npm audit fix`** — resolve 44 Dependabot vulnerabilities (2 critical, 25 high) | **P0** | M | 2h | `frontend/package.json`, `package-lock.json` |
+| **BATCH14-T3** | **Driver withdrawal flow** — "Request Withdrawal" button on DriverDashboardPage is a toast placeholder; implement actual payout request to a `driver_payouts` table | P1 | M | 3h | `frontend/src/pages/DriverDashboardPage.tsx`, new migration |
+| **BATCH14-T4** | **Admin: approve/reject pending agencies** — AdminAgenciesPage shows agencies but lacks approve/reject action; `transport_agencies.status` exists but no UI to change it | P1 | M | 2h | `frontend/src/pages/AdminAgenciesPage.tsx` |
+| **BATCH14-T5** | **Admin: approve/reject pending drivers** — same pattern as T4 but for AdminDriversPage | P1 | M | 2h | `frontend/src/pages/AdminDriversPage.tsx` |
+| **BATCH14-T6** | **Supabase migration push** (human) — run `supabase db push` for migrations 20260306 and 20260307; verify RLS policies live | P0 | S | 30m | Supabase dashboard / CLI |
 
 ### Priority Levels
 - 🔴 **P0** - Critical (blocking production)
