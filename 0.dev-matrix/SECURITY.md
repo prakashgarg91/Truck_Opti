@@ -41,7 +41,9 @@ These have been found but are NOT yet fixed in migration files. Any agent workin
 | BUG-RLS-005 | `trucks` (base_schema.sql + production_setup.sql) | `USING (true)` on UPDATE, DELETE — any authenticated user deletes any truck record | 🟠 High |
 | BUG-RLS-006 | `cartons` (base_schema.sql + production_setup.sql) | `USING (true)` on UPDATE, DELETE — any authenticated user deletes any carton record | 🟠 High |
 | BUG-REDIRECT-001 | `CheckoutPage.tsx:113` | `window.location.href = phonePeResult.data.instrumentResponse.redirectInfo.url` — open redirect; no domain validation on URL from payment API response | 🟠 High |
-| BUG-WEBHOOK-001 | (Razorpay webhook — not yet implemented) | No HMAC-SHA256 `x-razorpay-signature` verification before processing payment event | 🔴 Critical |
+| ~~BUG-WEBHOOK-001~~ | ~~(Razorpay webhook — not yet implemented)~~ | ~~No HMAC-SHA256 `x-razorpay-signature` verification~~ | ~~🔴 Critical~~ |
+| BUG-021 | `supabase/migrations/20260306000000_driver_docs_bucket.sql` | **FIXED (BATCH12 judge)** — "Admins can manage all driver documents" policy had an OR clause (`OR (auth.jwt() ->> 'role') = 'authenticated'`) that granted ALL authenticated users admin rights over ALL driver docs. Fixed: removed OR clause, requires `user_metadata.role = 'admin'` only. | ✅ Fixed |
+| BUG-022 | `supabase/functions/razorpay-webhook/index.ts` | **FIXED (BATCH12 judge)** — No guard for empty `RAZORPAY_KEY_SECRET` env var. A missing secret would silently compute HMAC with empty key instead of rejecting the request. Fixed: early return with HTTP 500 when secret is unset. | ✅ Fixed |
 
 **Root cause of BUG-RLS-001 through -004**: The `customers`, `shipments`, `routes`, and `packing_results` tables have no ownership column (`user_id`, `agency_id`, `created_by`). Before RLS can be scoped correctly, a `created_by UUID REFERENCES auth.users(id)` column must be added and backfilled. See Section 4 for the correct pattern.
 

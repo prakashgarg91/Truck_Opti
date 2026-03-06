@@ -11,6 +11,10 @@ serve(async (req) => {
     const body = await req.text()
     const signature = req.headers.get('x-razorpay-signature') ?? ''
     const secret = Deno.env.get('RAZORPAY_KEY_SECRET') ?? ''
+    if (!secret) {
+      console.error('[razorpay-webhook] RAZORPAY_KEY_SECRET not configured')
+      return new Response('Webhook not configured', { status: 500 })
+    }
 
     // Verify HMAC-SHA256 signature
     const key = await crypto.subtle.importKey(

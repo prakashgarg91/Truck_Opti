@@ -15,11 +15,11 @@
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-115 | Upgrade/downgrade subscription flow | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| **BATCH12-T1** | **Razorpay webhook Edge Function (HMAC-SHA256)** | **P1** | UNCLAIMED | - | 🟡 Ready to claim |
-| **BATCH12-T2** | **Admin dashboard real analytics** | **P2** | UNCLAIMED | - | 🟡 Ready to claim |
-| **BATCH12-T3** | **Driver document upload (licence + RC)** | **P2** | UNCLAIMED | - | 🟡 Ready to claim |
-| **BATCH12-T4** | **Customer shipment history page** | **P2** | UNCLAIMED | - | 🟡 Ready to claim |
-| **BATCH12-T5** | **Agency notification bell (Realtime)** | **P2** | UNCLAIMED | - | 🟡 Ready to claim |
+| ~~BATCH12-T1~~ | ~~Razorpay webhook Edge Function~~ | ~~P1~~ | SONNET-004 (judge) | 2026-03-06 | ✅ DONE |
+| ~~BATCH12-T2~~ | ~~Admin dashboard real analytics~~ | ~~P2~~ | MINIMAX-001 | 2026-03-05 | ✅ DONE |
+| ~~BATCH12-T3~~ | ~~Driver document upload~~ | ~~P2~~ | MINIMAX-001 | 2026-03-05 | ✅ DONE |
+| ~~BATCH12-T4~~ | ~~Customer shipment history page~~ | ~~P2~~ | MINIMAX-001 | 2026-03-05 | ✅ DONE |
+| ~~BATCH12-T5~~ | ~~Agency notification bell~~ | ~~P2~~ | MINIMAX-001 | 2026-03-05 | ✅ DONE |
 
 ---
 

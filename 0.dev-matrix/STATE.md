@@ -62,6 +62,44 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-06] SONNET-004 (JUDGE): ✅ BATCH12 VERIFIED + 2 SECURITY BUGS FIXED → v53 DEPLOYED
+
+                             JUDGMENT: BATCH12 PASSES (with 2 bugs found and fixed by judge)
+
+                             V52 BATCH12 TASKS VERIFIED (all pass):
+                             ✅ T1: Razorpay webhook (supabase/functions/razorpay-webhook/index.ts)
+                                  HMAC-SHA256 x-razorpay-signature verification correct.
+                                  BUG-022 found: no guard for empty RAZORPAY_KEY_SECRET — FIXED.
+                             ✅ T2: Admin dashboard real analytics (AdminDashboardPage.tsx)
+                                  totalRevenue from agency_jobs.fare, platformFee = 10%.
+                                  Real agency/driver/shipment counts via count:'exact' ✅
+                             ✅ T3: Driver doc upload (DriverRegisterPage.tsx)
+                                  dl_url/rc_url fields in FormData, handleFileUpload() to
+                                  driver-docs/{uid}/ bucket, UI buttons + previews in Step 2 ✅
+                                  Migration 20260306000000_driver_docs_bucket.sql exists ✅
+                                  BUG-021 found: admin policy OR clause granted ALL auth users admin
+                                  rights — FIXED (admin role check only, no OR clause).
+                             ✅ T4: Customer shipment history (ShipmentHistoryPage.tsx)
+                                  Route /history in App.tsx. In MobileLayout bottom nav ✅
+                             ✅ T5: Agency notification bell (AgencyLayout.tsx)
+                                  Bell icon, newJobCount state, Realtime subscription on
+                                  agency-new-jobs channel, badge clears on click ✅
+
+                             FULL INTEGRATION SCAN — all 37 pages connected to routes ✅
+                             All 6 Edge Functions connected to payment services ✅
+                             ORPHANED FILES FOUND (documented in AUDIT.md):
+                               - 10 Python test scripts at root (not in .gitignore)
+                               - 35+ old MD report files at root
+                               - 3 screenshot MD notes at root
+                               - 2 old batch prompt MDs at root (BATCH5, BATCH6)
+                             BUNDLE SIZE WARNINGS: three-vendor 1042 kB, pdf-vendor 591 kB,
+                             excel-vendor 385 kB — lazy-load optimization recommended in BATCH13
+
+                             BUILD STATUS: ✓ built in 6.33s (0 TS errors)
+                             DEPLOY: Heroku v53 | GitHub: main pushed
+
+                             NEXT: BATCH13 — see 0.dev-matrix/BATCH13_AGENT_CONTINUATION_PROMPT.md
+───────────────────────────────────────────────────────────────────────
 [2026-03-05] MINIMAX-001: ✅ BATCH11 COMPLETED — v49 DEPLOYED
 
 TASKS COMPLETED:

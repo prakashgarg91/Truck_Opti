@@ -44,14 +44,11 @@ USING (
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 
--- Allow admins full access
+-- Allow admins full access (admin role in user_metadata only)
+-- BUG-021-FIX: removed OR clause that granted any authenticated user admin access
 CREATE POLICY "Admins can manage all driver documents"
 ON storage.objects FOR ALL
 USING (
   bucket_id = 'driver-docs'
-  AND auth.jwt() ->> 'role' = 'authenticated'
-  AND (
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
-    OR (auth.jwt() ->> 'role') = 'authenticated'
-  )
+  AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
 );
