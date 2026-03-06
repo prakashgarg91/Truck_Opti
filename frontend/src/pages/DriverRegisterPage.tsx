@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   User, Truck, CreditCard, CheckCircle2,
-  ChevronRight, ChevronLeft, FileText, ArrowLeft
+  ChevronRight, ChevronLeft, FileText, ArrowLeft, Upload, X
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
@@ -27,10 +27,11 @@ interface FormData {
   vehicle_type: string
   rc_number: string
   license_number: string
+  // Documents
+  dl_url: string
+  rc_url: string
   // Step 3
   bank_account: string
-  licence_url: string
-  rc_url: string
   ifsc_code: string
   upi_id: string
 }
@@ -45,7 +46,7 @@ const STEPS = [
 const INITIAL: FormData = {
   full_name: '', phone: '', aadhaar_last4: '', home_city: '',
   vehicle_type: '', rc_number: '', license_number: '',
-  bank_account: '', licence_url: '', rc_url: '', ifsc_code: '', upi_id: '',
+  dl_url: '', rc_url: '', bank_account: '', ifsc_code: '', upi_id: '',
 }
 
 export default function DriverRegisterPage() {
@@ -53,6 +54,47 @@ export default function DriverRegisterPage() {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
   const [submitting, setSubmitting] = useState(false)
+  const [uploading, setUploading] = useState<{ licence?: boolean; rc?: boolean }>({})
+  const licenceInputRef = useRef<HTMLInputElement>(null)
+  const rcInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = async (field: 'dl_url' | 'rc_url', file: File) => {
+    const isLicence = field === 'dl_url'
+    setUploading(prev => ({ ...prev, [isLicence ? 'licence' : 'rc']: true }))
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.id) {
+        toast.error('Please login to upload documents')
+        return
+      }
+
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const path = `${user.id}/${isLicence ? 'licence' : 'rc'}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('driver-docs')
+        .upload(path, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('driver-docs')
+        .getPublicUrl(path)
+
+      setForm(prev => ({ ...prev, [field]: publicUrl }))
+      toast.success(isLicence ? 'Driving licence uploaded' : 'RC uploaded')
+    } catch (err) {
+      console.error('Upload error:', err)
+      toast.error('Failed to upload document')
+    } finally {
+      setUploading(prev => ({ ...prev, [isLicence ? 'licence' : 'rc']: false }))
+    }
+  }
+
+  const removeFile = (field: 'dl_url' | 'rc_url') => {
+    setForm(prev => ({ ...prev, [field]: '' }))
+  }
 
   const set = (field: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -98,7 +140,7 @@ export default function DriverRegisterPage() {
         bank_account: form.bank_account.trim(),
         ifsc_code: form.ifsc_code.toUpperCase().trim(),
         upi_id: form.upi_id.trim() || null,
-        licence_url: form.licence_url.trim() || null,
+        dl_url: form.dl_url.trim() || null,
         rc_url: form.rc_url.trim() || null,
         status: 'pending',
       })
@@ -251,6 +293,91 @@ export default function DriverRegisterPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Driving License Number</label>
                   <input value={form.license_number} onChange={set('license_number')} placeholder="MH0120220001234"
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase" />
+                </div>
+
+                {/* Document Uploads */}
+                <div className="pt-2 space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Driving Licence Photo
+                    </label>
+                    {form.dl_url ? (
+                      <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                        <img src={form.dl_url} alt="Licence" className="w-12 h-12 object-cover rounded-lg" />
+                        <span className="text-xs text-green-700 dark:text-green-400 flex-1">Uploaded</span>
+                        <button type="button" onClick={() => removeFile('dl_url')} className="p-1 text-red-500">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={licenceInputRef}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleFileUpload('dl_url', file)
+                        }}
+                        className="hidden"
+                      />
+                    )}
+                    {!form.dl_url && (
+                      <button
+                        type="button"
+                        onClick={() => licenceInputRef.current?.click()}
+                        disabled={uploading.licence}
+                        className="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-sm text-slate-500 hover:border-primary-500 hover:text-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {uploading.licence ? (
+                          <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        {uploading.licence ? 'Uploading...' : 'Upload Driving Licence'}
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Vehicle RC Photo
+                    </label>
+                    {form.rc_url ? (
+                      <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                        <img src={form.rc_url} alt="RC" className="w-12 h-12 object-cover rounded-lg" />
+                        <span className="text-xs text-green-700 dark:text-green-400 flex-1">Uploaded</span>
+                        <button type="button" onClick={() => removeFile('rc_url')} className="p-1 text-red-500">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={rcInputRef}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleFileUpload('rc_url', file)
+                        }}
+                        className="hidden"
+                      />
+                    )}
+                    {!form.rc_url && (
+                      <button
+                        type="button"
+                        onClick={() => rcInputRef.current?.click()}
+                        disabled={uploading.rc}
+                        className="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-sm text-slate-500 hover:border-primary-500 hover:text-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {uploading.rc ? (
+                          <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        {uploading.rc ? 'Uploading...' : 'Upload Vehicle RC'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
