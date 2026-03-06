@@ -6,6 +6,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
 
 interface Driver {
@@ -60,6 +61,7 @@ function vehicleLabel(type: string) {
 export default function AdminDriversPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const { language } = useLanguageStore()
   const [tab, setTab] = useState<Tab>('pending')
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,7 +74,7 @@ export default function AdminDriversPage() {
   useEffect(() => {
     const role = user?.role
     if (user && role !== 'admin') {
-      toast.error('Admin access required')
+      toast.error(language === 'en' ? 'Admin access required' : 'एडमिन एक्सेस आवश्यक है')
       navigate('/dashboard', { replace: true })
     }
   }, [user, navigate])
@@ -109,10 +111,10 @@ export default function AdminDriversPage() {
         })
         .eq('id', driverId)
       if (error) throw error
-      toast.success(`${driverName} approved!`)
+      toast.success(language === 'en' ? `${driverName} approved!` : `${driverName} को स्वीकृत किया गया!`)
       setDrivers(prev => prev.filter(d => d.id !== driverId))
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Approval failed')
+      toast.error(language === 'en' ? 'Approval failed' : 'स्वीकृति विफल')
     } finally {
       setActionLoading(null)
     }
@@ -120,7 +122,7 @@ export default function AdminDriversPage() {
 
   const handleRejectConfirm = async () => {
     if (!rejectModal) return
-    if (!rejectReason.trim()) { toast.error('Enter a reason for rejection'); return }
+    if (!rejectReason.trim()) { toast.error(language === 'en' ? 'Enter a reason for rejection' : 'अस्वीकृति का कारण दर्ज करें'); return }
     setActionLoading(rejectModal.driverId)
     try {
       const { error } = await supabase
@@ -128,12 +130,12 @@ export default function AdminDriversPage() {
         .update({ status: 'rejected', rejection_reason: rejectReason.trim() })
         .eq('id', rejectModal.driverId)
       if (error) throw error
-      toast.success(`${rejectModal.name} rejected`)
+      toast.success(language === 'en' ? `${rejectModal.name} rejected` : `${rejectModal.name} को अस्वीकृत किया गया`)
       setDrivers(prev => prev.filter(d => d.id !== rejectModal!.driverId))
       setRejectModal(null)
       setRejectReason('')
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Rejection failed')
+      toast.error(language === 'en' ? 'Rejection failed' : 'अस्वीकृति विफल')
     } finally {
       setActionLoading(null)
     }
@@ -144,10 +146,10 @@ export default function AdminDriversPage() {
     try {
       const { error } = await supabase.from('drivers').update({ status: 'suspended' }).eq('id', driverId)
       if (error) throw error
-      toast.success(`${driverName} suspended`)
+      toast.success(language === 'en' ? `${driverName} suspended` : `${driverName} को निलंबित किया गया`)
       setDrivers(prev => prev.filter(d => d.id !== driverId))
     } catch {
-      toast.error('Failed to suspend')
+      toast.error(language === 'en' ? 'Failed to suspend' : 'निलंबित करने में विफल')
     } finally {
       setActionLoading(null)
     }

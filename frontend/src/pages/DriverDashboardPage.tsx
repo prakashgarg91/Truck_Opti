@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Power, Truck, Star, TrendingUp, Clock, MapPin,
   CheckCircle2, XCircle, AlertTriangle,
-  Wallet, Navigation, PhoneCall, RefreshCw, UserCircle
+  Wallet, Navigation, PhoneCall, RefreshCw, UserCircle, X, DollarSign
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
+import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
@@ -61,6 +62,7 @@ const VEHICLE_LABELS: Record<string, string> = {
 
 export default function DriverDashboardPage() {
   const { user } = useAuthStore()
+  const { language } = useLanguageStore()
   const navigate = useNavigate()
   const [driver, setDriver] = useState<DriverRecord | null>(null)
   const [loading, setLoading] = useState(true)
@@ -74,6 +76,10 @@ export default function DriverDashboardPage() {
   const [walletBalance, setWalletBalance] = useState(0)
   const [totalEarned, setTotalEarned] = useState(0)
   const [completedTrips, setCompletedTrips] = useState<TripHistory[]>([])
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false)
+  const [withdrawalAmount, setWithdrawalAmount] = useState('')
+  const [withdrawing, setWithdrawing] = useState(false)
+  const [payoutHistory, setPayoutHistory] = useState<{id: string, amount: number, status: string, requested_at: string}[]>([])
 
   const fetchDriver = useCallback(async () => {
     if (!user?.id) return
@@ -114,7 +120,52 @@ export default function DriverDashboardPage() {
     setTotalEarned(total)
     setWalletBalance(total) // Available = total (no withdrawals yet)
     setCompletedTrips(delivered.slice(0, 5))
+
+    // Fetch payout history
+    const { data: payouts } = await supabase
+      .from('driver_payouts')
+      .select('id, amount, status, requested_at')
+      .eq('driver_id', driverId)
+      .order('requested_at', { ascending: false })
+      .limit(5)
+    setPayoutHistory(payouts || [])
   }, [])
+
+  const handleWithdrawal = async () => {
+    if (!driver?.id) return
+    const amount = parseFloat(withdrawalAmount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error(language === 'en' ? 'Please enter a valid amount' : 'कृपया एक मान्य राशि दर्ज करें')
+      return
+    }
+    if (amount > walletBalance) {
+      toast.error(language === 'en' ? 'Amount exceeds available balance' : 'राशि उपलब्ध शेष से अधिक है')
+      return
+    }
+    setWithdrawing(true)
+    const { error } = await supabase.from('driver_payouts').insert({
+      driver_id: driver.id,
+      amount: amount,
+      status: 'pending'
+    })
+    if (error) {
+      console.error('[Withdrawal]', error)
+      toast.error(language === 'en' ? 'Failed to submit withdrawal request' : 'निकासी अनुरोध सबमिट करने में विफल')
+    } else {
+      toast.success(language === 'en' ? 'Withdrawal request submitted' : 'निकासी अनुरोध सबमिट किया गया')
+      setShowWithdrawalModal(false)
+      setWithdrawalAmount('')
+      // Refresh payout history
+      const { data: payouts } = await supabase
+        .from('driver_payouts')
+        .select('id, amount, status, requested_at')
+        .eq('driver_id', driver.id)
+        .order('requested_at', { ascending: false })
+        .limit(5)
+      setPayoutHistory(payouts || [])
+    }
+    setWithdrawing(false)
+  }
 
   useEffect(() => {
     fetchDriver()
@@ -253,6 +304,52 @@ export default function DriverDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Withdrawal Request Modal */}
+      {showWithdrawalModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                {language === 'en' ? 'Request Withdrawal' : 'निकासी का अनुरोध करें'}
+              </h3>
+              <button onClick={() => setShowWithdrawalModal(false)} className="p-1">
+                <X size={20} className="text-slate-400" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'en' ? 'Amount (₹)' : 'राशि (₹)'}
+                </label>
+                <div className="relative">
+                  <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="number"
+                    value={withdrawalAmount}
+                    onChange={(e) => setWithdrawalAmount(e.target.value)}
+                    placeholder="0"
+                    max={walletBalance}
+                    className="w-full pl-9 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  {language === 'en' ? 'Available:' : 'उपलब्ध:'} {formatCurrency(walletBalance)}
+                </p>
+              </div>
+              <button
+                onClick={handleWithdrawal}
+                disabled={withdrawing || !withdrawalAmount}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white font-semibold rounded-xl transition-colors"
+              >
+                {withdrawing
+                  ? (language === 'en' ? 'Submitting...' : 'सबमिट हो रहा है...')
+                  : (language === 'en' ? 'Submit Request' : 'अनुरोध सबमिट करें')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Incoming Job Offer Modal */}
       {incomingJob && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
@@ -405,7 +502,7 @@ export default function DriverDashboardPage() {
                 <h3 className="text-lg font-bold text-white">My Wallet</h3>
               </div>
               <button
-                onClick={() => toast.success('Withdrawal requests coming soon — contact support')}
+                onClick={() => setShowWithdrawalModal(true)}
                 className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-full transition-colors"
               >
                 Request Withdrawal →
@@ -450,6 +547,45 @@ export default function DriverDashboardPage() {
                   </div>
                   <span className="text-sm font-bold text-green-600">
                     +{formatCurrency(trip.fare ?? 0)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Payout History */}
+        {driver.status === 'approved' && payoutHistory.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <DollarSign size={16} className="text-amber-500" />
+                {language === 'en' ? 'Payout Requests' : 'भुगतान अनुरोध'}
+              </h3>
+            </div>
+            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+              {payoutHistory.map((payout) => (
+                <div key={payout.id} className="px-4 py-3 flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {formatCurrency(payout.amount)}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {new Date(payout.requested_at).toLocaleDateString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    payout.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                    payout.status === 'approved' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                    payout.status === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    {payout.status === 'pending' ? (language === 'en' ? 'Pending' : 'लंबित') :
+                     payout.status === 'approved' ? (language === 'en' ? 'Approved' : 'स्वीकृत') :
+                     payout.status === 'paid' ? (language === 'en' ? 'Paid' : 'भुगतान किया') :
+                     (language === 'en' ? 'Rejected' : 'अस्वीकृत')}
                   </span>
                 </div>
               ))}

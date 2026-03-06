@@ -15,6 +15,11 @@
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | ~~T-115~~ | ~~Upgrade/downgrade subscription flow~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH14-T1~~ | ~~BUG-REDIRECT-001 PhonePe domain validation~~ | ~~P0~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH14-T2~~ | ~~npm audit fix for 45 vulnerabilities~~ | ~~P0~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH14-T3~~ | ~~Driver withdrawal writes to driver_payouts~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH14-T4~~ | ~~Admin approve/reject agencies~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH14-T5~~ | ~~Admin approve/reject drivers~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
 | ~~BATCH13-T1~~ | ~~RLS security fixes (customers, shipments, routes, packing_results)~~ | ~~P0~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
 | ~~BATCH13-T2~~ | ~~SMS OTP via Twilio - error handling~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
 | ~~BATCH13-T3~~ | ~~Subscription upgrade/downgrade flow~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |

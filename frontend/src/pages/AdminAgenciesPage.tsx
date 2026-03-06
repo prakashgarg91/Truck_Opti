@@ -7,6 +7,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
 
 interface Agency {
@@ -51,6 +52,7 @@ function formatDate(iso: string) {
 export default function AdminAgenciesPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const { language } = useLanguageStore()
   const [tab, setTab] = useState<Tab>('pending')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +64,7 @@ export default function AdminAgenciesPage() {
 
   useEffect(() => {
     if (user && user.role !== 'admin') {
-      toast.error('Admin access required')
+      toast.error(language === 'en' ? 'Admin access required' : 'एडमिन एक्सेस आवश्यक है')
       navigate('/', { replace: true })
     }
   }, [user, navigate])
@@ -108,9 +110,9 @@ export default function AdminAgenciesPage() {
       .update({ status: 'approved', approved_by: user?.id, approved_at: new Date().toISOString() })
       .eq('id', agencyId)
     if (error) {
-      toast.error('Failed to approve agency')
+      toast.error(language === 'en' ? 'Failed to approve agency' : 'एजेंसी को स्वीकृत करने में विफल')
     } else {
-      toast.success('Agency approved successfully')
+      toast.success(language === 'en' ? 'Agency approved successfully' : 'एजेंसी सफलतापूर्वक स्वीकृत')
       fetchAgencies()
       fetchCounts()
     }
@@ -119,16 +121,16 @@ export default function AdminAgenciesPage() {
 
   const handleReject = async () => {
     if (!rejectModal) return
-    if (!rejectReason.trim()) { toast.error('Please enter a rejection reason'); return }
+    if (!rejectReason.trim()) { toast.error(language === 'en' ? 'Please enter a rejection reason' : 'कृपया अस्वीकृति का कारण दर्ज करें'); return }
     setActionLoading(rejectModal.agencyId)
     const { error } = await supabase
       .from('transport_agencies')
       .update({ status: 'rejected', rejection_reason: rejectReason.trim() })
       .eq('id', rejectModal.agencyId)
     if (error) {
-      toast.error('Failed to reject agency')
+      toast.error(language === 'en' ? 'Failed to reject agency' : 'एजेंसी को अस्वीकृत करने में विफल')
     } else {
-      toast.success('Agency rejected')
+      toast.success(language === 'en' ? 'Agency rejected' : 'एजेंसी अस्वीकृत')
       setRejectModal(null)
       setRejectReason('')
       fetchAgencies()
@@ -144,9 +146,9 @@ export default function AdminAgenciesPage() {
       .update({ status: 'suspended' })
       .eq('id', agencyId)
     if (error) {
-      toast.error('Failed to suspend agency')
+      toast.error(language === 'en' ? 'Failed to suspend agency' : 'एजेंसी को निलंबित करने में विफल')
     } else {
-      toast.success('Agency suspended')
+      toast.success(language === 'en' ? 'Agency suspended' : 'एजेंसी निलंबित')
       fetchAgencies()
       fetchCounts()
     }
