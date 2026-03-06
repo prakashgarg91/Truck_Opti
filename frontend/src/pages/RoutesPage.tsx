@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
+import { useAuthStore } from '../stores/authStore'
 import { MapPin, Navigation, Clock, IndianRupee, Plus, X, Search, ChevronRight, Map as MapIcon, TrendingUp, Zap, Eye } from 'lucide-react'
 import { routesSupabaseApi } from '../services/supabaseApi'
 import { logger } from '../utils/logger'
@@ -113,6 +114,7 @@ interface RouteType {
 
 export default function RoutesPage() {
   const { language } = useLanguageStore()
+  const { user } = useAuthStore()
   const { checkLimit, showUpgradePrompt } = useSubscription()
   const [routes, setRoutes] = useState<RouteType[]>([])
   const [loading, setLoading] = useState(true)
@@ -204,7 +206,8 @@ export default function RoutesPage() {
         total_cost: fuelCost + tollCost,
         toll_cost: tollCost,
         fuel_cost: fuelCost,
-        status: 'planned'
+        status: 'planned',
+        created_by: user?.id  // Required for RLS policy
       })
       
       setIsModalOpen(false)

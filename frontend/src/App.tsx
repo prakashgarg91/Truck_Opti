@@ -46,6 +46,7 @@ const CompanyProfilePage = React.lazy(() => import('./pages/CompanyProfilePage')
 const AdminDriversPage = React.lazy(() => import('./pages/AdminDriversPage'))
 const AdminDashboardPage = React.lazy(() => import('./pages/AdminDashboardPage'))
 const AdminAgenciesPage = React.lazy(() => import('./pages/AdminAgenciesPage'))
+const AdminPayoutsPage = React.lazy(() => import('./pages/AdminPayoutsPage'))
 const AgencyRegisterPage = React.lazy(() => import('./pages/AgencyRegisterPage'))
 const DriverDashboardPage = React.lazy(() => import('./pages/DriverDashboardPage'))
 const DriverTripPage = React.lazy(() => import('./pages/DriverTripPage'))
@@ -124,6 +125,7 @@ function AppContent() {
           <Route path="/admin/drivers" element={<AdminDriversPage />} />
           <Route path="/admin/drivers/:id" element={<DriverDetailPage />} />
           <Route path="/admin/agencies" element={<AdminAgenciesPage />} />
+          <Route path="/admin/payouts" element={<AdminPayoutsPage />} />
           <Route path="/history" element={<ShipmentHistoryPage />} />
         </Route>
 

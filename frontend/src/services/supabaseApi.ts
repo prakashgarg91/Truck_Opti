@@ -90,6 +90,7 @@ export interface Route {
   toll_cost: number
   fuel_cost: number
   status: 'planned' | 'active' | 'completed'
+  created_by?: string
   created_at?: string
   updated_at?: string
 }
@@ -105,6 +106,7 @@ export interface PackingResult {
   weight_utilization: number
   packed_boxes: object
   unfit_items: string[]
+  created_by?: string
   created_at?: string
 }
 

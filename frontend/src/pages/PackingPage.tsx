@@ -1029,6 +1029,7 @@ export default function PackingPage() {
       await shipmentsSupabaseApi.create({
         shipment_id: `SHP-${Date.now()}`,
         customer_id: bookForm.customerId || '',
+        created_by: user.id,  // Required for RLS policy
         truck_id: selectedRecommendation.truck.id,
         origin: bookForm.origin,
         destination: bookForm.destination,

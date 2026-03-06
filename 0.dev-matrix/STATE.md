@@ -37,7 +37,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `MINIMAX-002` | LEAD | MiniMax-M2.5 | Full-stack | BATCH14 tasks → v54 | 2026-03-06 | 🟢 Active |
+| `MINIMAX-002` | LEAD | MiniMax-M2.5 | Full-stack | BATCH15 tasks → v55 | 2026-03-07 | 🟢 Active |
 | `MINIMAX-001` | LEAD | MiniMax-M2.5 | Full-stack | BATCH11 tasks → v49 | 2026-03-05 | 🔴 Offline |
 | `SONNET-004` | JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH11 judge → v50 + 0.dev-matrix rewrite | 2026-03-05 | 🔴 Offline |
 | `SONNET-003` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 2 driver app, Phase 3 agency portal | 2026-03-05 | 🔴 Offline |
