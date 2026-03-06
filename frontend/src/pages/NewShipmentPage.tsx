@@ -62,6 +62,7 @@ export default function NewShipmentPage() {
         .from('shipments')
         .insert({
           customer_id: user.id,
+          created_by: user.id,
           origin: formData.origin_city,
           destination: formData.destination_city,
           status: 'pending',

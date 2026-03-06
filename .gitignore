@@ -54,3 +54,7 @@ supabase/.temp/
 # Local SQLite artifacts
 *.db
 *.db-journal
+
+# Archive directories (historical files)
+scripts/archive/
+docs/archive/

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { customersSupabaseApi } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
+import { useAuthStore } from '../stores/authStore'
 import { customerSchema, getFieldErrors, type CustomerInput } from '../utils/validators'
 import { queryClient } from '../lib/queryClient'
 import EmptyState from '../components/EmptyState'
@@ -19,11 +20,13 @@ interface Customer {
   state?: string
   pincode?: string
   gst_number?: string | null
+  created_by?: string
 }
 
 export default function CustomersPage() {
   const navigate = useNavigate()
   const { language } = useLanguageStore()
+  const { user } = useAuthStore()
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
@@ -155,16 +158,23 @@ export default function CustomersPage() {
 
   const handleSave = () => {
     if (!validateForm()) return
-    
+
     const dataToSave = {
-      ...formData,
-      phone: formData.phone.startsWith('+91') ? formData.phone : `+91${formData.phone}`
+      name: formData.name,
+      phone: formData.phone.startsWith('+91') ? formData.phone : `+91${formData.phone}`,
+      email: formData.email || null,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state || '',
+      pincode: formData.pincode || '',
+      gst_number: formData.gst_number || null,
+      created_by: (!editingCustomer && user) ? user.id : undefined
     }
-    
+
     if (editingCustomer) {
       updateMutation.mutate({ id: editingCustomer.id, data: dataToSave })
     } else {
-      createMutation.mutate(dataToSave)
+      createMutation.mutate(dataToSave as Customer)
     }
   }
 

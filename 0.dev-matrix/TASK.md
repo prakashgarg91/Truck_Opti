@@ -14,7 +14,12 @@
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| T-115 | Upgrade/downgrade subscription flow | P1 | UNCLAIMED | - | 🟡 Ready to claim |
+| ~~T-115~~ | ~~Upgrade/downgrade subscription flow~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH13-T1~~ | ~~RLS security fixes (customers, shipments, routes, packing_results)~~ | ~~P0~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH13-T2~~ | ~~SMS OTP via Twilio - error handling~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH13-T3~~ | ~~Subscription upgrade/downgrade flow~~ | ~~P1~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH13-T4~~ | ~~Bundle size optimization (lazy load three, pdf, excel)~~ | ~~P2~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
+| ~~BATCH13-T5~~ | ~~Root directory cleanup~~ | ~~P3~~ | MINIMAX-002 | 2026-03-06 | ✅ DONE |
 | ~~BATCH12-T1~~ | ~~Razorpay webhook Edge Function~~ | ~~P1~~ | SONNET-004 (judge) | 2026-03-06 | ✅ DONE |
 | ~~BATCH12-T2~~ | ~~Admin dashboard real analytics~~ | ~~P2~~ | MINIMAX-001 | 2026-03-05 | ✅ DONE |
 | ~~BATCH12-T3~~ | ~~Driver document upload~~ | ~~P2~~ | MINIMAX-001 | 2026-03-05 | ✅ DONE |

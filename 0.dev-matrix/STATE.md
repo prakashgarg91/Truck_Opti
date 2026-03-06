@@ -37,6 +37,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `MINIMAX-002` | LEAD | MiniMax-M2.5 | Full-stack | BATCH13 tasks → v53 | 2026-03-06 | 🟢 Active |
 | `MINIMAX-001` | LEAD | MiniMax-M2.5 | Full-stack | BATCH11 tasks → v49 | 2026-03-05 | 🔴 Offline |
 | `SONNET-004` | JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH11 judge → v50 + 0.dev-matrix rewrite | 2026-03-05 | 🔴 Offline |
 | `SONNET-003` | LEAD | Claude Sonnet 4.6 | Full-stack | Phase 2 driver app, Phase 3 agency portal | 2026-03-05 | 🔴 Offline |
@@ -62,6 +63,27 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-06] MINIMAX-002: ✅ BATCH13 COMPLETED → v54 READY FOR DEPLOYMENT
+
+                              BATCH13 TASKS DONE:
+                              ✅ T1: RLS Security Fixes - Created migration 20260307000000_fix_rls_ownership.sql
+                                   Added created_by column to customers, shipments, routes, packing_results
+                                   Fixed BUG-RLS-001 to BUG-RLS-006: replaced USING(true) with ownership-scoped policies
+                                   Made trucks/cartons read-only (reference data)
+                              ✅ T2: SMS OTP via Twilio - Verified bilingual error handling in LoginPage.tsx and OTPPage.tsx
+                              ✅ T3: Subscription upgrade/downgrade - Added detection in CheckoutPage.tsx
+                                   Show upgrade/downgrade CTAs based on current plan tier
+                              ✅ T4: Bundle Size Optimization - Lazy loaded TruckViewer in PackingPage.tsx
+                                   Dynamic jsPDF import in AgencyBillingPage.tsx generateInvoice()
+                                   Dynamic XLSX import in SaleOrdersPage.tsx Excel parsing
+                                   Three-vendor, pdf-vendor, excel-vendor now lazy-loaded
+                              ✅ T5: Root Directory Cleanup - Moved 7 Python test scripts to scripts/archive/
+                                   Moved BATCH5_PROMPT.md, BATCH6_PROMPT.md to 0.dev-matrix/
+                                   Moved 3 screenshot notes to docs/
+                                   Moved 35+ report MDs to docs/archive/
+                                   Updated .gitignore to exclude archive directories
+                              Build: npm run build passes with 0 TypeScript errors
+
 [2026-03-06] SONNET-004 (JUDGE): ✅ BATCH12 VERIFIED + 2 SECURITY BUGS FIXED → v53 DEPLOYED
 
                              JUDGMENT: BATCH12 PASSES (with 2 bugs found and fixed by judge)

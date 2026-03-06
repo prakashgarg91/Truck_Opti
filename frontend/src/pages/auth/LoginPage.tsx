@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
+import { useLanguageStore } from '../../stores/languageStore'
 import { phoneInputSchema, emailSchema } from '../../utils/validators'
 
 const features = [
@@ -18,6 +19,7 @@ const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED === 'true'
 export default function LoginPage() {
   const navigate = useNavigate()
   const { setPendingPhone } = useAuthStore()
+  const { language } = useLanguageStore()
   const [phone, setPhone] = useState('')
   const [phoneError, setPhoneError] = useState('')
   const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>(isEmailOtpEnabled ? 'email' : 'sms')
@@ -52,7 +54,9 @@ export default function LoginPage() {
     mutationFn: async () => {
       if (channel === 'email') {
         if (!isEmailOtpEnabled) {
-          throw new Error('Email OTP is disabled. Please use SMS/WhatsApp or Google sign-in.')
+          throw new Error(language === 'en'
+            ? 'Email OTP is disabled. Please use SMS/WhatsApp or Google sign-in.'
+            : 'ईमेल OTP अक्षम है। कृपया SMS/WhatsApp या Google साइन-इन का उपयोग करें।')
         }
         await authSupabaseApi.signInWithEmail(phone) // phone variable holds email in this case
         return { success: true, channel: 'email' }
@@ -66,14 +70,18 @@ export default function LoginPage() {
     onSuccess: (data) => {
       setPendingPhone(phone)
       const channelLabel = data.channel === 'email' ? 'Email' : data.channel === 'whatsapp' ? 'WhatsApp' : 'SMS'
-      toast.success(`OTP sent via ${channelLabel}`, {
+      const successMsg = data.channel === 'email'
+        ? (language === 'en' ? 'OTP sent to email' : 'ईमेल पर OTP भेजा गया')
+        : (language === 'en' ? `OTP sent via ${channelLabel}` : `${channelLabel} के माध्यम से OTP भेजा गया`)
+      toast.success(successMsg, {
         icon: data.channel === 'email' ? '📧' : '📱',
         duration: 3000
       })
       navigate('/otp', { state: { channel, contact: phone } })
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to send OTP')
+      const errorMsg = error.message || (language === 'en' ? 'Failed to send OTP' : 'OTP भेजने में विफल')
+      toast.error(errorMsg)
     }
   })
   

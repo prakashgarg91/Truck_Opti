@@ -3,7 +3,6 @@ import { FileText, TrendingUp, Download, Clock, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { formatCurrency } from '../utils/formatters'
-import jsPDF from 'jspdf'
 
 interface BillingSummary {
   thisMonth: number
@@ -73,7 +72,9 @@ export default function AgencyBillingPage() {
 
   useEffect(() => { fetchBilling() }, [fetchBilling])
 
-  const generateInvoice = (job: DeliveredJob) => {
+  const generateInvoice = async (job: DeliveredJob) => {
+    // Dynamic import to reduce initial bundle size
+    const { default: jsPDF } = await import('jspdf')
     const doc = new jsPDF()
     const invoiceNum = `TRK-${job.id.slice(0, 8).toUpperCase()}`
     const date = new Date(job.updated_at).toLocaleDateString('en-IN')

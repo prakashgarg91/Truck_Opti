@@ -6,6 +6,7 @@ import { initiateRazorpayPayment, getRazorpayConfig, RazorpayPaymentResult } fro
 import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
 import toast from 'react-hot-toast';
 import { logger } from '../utils/logger';
+import { useSubscription } from '../hooks/useSubscription';
 
 interface Plan {
   id: string;
@@ -20,10 +21,11 @@ interface Plan {
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+  const { subscription: currentSubscription, plan: currentPlan } = useSubscription();
+
   const planId = searchParams.get('plan');
   const billingCycle = (searchParams.get('billing') || 'monthly') as 'monthly' | 'yearly';
-  
+
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -31,6 +33,7 @@ const CheckoutPage: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
+  const [subscriptionChange, setSubscriptionChange] = useState<'upgrade' | 'downgrade' | null>(null);
 
   const razorpayConfig = getRazorpayConfig();
   const phonePeConfig = getPaymentConfig();
@@ -48,7 +51,7 @@ const CheckoutPage: React.FC = () => {
       // Get user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('Please login to continue');
+        toast.error(language === 'en' ? 'Please login to continue' : 'कृपया जारी रखने के लिए लॉगिन करें');
         navigate('/login');
         return;
       }
@@ -64,20 +67,35 @@ const CheckoutPage: React.FC = () => {
           .single();
 
         if (error || !planData) {
-          toast.error('Plan not found');
+          toast.error(language === 'en' ? 'Plan not found' : 'प्लान नहीं मिला');
           navigate('/pricing');
           return;
         }
         setPlan({
           ...planData,
-          features: typeof planData.features === 'string' 
-            ? JSON.parse(planData.features) 
+          features: typeof planData.features === 'string'
+            ? JSON.parse(planData.features)
             : planData.features,
         });
+
+        // Check for existing subscription and determine upgrade/downgrade
+        if (currentSubscription && currentPlan) {
+          const tierOrder = { starter: 1, growth: 2, professional: 3, enterprise: 4 };
+          const currentTier = currentPlan.tier || 'starter';
+          const newTier = planData.tier || 'starter';
+          const currentTierNum = tierOrder[currentTier as keyof typeof tierOrder] || 1;
+          const newTierNum = tierOrder[newTier as keyof typeof tierOrder] || 1;
+
+          if (newTierNum > currentTierNum) {
+            setSubscriptionChange('upgrade');
+          } else if (newTierNum < currentTierNum) {
+            setSubscriptionChange('downgrade');
+          }
+        }
       }
     } catch (error) {
       logger.error('Error loading checkout data:', error);
-      toast.error('Failed to load checkout');
+      toast.error(language === 'en' ? 'Failed to load checkout' : 'चेकआउट लोड करने में विफल');
     } finally {
       setLoading(false);
     }
@@ -221,6 +239,25 @@ const CheckoutPage: React.FC = () => {
               {language === 'en' ? 'Order Summary' : 'ऑर्डर सारांश'}
             </h2>
 
+            {/* Upgrade/Downgrade Notice */}
+            {subscriptionChange && (
+              <div className={`mb-4 p-3 rounded-lg ${subscriptionChange === 'upgrade' ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'}`}>
+                {subscriptionChange === 'upgrade' ? (
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    {language === 'en'
+                      ? 'You are upgrading your plan. The new features will be available immediately after payment.'
+                      : 'आप अपना प्लान अपग्रेड कर रहे हैं। नई सुविधाएं भुगतान के तुरंत बाद उपलब्ध होंगी।'}
+                  </p>
+                ) : (
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    {language === 'en'
+                      ? 'You are downgrading your plan. The change will take effect at the end of your current billing period.'
+                      : 'आप अपना प्लान डाउनग्रेड कर रहे हैं। यह परिवर्तन आपकी वर्तमान बिलिंग अवधि के अंत में प्रभावी होगा।'}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
               <div className="flex justify-between items-start">
                 <div>
@@ -228,7 +265,7 @@ const CheckoutPage: React.FC = () => {
                     {language === 'en' ? plan.name : plan.name_hi} Plan
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {billingCycle === 'yearly' 
+                    {billingCycle === 'yearly'
                       ? (language === 'en' ? 'Annual subscription' : 'वार्षिक सदस्यता')
                       : (language === 'en' ? 'Monthly subscription' : 'मासिक सदस्यता')}
                   </p>

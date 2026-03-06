@@ -49,17 +49,19 @@ export interface Customer {
   email: string | null
   address: string
   city: string
-  state: string
-  pincode: string
-  gst_number: string | null
+  state?: string
+  pincode?: string
+  gst_number?: string | null
   created_at?: string
   updated_at?: string
+  created_by?: string
 }
 
 export interface Shipment {
   id: string
   shipment_id: string
   customer_id: string
+  created_by?: string
   truck_id: string
   origin: string
   destination: string

@@ -1,11 +1,12 @@
-import { useState, useMemo, useCallback, useEffect, memo } from 'react'
-import { 
-  Package, Truck, Play, Settings, Layers, CheckCircle2, 
+import { useState, useMemo, useCallback, useEffect, memo, lazy, Suspense } from 'react'
+import {
+  Package, Truck, Play, Settings, Layers, CheckCircle2,
   Plus, Trash2, Wand2, AlertTriangle, ChevronDown,
   Zap, Brain, Target, Calculator, ShoppingCart, ArrowRight, Globe,
   Save, Edit2, Check, X, Loader2
 } from 'lucide-react'
-import TruckViewer from '../components/TruckViewer'
+// Lazy load 3D viewer to reduce initial bundle size
+const TruckViewer = lazy(() => import('../components/TruckViewer'))
 import toast from 'react-hot-toast'
 import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, customersSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
@@ -167,7 +168,7 @@ interface Customer {
   email: string | null
   address: string
   city: string
-  state: string
+  state?: string
 }
 
 // ============= CONSTANTS =============
@@ -1479,10 +1480,21 @@ export default function PackingPage() {
             {/* 3D Visualization */}
             <div className="card overflow-hidden">
               {selectedRecommendation || (currentTruck && mode === 'manual') ? (
-                <TruckViewer
-                  truckDimensions={selectedRecommendation?.truck.dimensions || currentTruck!.dimensions}
-                  packedBoxes={selectedRecommendation?.packedBoxes || []}
-                />
+                <Suspense fallback={
+                  <div className="h-64 lg:h-96 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-2" />
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {lang === 'en' ? 'Loading 3D view...' : '3D व्यू लोड हो रहा है...'}
+                      </p>
+                    </div>
+                  </div>
+                }>
+                  <TruckViewer
+                    truckDimensions={selectedRecommendation?.truck.dimensions || currentTruck!.dimensions}
+                    packedBoxes={selectedRecommendation?.packedBoxes || []}
+                  />
+                </Suspense>
               ) : (
                 <div className="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 h-64 lg:h-96 flex items-center justify-center">
                   <div className="text-center px-4">

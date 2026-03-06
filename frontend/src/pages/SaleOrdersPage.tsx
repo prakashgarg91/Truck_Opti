@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-  FileSpreadsheet, AlertCircle, CheckCircle2, 
+import {
+  FileSpreadsheet, AlertCircle, CheckCircle2,
   Package, Trash2, ArrowRight, Loader2,
   FileText, Download, RefreshCw
 } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import Papa from 'papaparse'
-import * as XLSX from 'xlsx'
 import toast from 'react-hot-toast'
 import { saleOrdersSupabaseApi, type SaleOrder } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
@@ -151,7 +150,8 @@ export default function SaleOrdersPage() {
         const result = Papa.parse(text, { header: true, skipEmptyLines: true })
         data = result.data as Record<string, unknown>[]
       } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        // Parse Excel
+        // Parse Excel - dynamic import to reduce bundle size
+        const XLSX = await import('xlsx')
         const buffer = await file.arrayBuffer()
         const workbook = XLSX.read(buffer)
         const sheet = workbook.Sheets[workbook.SheetNames[0]]
