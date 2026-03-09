@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
-  RefreshCw, Building2, Calendar, Wallet, MessageSquare
+  RefreshCw, Building2, Calendar, Wallet, MessageSquare, Download
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
@@ -32,6 +32,7 @@ export default function AdminDashboardPage() {
   const { language } = useLanguageStore()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
   const [analytics, setAnalytics] = useState<Analytics>({
     totalRevenue: 0,
     totalAgencies: 0,
@@ -130,6 +131,82 @@ export default function AdminDashboardPage() {
     }
   }, [user?.role, fetchAnalytics])
 
+  // CSV Export function
+  const handleExportCSV = async () => {
+    setExporting(true)
+    try {
+      // Get current month's date range
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
+
+      // Fetch all shipments for current month with agency info
+      const { data: shipmentsData, error } = await supabase
+        .from('shipments')
+        .select(`
+          id,
+          origin,
+          destination,
+          status,
+          estimated_cost,
+          created_at,
+          transport_agencies(company_name)
+        `)
+        .gte('created_at', startOfMonth)
+        .lte('created_at', endOfMonth)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        toast.error(language === 'en' ? 'Failed to export data' : 'डेटा निर्यात करने में विफल')
+        return
+      }
+
+      if (!shipmentsData || shipmentsData.length === 0) {
+        toast.error(language === 'en' ? 'No shipments found for this month' : 'इस महीने कोई शिपमेंट नहीं मिली')
+        return
+      }
+
+      // Generate CSV content
+      const headers = ['Shipment ID', 'Origin', 'Destination', 'Status', 'Fare (₹)', 'Date', 'Agency']
+      const rows = shipmentsData.map((s: Record<string, unknown>) => {
+        const agency = (Array.isArray(s.transport_agencies) ? s.transport_agencies[0] : s.transport_agencies) as { company_name?: string } | null
+        return [
+          (s.id as string)?.slice(-8) || '',
+          (s.origin as string) || '',
+          (s.destination as string) || '',
+          (s.status as string) || '',
+          (s.estimated_cost as number) || 0,
+          new Date(s.created_at as string).toLocaleDateString('en-IN'),
+          agency?.company_name || 'Direct'
+        ]
+      })
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n')
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const monthStr = now.toISOString().slice(0, 7)
+      link.href = url
+      link.download = `truckopti-report-${monthStr}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success(language === 'en' ? 'CSV exported successfully!' : 'CSV सफलतापूर्वक निर्यात हुई!')
+    } catch (err) {
+      console.error('Export error:', err)
+      toast.error(language === 'en' ? 'Failed to export CSV' : 'CSV निर्यात करने में विफल')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -217,11 +294,19 @@ export default function AdminDashboardPage() {
 
       {/* Recent Jobs Table */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
           <h2 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2">
             <Calendar className="w-4 h-4 text-slate-400" />
             Recent Delivered Jobs
           </h2>
+          <button
+            onClick={handleExportCSV}
+            disabled={exporting}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg text-xs font-semibold transition-colors"
+          >
+            <Download size={14} />
+            {exporting ? (language === 'en' ? 'Exporting...' : 'निर्यात हो रहा...') : (language === 'en' ? 'Export CSV' : 'CSV निर्यात')}
+          </button>
         </div>
 
         {recentJobs.length === 0 ? (

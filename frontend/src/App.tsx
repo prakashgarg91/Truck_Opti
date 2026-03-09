@@ -63,12 +63,14 @@ const NewShipmentPage = React.lazy(() => import('./pages/NewShipmentPage'))
 const ShipmentHistoryPage = React.lazy(() => import('./pages/ShipmentHistoryPage'))
 const ContactPage = React.lazy(() => import('./pages/ContactPage'))
 const AdminContactPage = React.lazy(() => import('./pages/AdminContactPage'))
+const LandingPage = React.lazy(() => import('./pages/LandingPage'))
 
-// Role-based home: redirects drivers/agencies to their portal, customers to Dashboard
+// Role-based home: redirects drivers/agencies to their portal, shows landing page to non-authenticated users
 function RoleHome() {
   const { user } = useAuthStore()
-  if (user?.role === 'driver') return <Navigate to="/driver/dashboard" replace />
-  if (user?.role === 'agency') return <Navigate to="/agency/dashboard" replace />
+  if (!user) return <LandingPage />
+  if (user.role === 'driver') return <Navigate to="/driver/dashboard" replace />
+  if (user.role === 'agency') return <Navigate to="/agency/dashboard" replace />
   return <Dashboard />
 }
 
