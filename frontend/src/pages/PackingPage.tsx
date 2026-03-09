@@ -970,7 +970,7 @@ export default function PackingPage() {
       toast.success('Packing job saved successfully!')
     } catch (error: any) {
       logger.error('Failed to save packing job:', error)
-      toast.error(error.message || 'Failed to save packing job')
+      toast.error(lang === 'en' ? 'Failed to save packing job' : 'पैकिंग जॉब सेव करने में विफल')
     } finally {
       setIsSaving(false)
     }

@@ -61,7 +61,8 @@ export default function CartonsPage() {
       resetForm()
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create carton')
+      void error
+      toast.error(language === 'en' ? 'Failed to create carton' : 'कार्टन बनाने में विफल')
     },
   })
 
@@ -76,7 +77,8 @@ export default function CartonsPage() {
       resetForm()
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update carton')
+      void error
+      toast.error(language === 'en' ? 'Failed to update carton' : 'कार्टन अपडेट करने में विफल')
     },
   })
 
@@ -88,7 +90,8 @@ export default function CartonsPage() {
       toast.success(language === 'en' ? 'Carton type deleted' : 'कार्टन प्रकार हटा दिया गया')
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete carton')
+      void error
+      toast.error(language === 'en' ? 'Failed to delete carton' : 'कार्टन हटाने में विफल')
     },
   })
 

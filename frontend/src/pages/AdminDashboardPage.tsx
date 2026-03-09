@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
-  RefreshCw, Building2, Calendar
+  RefreshCw, Building2, Calendar, Wallet, MessageSquare
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
+import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { formatCurrency } from '../utils/formatters'
@@ -28,6 +29,7 @@ interface RecentJob {
 
 export default function AdminDashboardPage() {
   const { user } = useAuthStore()
+  const { language } = useLanguageStore()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [analytics, setAnalytics] = useState<Analytics>({
@@ -272,14 +274,28 @@ export default function AdminDashboardPage() {
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <Users className="w-5 h-5 text-blue-500" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">Manage Drivers</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Manage Drivers' : 'चालक प्रबंधन'}</span>
         </button>
         <button
           onClick={() => navigate('/admin/agencies')}
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <Building2 className="w-5 h-5 text-indigo-500" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">Manage Agencies</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Manage Agencies' : 'एजेंसी प्रबंधन'}</span>
+        </button>
+        <button
+          onClick={() => navigate('/admin/payouts')}
+          className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <Wallet className="w-5 h-5 text-green-500" />
+          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Driver Payouts' : 'चालक भुगतान'}</span>
+        </button>
+        <button
+          onClick={() => navigate('/admin/contact')}
+          className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <MessageSquare className="w-5 h-5 text-orange-500" />
+          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Contact Inquiries' : 'संपर्क पूछताछ'}</span>
         </button>
       </div>
     </div>

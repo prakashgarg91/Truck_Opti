@@ -148,7 +148,7 @@ export default function TrucksPage() {
     },
     onError: (error: any) => {
       logger.error('Failed to create truck:', error)
-      toast.error(error.message || 'Failed to create truck')
+      toast.error(language === 'en' ? 'Failed to create truck' : 'ट्रक बनाने में विफल')
     },
   })
 
@@ -164,7 +164,7 @@ export default function TrucksPage() {
     },
     onError: (error: any) => {
       logger.error('Failed to update truck:', error)
-      toast.error(error.message || 'Failed to update truck')
+      toast.error(language === 'en' ? 'Failed to update truck' : 'ट्रक अपडेट करने में विफल')
     },
   })
 
@@ -177,7 +177,7 @@ export default function TrucksPage() {
     },
     onError: (error: any) => {
       logger.error('Failed to delete truck:', error)
-      toast.error(error.message || 'Failed to delete truck')
+      toast.error(language === 'en' ? 'Failed to delete truck' : 'ट्रक हटाने में विफल')
     },
   })
 
@@ -220,7 +220,7 @@ export default function TrucksPage() {
       if (error.message === 'All default trucks already exist!') {
         toast(error.message)
       } else {
-        toast.error(error.message || 'Failed to seed trucks')
+        toast.error(language === 'en' ? 'Failed to add default trucks' : 'डिफॉल्ट ट्रक जोड़ने में विफल')
       }
     },
   })

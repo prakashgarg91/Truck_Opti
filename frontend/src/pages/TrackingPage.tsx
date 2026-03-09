@@ -160,7 +160,8 @@ export default function TrackingPage() {
       setSelectedId(null)
       toast.success('Shipment cancelled')
     } catch (err: any) {
-      toast.error(err.message || 'Failed to cancel shipment')
+      void err
+      toast.error(language === 'en' ? 'Failed to cancel shipment' : 'शिपमेंट रद्द करने में विफल')
     } finally {
       setUpdatingStatus(null)
     }
@@ -189,7 +190,8 @@ export default function TrackingPage() {
         } catch { /* non-critical */ }
       }
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update status')
+      void err
+      toast.error(language === 'en' ? 'Failed to update status' : 'स्टेटस अपडेट करने में विफल')
     } finally {
       setUpdatingStatus(null)
     }

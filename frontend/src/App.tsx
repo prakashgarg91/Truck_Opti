@@ -61,6 +61,8 @@ const AgencyDriversPage = React.lazy(() => import('./pages/AgencyDriversPage'))
 const AgencyRatesPage = React.lazy(() => import('./pages/AgencyRatesPage'))
 const NewShipmentPage = React.lazy(() => import('./pages/NewShipmentPage'))
 const ShipmentHistoryPage = React.lazy(() => import('./pages/ShipmentHistoryPage'))
+const ContactPage = React.lazy(() => import('./pages/ContactPage'))
+const AdminContactPage = React.lazy(() => import('./pages/AdminContactPage'))
 
 // Role-based home: redirects drivers/agencies to their portal, customers to Dashboard
 function RoleHome() {
@@ -94,6 +96,7 @@ function AppContent() {
           <Route path="/payment/success" element={<PaymentCallbackPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="/subscription" element={<Navigate to="/pricing" replace />} />
           <Route path="/driver/register" element={<DriverRegisterPage />} />
           <Route path="/agency/register" element={<AgencyRegisterPage />} />
@@ -126,6 +129,7 @@ function AppContent() {
           <Route path="/admin/drivers/:id" element={<DriverDetailPage />} />
           <Route path="/admin/agencies" element={<AdminAgenciesPage />} />
           <Route path="/admin/payouts" element={<AdminPayoutsPage />} />
+          <Route path="/admin/contact" element={<AdminContactPage />} />
           <Route path="/history" element={<ShipmentHistoryPage />} />
         </Route>
 

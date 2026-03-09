@@ -267,7 +267,8 @@ export default function ProfilePage() {
       setIsEditing(false)
       toast.success(language === 'en' ? 'Profile updated!' : 'प्रोफ़ाइल अपडेट!')
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update profile')
+      void err
+      toast.error(language === 'en' ? 'Failed to update profile' : 'प्रोफाइल अपडेट करने में विफल')
     } finally {
       setIsSaving(false)
     }
@@ -294,7 +295,8 @@ export default function ProfilePage() {
       setIsEditingCompany(false)
       toast.success(language === 'en' ? 'Company info updated!' : 'कंपनी जानकारी अपडेट!')
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update company')
+      void err
+      toast.error(language === 'en' ? 'Failed to update company' : 'कंपनी जानकारी अपडेट करने में विफल')
     } finally {
       setIsSaving(false)
     }

@@ -70,9 +70,9 @@ export default function OTPPage() {
       toast.success('Login successful! 🎉', { duration: 2000 })
       setTimeout(() => navigate('/'), 1000)
     },
-    onError: (error: any) => {
+    onError: () => {
       setIsError(true)
-      toast.error(error.message || 'Invalid OTP')
+      toast.error('Invalid OTP — please try again')
       setTimeout(() => {
         setIsError(false)
         setOtp(Array(OTP_LENGTH).fill(''))
@@ -98,8 +98,8 @@ export default function OTPPage() {
       setOtp(Array(OTP_LENGTH).fill(''))
       inputRefs.current[0]?.focus()
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to resend OTP')
+    onError: () => {
+      toast.error('Failed to resend OTP — please try again')
     }
   })
   

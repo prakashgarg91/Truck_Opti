@@ -333,7 +333,7 @@ export default function PricingPage() {
                   key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
                   isCurrent={currentPlan?.id === tier.id}
                   className="snap-center shrink-0 w-[82vw] sm:w-[55vw]"
-                  onCta={() => tier.id === 'enterprise' ? (window.location.href = 'mailto:sales@truckopti.in') : navigate('/signup')}
+                  onCta={() => tier.id === 'enterprise' ? navigate('/contact') : navigate('/signup')}
                 />
               ))}
             </div>
@@ -354,7 +354,7 @@ export default function PricingPage() {
                 <PricingCard
                   key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
                   isCurrent={currentPlan?.id === tier.id}
-                  onCta={() => tier.id === 'enterprise' ? (window.location.href = 'mailto:sales@truckopti.in') : navigate('/signup')}
+                  onCta={() => tier.id === 'enterprise' ? navigate('/contact') : navigate('/signup')}
                 />
               ))}
             </div>
@@ -415,7 +415,7 @@ export default function PricingPage() {
                       return (
                         <td key={tier.id} className="py-5 px-3 text-center">
                           <button
-                            onClick={() => tier.id === 'enterprise' ? (window.location.href = 'mailto:sales@truckopti.in') : navigate('/signup')}
+                            onClick={() => tier.id === 'enterprise' ? navigate('/contact') : navigate('/signup')}
                             className={`px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${cfg.grad} hover:opacity-90 transition-opacity active:scale-95`}
                           >{tier.id === 'enterprise' ? L.contactSales : L.getStarted}</button>
                         </td>

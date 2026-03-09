@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
+import { useLanguageStore } from '../../stores/languageStore'
 import { emailSchema } from '../../utils/validators'
 
 const features = [
@@ -18,6 +19,7 @@ const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED === 'true'
 export default function SignupPage() {
   const navigate = useNavigate()
   const { setPendingPhone } = useAuthStore()
+  const { language } = useLanguageStore()
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -49,8 +51,8 @@ export default function SignupPage() {
       toast.success('Verification code sent to your email 📧', { duration: 3000 })
       navigate('/otp', { state: { channel: 'email', contact: email, isSignup: true } })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create account')
+    onError: () => {
+      toast.error(language === 'en' ? 'Failed to create account' : 'खाता बनाने में विफल')
     }
   })
 
