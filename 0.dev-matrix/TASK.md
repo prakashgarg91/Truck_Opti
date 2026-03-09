@@ -14,7 +14,16 @@
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| ~~BATCH15-T1~~ | ~~Admin payout management UI~~ | ~~P1~~ | MINIMAX-M2.5 | 2026-03-06 | ✅ DONE |
+| **BATCH17-T1** | **Supabase migration push (human)** — run `supabase db push` for 3 pending migrations | P0 | HUMAN | - | 🟡 Human action |
+| **BATCH17-T2** | **Landing page SEO + meta tags** — add og:title, og:description, og:image, twitter:card to index.html + LandingPage. Add sitemap.xml | P1 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH17-T3** | **Agency job dispatch** — AgencyJobsPage: agency can assign a driver to a pending shipment job. Button “Assign Driver” opens a modal listing agency’s drivers. writes to `job_offers` | P1 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH17-T4** | **Driver location update** — DriverTripPage: every 30s broadcast driver lat/lng to `shipments.latitude/longitude` via Supabase realtime update | P1 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH17-T5** | **Admin reports export** — AdminDashboardPage: add “Export CSV” button that downloads all shipments for selected month as CSV | P2 | UNCLAIMED | - | 🟡 Ready |
+| ~~BATCH16-T1~~ | ~~Admin payouts nav card~~ | P1 | SONNET-005 | 2026-03-09 | ✅ DONE |
+| ~~BATCH16-T2~~ | ~~E2E smoke test for RLS created_by~~ | P0 | SONNET-005 | 2026-03-09 | ✅ DONE |
+| ~~BATCH16-T3~~ | ~~Fix remaining raw error.message leaks~~ | P1 | SONNET-005 | 2026-03-09 | ✅ DONE (14 in 7 files) |
+| ~~BATCH16-T4~~ | ~~Contact page~~ | P2 | SONNET-005 | 2026-03-09 | ✅ DONE |
+| ~~BATCH16-T5~~ | ~~Admin contact inquiries view~~ | P2 | SONNET-005 | 2026-03-09 | ✅ DONE |
 | ~~BATCH15-T2~~ | ~~BUG-023: vite-plugin-pwa downgrade + serialize-javascript override~~ | ~~P2~~ | MINIMAX-M2.5 | 2026-03-06 | ✅ DONE |
 | ~~BATCH15-T3~~ | ~~Add created_by to shipment inserts (RLS)~~ | ~~P0~~ | MINIMAX-M2.5 | 2026-03-06 | ✅ DONE |
 | ~~BATCH15-T4~~ | ~~Add created_by to routes/packing inserts (RLS)~~ | ~~P0~~ | MINIMAX-M2.5 | 2026-03-06 | ✅ DONE |

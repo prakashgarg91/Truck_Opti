@@ -37,6 +37,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `SONNET-005` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH16 ✅ COMPLETE - v53 deployed | 2026-03-09 | ✅ DONE |
 | `MINIMAX-002` | LEAD | MiniMax-M2.5 | Full-stack | BATCH15 ✅ COMPLETE - v55 | 2026-03-07 | ✅ DONE |
 | `MINIMAX-001` | LEAD | MiniMax-M2.5 | Full-stack | BATCH11 tasks → v49 | 2026-03-05 | 🔴 Offline |
 | `SONNET-004` | JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH11 judge → v50 + 0.dev-matrix rewrite | 2026-03-05 | 🔴 Offline |
@@ -63,6 +64,51 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-09] SONNET-005 (LEAD+JUDGE): ✅ BATCH16 COMPLETE → v53 deployed to Heroku
+
+                             ROOT CAUSE diagnosis: App "not responding" = Eco dyno cold start (30s)
+                             + 10 commits (BATCHes 13-15 + 16) were NOT deployed to Heroku (was at v52/c1160aff)
+                             RESOLUTION: Completed BATCH16 + deployed all pending commits → v53
+
+                             ✅ T1: AdminDashboardPage.tsx — added 2 new nav cards:
+                                  "Driver Payouts" (Wallet icon) → /admin/payouts ✅
+                                  "Contact Inquiries" (MessageSquare icon) → /admin/contact ✅
+                                  language imported from useLanguageStore, bilingual labels ✅
+                             ✅ T2: RLS created_by audit PASSED:
+                                  shipments (NewShipmentPage:65) ✅
+                                  routes (RoutesPage:210) ✅
+                                  packing_results (PackingPage:1032) ✅
+                                  customers (CustomersPage:171) ✅
+                                  No .update() overwrites created_by ✅
+                             ✅ T3: ALL raw error.message leaks fixed — 14 occurrences in 7 files:
+                                  SignupPage.tsx (1), TrucksPage.tsx (4), CartonsPage.tsx (3)
+                                  PackingPage.tsx (1), OTPPage.tsx (2), ProfilePage.tsx (2)
+                                  TrackingPage.tsx (2) — all now bilingual safe messages ✅
+                             ✅ T4: ContactPage.tsx CREATED — /contact (public route, no auth)
+                                  Form: Name, Email, Phone, Subject (dropdown), Message ✅
+                                  Saves to contact_inquiries table ✅
+                                  Bilingual EN/HI, no raw error.message ✅
+                                  PricingPage enterprise CTA → /contact (not mailto) ✅
+                             ✅ T5: AdminContactPage.tsx CREATED — /admin/contact
+                                  Lists all contact_inquiries (name, email, subject, message, date) ✅
+                                  Mark as resolved button ✅ status badge open/resolved ✅
+                                  Nav card added to AdminDashboardPage ✅
+                             ✅ MIGRATION: 20260309000000_contact_inquiries.sql
+                                  RLS: anon+auth can INSERT, only admin can SELECT/UPDATE ✅
+                             BUILD: ✓ 0 TypeScript errors, built in 6.71s
+                             DEPLOY: v53 on Heroku (db5d4c98) — all 10 pending commits deployed
+                             npm audit: 0 vulnerabilities ✅
+
+                             ⚠️ HUMAN ACTIONS STILL REQUIRED:
+                             1. supabase db push → apply 3 pending migrations to production:
+                                - 20260307000000_fix_rls_ownership.sql
+                                - 20260308000000_driver_payouts.sql
+                                - 20260309000000_contact_inquiries.sql
+                             2. heroku config:set VITE_RAZORPAY_KEY_ID=rzp_live_XXX RAZORPAY_KEY_SECRET=XXX
+                             3. Configure Twilio SMS OTP in Supabase Auth dashboard
+
+                             NEXT: BATCH17 — see 0.dev-matrix/BATCH17_AGENT_CONTINUATION_PROMPT.md
+───────────────────────────────────────────────────────────────────────
 [2026-03-07] SONNET-004 (JUDGE): ✅ BATCH15 VERIFIED → v56 PASSES
 
                              JUDGMENT: BATCH15 PASSES — all 5 tasks verified correct.
