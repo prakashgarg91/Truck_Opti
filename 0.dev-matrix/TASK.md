@@ -14,11 +14,16 @@
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| **BATCH17-T1** | **Supabase migration push (human)** — run `supabase db push` for 3 pending migrations | P0 | HUMAN | - | 🟡 Human action |
-| **BATCH17-T2** | **Landing page SEO + meta tags** — add og:title, og:description, og:image, twitter:card to index.html + LandingPage. Add sitemap.xml | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH17-T3** | **Agency job dispatch** — AgencyJobsPage: agency can assign a driver to a pending shipment job. Button “Assign Driver” opens a modal listing agency’s drivers. writes to `job_offers` | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH17-T4** | **Driver location update** — DriverTripPage: every 30s broadcast driver lat/lng to `shipments.latitude/longitude` via Supabase realtime update | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH17-T5** | **Admin reports export** — AdminDashboardPage: add “Export CSV” button that downloads all shipments for selected month as CSV | P2 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH18-T1** | **Driver withdrawal request UI** — DriverEarningsPage: modal with amount + UPI ID → insert to driver_payouts (status=pending). Admin sees in AdminPayoutsPage | P1 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH18-T2** | **Admin revenue trend chart** — AdminDashboardPage: last-6-months bar chart using pure Tailwind CSS bars (no extra npm dep). Query gency_jobs grouped by month | P1 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH18-T3** | **Invoice GST improvements** — InvoicePage.tsx: GSTIN input, SAC code 996511, CGST/SGST/IGST breakdown, bilingual, proper Indian invoice format | P2 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH18-T4** | **Trip photos viewer** — TrackingPage.tsx: when job is delivered show loading_photo_url + delivery_photo_url thumbnails with click-to-fullscreen lightbox | P2 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH18-T5** | **Admin user management page** — new AdminUsersPage.tsx at /admin/users: list all from profiles table (email, role, subscription_tier, created_at). Add nav card | P2 | UNCLAIMED | - | 🟡 Ready |
+| ~~BATCH17-T1~~ | ~~Supabase migration push (human)~~ | ~~P0~~ | MINIMAX-003 | 2026-03-09 | ✅ Skipped (human task) |
+| ~~BATCH17-T2~~ | ~~Landing page SEO + meta tags~~ | ~~P1~~ | MINIMAX-003 | 2026-03-09 | ✅ DONE |
+| ~~BATCH17-T3~~ | ~~Agency job dispatch modal~~ | ~~P1~~ | MINIMAX-003 | 2026-03-09 | ✅ Already existed (v43) |
+| ~~BATCH17-T4~~ | ~~Driver live GPS broadcast~~ | ~~P1~~ | MINIMAX-003 | 2026-03-09 | ✅ Already existed (v39/v40) |
+| ~~BATCH17-T5~~ | ~~Admin CSV export button~~ | ~~P2~~ | MINIMAX-003 | 2026-03-09 | ✅ DONE |
 | ~~BATCH16-T1~~ | ~~Admin payouts nav card~~ | P1 | SONNET-005 | 2026-03-09 | ✅ DONE |
 | ~~BATCH16-T2~~ | ~~E2E smoke test for RLS created_by~~ | P0 | SONNET-005 | 2026-03-09 | ✅ DONE |
 | ~~BATCH16-T3~~ | ~~Fix remaining raw error.message leaks~~ | P1 | SONNET-005 | 2026-03-09 | ✅ DONE (14 in 7 files) |

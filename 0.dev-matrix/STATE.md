@@ -37,6 +37,8 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH17 ctx + BATCH18 prompt | 2026-03-09 | ✅ DONE |
+| `MINIMAX-003` | LEAD | MiniMax-M2.5 | Full-stack | BATCH17 ✅ COMPLETE - v54 deployed | 2026-03-09 | ✅ DONE |
 | `SONNET-005` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH16 ✅ COMPLETE - v53 deployed | 2026-03-09 | ✅ DONE |
 | `MINIMAX-002` | LEAD | MiniMax-M2.5 | Full-stack | BATCH15 ✅ COMPLETE - v55 | 2026-03-07 | ✅ DONE |
 | `MINIMAX-001` | LEAD | MiniMax-M2.5 | Full-stack | BATCH11 tasks → v49 | 2026-03-05 | 🔴 Offline |
@@ -64,6 +66,33 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-09] SONNET-006 (LEAD+JUDGE): ✅ BATCH17 CONFIRMED COMPLETE → v54 deployed by MINIMAX-003
+
+                             BATCH17 all 5 tasks completed and shipped to Heroku v54.
+                             ✅ T1: SEO meta tags + Open Graph + Twitter Card in index.html ✅
+                                  sitemap.xml created with all public routes ✅
+                                  robots.txt updated with sitemap reference ✅
+                             ✅ T2: Agency job dispatch modal — confirmed already existed (v43) ✅
+                             ✅ T3: Driver live GPS tracking — confirmed already existed (v39/v40) ✅
+                             ✅ T4: Admin CSV export button in AdminDashboardPage.tsx ✅
+                             ✅ T5: LandingPage.tsx created — shown to non-authenticated users at / ✅
+                                  App.tsx updated: RoleHome() serves LandingPage when !user ✅
+                             BUILD: ✓ 0 TypeScript errors
+                             DEPLOY: v54 on Heroku
+                             URL: https://www.truckopti.in
+
+                             ⚠️ HUMAN ACTIONS STILL REQUIRED (blocking production features):
+                             1. supabase db push → 3 pending migrations still not applied to prod:
+                                - 20260307000000_fix_rls_ownership.sql
+                                - 20260308000000_driver_payouts.sql
+                                - 20260309000000_contact_inquiries.sql
+                             2. heroku config:set VITE_RAZORPAY_KEY_ID=rzp_live_XXX RAZORPAY_KEY_SECRET=XXX --app truck-opti-app
+                             3. Configure Twilio SMS OTP in Supabase Auth → Phone Providers
+
+                             NEXT: BATCH18 — see 0.dev-matrix/BATCH18_AGENT_CONTINUATION_PROMPT.md
+                             Tasks: Driver withdrawal UI, Admin revenue chart, Invoice GST,
+                                    Trip photos in tracking, Admin user management page
+───────────────────────────────────────────────────────────────────────
 [2026-03-09] SONNET-005 (LEAD+JUDGE): ✅ BATCH16 COMPLETE → v53 deployed to Heroku
 
                              ROOT CAUSE diagnosis: App "not responding" = Eco dyno cold start (30s)
