@@ -78,6 +78,8 @@ export default function TrackingPage() {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
   const [jobOffer, setJobOffer] = useState<JobOffer | null>(null)
   const [loadingOTP, setLoadingOTP] = useState(false)
+  const [jobPhotos, setJobPhotos] = useState<{ loading_url?: string; delivery_url?: string } | null>(null)
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null)
 
   const {
     data: shipments = [],
@@ -110,23 +112,25 @@ export default function TrackingPage() {
     }
   }, [queryClient])
 
-  // Fetch job offer OTP when modal opens
+  // Fetch job offer OTP and photos when modal opens
   useEffect(() => {
     if (showDetailModal && selectedShipment) {
       setLoadingOTP(true)
       supabase
         .from('job_offers')
-        .select('pickup_otp, delivery_otp, status, drivers(full_name)')
+        .select('pickup_otp, delivery_otp, status, drivers(full_name), photo_loading_url, photo_delivery_url')
         .eq('shipment_id', selectedShipment.id)
-        .in('status', ['pending', 'accepted', 'pickup_arrived', 'in_transit', 'delivery_arrived'])
+        .in('status', ['pending', 'accepted', 'pickup_arrived', 'in_transit', 'delivery_arrived', 'delivered'])
         .limit(1)
         .maybeSingle()
         .then(({ data }) => {
           setJobOffer(data as JobOffer | null)
+          setJobPhotos({ loading_url: data?.photo_loading_url, delivery_url: data?.photo_delivery_url })
           setLoadingOTP(false)
         })
     } else {
       setJobOffer(null)
+      setJobPhotos(null)
     }
   }, [showDetailModal, selectedShipment])
 
@@ -586,6 +590,37 @@ export default function TrackingPage() {
                   </p>
                 </div>
               )}
+
+              {/* Trip Photos */}
+              {jobPhotos && (jobPhotos.loading_url || jobPhotos.delivery_url) && (
+                <div className="space-y-3">
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'Trip Photos' : 'यात्रा फोटो'}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {jobPhotos.loading_url && (
+                      <div
+                        onClick={() => setLightboxPhoto(jobPhotos.loading_url!)}
+                        className="relative aspect-video bg-slate-100 dark:bg-slate-700 rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      >
+                        <img src={jobPhotos.loading_url} alt="Loading" className="w-full h-full object-cover" />
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
+                          <p className="text-xs text-white">{language === 'en' ? 'Loading' : 'लोडिंग'}</p>
+                        </div>
+                      </div>
+                    )}
+                    {jobPhotos.delivery_url && (
+                      <div
+                        onClick={() => setLightboxPhoto(jobPhotos.delivery_url!)}
+                        className="relative aspect-video bg-slate-100 dark:bg-slate-700 rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                      >
+                        <img src={jobPhotos.delivery_url} alt="Delivery" className="w-full h-full object-cover" />
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
+                          <p className="text-xs text-white">{language === 'en' ? 'Delivery' : 'डिलीवरी'}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Book Another Truck CTA for delivered shipments */}
@@ -617,6 +652,27 @@ export default function TrackingPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Trip Photos Lightbox */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <button
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+            onClick={() => setLightboxPhoto(null)}
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <img
+            src={lightboxPhoto}
+            alt="Trip photo"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={e => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

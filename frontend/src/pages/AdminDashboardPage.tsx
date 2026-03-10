@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
-  RefreshCw, Building2, Calendar, Wallet, MessageSquare, Download
+  RefreshCw, Building2, Calendar, Wallet, MessageSquare, Download, Shield
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
@@ -41,6 +41,7 @@ export default function AdminDashboardPage() {
     platformFee: 0
   })
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([])
+  const [revenueTrend, setRevenueTrend] = useState<{ month: string; revenue: number }[]>([])
 
   // Redirect non-admins
   useEffect(() => {
@@ -110,6 +111,33 @@ export default function AdminDashboardPage() {
       }
 
       setRecentJobs(jobs)
+
+      // Fetch last 6 months revenue trend
+      const sixMonthsAgo = new Date()
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+      const { data: trendData } = await supabase
+        .from('agency_jobs')
+        .select('fare, created_at')
+        .eq('status', 'delivered')
+        .gte('created_at', sixMonthsAgo.toISOString())
+
+      // Group by month
+      const monthlyRevenue: Record<string, number> = {}
+      ;(trendData || []).forEach(job => {
+        const monthKey = new Date(job.created_at).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })
+        monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + (job.fare || 0)
+      })
+
+      // Convert to array and ensure last 6 months are present
+      const months = []
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date()
+        d.setMonth(d.getMonth() - i)
+        const key = d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })
+        months.push({ month: key, revenue: monthlyRevenue[key] || 0 })
+      }
+      setRevenueTrend(months)
+
       setAnalytics({
         totalRevenue,
         totalAgencies: agencies,
@@ -292,6 +320,41 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* Revenue Trend Chart (CSS Bars) */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
+        <h3 className="font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-slate-400" />
+          {language === 'en' ? 'Revenue Trend (6 Months)' : 'राजस्व रुझान (6 महीने)'}
+        </h3>
+        {revenueTrend.length > 0 && revenueTrend.some(r => r.revenue > 0) ? (
+          <div className="flex items-end justify-between gap-2 h-40">
+            {revenueTrend.map((item, idx) => {
+              const maxRevenue = Math.max(...revenueTrend.map(r => r.revenue), 1)
+              const heightPercent = (item.revenue / maxRevenue) * 100
+              return (
+                <div key={idx} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-full flex-1 flex items-end">
+                    <div
+                      className="w-full bg-indigo-500 rounded-t-lg transition-all hover:bg-indigo-600 relative group"
+                      style={{ height: `${Math.max(heightPercent, 4)}%` }}
+                    >
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 dark:bg-slate-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                        {formatCurrency(item.revenue)}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{item.month.split(' ')[0]}</span>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="h-32 flex items-center justify-center text-slate-400 text-sm">
+            {language === 'en' ? 'No revenue data yet' : 'अभी तक कोई राजस्व डेटा नहीं'}
+          </div>
+        )}
+      </div>
+
       {/* Recent Jobs Table */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -354,6 +417,13 @@ export default function AdminDashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => navigate('/admin/users')}
+          className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <Shield className="w-5 h-5 text-indigo-500" />
+          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'User Management' : 'उपयोगकर्ता'}</span>
+        </button>
         <button
           onClick={() => navigate('/admin/drivers')}
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
