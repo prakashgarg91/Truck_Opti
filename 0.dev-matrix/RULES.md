@@ -136,6 +136,63 @@ const path = `driver-docs/${driverId}/${docType}.jpg`
 
 ---
 
+## 🔒 DEPENDENCY / SECURITY RULES
+
+### 19. Dependabot Closure Rule — Every Push
+Run `npm audit` in `d:\Github\Truck_Opti\frontend` before and after changing any package:
+```powershell
+cd d:\Github\Truck_Opti\frontend ; npm audit
+```
+- If 0 vulnerabilities → proceed.
+- If vulnerabilities exist → run `npm audit fix` and commit with `security: fix Dependabot CVE-XXX`.
+- Also check root `package.json` (`express`, `dotenv`, etc.). Upgrade to latest non-vulnerable minor:
+  ```powershell
+  cd d:\Github\Truck_Opti ; npm audit fix
+  ```
+- **BATCH is NOT complete while `npm audit` reports vulnerabilities in either package.json.**
+- GitHub Dependabot alerts must be resolved within the same batch that introduced them — never carry over >1 batch.
+
+### 21. Column Name Verification Before Shipping
+When a page selects or displays a column from a Supabase table, verify the column name against the migration file before committing:
+```
+# grep column name in all migrations
+python -c "import os; [print(f, l.strip()) for f in os.listdir('supabase/migrations') for i,l in enumerate(open(f'supabase/migrations/{f}').readlines(),1) if 'col_name' in l]"
+```
+- ❌ Selecting `full_name` when the column is `name` → silent nulls in UI (BUG-021 pattern)
+- ✅ Always cross-check selected column names against migration DDL
+
+### 22. End-of-Day Closing Questions
+Answer these 4 questions every time you close a batch or a day's work:
+1. **Are there deep hidden bugs?** — grep `error.message`, wrong table names, missing routes, broken RLS.
+2. **Is codebase clean?** — 0 TS errors, 0 `npm audit` vulnerabilities, no TODO comments, no dead code.
+3. **Is every bug resolved?** — Check ROADMAP.md open bugs section; all P0/P1 must be fixed or tracked.
+4. **Is everything glued together?** — Every new page has a route in App.tsx, a nav card, and a Supabase migration applied.
+
+### 21. When User Pastes External Agent Output
+When the user provides output from another AI agent (claiming tasks complete/deployed), you MUST:
+1. **Read** each claimed file — never trust strings like "already present" or "already existed" without verifying.
+2. **Check table names** — grep `supabase.from(` in every modified file and confirm the table names match migration files.
+3. **Check for raw error.message** — grep `error.message` and `err.message` in every modified file.
+4. **Register** the reporting agent in `STATE.md`, post judgment message (newest at top).
+5. **Mark** tasks ✅ DONE or 🔴 BUG in `TASK.md` with evidence.
+6. **Create** the next `BATCHNN_AGENT_CONTINUATION_PROMPT.md` with any bugs as P0 tasks.
+7. **Output** exactly one single-line summary: `"BATCHXX ✅ PASS / ⚠️ PARTIAL: [issue]. Next: BATCHYY prompt at 0.dev-matrix/BATCHYY_AGENT_CONTINUATION_PROMPT.md"`
+
+### 17. Alter Existing Tables via Migration, Not Direct Edit
+Never modify `base_schema.sql` directly. Always add a new migration file for schema changes.
+
+### 18. Storage Bucket Paths Must Use auth.uid()
+```typescript
+// ❌ WRONG — user-supplied name
+const path = `uploads/${filename}`
+
+// ✅ RIGHT — deterministic, ownership-scoped
+const path = `driver-docs/${driverId}/${docType}.jpg`
+//                          ^^^^^^^^ = auth.uid()
+```
+
+---
+
 ## 💫 COMMIT CONVENTIONS
 
 ```

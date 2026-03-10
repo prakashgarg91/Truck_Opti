@@ -79,7 +79,7 @@ export default function DriverEarningsPage() {
     }
     setWithdrawLoading(true)
     try {
-      const { error } = await supabase.from('withdrawal_requests').insert({
+      const { error } = await supabase.from('driver_payouts').insert({
         driver_id: driverId,
         amount: amount,
         status: 'pending',

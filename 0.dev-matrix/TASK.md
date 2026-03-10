@@ -14,11 +14,16 @@
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| **BATCH18-T1** | **Driver withdrawal request UI** — DriverEarningsPage: modal with amount + UPI ID → insert to driver_payouts (status=pending). Admin sees in AdminPayoutsPage | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH18-T2** | **Admin revenue trend chart** — AdminDashboardPage: last-6-months bar chart using pure Tailwind CSS bars (no extra npm dep). Query gency_jobs grouped by month | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH18-T3** | **Invoice GST improvements** — InvoicePage.tsx: GSTIN input, SAC code 996511, CGST/SGST/IGST breakdown, bilingual, proper Indian invoice format | P2 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH18-T4** | **Trip photos viewer** — TrackingPage.tsx: when job is delivered show loading_photo_url + delivery_photo_url thumbnails with click-to-fullscreen lightbox | P2 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH18-T5** | **Admin user management page** — new AdminUsersPage.tsx at /admin/users: list all from profiles table (email, role, subscription_tier, created_at). Add nav card | P2 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH19-T1** | **Fix photo_loading_url/photo_delivery_url column verification** — confirm agency_jobs table has these columns; add migration if missing; update TrackingPage query if col names differ | P0 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH19-T2** | **Driver wallet balance display** — DriverEarningsPage: fetch SUM of paid driver_payouts to show real wallet balance; show pending withdrawal amount separately | P1 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH19-T3** | **Agency payroll page** — AgencyDriversPage: add Pay button for each driver; modal with amount, period, UPI; insert to driver_payouts as agency-initiated payment | P2 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH19-T4** | **FCM push notifications setup** — Add Firebase SDK to frontend; service worker for background notifications; trigger on new job_offers Realtime event for driver | P2 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH19-T5** | **E-way bill form** — NewShipmentPage: after booking, show optional e-way bill form (consignor GSTIN, consignee GSTIN, HSN code, value, transport mode); save to shipments table | P2 | UNCLAIMED | - | 🟡 Ready |
+| ~~BATCH18-T1~~ | ~~Driver withdrawal request UI~~ | ~~P1~~ | MINIMAX-003 | 2026-03-09 | ⚠️ DONE (BUG: table fixed by SONNET-006) |
+| ~~BATCH18-T2~~ | ~~Admin revenue trend chart~~ | ~~P1~~ | MINIMAX-003 | 2026-03-09 | ✅ DONE |
+| ~~BATCH18-T3~~ | ~~Invoice GST fields~~ | ~~P2~~ | MINIMAX-003 | 2026-03-09 | ✅ Already existed (pre-BATCH18) |
+| ~~BATCH18-T4~~ | ~~Trip photos lightbox~~ | ~~P2~~ | MINIMAX-003 | 2026-03-09 | ✅ DONE |
+| ~~BATCH18-T5~~ | ~~Admin user management page~~ | ~~P2~~ | MINIMAX-003 | 2026-03-09 | ⚠️ DONE (BUG: full_name→name fixed by SONNET-006) |
 | ~~BATCH17-T1~~ | ~~Supabase migration push (human)~~ | ~~P0~~ | MINIMAX-003 | 2026-03-09 | ✅ Skipped (human task) |
 | ~~BATCH17-T2~~ | ~~Landing page SEO + meta tags~~ | ~~P1~~ | MINIMAX-003 | 2026-03-09 | ✅ DONE |
 | ~~BATCH17-T3~~ | ~~Agency job dispatch modal~~ | ~~P1~~ | MINIMAX-003 | 2026-03-09 | ✅ Already existed (v43) |

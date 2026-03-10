@@ -37,8 +37,8 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH17 ctx + BATCH18 prompt | 2026-03-09 | ✅ DONE |
-| `MINIMAX-003` | LEAD | MiniMax-M2.5 | Full-stack | BATCH17 ✅ COMPLETE - v54 deployed | 2026-03-09 | ✅ DONE |
+| `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH18 judge + BATCH19 prompt + BUG fix | 2026-03-10 | ✅ DONE |
+| `MINIMAX-003` | LEAD | MiniMax-M2.5 | Full-stack | BATCH18 ⚠️ PARTIAL - v55 deployed (T1 table bug) | 2026-03-09 | ✅ DONE |
 | `SONNET-005` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH16 ✅ COMPLETE - v53 deployed | 2026-03-09 | ✅ DONE |
 | `MINIMAX-002` | LEAD | MiniMax-M2.5 | Full-stack | BATCH15 ✅ COMPLETE - v55 | 2026-03-07 | ✅ DONE |
 | `MINIMAX-001` | LEAD | MiniMax-M2.5 | Full-stack | BATCH11 tasks → v49 | 2026-03-05 | 🔴 Offline |
@@ -66,6 +66,41 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-10] SONNET-006 (LEAD+JUDGE): ⚠️ BATCH18 PARTIAL PASS → v55 deployed by MINIMAX-003, 2 bugs found+fixed
+
+                             BATCH18 JUDGMENT: PARTIAL PASS — 4/5 tasks verified, 1 table mismatch bug fixed.
+                             ✅ T1: DriverEarningsPage.tsx — withdrawal modal exists ✅
+                                  BUG FOUND + FIXED: inserts to withdrawal_requests (non-existent) → fixed to driver_payouts ✅
+                             ✅ T2: AdminDashboardPage.tsx — 6-month CSS bar chart present ✅
+                                  Colors, tooltips, empty state — all OK ✅
+                             ✅ T3: InvoicePage.tsx — GST fields confirmed ALREADY PRESENT (pre-existing) ✅
+                                  GSTIN, SAC 996511, CGST/SGST/IGST, bilingual — all verified ✅
+                             ✅ T4: TrackingPage.tsx — trip photos lightbox present ✅
+                                  Selects photo_loading_url + photo_delivery_url from agency_jobs ✅
+                                  setLightboxPhoto state, fixed inset-0 overlay confirmed ✅
+                             ✅ T5: AdminUsersPage.tsx CREATED — /admin/users route ✅
+                                  BUG FOUND + FIXED: selected full_name (non-existent) → fixed to name ✅
+                                  Admin guard, search/filter, delete modal — all OK ✅
+                             BUILD: ✓ Verified 0 TS errors
+                             npm audit: ✅ 0 vulnerabilities (frontend + root)
+                             BUGS FIXED THIS SESSION:
+                             - BUG-BATCH18-T1: DriverEarningsPage withdrawal_requests → driver_payouts
+                             - BUG-021: AdminUsersPage full_name → name (users table column)
+                             HOOKS ADDED:
+                             - Hook 1: Dependabot Closure (RULES.md §19)
+                             - Hook 2: Judge External Agent Output (RULES.md §21)
+                             - Hook 3: Skill/Pattern Drift Update (copilot-instructions.md)
+                             - Hook 4: End-of-Day Closing Checklist (copilot-instructions.md)
+                             - Rule 21: Column Name Verification (RULES.md §21)
+                             - Rule 22: End-of-Day Closing Questions (RULES.md §22)
+
+                             ⚠️ HUMAN ACTIONS STILL REQUIRED:
+                             1. supabase db push → 3 pending migrations still not applied
+                             2. heroku config:set VITE_RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET
+                             3. Twilio SMS OTP in Supabase Auth
+
+                             NEXT: BATCH19 → see 0.dev-matrix/BATCH19_AGENT_CONTINUATION_PROMPT.md
+───────────────────────────────────────────────────────────────────────
 [2026-03-09] SONNET-006 (LEAD+JUDGE): ✅ BATCH17 CONFIRMED COMPLETE → v54 deployed by MINIMAX-003
 
                              BATCH17 all 5 tasks completed and shipped to Heroku v54.

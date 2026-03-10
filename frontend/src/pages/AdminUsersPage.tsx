@@ -12,7 +12,7 @@ interface UserRecord {
   role: string
   created_at: string
   updated_at: string
-  full_name?: string
+  name?: string
   phone?: string
 }
 
@@ -40,7 +40,7 @@ export default function AdminUsersPage() {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, email, role, created_at, updated_at, full_name, phone')
+        .select('id, email, role, created_at, updated_at, name, phone')
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -81,7 +81,7 @@ export default function AdminUsersPage() {
   const filteredUsers = users.filter(u => {
     const matchesSearch = !search ||
       u.email?.toLowerCase().includes(search.toLowerCase()) ||
-      u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.name?.toLowerCase().includes(search.toLowerCase()) ||
       u.role?.toLowerCase().includes(search.toLowerCase())
     const matchesRole = roleFilter === 'all' || u.role === roleFilter
     return matchesSearch && matchesRole
@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
                   </div>
                   <div>
                     <p className="font-medium text-slate-800 dark:text-white">
-                      {user.full_name || user.email?.split('@')[0] || 'Unknown'}
+                      {user.name || user.email?.split('@')[0] || 'Unknown'}
                     </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
                     {user.phone && (
