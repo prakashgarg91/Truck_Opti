@@ -14,6 +14,7 @@
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
+| **BATCH19-T0** | **Dependabot 32 alerts** — transitive `rollup@2.80.0` via `workbox-build@7.4.0` in frontend; upgrade `vite-plugin-pwa` to latest version that uses vite 6 + rollup 4; run `npm audit` must show 0 | P1 | UNCLAIMED | - | 🟡 Ready |
 | **BATCH19-T1** | **Fix photo_loading_url/photo_delivery_url column verification** — confirm agency_jobs table has these columns; add migration if missing; update TrackingPage query if col names differ | P0 | UNCLAIMED | - | 🟡 Ready |
 | **BATCH19-T2** | **Driver wallet balance display** — DriverEarningsPage: fetch SUM of paid driver_payouts to show real wallet balance; show pending withdrawal amount separately | P1 | UNCLAIMED | - | 🟡 Ready |
 | **BATCH19-T3** | **Agency payroll page** — AgencyDriversPage: add Pay button for each driver; modal with amount, period, UPI; insert to driver_payouts as agency-initiated payment | P2 | UNCLAIMED | - | 🟡 Ready |
