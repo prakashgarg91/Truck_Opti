@@ -14,6 +14,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
 import { usePackingWorker } from '../hooks/usePackingWorker'
 import { useSubscription } from '../hooks/useSubscription'
+import { useAuthStore } from '../stores/authStore'
+import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
 import { formatPercent, formatCurrency } from '../utils/formatters'
 
@@ -592,6 +594,11 @@ RecommendationCard.displayName = 'RecommendationCard'
 export default function PackingPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useAuthStore()
+  const { language } = useLanguageStore()
+  const { isExpired, checkLimit, showUpgradePrompt } = useSubscription()
+  const isAdmin = (user?.user_metadata as Record<string, unknown>)?.role === 'admin'
+
   const [lang, setLang] = useState<Language>('en')
   const [mode, setMode] = useState<'manual' | 'smart'>('smart')
   const [selectedTruck, setSelectedTruck] = useState<string | null>(null)
@@ -611,8 +618,7 @@ export default function PackingPage() {
   const [expandedSection, setExpandedSection] = useState<string | null>('items')
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const { checkLimit, showUpgradePrompt } = useSubscription()
-  
+
   // Booking modal state
   const [showBookModal, setShowBookModal] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -1083,6 +1089,28 @@ export default function PackingPage() {
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section)
+  }
+
+  // Subscription expired check - block expired users
+  if (!isAdmin && isExpired) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <h2 className="text-2xl font-bold text-red-600 mb-2">
+          {language === 'en' ? 'Subscription Expired' : 'सदस्यता समाप्त'}
+        </h2>
+        <p className="text-gray-600 mb-6">
+          {language === 'en'
+            ? 'Your trial has ended. Upgrade to continue using 3D packing.'
+            : 'आपका परीक्षण समाप्त हो गया है। 3D पैकिंग जारी रखने के लिए अपग्रेड करें।'}
+        </p>
+        <button
+          onClick={() => navigate('/pricing')}
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
+        >
+          {language === 'en' ? 'View Plans' : 'प्लान देखें'}
+        </button>
+      </div>
+    )
   }
 
   return (
