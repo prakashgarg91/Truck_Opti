@@ -37,7 +37,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin fix + Dependabot cleanup; BATCH21 queued | 2026-03-11 | ✅ DONE |
+| `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin fix + Dependabot cleanup → v57 Heroku; BATCH21 queued | 2026-03-11 | ✅ DONE |
 | `BATCH20-AGENT` | LEAD | Unknown | Full-stack | BATCH20 ✅ NEAR-COMPLETE - v56 deployed (1 bug found by judge) | 2026-03-11 | ✅ DONE |
 | `MINIMAX-003` | LEAD | MiniMax-M2.5 | Full-stack | BATCH18 ⚠️ PARTIAL - v55 deployed (T1 table bug) | 2026-03-09 | ✅ DONE |
 | `SONNET-005` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH16 ✅ COMPLETE - v53 deployed | 2026-03-09 | ✅ DONE |
