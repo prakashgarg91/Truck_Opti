@@ -597,7 +597,7 @@ export default function PackingPage() {
   const { user } = useAuthStore()
   const { language } = useLanguageStore()
   const { isExpired, checkLimit, showUpgradePrompt } = useSubscription()
-  const isAdmin = (user?.user_metadata as Record<string, unknown>)?.role === 'admin'
+  const isAdmin = user?.role === 'admin'
 
   const [lang, setLang] = useState<Language>('en')
   const [mode, setMode] = useState<'manual' | 'smart'>('smart')

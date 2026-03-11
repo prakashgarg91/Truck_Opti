@@ -14,12 +14,25 @@
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| **BATCH19-T0** | **Dependabot 32 alerts** — transitive `rollup@2.80.0` via `workbox-build@7.4.0` in frontend; upgrade `vite-plugin-pwa` to latest version that uses vite 6 + rollup 4; run `npm audit` must show 0 | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH19-T1** | **Fix photo_loading_url/photo_delivery_url column verification** — confirm agency_jobs table has these columns; add migration if missing; update TrackingPage query if col names differ | P0 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH19-T2** | **Driver wallet balance display** — DriverEarningsPage: fetch SUM of paid driver_payouts to show real wallet balance; show pending withdrawal amount separately | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH19-T3** | **Agency payroll page** — AgencyDriversPage: add Pay button for each driver; modal with amount, period, UPI; insert to driver_payouts as agency-initiated payment | P2 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH19-T4** | **FCM push notifications setup** — Add Firebase SDK to frontend; service worker for background notifications; trigger on new job_offers Realtime event for driver | P2 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH19-T5** | **E-way bill form** — NewShipmentPage: after booking, show optional e-way bill form (consignor GSTIN, consignee GSTIN, HSN code, value, transport mode); save to shipments table | P2 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH21-T1** | **Supabase `db push` helper** — create a `scripts/push-migrations.sh` script that lists all pending migrations and reminds owner to run `supabase db push`; document the 6 pending migrations in STATE.md clearly | P1 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH21-T2** | **Sentry error tracking** — add `@sentry/react` to frontend; init in `main.tsx` with `VITE_SENTRY_DSN` env var; wrap `<App />` in `Sentry.ErrorBoundary`; update `.env.example` | P1 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH21-T3** | **Admin: mark driver payout approved/paid** — `AdminPayoutsPage.tsx`: add "Approve" and "Mark Paid" buttons per pending payout row; update `driver_payouts.status`; notify driver via toast | P1 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH21-T4** | **Driver: GPS broadcast on trip start** — `DriverTripPage.tsx`: when step transitions to 'driving', start `navigator.geolocation.watchPosition`, upsert `driver_locations` every 10s; stop on trip end | P2 | UNCLAIMED | - | 🟡 Ready |
+| **BATCH21-T5** | **Subscription upgrade/downgrade flow** — `PricingPage.tsx`: if user already has a subscription, show "Current Plan" badge, "Upgrade" on higher plans, "Downgrade" on lower; call `subscriptionsApi.update()` | P2 | UNCLAIMED | - | 🟡 Ready |
+| ~~BATCH20-T1~~ | ~~Photo columns migration~~ | ~~P0~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE |
+| ~~BATCH20-T2~~ | ~~Driver wallet real balance~~ | ~~P1~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE |
+| ~~BATCH20-T3~~ | ~~Agency payroll Pay button~~ | ~~P2~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE |
+| ~~BATCH20-T4~~ | ~~Subscription enforcement~~ | ~~P1~~ | BATCH20-AGENT | 2026-03-11 | ⚠️ DONE (BUG: isAdmin wrong field fixed by SONNET-006) |
+| ~~BATCH20-T5~~ | ~~Admin subscriptions page~~ | ~~P1~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE |
+| ~~BATCH20-T6~~ | ~~Dependabot vite-plugin-pwa fix~~ | ~~P1~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE (0 vulns) |
+| ~~BATCH20-T7~~ | ~~E-way bill form stub~~ | ~~P2~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE |
+| ~~BATCH20-T8~~ | ~~Launch checklist update~~ | ~~P2~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE |
+| ~~BATCH19-T0~~ | ~~Dependabot 32 alerts~~ | ~~P1~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE (via T6) |
+| ~~BATCH19-T1~~ | ~~Photo column verification~~ | ~~P0~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE (via T1) |
+| ~~BATCH19-T2~~ | ~~Driver wallet balance~~ | ~~P1~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE (via T2) |
+| ~~BATCH19-T3~~ | ~~Agency payroll page~~ | ~~P2~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE (via T3) |
+| ~~BATCH19-T4~~ | ~~FCM push notifications~~ | ~~P2~~ | UNCLAIMED | - | ⏭️ Deferred to BATCH21-T4 variant |
+| ~~BATCH19-T5~~ | ~~E-way bill form~~ | ~~P2~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE (via T7) |
 | ~~BATCH18-T1~~ | ~~Driver withdrawal request UI~~ | ~~P1~~ | MINIMAX-003 | 2026-03-09 | ⚠️ DONE (BUG: table fixed by SONNET-006) |
 | ~~BATCH18-T2~~ | ~~Admin revenue trend chart~~ | ~~P1~~ | MINIMAX-003 | 2026-03-09 | ✅ DONE |
 | ~~BATCH18-T3~~ | ~~Invoice GST fields~~ | ~~P2~~ | MINIMAX-003 | 2026-03-09 | ✅ Already existed (pre-BATCH18) |

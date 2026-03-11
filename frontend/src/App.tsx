@@ -64,6 +64,7 @@ const ShipmentHistoryPage = React.lazy(() => import('./pages/ShipmentHistoryPage
 const ContactPage = React.lazy(() => import('./pages/ContactPage'))
 const AdminContactPage = React.lazy(() => import('./pages/AdminContactPage'))
 const AdminUsersPage = React.lazy(() => import('./pages/AdminUsersPage'))
+const AdminSubscriptionsPage = React.lazy(() => import('./pages/AdminSubscriptionsPage'))
 const LandingPage = React.lazy(() => import('./pages/LandingPage'))
 
 // Role-based home: redirects drivers/agencies to their portal, shows landing page to non-authenticated users
@@ -134,6 +135,7 @@ function AppContent() {
           <Route path="/admin/payouts" element={<AdminPayoutsPage />} />
           <Route path="/admin/contact" element={<AdminContactPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
           <Route path="/history" element={<ShipmentHistoryPage />} />
         </Route>
 

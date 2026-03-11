@@ -37,7 +37,8 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH18 judge + BATCH19 prompt + BUG fix | 2026-03-10 | ✅ DONE |
+| `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin BUG fix | 2026-03-11 | ✅ DONE |
+| `BATCH20-AGENT` | LEAD | Unknown | Full-stack | BATCH20 ✅ NEAR-COMPLETE - v56 deployed (1 bug found by judge) | 2026-03-11 | ✅ DONE |
 | `MINIMAX-003` | LEAD | MiniMax-M2.5 | Full-stack | BATCH18 ⚠️ PARTIAL - v55 deployed (T1 table bug) | 2026-03-09 | ✅ DONE |
 | `SONNET-005` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH16 ✅ COMPLETE - v53 deployed | 2026-03-09 | ✅ DONE |
 | `MINIMAX-002` | LEAD | MiniMax-M2.5 | Full-stack | BATCH15 ✅ COMPLETE - v55 | 2026-03-07 | ✅ DONE |
@@ -66,6 +67,40 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-11] SONNET-006 (LEAD+JUDGE): ✅ BATCH20 NEAR-PASS — 7/8 tasks verified clean, 1 bug found+fixed
+
+                             BATCH20 JUDGMENT: NEAR-PASS — all 8 tasks present and functional.
+                             ✅ T1: migration 20260311000000_add_photo_columns_to_agency_jobs.sql ✅
+                                  photo_loading_url + photo_delivery_url added to agency_jobs ✅
+                             ✅ T2: DriverEarningsPage real balance from driver_payouts ✅
+                                  earned/pending computed via filter+reduce, amber pending badge ✅
+                             ✅ T3: AgencyDriversPage Pay button + modal + migration ✅
+                                  agency_id + type columns added with RLS policies ✅
+                             ✅ T4: Subscription enforcement on NewShipmentPage + PackingPage ✅
+                                  BUG FOUND + FIXED: isAdmin used user_metadata.role (wrong field)
+                                    → fixed to user.role (correct, matching useSubscription pattern)
+                             ✅ T5: AdminSubscriptionsPage created ✅
+                                  lazily imported, route /admin/subscriptions, nav card in AdminDashboard ✅
+                                  Bilingual, admin guard, status badges, no error.message leaks ✅
+                             ✅ T6: vite-plugin-pwa upgraded to v1.2.0 ✅
+                                  npm audit: 0 vulnerabilities ✅
+                             ✅ T7: E-way bill form in NewShipmentPage ✅
+                                  GSTIN validation regex, shipments.eway_bill_data JSONB column, migration ✅
+                             ✅ T8: LAUNCH_CHECKLIST.md updated (6.8, 6.11, 6.12 all ✅) ✅
+                             BUILD: ✓ 0 TS errors, dist/sw.js generated, PWA v1.2.0 ✅
+                             npm audit: ✅ 0 vulnerabilities
+                             BUG FIXED THIS SESSION:
+                             - BUG-BATCH20-T4: isAdmin wrong field in NewShipmentPage + PackingPage
+                               user?.user_metadata?.role → user?.role (consistent with useSubscription hook)
+
+                             ⚠️ HUMAN ACTIONS STILL REQUIRED:
+                             1. supabase db push → 6 pending migrations not yet applied to production
+                                (3 from BATCH13-16 + 3 new from BATCH20: T1/T3/T7)
+                             2. heroku config:set VITE_RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET
+                             3. Twilio SMS OTP in Supabase Auth → Phone Providers
+
+                             NEXT: BATCH21 → see 0.dev-matrix/BATCH21_AGENT_CONTINUATION_PROMPT.md
+───────────────────────────────────────────────────────────────────────
 [2026-03-10] SONNET-006 (LEAD+JUDGE): ✅ DAY-CLOSE COMPLETE — v55 + hooks + BATCH19 queued
 
                              DAY-CLOSE SUMMARY:

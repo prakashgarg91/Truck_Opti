@@ -31,7 +31,7 @@ export default function NewShipmentPage() {
   const { user } = useAuthStore()
   const { language } = useLanguageStore()
   const { isExpired } = useSubscription()
-  const isAdmin = (user?.user_metadata as Record<string, unknown>)?.role === 'admin'
+  const isAdmin = user?.role === 'admin'
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)

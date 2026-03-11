@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
-  RefreshCw, Building2, Calendar, Wallet, MessageSquare, Download, Shield
+  RefreshCw, Building2, Calendar, Wallet, MessageSquare, Download, Shield, CreditCard
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
@@ -451,6 +451,13 @@ export default function AdminDashboardPage() {
         >
           <MessageSquare className="w-5 h-5 text-orange-500" />
           <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Contact Inquiries' : 'संपर्क पूछताछ'}</span>
+        </button>
+        <button
+          onClick={() => navigate('/admin/subscriptions')}
+          className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <CreditCard className="w-5 h-5 text-purple-500" />
+          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Subscriptions' : 'सदस्यता'}</span>
         </button>
       </div>
     </div>

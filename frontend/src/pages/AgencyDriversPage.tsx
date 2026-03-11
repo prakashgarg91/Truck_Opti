@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Users, Truck, Star, RefreshCw, AlertTriangle,
-  Phone, MapPin, Share2, CheckCircle2, XCircle
+  Phone, MapPin, Share2, CheckCircle2, XCircle, Wallet
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
+import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
 
 interface AssignedDriver {
@@ -38,11 +39,15 @@ const VEHICLE_LABELS: Record<string, string> = {
 
 export default function AgencyDriversPage() {
   const { user } = useAuthStore()
+  const { language } = useLanguageStore()
   const [agencyId, setAgencyId] = useState<string | null>(null)
   const [drivers, setDrivers] = useState<AssignedDriver[]>([])
   const [trucks, setTrucks] = useState<AgencyTruck[]>([])
   const [loading, setLoading] = useState(true)
   const [assignModal, setAssignModal] = useState<{ driverId: string; driverName: string } | null>(null)
+  const [payModal, setPayModal] = useState<{ driverId: string; driverName: string } | null>(null)
+  const [payAmount, setPayAmount] = useState('')
+  const [payNote, setPayNote] = useState('')
   const [selectedTruckId, setSelectedTruckId] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -122,6 +127,35 @@ export default function AgencyDriversPage() {
     }
   }
 
+  const handlePayDriver = async () => {
+    if (!payModal || !payAmount || !agencyId) return
+    const amount = parseFloat(payAmount)
+    if (isNaN(amount) || amount < 1) {
+      toast.error(language === 'en' ? 'Enter a valid amount (min ₹1)' : 'मान्य राशि दर्ज करें (न्यूनतम ₹1)')
+      return
+    }
+    setSaving(true)
+    const { error } = await supabase.from('driver_payouts').insert({
+      driver_id: payModal.driverId,
+      agency_id: agencyId,
+      amount: amount,
+      type: 'agency_pay',
+      status: 'paid',
+      note: payNote || null
+    })
+    if (error) {
+      console.error('[AgencyDrivers] pay:', error)
+      toast.error(language === 'en' ? 'Payment failed' : 'भुगतान विफल')
+      setSaving(false)
+      return
+    }
+    toast.success(language === 'en' ? 'Payment recorded' : 'भुगतान दर्ज किया गया')
+    setPayModal(null)
+    setPayAmount('')
+    setPayNote('')
+    setSaving(false)
+  }
+
   const copyInviteLink = () => {
     const link = `${window.location.origin}/driver/register?ref=${agencyId}`
     navigator.clipboard.writeText(link).then(() => toast.success('Invite link copied!'))
@@ -170,6 +204,63 @@ export default function AgencyDriversPage() {
                 className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
               >
                 {saving ? 'Assigning...' : 'Assign'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pay Driver Modal */}
+      {payModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1">
+              {language === 'en' ? 'Pay Driver' : 'चालक को भुगतान करें'}
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              {language === 'en' ? 'Recording payment for' : 'भुगतान दर्ज करें'}{' '}
+              <strong>{payModal.driverName}</strong>
+            </p>
+            <div className="space-y-4 mb-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  {language === 'en' ? 'Amount (₹)' : 'राशि (₹)'} *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={payAmount}
+                  onChange={e => setPayAmount(e.target.value)}
+                  placeholder={language === 'en' ? 'Enter amount' : 'राशि दर्ज करें'}
+                  className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  {language === 'en' ? 'Note (optional)' : 'नोट (वैकल्पिक)'}
+                </label>
+                <input
+                  type="text"
+                  value={payNote}
+                  onChange={e => setPayNote(e.target.value)}
+                  placeholder={language === 'en' ? 'Monthly salary / मासिक वेतन' : 'Monthly salary / मासिक वेतन'}
+                  className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setPayModal(null); setPayAmount(''); setPayNote('') }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium"
+              >
+                {language === 'en' ? 'Cancel' : 'रद्द करें'}
+              </button>
+              <button
+                disabled={!payAmount || saving}
+                onClick={handlePayDriver}
+                className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
+              >
+                {saving ? (language === 'en' ? 'Processing...' : 'प्रोसेसिंग...') : (language === 'en' ? 'Record Payment' : 'भुगतान दर्ज करें')}
               </button>
             </div>
           </div>
@@ -267,6 +358,13 @@ export default function AgencyDriversPage() {
                 <Phone size={12} />
                 Call
               </a>
+              <button
+                onClick={() => setPayModal({ driverId: driver.id, driverName: driver.full_name })}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-xs font-medium"
+              >
+                <Wallet size={12} />
+                {language === 'en' ? 'Pay' : 'भुगतान'}
+              </button>
               {driver.truck_id ? (
                 <button
                   onClick={() => handleUnassign(driver.truck_id!, driver.full_name)}

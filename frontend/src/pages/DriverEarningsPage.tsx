@@ -25,7 +25,8 @@ export default function DriverEarningsPage() {
   const { user } = useAuthStore()
   const { language } = useLanguageStore()
   const [driverId, setDriverId] = useState<string | null>(null)
-  const [driverData, setDriverData] = useState<{ total_earnings?: number; pending_payout?: number; bank_account?: string } | null>(null)
+  const [payoutEarned, setPayoutEarned] = useState<number>(0)
+  const [payoutPending, setPayoutPending] = useState<number>(0)
   const [jobs, setJobs] = useState<JobRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'week' | 'month' | 'total'>('week')
@@ -35,12 +36,31 @@ export default function DriverEarningsPage() {
 
   const fetchDriverId = useCallback(async () => {
     if (!user?.id) return
-    const { data } = await supabase.from('drivers').select('id, total_earnings, pending_payout, bank_account').eq('user_id', user.id).maybeSingle()
+    const { data } = await supabase.from('drivers').select('id').eq('user_id', user.id).maybeSingle()
     if (data?.id) {
       setDriverId(data.id)
-      setDriverData(data)
     }
   }, [user?.id])
+
+  const loadData = useCallback(async (drId: string) => {
+    // Fetch payouts from driver_payouts table
+    const { data: payouts, error: payErr } = await supabase
+      .from('driver_payouts')
+      .select('amount, status')
+      .eq('driver_id', drId)
+
+    if (payErr) {
+      console.error('[DriverEarnings] balance:', payErr)
+      toast.error(language === 'en' ? 'Failed to load balance' : 'बैलेंस लोड नहीं हुआ')
+      return
+    }
+
+    const earned = payouts?.filter(p => p.status === 'paid').reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0
+    const pending = payouts?.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0
+
+    setPayoutEarned(earned)
+    setPayoutPending(pending)
+  }, [language])
 
   const fetchJobs = useCallback(async (drId: string) => {
     setLoading(true)
@@ -65,6 +85,7 @@ export default function DriverEarningsPage() {
 
   useEffect(() => { fetchDriverId() }, [fetchDriverId])
   useEffect(() => { if (driverId) fetchJobs(driverId) }, [driverId, fetchJobs])
+  useEffect(() => { if (driverId) loadData(driverId) }, [driverId, loadData])
 
   const handleWithdrawRequest = async () => {
     const amount = parseFloat(withdrawAmount)
@@ -72,7 +93,7 @@ export default function DriverEarningsPage() {
       toast.error(language === 'en' ? 'Please enter a valid amount' : 'कृपया एक मान्य राशि दर्ज करें')
       return
     }
-    const available = driverData?.pending_payout || 0
+    const available = payoutEarned
     if (amount > available) {
       toast.error(language === 'en' ? 'Amount exceeds available balance' : 'राशि उपलब्ध शेष से अधिक है')
       return
@@ -148,16 +169,21 @@ export default function DriverEarningsPage() {
         ) : (
           <>
             {/* Summary cards */}
-            {/* Available for withdrawal card with withdraw button */}
+            {/* Wallet card with earned and pending */}
               <div className="col-span-2 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-5 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-100 text-sm font-medium">{language === 'en' ? 'Available for Withdrawal' : 'निकासी के लिए उपलब्ध'}</p>
-                    <p className="text-3xl font-bold text-white mt-1">{formatCurrency(driverData?.pending_payout || 0)}</p>
+                    <p className="text-green-100 text-sm font-medium">{language === 'en' ? 'Wallet Balance' : 'वॉलेट बैलेंस'}</p>
+                    <p className="text-3xl font-bold text-white mt-1">₹{payoutEarned.toLocaleString('en-IN')}</p>
+                    {payoutPending > 0 && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-400/20 rounded-lg">
+                        <span className="text-amber-100 text-xs font-medium">{language === 'en' ? 'Pending' : 'लंबित'}: ₹{payoutPending.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => setShowWithdrawModal(true)}
-                    disabled={(driverData?.pending_payout || 0) <= 0}
+                    disabled={payoutEarned <= 0}
                     className="px-5 py-2.5 bg-white text-green-600 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-50 transition-colors"
                   >
                     {language === 'en' ? 'Withdraw' : 'निकालें'}
@@ -247,7 +273,7 @@ export default function DriverEarningsPage() {
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  {language === 'en' ? 'Available:' : 'उपलब्ध:'} {formatCurrency(driverData?.pending_payout || 0)}
+                  {language === 'en' ? 'Available:' : 'उपलब्ध:'} ₹{payoutEarned.toLocaleString('en-IN')}
                 </p>
               </div>
               <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 flex items-start gap-2">
