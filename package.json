@@ -11,7 +11,7 @@
     "node": "20.x"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^5.2.1"
   },
   "repository": {
     "type": "git",
