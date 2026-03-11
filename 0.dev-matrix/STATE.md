@@ -37,7 +37,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin BUG fix | 2026-03-11 | ✅ DONE |
+| `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin fix + Dependabot cleanup; BATCH21 queued | 2026-03-11 | ✅ DONE |
 | `BATCH20-AGENT` | LEAD | Unknown | Full-stack | BATCH20 ✅ NEAR-COMPLETE - v56 deployed (1 bug found by judge) | 2026-03-11 | ✅ DONE |
 | `MINIMAX-003` | LEAD | MiniMax-M2.5 | Full-stack | BATCH18 ⚠️ PARTIAL - v55 deployed (T1 table bug) | 2026-03-09 | ✅ DONE |
 | `SONNET-005` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH16 ✅ COMPLETE - v53 deployed | 2026-03-09 | ✅ DONE |
@@ -67,6 +67,28 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-11] SONNET-006 (SESSION-CLOSE): ✅ SESSION FULLY CLOSED — v56 on Heroku, Dependabot cleaned
+
+                             SESSION CLOSE SUMMARY:
+                             ✅ Build: 0 TS errors (build ran twice; second after isAdmin fix)
+                             ✅ npm audit: 0 vulns (root, frontend, apps/web all clear)
+                             ✅ security: express 4.x → 5.2.1 (Dependabot CVE-root-express resolved)
+                             ✅ security: apps/web/node_modules/ untracked from git (9,861 files removed)
+                                → Was committed before .gitignore took effect; caused 22 Dependabot alerts
+                             ✅ Git pushed: origin/main @ d0d9d50e (3 commits this session)
+                             ✅ Heroku: Released v56 ✅ https://truck-opti-app-efabf95bd306.herokuapp.com/
+                             ✅ TASK.md: BATCH20 archived, BATCH21 T1-T5 queued
+                             ✅ BATCH21 prompt: 0.dev-matrix/BATCH21_AGENT_CONTINUATION_PROMPT.md created
+
+                             ⚠️ HUMAN ACTIONS STILL REQUIRED:
+                             1. supabase db push → 6 pending migrations not yet applied to production
+                                (20260307, 20260308, 20260309 + 20260311 T1/T3/T7)
+                             2. heroku config:set VITE_RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET
+                             3. Twilio SMS OTP in Supabase Auth → Phone Providers
+                             4. Register Sentry DSN → heroku config:set VITE_SENTRY_DSN=... (after BATCH21-T2)
+
+                             NEXT: BATCH21 → see 0.dev-matrix/BATCH21_AGENT_CONTINUATION_PROMPT.md
+───────────────────────────────────────────────────────────────────────
 [2026-03-11] SONNET-006 (LEAD+JUDGE): ✅ BATCH20 NEAR-PASS — 7/8 tasks verified clean, 1 bug found+fixed
 
                              BATCH20 JUDGMENT: NEAR-PASS — all 8 tasks present and functional.
