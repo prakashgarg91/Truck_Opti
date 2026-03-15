@@ -69,13 +69,16 @@
 | 6.3 | Google Maps API key | ❌ | P1 — Leaflet fallback works |
 | 6.4 | Custom domain + SSL | ✅ | P0 — `truckopti.in` + `www.truckopti.in` live |
 | 6.5 | PWA icons (missing from public/) | ✅ | BATCH9 verified — pwa-192x192.png, pwa-512x512.png, apple-touch-icon.png exist |
-| 6.6 | Error tracking (Sentry or similar) | ❌ | P1 |
+| 6.6 | Error tracking (Sentry or similar) | ✅ | BATCH21 T2 |
 | 6.7 | Terms of Service / Privacy Policy pages | ✅ | BATCH6 T9 — `/terms` and `/privacy` pages live |
 | 6.8 | Admin panel for subscriber management | ✅ | AdminSubscriptionsPage |
 | 6.9 | Database backups (PITR) | ❌ | P1 — requires owner action |
 | 6.10 | Remove socket.io-client dead dep | ❌ | P2 |
 | 6.11 | Photo columns migration (photo_loading_url, photo_delivery_url) | ✅ | BATCH20 T1-T8 |
 | 6.12 | Subscription enforcement on booking page | ✅ | BATCH20 T1-T8 |
+| 6.13 | Driver GPS broadcast during trip | ✅ | BATCH21 T3 |
+| 6.14 | Subscription upgrade/downgrade UI | ✅ | BATCH21 T4 |
+| 6.15 | Admin payout workflow (approve/pay) | ✅ | BATCH21 T1 |
 
 ---
 
@@ -86,10 +89,10 @@
 | 1. Infrastructure | 6 | 6 | 0 |
 | 2. Authentication | 6 | 6 | 0 |
 | 3. Frontend Wiring | 6 | 6 | 0 |
-| 4. Subscriptions | 7 | 6 | 1 |
+| 4. Subscriptions | 7 | 7 | 0 |
 | 5. Testing | 5 | 4 | 1 |
-| 6. Production | 12 | 6 | 6 |
-| **TOTAL** | **42** | **34** | **8** |
+| 6. Production | 15 | 9 | 6 |
+| **TOTAL** | **45** | **38** | **7** |
 
 ---
 
@@ -113,3 +116,4 @@
 | Mar 03 | `975910fb` | BATCH6: T1-T9 fixes (Razorpay, PaymentCallback, OG tags, robots.txt, .gitignore security, TestPaymentPage, InvoicePage GST) | 0 |
 | Mar 03 | `e3ed5088` | BATCH7: useSubscription hook, MobileLayout plan badge, Supabase test script 42/42 | 0 |
 | Mar 11 | `67e290ae` | BATCH20: T1-T8 photo migration (photo_loading_url, photo_delivery_url), wallet, payroll, subscription enforcement, admin subscriptions, eway bill | 0 |
+| Mar 11 | _pending_ | BATCH21: Sentry integration, Driver GPS broadcast, Subscription upgrade/downgrade, Admin payout approve/pay | 0 |

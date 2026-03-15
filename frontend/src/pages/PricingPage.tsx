@@ -6,6 +6,7 @@ import { PRICING_TIERS, type PricingTier } from '../config/pricing'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { useSubscription } from '../hooks/useSubscription'
+import toast from 'react-hot-toast'
 
 // ── Data fetcher ────────────────────────────────────────────────────────────
 const fetchPricingPlans = async (): Promise<PricingTier[]> => {
@@ -42,6 +43,7 @@ const LABELS = {
     perMonth: '/mo', perYear: '/yr',
     getStarted: 'Get Started', contactSales: 'Contact Sales', startFree: 'Start Free →',
     mostPopular: 'Most Popular', currentPlan: 'Your Plan',
+    upgrade: 'Upgrade', downgrade: 'Downgrade',
     users: 'Users', trucks: 'Trucks', shipments: 'Shipments/mo',
     packing: 'Packing Opts', routes: 'Route Opts',
     storage: 'Storage', apiCalls: 'API Calls/mo', sms: 'SMS OTP/mo',
@@ -60,6 +62,7 @@ const LABELS = {
     perMonth: '/माह', perYear: '/वर्ष',
     getStarted: 'शुरू करें', contactSales: 'संपर्क करें', startFree: 'मुफ्त शुरू करें →',
     mostPopular: 'सबसे लोकप्रिय', currentPlan: 'आपका प्लान',
+    upgrade: 'अपग्रेड', downgrade: 'डाउनग्रेड',
     users: 'यूज़र्स', trucks: 'ट्रक', shipments: 'शिपमेंट/माह',
     packing: 'पैकिंग ऑप्ट', routes: 'रूट ऑप्ट',
     storage: 'स्टोरेज', apiCalls: 'API कॉल/माह', sms: 'SMS OTP/माह',
@@ -98,15 +101,44 @@ interface CardProps {
   lang: Language
   L: typeof LABELS['en']
   isCurrent: boolean
+  isUpgrade: boolean
+  isDowngrade: boolean
   className?: string
   onCta: () => void
 }
-function PricingCard({ tier, isYearly, lang, L, isCurrent, className = '', onCta }: CardProps) {
+function PricingCard({ tier, isYearly, lang, L, isCurrent, isUpgrade, isDowngrade, className = '', onCta }: CardProps) {
   const cfg = TIER_CFG[tier.id] || TIER_CFG.starter
   const Icon = cfg.icon
   const isPopular = tier.id === 'growth'
   const price = isYearly ? tier.yearlyPrice : tier.monthlyPrice
   const hasBadge = isPopular || isCurrent
+
+  // Determine CTA button content and style
+  const getCtaContent = () => {
+    if (tier.id === 'enterprise') return L.contactSales
+    if (isCurrent) return L.currentPlan
+    if (isUpgrade) return L.upgrade
+    if (isDowngrade) return L.downgrade
+    return L.getStarted
+  }
+
+  const isCtaDisabled = isCurrent
+
+  const getCtaClass = () => {
+    if (tier.id === 'enterprise') {
+      return 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800'
+    }
+    if (isCurrent) {
+      return 'bg-gray-400 dark:bg-gray-600 text-white cursor-not-allowed'
+    }
+    if (isUpgrade) {
+      return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:opacity-90 shadow-sm'
+    }
+    if (isDowngrade) {
+      return 'bg-white dark:bg-slate-700 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+    }
+    return `bg-gradient-to-r ${cfg.grad} text-white hover:opacity-90 shadow-sm`
+  }
 
   return (
     <div className={`relative flex flex-col rounded-2xl overflow-hidden border-2 bg-white dark:bg-slate-800 transition-shadow
@@ -153,12 +185,10 @@ function PricingCard({ tier, isYearly, lang, L, isCurrent, className = '', onCta
         {/* CTA */}
         <button
           onClick={onCta}
-          className={`w-full py-3 rounded-xl font-semibold text-sm transition-all mb-4 active:scale-95
-            ${tier.id === 'enterprise'
-              ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800'
-              : `bg-gradient-to-r ${cfg.grad} text-white hover:opacity-90 shadow-sm`}`}
+          disabled={isCtaDisabled}
+          className={`w-full py-3 rounded-xl font-semibold text-sm transition-all mb-4 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed ${getCtaClass()}`}
         >
-          {tier.id === 'enterprise' ? L.contactSales : L.getStarted}
+          {getCtaContent()}
         </button>
 
         {/* Key limits */}
@@ -198,21 +228,59 @@ function PricingCard({ tier, isYearly, lang, L, isCurrent, className = '', onCta
 export default function PricingPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { plan: currentPlan } = useSubscription()
+  const { subscription, plan: currentPlan, refetch } = useSubscription()
   const isAdmin = user?.role === 'admin'
 
   const [lang, setLang] = useState<Language>('en')
   const [isYearly, setIsYearly] = useState(false)
   const [activeIdx, setActiveIdx] = useState(1)
+  const [updating, setUpdating] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const L = LABELS[lang]
 
   useEffect(() => { document.title = 'Pricing — TruckOpti' }, [])
 
+  // Handle plan upgrade/downgrade
+  const handlePlanChange = async (tierId: string) => {
+    if (!subscription?.id || updating) return
+
+    setUpdating(tierId)
+    try {
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({ plan_id: tierId })
+        .eq('id', subscription.id)
+
+      if (error) {
+        console.error('[PricingPage] Plan update error:', error)
+        toast.error(lang === 'en' ? 'Failed to update plan' : 'प्लान अपडेट करने में विफल')
+        return
+      }
+
+      toast.success(lang === 'en' ? 'Plan updated successfully!' : 'प्लान सफलतापूर्वक अपडेट हुआ!')
+      refetch()
+    } finally {
+      setUpdating(null)
+    }
+  }
+
   const { data: tiers = PRICING_TIERS, isLoading } = useQuery<PricingTier[]>({
     queryKey: ['pricing-plans'], queryFn: fetchPricingPlans,
     staleTime: 1000 * 60 * 5, initialData: PRICING_TIERS,
   })
+
+  // Determine current tier index (based on price order - lowest first)
+  const currentTierIndex = currentPlan
+    ? tiers.findIndex(t => t.id === currentPlan.id)
+    : -1
+
+  // Determine if each tier is upgrade or downgrade
+  const getTierRelation = (tierIndex: number) => {
+    if (!subscription || currentTierIndex === -1) return { isUpgrade: false, isDowngrade: false }
+    if (tierIndex > currentTierIndex) return { isUpgrade: true, isDowngrade: false }
+    if (tierIndex < currentTierIndex) return { isUpgrade: false, isDowngrade: true }
+    return { isUpgrade: false, isDowngrade: false }
+  }
 
   const scrollToCard = (idx: number) => {
     const el = scrollRef.current?.children[idx] as HTMLElement
@@ -328,14 +396,26 @@ export default function PricingPage() {
               className="lg:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 pb-4"
               style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
             >
-              {tiers.map((tier) => (
+            {tiers.map((tier, idx) => {
+                  const { isUpgrade, isDowngrade } = getTierRelation(idx)
+                  return (
                 <PricingCard
                   key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
                   isCurrent={currentPlan?.id === tier.id}
+                  isUpgrade={isUpgrade}
+                  isDowngrade={isDowngrade}
                   className="snap-center shrink-0 w-[82vw] sm:w-[55vw]"
-                  onCta={() => tier.id === 'enterprise' ? navigate('/contact') : navigate('/signup')}
+                  onCta={() => {
+                    if (tier.id === 'enterprise') {
+                      navigate('/contact')
+                    } else if (subscription && (isUpgrade || isDowngrade)) {
+                      handlePlanChange(tier.id)
+                    } else {
+                      navigate('/signup')
+                    }
+                  }}
                 />
-              ))}
+              )})}
             </div>
 
             {/* Mobile dots */}
@@ -350,13 +430,25 @@ export default function PricingPage() {
 
             {/* Desktop grid */}
             <div className="hidden lg:grid grid-cols-4 gap-5 items-stretch">
-              {tiers.map((tier) => (
+              {tiers.map((tier, idx) => {
+                const { isUpgrade, isDowngrade } = getTierRelation(idx)
+                return (
                 <PricingCard
                   key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
                   isCurrent={currentPlan?.id === tier.id}
-                  onCta={() => tier.id === 'enterprise' ? navigate('/contact') : navigate('/signup')}
+                  isUpgrade={isUpgrade}
+                  isDowngrade={isDowngrade}
+                  onCta={() => {
+                    if (tier.id === 'enterprise') {
+                      navigate('/contact')
+                    } else if (subscription && (isUpgrade || isDowngrade)) {
+                      handlePlanChange(tier.id)
+                    } else {
+                      navigate('/signup')
+                    }
+                  }}
                 />
-              ))}
+              )})}
             </div>
           </>
         )}
