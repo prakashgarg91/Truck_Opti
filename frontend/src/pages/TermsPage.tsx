@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Truck } from 'lucide-react'
 
 export default function TermsPage() {
@@ -74,9 +74,9 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">5. Data and Privacy</h2>
           <p className="text-slate-600 dark:text-slate-400">
             We collect and process your data in accordance with our{' '}
-            <a href="/privacy" className="text-primary-600 hover:underline">
+            <Link to="/privacy" className="text-primary-600 hover:underline">
               Privacy Policy
-            </a>
+            </Link>
             . By using the Service, you consent to such processing.
           </p>
         </section>

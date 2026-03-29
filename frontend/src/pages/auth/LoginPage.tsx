@@ -80,7 +80,8 @@ export default function LoginPage() {
       navigate('/otp', { state: { channel, contact: phone } })
     },
     onError: (error: any) => {
-      const errorMsg = error.message || (language === 'en' ? 'Failed to send OTP' : 'OTP भेजने में विफल')
+      console.error('[LoginPage] OTP error:', error)
+      const errorMsg = language === 'en' ? 'Failed to send OTP. Please try again.' : 'OTP भेजने में विफल। कृपया पुनः प्रयास करें।'
       toast.error(errorMsg)
     }
   })
@@ -402,9 +403,9 @@ export default function LoginPage() {
       {/* Terms */}
       <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 animate-fade-in" style={{ animationDelay: '700ms' }}>
         By continuing, you agree to our{' '}
-        <a href="/terms" className="text-primary-600 hover:underline font-medium">Terms</a>
+        <Link to="/terms" className="text-primary-600 hover:underline font-medium">Terms</Link>
         {' '}and{' '}
-        <a href="/privacy" className="text-primary-600 hover:underline font-medium">Privacy Policy</a>
+        <Link to="/privacy" className="text-primary-600 hover:underline font-medium">Privacy Policy</Link>
       </p>
     </div>
   )

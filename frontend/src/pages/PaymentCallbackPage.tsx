@@ -186,8 +186,8 @@ const PaymentCallbackPage: React.FC = () => {
         {/* Support */}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-6">
           Need help? Contact support at{' '}
-          <a href="mailto:support@truckopti.com" className="text-blue-600 hover:underline">
-            support@truckopti.com
+          <a href="mailto:support@truckopti.in" className="text-blue-600 hover:underline">
+            support@truckopti.in
           </a>
         </p>
       </div>
