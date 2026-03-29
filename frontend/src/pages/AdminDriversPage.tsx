@@ -90,8 +90,8 @@ export default function AdminDriversPage() {
       if (error) throw error
       setDrivers(data ?? [])
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load drivers'
-      toast.error(msg)
+      console.error('[AdminDriversPage]', err)
+      toast.error(language === 'en' ? 'Failed to load drivers.' : 'ड्राइवर लोड करने में विफल।')
     } finally {
       setLoading(false)
     }

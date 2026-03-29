@@ -4,13 +4,15 @@ import { Check, Loader2, Smartphone, AlertCircle, FlaskConical, IndianRupee, Cre
 import { supabase } from '../lib/supabase';
 import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
 import { initiateRazorpayPayment, getRazorpayConfig } from '../services/razorpayPayment';
-import toast from 'react-hot-toast';
-import { logger } from '../utils/logger';
+import toast from 'react-hot-toast'
+import { useLanguageStore } from '../stores/languageStore'
+import { logger } from '../utils/logger'
 
 type PaymentMethod = 'phonepe' | 'razorpay';
 
 const TestPaymentPage: React.FC = () => {
   const navigate = useNavigate();
+  const { language } = useLanguageStore();
   const [processing, setProcessing] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [phone, setPhone] = useState('');
@@ -81,13 +83,14 @@ const TestPaymentPage: React.FC = () => {
           toast.success('Redirecting to PhonePe...');
           window.location.href = result.data.instrumentResponse.redirectInfo.url;
         } else {
-          toast.error(result.message || 'Payment initiation failed');
+          console.error('[TestPaymentPage]', result)
+          toast.error(language === 'en' ? 'Payment failed. Please try again.' : 'भुगतान विफल। कृपया पुनः प्रयास करें।')
           logger.error('Payment error:', result);
         }
       }
     } catch (error) {
-      logger.error('Payment error:', error);
-      toast.error('Failed to initiate payment');
+      console.error('[TestPaymentPage]', error)
+      toast.error(language === 'en' ? 'Payment failed. Please try again.' : 'भुगतान विफल। कृपया पुनः प्रयास करें।')
     } finally {
       setProcessing(false);
     }

@@ -218,7 +218,7 @@ export default function TrucksPage() {
     onError: (error: any) => {
       logger.error('Failed to seed trucks:', error)
       if (error.message === 'All default trucks already exist!') {
-        toast(error.message)
+        toast(language === 'en' ? 'Default trucks already added.' : 'डिफॉल्ट ट्रक पहले से जोड़ गए हैं')
       } else {
         toast.error(language === 'en' ? 'Failed to add default trucks' : 'डिफॉल्ट ट्रक जोड़ने में विफल')
       }

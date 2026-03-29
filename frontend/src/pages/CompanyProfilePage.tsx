@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
+import { useLanguageStore } from '../stores/languageStore'
 
 interface CompanyData {
   name: string
@@ -39,6 +40,7 @@ export default function CompanyProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const { language } = useLanguageStore()
 
   useEffect(() => {
     loadProfile()
@@ -91,8 +93,8 @@ export default function CompanyProfilePage() {
       toast.success('Company profile saved!')
       setTimeout(() => setSaved(false), 3000)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Save failed'
-      toast.error(msg)
+      console.error('[CompanyProfilePage]', err)
+      toast.error(language === 'en' ? 'Profile update failed.' : 'प्रोफ़ाइल अपडेट करने में विफल।')
     } finally {
       setSaving(false)
     }

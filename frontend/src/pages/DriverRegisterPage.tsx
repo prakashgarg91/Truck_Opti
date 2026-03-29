@@ -147,8 +147,8 @@ export default function DriverRegisterPage() {
       if (error) throw error
       setStep(4)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Submission failed'
-      toast.error(msg)
+      console.error('[DriverRegisterPage]', err)
+      toast.error('Submission failed. Please try again.')
     } finally {
       setSubmitting(false)
     }

@@ -239,7 +239,8 @@ export default function ProfilePage() {
       updateUser({ profile_picture: publicUrl })
       toast.success('Profile photo updated!')
     } catch (err: any) {
-      toast.error(err?.message?.includes('bucket') ? 'Storage not configured' : 'Upload failed')
+      console.error('[ProfilePage]', err)
+      toast.error(language === 'en' ? 'Upload failed. Please try again.' : 'अपलोड विफल। कृपया पुनः प्रयास करें।')
     } finally {
       setIsUploadingAvatar(false)
       if (fileInputRef.current) fileInputRef.current.value = ''

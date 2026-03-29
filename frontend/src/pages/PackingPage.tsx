@@ -1081,7 +1081,8 @@ export default function PackingPage() {
       navigate('/tracking')
     } catch (error: any) {
       logger.error('Failed to book truck:', error)
-      setBookError(error.message || 'Failed to book truck')
+      console.error('[PackingPage]', error)
+      setBookError(language === 'en' ? 'Failed to book truck.' : 'ट्रक बुक करने में विफल।')
     } finally {
       setBookingInProgress(false)
     }

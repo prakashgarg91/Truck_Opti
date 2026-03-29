@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
+import { useLanguageStore } from '../stores/languageStore'
 
 const INDIAN_STATES = [
   'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
@@ -54,6 +55,7 @@ const INITIAL: FormData = {
 
 export default function AgencyRegisterPage() {
   const navigate = useNavigate()
+  const { language } = useLanguageStore()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
   const [submitting, setSubmitting] = useState(false)
@@ -115,8 +117,8 @@ export default function AgencyRegisterPage() {
       if (error) throw error
       setStep(4)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Registration failed'
-      toast.error(message)
+      console.error('[AgencyRegisterPage]', err)
+      toast.error(language === 'en' ? 'Registration failed. Please try again.' : 'पंजीकरण विफल। कृपया पुनः प्रयास करें।')
     } finally {
       setSubmitting(false)
     }

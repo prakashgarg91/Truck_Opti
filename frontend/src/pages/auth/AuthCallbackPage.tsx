@@ -4,9 +4,11 @@ import { Loader2, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import { logger } from '../../utils/logger'
+import { useLanguageStore } from '../../stores/languageStore'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
+  const { language } = useLanguageStore()
   const [, setIsProcessing] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -54,8 +56,8 @@ export default function AuthCallbackPage() {
         
         if (error) {
           logger.error('Auth callback error:', error)
-          setError(error.message)
-          toast.error('Authentication failed: ' + error.message)
+          setError(language === 'en' ? 'Authentication failed. Please try again.' : 'प्रमाणीकरण विफल। कृपया पुनः प्रयास करें।')
+          toast.error(language === 'en' ? 'Authentication failed. Please try again.' : 'प्रमाणीकरण विफल। कृपया पुनः प्रयास करें।')
           navigate('/login', { replace: true })
           return
         }
@@ -81,7 +83,7 @@ export default function AuthCallbackPage() {
         }
       } catch (err: any) {
         logger.error('Unexpected error during auth callback:', err)
-        setError(err.message || 'An unexpected error occurred')
+        setError(language === 'en' ? 'An unexpected error occurred.' : 'एक अप्रत्याशित त्रुटि हुई।')
         toast.error('Authentication failed. Please try again.')
         window.clearTimeout(timeoutId)
         window.location.replace('/login')
