@@ -12,8 +12,10 @@
 | ID | Task | Priority | Claimed By | Started | Status |
 |----|------|----------|------------|---------|--------|
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
+| T-111 | Google OAuth production credentials verification | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
+| T-115 | Verify production DB backup / PITR setup | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T3~~ | ~~Driver GPS broadcast on trip~~ | ~~P2~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |

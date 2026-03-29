@@ -46,7 +46,7 @@
 | 4.2 | Free trial (14-day) tracking | ✅ | 4.1 |
 | 4.3 | Usage limit display | ✅ | 4.1 |
 | 4.4 | Expired plan detection + isCancelled state | ✅ | 4.1 |
-| 4.5 | Upgrade/downgrade flow | ❌ | Needs dedicated page |
+| 4.5 | Upgrade/downgrade flow | ✅ | BATCH21 T4 verified by GLM-001 |
 | 4.6 | Razorpay: verify Edge Function called on success | ✅ | BATCH6 T1 |
 | 4.7 | Invoice PDF: user metadata for company info | ✅ | BATCH6 T8 |
 
@@ -73,7 +73,7 @@
 | 6.7 | Terms of Service / Privacy Policy pages | ✅ | BATCH6 T9 — `/terms` and `/privacy` pages live |
 | 6.8 | Admin panel for subscriber management | ✅ | AdminSubscriptionsPage |
 | 6.9 | Database backups (PITR) | ❌ | P1 — requires owner action |
-| 6.10 | Remove socket.io-client dead dep | ❌ | P2 |
+| 6.10 | Remove socket.io-client dead dep | ✅ | GLM-001 |
 | 6.11 | Photo columns migration (photo_loading_url, photo_delivery_url) | ✅ | BATCH20 T1-T8 |
 | 6.12 | Subscription enforcement on booking page | ✅ | BATCH20 T1-T8 |
 | 6.13 | Driver GPS broadcast during trip | ✅ | BATCH21 T3 |
@@ -91,8 +91,8 @@
 | 3. Frontend Wiring | 6 | 6 | 0 |
 | 4. Subscriptions | 7 | 7 | 0 |
 | 5. Testing | 5 | 4 | 1 |
-| 6. Production | 15 | 9 | 6 |
-| **TOTAL** | **45** | **38** | **7** |
+| 6. Production | 15 | 11 | 4 |
+| **TOTAL** | **45** | **40** | **5** |
 
 ---
 
@@ -117,3 +117,4 @@
 | Mar 03 | `e3ed5088` | BATCH7: useSubscription hook, MobileLayout plan badge, Supabase test script 42/42 | 0 |
 | Mar 11 | `67e290ae` | BATCH20: T1-T8 photo migration (photo_loading_url, photo_delivery_url), wallet, payroll, subscription enforcement, admin subscriptions, eway bill | 0 |
 | Mar 11 | _pending_ | BATCH21: Sentry integration, Driver GPS broadcast, Subscription upgrade/downgrade, Admin payout approve/pay | 0 |
+| Mar 29 | `de2840ea` / `48e55427` / `cb0daa1a` | GLM-001: security cleanup, dead dependency removal, safer UI error handling, dev-matrix audit update | 0 |

@@ -37,7 +37,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
-| `GLM-001` | LEAD+JUDGE | GLM-5.1 | Full-stack audit | BATCH21 audit + security fixes + npm vuln cleanup + dev-matrix reality sync | 2026-03-29 | 🟢 Active |
+| `GLM-001` | LEAD+JUDGE | GLM-5.1 | Full-stack audit | BATCH21 audit + security fixes + npm vuln cleanup + dev-matrix reality sync | 2026-03-29 | ✅ DONE |
 | `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin fix + Dependabot cleanup → v57 Heroku; BATCH21 queued | 2026-03-11 | ✅ DONE |
 | `BATCH20-AGENT` | LEAD | Unknown | Full-stack | BATCH20 ✅ NEAR-COMPLETE - v56 deployed (1 bug found by judge) | 2026-03-11 | ✅ DONE |
 | `MINIMAX-003` | LEAD | MiniMax-M2.5 | Full-stack | BATCH18 ⚠️ PARTIAL - v55 deployed (T1 table bug) | 2026-03-09 | ✅ DONE |
@@ -987,7 +987,7 @@ Remove your row when done editing
 | **Type** | Complex (SaaS Logistics Platform) |
 | **Version** | 2.0.0 |
 | **Tests** | Live interaction + build checks passing |
-| **Status** | ✅ DEPLOYED |
+| **Status** | 🟡 CODE READY, EXTERNAL LAUNCH BLOCKERS REMAIN |
 
 ---
 
@@ -996,7 +996,7 @@ Remove your row when done editing
 ```
 SPRINT: Launch Readiness + Subscription Completion
 GOAL: Complete launch blockers, production auth/domain hardening, and subscription lifecycle
-STATUS: 🟡 IN PROGRESS
+STATUS: 🟡 FINAL EXTERNAL BLOCKERS
 ```
 
 ### Sprint Tasks
@@ -1013,7 +1013,7 @@ STATUS: 🟡 IN PROGRESS
 - [x] **[DONE]** Re-deploy Heroku: v22 deployed (337 MB slug) — `.slugignore` added to fix 843 MB overflow
 - [x] **[DONE]** Supabase Site URL → `https://www.truckopti.in` (Management API, allow-list includes apex + www + Heroku)
 - [x] **[DONE]** Email templates live: magic_link + confirmation uploaded via curl (5.5 KB + 6 KB)
-- [ ] Complete launch checklist Phase 6 (production keys, ToS, privacy policy)
+- [ ] Complete launch checklist Phase 6 external items (production keys, OAuth/Twilio/Supabase actions)
 
 ---
 
@@ -1043,14 +1043,14 @@ STATUS: 🟡 IN PROGRESS
 |-----------|--------|------------|-----------|
 | Domain DNS | ✅ Active | 2026-03-03 | Cloudflare NS live |
 | SSL (Heroku ACM) | ✅ Active | 2026-03-03 | Both domains cert issued |
-| Live App (truckopti.in) | ✅ 200 OK | 2026-03-03 | Login/Pricing/404 all load |
-| Heroku Deployment | ✅ v22 LIVE | 2026-03-03 | .slugignore added; 843→337 MB; BATCH5/6/7 deployed |
+| Live App (truckopti.in) | ✅ 200 OK | 2026-03-29 | Public app reachable; full authenticated smoke test still pending |
+| Heroku Deployment | ✅ Live | 2026-03-29 | Latest repo state pushed; production credential tasks remain external |
 | Heroku Redirect (to truckopti.in) | ✅ WORKING | 2026-03-03 | Code now in deployed bundle (v22) |
 | Supabase Site URL | ✅ FIXED | 2026-03-03 | https://www.truckopti.in — auth emails use custom domain |
-| Frontend Build | ✅ Passing | 2026-03-03 | Built in 6.57s, 0 TS errors |
+| Frontend Build | ✅ Passing | 2026-03-29 | Built in 7.31s, 0 TS errors |
 | Supabase Integration | ✅ 42/42 | 2026-03-03 | All 17 tables, RLS, realtime |
 | OG Meta Tags | ✅ Fixed | 2026-03-03 | Now www.truckopti.in (was Heroku) |
-| Launch Checklist | ⚠️ 29/40 | 2026-03-03 | Phase 3/4/5 done; Phase 6 pending |
+| Launch Checklist | ⚠️ 40/45 | 2026-03-29 | Code-side launch work mostly complete; 5 items remain |
 
 ### Quality Metrics Dashboard
 | Metric | Current | Target | Status |
@@ -1061,7 +1061,7 @@ STATUS: 🟡 IN PROGRESS
 | Heroku Code Sync | v40 | Latest | ✅ Deployed 2026-03-05 |
 | Supabase Auth Site URL | truckopti.in | truckopti.in | ✅ Fixed (v22 session) |
 | OG Tags Domain | truckopti.in | truckopti.in | ✅ |
-| Launch Checklist Completion | 39/40 | 40/40 | ⚠️ Photo capture (Phase 5) remaining |
+| Launch Checklist Completion | 40/45 | 45/45 | ⚠️ External launch blockers remain |
 
 ---
 
@@ -1165,7 +1165,7 @@ If stuck:
 
 ---
 
-**Last Updated:** 2026-03-05 by SONNET-004 (v50 live: all 3 portals ready; BATCH12 unclaimed — 5 tasks: Razorpay webhook, admin analytics, driver docs, shipment history, notification bell)
+**Last Updated:** 2026-03-29 by Manager Verification after GLM-001 (code verified, launch still blocked by external actions)
 
 ## 📝 AGENT MESSAGES
 
@@ -1182,4 +1182,3 @@ If stuck:
   - Task 5: Agency notification bell ✅
 
 **Deployed:** v52 to Heroku
-
