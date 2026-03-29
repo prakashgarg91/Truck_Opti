@@ -14,11 +14,16 @@
 | T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| **BATCH21-T1** | **Supabase `db push` helper** — create a `scripts/push-migrations.sh` script that lists all pending migrations and reminds owner to run `supabase db push`; document the 6 pending migrations in STATE.md clearly | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH21-T2** | **Sentry error tracking** — add `@sentry/react` to frontend; init in `main.tsx` with `VITE_SENTRY_DSN` env var; wrap `<App />` in `Sentry.ErrorBoundary`; update `.env.example` | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH21-T3** | **Admin: mark driver payout approved/paid** — `AdminPayoutsPage.tsx`: add "Approve" and "Mark Paid" buttons per pending payout row; update `driver_payouts.status`; notify driver via toast | P1 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH21-T4** | **Driver: GPS broadcast on trip start** — `DriverTripPage.tsx`: when step transitions to 'driving', start `navigator.geolocation.watchPosition`, upsert `driver_locations` every 10s; stop on trip end | P2 | UNCLAIMED | - | 🟡 Ready |
-| **BATCH21-T5** | **Subscription upgrade/downgrade flow** — `PricingPage.tsx`: if user already has a subscription, show "Current Plan" badge, "Upgrade" on higher plans, "Downgrade" on lower; call `subscriptionsApi.update()` | P2 | UNCLAIMED | - | 🟡 Ready |
+| ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
+| ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
+| ~~BATCH21-T3~~ | ~~Driver GPS broadcast on trip~~ | ~~P2~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
+| ~~BATCH21-T4~~ | ~~Subscription upgrade/downgrade~~ | ~~P2~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
+| ~~BATCH21-T5~~ | ~~LAUNCH_CHECKLIST update~~ | ~~P2~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
+| ~~BATCH21-T1~~ | ~~Supabase db push helper script~~ | ~~P1~~ | UNCLAIMED | - | ⏭️ Superseded by human action item |
+| ~~BATCH21-T2~~ | ~~Sentry via @sentry/react~~ | ~~P1~~ | UNCLAIMED | - | ⏭️ Already done in earlier batch |
+| ~~BATCH21-T3~~ | ~~Admin payout approve/pay~~ | ~~P1~~ | UNCLAIMED | - | ⏭️ Already done in BATCH20 |
+| ~~BATCH21-T4~~ | ~~Driver GPS broadcast~~ | ~~P2~~ | UNCLAIMED | - | ⏭️ Already done in earlier batch |
+| ~~BATCH21-T5~~ | ~~Subscription upgrade/downgrade~~ | ~~P2~~ | UNCLAIMED | - | ⏭️ Already done in earlier batch |
 | ~~BATCH20-T1~~ | ~~Photo columns migration~~ | ~~P0~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE |
 | ~~BATCH20-T2~~ | ~~Driver wallet real balance~~ | ~~P1~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE |
 | ~~BATCH20-T3~~ | ~~Agency payroll Pay button~~ | ~~P2~~ | BATCH20-AGENT | 2026-03-11 | ✅ DONE |
