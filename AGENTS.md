@@ -39,3 +39,20 @@ Testing is the key to quality.
 ### GitHub Responsibility
 
 - When work is complete and validated, update the GitHub repository appropriately with commits and pushes.
+### Professional Codebase Standard
+
+Always push the code tree toward a professional, sustainable, world-class standard.
+
+- Improve structure, naming, organization, and maintainability whenever appropriate.
+- Prefer clean architecture, clear ownership, and low-friction onboarding for future work.
+- Reduce dead code, duplication, drift, and hidden coupling where it is safe to do so.
+- Build for long-term sustainability, not just short-term patching.
+
+### Glue Principle
+
+Software is not complete unless the full chain works together professionally.
+
+- Verify end-to-end glue between UI, API, services, data stores, background jobs, and configuration.
+- Do not treat isolated code changes as success if the integrated flow is still broken.
+- Prefer professionally integrated working software over partially implemented features.
+- Update tracking files when integration reality differs from claimed status.
