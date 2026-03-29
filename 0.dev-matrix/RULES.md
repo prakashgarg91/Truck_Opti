@@ -216,4 +216,6 @@ migration: add licence_url and rc_url columns to drivers table
 ---
 
 *Last updated: 2026-03-05 | v50 | SONNET-004*
+## Baseline Reference
 
+Use `QUALITY-BASELINE.md` as the standing companion to these rules. It captures the repo-local software quality bar, integration expectations, and documentation discipline for this application.

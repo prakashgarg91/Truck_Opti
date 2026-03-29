@@ -195,3 +195,6 @@ supabase secrets set RAZORPAY_KEY_SECRET=your_live_secret --project-ref jbxncejt
 ---
 
 *Last updated: 2026-03-05 | v50 | SONNET-004 (judge)*
+## Quality Baseline
+
+Read `QUALITY-BASELINE.md` alongside this index. It defines the repo-local quality bar, integration expectations, documentation discipline, and sustainable codebase standards for this specific software product.
