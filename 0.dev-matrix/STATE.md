@@ -38,6 +38,7 @@
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
 | `GLM-001` | LEAD+JUDGE | GLM-5.1 | Full-stack audit | BATCH21 audit + security fixes + npm vuln cleanup + dev-matrix reality sync | 2026-03-29 | ✅ DONE |
+| `GLM-003` | MANAGER | GLM-5.1 | DevOps scripts | Launch-readiness script (6-gate PS1) + npm entry + dev-matrix update | 2026-03-30 | ✅ DONE |
 | `GLM-002` | MANAGER | GLM-5.1 | Launch audit | Final launch readiness verification + dev-matrix cleanup + owner action doc | 2026-03-30 | ✅ DONE |
 | `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin fix + Dependabot cleanup → v57 Heroku; BATCH21 queued | 2026-03-11 | ✅ DONE |
 | `BATCH20-AGENT` | LEAD | Unknown | Full-stack | BATCH20 ✅ NEAR-COMPLETE - v56 deployed (1 bug found by judge) | 2026-03-11 | ✅ DONE |
@@ -69,6 +70,15 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-30] GLM-003 (MANAGER): ✅ LAUNCH-READINESS SCRIPT CREATED + VERIFIED
+
+                             CREATED: scripts/launch-readiness.ps1
+                             6 gates: frontend build, root npm audit, frontend npm audit,
+                             apps/web npm audit, pip-audit (requirements.txt), python compileall
+                             All gates verified PASS on local Windows.
+                             npm script added: npm run launch-check
+                             Dev-matrix updated: RULES.md §1b, STATE.md agent registry.
+──────────────────────────────────────────────────────────────────────────────────────────
 [2026-03-29] GLM-001 (MANAGER+JUDGE): ✅ LAUNCH-READINESS AUDIT + SECURITY FIXES COMPLETE
 
                              AUDIT FINDINGS:

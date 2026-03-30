@@ -14,6 +14,15 @@ cd d:\Github\Truck_Opti\frontend ; npm run build
 # Do NOT push if build fails
 ```
 
+### 1b. Launch-Readiness Gate Check (recommended before every push)
+```powershell
+# From repo root — checks all 6 gates at once:
+.\scripts\launch-readiness.ps1
+# Or via npm:
+npm run launch-check
+```
+Gates: frontend build, root npm audit, frontend npm audit, apps/web npm audit, pip-audit, python compileall. All must pass before pushing.
+
 ### 2. Git Push Order
 ```powershell
 git push origin main    ← FIRST (GitHub)

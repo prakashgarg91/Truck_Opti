@@ -5,7 +5,8 @@
   "scripts": {
     "heroku-postbuild": "cd frontend && npm install --include=dev && npm run build",
     "start": "node server.js",
-    "test:live-buttons": ".venv\\Scripts\\python.exe scripts/live_button_deep_audit.py"
+    "test:live-buttons": ".venv\\Scripts\\python.exe scripts/live_button_deep_audit.py",
+    "launch-check": "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1"
   },
   "engines": {
     "node": "20.x"
