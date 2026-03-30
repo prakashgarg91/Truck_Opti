@@ -997,7 +997,7 @@ Remove your row when done editing
 ```
 SPRINT: Launch Readiness + Subscription Completion
 GOAL: Complete launch blockers, production auth/domain hardening, and subscription lifecycle
-STATUS: 🟡 FINAL EXTERNAL BLOCKERS
+STATUS: 🟡 6 EXTERNAL OWNER ACTIONS — SEE OWNER_ACTION_CHECKLIST.md
 ```
 
 ### Sprint Tasks
@@ -1168,7 +1168,7 @@ If stuck:
 
 ---
 
-**Last Updated:** 2026-03-30 by Manager Verification (stale TASK.md queue cleaned, STATE.md status clarified, all code-side work confirmed complete)
+**Last Updated:** 2026-03-30 by GLM-002 Manager (full launch audit: build+audit+routes verified, OWNER_ACTION_CHECKLIST.md created)
 
 ## 📝 AGENT MESSAGES
 

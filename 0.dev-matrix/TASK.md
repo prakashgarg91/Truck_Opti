@@ -7,15 +7,18 @@
 
 ## 🎯 ACTIVE TASKS
 
-> **Tasks currently being worked on.**
+> **All in-repo code work is COMPLETE. Remaining tasks require OWNER external action.**
+> **See `OWNER_ACTION_CHECKLIST.md` for step-by-step instructions.**
 
-| ID | Task | Priority | Claimed By | Started | Status |
-|----|------|----------|------------|---------|--------|
-| T-110 | Production Razorpay keys + test | P0 | UNCLAIMED | - | 🟡 Ready to claim |
-| T-111 | Google OAuth production credentials verification | P0 | UNCLAIMED | - | 🟡 Ready to claim |
-| T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| T-114 | Smoke test all authenticated pages (post-login) | P1 | UNCLAIMED | - | 🟡 Ready to claim |
-| T-115 | Verify production DB backup / PITR setup | P1 | UNCLAIMED | - | 🟡 Ready to claim |
+| ID | Task | Priority | Type | Status |
+|----|------|----------|------|--------|
+| T-110 | Production Razorpay keys + test | P0 | 🔑 External | 🟡 Owner: set env vars |
+| T-111 | Google OAuth production credentials verification | P0 | 🔑 External | 🟡 Owner: Supabase + Google Console |
+| T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | 🔑 External | 🟡 Owner: Supabase dashboard |
+| T-114 | Smoke test all authenticated pages (post-login) | P1 | 🧪 Manual | 🟡 Owner: browser test with real account |
+| T-115 | Verify production DB backup / PITR setup | P1 | 🔑 External | 🟡 Owner: Supabase dashboard |
+| T-116 | Sentry DSN configuration | P1 | 🔑 External | 🟡 Owner: heroku config:set VITE_SENTRY_DSN |
+| T-117 | Supabase db push (6 pending migrations) | P0 | 🔑 External | 🟡 Owner: run `supabase db push` |
 | ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T3~~ | ~~Driver GPS broadcast on trip~~ | ~~P2~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
@@ -84,40 +87,19 @@
 
 ## 📝 TASK QUEUE
 
-> **Available tasks. Claim one before starting.**
+> **All in-repo code tasks are COMPLETE. Remaining items require external owner action.**
+> **See `0.dev-matrix/OWNER_ACTION_CHECKLIST.md` for precise instructions.**
 
-| ID | Task | Priority | Complexity | Est. Time | Files |
-|----|------|----------|------------|-----------|-------|
-| *(all code tasks complete — queue is empty)* | | | | | |
-
-> **Note:** All in-repo code tasks through BATCH21 are complete. Remaining work items are external/owner-only:
-> - T-110: Production Razorpay keys (owner action — Razorpay dashboard)
-> - T-111: Google OAuth production credentials (owner action — Google Cloud Console)
-> - T-113: Twilio SMS/WhatsApp OTP (owner action — Supabase Auth → Phone Providers)
-> - T-115: Production DB backup / PITR setup (owner action — Supabase dashboard)
-> - T-114: Authenticated smoke test (manual — requires running app + real credentials)
-> - Phase 6.3: Google Maps API key remains optional P1 production readiness work; Leaflet fallback already covers map rendering
->
-> Stale queue entries removed 2026-03-30 by manager verification:
-> - ~~T-107~~ → already done (OAuth verified working)
-> - ~~T-117~~ → already done (ContactPage.tsx + AdminContactPage.tsx exist)
-> - ~~BATCH16-T1~~ → already done (AdminDashboardPage payouts nav card)
-> - ~~BATCH16-T2~~ → already done (RLS smoke test passed BATCH16)
-> - ~~BATCH16-T3~~ → human action (supabase db push — 6 migrations pending)
-> - ~~BATCH16-T4~~ → human action (Heroku env vars for Razorpay)
-> - ~~BATCH16-T5~~ → already done (ContactPage.tsx created in BATCH16)
-
-### Priority Levels
-- 🔴 **P0** - Critical (blocking production)
-- 🟠 **P1** - High (needed soon)
-- 🟡 **P2** - Medium (should do)
-- 🟢 **P3** - Low (nice to have)
-
-### Complexity Levels
-- **S** - Simple (1 file, <1 hour)
-- **M** - Medium (2-5 files, 1-4 hours)
-- **L** - Large (5+ files, 4+ hours)
-- **XL** - Extra Large (needs breakdown)
+| ID | Task | Priority | Nature | Owner Action |
+|----|------|----------|--------|--------------|
+| T-117 | Supabase db push (6 pending migrations) | P0 | External | `supabase db push` from project root |
+| T-110 | Production Razorpay keys + test | P0 | External | Heroku config:set + Supabase secrets |
+| T-111 | Google OAuth production credentials | P0 | External | Supabase dashboard + Google Console |
+| T-113 | SMS/WhatsApp OTP via Twilio | P1 | External | Supabase Auth → Phone Providers |
+| T-116 | Sentry DSN configuration | P1 | External | `heroku config:set VITE_SENTRY_DSN=...` |
+| T-115 | Verify production DB backup / PITR | P1 | External | Supabase dashboard → Backups |
+| T-114 | Authenticated smoke test (all pages) | P1 | Manual | Browser test with real account |
+| T-107 | Google Maps API key (optional) | P2 | External | Leaflet fallback works; nice-to-have |
 
 ---
 

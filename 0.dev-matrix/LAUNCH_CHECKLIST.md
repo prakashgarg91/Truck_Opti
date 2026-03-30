@@ -79,6 +79,8 @@
 | 6.13 | Driver GPS broadcast during trip | ✅ | BATCH21 T3 |
 | 6.14 | Subscription upgrade/downgrade UI | ✅ | BATCH21 T4 |
 | 6.15 | Admin payout workflow (approve/pay) | ✅ | BATCH21 T1 |
+| 6.16 | Supabase migration push (6 pending) | ❌ | P0 — requires owner action: `supabase db push` |
+| 6.17 | Sentry DSN env var configuration | ❌ | P1 — requires `heroku config:set VITE_SENTRY_DSN=...` |
 
 ---
 
@@ -91,8 +93,8 @@
 | 3. Frontend Wiring | 6 | 6 | 0 |
 | 4. Subscriptions | 7 | 7 | 0 |
 | 5. Testing | 5 | 4 | 1 |
-| 6. Production | 15 | 11 | 4 |
-| **TOTAL** | **45** | **40** | **5** |
+| 6. Production | 17 | 11 | 6 |
+| **TOTAL** | **47** | **40** | **7** |
 
 ---
 
@@ -118,3 +120,4 @@
 | Mar 11 | `67e290ae` | BATCH20: T1-T8 photo migration (photo_loading_url, photo_delivery_url), wallet, payroll, subscription enforcement, admin subscriptions, eway bill | 0 |
 | Mar 11 | _pending_ | BATCH21: Sentry integration, Driver GPS broadcast, Subscription upgrade/downgrade, Admin payout approve/pay | 0 |
 | Mar 29 | `de2840ea` / `48e55427` / `cb0daa1a` | GLM-001: security cleanup, dead dependency removal, safer UI error handling, dev-matrix audit update | 0 |
+| Mar 30 | _no code change_ | GLM-002: Full launch audit — build+vuln+route+security verified, dev-matrix synced, OWNER_ACTION_CHECKLIST.md created | 0 |
