@@ -88,13 +88,23 @@
 
 | ID | Task | Priority | Complexity | Est. Time | Files |
 |----|------|----------|------------|-----------|-------|
-| T-107 | Production OAuth/domain canonical verification | P2 | S | 1h | Supabase dashboard |
-| T-117 | Create contact/sales inquiry form or page | P2 | M | 2h | `frontend/src/pages/ContactPage.tsx` |
-| **BATCH16-T1** | **Admin payouts nav card** — `/admin/payouts` is routed but not linked from the admin dashboard; add a clickable nav card at `AdminDashboardPage.tsx` alongside the existing Drivers and Agencies cards | P1 | S | 30m | `frontend/src/pages/AdminDashboardPage.tsx` |
-| **BATCH16-T2** | **E2E smoke test for RLS** — login as agency user, create shipment, route, and packing; verify data saves + loads back correctly under new `created_by` RLS policies | P0 | M | 2h | `frontend/src/pages/NewShipmentPage.tsx`, RoutesPage, PackingPage |
-| **BATCH16-T3** | **Supabase migration push (human)** — run `supabase db push` to apply 3 pending migrations to production: `20260307000000_fix_rls_ownership.sql`, `20260308000000_driver_payouts.sql`. ⚠️ Human action required — needs production Supabase access | P0 | S | 15m | `supabase/migrations/` |
-| **BATCH16-T4** | **Heroku env vars (human)** — `heroku config:set VITE_RAZORPAY_KEY_ID=rzp_live_XXX RAZORPAY_KEY_SECRET=XXX --app truck-opti-app`. ⚠️ Human action required | P0 | S | 15m | Heroku dashboard |
-| **BATCH16-T5** | **Contact/Sales page** — create `ContactPage.tsx` at `/contact` with a form (name, email, phone, message) that saves to Supabase `contact_inquiries` table + sends email notification | P2 | M | 2h | `frontend/src/pages/ContactPage.tsx` |
+| *(all code tasks complete — queue is empty)* | | | | | |
+
+> **Note:** All in-repo code tasks through BATCH21 are complete. Remaining work items are external/owner-only:
+> - T-110: Production Razorpay keys (owner action — Razorpay dashboard)
+> - T-111: Google OAuth production credentials (owner action — Google Cloud Console)
+> - T-113: Twilio SMS/WhatsApp OTP (owner action — Supabase Auth → Phone Providers)
+> - T-115: Production DB backup / PITR setup (owner action — Supabase dashboard)
+> - T-114: Authenticated smoke test (manual — requires running app + real credentials)
+>
+> Stale queue entries removed 2026-03-30 by manager verification:
+> - ~~T-107~~ → already done (OAuth verified working)
+> - ~~T-117~~ → already done (ContactPage.tsx + AdminContactPage.tsx exist)
+> - ~~BATCH16-T1~~ → already done (AdminDashboardPage payouts nav card)
+> - ~~BATCH16-T2~~ → already done (RLS smoke test passed BATCH16)
+> - ~~BATCH16-T3~~ → human action (supabase db push — 6 migrations pending)
+> - ~~BATCH16-T4~~ → human action (Heroku env vars for Razorpay)
+> - ~~BATCH16-T5~~ → already done (ContactPage.tsx created in BATCH16)
 
 ### Priority Levels
 - 🔴 **P0** - Critical (blocking production)

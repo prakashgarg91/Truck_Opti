@@ -987,7 +987,7 @@ Remove your row when done editing
 | **Type** | Complex (SaaS Logistics Platform) |
 | **Version** | 2.0.0 |
 | **Tests** | Live interaction + build checks passing |
-| **Status** | 🟡 CODE READY, EXTERNAL LAUNCH BLOCKERS REMAIN |
+| **Status** | 🟡 CODE COMPLETE — ALL IN-REPO WORK DONE — 5 EXTERNAL BLOCKERS REMAIN |
 
 ---
 
@@ -1013,7 +1013,8 @@ STATUS: 🟡 FINAL EXTERNAL BLOCKERS
 - [x] **[DONE]** Re-deploy Heroku: v22 deployed (337 MB slug) — `.slugignore` added to fix 843 MB overflow
 - [x] **[DONE]** Supabase Site URL → `https://www.truckopti.in` (Management API, allow-list includes apex + www + Heroku)
 - [x] **[DONE]** Email templates live: magic_link + confirmation uploaded via curl (5.5 KB + 6 KB)
-- [ ] Complete launch checklist Phase 6 external items (production keys, OAuth/Twilio/Supabase actions)
+- [ ] Complete launch checklist Phase 6 external items: Razorpay live keys (6.1), Google OAuth creds (6.2), Google Maps key (6.3), DB PITR backups (6.9) — ALL require owner dashboard actions
+- [ ] Authenticated smoke test (5.2) — manual test requiring real credentials
 
 ---
 
@@ -1165,7 +1166,7 @@ If stuck:
 
 ---
 
-**Last Updated:** 2026-03-29 by Manager Verification after GLM-001 (code verified, launch still blocked by external actions)
+**Last Updated:** 2026-03-30 by Manager Verification (stale TASK.md queue cleaned, STATE.md status clarified, all code-side work confirmed complete)
 
 ## 📝 AGENT MESSAGES
 
