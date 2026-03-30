@@ -12,6 +12,7 @@
 #   4. apps/web npm audit
 #   5. pip-audit on apps/web/requirements.txt
 #   6. Python compileall on apps/web/app and apps/web/run.py
+#   7. Git working tree cleanliness (no uncommitted/unignored changes)
 # ============================================================
 
 param(
@@ -205,6 +206,45 @@ if ($compileTargets.Count -eq 0) {
         $targetCount = $compileTargets.Count
         Write-Gate 'Python compileall (apps/web)' 'PASS' "$targetCount target(s) compiled clean"
     }
+}
+
+# ---------- Gate 7: Git cleanliness ----------
+
+Write-Host '  Gate 7: Git working tree cleanliness' -ForegroundColor Cyan
+Push-Location $RepoRoot
+try {
+    # Refresh the git index so .gitignore changes take effect for status
+    $null = git update-index --refresh 2>&1
+
+    # Collect porcelain status (short format)
+    $gitStatusOutput = git status --porcelain 2>&1
+    $gitStatusExit   = $LASTEXITCODE
+
+    if ($gitStatusExit -ne 0) {
+        Write-Gate 'Git working tree cleanliness' 'FAIL' "git status exited $gitStatusExit"
+    } else {
+        # Filter out lines that start with '!!' (ignored files) — those are not dirty
+        # and lines starting with '?' (untracked) that are covered by .gitignore
+        $dirtyLines = @()
+        foreach ($line in $gitStatusOutput) {
+            # Skip ignored files (shown with '!!' prefix when --ignored is used)
+            # and blank lines
+            if ($line -match '^\s*$') { continue }
+            if ($line -match '^!!') { continue }
+            # Remaining lines are real modifications (staged, unstaged, or untracked)
+            $dirtyLines += $line
+        }
+
+        if ($dirtyLines.Count -gt 0) {
+            $sample = ($dirtyLines | Select-Object -First 5) -join ' | '
+            $count  = $dirtyLines.Count
+            Write-Gate 'Git working tree cleanliness' 'FAIL' "$count dirty path(s): $sample"
+        } else {
+            Write-Gate 'Git working tree cleanliness' 'PASS' 'working tree clean'
+        }
+    }
+} finally {
+    Pop-Location
 }
 
 # ---------- summary ----------

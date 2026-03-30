@@ -40,6 +40,7 @@
 | `GLM-001` | LEAD+JUDGE | GLM-5.1 | Full-stack audit | BATCH21 audit + security fixes + npm vuln cleanup + dev-matrix reality sync | 2026-03-29 | ✅ DONE |
 | `GLM-003` | MANAGER | GLM-5.1 | DevOps scripts | Launch-readiness script (6-gate PS1) + npm entry + dev-matrix update | 2026-03-30 | ✅ DONE |
 | `GLM-002` | MANAGER | GLM-5.1 | Launch audit | Final launch readiness verification + dev-matrix cleanup + owner action doc | 2026-03-30 | ✅ DONE |
+| `GLM-004` | MANAGER | GLM-5.1 | DevOps scripts | Launch-readiness Gate 7 (git cleanliness) + .gitignore SQLite sidecar fix | 2026-03-30 | ✅ DONE |
 | `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin fix + Dependabot cleanup → v57 Heroku; BATCH21 queued | 2026-03-11 | ✅ DONE |
 | `BATCH20-AGENT` | LEAD | Unknown | Full-stack | BATCH20 ✅ NEAR-COMPLETE - v56 deployed (1 bug found by judge) | 2026-03-11 | ✅ DONE |
 | `MINIMAX-003` | LEAD | MiniMax-M2.5 | Full-stack | BATCH18 ⚠️ PARTIAL - v55 deployed (T1 table bug) | 2026-03-09 | ✅ DONE |
@@ -70,6 +71,23 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-30] GLM-004 (MANAGER): ✅ LAUNCH-READINESS GAP CLOSED — Gate 7 + .gitignore fix
+
+                             GAP IDENTIFIED: data/telegram_bot.db-wal and .db-shm files
+                             were not covered by .gitignore, causing persistent dirty git status.
+                             Launch-readiness script had no git cleanliness verification.
+
+                             CHANGES:
+                             ✅ .gitignore: added *.db-wal and *.db-shm patterns
+                             ✅ scripts/launch-readiness.ps1: added Gate 7 (git working tree cleanliness)
+                                - Runs git status --porcelain, filters ignored files, fails on real dirty paths
+                                - git update-index --refresh called first to honour recent .gitignore changes
+                             ✅ 0.dev-matrix/RULES.md §1b: updated "6 gates" → "7 gates", added git cleanliness
+                             ✅ 0.dev-matrix/STATE.md: GLM-004 registered, agent message posted
+
+                             VERIFICATION: git status --short now returns clean after .gitignore update.
+                             Launch-readiness script passes all 7 gates locally.
+──────────────────────────────────────────────────────────────────────────────────────────
 [2026-03-30] GLM-003 (MANAGER): ✅ LAUNCH-READINESS SCRIPT CREATED + VERIFIED
 
                              CREATED: scripts/launch-readiness.ps1
