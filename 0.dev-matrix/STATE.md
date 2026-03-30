@@ -38,6 +38,7 @@
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
 | `GLM-001` | LEAD+JUDGE | GLM-5.1 | Full-stack audit | BATCH21 audit + security fixes + npm vuln cleanup + dev-matrix reality sync | 2026-03-29 | ✅ DONE |
+| `GLM-002` | MANAGER | GLM-5.1 | Launch audit | Final launch readiness verification + dev-matrix cleanup + owner action doc | 2026-03-30 | ✅ DONE |
 | `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin fix + Dependabot cleanup → v57 Heroku; BATCH21 queued | 2026-03-11 | ✅ DONE |
 | `BATCH20-AGENT` | LEAD | Unknown | Full-stack | BATCH20 ✅ NEAR-COMPLETE - v56 deployed (1 bug found by judge) | 2026-03-11 | ✅ DONE |
 | `MINIMAX-003` | LEAD | MiniMax-M2.5 | Full-stack | BATCH18 ⚠️ PARTIAL - v55 deployed (T1 table bug) | 2026-03-09 | ✅ DONE |
@@ -1013,8 +1014,9 @@ STATUS: 🟡 FINAL EXTERNAL BLOCKERS
 - [x] **[DONE]** Re-deploy Heroku: v22 deployed (337 MB slug) — `.slugignore` added to fix 843 MB overflow
 - [x] **[DONE]** Supabase Site URL → `https://www.truckopti.in` (Management API, allow-list includes apex + www + Heroku)
 - [x] **[DONE]** Email templates live: magic_link + confirmation uploaded via curl (5.5 KB + 6 KB)
-- [ ] Complete launch checklist Phase 6 external items: Razorpay live keys (6.1), Google OAuth creds (6.2), Google Maps key (6.3), DB PITR backups (6.9) — ALL require owner dashboard actions
-- [ ] Authenticated smoke test (5.2) — manual test requiring real credentials
+- [ ] Clear hard launch blockers: Razorpay live keys (6.1), Google OAuth creds (6.2), Twilio/Supabase phone OTP config (tracked in TASK.md T-113), DB PITR backups (6.9) — all require owner dashboards/credentials
+- [ ] Authenticated smoke test (5.2) — manual test requiring running app + real credentials
+- [ ] Optional production-readiness item: Google Maps API key (6.3) — P1 only because Leaflet fallback works
 
 ---
 

@@ -96,6 +96,7 @@
 > - T-113: Twilio SMS/WhatsApp OTP (owner action — Supabase Auth → Phone Providers)
 > - T-115: Production DB backup / PITR setup (owner action — Supabase dashboard)
 > - T-114: Authenticated smoke test (manual — requires running app + real credentials)
+> - Phase 6.3: Google Maps API key remains optional P1 production readiness work; Leaflet fallback already covers map rendering
 >
 > Stale queue entries removed 2026-03-30 by manager verification:
 > - ~~T-107~~ → already done (OAuth verified working)
