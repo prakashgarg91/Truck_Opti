@@ -48,6 +48,38 @@ These have been found but are NOT yet fixed in migration files. Any agent workin
 
 **All known vulnerabilities as of BATCH15: RESOLVED ✅ — `npm audit` shows 0 vulnerabilities.**
 
+### BATCH22 Security Investigation (2026-03-31)
+
+GitHub Dependabot reported 1 moderate vulnerability on the default branch despite clean local `npm audit` (0 vulnerabilities across root, frontend, apps/web).
+
+**Investigated surfaces:**
+- All 3 `package-lock.json` files (root, frontend, apps/web)
+- All `package.json` files (root, frontend, apps/web)
+- Both Dockerfiles (root, infra/)
+- Python requirements.txt (apps/web/) and requirements_test.txt (apps/desktop/)
+- Transitive dependency chains (cross-spawn, esbuild, rollup, serialize-javascript, dompurify, nanoid)
+
+**Root causes identified:**
+
+| # | Package | Issue | Advisory | Severity | Fix Applied |
+|---|---------|-------|----------|----------|-------------|
+| 1 | `xlsx` (CDN tarball) | SheetJS `xlsx@0.20.3` resolved from `https://cdn.sheetjs.com/...` — Dependabot cannot resolve CDN URL to a version, falls back to npm registry (stuck at 0.18.5, which IS vulnerable) | GHSA-5pgg-2g8v-p4x9 (CVE-2024-22363) — "Patched versions: None" because npm is abandoned | High | Replaced with `xlsx-js-style@1.2.0` (community fork, same API, on npm, no advisories) |
+| 2 | `dompurify` (override) | `overrides.dompurify: "^3.2.4"` semver range spans vulnerable 3.2.4–3.3.1 (XSS) | CVE-2026-0540 (GHSA-v2wj-7wpq-c8vv) — Moderate CVSS 5.1 | Moderate | Updated override to `"^3.3.2"` to eliminate vulnerable range |
+
+**Changes applied:**
+- `frontend/package.json`: Removed `xlsx` CDN tarball dependency, added `xlsx-js-style@^1.2.0`
+- `frontend/package.json`: Updated `overrides.dompurify` from `^3.2.4` to `^3.3.2`
+- `frontend/src/pages/SaleOrdersPage.tsx`: Updated dynamic import from `'xlsx'` to `'xlsx-js-style'`
+- `frontend/vite.config.ts`: Updated `manualChunks` entry from `'xlsx'` to `'xlsx-js-style'`
+- `frontend/package-lock.json`: Regenerated (0 vulnerabilities)
+
+**Validation:**
+- `npm audit` → 0 vulnerabilities (all 3 surfaces)
+- `npm run build` → success (0 TypeScript errors)
+- Build output includes `excel-vendor` chunk with `xlsx-js-style`
+
+**Note:** Without `gh auth` we cannot directly query Dependabot alerts API to confirm which advisory was the "1 moderate". The `dompurify` override (CVE-2026-0540, Moderate) is the most likely match for "1 moderate". The xlsx issue was a bonus fix — Dependabot may classify it differently depending on how it resolves the CDN URL.
+
 ---
 
 ## 3. RULE REFERENCE (quick card)
