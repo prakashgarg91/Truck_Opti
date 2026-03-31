@@ -2,6 +2,7 @@
 
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.0 | All AIs MUST register here and update regularly.
+> 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
 
 ---
 
@@ -82,6 +83,18 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
                              TASK.md (T-123), STATE.md (GLM-005 registered).
 
                              NO CODE CHANGES — documentation and decision clarity only.
+──────────────────────────────────────────────────────────────────────────────────────────
+[2026-03-31] MANAGER-NEXT: ⚠️ PRODUCT COMPLETION FOLLOW-UPS RECORDED
+
+                             Owner clarified that the following software work is still pending:
+                             1. frontend testing
+                             2. advanced 3D bin-packing algorithm improvement
+                             3. validating or moving packing execution to client side where needed
+                             4. testing of all important paths and flows
+
+                             Manager judgment updated:
+                             preflight/security readiness is green, but product validation and
+                             packing-engine completion work remain open for the next session.
 ──────────────────────────────────────────────────────────────────────────────────────────
 [2026-03-30] GLM-004 (MANAGER): ✅ LAUNCH-READINESS GAP CLOSED — Gate 7 + .gitignore fix
 

@@ -7,12 +7,16 @@
 
 ## 🎯 ACTIVE TASKS
 
-> **All repo-side launch work is currently COMPLETE and locally verified.**
+> **Repo-side preflight/security work is green, but launch-critical product work is still pending.**
 > **Evidence:** `npm run launch-check` passed 8/8 gates on 2026-03-31 (build, audits, Python checks, git cleanliness, tree hygiene).
-> **Remaining tasks require OWNER external action. See `OWNER_ACTION_CHECKLIST.md` for step-by-step instructions.**
+> **Next session must cover frontend testing, packing algorithm improvement, client-side packing execution, and full flow validation in addition to owner external actions.**
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
+| T-124 | Frontend testing pass for key user-facing pages | P0 | 🧪 Product | 🟡 Pending next session |
+| T-125 | Improve advanced 3D bin-packing algorithm quality | P0 | 🧠 Product | 🟡 Pending next session |
+| T-126 | Move packing algorithm execution to client side where required UX/perf needs it | P0 | 🏗️ Architecture | 🟡 Pending next session |
+| T-127 | Test all major paths and end-to-end flows, not just preflight gates | P0 | 🧪 Product | 🟡 Pending next session |
 | T-110 | Production Razorpay keys + test | P0 | 🔑 External | 🟡 Owner: set env vars |
 | T-111 | Google OAuth production credentials verification | P0 | 🔑 External | 🟡 Owner: Supabase + Google Console |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | 🔑 External | 🟡 Owner: Supabase dashboard |
