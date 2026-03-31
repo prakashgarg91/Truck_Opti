@@ -87,6 +87,8 @@ supabase secrets set RAZORPAY_KEY_SECRET=live_secret_XXXXXX
 
 **Verification:** Log out, enter a real phone number on `/login`, verify OTP SMS is received.
 
+> **⚠️ Twilio is OPTIONAL for launch.** If you accept Email OTP + Google OAuth as the launch auth methods (both already working), you can defer Twilio configuration. Phone OTP can be added later. See `docs/AUTH_ARCHITECTURE_DECISIONS.md` for the full analysis.
+
 ---
 
 ### Action 5: Configure Sentry DSN

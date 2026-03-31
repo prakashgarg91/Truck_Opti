@@ -40,6 +40,7 @@
 | `GLM-001` | LEAD+JUDGE | GLM-5.1 | Full-stack audit | BATCH21 audit + security fixes + npm vuln cleanup + dev-matrix reality sync | 2026-03-29 | ✅ DONE |
 | `GLM-003` | MANAGER | GLM-5.1 | DevOps scripts | Launch-readiness script (6-gate PS1) + npm entry + dev-matrix update | 2026-03-30 | ✅ DONE |
 | `GLM-002` | MANAGER | GLM-5.1 | Launch audit | Final launch readiness verification + dev-matrix cleanup + owner action doc | 2026-03-30 | ✅ DONE |
+| `GLM-005` | MANAGER | GLM-5.1 | Architecture docs | Auth architecture decision doc + launch checklist updates | 2026-03-31 | ✅ DONE |
 | `GLM-004` | MANAGER | GLM-5.1 | DevOps scripts | Launch-readiness Gate 7 (git cleanliness) + .gitignore SQLite sidecar fix | 2026-03-30 | ✅ DONE |
 | `SONNET-006` | LEAD+JUDGE | Claude Sonnet 4.6 | Full-stack | BATCH20 judge + isAdmin fix + Dependabot cleanup → v57 Heroku; BATCH21 queued | 2026-03-11 | ✅ DONE |
 | `BATCH20-AGENT` | LEAD | Unknown | Full-stack | BATCH20 ✅ NEAR-COMPLETE - v56 deployed (1 bug found by judge) | 2026-03-11 | ✅ DONE |
@@ -71,6 +72,17 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-03-31] GLM-005 (MANAGER): ✅ AUTH ARCHITECTURE DECISION DOC CREATED
+
+                             docs/AUTH_ARCHITECTURE_DECISIONS.md produced.
+                             Covers: Telegram-as-DB analysis, custom OTP assessment,
+                             Supabase OTP migration options, recommended launch path.
+
+                             Updated: LAUNCH_CHECKLIST §6.18, OWNER_ACTION_CHECKLIST (Twilio-optional note),
+                             TASK.md (T-123), STATE.md (GLM-005 registered).
+
+                             NO CODE CHANGES — documentation and decision clarity only.
+──────────────────────────────────────────────────────────────────────────────────────────
 [2026-03-30] GLM-004 (MANAGER): ✅ LAUNCH-READINESS GAP CLOSED — Gate 7 + .gitignore fix
 
                              GAP IDENTIFIED: data/telegram_bot.db-wal and .db-shm files

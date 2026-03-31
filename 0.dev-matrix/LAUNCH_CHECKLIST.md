@@ -82,6 +82,7 @@
 | 6.15 | Admin payout workflow (approve/pay) | ✅ | BATCH21 T1 |
 | 6.16 | Supabase migration push (6 pending) | ❌ | P0 — requires owner action: `supabase db push` |
 | 6.17 | Sentry DSN env var configuration | ❌ | P1 — requires `heroku config:set VITE_SENTRY_DSN=...` |
+| 6.18 | Auth launch alternatives documented | ✅ | GLM-005 — See `docs/AUTH_ARCHITECTURE_DECISIONS.md`. Twilio optional if Email OTP + Google OAuth accepted |
 
 ---
 
@@ -94,8 +95,8 @@
 | 3. Frontend Wiring | 6 | 6 | 0 |
 | 4. Subscriptions | 7 | 7 | 0 |
 | 5. Testing | 6 | 5 | 1 |
-| 6. Production | 17 | 11 | 6 |
-| **TOTAL** | **48** | **41** | **7** |
+| 6. Production | 18 | 12 | 6 |
+| **TOTAL** | **49** | **42** | **7** |
 
 ---
 
