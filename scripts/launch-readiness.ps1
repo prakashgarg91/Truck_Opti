@@ -253,7 +253,7 @@ try {
 Write-Host '  Gate 8: Tree hygiene' -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
-    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md')
+    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md', '0.dev-matrix\CLOSING-DAY-HOOK.md')
     $missingDocs = $requiredDocs | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
     $junkNames = @('nul', '.DS_Store', 'Thumbs.db', 'Desktop.ini')
     $junkPaths = @(
