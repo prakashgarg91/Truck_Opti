@@ -8,7 +8,7 @@
 ## 🎯 ACTIVE TASKS
 
 > **All repo-side launch work is currently COMPLETE and locally verified.**
-> **Evidence:** `npm run launch-check` passed 7/7 gates on 2026-03-31 (build, audits, Python checks, git cleanliness).
+> **Evidence:** `npm run launch-check` passed 8/8 gates on 2026-03-31 (build, audits, Python checks, git cleanliness, tree hygiene).
 > **Remaining tasks require OWNER external action. See `OWNER_ACTION_CHECKLIST.md` for step-by-step instructions.**
 
 | ID | Task | Priority | Type | Status |
@@ -150,7 +150,7 @@ Move task from QUEUE to ACTIVE TASKS:
 | T-120 | Fix PricingPage dead CTA buttons (Start Free, Get Started ×4, Contact Sales, Talk to Us) | SONNET-001 | 2026-03-03 | All 6 CTA buttons now have onClick; navigate('/signup') or mailto: |
 | T-121 | Harden `apps/web` dependency surfaces | GLM-002 / OpenCode | 2026-03-30 | `756285a0` + `0599fa53`; apps/web npm audit clean, pip-audit clean, compileall pass |
 | T-123 | Auth architecture decision doc + launch checklist updates | GLM-005 / GLM-5.1 | 2026-03-31 | docs/AUTH_ARCHITECTURE_DECISIONS.md; Telegram-as-DB analysis; OTP migration options |
-| T-122 | Add repeatable launch-readiness preflight | GLM-003 / OpenCode | 2026-03-31 | `92eb6324` + `50e519db`; `npm run launch-check` passes 7/7 gates |
+| T-122 | Add repeatable launch-readiness preflight | GLM-003 / OpenCode | 2026-03-31 | `92eb6324` + `50e519db`; later extended to 8/8 gates including tree hygiene |
 | T-100 | Cloudflare + Heroku dual-domain SSL validation | GPT-5.3-Codex | 2026-02-22 | `truckopti.in` + `www` live |
 | T-101 | Launch readiness continuation (BATCH6+7) | Copilot (Claude Sonnet) | 2026-03-03 | 10 BATCH6 tasks + 5 BATCH7 tasks done |
 | T-102 | Build `useSubscription` hook + trial/expiry logic | Copilot (Claude Sonnet) | 2026-03-03 | `useSubscription.ts` — 235 lines, 42/42 tests |

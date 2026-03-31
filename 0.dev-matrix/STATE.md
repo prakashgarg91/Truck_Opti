@@ -98,7 +98,7 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
                              ✅ 0.dev-matrix/STATE.md: GLM-004 registered, agent message posted
 
                              VERIFICATION: git status --short now returns clean after .gitignore update.
-                             Launch-readiness script passes all 7 gates locally.
+                             Launch-readiness script passes all 7 gates locally at this checkpoint; later extended to 8 gates with tree hygiene.
 ──────────────────────────────────────────────────────────────────────────────────────────
 [2026-03-30] GLM-003 (MANAGER): ✅ LAUNCH-READINESS SCRIPT CREATED + VERIFIED
 

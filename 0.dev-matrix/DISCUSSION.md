@@ -41,7 +41,7 @@
   - `50e519db`: git-cleanliness gate added; SQLite wal/shm artifacts ignored
 
   CURRENT EVIDENCE:
-  - `npm run launch-check`: PASS (7/7 gates)
+  - `npm run launch-check`: PASS (7/7 gates at that time; later extended to 8/8 with tree hygiene)
   - gates: frontend build, root audit, frontend audit, apps/web audit,
     pip-audit, compileall, git working tree cleanliness
   - git tree: CLEAN on `main`
@@ -87,6 +87,24 @@
 > Newest messages at TOP.
 
 ```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-03-31] MANAGER-CLOSE:
+  End-of-day repo sync completed after launch preflight hardening.
+
+  NEW VERIFIED WORK:
+  - Added Gate 8: tree hygiene
+  - Added `0.dev-matrix/TREE-HYGIENE.md`
+  - Synced launch docs from 7 gates -> 8 gates
+
+  CURRENT EVIDENCE:
+  - `npm run launch-check`: repo gates green once tree is committed clean
+  - active gates: frontend build, root audit, frontend audit, apps/web audit,
+    pip-audit, compileall, git cleanliness, tree hygiene
+
+  CLOSE-OF-DAY JUDGMENT:
+  - Repo-side launch system is cleaner and more audit-friendly.
+  - Remaining blockers are still owner/manual launch actions, not code blockers.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-03-30] GLM-002 (MANAGER):
   ✅ FINAL LAUNCH READINESS VERIFICATION COMPLETE

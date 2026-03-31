@@ -13,6 +13,7 @@
 #   5. pip-audit on apps/web/requirements.txt
 #   6. Python compileall on apps/web/app and apps/web/run.py
 #   7. Git working tree cleanliness (no uncommitted/unignored changes)
+#   8. Tree hygiene (required doc, no junk artifacts, no merge markers in active code/config files)
 # ============================================================
 
 param(
@@ -242,6 +243,40 @@ try {
         } else {
             Write-Gate 'Git working tree cleanliness' 'PASS' 'working tree clean'
         }
+    }
+} finally {
+    Pop-Location
+}
+
+# ---------- Gate 8: Tree hygiene ----------
+
+Write-Host '  Gate 8: Tree hygiene' -ForegroundColor Cyan
+Push-Location $RepoRoot
+try {
+    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md')
+    $missingDocs = $requiredDocs | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
+    $junkNames = @('nul', '.DS_Store', 'Thumbs.db', 'Desktop.ini')
+    $junkPaths = @(
+        Get-ChildItem -Path $RepoRoot -Recurse -Force -File -ErrorAction SilentlyContinue |
+            Where-Object { $junkNames -contains $_.Name } |
+            Select-Object -ExpandProperty FullName
+    )
+    $scanFiles = Get-ChildItem -Path $RepoRoot -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.FullName -notmatch '\\(node_modules|dist|coverage|logs|playwright-report|test-results|venv|\.venv|0\.dev-matrix\\(test-reports|archive|backup)|\.git)\\' -and
+            $_.Extension -in @('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.json', '.yml', '.yaml', '.toml', '.ini', '.env', '.ps1', '.sh', '.bat')
+        }
+    $conflictHit = $scanFiles | Select-String -Pattern '^(<{7}|={7}|>{7})( .*)?$' | Select-Object -First 1
+    $treeClean = ($missingDocs.Count -eq 0) -and ($junkPaths.Count -eq 0) -and ($null -eq $conflictHit)
+
+    if ($treeClean) {
+        Write-Gate 'Tree hygiene' 'PASS' 'tree-hygiene doc present and active code tree is clean'
+    } elseif ($missingDocs.Count -gt 0) {
+        Write-Gate 'Tree hygiene' 'FAIL' ("missing: " + ($missingDocs -join ', '))
+    } elseif ($junkPaths.Count -gt 0) {
+        Write-Gate 'Tree hygiene' 'FAIL' ("junk artifact: " + $junkPaths[0])
+    } else {
+        Write-Gate 'Tree hygiene' 'FAIL' ("merge marker: " + $conflictHit.Path + ':' + $conflictHit.LineNumber)
     }
 } finally {
     Pop-Location

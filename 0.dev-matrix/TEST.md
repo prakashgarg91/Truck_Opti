@@ -15,7 +15,7 @@ Any developer can run these. All gates must pass before considering a deploy.
 npm run launch-check
 ```
 
-Runs 7 automated gates:
+Runs 8 automated gates:
 
 | Gate | Check | Auto-verified |
 |------|-------|:---:|
@@ -26,8 +26,9 @@ Runs 7 automated gates:
 | 5 | `pip-audit` on apps/web/requirements.txt | Yes |
 | 6 | Python `compileall` on apps/web/app + run.py | Yes |
 | 7 | Git working-tree cleanliness (no uncommitted changes) | Yes |
+| 8 | Tree hygiene (required docs, no junk artifacts, no merge markers in active code/config files) | Yes |
 
-**Pass criteria:** 7/7 gates green. Any FAIL = do not deploy.
+**Pass criteria:** 8/8 gates green. Any FAIL = do not deploy.
 
 ### Step 2: Frontend Build (belt-and-braces, covered by Gate 1)
 
@@ -169,7 +170,7 @@ Login as admin. Auto-redirected to `/admin`.
 
 | Step | Area | Owner | Last Result | Date | Blocker |
 |------|------|-------|:-----------:|------|:-------:|
-| 1 | Launch preflight | Any dev | 7/7 PASS | 2026-03-31 | No |
+| 1 | Launch preflight | Any dev | 8/8 PASS | 2026-03-31 | No |
 | 2 | Frontend build | Any dev | PASS | 2026-03-31 | No |
 | 5 | Auth smoke | Owner | — | — | Yes (Twilio/OAuth) |
 | 6 | Customer portal | Owner | — | — | Yes (auth) |
@@ -194,7 +195,7 @@ Login as admin. Auto-redirected to `/admin`.
 ## QUICK REGRESSION CHECKLIST
 
 Before every push, confirm:
-- [ ] `npm run launch-check` — all 7 gates green
+- [ ] `npm run launch-check` — all 8 gates green
 - [ ] `npm run build` — 0 TypeScript errors
 - [ ] Login works (at least one auth path)
 - [ ] No red console errors on main pages
@@ -202,4 +203,4 @@ Before every push, confirm:
 
 ---
 
-*Last updated: 2026-03-31 | GLM-003 (Manager) | Phase A verified, Phase B pending owner credentials*
+*Last updated: 2026-03-31 | MANAGER-CLOSE | Phase A verified at 8/8 gates, Phase B pending owner credentials*
