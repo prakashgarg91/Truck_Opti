@@ -147,7 +147,7 @@ export default defineConfig({
           'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
           'map-vendor': ['leaflet', 'react-leaflet'],
           'pdf-vendor': ['jspdf', 'html2canvas'],
-          'excel-vendor': ['xlsx', 'papaparse'],
+          'excel-vendor': ['xlsx-js-style', 'papaparse'],
           'query-vendor': ['@tanstack/react-query'],
           'ui-vendor': ['lucide-react', 'react-hot-toast'],
         }

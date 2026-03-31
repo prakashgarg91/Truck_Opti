@@ -151,7 +151,7 @@ export default function SaleOrdersPage() {
         data = result.data as Record<string, unknown>[]
       } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         // Parse Excel - dynamic import to reduce bundle size
-        const XLSX = await import('xlsx')
+        const XLSX = await import('xlsx-js-style')
         const buffer = await file.arrayBuffer()
         const workbook = XLSX.read(buffer)
         const sheet = workbook.Sheets[workbook.SheetNames[0]]

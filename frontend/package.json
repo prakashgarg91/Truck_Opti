@@ -62,10 +62,9 @@
     "react-hot-toast": "^2.4.1",
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.28.0",
-
     "tailwind-merge": "^2.5.0",
     "three": "^0.169.0",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "xlsx-js-style": "^1.2.0",
     "zod": "^4.3.6",
     "zustand": "^4.5.0"
   },
@@ -96,7 +95,7 @@
     "india"
   ],
   "overrides": {
-    "dompurify": "^3.2.4",
+    "dompurify": "^3.3.2",
     "esbuild": "^0.25.0",
     "serialize-javascript": "^7.0.3",
     "rollup": "^4.0.0"
