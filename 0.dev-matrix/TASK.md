@@ -7,8 +7,9 @@
 
 ## 🎯 ACTIVE TASKS
 
-> **All in-repo code work is COMPLETE. Remaining tasks require OWNER external action.**
-> **See `OWNER_ACTION_CHECKLIST.md` for step-by-step instructions.**
+> **All repo-side launch work is currently COMPLETE and locally verified.**
+> **Evidence:** `npm run launch-check` passed 7/7 gates on 2026-03-31 (build, audits, Python checks, git cleanliness).
+> **Remaining tasks require OWNER external action. See `OWNER_ACTION_CHECKLIST.md` for step-by-step instructions.**
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
@@ -87,7 +88,7 @@
 
 ## 📝 TASK QUEUE
 
-> **All in-repo code tasks are COMPLETE. Remaining items require external owner action.**
+> **All repo-side code tasks are COMPLETE and preflight-verified. Remaining items require external owner action.**
 > **See `0.dev-matrix/OWNER_ACTION_CHECKLIST.md` for precise instructions.**
 
 | ID | Task | Priority | Nature | Owner Action |
@@ -147,6 +148,8 @@ Move task from QUEUE to ACTIVE TASKS:
 | T-112 | Enable Email OTP | SONNET-001 | 2026-03-03 | VITE_AUTH_EMAIL_OTP_ENABLED=true in .env + .env.production |
 | T-119 | Fix silent phone OTP failure (no error shown) | SONNET-001 | 2026-03-03 | supabaseApi.ts signInWithPhone: added phone_provider_disabled friendly error |
 | T-120 | Fix PricingPage dead CTA buttons (Start Free, Get Started ×4, Contact Sales, Talk to Us) | SONNET-001 | 2026-03-03 | All 6 CTA buttons now have onClick; navigate('/signup') or mailto: |
+| T-121 | Harden `apps/web` dependency surfaces | GLM-002 / OpenCode | 2026-03-30 | `756285a0` + `0599fa53`; apps/web npm audit clean, pip-audit clean, compileall pass |
+| T-122 | Add repeatable launch-readiness preflight | GLM-003 / OpenCode | 2026-03-31 | `92eb6324` + `50e519db`; `npm run launch-check` passes 7/7 gates |
 | T-100 | Cloudflare + Heroku dual-domain SSL validation | GPT-5.3-Codex | 2026-02-22 | `truckopti.in` + `www` live |
 | T-101 | Launch readiness continuation (BATCH6+7) | Copilot (Claude Sonnet) | 2026-03-03 | 10 BATCH6 tasks + 5 BATCH7 tasks done |
 | T-102 | Build `useSubscription` hook + trial/expiry logic | Copilot (Claude Sonnet) | 2026-03-03 | `useSubscription.ts` — 235 lines, 42/42 tests |
@@ -334,4 +337,4 @@ Move back to QUEUE, not delete.
 
 ---
 
-**Last Updated:** 2026-01-11 | **Framework Version:** 2.0
+**Last Updated:** 2026-03-31 | **Framework Version:** 2.0

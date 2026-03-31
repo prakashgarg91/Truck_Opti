@@ -50,7 +50,7 @@
 | 4.6 | Razorpay: verify Edge Function called on success | ✅ | BATCH6 T1 |
 | 4.7 | Invoice PDF: user metadata for company info | ✅ | BATCH6 T8 |
 
-## Phase 5: Testing ✅ CORE COMPLETE
+## Phase 5: Testing ✅ CORE COMPLETE + LOCAL PREFLIGHT VERIFIED
 
 | # | Item | Status | Depends on |
 |---|------|--------|----------|
@@ -59,6 +59,7 @@
 | 5.3 | TypeScript 0 errors | ✅ | `npx tsc --noEmit` → 0 errors |
 | 5.4 | Vite build succeeds | ✅ | Built in 6.57s |
 | 5.5 | RLS policy verification | ✅ | Validated in test script |
+| 5.6 | Repo launch-readiness preflight (`npm run launch-check`) | ✅ 7/7 PASS | 2026-03-31 manager verification |
 
 ## Phase 6: Production Readiness ❌ NOT STARTED
 
@@ -92,9 +93,9 @@
 | 2. Authentication | 6 | 6 | 0 |
 | 3. Frontend Wiring | 6 | 6 | 0 |
 | 4. Subscriptions | 7 | 7 | 0 |
-| 5. Testing | 5 | 4 | 1 |
+| 5. Testing | 6 | 5 | 1 |
 | 6. Production | 17 | 11 | 6 |
-| **TOTAL** | **47** | **40** | **7** |
+| **TOTAL** | **48** | **41** | **7** |
 
 ---
 
@@ -121,3 +122,4 @@
 | Mar 11 | _pending_ | BATCH21: Sentry integration, Driver GPS broadcast, Subscription upgrade/downgrade, Admin payout approve/pay | 0 |
 | Mar 29 | `de2840ea` / `48e55427` / `cb0daa1a` | GLM-001: security cleanup, dead dependency removal, safer UI error handling, dev-matrix audit update | 0 |
 | Mar 30 | _no code change_ | GLM-002: Full launch audit — build+vuln+route+security verified, dev-matrix synced, OWNER_ACTION_CHECKLIST.md created | 0 |
+| Mar 30-31 | `756285a0` / `0599fa53` / `92eb6324` / `50e519db` | Manager/OpenCode: apps/web dependency hardening + repeatable 7-gate launch preflight | 0 |

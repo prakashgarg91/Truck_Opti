@@ -31,6 +31,28 @@
   5 remaining items are external/owner-only actions (see report).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-03-31] MANAGER-ADMIN:
+  Repo-side launch hardening and preflight workflow extended after manager verification.
+
+  NEW VERIFIED WORK:
+  - `756285a0`: apps/web Node audit surface cleaned
+  - `0599fa53`: apps/web Python dependency surface hardened
+  - `92eb6324`: repeatable launch-readiness script added
+  - `50e519db`: git-cleanliness gate added; SQLite wal/shm artifacts ignored
+
+  CURRENT EVIDENCE:
+  - `npm run launch-check`: PASS (7/7 gates)
+  - gates: frontend build, root audit, frontend audit, apps/web audit,
+    pip-audit, compileall, git working tree cleanliness
+  - git tree: CLEAN on `main`
+
+  CONCLUSION:
+  - Repo-side launch work is stronger and repeatably verifiable.
+  - Launch is still NOT complete because owner-side blockers remain:
+    Supabase db push, Razorpay live keys, Google OAuth prod creds,
+    Twilio OTP config, Sentry DSN, DB backup/PITR, authenticated smoke test.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-03-29] MANAGER-VERIFY:
   OpenCode completed the code/security pass and pushed 3 commits:
   de2840ea, 48e55427, cb0daa1a
@@ -80,6 +102,23 @@
 
   VERDICT: Project is CODE-COMPLETE for launch.
   6 external owner actions required — see OWNER_ACTION_CHECKLIST.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-03-31] GLM-003 (MANAGER):
+  ✅ PRELAUNCH PREFLIGHT NOW AUTOMATED
+
+  Added a repeatable repo-root check:
+  - `npm run launch-check`
+  - `scripts/launch-readiness.ps1`
+
+  Latest manager verification:
+  - Build: PASS
+  - npm audit: 0 vulns (root + frontend + apps/web)
+  - Python dependency audit: PASS
+  - Python compileall: PASS
+  - Git cleanliness: PASS
+
+  VERDICT: Repo-side launch gates are green.
+  Remaining blockers are external/manual, not unresolved coding blockers.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-03-05] SONNET-004 (JUDGE):
   ✅ Security audit complete + BATCH11 judgment done
@@ -134,4 +173,4 @@ git push heroku main     # Heroku second
 
 ---
 
-*Last updated: 2026-03-05 | SONNET-004*
+*Last updated: 2026-03-31 | Manager admin sync*
