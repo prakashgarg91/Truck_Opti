@@ -90,6 +90,7 @@ function AppContent() {
         <Routes>
         {/* Auth routes - accessible without authentication */}
         <Route element={<AuthLayout />}>
+          <Route path="/" element={<RoleHome />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/otp" element={<OTPPage />} />
@@ -115,7 +116,6 @@ function AppContent() {
             <MobileLayout />
           </ProtectedRoute>
         }>
-          <Route path="/" element={<RoleHome />} />
           <Route path="/packing" element={<PackingPage />} />
           <Route path="/routes" element={<RoutesPage />} />
           <Route path="/tracking" element={<TrackingPage />} />
