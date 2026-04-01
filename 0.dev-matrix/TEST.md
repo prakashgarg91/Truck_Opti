@@ -38,6 +38,26 @@ cd frontend && npm run build
 
 **Pass criteria:** Zero TypeScript errors. Warnings acceptable, errors are not.
 
+### Step 2b: Public Frontend Smoke — `npm run test:public-smoke`
+
+```powershell
+npm run test:public-smoke
+```
+
+Verifies deployed public/frontend routes with a fresh browser context:
+
+- `/`
+- `/pricing`
+- `/terms`
+- `/privacy`
+- `/contact`
+- `/login`
+- `/signup`
+
+Writes evidence to `logs/public_frontend_smoke_report.json`.
+
+**Latest evidence:** 2026-04-01 manager verification passed 7/7 public routes with 0 app errors, 0 console errors, and 0 failed HTTP responses.
+
 ### Step 3: Supabase Data Integrity (run after key user flows)
 
 ```sql
@@ -189,6 +209,7 @@ Login as admin. Auto-redirected to `/admin`.
 |------|------|-------|:-----------:|------|:-------:|
 | 1 | Launch preflight | Any dev | 8/8 PASS | 2026-03-31 | No |
 | 2 | Frontend build | Any dev | PASS | 2026-03-31 | No |
+| 2b | Public frontend smoke | Manager | 7/7 PASS | 2026-04-01 | No |
 | 4b | Public route smoke | Manager | PASS (7 routes, fresh bundle) | 2026-04-01 | No |
 | 5 | Auth smoke | Owner | — | — | Yes (Twilio/OAuth) |
 | 6 | Customer portal | Owner | — | — | Yes (auth) |

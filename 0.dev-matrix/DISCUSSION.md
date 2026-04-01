@@ -103,6 +103,9 @@
   - `heroku ps`: web dyno up after deploy
   - public-route smoke (fresh bundle) PASS:
     `/`, `/pricing`, `/terms`, `/privacy`, `/contact`, `/login`, `/signup`
+  - repeatable frontend smoke command added:
+    `npm run test:public-smoke`
+    -> latest run PASS (7/7 public routes)
   - bare `/` may require hard refresh on cached clients until stale client assets expire
 
   JUDGMENT:

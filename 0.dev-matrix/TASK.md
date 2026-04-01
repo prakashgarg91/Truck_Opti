@@ -13,7 +13,7 @@
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
-| T-124 | Frontend testing pass for key user-facing pages | P0 | 🧪 Product | 🟡 Pending next session |
+| T-124 | Frontend testing pass for key user-facing pages | P0 | 🧪 Product | 🟡 Public smoke automated and passing; authenticated/full-flow still pending |
 | T-125 | Improve advanced 3D bin-packing algorithm quality | P0 | 🧠 Product | 🟡 Pending next session |
 | T-126 | Move packing algorithm execution to client side where required UX/perf needs it | P0 | 🏗️ Architecture | 🟡 Pending next session |
 | T-127 | Test all major paths and end-to-end flows, not just preflight gates | P0 | 🧪 Product | 🟡 Pending next session |
