@@ -27,6 +27,7 @@
 
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
+| `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
 | ~~HEROKU-STALE~~ | ✅ RESOLVED | Deployed v22 (slug 337 MB). Added .slugignore; slug was 843 MB. | SONNET-001 (auto) |
 | ~~SUPABASE-SITE-URL~~ | ✅ RESOLVED | Site URL updated to https://www.truckopti.in via Management API. Allow-list: www+apex+Heroku. | SONNET-001 (auto) |
 
@@ -73,6 +74,28 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-01] MANAGER-ADMIN: ✅ PRODUCTION RUNTIME RESTORED + PUBLIC ROUTE SMOKE VERIFIED
+
+                             LIVE INCIDENT:
+                             - `www.truckopti.in` and Heroku app both returned 503 / `Application Error`
+                             - Heroku logs showed `H10 App crashed`
+                             - root cause in app logs: Express 5 route parser rejected `app.get('*', ...)`
+
+                             FIX + DEPLOY:
+                             - `552b424c` fixed SPA fallback for Express 5
+                             - `f8e93f07` moved `/` to public routing so LandingPage is reachable
+                             - deployed to Heroku successfully as v58/v59
+
+                             VERIFIED EVIDENCE:
+                             - `heroku ps`: web dyno up
+                             - public fresh-bundle smoke PASS for:
+                               `/`, `/pricing`, `/terms`, `/privacy`, `/contact`, `/login`, `/signup`
+
+                             REMAINING REALITY:
+                             - authenticated flows still unverified end-to-end
+                             - packing algorithm improvement/testing remains open
+                             - owner config blockers still prevent honest launch-complete status
+──────────────────────────────────────────────────────────────────────────────────────────
 [2026-03-31] GLM-005 (MANAGER): ✅ AUTH ARCHITECTURE DECISION DOC CREATED
 
                              docs/AUTH_ARCHITECTURE_DECISIONS.md produced.

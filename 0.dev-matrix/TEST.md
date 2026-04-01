@@ -59,6 +59,23 @@ After `git push heroku main`, confirm within 60 seconds:
 - `State changed from starting to up`
 - No `Error` lines
 
+### Step 4b: Public Route Smoke (deployed frontend, no credentials)
+
+Verify the key unauthenticated routes render without `Application Error`:
+
+- `/`
+- `/pricing`
+- `/terms`
+- `/privacy`
+- `/contact`
+- `/login`
+- `/signup`
+
+**Latest evidence:** 2026-04-01 manager verification found:
+- Heroku web dyno restored after fixing Express 5 SPA fallback in `server.js`
+- fresh-bundle smoke for all 7 public routes passed
+- note: cached clients may need a hard refresh or service-worker clear to pick up the newest root-route bundle immediately
+
 ---
 
 ## PHASE B — AUTHENTICATED SMOKE (Requires Real Credentials + Production Config)
@@ -172,6 +189,7 @@ Login as admin. Auto-redirected to `/admin`.
 |------|------|-------|:-----------:|------|:-------:|
 | 1 | Launch preflight | Any dev | 8/8 PASS | 2026-03-31 | No |
 | 2 | Frontend build | Any dev | PASS | 2026-03-31 | No |
+| 4b | Public route smoke | Manager | PASS (7 routes, fresh bundle) | 2026-04-01 | No |
 | 5 | Auth smoke | Owner | — | — | Yes (Twilio/OAuth) |
 | 6 | Customer portal | Owner | — | — | Yes (auth) |
 | 7 | Driver portal | Owner | — | — | Yes (auth) |
@@ -203,4 +221,4 @@ Before every push, confirm:
 
 ---
 
-*Last updated: 2026-03-31 | MANAGER-CLOSE | Phase A verified at 8/8 gates, Phase B pending owner credentials*
+*Last updated: 2026-04-01 | MANAGER-ADMIN | Production runtime restored; public-route smoke verified; authenticated Phase B still pending owner credentials*

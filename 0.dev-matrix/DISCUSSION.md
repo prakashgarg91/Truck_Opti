@@ -88,6 +88,29 @@
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-01] MANAGER-ADMIN:
+  Production launch blocker investigated and partially cleared.
+
+  NEW VERIFIED WORK:
+  - Heroku `H10 App crashed` reproduced on live domain and traced to `server.js`
+  - Root cause: Express 5 wildcard route `app.get('*', ...)` crashed the dyno
+  - Fix deployed:
+    - `552b424c` restore Express 5 SPA fallback on production server
+    - `f8e93f07` expose landing page on public root route
+  - Heroku deploys: v58 then v59
+
+  CURRENT EVIDENCE:
+  - `heroku ps`: web dyno up after deploy
+  - public-route smoke (fresh bundle) PASS:
+    `/`, `/pricing`, `/terms`, `/privacy`, `/contact`, `/login`, `/signup`
+  - bare `/` may require hard refresh on cached clients until stale client assets expire
+
+  JUDGMENT:
+  - repo-side runtime outage is fixed
+  - project is still NOT fully launch-complete:
+    authenticated flow testing, packing improvement work, owner config, and end-to-end flow evidence remain pending
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-03-31] MANAGER-NEXT:
   Next-session priorities explicitly reclassified by owner instruction.
 

@@ -55,7 +55,7 @@
 | # | Item | Status | Depends on |
 |---|------|--------|----------|
 | 5.1 | Supabase integration test script | ✅ 42/42 PASS | BATCH7 T-105 |
-| 5.2 | Browser smoke test (14 pages) | ⏭️ Skipped (manual) | Requires running browser |
+| 5.2 | Browser smoke test (14 pages) | 🟡 Public routes verified on 2026-04-01; authenticated/browser-full flow still pending | Requires real accounts for full completion |
 | 5.3 | TypeScript 0 errors | ✅ | `npx tsc --noEmit` → 0 errors |
 | 5.4 | Vite build succeeds | ✅ | Built in 6.57s |
 | 5.5 | RLS policy verification | ✅ | Validated in test script |

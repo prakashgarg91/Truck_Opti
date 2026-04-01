@@ -9,7 +9,7 @@
 
 > **Repo-side preflight/security work is green, but launch-critical product work is still pending.**
 > **Evidence:** `npm run launch-check` passed 8/8 gates on 2026-03-31 (build, audits, Python checks, git cleanliness, tree hygiene).
-> **Next session must cover frontend testing, packing algorithm improvement, client-side packing execution, and full flow validation in addition to owner external actions.**
+> **2026-04-01 update:** production runtime was restored on Heroku and public-route smoke passed, but full frontend/authenticated testing, packing improvements, and owner external actions still block honest launch completion.
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
