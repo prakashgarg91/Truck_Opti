@@ -98,6 +98,7 @@
   - auth-service check FAIL:
     `jbxncejtcbpcronndqlx.supabase.co` did not resolve
     live `/login` submission failed on `/auth/v1/otp` with `ERR_NAME_NOT_RESOLVED`
+    Google Public DNS (`8.8.8.8`) also returned NXDOMAIN, confirming this is not just a local resolver issue
   - auth UX hardened so OTP flows now show a safe, specific service-unreachable message
 
   JUDGMENT:

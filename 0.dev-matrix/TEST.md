@@ -72,7 +72,7 @@ Verifies:
 
 Writes evidence to `logs/frontend_launch_smoke_report.json`.
 
-**Latest evidence:** 2026-04-01 manager verification passed 12/13 checks and failed the auth-service check because `jbxncejtcbpcronndqlx.supabase.co` could not be resolved and `/auth/v1/otp` failed with `ERR_NAME_NOT_RESOLVED` from the live login page.
+**Latest evidence:** 2026-04-01 manager verification passed 12/13 checks and failed the auth-service check because `jbxncejtcbpcronndqlx.supabase.co` could not be resolved and `/auth/v1/otp` failed with `ERR_NAME_NOT_RESOLVED` from the live login page. This was rechecked against Google Public DNS (`8.8.8.8`), which also returned NXDOMAIN, so the failure is not limited to the local network resolver.
 
 ### Step 3: Supabase Data Integrity (run after key user flows)
 

@@ -82,6 +82,7 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
                              - result: 12/13 checks passed
                              - failing check: auth-service reachability
                              - direct DNS lookup failed for `jbxncejtcbpcronndqlx.supabase.co`
+                             - Google Public DNS `8.8.8.8` also returned NXDOMAIN for the same host
                              - live browser login reproduced `/auth/v1/otp` failure with `ERR_NAME_NOT_RESOLVED`
 
                              PRODUCT IMPACT:
