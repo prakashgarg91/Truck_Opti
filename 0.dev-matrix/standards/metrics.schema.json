@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "0.dev-matrix metrics.json",
+  "type": "object",
+  "required": ["updatedAt"],
+  "properties": {
+    "updatedAt": { "type": "string" },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["number", "string", "boolean", "object", "array", "null"]
+      }
+    }
+  },
+  "additionalProperties": true
+}

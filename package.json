@@ -8,6 +8,8 @@
     "test:live-buttons": "node scripts/public_frontend_smoke.mjs",
     "test:public-smoke": "node scripts/public_frontend_smoke.mjs",
     "test:frontend-smoke": "node scripts/frontend_launch_smoke.mjs",
+    "deep-scan": "node 0.dev-matrix/deep-error-scanner.mjs",
+    "glue:check": "node tools/glue-check.mjs",
     "launch-check": "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",
     "close-day": "powershell -ExecutionPolicy Bypass -File scripts/close-day.ps1"
   },

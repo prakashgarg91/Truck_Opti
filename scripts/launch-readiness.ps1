@@ -209,6 +209,38 @@ if ($compileTargets.Count -eq 0) {
     }
 }
 
+# ---------- Gate 7a: Deep-scan ----------
+
+Write-Host '  Gate 7a: Deep error scan' -ForegroundColor Cyan
+Push-Location $RepoRoot
+try {
+    node 0.dev-matrix/deep-error-scanner.mjs *> $null
+    $scanExit = $LASTEXITCODE
+    if ($scanExit -ne 0) {
+        Write-Gate 'Deep error scan' 'FAIL' "deep-error-scanner exited $scanExit"
+    } else {
+        Write-Gate 'Deep error scan' 'PASS' '0 errors found'
+    }
+} finally {
+    Pop-Location
+}
+
+# ---------- Gate 7b: Glue check ----------
+
+Write-Host '  Gate 7b: Glue check' -ForegroundColor Cyan
+Push-Location $RepoRoot
+try {
+    node tools/glue-check.mjs *> $null
+    $glueExit = $LASTEXITCODE
+    if ($glueExit -ne 0) {
+        Write-Gate 'Glue check' 'FAIL' "glue-check exited $glueExit"
+    } else {
+        Write-Gate 'Glue check' 'PASS' '0 integration gaps'
+    }
+} finally {
+    Pop-Location
+}
+
 # ---------- Gate 7: Git cleanliness ----------
 
 Write-Host '  Gate 7: Git working tree cleanliness' -ForegroundColor Cyan
@@ -253,7 +285,7 @@ try {
 Write-Host '  Gate 8: Tree hygiene' -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
-    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md', '0.dev-matrix\CLOSING-DAY-HOOK.md')
+    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md', '0.dev-matrix\CLOSING-DAY-HOOK.md', '0.dev-matrix\standards\DEEP-VERIFICATION-STANDARD.md')
     $missingDocs = $requiredDocs | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
     $junkNames = @('nul', '.DS_Store', 'Thumbs.db', 'Desktop.ini')
     $junkPaths = @(
@@ -264,7 +296,7 @@ try {
     $scanFiles = Get-ChildItem -Path $RepoRoot -Recurse -File -ErrorAction SilentlyContinue |
         Where-Object {
             $_.FullName -notmatch '\\(node_modules|dist|coverage|logs|playwright-report|test-results|venv|\.venv|0\.dev-matrix\\(test-reports|archive|backup)|\.git)\\' -and
-            $_.Extension -in @('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.json', '.yml', '.yaml', '.toml', '.ini', '.env', '.ps1', '.sh', '.bat')
+            $_.Extension -in @('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.json', '.yml', '.yaml', '.toml', '.ini', '.env', '.ps1', '.sh', '.bat', '.md', '.html', '.css', '.sql', '.dockerfile')
         }
     $conflictHit = $scanFiles | Select-String -Pattern '^(<{7}|={7}|>{7})( .*)?$' | Select-Object -First 1
     $treeClean = ($missingDocs.Count -eq 0) -and ($junkPaths.Count -eq 0) -and ($null -eq $conflictHit)
@@ -277,6 +309,20 @@ try {
         Write-Gate 'Tree hygiene' 'FAIL' ("junk artifact: " + $junkPaths[0])
     } else {
         Write-Gate 'Tree hygiene' 'FAIL' ("merge marker: " + $conflictHit.Path + ':' + $conflictHit.LineNumber)
+    }
+
+    # Anti-hallucination: STATE.md freshness
+    $stateFile = Join-Path $RepoRoot '0.dev-matrix\STATE.md'
+    if (Test-Path $stateFile) {
+        $stateLastWrite = (Get-Item $stateFile).LastWriteTime
+        $staleDays = ((Get-Date) - $stateLastWrite).Days
+        if ($staleDays -gt 7) {
+            Write-Gate 'State freshness' 'FAIL' "STATE.md last modified $staleDays days ago (stale >7 days)"
+        } else {
+            Write-Gate 'State freshness' 'PASS' "STATE.md modified $staleDays day(s) ago"
+        }
+    } else {
+        Write-Gate 'State freshness' 'FAIL' 'STATE.md not found'
     }
 } finally {
     Pop-Location
