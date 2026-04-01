@@ -29,7 +29,8 @@ app.use(express.static(DIST_DIR, {
 }));
 
 // ── 3. SPA fallback — serve index.html for all unmatched routes ───────────────
-app.get('*', (req, res) => {
+// Express 5 requires a named wildcard instead of the legacy "*" token.
+app.get('/{*splat}', (req, res) => {
   const indexPath = path.join(DIST_DIR, 'index.html');
   if (!fs.existsSync(indexPath)) {
     return res.status(503).send('App not built. Run npm run build.');
