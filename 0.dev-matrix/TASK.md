@@ -9,14 +9,15 @@
 
 > **Repo-side preflight/security work is green, but launch-critical product work is still pending.**
 > **Evidence:** `npm run launch-check` passed 8/8 gates on 2026-03-31 (build, audits, Python checks, git cleanliness, tree hygiene).
-> **2026-04-01 update:** production runtime was restored on Heroku and public-route smoke passed, but full frontend/authenticated testing, packing improvements, and owner external actions still block honest launch completion.
+> **2026-04-01 update:** production runtime was restored on Heroku and public-route smoke passed, but authenticated launch smoke now proves the configured Supabase auth host is unreachable from production-facing checks. Launch is blocked until auth infrastructure is corrected and re-tested.
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
-| T-124 | Frontend testing pass for key user-facing pages | P0 | 🧪 Product | 🟡 Public smoke automated and passing; authenticated/full-flow still pending |
+| T-124 | Frontend testing pass for key user-facing pages | P0 | 🧪 Product | 🟡 Public smoke 7/7 and broader frontend smoke 12/13 pass; authenticated/full-flow still blocked by unreachable auth backend |
 | T-125 | Improve advanced 3D bin-packing algorithm quality | P0 | 🧠 Product | 🟡 Pending next session |
-| T-126 | Move packing algorithm execution to client side where required UX/perf needs it | P0 | 🏗️ Architecture | 🟡 Pending next session |
-| T-127 | Test all major paths and end-to-end flows, not just preflight gates | P0 | 🧪 Product | 🟡 Pending next session |
+| T-126 | Move packing algorithm execution to client side where required UX/perf needs it | P0 | 🏗️ Architecture | 🟡 Web Worker path is already live; still needs stronger regression/perf evidence |
+| T-127 | Test all major paths and end-to-end flows, not just preflight gates | P0 | 🧪 Product | 🟡 Frontend launch smoke added; authenticated end-to-end still blocked by auth backend reachability |
+| T-128 | Restore live Supabase auth/backend reachability for production frontend | P0 | 🔑 External | 🔴 Blocking: `jbxncejtcbpcronndqlx.supabase.co` DNS/auth health failing in 2026-04-01 smoke |
 | T-110 | Production Razorpay keys + test | P0 | 🔑 External | 🟡 Owner: set env vars |
 | T-111 | Google OAuth production credentials verification | P0 | 🔑 External | 🟡 Owner: Supabase + Google Console |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | 🔑 External | 🟡 Owner: Supabase dashboard |

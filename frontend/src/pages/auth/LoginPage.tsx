@@ -81,7 +81,9 @@ export default function LoginPage() {
     },
     onError: (error: any) => {
       console.error('[LoginPage] OTP error:', error)
-      const errorMsg = language === 'en' ? 'Failed to send OTP. Please try again.' : 'OTP भेजने में विफल। कृपया पुनः प्रयास करें।'
+      const errorMsg = language === 'en'
+        ? (error instanceof Error ? error.message : 'Failed to send OTP. Please try again.')
+        : 'OTP भेजने में विफल। कृपया पुनः प्रयास करें।'
       toast.error(errorMsg)
     }
   })

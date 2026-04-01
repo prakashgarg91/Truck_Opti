@@ -27,6 +27,7 @@
 
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
+| `SUPABASE-AUTH-DNS-20260401` | 🔴 BLOCKING | Live/frontend auth smoke failed because `jbxncejtcbpcronndqlx.supabase.co` did not resolve and `/auth/v1/otp` failed with `ERR_NAME_NOT_RESOLVED` | MANAGER + OWNER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
 | ~~HEROKU-STALE~~ | ✅ RESOLVED | Deployed v22 (slug 337 MB). Added .slugignore; slug was 843 MB. | SONNET-001 (auto) |
 | ~~SUPABASE-SITE-URL~~ | ✅ RESOLVED | Site URL updated to https://www.truckopti.in via Management API. Allow-list: www+apex+Heroku. | SONNET-001 (auto) |
@@ -74,6 +75,22 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-01] MANAGER-ADMIN: 🔴 LIVE AUTH BACKEND BLOCKER CONFIRMED
+
+                             NEW EVIDENCE:
+                             - `npm run test:frontend-smoke` added and run
+                             - result: 12/13 checks passed
+                             - failing check: auth-service reachability
+                             - direct DNS lookup failed for `jbxncejtcbpcronndqlx.supabase.co`
+                             - live browser login reproduced `/auth/v1/otp` failure with `ERR_NAME_NOT_RESOLVED`
+
+                             PRODUCT IMPACT:
+                             - public routes are healthy
+                             - protected-route redirect behavior is healthy
+                             - authentication is not launch-ready
+                             - launch status must remain blocked until Supabase host reachability is restored
+                             - authenticated smoke cannot be honestly completed before that fix
+──────────────────────────────────────────────────────────────────────────────────────────
 [2026-04-01] MANAGER-ADMIN: ✅ PRODUCTION RUNTIME RESTORED + PUBLIC ROUTE SMOKE VERIFIED
 
                              LIVE INCIDENT:

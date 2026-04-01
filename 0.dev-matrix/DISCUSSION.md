@@ -89,6 +89,24 @@
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-01] MANAGER-ADMIN:
+  Launch status reclassified after broader frontend smoke.
+
+  NEW VERIFIED WORK:
+  - Added `npm run test:frontend-smoke`
+  - verifies public routes, unauth redirects, and auth backend reachability
+  - latest result: 12/13 checks PASS
+  - auth-service check FAIL:
+    `jbxncejtcbpcronndqlx.supabase.co` did not resolve
+    live `/login` submission failed on `/auth/v1/otp` with `ERR_NAME_NOT_RESOLVED`
+  - auth UX hardened so OTP flows now show a safe, specific service-unreachable message
+
+  JUDGMENT:
+  - public frontend is healthy
+  - launch is now blocked by live auth infrastructure, not just "pending authenticated testing"
+  - do not call authentication complete until Supabase host reachability is restored and smoke re-run
+
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+[2026-04-01] MANAGER-ADMIN:
   Production launch blocker investigated and partially cleared.
 
   NEW VERIFIED WORK:

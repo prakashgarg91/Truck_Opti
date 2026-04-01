@@ -14,6 +14,23 @@ const getAuthErrorMessage = (error: any, fallback: string): string => {
   return error?.message || fallback
 }
 
+const getSafeAuthFailureMessage = (error: unknown, fallback: string): string => {
+  const message = error instanceof Error ? error.message : String(error ?? '')
+  const lowered = message.toLowerCase()
+
+  if (
+    lowered.includes('failed to fetch') ||
+    lowered.includes('networkerror') ||
+    lowered.includes('network request failed') ||
+    lowered.includes('err_name_not_resolved') ||
+    lowered.includes('load failed')
+  ) {
+    return 'Authentication service is currently unreachable. Please try again shortly or use Google sign-in if available.'
+  }
+
+  return fallback
+}
+
 // ============= TYPES =============
 export interface Truck {
   id: string
@@ -429,68 +446,113 @@ export const packingSupabaseApi = {
 // ============= AUTH API (Supabase Auth) =============
 export const authSupabaseApi = {
   async signInWithPhone(phone: string, channel: 'sms' | 'whatsapp' = 'sms'): Promise<void> {
-    const { error } = await supabase.auth.signInWithOtp({
-      phone,
-      options: {
-        channel
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone,
+        options: {
+          channel
+        }
+      })
+      if (error) {
+        // Provide user-friendly message when phone/SMS provider is not configured
+        if (
+          error.message?.toLowerCase().includes('provider') ||
+          error.message?.toLowerCase().includes('sms') ||
+          (error as any).code === 'phone_provider_disabled' ||
+          error.message?.toLowerCase().includes('not set up') ||
+          error.message?.toLowerCase().includes('phone sign')
+        ) {
+          throw new Error(
+            'Phone OTP is currently unavailable. Please use Email OTP or Google sign-in instead.'
+          )
+        }
+        throw error
       }
-    })
-    if (error) {
-      // Provide user-friendly message when phone/SMS provider is not configured
-      if (
-        error.message?.toLowerCase().includes('provider') ||
-        error.message?.toLowerCase().includes('sms') ||
-        (error as any).code === 'phone_provider_disabled' ||
-        error.message?.toLowerCase().includes('not set up') ||
-        error.message?.toLowerCase().includes('phone sign')
-      ) {
-        throw new Error(
-          'Phone OTP is currently unavailable. Please use Email OTP or Google sign-in instead.'
+    } catch (error) {
+      throw new Error(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to start phone verification right now. Please try again later or use another sign-in method.'
         )
-      }
-      throw error
+      )
     }
   },
 
   async signInWithEmail(email: string): Promise<void> {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false // Login only - don't create new users
-      }
-    })
-    if (error) throw new Error(getAuthErrorMessage(error, 'Failed to send email OTP'))
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false // Login only - don't create new users
+        }
+      })
+      if (error) throw new Error(getAuthErrorMessage(error, 'Failed to send email OTP'))
+    } catch (error) {
+      throw new Error(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to send email OTP right now. Please try again later or use Google sign-in.'
+        )
+      )
+    }
   },
 
   async signUpWithEmail(email: string, name?: string): Promise<void> {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        data: name ? { full_name: name, name } : undefined
-      }
-    })
-    if (error) throw new Error(getAuthErrorMessage(error, 'Failed to create account'))
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          data: name ? { full_name: name, name } : undefined
+        }
+      })
+      if (error) throw new Error(getAuthErrorMessage(error, 'Failed to create account'))
+    } catch (error) {
+      throw new Error(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to start email signup right now. Please try again later or use Google sign-up.'
+        )
+      )
+    }
   },
 
   async verifyPhoneOtp(phone: string, token: string) {
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone,
-      token,
-      type: 'sms'
-    })
-    if (error) throw error
-    return data
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone,
+        token,
+        type: 'sms'
+      })
+      if (error) throw error
+      return data
+    } catch (error) {
+      throw new Error(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to verify phone OTP right now. Please request a fresh code or try another sign-in method.'
+        )
+      )
+    }
   },
 
   async verifyEmailOtp(email: string, token: string) {
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: 'email'
-    })
-    if (error) throw error
-    return data
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email'
+      })
+      if (error) throw error
+      return data
+    } catch (error) {
+      throw new Error(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to verify email OTP right now. Please request a fresh code or try Google sign-in.'
+        )
+      )
+    }
   },
 
   async signInWithGoogle() {

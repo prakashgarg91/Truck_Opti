@@ -7,6 +7,7 @@
     "start": "node server.js",
     "test:live-buttons": "node scripts/public_frontend_smoke.mjs",
     "test:public-smoke": "node scripts/public_frontend_smoke.mjs",
+    "test:frontend-smoke": "node scripts/frontend_launch_smoke.mjs",
     "launch-check": "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",
     "close-day": "powershell -ExecutionPolicy Bypass -File scripts/close-day.ps1"
   },

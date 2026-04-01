@@ -58,6 +58,22 @@ Writes evidence to `logs/public_frontend_smoke_report.json`.
 
 **Latest evidence:** 2026-04-01 manager verification passed 7/7 public routes with 0 app errors, 0 console errors, and 0 failed HTTP responses.
 
+### Step 2c: Frontend Launch Smoke — `npm run test:frontend-smoke`
+
+```powershell
+npm run test:frontend-smoke
+```
+
+Verifies:
+
+- the 7 public routes above
+- protected-route redirects for unauthenticated users
+- auth backend reachability for the configured Supabase public URL
+
+Writes evidence to `logs/frontend_launch_smoke_report.json`.
+
+**Latest evidence:** 2026-04-01 manager verification passed 12/13 checks and failed the auth-service check because `jbxncejtcbpcronndqlx.supabase.co` could not be resolved and `/auth/v1/otp` failed with `ERR_NAME_NOT_RESOLVED` from the live login page.
+
 ### Step 3: Supabase Data Integrity (run after key user flows)
 
 ```sql
@@ -101,6 +117,7 @@ Verify the key unauthenticated routes render without `Application Error`:
 ## PHASE B — AUTHENTICATED SMOKE (Requires Real Credentials + Production Config)
 
 > **⚠️ HARD GATE:** This phase **cannot be marked complete** without:
+> 0. A reachable production auth backend for the configured Supabase URL
 > 1. Real Supabase project with production RLS policies applied (`supabase db push` complete)
 > 2. Production Razorpay live keys configured (`VITE_RAZORPAY_KEY_ID` in Heroku)
 > 3. Google OAuth production credentials in Supabase Auth → Providers → Google

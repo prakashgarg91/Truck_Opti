@@ -51,8 +51,12 @@ export default function SignupPage() {
       toast.success('Verification code sent to your email 📧', { duration: 3000 })
       navigate('/otp', { state: { channel: 'email', contact: email, isSignup: true } })
     },
-    onError: () => {
-      toast.error(language === 'en' ? 'Failed to create account' : 'खाता बनाने में विफल')
+    onError: (error: unknown) => {
+      toast.error(
+        language === 'en'
+          ? (error instanceof Error ? error.message : 'Failed to create account')
+          : 'खाता बनाने में विफल'
+      )
     }
   })
 

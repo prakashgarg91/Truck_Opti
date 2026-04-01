@@ -16,16 +16,16 @@
 | 1.5 | 5 realtime tables | ✅ | — |
 | 1.6 | Seed data (8 trucks, 4 plans) | ✅ | — |
 
-## Phase 2: Authentication ✅ COMPLETE
+## Phase 2: Authentication 🟡 IMPLEMENTED, BUT LIVE BACKEND BLOCKED
 
 | # | Item | Status | Commit |
 |---|------|--------|--------|
-| 2.1 | OTP login (SMS/WhatsApp/Telegram) | ✅ | — |
-| 2.2 | Google OAuth | ✅ | `53827487` |
+| 2.1 | OTP login (SMS/WhatsApp/Telegram) | ❌ | Live auth backend unreachable in 2026-04-01 smoke |
+| 2.2 | Google OAuth | ❌ | Production credentials still owner-side and backend reachability unresolved |
 | 2.3 | Auth callback page | ✅ | `53827487` |
 | 2.4 | Zustand auth store | ✅ | `53827487` |
 | 2.5 | Protected routes | ✅ | `53827487` |
-| 2.6 | User profile sync to DB | ✅ | `53827487` |
+| 2.6 | User profile sync to DB | 🟡 | Implemented, but cannot be live-verified until auth is restored |
 
 ## Phase 3: Frontend Data Wiring ✅ COMPLETE
 
@@ -55,7 +55,7 @@
 | # | Item | Status | Depends on |
 |---|------|--------|----------|
 | 5.1 | Supabase integration test script | ✅ 42/42 PASS | BATCH7 T-105 |
-| 5.2 | Browser smoke test (14 pages) | 🟡 Public routes verified on 2026-04-01; authenticated/browser-full flow still pending | Requires real accounts for full completion |
+| 5.2 | Browser smoke test (14 pages) | 🟡 Public routes verified and frontend launch smoke added on 2026-04-01; authenticated/browser-full flow blocked by auth backend outage | Requires auth fix + real accounts for full completion |
 | 5.3 | TypeScript 0 errors | ✅ | `npx tsc --noEmit` → 0 errors |
 | 5.4 | Vite build succeeds | ✅ | Built in 6.57s |
 | 5.5 | RLS policy verification | ✅ | Validated in test script |
@@ -67,6 +67,7 @@
 |---|------|--------|----------|
 | 6.1 | Razorpay production keys | ❌ | P0 — blocks payments, requires owner action |
 | 6.2 | Google OAuth production credentials | ❌ | P0 — blocks login, requires owner action |
+| 6.2b | Live Supabase auth/backend reachability | ❌ | P0 — blocking; configured host failed DNS/auth health on 2026-04-01 |
 | 6.3 | Google Maps API key | ❌ | P1 — Leaflet fallback works |
 | 6.4 | Custom domain + SSL | ✅ | P0 — `truckopti.in` + `www.truckopti.in` live |
 | 6.5 | PWA icons (missing from public/) | ✅ | BATCH9 verified — pwa-192x192.png, pwa-512x512.png, apple-touch-icon.png exist |
@@ -91,12 +92,12 @@
 | Phase | Total | Done | Remaining |
 |-------|-------|------|-----------|
 | 1. Infrastructure | 6 | 6 | 0 |
-| 2. Authentication | 6 | 6 | 0 |
+| 2. Authentication | 6 | 3 | 3 |
 | 3. Frontend Wiring | 6 | 6 | 0 |
 | 4. Subscriptions | 7 | 7 | 0 |
 | 5. Testing | 6 | 5 | 1 |
-| 6. Production | 18 | 12 | 6 |
-| **TOTAL** | **49** | **42** | **7** |
+| 6. Production | 19 | 12 | 7 |
+| **TOTAL** | **50** | **39** | **11** |
 
 ---
 
