@@ -211,6 +211,98 @@ async function collectAuthFallbackResult(browser) {
   }
 }
 
+async function collectDriverRegisterWizardResult(browser) {
+  const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  const page = await context.newPage();
+  const signals = attachSignals(page);
+
+  try {
+    await resetSession(page, context);
+    await page.goto(`${BASE_URL}/driver/register?fresh=${Date.now()}`, { waitUntil: 'networkidle', timeout: 45000 });
+
+    let reachedVehicleDetails = false;
+    let reachedPaymentDetails = false;
+
+    await page.getByPlaceholder('As on Aadhaar card').fill('Launch Driver');
+    await page.getByPlaceholder('10-digit number').fill('9876543210');
+    await page.getByPlaceholder('e.g. Mumbai').fill('Mumbai');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await page.getByText('Vehicle Details').waitFor({ timeout: 10000 });
+    reachedVehicleDetails = true;
+    await page.locator('select').selectOption('tata_407');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await page.getByText('Payment Details').waitFor({ timeout: 10000 });
+    reachedPaymentDetails = true;
+
+    return {
+      kind: 'driver-register-wizard',
+      path: '/driver/register',
+      finalUrl: page.url(),
+      title: await page.title(),
+      passed:
+        reachedVehicleDetails &&
+        reachedPaymentDetails &&
+        signals.consoleErrors.length === 0 &&
+        signals.pageErrors.length === 0 &&
+        signals.failedResponses.length === 0,
+      consoleErrors: signals.consoleErrors,
+      pageErrors: signals.pageErrors,
+      failedResponses: signals.failedResponses,
+    };
+  } finally {
+    await context.close();
+  }
+}
+
+async function collectAgencyRegisterWizardResult(browser) {
+  const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  const page = await context.newPage();
+  const signals = attachSignals(page);
+
+  try {
+    await resetSession(page, context);
+    await page.goto(`${BASE_URL}/agency/register?fresh=${Date.now()}`, { waitUntil: 'networkidle', timeout: 45000 });
+
+    let reachedContactAddress = false;
+    let reachedBankDetails = false;
+
+    await page.getByPlaceholder('Sharma Transport Co.').fill('Launch Agency Logistics');
+    await page.getByPlaceholder('TR/2024/12345').fill('TR/2026/55555');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await page.getByText('Contact & Address').waitFor({ timeout: 10000 });
+    reachedContactAddress = true;
+    await page.getByPlaceholder('Ramesh Sharma').fill('Launch Manager');
+    await page.getByPlaceholder('9876543210').fill('9876543210');
+    await page.getByPlaceholder('Mumbai', { exact: true }).fill('Mumbai');
+    await page.locator('select').selectOption('Maharashtra');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await page.getByText('Bank Details').waitFor({ timeout: 10000 });
+    reachedBankDetails = true;
+
+    return {
+      kind: 'agency-register-wizard',
+      path: '/agency/register',
+      finalUrl: page.url(),
+      title: await page.title(),
+      passed:
+        reachedContactAddress &&
+        reachedBankDetails &&
+        signals.consoleErrors.length === 0 &&
+        signals.pageErrors.length === 0 &&
+        signals.failedResponses.length === 0,
+      consoleErrors: signals.consoleErrors,
+      pageErrors: signals.pageErrors,
+      failedResponses: signals.failedResponses,
+    };
+  } finally {
+    await context.close();
+  }
+}
+
 async function collectAuthServiceHealth() {
   const hostname = getSupabaseHostname();
   const result = {
@@ -268,6 +360,8 @@ async function main() {
 
     results.push(await collectContactFallbackResult(browser));
     results.push(await collectAuthFallbackResult(browser));
+    results.push(await collectDriverRegisterWizardResult(browser));
+    results.push(await collectAgencyRegisterWizardResult(browser));
     results.push(await collectAuthServiceHealth());
 
     const passedChecks = results.filter((result) => result.passed).length;

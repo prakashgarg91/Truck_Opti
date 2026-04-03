@@ -93,8 +93,8 @@
 
   NEW VERIFIED WORK:
   - `npm run launch-check`: PASS (14/14 checks)
-  - `npm run test:frontend-smoke`: PASS (14/15), only raw `auth-service` still failing
-  - new passing checks cover contact degraded-mode fallback and login degraded-mode auth fallback without creating live backend rows or OTPs
+  - `npm run test:frontend-smoke`: PASS (16/17), only raw `auth-service` still failing
+  - new passing checks cover contact degraded-mode fallback, login degraded-mode auth fallback, and both public onboarding wizards without creating live backend rows or OTPs
   - `npm run test:prod-config`: PASS (2/6), still failing on dead Supabase host, Razorpay test key, missing Sentry DSN, and PhonePe preprod
 
   JUDGMENT:

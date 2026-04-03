@@ -98,11 +98,13 @@ Verifies:
 - protected-route redirects for unauthenticated users
 - contact-form graceful fallback when the backend is unreachable (network intercepted in-browser, no live row created)
 - login graceful fallback when OTP transport is unreachable (network intercepted in-browser, no live OTP sent)
+- driver registration wizard progression through `Vehicle Details` -> `Payment Details` without submitting a live application
+- agency registration wizard progression through `Contact & Address` -> `Bank Details` without submitting a live application
 - auth backend reachability for the configured Supabase public URL
 
 Writes evidence to `logs/frontend_launch_smoke_report.json`.
 
-**Latest evidence:** 2026-04-03 manager verification passed 14/15 checks and failed only the auth-service reachability check. The new passing checks prove the live frontend now degrades gracefully when backend-dependent actions fail: `/contact` shows `Support is temporarily unreachable` with `Retry send` and `Email support`, and `/login` shows `Authentication service is currently unreachable...` when OTP transport is blocked in-browser. The single remaining failing check is still the real external blocker: `jbxncejtcbpcronndqlx.supabase.co` could not be resolved, and this was previously rechecked against Google Public DNS (`8.8.8.8`), which also returned NXDOMAIN.
+**Latest evidence:** 2026-04-03 manager verification passed 16/17 checks and failed only the auth-service reachability check. The passing checks now prove the live frontend degrades gracefully when backend-dependent actions fail and that the public onboarding wizards still progress: `/contact` shows `Support is temporarily unreachable` with `Retry send` and `Email support`, `/login` shows `Authentication service is currently unreachable...` when OTP transport is blocked in-browser, `/driver/register` advances through `Vehicle Details` to `Payment Details`, and `/agency/register` advances through `Contact & Address` to `Bank Details` without submitting live records. The single remaining failing check is still the real external blocker: `jbxncejtcbpcronndqlx.supabase.co` could not be resolved, and this was previously rechecked against Google Public DNS (`8.8.8.8`), which also returned NXDOMAIN.
 
 ### Step 2d: Production Config Audit — `npm run test:prod-config`
 
