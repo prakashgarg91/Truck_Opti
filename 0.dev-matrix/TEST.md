@@ -74,6 +74,29 @@ Writes evidence to `logs/frontend_launch_smoke_report.json`.
 
 **Latest evidence:** 2026-04-01 manager verification passed 12/13 checks and failed the auth-service check because `jbxncejtcbpcronndqlx.supabase.co` could not be resolved and `/auth/v1/otp` failed with `ERR_NAME_NOT_RESOLVED` from the live login page. This was rechecked against Google Public DNS (`8.8.8.8`), which also returned NXDOMAIN, so the failure is not limited to the local network resolver.
 
+### Step 2d: Production Config Audit — `npm run test:prod-config`
+
+```powershell
+npm run test:prod-config
+```
+
+Verifies the currently deployed Heroku production config for launch readiness:
+
+- `VITE_APP_URL` is present
+- `VITE_SUPABASE_URL` is present and DNS-resolvable
+- `VITE_AUTH_EMAIL_OTP_ENABLED=true`
+- Razorpay is using a live key and non-placeholder secret
+- `VITE_SENTRY_DSN` is set
+- PhonePe is not pointed at sandbox/preprod
+
+Writes evidence to `logs/production_config_audit.json`.
+
+**Latest evidence:** 2026-04-03 manager verification passed 2/6 checks and failed 4/6:
+- Supabase auth backend DNS lookup failed for `jbxncejtcbpcronndqlx.supabase.co`
+- Razorpay still uses `rzp_test_*`
+- `VITE_SENTRY_DSN` is missing
+- PhonePe is still configured for `api-preprod.phonepe.com/apis/pg-sandbox`
+
 ### Step 3: Supabase Data Integrity (run after key user flows)
 
 ```sql
@@ -227,6 +250,7 @@ Login as admin. Auto-redirected to `/admin`.
 | 1 | Launch preflight | Any dev | 8/8 PASS | 2026-03-31 | No |
 | 2 | Frontend build | Any dev | PASS | 2026-03-31 | No |
 | 2b | Public frontend smoke | Manager | 7/7 PASS | 2026-04-01 | No |
+| 2d | Production config audit | Manager | 2/6 PASS | 2026-04-03 | Yes |
 | 4b | Public route smoke | Manager | PASS (7 routes, fresh bundle) | 2026-04-01 | No |
 | 5 | Auth smoke | Owner | — | — | Yes (Twilio/OAuth) |
 | 6 | Customer portal | Owner | — | — | Yes (auth) |
@@ -259,4 +283,4 @@ Before every push, confirm:
 
 ---
 
-*Last updated: 2026-04-01 | MANAGER-ADMIN | Production runtime restored; public-route smoke verified; authenticated Phase B still pending owner credentials*
+*Last updated: 2026-04-03 | MANAGER-ADMIN | Production config audit added; live auth and payment/observability config still block launch*

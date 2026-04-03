@@ -28,6 +28,7 @@
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
 | `SUPABASE-AUTH-DNS-20260401` | 🔴 BLOCKING | Live/frontend auth smoke failed because `jbxncejtcbpcronndqlx.supabase.co` did not resolve and `/auth/v1/otp` failed with `ERR_NAME_NOT_RESOLVED` | MANAGER + OWNER |
+| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit passed 2/6 only: Razorpay test key, missing `VITE_SENTRY_DSN`, and PhonePe sandbox/preprod still configured | MANAGER + OWNER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
 | ~~HEROKU-STALE~~ | ✅ RESOLVED | Deployed v22 (slug 337 MB). Added .slugignore; slug was 843 MB. | SONNET-001 (auto) |
 | ~~SUPABASE-SITE-URL~~ | ✅ RESOLVED | Site URL updated to https://www.truckopti.in via Management API. Allow-list: www+apex+Heroku. | SONNET-001 (auto) |
@@ -75,6 +76,23 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-03] MANAGER-ADMIN: 🔴 PRODUCTION CONFIG AUDIT CONFIRMED LIVE LAUNCH BLOCKERS
+
+                             NEW EVIDENCE:
+                             - added `npm run test:prod-config`
+                             - fixed Windows-compatible Heroku CLI execution in the audit script
+                             - latest result: 2/6 checks passed
+                             - failed checks:
+                               1. Supabase auth backend DNS failed
+                               2. Razorpay still uses `rzp_test_*`
+                               3. `VITE_SENTRY_DSN` missing
+                               4. PhonePe still points at sandbox/preprod
+
+                             BUSINESS IMPACT:
+                             - public frontend remains healthy
+                             - launch is blocked by live production configuration, not a hidden frontend-only bug
+                             - owner/dashboard corrections are now the critical path before authenticated smoke can finish honestly
+──────────────────────────────────────────────────────────────────────────────────────────
 [2026-04-01] MANAGER-ADMIN: 🔴 LIVE AUTH BACKEND BLOCKER CONFIRMED
 
                              NEW EVIDENCE:
@@ -1082,7 +1100,7 @@ Remove your row when done editing
 | **Type** | Complex (SaaS Logistics Platform) |
 | **Version** | 2.0.0 |
 | **Tests** | Live interaction + build checks passing |
-| **Status** | 🟡 CODE COMPLETE — ALL IN-REPO WORK DONE — 5 EXTERNAL BLOCKERS REMAIN |
+| **Status** | 🔴 LAUNCH BLOCKED — PUBLIC FRONTEND GREEN, BUT LIVE AUTH/PAYMENTS/OBSERVABILITY CONFIG IS NOT READY |
 
 ---
 

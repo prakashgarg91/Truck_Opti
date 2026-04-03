@@ -7,9 +7,9 @@
 
 ## 🎯 ACTIVE TASKS
 
-> **Repo-side preflight/security work is green, but launch-critical product work is still pending.**
-> **Evidence:** `npm run launch-check` passed 8/8 gates on 2026-03-31 (build, audits, Python checks, git cleanliness, tree hygiene).
-> **2026-04-01 update:** production runtime was restored on Heroku and public-route smoke passed, but authenticated launch smoke now proves the configured Supabase auth host is unreachable from production-facing checks. Launch is blocked until auth infrastructure is corrected and re-tested.
+> **Repo-side preflight/security work is green and public frontend smoke is green, but launch is still blocked by live production configuration.**
+> **Evidence:** `npm run launch-check` passed 8/8 gates on 2026-03-31; `npm run test:frontend-smoke` passed 12/13 on 2026-04-01; `npm run test:prod-config` passed 2/6 on 2026-04-03.
+> **2026-04-03 update:** the deployed frontend is reachable, but live production checks still prove the configured Supabase auth host is unreachable, Razorpay is still on test keys, `VITE_SENTRY_DSN` is missing, and PhonePe is still pointed at sandbox/preprod. Launch remains blocked until those production dependencies are corrected and re-tested.
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
@@ -17,14 +17,15 @@
 | T-125 | Improve advanced 3D bin-packing algorithm quality | P0 | 🧠 Product | 🟡 Pending next session |
 | T-126 | Move packing algorithm execution to client side where required UX/perf needs it | P0 | 🏗️ Architecture | 🟡 Web Worker path is already live; still needs stronger regression/perf evidence |
 | T-127 | Test all major paths and end-to-end flows, not just preflight gates | P0 | 🧪 Product | 🟡 Frontend launch smoke added; authenticated end-to-end still blocked by auth backend reachability |
-| T-128 | Restore live Supabase auth/backend reachability for production frontend | P0 | 🔑 External | 🔴 Blocking: `jbxncejtcbpcronndqlx.supabase.co` DNS/auth health failing in 2026-04-01 smoke |
-| T-110 | Production Razorpay keys + test | P0 | 🔑 External | 🟡 Owner: set env vars |
+| T-128 | Restore live Supabase auth/backend reachability for production frontend | P0 | 🔑 External | 🔴 Blocking: `jbxncejtcbpcronndqlx.supabase.co` failed live smoke on 2026-04-01 and prod-config DNS audit on 2026-04-03 |
+| T-110 | Production Razorpay keys + test | P0 | 🔑 External | 🔴 Blocking: Heroku still has `rzp_test_*` and placeholder secret in 2026-04-03 prod-config audit |
 | T-111 | Google OAuth production credentials verification | P0 | 🔑 External | 🟡 Owner: Supabase + Google Console |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | 🔑 External | 🟡 Owner: Supabase dashboard |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | 🧪 Manual | 🟡 Owner: browser test with real account |
 | T-115 | Verify production DB backup / PITR setup | P1 | 🔑 External | 🟡 Owner: Supabase dashboard |
-| T-116 | Sentry DSN configuration | P1 | 🔑 External | 🟡 Owner: heroku config:set VITE_SENTRY_DSN |
+| T-116 | Sentry DSN configuration | P1 | 🔑 External | 🔴 Blocking for observability: `VITE_SENTRY_DSN` missing in 2026-04-03 prod-config audit |
 | T-117 | Supabase db push (6 pending migrations) | P0 | 🔑 External | 🟡 Owner: run `supabase db push` |
+| T-129 | PhonePe production configuration | P1 | 🔑 External | 🔴 Blocking if PhonePe remains enabled: Heroku still points at `api-preprod.phonepe.com/apis/pg-sandbox` |
 | ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T3~~ | ~~Driver GPS broadcast on trip~~ | ~~P2~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
@@ -93,7 +94,7 @@
 
 ## 📝 TASK QUEUE
 
-> **All repo-side code tasks are COMPLETE and preflight-verified. Remaining items require external owner action.**
+> **All repo-side code tasks are COMPLETE and preflight-verified. Remaining launch blockers are now concrete external production-config and owner-action items.**
 > **See `0.dev-matrix/OWNER_ACTION_CHECKLIST.md` for precise instructions.**
 
 | ID | Task | Priority | Nature | Owner Action |
@@ -103,6 +104,7 @@
 | T-111 | Google OAuth production credentials | P0 | External | Supabase dashboard + Google Console |
 | T-113 | SMS/WhatsApp OTP via Twilio | P1 | External | Supabase Auth → Phone Providers |
 | T-116 | Sentry DSN configuration | P1 | External | `heroku config:set VITE_SENTRY_DSN=...` |
+| T-129 | PhonePe production configuration | P1 | External | Replace sandbox/preprod env values or disable PhonePe before launch |
 | T-115 | Verify production DB backup / PITR | P1 | External | Supabase dashboard → Backups |
 | T-114 | Authenticated smoke test (all pages) | P1 | Manual | Browser test with real account |
 | T-107 | Google Maps API key (optional) | P2 | External | Leaflet fallback works; nice-to-have |
@@ -343,4 +345,4 @@ Move back to QUEUE, not delete.
 
 ---
 
-**Last Updated:** 2026-03-31 | **Framework Version:** 2.0
+**Last Updated:** 2026-04-03 | **Framework Version:** 2.0

@@ -88,6 +88,27 @@
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-03] MANAGER-ADMIN:
+  Production config was audited directly from Heroku to separate repo truth from owner/dashboard truth.
+
+  NEW VERIFIED WORK:
+  - Added `npm run test:prod-config`
+  - fixed Windows compatibility in `scripts/production_config_audit.mjs`
+  - latest run wrote `logs/production_config_audit.json`
+  - result: 2/6 checks PASS, 4/6 FAIL
+
+  FAILED CHECKS:
+  - Supabase auth backend DNS still fails for `jbxncejtcbpcronndqlx.supabase.co`
+  - Razorpay still uses `rzp_test_*`
+  - `VITE_SENTRY_DSN` is missing
+  - PhonePe still targets `api-preprod.phonepe.com/apis/pg-sandbox`
+
+  JUDGMENT:
+  - public frontend remains healthy
+  - launch is blocked by live external production config, not by an unresolved frontend code path
+  - next honest step is owner/dashboard correction, then rerun `npm run test:prod-config` and authenticated smoke
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-01] MANAGER-ADMIN:
   Launch status reclassified after broader frontend smoke.
 
@@ -250,4 +271,4 @@ git push heroku main     # Heroku second
 
 ---
 
-*Last updated: 2026-03-31 | Manager admin sync*
+*Last updated: 2026-04-03 | Manager admin sync*
