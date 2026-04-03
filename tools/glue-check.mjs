@@ -144,11 +144,42 @@ if (hardGaps.length === 0 && coupling.length === 0 && stubs.length === 0) {
 }
 
 const reportDir = path.join(ROOT, '0.dev-matrix/test-reports');
+const reportPath = path.join(reportDir, 'glue-check-report.json');
 if (!fs.existsSync(reportDir)) fs.mkdirSync(reportDir, { recursive: true });
-fs.writeFileSync(path.join(reportDir, 'glue-check-report.json'), JSON.stringify({
+
+const nextReport = {
   generatedAt: new Date().toISOString(),
-  summary: { hardGaps: hardGaps.length, warnings: allGaps.length - hardGaps.length + coupling.length, sealed: hardGaps.length === 0 },
+  summary: {
+    hardGaps: hardGaps.length,
+    warnings: allGaps.length - hardGaps.length + coupling.length,
+    sealed: hardGaps.length === 0,
+  },
   details: [...allGaps, ...coupling],
-}, null, 2));
+};
+
+let shouldWriteReport = true;
+if (fs.existsSync(reportPath)) {
+  try {
+    const previousReport = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+    const previousStable = JSON.stringify({
+      summary: previousReport.summary ?? null,
+      details: previousReport.details ?? null,
+    });
+    const nextStable = JSON.stringify({
+      summary: nextReport.summary,
+      details: nextReport.details,
+    });
+
+    if (previousStable === nextStable) {
+      shouldWriteReport = false;
+    }
+  } catch {
+    // If the existing report is unreadable, overwrite it with the fresh result.
+  }
+}
+
+if (shouldWriteReport) {
+  fs.writeFileSync(reportPath, JSON.stringify(nextReport, null, 2));
+}
 
 process.exit(hardGaps.length > 0 ? 1 : 0);
