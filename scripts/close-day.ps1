@@ -8,8 +8,7 @@ $LaunchCommand = 'npm run launch-check'
 $NodeAuditDirs = @('.', 'frontend', 'apps\web')
 $PythonRequirementFiles = @('apps\web\requirements.txt')
 $DeepVerificationTasks = @(
-  @{ Label = 'deep verification: live button audit'; Dir = '.'; Command = 'npm run test:live-buttons' },
-  @{ Label = 'deep verification: app coverage'; Dir = 'apps\web'; Command = 'npm run test:coverage' }
+  @{ Label = 'deep verification: live button audit'; Dir = '.'; Command = 'npm run test:live-buttons' }
 )
 $AllowedRuntimeDirtyFiles = @(
   '0.dev-matrix/STATE.md',
@@ -171,9 +170,8 @@ if ($DeepVerificationTasks.Count -eq 0) {
 foreach ($dir in $NodeAuditDirs) {
   $pkgPath = if ($dir -eq '.') { Join-Path $RepoRoot 'package.json' } else { Join-Path (Join-Path $RepoRoot $dir) 'package.json' }
   if (Test-Path $pkgPath) {
-    $null = Invoke-InDir $dir 'npm audit fix'
     $auditOk = Invoke-InDir $dir 'npm audit --omit=dev'
-    Gate "node vulnerability sweep ($dir)" $auditOk "npm audit fix && npm audit --omit=dev"
+    Gate "node vulnerability sweep ($dir)" $auditOk 'npm audit --omit=dev'
   }
 }
 

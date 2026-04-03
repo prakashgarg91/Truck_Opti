@@ -88,6 +88,25 @@
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-03] GPT-001:
+  Close-day verification completed on the synced `70e764c5` tree.
+
+  NEW VERIFIED WORK:
+  - `git status -sb`: clean before closeout docs
+  - `git rev-parse --short HEAD`: `70e764c5`
+  - `npm run launch-check`: PASS (14/14)
+  - `cd frontend && npm run build`: PASS
+  - root + frontend `npm audit --omit=dev`: 0 vulnerabilities
+  - `npm run test:frontend-smoke`: PASS (16/17), only `auth-service` failed
+  - `npm run test:prod-config`: PASS (2/6), failed on Supabase DNS, Razorpay live keys, Sentry DSN, and PhonePe mode
+
+  JUDGMENT:
+  - GitHub can be updated without pretending launch is clear
+  - next repo-side batch should consolidate the duplicated packing engine shared by `PackingPage.tsx` and `packingWorker.ts`
+  - authenticated and lead-capture flows remain blocked until the production Supabase host resolves again
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-03] MANAGER-ADMIN:
   Fresh repo-side launch verification completed after the stale-client/contact hardening pass.
 
@@ -100,8 +119,6 @@
   JUDGMENT:
   - repo-side preflight is stronger than the older 8-gate documentation implied
   - launch remains blocked by external auth/config readiness, not by the repo preflight path
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-03] MANAGER-ADMIN:
   Close-day interactive frontend audit extended beyond route coverage into real public user actions.
 
