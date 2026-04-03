@@ -89,6 +89,25 @@
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-03] MANAGER-ADMIN:
+  Full frontend browser audit completed against the live site as an unauthenticated real user.
+
+  NEW VERIFIED WORK:
+  - exercised all `47` routes exposed from `frontend/src/App.tsx`
+  - `15/15` public/auth routes loaded without `Application Error`
+  - `31/31` protected routes redirected to `/login`
+  - `1/1` invalid route rendered 404 correctly
+  - driver registration advanced step 1 -> step 2
+  - agency registration advanced step 1 -> step 2
+  - login email OTP, signup email OTP, Google OAuth, and contact submission all failed because the configured Supabase host is unreachable
+  - stale service-worker chunk mismatch was reproduced on a first-pass stale client, then cleared by unregistering the service worker and clearing caches
+
+  JUDGMENT:
+  - public frontend shell and route guards are stronger than previously evidenced
+  - launch remains blocked because live Supabase failure also breaks public lead capture and all auth-backed user flows
+  - a PWA cache-busting follow-up is still needed for returning users
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-03] MANAGER-ADMIN:
   Checkout/payment flow hardened to fail closed on live TruckOpti domains when gateways are not launch-ready.
 
   NEW VERIFIED WORK:

@@ -29,6 +29,7 @@
 |-------|----------|-------------|-------------|
 | `SUPABASE-AUTH-DNS-20260401` | 🔴 BLOCKING | Live/frontend auth smoke failed because `jbxncejtcbpcronndqlx.supabase.co` did not resolve and `/auth/v1/otp` failed with `ERR_NAME_NOT_RESOLVED` | MANAGER + OWNER |
 | `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit passed 2/6 only: Razorpay test key, missing `VITE_SENTRY_DSN`, and PhonePe sandbox/preprod still configured | MANAGER + OWNER |
+| `PWA-SW-STALE-CHUNK-20260403` | 🟡 WATCH | Full browser audit reproduced stale lazy-chunk/module failures for returning clients until service worker + caches were cleared | MANAGER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
 | ~~HEROKU-STALE~~ | ✅ RESOLVED | Deployed v22 (slug 337 MB). Added .slugignore; slug was 843 MB. | SONNET-001 (auto) |
 | ~~SUPABASE-SITE-URL~~ | ✅ RESOLVED | Site URL updated to https://www.truckopti.in via Management API. Allow-list: www+apex+Heroku. | SONNET-001 (auto) |
@@ -76,6 +77,23 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-03] MANAGER-ADMIN: ✅ FULL FRONTEND ROUTE AUDIT COMPLETE (47 ROUTES)
+
+                             NEW EVIDENCE:
+                             - exercised all `47` routes exposed in `frontend/src/App.tsx`
+                             - `15/15` public/auth routes rendered successfully
+                             - `31/31` protected routes redirected unauthenticated users to `/login`
+                             - `1/1` invalid route rendered 404 correctly
+                             - driver registration advanced step 1 -> step 2
+                             - agency registration advanced step 1 -> step 2
+                             - login OTP, signup OTP, Google OAuth, and contact-form submission all failed because Supabase host reachability is still broken
+                             - stale service-worker chunk mismatch reproduced on first pass, then cleared after unregister/cache clear
+
+                             BUSINESS IMPACT:
+                             - public shell quality confidence is much higher than before
+                             - contact form is also dead, so inbound leads are blocked along with auth
+                             - returning users may still need cache-clear / hard refresh until PWA cache-busting is tightened
+──────────────────────────────────────────────────────────────────────────────────────────
 [2026-04-03] MANAGER-ADMIN: 🔴 PRODUCTION CONFIG AUDIT CONFIRMED LIVE LAUNCH BLOCKERS
 
                              NEW EVIDENCE:

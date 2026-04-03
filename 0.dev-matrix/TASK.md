@@ -13,11 +13,11 @@
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
-| T-124 | Frontend testing pass for key user-facing pages | P0 | 🧪 Product | 🟡 Public smoke 7/7 and broader frontend smoke 12/13 pass; authenticated/full-flow still blocked by unreachable auth backend |
+| T-124 | Frontend testing pass for key user-facing pages | P0 | 🧪 Product | 🟡 Full browser route audit completed: 47 routes exercised, public shell/redirects green; auth/contact flows still blocked by unreachable Supabase backend |
 | T-125 | Improve advanced 3D bin-packing algorithm quality | P0 | 🧠 Product | 🟡 Pending next session |
 | T-126 | Move packing algorithm execution to client side where required UX/perf needs it | P0 | 🏗️ Architecture | 🟡 Web Worker path is already live; still needs stronger regression/perf evidence |
-| T-127 | Test all major paths and end-to-end flows, not just preflight gates | P0 | 🧪 Product | 🟡 Frontend launch smoke added; authenticated end-to-end still blocked by auth backend reachability |
-| T-128 | Restore live Supabase auth/backend reachability for production frontend | P0 | 🔑 External | 🔴 Blocking: `jbxncejtcbpcronndqlx.supabase.co` failed live smoke on 2026-04-01 and prod-config DNS audit on 2026-04-03 |
+| T-127 | Test all major paths and end-to-end flows, not just preflight gates | P0 | 🧪 Product | 🟡 Public route map now fully exercised; authenticated end-to-end still blocked by auth backend reachability |
+| T-128 | Restore live Supabase auth/backend reachability for production frontend | P0 | 🔑 External | 🔴 Blocking: `jbxncejtcbpcronndqlx.supabase.co` failed live smoke, Google OAuth handoff, email OTP, signup OTP, and public contact submission in 2026-04-03 browser audit |
 | T-110 | Production Razorpay keys + test | P0 | 🔑 External | 🔴 Blocking: Heroku still has `rzp_test_*` and placeholder secret in 2026-04-03 prod-config audit |
 | T-111 | Google OAuth production credentials verification | P0 | 🔑 External | 🟡 Owner: Supabase + Google Console |
 | T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | 🔑 External | 🟡 Owner: Supabase dashboard |
@@ -26,6 +26,7 @@
 | T-116 | Sentry DSN configuration | P1 | 🔑 External | 🔴 Blocking for observability: `VITE_SENTRY_DSN` missing in 2026-04-03 prod-config audit |
 | T-117 | Supabase db push (6 pending migrations) | P0 | 🔑 External | 🟡 Owner: run `supabase db push` |
 | T-129 | PhonePe production configuration | P1 | 🔑 External | 🔴 Blocking if PhonePe remains enabled: Heroku still points at `api-preprod.phonepe.com/apis/pg-sandbox` |
+| T-130 | Fix stale service-worker chunk invalidation for returning users | P1 | 🧪 Product | 🟡 Real browser audit reproduced stale lazy-chunk failures until service worker/caches were cleared |
 | ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T3~~ | ~~Driver GPS broadcast on trip~~ | ~~P2~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |

@@ -58,6 +58,19 @@ Writes evidence to `logs/public_frontend_smoke_report.json`.
 
 **Latest evidence:** 2026-04-01 manager verification passed 7/7 public routes with 0 app errors, 0 console errors, and 0 failed HTTP responses.
 
+### Step 2e: Full Frontend Route Audit (real browser, unauthenticated)
+
+Manager-admin exercised every frontend route exposed in `frontend/src/App.tsx` against the live site in a real browser session with service-worker state cleared.
+
+**Latest evidence:** 2026-04-03 manager verification exercised `47` routes total:
+- `15/15` public/auth routes loaded without `Application Error`
+- `31/31` protected routes redirected unauthenticated users to `/login`
+- `1/1` invalid route rendered the 404 page
+- login email OTP, signup email OTP, Google OAuth, and contact-form submission all failed because the configured Supabase host `jbxncejtcbpcronndqlx.supabase.co` is unreachable
+- driver registration advanced from step 1 -> step 2
+- agency registration advanced from step 1 -> step 2
+- first-pass stale chunk mismatch was reproduced on some lazy-loaded routes for a stale client, then cleared after unregistering the service worker and clearing caches
+
 ### Step 2c: Frontend Launch Smoke — `npm run test:frontend-smoke`
 
 ```powershell
@@ -134,6 +147,7 @@ Verify the key unauthenticated routes render without `Application Error`:
 - Heroku web dyno restored after fixing Express 5 SPA fallback in `server.js`
 - fresh-bundle smoke for all 7 public routes passed
 - note: cached clients may need a hard refresh or service-worker clear to pick up the newest root-route bundle immediately
+- 2026-04-03 full route audit confirmed the stale-client risk is real for some lazy-loaded pages until service-worker/caches are cleared
 
 ---
 
@@ -250,6 +264,7 @@ Login as admin. Auto-redirected to `/admin`.
 | 1 | Launch preflight | Any dev | 8/8 PASS | 2026-03-31 | No |
 | 2 | Frontend build | Any dev | PASS | 2026-03-31 | No |
 | 2b | Public frontend smoke | Manager | 7/7 PASS | 2026-04-01 | No |
+| 2e | Full frontend route audit | Manager | 47/47 route outcomes verified | 2026-04-03 | Yes (auth/contact backend unreachable; stale client cache risk) |
 | 2d | Production config audit | Manager | 2/6 PASS | 2026-04-03 | Yes |
 | 4b | Public route smoke | Manager | PASS (7 routes, fresh bundle) | 2026-04-01 | No |
 | 5 | Auth smoke | Owner | — | — | Yes (Twilio/OAuth) |
@@ -265,6 +280,7 @@ Login as admin. Auto-redirected to `/admin`.
 
 | Area | Issue | Workaround |
 |------|-------|------------|
+| PWA / lazy-loaded routes | Returning visitors may hold stale chunk hashes in service worker/cache and hit dynamic-import failures | Unregister service worker / clear caches / hard refresh; proper cache-busting fix still pending |
 | Job offer Realtime | May not fire if browser tab is backgrounded | Reload page |
 | PhonePe redirect | Varies by PhonePe env (test vs prod) | Use Razorpay for local testing |
 | jsPDF invoice | PDF may not include Unicode Hindi text | Known limitation — use English invoice |
@@ -283,4 +299,4 @@ Before every push, confirm:
 
 ---
 
-*Last updated: 2026-04-03 | MANAGER-ADMIN | Production config audit added; live auth and payment/observability config still block launch*
+*Last updated: 2026-04-03 | MANAGER-ADMIN | Full live route audit recorded; public shell green but auth/contact backend and stale-client cache risk still block launch*
