@@ -1,13 +1,20 @@
 const https = require('https');
 
-const PAT = 'sbp_53c56615cd7a5cfbc6406f9a8c72421c91ab3903';
-const projId = 'jbxncejtcbpcronndqlx';
+const PAT = process.env.SUPABASE_ACCESS_TOKEN;
+const projId = process.env.SUPABASE_PROJECT_REF;
+const email = process.env.SUPABASE_TEST_EMAIL || 'prakashgarg91@gmail.com';
+const redirectTo = process.env.MAGIC_LINK_REDIRECT_TO || 'https://www.truckopti.in/';
+
+if (!PAT || !projId) {
+  console.error('Missing SUPABASE_ACCESS_TOKEN or SUPABASE_PROJECT_REF');
+  process.exit(1);
+}
 
 const body = JSON.stringify({
-  email: 'prakashgarg91@gmail.com',
+  email,
   type: 'magiclink',
   options: { 
-    redirect_to: 'https://truck-opti-app-efabf95bd306.herokuapp.com/' 
+    redirect_to: redirectTo
   }
 });
 
@@ -29,7 +36,7 @@ const req = https.request(opts, (res) => {
     try {
       const data = JSON.parse(b);
       if (data.hashed_token) {
-        const link = `https://${projId}.supabase.co/auth/v1/verify?token=${data.hashed_token}&type=magiclink&redirect_to=https://truck-opti-app-efabf95bd306.herokuapp.com/`;
+        const link = `https://${projId}.supabase.co/auth/v1/verify?token=${data.hashed_token}&type=magiclink&redirect_to=${encodeURIComponent(redirectTo)}`;
         console.log('MAGIC LINK:', link);
       } else {
         console.log(JSON.stringify(data, null, 2));

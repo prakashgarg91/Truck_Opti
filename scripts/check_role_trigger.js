@@ -1,8 +1,13 @@
 // Check what is affecting the role in the users table
 const { createClient } = require('@supabase/supabase-js')
 
-const SUPABASE_URL = 'https://jbxncejtcbpcronndqlx.supabase.co'
-const SERVICE_ROLE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpieG5jZWp0Y2JwY3Jvbm5kcWx4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzgwOTYyMiwiZXhwIjoyMDgzMzg1NjIyfQ.R7Jq0rMPklDfG49GiS6jfuBqaWD7J3BtsDCUhzcyw9c'
+const SUPABASE_URL = process.env.SUPABASE_URL
+const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!SUPABASE_URL || !SERVICE_ROLE) {
+  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+  process.exit(1)
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
 

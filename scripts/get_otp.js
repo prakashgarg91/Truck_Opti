@@ -1,15 +1,21 @@
 const https = require('https');
 
-// Generate a magic link for the user using Supabase admin API
-const serviceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpieG5jZWp0Y2JwY3Jvbm5kcWx4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzgwOTYyMiwiZXhwIjoyMDgzMzg1NjIyfQ.R7Jq0rMPklDfG49GiS6jfuBqaWD7J3BtsDCUhzcyw9c';
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const projectRef = process.env.SUPABASE_PROJECT_REF;
+const email = process.env.SUPABASE_TEST_EMAIL || 'prakashgarg91@gmail.com';
+
+if (!serviceKey || !projectRef) {
+  console.error('Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_PROJECT_REF');
+  process.exit(1);
+}
 
 const payload = JSON.stringify({
-  email: 'prakashgarg91@gmail.com',
+  email,
   type: 'magiclink',
 });
 
 const req = https.request({
-  hostname: 'jbxncejtcbpcronndqlx.supabase.co',
+  hostname: `${projectRef}.supabase.co`,
   path: '/auth/v1/admin/generate_link',
   method: 'POST',
   headers: {

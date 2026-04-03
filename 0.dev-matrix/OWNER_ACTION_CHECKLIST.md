@@ -1,12 +1,44 @@
 # OWNER ACTION CHECKLIST — TruckOpti Launch Blockers
 
-> **All in-repo code work is COMPLETE. This document lists the 6 external actions only the project owner can perform.**
+> **All in-repo code work is COMPLETE. This document lists the external actions only the project owner can perform.**
 > **Date verified:** 2026-03-30 | **Verifier:** GLM-002 (Manager Audit)
 > **Pre-requisite:** All code changes are committed and pushed to GitHub (main branch).
 
 ---
 
 ## 🔴 CRITICAL (blocks core functionality)
+
+### Action 0: Restore or Replace the Production Supabase Project/Host
+
+**Why:** Live auth is currently blocked before OTP/OAuth even starts. `jbxncejtcbpcronndqlx.supabase.co` returns NXDOMAIN, and the frontend smoke fails on `/auth/v1/otp` with `ERR_NAME_NOT_RESOLVED`.
+
+**Steps:**
+1. Open Supabase Dashboard and verify whether project `jbxncejtcbpcronndqlx` still exists, is paused, or was replaced.
+2. If the project still exists and is paused, restore/resume it.
+3. If the project was replaced, get the new:
+   - project ref / URL
+   - anon key
+   - service role key
+4. Update production config:
+```bash
+heroku config:set VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co --app truck-opti-app
+heroku config:set VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here --app truck-opti-app
+```
+5. Update local/admin tooling env vars before running maintenance scripts:
+```bash
+$env:SUPABASE_PROJECT_REF="YOUR_PROJECT_REF"
+$env:SUPABASE_URL="https://YOUR_PROJECT_ID.supabase.co"
+$env:SUPABASE_ACCESS_TOKEN="sbp_your_token_here"
+$env:SUPABASE_SERVICE_ROLE_KEY="your_service_role_key_here"
+```
+6. Redeploy the app after config correction.
+
+**Verification:**
+- `nslookup YOUR_PROJECT_ID.supabase.co 8.8.8.8`
+- `npm run test:frontend-smoke`
+- live `/login` no longer fails on `/auth/v1/otp`
+
+---
 
 ### Action 1: Push Pending Supabase Migrations
 

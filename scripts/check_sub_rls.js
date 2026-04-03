@@ -1,7 +1,11 @@
 const https = require('https');
-const PAT = 'sbp_53c56615cd7a5cfbc6406f9a8c72421c91ab3903';
-const projId = 'jbxncejtcbpcronndqlx';
-const serviceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpieG5jZWp0Y2JwY3Jvbm5kcWx4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzgwOTYyMiwiZXhwIjoyMDgzMzg1NjIyfQ.R7Jq0rMPklDfG49GiS6jfuBqaWD7J3BtsDCUhzcyw9c';
+const PAT = process.env.SUPABASE_ACCESS_TOKEN;
+const projId = process.env.SUPABASE_PROJECT_REF;
+
+if (!PAT || !projId) {
+  console.error('Missing SUPABASE_ACCESS_TOKEN or SUPABASE_PROJECT_REF');
+  process.exit(1);
+}
 
 const query = `
 SELECT tablename, policyname, cmd, qual, with_check 

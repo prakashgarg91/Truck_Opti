@@ -1,6 +1,11 @@
 const https = require('https');
-const PAT = 'sbp_53c56615cd7a5cfbc6406f9a8c72421c91ab3903';
-const projId = 'jbxncejtcbpcronndqlx';
+const PAT = process.env.SUPABASE_ACCESS_TOKEN;
+const projId = process.env.SUPABASE_PROJECT_REF;
+
+if (!PAT || !projId) {
+  console.error('Missing SUPABASE_ACCESS_TOKEN or SUPABASE_PROJECT_REF');
+  process.exit(1);
+}
 
 const query = `SELECT tablename, policyname, cmd, qual, with_check 
   FROM pg_policies 
