@@ -78,6 +78,7 @@ Manager-admin exercised every frontend route exposed in `frontend/src/App.tsx` a
 - Driver registration advanced through step 3 visibility
 - Agency registration advanced through step 3 visibility
 - Contact form submitted and showed `Something went wrong`, confirming the public lead-capture path is backend-blocked, not just auth
+- 2026-04-03 repo-side mitigation landed locally: `frontend` build passed after adding `vite-plugin-pwa` client types, runtime chunk-recovery logic in `src/main.tsx` + `src/utils/runtimeRecovery.ts`, chunk-aware recovery in `src/components/ErrorBoundary.tsx`, and Workbox `cleanupOutdatedCaches` + `navigateFallback` in `vite.config.ts`; live stale-client retest is still pending
 
 ### Step 2c: Frontend Launch Smoke — `npm run test:frontend-smoke`
 
@@ -286,6 +287,8 @@ Login as admin. Auto-redirected to `/admin`.
 
 ## KNOWN FLAKY AREAS
 
+> **2026-04-03 update:** the PWA stale-client issue now has a repo-side mitigation. Keep the workaround below until the deployed live bundle is re-tested from a returning client.
+
 | Area | Issue | Workaround |
 |------|-------|------------|
 | PWA / lazy-loaded routes | Returning visitors may hold stale chunk hashes in service worker/cache and hit dynamic-import failures | Unregister service worker / clear caches / hard refresh; proper cache-busting fix still pending |
@@ -307,4 +310,4 @@ Before every push, confirm:
 
 ---
 
-*Last updated: 2026-04-03 | MANAGER-ADMIN | Full live route audit recorded; public shell green but auth/contact backend and stale-client cache risk still block launch*
+*Last updated: 2026-04-03 | MANAGER-ADMIN | Full live route audit recorded; repo-side stale-client mitigation landed locally, but auth/contact backend and live production config still block launch*

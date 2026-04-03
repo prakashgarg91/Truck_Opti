@@ -105,6 +105,21 @@
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-03] MANAGER-ADMIN:
+  Repo-side stale-client mitigation landed after the live route audit reproduced service-worker chunk mismatch on returning clients.
+
+  NEW VERIFIED WORK:
+  - `frontend/src/main.tsx`, `frontend/src/utils/runtimeRecovery.ts`, and `frontend/src/components/ErrorBoundary.tsx` now catch stale lazy-chunk failures, trigger a safe recovery path, and avoid reload loops
+  - `frontend/vite.config.ts` now sets Workbox `cleanupOutdatedCaches` and `navigateFallback: '/index.html'`
+  - `frontend/src/vite-env.d.ts` now includes `vite-plugin-pwa/client` types
+  - `frontend/src/pages/ContactPage.tsx` now shows a safer fallback message with direct support contact details when the backend is unreachable
+  - `cd frontend && npm run build`: PASS on 2026-04-03
+
+  JUDGMENT:
+  - repo-side stale-client recovery is materially stronger than before
+  - this is still not a full live fix claim until a returning-user browser retest confirms the deployed bundle recovers without manual cache clearing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-03] MANAGER-ADMIN:
   Full frontend browser audit completed against the live site as an unauthenticated real user.
 
   NEW VERIFIED WORK:

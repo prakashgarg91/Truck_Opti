@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { logger } from '../utils/logger'
+import { isChunkLoadLikeError, triggerRuntimeRecovery } from '../utils/runtimeRecovery'
 
 interface Props {
   children: ReactNode
@@ -50,6 +51,11 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReload = (): void => {
+    if (this.state.error && isChunkLoadLikeError(this.state.error)) {
+      void triggerRuntimeRecovery()
+      return
+    }
+
     window.location.reload()
   }
 
@@ -57,6 +63,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       const isDev = import.meta.env.DEV
       const { error, errorInfo } = this.state
+      const isChunkError = error ? isChunkLoadLikeError(error) : false
 
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4">
@@ -77,7 +84,9 @@ export default class ErrorBoundary extends Component<Props, State> {
               {/* Content */}
               <div className="p-6 space-y-4">
                 <p className="text-slate-600 dark:text-slate-400 text-center text-sm">
-                  An unexpected error occurred. Please try refreshing the page or contact support if the problem persists.
+                  {isChunkError
+                    ? 'A new version is available. Reload to fetch the latest application files.'
+                    : 'An unexpected error occurred. Please try refreshing the page or contact support if the problem persists.'}
                 </p>
 
                 {/* Try Again Button */}
@@ -86,7 +95,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-xl transition-all duration-200 active:scale-[0.98]"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  Try Again
+                  {isChunkError ? 'Load Latest Version' : 'Try Again'}
                 </button>
 
                 {/* Error Details - Development Only */}
