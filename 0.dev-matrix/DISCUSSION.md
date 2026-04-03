@@ -89,6 +89,22 @@
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-03] MANAGER-ADMIN:
+  Close-day interactive frontend audit extended beyond route coverage into real public user actions.
+
+  NEW VERIFIED WORK:
+  - pricing yearly/monthly toggle worked
+  - pricing CTA navigated to `/signup`
+  - login channel switching (`Email` / `WhatsApp` / `SMS`) worked
+  - driver registration wizard progressed through step 3 visibility
+  - agency registration wizard progressed through step 3 visibility
+  - contact form submission failed with `Something went wrong`, confirming public lead capture is blocked by the dead Supabase backend
+
+  JUDGMENT:
+  - public interaction coverage is stronger than route-only smoke
+  - remaining frontend gaps are now mostly authenticated and backend-dependent, not unexplored public navigation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-03] MANAGER-ADMIN:
   Full frontend browser audit completed against the live site as an unauthenticated real user.
 
   NEW VERIFIED WORK:

@@ -13,7 +13,7 @@
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
-| T-124 | Frontend testing pass for key user-facing pages | P0 | 🧪 Product | 🟡 Full browser route audit completed: 47 routes exercised, public shell/redirects green; auth/contact flows still blocked by unreachable Supabase backend |
+| T-124 | Frontend testing pass for key user-facing pages | P0 | 🧪 Product | 🟡 Full browser route audit completed: 47 routes exercised; pricing interactions and both public registration wizards progressed to step 3; auth/contact flows still blocked by unreachable Supabase backend |
 | T-125 | Improve advanced 3D bin-packing algorithm quality | P0 | 🧠 Product | 🟡 Pending next session |
 | T-126 | Move packing algorithm execution to client side where required UX/perf needs it | P0 | 🏗️ Architecture | 🟡 Web Worker path is already live; still needs stronger regression/perf evidence |
 | T-127 | Test all major paths and end-to-end flows, not just preflight gates | P0 | 🧪 Product | 🟡 Public route map now fully exercised; authenticated end-to-end still blocked by auth backend reachability |

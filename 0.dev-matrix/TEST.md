@@ -71,6 +71,14 @@ Manager-admin exercised every frontend route exposed in `frontend/src/App.tsx` a
 - agency registration advanced from step 1 -> step 2
 - first-pass stale chunk mismatch was reproduced on some lazy-loaded routes for a stale client, then cleared after unregistering the service worker and clearing caches
 
+**Additional interactive evidence from 2026-04-03 close-day audit:**
+- Pricing yearly/monthly toggle worked in the live browser
+- Pricing CTA navigated to `/signup`
+- Login tab switching (`Email` / `WhatsApp` / `SMS`) worked in the live browser
+- Driver registration advanced through step 3 visibility
+- Agency registration advanced through step 3 visibility
+- Contact form submitted and showed `Something went wrong`, confirming the public lead-capture path is backend-blocked, not just auth
+
 ### Step 2c: Frontend Launch Smoke — `npm run test:frontend-smoke`
 
 ```powershell
@@ -264,7 +272,7 @@ Login as admin. Auto-redirected to `/admin`.
 | 1 | Launch preflight | Any dev | 8/8 PASS | 2026-03-31 | No |
 | 2 | Frontend build | Any dev | PASS | 2026-03-31 | No |
 | 2b | Public frontend smoke | Manager | 7/7 PASS | 2026-04-01 | No |
-| 2e | Full frontend route audit | Manager | 47/47 route outcomes verified | 2026-04-03 | Yes (auth/contact backend unreachable; stale client cache risk) |
+| 2e | Full frontend route audit | Manager | 47/47 route outcomes verified + key public interactions exercised | 2026-04-03 | Yes (auth/contact backend unreachable; stale client cache risk) |
 | 2d | Production config audit | Manager | 2/6 PASS | 2026-04-03 | Yes |
 | 4b | Public route smoke | Manager | PASS (7 routes, fresh bundle) | 2026-04-01 | No |
 | 5 | Auth smoke | Owner | — | — | Yes (Twilio/OAuth) |
