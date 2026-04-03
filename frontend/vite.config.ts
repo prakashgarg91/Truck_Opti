@@ -45,6 +45,11 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
         navigateFallback: '/index.html',
+        navigateFallbackDenylist: [
+          /^\/api(?:\/|$)/,
+          /^\/assets\//,
+          /\/[^/?]+\.(?:js|css|map|json|ico|png|svg|woff2?)$/i,
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\./i,

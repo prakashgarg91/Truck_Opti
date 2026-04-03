@@ -65,6 +65,15 @@ const clearRuntimeCaches = async (): Promise<void> => {
   }
 }
 
+const unregisterServiceWorkers = async (): Promise<void> => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return
+  }
+
+  const registrations = await navigator.serviceWorker.getRegistrations()
+  await Promise.all(registrations.map((registration) => registration.unregister()))
+}
+
 export const triggerRuntimeRecovery = async (
   updateServiceWorker?: ServiceWorkerUpdater,
 ): Promise<boolean> => {
@@ -82,6 +91,12 @@ export const triggerRuntimeRecovery = async (
     await clearRuntimeCaches()
   } catch {
     // Cache cleanup is additive; keep moving if it fails.
+  }
+
+  try {
+    await unregisterServiceWorkers()
+  } catch {
+    // Unregistering old workers is additive; keep moving if it fails.
   }
 
   window.location.reload()

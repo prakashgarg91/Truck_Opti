@@ -8,7 +8,7 @@
 ## 🎯 ACTIVE TASKS
 
 > **Repo-side preflight/security work is green and public frontend smoke is green, but launch is still blocked by live production configuration.**
-> **Evidence:** `npm run launch-check` passed 8/8 gates on 2026-03-31; `npm run test:frontend-smoke` passed 12/13 on 2026-04-01; `npm run test:prod-config` passed 2/6 on 2026-04-03.
+> **Evidence:** `npm run launch-check` passed 14/14 checks on 2026-04-03; `npm run test:frontend-smoke` passed 12/13 on 2026-04-03; `npm run test:prod-config` passed 2/6 on 2026-04-03.
 > **2026-04-03 update:** the deployed frontend is reachable, but live production checks still prove the configured Supabase auth host is unreachable, Razorpay is still on test keys, `VITE_SENTRY_DSN` is missing, and PhonePe is still pointed at sandbox/preprod. Checkout now fails closed in the frontend when live gateways are not ready, but launch remains blocked until those production dependencies are corrected and re-tested.
 > **2026-04-03 repo-side note:** T-130 mitigation landed locally. `frontend/src/main.tsx`, `frontend/src/utils/runtimeRecovery.ts`, and `frontend/src/components/ErrorBoundary.tsx` now recover stale lazy-chunk failures by forcing a safe reload path, while `frontend/vite.config.ts` now enables Workbox `cleanupOutdatedCaches` and `navigateFallback: '/index.html'`. The public contact page also fails with actionable support fallback UX instead of a generic error. Live returning-user retest is still pending.
 
@@ -27,7 +27,7 @@
 | T-116 | Sentry DSN configuration | P1 | 🔑 External | 🔴 Blocking for observability: `VITE_SENTRY_DSN` missing in 2026-04-03 prod-config audit |
 | T-117 | Supabase db push (6 pending migrations) | P0 | 🔑 External | 🟡 Owner: run `supabase db push` |
 | T-129 | PhonePe production configuration | P1 | 🔑 External | 🔴 Blocking if PhonePe remains enabled: Heroku still points at `api-preprod.phonepe.com/apis/pg-sandbox` |
-| T-130 | Fix stale service-worker chunk invalidation for returning users | P1 | 🧪 Product | 🟡 Real browser audit reproduced stale lazy-chunk failures until service worker/caches were cleared |
+| T-130 | Fix stale service-worker chunk invalidation for returning users | P1 | 🧪 Product | 🟡 Repo-side recovery is in place; live returning-user retest is still pending |
 | ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T3~~ | ~~Driver GPS broadcast on trip~~ | ~~P2~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
@@ -159,7 +159,7 @@ Move task from QUEUE to ACTIVE TASKS:
 | T-120 | Fix PricingPage dead CTA buttons (Start Free, Get Started ×4, Contact Sales, Talk to Us) | SONNET-001 | 2026-03-03 | All 6 CTA buttons now have onClick; navigate('/signup') or mailto: |
 | T-121 | Harden `apps/web` dependency surfaces | GLM-002 / OpenCode | 2026-03-30 | `756285a0` + `0599fa53`; apps/web npm audit clean, pip-audit clean, compileall pass |
 | T-123 | Auth architecture decision doc + launch checklist updates | GLM-005 / GLM-5.1 | 2026-03-31 | docs/AUTH_ARCHITECTURE_DECISIONS.md; Telegram-as-DB analysis; OTP migration options |
-| T-122 | Add repeatable launch-readiness preflight | GLM-003 / OpenCode | 2026-03-31 | `92eb6324` + `50e519db`; later extended to 8/8 gates including tree hygiene |
+| T-122 | Add repeatable launch-readiness preflight | GLM-003 / OpenCode | 2026-03-31 | `92eb6324` + `50e519db`; later extended to 14/14 checks including deep scan, glue check, and tree/state hygiene |
 | T-100 | Cloudflare + Heroku dual-domain SSL validation | GPT-5.3-Codex | 2026-02-22 | `truckopti.in` + `www` live |
 | T-101 | Launch readiness continuation (BATCH6+7) | Copilot (Claude Sonnet) | 2026-03-03 | 10 BATCH6 tasks + 5 BATCH7 tasks done |
 | T-102 | Build `useSubscription` hook + trial/expiry logic | Copilot (Claude Sonnet) | 2026-03-03 | `useSubscription.ts` — 235 lines, 42/42 tests |

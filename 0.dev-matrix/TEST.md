@@ -15,7 +15,7 @@ Any developer can run these. All gates must pass before considering a deploy.
 npm run launch-check
 ```
 
-Runs 8 automated gates:
+Runs 14 automated checks across 8 gate groups:
 
 | Gate | Check | Auto-verified |
 |------|-------|:---:|
@@ -25,10 +25,16 @@ Runs 8 automated gates:
 | 4 | apps/web `npm audit` | Yes |
 | 5 | `pip-audit` on apps/web/requirements.txt | Yes |
 | 6 | Python `compileall` on apps/web/app + run.py | Yes |
-| 7 | Git working-tree cleanliness (no uncommitted changes) | Yes |
-| 8 | Tree hygiene (required docs, no junk artifacts, no merge markers in active code/config files) | Yes |
+| 7a | Deep error scan | Yes |
+| 7b | Glue check | Yes |
+| 7 | Git working-tree cleanliness (allowing runtime evidence noise only) | Yes |
+| 8a | Standards presence | Yes |
+| 8b | Runtime docs | Yes |
+| 8c | Documentation governance | Yes |
+| 8d | Tree hygiene | Yes |
+| 8e | State freshness | Yes |
 
-**Pass criteria:** 8/8 gates green. Any FAIL = do not deploy.
+**Pass criteria:** 14/14 checks green. Any FAIL = do not deploy.
 
 ### Step 2: Frontend Build (belt-and-braces, covered by Gate 1)
 
@@ -270,7 +276,7 @@ Login as admin. Auto-redirected to `/admin`.
 
 | Step | Area | Owner | Last Result | Date | Blocker |
 |------|------|-------|:-----------:|------|:-------:|
-| 1 | Launch preflight | Any dev | 8/8 PASS | 2026-03-31 | No |
+| 1 | Launch preflight | Any dev | 14/14 PASS | 2026-04-03 | No |
 | 2 | Frontend build | Any dev | PASS | 2026-03-31 | No |
 | 2b | Public frontend smoke | Manager | 7/7 PASS | 2026-04-01 | No |
 | 2e | Full frontend route audit | Manager | 47/47 route outcomes verified + key public interactions exercised | 2026-04-03 | Yes (auth/contact backend unreachable; stale client cache risk) |
@@ -291,7 +297,7 @@ Login as admin. Auto-redirected to `/admin`.
 
 | Area | Issue | Workaround |
 |------|-------|------------|
-| PWA / lazy-loaded routes | Returning visitors may hold stale chunk hashes in service worker/cache and hit dynamic-import failures | Unregister service worker / clear caches / hard refresh; proper cache-busting fix still pending |
+| PWA / lazy-loaded routes | Returning visitors remain the highest-risk browser cohort after deploy churn | Repo-side recovery is now in place; re-test from a stale returning client after deploy and hard refresh only if recovery fails |
 | Job offer Realtime | May not fire if browser tab is backgrounded | Reload page |
 | PhonePe redirect | Varies by PhonePe env (test vs prod) | Use Razorpay for local testing |
 | jsPDF invoice | PDF may not include Unicode Hindi text | Known limitation — use English invoice |
@@ -302,7 +308,7 @@ Login as admin. Auto-redirected to `/admin`.
 ## QUICK REGRESSION CHECKLIST
 
 Before every push, confirm:
-- [ ] `npm run launch-check` — all 8 gates green
+- [ ] `npm run launch-check` — all 14 checks green
 - [ ] `npm run build` — 0 TypeScript errors
 - [ ] Login works (at least one auth path)
 - [ ] No red console errors on main pages
@@ -310,4 +316,4 @@ Before every push, confirm:
 
 ---
 
-*Last updated: 2026-04-03 | MANAGER-ADMIN | Full live route audit recorded; repo-side stale-client mitigation landed locally, but auth/contact backend and live production config still block launch*
+*Last updated: 2026-04-03 | MANAGER-ADMIN | Launch preflight re-verified at 14/14 PASS; auth/backend and live production config still block launch*

@@ -89,6 +89,19 @@
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-03] MANAGER-ADMIN:
+  Fresh repo-side launch verification completed after the stale-client/contact hardening pass.
+
+  NEW VERIFIED WORK:
+  - `npm run launch-check`: PASS (14/14 checks)
+  - `npm run test:frontend-smoke`: PASS (12/13), only `auth-service` still failing
+  - `npm run test:prod-config`: PASS (2/6), still failing on dead Supabase host, Razorpay test key, missing Sentry DSN, and PhonePe preprod
+
+  JUDGMENT:
+  - repo-side preflight is stronger than the older 8-gate documentation implied
+  - launch remains blocked by external auth/config readiness, not by the repo preflight path
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-03] MANAGER-ADMIN:
   Close-day interactive frontend audit extended beyond route coverage into real public user actions.
 
   NEW VERIFIED WORK:
