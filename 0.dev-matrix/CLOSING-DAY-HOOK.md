@@ -20,3 +20,12 @@ Run `npm run close-day` from repo root before ending the work day when you want 
 - treat the hook as a workflow standard, not as proof that all product flows are complete
 - review any dependency changes before committing if the hook performs remediation
 - keep launch judgment based on real evidence, not automation alone
+
+## Required Handoff Fields
+
+The newest `AI-HANDOFF.md` entry for the close-day run must include:
+- `Changed:`
+- `Verified:`
+- `Continue from:`
+- `Next step:`
+- `Blockers:`

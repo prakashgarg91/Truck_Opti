@@ -20,3 +20,7 @@ Use these rules when changing multiple repos at once.
 12. Close-day scripts must capture actual command output to dated log files in `0.dev-matrix/closeout-logs/`. Output suppression (`*> $null`) is forbidden in evidence-producing gates.
 13. Close-day scripts must detect regression by comparing current pass/fail counts against the previous closeout. A drop in passes or rise in failures must be flagged.
 14. Whitespace-only edits to status files (STATE.md, TASK.md) do not satisfy status-discipline gates. The system must verify real content changes via `git diff --stat`.
+15. Every repo must carry `0.dev-matrix/standards/DOCUMENTATION-GOVERNANCE-STANDARD.md` and a repo-local `0.dev-matrix/DOCUMENTATION-GOVERNANCE.md`.
+16. New docs must be consolidated into canonical zones; do not proliferate sibling FINAL/COPY/NEW/V2 report files in active paths.
+17. Close-day must fail when new docs land in nonstandard locations or the working tree remains dirty beyond intentional runtime handoff files.
+18. Every repo must carry `0.dev-matrix/AI-HANDOFF.md`, and close-day must fail unless the newest entry is dated today and contains `Changed:`, `Verified:`, `Continue from:`, `Next step:`, and `Blockers:`.

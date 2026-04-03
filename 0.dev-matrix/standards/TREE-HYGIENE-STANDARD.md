@@ -14,6 +14,9 @@ The codebase should be easy to scan, easy to onboard into, and free of obvious j
 - Do not keep duplicate operating systems for the same repo unless one is clearly marked as archived or legacy.
 - Keep `0.dev-matrix` as the active operational system when it exists.
 - Large generated outputs should live in known evidence/report folders, not mixed into source folders.
+- Reuse canonical docs before adding new ones, especially for process summaries, audits, guides, and reports.
+- Keep long-form docs in approved documentation zones instead of scattering markdown across random folders.
+- Archive superseded docs instead of keeping active FINAL/COPY/NEW/OLD/V2-style variants.
 
 ## Launch-Blocking Hygiene Failures
 
@@ -31,3 +34,4 @@ Each repo should keep a local `0.dev-matrix/TREE-HYGIENE.md` that records:
 - known legacy/stale areas
 - cleanup backlog
 - any intentionally retained archive zones
+- a matching `0.dev-matrix/DOCUMENTATION-GOVERNANCE.md` for doc placement and consolidation rules

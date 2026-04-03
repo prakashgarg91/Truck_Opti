@@ -11,10 +11,45 @@ $DeepVerificationTasks = @(
   @{ Label = 'deep verification: live button audit'; Dir = '.'; Command = 'npm run test:live-buttons' },
   @{ Label = 'deep verification: app coverage'; Dir = 'apps\web'; Command = 'npm run test:coverage' }
 )
+$AllowedRuntimeDirtyFiles = @(
+  '0.dev-matrix/STATE.md',
+  '0.dev-matrix/TASK.md',
+  '0.dev-matrix/DISCUSSION.md',
+  '0.dev-matrix/AI-HANDOFF.md'
+)
+$AllowedRuntimeDirtyPrefixes = @(
+  '0.dev-matrix/closeout-logs/',
+  '0.dev-matrix/test-reports/'
+)
+$ApprovedDocPrefixes = @(
+  '0.dev-matrix/',
+  'docs/',
+  'adr/',
+  'design/',
+  'specs/'
+)
+$CanonicalRootDocPatterns = @(
+  'README*.md',
+  'AGENTS*.md',
+  'CHANGELOG*.md',
+  'CONTRIBUTING*.md',
+  'SECURITY*.md',
+  'LICENSE*',
+  'API*.md',
+  'ARCHITECTURE*.md',
+  'DEPLOYMENT*.md',
+  'OPERATIONS*.md'
+)
+$SuspiciousDocNamePattern = '(?i)(^|[-_. ])(copy|backup|old|new|tmp|temp|draft|final|v[2-9]\d*)([-_. ]|$)'
+$RequiredHandoffLabels = @('Changed:', 'Verified:', 'Continue from:', 'Next step:', 'Blockers:')
 $pass = 0
 $fail = 0
 $reportLines = @()
 $outputLog = @()
+$todayStamp = Get-Date -Format 'yyyy-MM-dd'
+$latestHandoffDate = 'missing'
+$latestHandoffContinue = 'missing'
+$latestHandoffNext = 'missing'
 
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
 $dateStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
@@ -33,7 +68,65 @@ function Gate($name, $ok, $detail) {
   Log "[$status] $name - $detail"
 }
 
-function Run-InDir($relativeDir, $command) {
+function ConvertTo-RepoRelativePath($path) {
+  if ([string]::IsNullOrWhiteSpace($path)) { return $null }
+  return ($path -replace '\\', '/').Trim()
+}
+
+function Get-StatusPath($statusLine) {
+  if ([string]::IsNullOrWhiteSpace($statusLine) -or $statusLine.Length -lt 4) { return $null }
+  $path = $statusLine.Substring(3).Trim()
+  if ($path -match ' -> ') { $path = ($path -split ' -> ')[-1].Trim() }
+  return ConvertTo-RepoRelativePath $path
+}
+
+function Test-IsAllowedRuntimeDirtyPath($relativePath) {
+  if ([string]::IsNullOrWhiteSpace($relativePath)) { return $false }
+  if ($AllowedRuntimeDirtyFiles -contains $relativePath) { return $true }
+  foreach ($prefix in $AllowedRuntimeDirtyPrefixes) {
+    if ($relativePath -like "$prefix*") { return $true }
+  }
+  return $false
+}
+
+function Test-IsCanonicalRootDoc($relativePath) {
+  if ([string]::IsNullOrWhiteSpace($relativePath) -or $relativePath.Contains('/')) { return $false }
+  foreach ($pattern in $CanonicalRootDocPatterns) {
+    if ($relativePath -like $pattern) { return $true }
+  }
+  return $false
+}
+
+function Test-IsApprovedDocPath($relativePath) {
+  if ([string]::IsNullOrWhiteSpace($relativePath)) { return $false }
+  if (Test-IsCanonicalRootDoc $relativePath) { return $true }
+  foreach ($prefix in $ApprovedDocPrefixes) {
+    if ($relativePath -like "$prefix*") { return $true }
+  }
+  return $false
+}
+
+function Get-HandoffFieldValue($body, $label) {
+  if ([string]::IsNullOrWhiteSpace($body) -or [string]::IsNullOrWhiteSpace($label)) { return $null }
+  $pattern = '(?mi)^-\s*' + [regex]::Escape($label) + '\s*(?<value>.+)$'
+  $match = [regex]::Match($body, $pattern)
+  if ($match.Success) {
+    return $match.Groups['value'].Value.Trim()
+  }
+  return $null
+}
+
+function Get-LatestHandoffEntry($content) {
+  if ([string]::IsNullOrWhiteSpace($content)) { return $null }
+  $match = [regex]::Match($content, '(?ms)^###\s*(?<date>\d{4}-\d{2}-\d{2})(?<suffix>[^\r\n]*)\r?\n(?<body>.*?)(?=^###\s|\z)')
+  if (-not $match.Success) { return $null }
+  return @{
+    Date = $match.Groups['date'].Value
+    Body = $match.Groups['body'].Value.Trim()
+  }
+}
+
+function Invoke-InDir($relativeDir, $command) {
   $target = if ($relativeDir -eq '.') { $RepoRoot } else { Join-Path $RepoRoot $relativeDir }
   if (-not (Test-Path $target)) { Log "[SKIP] dir not found: $target"; return $false }
   Push-Location $target
@@ -49,9 +142,9 @@ function Run-InDir($relativeDir, $command) {
 }
 
 # ── 1. Runtime docs ──
-$required = @('0.dev-matrix\STATE.md', '0.dev-matrix\TASK.md', '0.dev-matrix\DISCUSSION.md', '0.dev-matrix\CLOSING-DAY-HOOK.md')
+$required = @('0.dev-matrix\STATE.md', '0.dev-matrix\TASK.md', '0.dev-matrix\DISCUSSION.md', '0.dev-matrix\CLOSING-DAY-HOOK.md', '0.dev-matrix\AI-HANDOFF.md')
 $missing = $required | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
-Gate 'runtime close docs' ($missing.Count -eq 0) ($(if ($missing.Count -eq 0) { 'state/task/discussion/hook present' } else { 'missing: ' + ($missing -join ', ') }))
+Gate 'runtime close docs' ($missing.Count -eq 0) ($(if ($missing.Count -eq 0) { 'state/task/discussion/hook/handoff present' } else { 'missing: ' + ($missing -join ', ') }))
 
 # ── 2. Launch-check ──
 Push-Location $RepoRoot
@@ -69,7 +162,7 @@ if ($DeepVerificationTasks.Count -eq 0) {
   Gate 'deep verification' $false 'NO deep checks configured - this is a policy violation'
 } else {
   foreach ($task in $DeepVerificationTasks) {
-    $ok = Run-InDir $task.Dir $task.Command
+    $ok = Invoke-InDir $task.Dir $task.Command
     Gate $task.Label $ok "$($task.Dir): $($task.Command)"
   }
 }
@@ -78,8 +171,8 @@ if ($DeepVerificationTasks.Count -eq 0) {
 foreach ($dir in $NodeAuditDirs) {
   $pkgPath = if ($dir -eq '.') { Join-Path $RepoRoot 'package.json' } else { Join-Path (Join-Path $RepoRoot $dir) 'package.json' }
   if (Test-Path $pkgPath) {
-    $null = Run-InDir $dir 'npm audit fix'
-    $auditOk = Run-InDir $dir 'npm audit --omit=dev'
+    $null = Invoke-InDir $dir 'npm audit fix'
+    $auditOk = Invoke-InDir $dir 'npm audit --omit=dev'
     Gate "node vulnerability sweep ($dir)" $auditOk "npm audit fix && npm audit --omit=dev"
   }
 }
@@ -125,6 +218,74 @@ try {
   }
   Gate 'status update discipline' $statusOk $statusDetail
   $gitSummary = if ($gitStatus.Count -gt 0) { ($gitStatus | Select-Object -First 10) -join ' | ' } else { 'clean' }
+
+  $dirtyPaths = @($gitStatus | ForEach-Object { Get-StatusPath $_ } | Where-Object { $_ })
+  $blockingDirty = @($dirtyPaths | Where-Object { -not (Test-IsAllowedRuntimeDirtyPath $_) } | Select-Object -Unique)
+  $workingTreeOk = $blockingDirty.Count -eq 0
+  $workingTreeDetail = if ($workingTreeOk) {
+    if ($dirtyPaths.Count -eq 0) { 'repo clean before closeout report' } else { 'only runtime handoff/evidence files are dirty before report write' }
+  } else {
+    'dirty working tree outside runtime handoff: ' + (($blockingDirty | Select-Object -First 5) -join ', ')
+  }
+  Gate 'working tree cleanliness' $workingTreeOk $workingTreeDetail
+
+  $newDocPaths = @(
+    $gitStatus |
+      Where-Object { $_ -match '^(A.|.A|\?\?)\s' } |
+      ForEach-Object { Get-StatusPath $_ } |
+      Where-Object { $_ -and $_ -match '\.(md|txt|rst)$' } |
+      Select-Object -Unique
+  )
+  $misplacedDocs = @($newDocPaths | Where-Object { -not (Test-IsApprovedDocPath $_) })
+  $docPlacementOk = $misplacedDocs.Count -eq 0
+  $docPlacementDetail = if ($docPlacementOk) {
+    if ($newDocPaths.Count -eq 0) { 'no newly created docs pending placement review' } else { 'new docs are in approved zones' }
+  } else {
+    'new docs in nonstandard locations: ' + (($misplacedDocs | Select-Object -First 5) -join ', ')
+  }
+  Gate 'documentation placement' $docPlacementOk $docPlacementDetail
+
+  $activeDocChanges = @(
+    $dirtyPaths |
+      Where-Object { $_ -match '\.(md|txt|rst)$' -and $_ -notlike '0.dev-matrix/closeout-logs/*' } |
+      Select-Object -Unique
+  )
+  $suspiciousDocPaths = @(
+    $activeDocChanges |
+      Where-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) -match $SuspiciousDocNamePattern } |
+      Select-Object -Unique
+  )
+  $docNamingOk = $suspiciousDocPaths.Count -eq 0
+  $docNamingDetail = if ($docNamingOk) { 'no active docs use unstable duplicate-style names' } else { 'unstable doc names: ' + (($suspiciousDocPaths | Select-Object -First 5) -join ', ') }
+  Gate 'documentation naming hygiene' $docNamingOk $docNamingDetail
+
+  $handoffFile = Join-Path $RepoRoot '0.dev-matrix\AI-HANDOFF.md'
+  if (Test-Path $handoffFile) {
+    $latestHandoff = Get-LatestHandoffEntry (Get-Content $handoffFile -Raw)
+    if ($null -eq $latestHandoff) {
+      Gate 'handoff continuity' $false 'AI-HANDOFF.md has no parseable top entry'
+    } else {
+      $latestHandoffDate = $latestHandoff.Date
+      $latestHandoffContinue = Get-HandoffFieldValue $latestHandoff.Body 'Continue from:'
+      $latestHandoffNext = Get-HandoffFieldValue $latestHandoff.Body 'Next step:'
+      $missingHandoffLabels = @(
+        $RequiredHandoffLabels |
+          Where-Object { -not [regex]::IsMatch($latestHandoff.Body, '(?mi)^-\s*' + [regex]::Escape($_) + '\s*.+$') }
+      )
+      $handoffDateOk = $latestHandoff.Date -eq $todayStamp
+      $handoffOk = $handoffDateOk -and $missingHandoffLabels.Count -eq 0
+      $handoffDetail = if ($handoffOk) {
+        'latest entry is dated today and contains changed/verified/continue/next/blockers fields'
+      } elseif (-not $handoffDateOk) {
+        "latest entry dated $($latestHandoff.Date); expected $todayStamp"
+      } else {
+        'latest entry missing fields: ' + (($missingHandoffLabels | ForEach-Object { $_.TrimEnd(':') }) -join ', ')
+      }
+      Gate 'handoff continuity' $handoffOk $handoffDetail
+    }
+  } else {
+    Gate 'handoff continuity' $false 'AI-HANDOFF.md not found'
+  }
 } finally {
   Pop-Location
 }
@@ -167,6 +328,11 @@ $report = @(
   "- Log: 0.dev-matrix/closeout-logs/closeout-$dateStamp.log",
   ""
 )
+$report += "## Handoff"
+$report += "- Latest handoff date: $latestHandoffDate"
+$report += "- Continue from: $latestHandoffContinue"
+$report += "- Next step: $latestHandoffNext"
+$report += ""
 if ($regressionNote) { $report += "## Regression Warning"; $report += ""; $report += "- $regressionNote"; $report += "" }
 $report += "## Results"
 $report += $reportLines

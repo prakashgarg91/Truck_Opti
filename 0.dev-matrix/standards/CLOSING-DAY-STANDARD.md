@@ -11,8 +11,10 @@ Every repo should have a repeatable close-of-day workflow so work ends with veri
 3. Repo-specific deep verification commands are run when available.
 4. Non-breaking dependency vulnerability remediation is attempted.
 5. Remaining vulnerabilities are surfaced explicitly.
-6. Runtime status files are updated or intentionally left unchanged with a clean repo.
-7. A closeout report is written with timestamp, commands, results, and follow-up.
+6. New documentation is reviewed for duplication, naming quality, and placement.
+7. Runtime status files are updated or intentionally left unchanged with a clean repo or runtime-only handoff diff.
+8. The newest `AI-HANDOFF.md` entry is updated for today and tells the next session exactly where to continue.
+9. A closeout report is written with timestamp, commands, results, and follow-up.
 
 ## Minimum Hook Behavior
 
@@ -22,7 +24,10 @@ A repo-local close-day hook should:
 - run repo-specific deep verification commands for flows, frontend, backend, and bug hunting when available
 - run dependency vulnerability remediation for supported package surfaces
 - re-check vulnerability status after remediation
+- review newly created docs for canonical placement and duplicate-style naming
 - check `STATE.md`, `TASK.md`, and `DISCUSSION.md` update discipline
+- verify the newest `AI-HANDOFF.md` entry is dated today and includes `Changed:`, `Verified:`, `Continue from:`, `Next step:`, and `Blockers:`
+- fail if the working tree stays dirty outside intentional runtime handoff files
 - capture `git status`
 - write a machine-readable or markdown closeout summary
 
@@ -31,6 +36,7 @@ A repo-local close-day hook should:
 Each repo must carry these close-day standard documents:
 
 - `0.dev-matrix/CLOSING-DAY-HOOK.md` — local hook policy for the repo
+- `0.dev-matrix/AI-HANDOFF.md` — continuation-grade close-day handoff log for future sessions
 - `0.dev-matrix/standards/DEEP-VERIFICATION-STANDARD.md` — deep verification policy (sourced from Github-manager master)
 - `0.dev-matrix/standards/ANTI-HALLUCINATION-STANDARD.md` — anti-hallucination enforcement policy (sourced from Github-manager master)
 
@@ -43,6 +49,9 @@ Every repo's close-day hook must have non-empty `$DeepVerificationTasks`. Runnin
 - Do not close the day on claims alone; use evidence.
 - Do not hide failing gates inside a handoff.
 - Do not leave vulnerability findings undocumented.
+- Do not create new duplicate-summary docs when an existing canonical doc should be updated.
+- Do not close the day with lingering code/package/lockfile changes outside runtime handoff files.
+- Do not end the day with a vague handoff; the next starting point must be explicit.
 - Prefer a clean tree or an explicit handoff, never silent drift.
 
 ## Anti-Hallucination Enforcement

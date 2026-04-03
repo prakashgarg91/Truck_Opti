@@ -22,6 +22,17 @@ param(
 
 $ErrorActionPreference = 'Continue'
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+$AllowedRuntimeDirtyFiles = @(
+    '0.dev-matrix/STATE.md',
+    '0.dev-matrix/TASK.md',
+    '0.dev-matrix/DISCUSSION.md',
+    '0.dev-matrix/AI-HANDOFF.md',
+    '0.dev-matrix/LAST-CLOSEOUT.md'
+)
+$AllowedRuntimeDirtyPrefixes = @(
+    '0.dev-matrix/closeout-logs/',
+    '0.dev-matrix/test-reports/'
+)
 
 # ---------- helpers ----------
 
@@ -47,6 +58,32 @@ function Write-Gate {
     if ($Status -eq 'PASS') { $script:PassCount++ }
     elseif ($Status -eq 'FAIL') { $script:FailCount++ }
     else { $script:SkipCount++ }
+}
+
+function ConvertTo-RepoRelativePath {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
+    return ($Path -replace '\\', '/').Trim()
+}
+
+function Get-StatusPath {
+    param([string]$StatusLine)
+    if ([string]::IsNullOrWhiteSpace($StatusLine) -or $StatusLine.Length -lt 4) { return $null }
+    $path = $StatusLine.Substring(3).Trim()
+    if ($path -match ' -> ') {
+        $path = ($path -split ' -> ')[-1].Trim()
+    }
+    return ConvertTo-RepoRelativePath $path
+}
+
+function Test-IsAllowedRuntimeDirtyPath {
+    param([string]$RelativePath)
+    if ([string]::IsNullOrWhiteSpace($RelativePath)) { return $false }
+    if ($AllowedRuntimeDirtyFiles -contains $RelativePath) { return $true }
+    foreach ($prefix in $AllowedRuntimeDirtyPrefixes) {
+        if ($RelativePath -like "$prefix*") { return $true }
+    }
+    return $false
 }
 
 # ---------- banner ----------
@@ -256,22 +293,21 @@ try {
     if ($gitStatusExit -ne 0) {
         Write-Gate 'Git working tree cleanliness' 'FAIL' "git status exited $gitStatusExit"
     } else {
-        # Filter out lines that start with '!!' (ignored files) — those are not dirty
-        # and lines starting with '?' (untracked) that are covered by .gitignore
-        $dirtyLines = @()
+        $dirtyPaths = @()
         foreach ($line in $gitStatusOutput) {
-            # Skip ignored files (shown with '!!' prefix when --ignored is used)
-            # and blank lines
             if ($line -match '^\s*$') { continue }
             if ($line -match '^!!') { continue }
-            # Remaining lines are real modifications (staged, unstaged, or untracked)
-            $dirtyLines += $line
+            $path = Get-StatusPath $line
+            if ($path) { $dirtyPaths += $path }
         }
 
-        if ($dirtyLines.Count -gt 0) {
-            $sample = ($dirtyLines | Select-Object -First 5) -join ' | '
-            $count  = $dirtyLines.Count
+        $blockingDirty = @($dirtyPaths | Where-Object { -not (Test-IsAllowedRuntimeDirtyPath $_) } | Select-Object -Unique)
+        if ($blockingDirty.Count -gt 0) {
+            $sample = ($blockingDirty | Select-Object -First 5) -join ' | '
+            $count  = $blockingDirty.Count
             Write-Gate 'Git working tree cleanliness' 'FAIL' "$count dirty path(s): $sample"
+        } elseif ($dirtyPaths.Count -gt 0) {
+            Write-Gate 'Git working tree cleanliness' 'PASS' 'only runtime handoff/evidence files are dirty'
         } else {
             Write-Gate 'Git working tree cleanliness' 'PASS' 'working tree clean'
         }
@@ -285,8 +321,18 @@ try {
 Write-Host '  Gate 8: Tree hygiene' -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
-    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md', '0.dev-matrix\CLOSING-DAY-HOOK.md', '0.dev-matrix\standards\DEEP-VERIFICATION-STANDARD.md')
+    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\DOCUMENTATION-GOVERNANCE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md', '0.dev-matrix\CLOSING-DAY-HOOK.md', '0.dev-matrix\AI-HANDOFF.md')
     $missingDocs = $requiredDocs | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
+    $requiredStandards = @(
+        '0.dev-matrix\standards\CLOSING-DAY-STANDARD.md',
+        '0.dev-matrix\standards\DEFINITION-OF-DONE.md',
+        '0.dev-matrix\standards\DOCUMENTATION-GOVERNANCE-STANDARD.md',
+        '0.dev-matrix\standards\DEEP-VERIFICATION-STANDARD.md',
+        '0.dev-matrix\standards\ROLLOUT-RULES.md',
+        '0.dev-matrix\standards\TREE-HYGIENE-STANDARD.md',
+        '0.dev-matrix\standards\VULNERABILITY-RESPONSE-STANDARD.md'
+    )
+    $missingStandards = $requiredStandards | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
     $junkNames = @('nul', '.DS_Store', 'Thumbs.db', 'Desktop.ini')
     $junkPaths = @(
         Get-ChildItem -Path $RepoRoot -Recurse -Force -File -ErrorAction SilentlyContinue |
@@ -295,16 +341,36 @@ try {
     )
     $scanFiles = Get-ChildItem -Path $RepoRoot -Recurse -File -ErrorAction SilentlyContinue |
         Where-Object {
-            $_.FullName -notmatch '\\(node_modules|dist|coverage|logs|playwright-report|test-results|venv|\.venv|0\.dev-matrix\\(test-reports|archive|backup)|\.git)\\' -and
+            $_.FullName -notmatch '\\(node_modules|dist|coverage|logs|playwright-report|test-results|venv|\.venv|docs\\archive|0\.dev-matrix\\(test-reports|archive|backup|closeout-logs|error-logs)|\.git)\\' -and
             $_.Extension -in @('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.json', '.yml', '.yaml', '.toml', '.ini', '.env', '.ps1', '.sh', '.bat', '.md', '.html', '.css', '.sql', '.dockerfile')
         }
     $conflictHit = $scanFiles | Select-String -Pattern '^(<{7}|={7}|>{7})( .*)?$' | Select-Object -First 1
-    $treeClean = ($missingDocs.Count -eq 0) -and ($junkPaths.Count -eq 0) -and ($null -eq $conflictHit)
+    $treeClean = ($junkPaths.Count -eq 0) -and ($null -eq $conflictHit)
+
+    if ($missingStandards.Count -eq 0) {
+        Write-Gate 'Standards presence' 'PASS' 'required standards present'
+    } else {
+        Write-Gate 'Standards presence' 'FAIL' ('missing: ' + ($missingStandards -join ', '))
+    }
+
+    if ($missingDocs.Count -eq 0) {
+        Write-Gate 'Runtime docs' 'PASS' 'tree hygiene, launch checklist, closing-day hook, documentation governance, and handoff present'
+    } else {
+        Write-Gate 'Runtime docs' 'FAIL' ('missing: ' + ($missingDocs -join ', '))
+    }
+
+    $docGovFile = Join-Path $RepoRoot '0.dev-matrix\DOCUMENTATION-GOVERNANCE.md'
+    if (Test-Path $docGovFile) {
+        $docGovContent = Get-Content $docGovFile -Raw
+        $docGovOk = ($docGovContent -match 'Approved Documentation Zones') -and ($docGovContent -match 'AI Rules')
+        $docGovDetail = if ($docGovOk) { 'approved zones and AI rules recorded' } else { 'missing required sections in DOCUMENTATION-GOVERNANCE.md' }
+        Write-Gate 'Documentation governance' ($(if ($docGovOk) { 'PASS' } else { 'FAIL' })) $docGovDetail
+    } else {
+        Write-Gate 'Documentation governance' 'FAIL' 'DOCUMENTATION-GOVERNANCE.md not found'
+    }
 
     if ($treeClean) {
-        Write-Gate 'Tree hygiene' 'PASS' 'tree-hygiene doc present and active code tree is clean'
-    } elseif ($missingDocs.Count -gt 0) {
-        Write-Gate 'Tree hygiene' 'FAIL' ("missing: " + ($missingDocs -join ', '))
+        Write-Gate 'Tree hygiene' 'PASS' 'active code tree is clean'
     } elseif ($junkPaths.Count -gt 0) {
         Write-Gate 'Tree hygiene' 'FAIL' ("junk artifact: " + $junkPaths[0])
     } else {
