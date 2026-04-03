@@ -20,6 +20,11 @@ const PHONEPE_CONFIG = {
   redirectUrl: import.meta.env.VITE_APP_URL || window.location.origin,
 };
 
+function isLiveTruckOptiSite(): boolean {
+  if (typeof window === 'undefined') return false;
+  return ['truckopti.in', 'www.truckopti.in'].includes(window.location.hostname);
+}
+
 function getPhonePeConfigError(): string | null {
   if (isUnset(PHONEPE_CONFIG.merchantId)) return 'Missing VITE_PHONEPE_MERCHANT_ID';
   if (isUnset(PHONEPE_CONFIG.apiUrl)) return 'Missing VITE_PHONEPE_API_URL';
@@ -61,6 +66,14 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
       success: false,
       code: 'CONFIG_ERROR',
       message: `PhonePe is not configured: ${configError}`,
+    };
+  }
+
+  if (isLiveTruckOptiSite() && getPaymentConfig().isTestMode) {
+    return {
+      success: false,
+      code: 'CONFIG_ERROR',
+      message: 'PhonePe live payments are not enabled yet. Please contact support.',
     };
   }
 
@@ -209,4 +222,6 @@ export const getPaymentConfig = () => ({
   merchantId: PHONEPE_CONFIG.merchantId || '',
   isConfigured: !getPhonePeConfigError(),
   isTestMode: (PHONEPE_CONFIG.apiUrl || '').includes('sandbox'),
+  isLaunchReady: !getPhonePeConfigError() && !(PHONEPE_CONFIG.apiUrl || '').includes('sandbox'),
+  launchBlocker: getPhonePeConfigError() || ((PHONEPE_CONFIG.apiUrl || '').includes('sandbox') ? 'PhonePe is still using sandbox/preprod' : null),
 });

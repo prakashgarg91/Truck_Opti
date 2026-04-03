@@ -37,6 +37,9 @@ const CheckoutPage: React.FC = () => {
 
   const razorpayConfig = getRazorpayConfig();
   const phonePeConfig = getPaymentConfig();
+  const hasLivePhonePe = phonePeConfig.isLaunchReady;
+  const hasLiveRazorpay = razorpayConfig.isLaunchReady;
+  const paymentTemporarilyUnavailable = !hasLivePhonePe && !hasLiveRazorpay;
 
   useEffect(() => {
     document.title = 'Checkout - TruckOpti'
@@ -106,6 +109,11 @@ const CheckoutPage: React.FC = () => {
     
     if (!phone || phone.length < 10) {
       toast.error(language === 'en' ? 'Please enter a valid phone number' : 'कृपया सही फ़ोन नंबर दर्ज करें');
+      return;
+    }
+
+    if (paymentTemporarilyUnavailable) {
+      toast.error('Live payments are temporarily unavailable. Please contact support.');
       return;
     }
 
@@ -378,10 +386,16 @@ const CheckoutPage: React.FC = () => {
                 <img loading="lazy" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/UPI-Logo-vector.svg/1200px-UPI-Logo-vector.svg.png" alt="UPI" className="h-8 object-contain" />
               </div>
 
+              {paymentTemporarilyUnavailable && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  Live payments are temporarily unavailable on this deployment. Please contact support before attempting a subscription checkout.
+                </div>
+              )}
+
               {/* Pay Button */}
               <button
                 onClick={handlePayment}
-                disabled={processing || !phone}
+                disabled={processing || !phone || paymentTemporarilyUnavailable}
                 className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
               >
                 {processing ? (

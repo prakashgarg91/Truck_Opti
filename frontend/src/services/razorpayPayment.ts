@@ -18,6 +18,11 @@ const RAZORPAY_CONFIG = {
   isTestMode: (import.meta.env.VITE_RAZORPAY_KEY_ID || '').includes('test'),
 };
 
+function isLiveTruckOptiSite(): boolean {
+  if (typeof window === 'undefined') return false;
+  return ['truckopti.in', 'www.truckopti.in'].includes(window.location.hostname);
+}
+
 export interface RazorpayPaymentRequest {
   amount: number; // in paise
   currency?: string;
@@ -57,10 +62,19 @@ function loadRazorpayScript(): Promise<boolean> {
 
 // Get Razorpay configuration info
 export function getRazorpayConfig() {
+  const isConfigured = !isUnset(RAZORPAY_CONFIG.keyId);
+  const isLaunchReady = isConfigured && !RAZORPAY_CONFIG.isTestMode;
+
   return {
     keyId: RAZORPAY_CONFIG.keyId || '',
-    isConfigured: !isUnset(RAZORPAY_CONFIG.keyId),
+    isConfigured,
     isTestMode: RAZORPAY_CONFIG.isTestMode,
+    isLaunchReady,
+    launchBlocker: isLaunchReady
+      ? null
+      : !isConfigured
+        ? 'Missing VITE_RAZORPAY_KEY_ID'
+        : 'Razorpay is still using a test key',
   };
 }
 
@@ -105,10 +119,19 @@ async function createServerOrder(request: RazorpayPaymentRequest): Promise<{ ord
 export async function initiateRazorpayPayment(
   request: RazorpayPaymentRequest
 ): Promise<RazorpayPaymentResult> {
-  if (isUnset(RAZORPAY_CONFIG.keyId)) {
+  const config = getRazorpayConfig();
+
+  if (!config.isConfigured) {
     return {
       success: false,
       error: 'Razorpay is not configured. Missing VITE_RAZORPAY_KEY_ID.',
+    };
+  }
+
+  if (isLiveTruckOptiSite() && !config.isLaunchReady) {
+    return {
+      success: false,
+      error: 'Razorpay live payments are not enabled yet. Please contact support.',
     };
   }
 

@@ -9,7 +9,7 @@
 
 > **Repo-side preflight/security work is green and public frontend smoke is green, but launch is still blocked by live production configuration.**
 > **Evidence:** `npm run launch-check` passed 8/8 gates on 2026-03-31; `npm run test:frontend-smoke` passed 12/13 on 2026-04-01; `npm run test:prod-config` passed 2/6 on 2026-04-03.
-> **2026-04-03 update:** the deployed frontend is reachable, but live production checks still prove the configured Supabase auth host is unreachable, Razorpay is still on test keys, `VITE_SENTRY_DSN` is missing, and PhonePe is still pointed at sandbox/preprod. Launch remains blocked until those production dependencies are corrected and re-tested.
+> **2026-04-03 update:** the deployed frontend is reachable, but live production checks still prove the configured Supabase auth host is unreachable, Razorpay is still on test keys, `VITE_SENTRY_DSN` is missing, and PhonePe is still pointed at sandbox/preprod. Checkout now fails closed in the frontend when live gateways are not ready, but launch remains blocked until those production dependencies are corrected and re-tested.
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|

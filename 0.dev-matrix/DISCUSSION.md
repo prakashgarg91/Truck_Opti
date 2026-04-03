@@ -89,6 +89,20 @@
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-03] MANAGER-ADMIN:
+  Checkout/payment flow hardened to fail closed on live TruckOpti domains when gateways are not launch-ready.
+
+  NEW VERIFIED WORK:
+  - `frontend/src/services/phonepePayment.ts` now rejects sandbox/preprod PhonePe on live domains
+  - `frontend/src/services/razorpayPayment.ts` now rejects test-key Razorpay on live domains
+  - `frontend/src/pages/CheckoutPage.tsx` now disables the pay button and shows a clear warning when no live gateway is ready
+  - `cd frontend && npm run build`: PASS
+
+  JUDGMENT:
+  - this does not remove the external payment blockers
+  - it does prevent the live site from presenting broken subscription checkout as if it were ready
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-03] MANAGER-ADMIN:
   Production config was audited directly from Heroku to separate repo truth from owner/dashboard truth.
 
   NEW VERIFIED WORK:
