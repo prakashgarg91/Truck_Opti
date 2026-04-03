@@ -93,7 +93,8 @@
 
   NEW VERIFIED WORK:
   - `npm run launch-check`: PASS (14/14 checks)
-  - `npm run test:frontend-smoke`: PASS (12/13), only `auth-service` still failing
+  - `npm run test:frontend-smoke`: PASS (14/15), only raw `auth-service` still failing
+  - new passing checks cover contact degraded-mode fallback and login degraded-mode auth fallback without creating live backend rows or OTPs
   - `npm run test:prod-config`: PASS (2/6), still failing on dead Supabase host, Razorpay test key, missing Sentry DSN, and PhonePe preprod
 
   JUDGMENT:
@@ -191,8 +192,8 @@
 
   NEW VERIFIED WORK:
   - Added `npm run test:frontend-smoke`
-  - verifies public routes, unauth redirects, and auth backend reachability
-  - latest result: 12/13 checks PASS
+  - now verifies public routes, unauth redirects, graceful contact/auth fallback UX, and auth backend reachability
+  - latest result: 14/15 checks PASS
   - auth-service check FAIL:
     `jbxncejtcbpcronndqlx.supabase.co` did not resolve
     live `/login` submission failed on `/auth/v1/otp` with `ERR_NAME_NOT_RESOLVED`

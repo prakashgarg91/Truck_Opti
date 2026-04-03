@@ -115,7 +115,7 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 
                              NEW EVIDENCE:
                              - `npm run test:frontend-smoke` added and run
-                             - result: 12/13 checks passed
+                             - result: 14/15 checks passed
                              - failing check: auth-service reachability
                              - direct DNS lookup failed for `jbxncejtcbpcronndqlx.supabase.co`
                              - Google Public DNS `8.8.8.8` also returned NXDOMAIN for the same host

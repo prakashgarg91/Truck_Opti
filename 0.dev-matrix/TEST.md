@@ -96,11 +96,13 @@ Verifies:
 
 - the 7 public routes above
 - protected-route redirects for unauthenticated users
+- contact-form graceful fallback when the backend is unreachable (network intercepted in-browser, no live row created)
+- login graceful fallback when OTP transport is unreachable (network intercepted in-browser, no live OTP sent)
 - auth backend reachability for the configured Supabase public URL
 
 Writes evidence to `logs/frontend_launch_smoke_report.json`.
 
-**Latest evidence:** 2026-04-01 manager verification passed 12/13 checks and failed the auth-service check because `jbxncejtcbpcronndqlx.supabase.co` could not be resolved and `/auth/v1/otp` failed with `ERR_NAME_NOT_RESOLVED` from the live login page. This was rechecked against Google Public DNS (`8.8.8.8`), which also returned NXDOMAIN, so the failure is not limited to the local network resolver.
+**Latest evidence:** 2026-04-03 manager verification passed 14/15 checks and failed only the auth-service reachability check. The new passing checks prove the live frontend now degrades gracefully when backend-dependent actions fail: `/contact` shows `Support is temporarily unreachable` with `Retry send` and `Email support`, and `/login` shows `Authentication service is currently unreachable...` when OTP transport is blocked in-browser. The single remaining failing check is still the real external blocker: `jbxncejtcbpcronndqlx.supabase.co` could not be resolved, and this was previously rechecked against Google Public DNS (`8.8.8.8`), which also returned NXDOMAIN.
 
 ### Step 2d: Production Config Audit — `npm run test:prod-config`
 

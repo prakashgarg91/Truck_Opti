@@ -132,6 +132,85 @@ async function collectProtectedRouteResult(browser, routePath) {
   }
 }
 
+async function collectContactFallbackResult(browser) {
+  const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  await context.route('**/rest/v1/contact_inquiries*', (route) => route.abort('internetdisconnected'));
+
+  const page = await context.newPage();
+  const signals = attachSignals(page);
+
+  try {
+    await resetSession(page, context);
+    await page.goto(`${BASE_URL}/contact?fresh=${Date.now()}`, { waitUntil: 'networkidle', timeout: 45000 });
+
+    await page.getByPlaceholder('Your full name').fill('Launch Smoke');
+    await page.getByPlaceholder('you@example.com').fill('launch-smoke@example.com');
+    await page.getByPlaceholder('+91 98765 43210').fill('9876543210');
+    await page.getByPlaceholder('How can we help you?').fill('Smoke test: verify graceful contact fallback.');
+    await page.getByRole('button', { name: 'Send Message' }).click();
+
+    await page.getByText('Support is temporarily unreachable.').waitFor({ timeout: 10000 });
+
+    return {
+      kind: 'contact-fallback',
+      path: '/contact',
+      finalUrl: page.url(),
+      title: await page.title(),
+      passed:
+        (await page.getByText('Support is temporarily unreachable.').count()) > 0 &&
+        (await page.getByText('Contact service is currently unavailable.').count()) > 0 &&
+        (await page.getByRole('button', { name: 'Retry send' }).count()) > 0 &&
+        (await page.getByRole('link', { name: 'Email support' }).count()) > 0 &&
+        signals.pageErrors.length === 0,
+      consoleErrors: signals.consoleErrors,
+      pageErrors: signals.pageErrors,
+      failedResponses: signals.failedResponses,
+    };
+  } finally {
+    await context.close();
+  }
+}
+
+async function collectAuthFallbackResult(browser) {
+  const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  await context.route('**/auth/v1/otp*', (route) => route.abort('internetdisconnected'));
+
+  const page = await context.newPage();
+  const signals = attachSignals(page);
+
+  try {
+    await resetSession(page, context);
+    await page.goto(`${BASE_URL}/login?fresh=${Date.now()}`, { waitUntil: 'networkidle', timeout: 45000 });
+
+    const emailTab = page.getByRole('button', { name: /^Email/ }).first();
+    if (await emailTab.count()) {
+      await emailTab.click();
+    }
+
+    await page.getByPlaceholder('your@email.com').fill('launch-smoke@example.com');
+    const submitButton = page.getByRole('button', { name: /Send Email OTP|Get OTP/ });
+    await submitButton.click();
+
+    const fallbackText = 'Authentication service is currently unreachable. Please try again shortly or use Google sign-in if available.';
+    await page.getByText(fallbackText).waitFor({ timeout: 10000 });
+
+    return {
+      kind: 'auth-fallback',
+      path: '/login',
+      finalUrl: page.url(),
+      title: await page.title(),
+      passed:
+        (await page.getByText(fallbackText).count()) > 0 &&
+        signals.pageErrors.length === 0,
+      consoleErrors: signals.consoleErrors,
+      pageErrors: signals.pageErrors,
+      failedResponses: signals.failedResponses,
+    };
+  } finally {
+    await context.close();
+  }
+}
+
 async function collectAuthServiceHealth() {
   const hostname = getSupabaseHostname();
   const result = {
@@ -187,6 +266,8 @@ async function main() {
       results.push(await collectProtectedRouteResult(browser, routePath));
     }
 
+    results.push(await collectContactFallbackResult(browser));
+    results.push(await collectAuthFallbackResult(browser));
     results.push(await collectAuthServiceHealth());
 
     const passedChecks = results.filter((result) => result.passed).length;
