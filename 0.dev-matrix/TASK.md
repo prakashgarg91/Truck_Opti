@@ -8,10 +8,10 @@
 ## 🎯 ACTIVE TASKS
 
 > **Repo-side preflight/security work is green and public frontend smoke is green, but launch is still blocked by live production configuration.**
-> **Evidence:** current synced head is `86690840`; `cd frontend && npm run build` passed on 2026-04-04; `npm run test:frontend-smoke` passed 16/17 on 2026-04-04; `npm run test:prod-config` last passed 2/6 on 2026-04-03.
+> **Evidence:** local manager head is `71c40ad4`; `cd frontend && npm run build` passed on 2026-04-04; `npm run test:frontend-smoke` passed 16/17 on 2026-04-04; `npm run test:prod-config` last passed 2/6 on 2026-04-03.
 > **2026-04-03 update:** the deployed frontend is reachable, but live production checks still prove the configured Supabase auth host is unreachable, Razorpay is still on test keys, `VITE_SENTRY_DSN` is missing, and PhonePe is still pointed at sandbox/preprod. Checkout now fails closed in the frontend when live gateways are not ready, but launch remains blocked until those production dependencies are corrected and re-tested.
 > **2026-04-03 repo-side note:** T-130 mitigation landed locally and the smoke evidence is stronger now. `frontend/src/main.tsx`, `frontend/src/utils/runtimeRecovery.ts`, and `frontend/src/components/ErrorBoundary.tsx` recover stale lazy-chunk failures by forcing a safe reload path; `frontend/vite.config.ts` enables Workbox `cleanupOutdatedCaches` and `navigateFallback: '/index.html'`; and `npm run test:frontend-smoke` now exercises 17 checks with 16 passing, including contact-page degraded-mode fallback, login-page auth fallback, and both public onboarding wizards progressing to their next major steps without creating live backend side effects. Live returning-user retest is still pending.
-> **2026-04-04 repo-side note:** the duplicated client-side packer has now been consolidated into `frontend/src/lib/packing.ts`, with `PackingPage.tsx` and `packingWorker.ts` both using the shared module. The frontend build still passes, and public frontend smoke still lands at 16/17 with only the external `auth-service` check failing.
+> **2026-04-04 repo-side note:** the duplicated client-side packer has now been consolidated into `frontend/src/lib/packing.ts`, with `PackingPage.tsx`, `packingWorker.ts`, and `usePackingWorker.ts` all using the shared engine/types. The frontend build still passes, and public frontend smoke still lands at 16/17 with only the external `auth-service` check failing.
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
