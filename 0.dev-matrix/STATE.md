@@ -42,6 +42,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `GPT-002` | MANAGER | GPT-5.4 | Packing regression | Deterministic packing proof + dev-matrix reality sync | 2026-04-04 | ✅ DONE |
 | `GPT-001` | MANAGER | GPT-5.4 | Close-day verification | Verify `70e764c5`, sync dev-matrix closeout, queue packing-engine handoff | 2026-04-03 | ✅ DONE |
 | `GLM-001` | LEAD+JUDGE | GLM-5.1 | Full-stack audit | BATCH21 audit + security fixes + npm vuln cleanup + dev-matrix reality sync | 2026-03-29 | ✅ DONE |
 | `GLM-003` | MANAGER | GLM-5.1 | DevOps scripts | Launch-readiness script (6-gate PS1) + npm entry + dev-matrix update | 2026-03-30 | ✅ DONE |
@@ -78,6 +79,19 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-04] GPT-002 (MANAGER): ✅ PACKING REGRESSION PROOF ADDED FOR THE SHARED ENGINE
+
+                             VERIFIED EVIDENCE:
+                             - added deterministic `frontend/scripts/packing-regression.ts`
+                             - added `npm run test:packing` in `frontend/` plus a repo-root alias
+                             - `npm run test:packing`: PASS (4/4)
+                             - `cd frontend && npm run build`: PASS
+                             - root + frontend `npm audit --omit=dev`: 0 vulnerabilities
+
+                             PRODUCT JUDGMENT:
+                             - shared packing logic is now backed by machine-verifiable regression proof instead of build-only confidence
+                             - next heuristic-quality task is concrete: skyline still under-packs a boundary-aligned 1m cube load that `extreme_points` fits completely
+──────────────────────────────────────────────────────────────────────────────────────────
 [2026-04-04] GPT-001 (MANAGER): ✅ CLIENT-SIDE PACKER CONSOLIDATED TO ONE SHARED FRONTEND MODULE
 
                              VERIFIED EVIDENCE:

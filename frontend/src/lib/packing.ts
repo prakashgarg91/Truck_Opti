@@ -52,6 +52,7 @@ export interface PackingResult {
 interface PackerOptions {
   geneticIterations?: number
   onProgress?: (progress: number) => void
+  random?: () => number
 }
 
 export const PACKING_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6']
@@ -248,11 +249,12 @@ export class AdvancedBinPacker {
 
   private packGenetic(): PackingResult {
     const iterations = this.options.geneticIterations ?? 12
+    const random = this.options.random ?? Math.random
     let bestResult: PackingResult = { packed: [], unpacked: [] }
     let bestCount = 0
 
     for (let iteration = 0; iteration < iterations; iteration += 1) {
-      const shuffledItems = [...this.items].sort(() => Math.random() - 0.5)
+      const shuffledItems = [...this.items].sort(() => random() - 0.5)
       const tempPacker = new AdvancedBinPacker(this.truck, shuffledItems, 'extreme_points')
       const result = tempPacker.packExtremePoints()
 

@@ -24,6 +24,14 @@ Update protocol:
 ## Handoff Log
 
 ### 2026-04-04
+- Changed: added deterministic regression proof for the shared frontend packing engine via `frontend/scripts/packing-regression.ts`, `frontend/tsconfig.packing-regression.json`, `npm run test:packing`, and a seeded-random hook in `frontend/src/lib/packing.ts`.
+- Verified: `cd frontend && npm run test:packing` PASS (4/4); `cd frontend && npm run build` PASS; root + frontend `npm audit --omit=dev` both returned 0 vulnerabilities.
+- Operational proof: the shared packer is now covered by deterministic proof for skyline, extreme points, recommendation ranking, and seeded genetic behavior instead of relying on build success alone.
+- Continue from: start `0.dev-matrix/BATCH23_AGENT_CONTINUATION_PROMPT.md` to improve skyline handling for boundary-aligned cube loads without regressing the shared engine or worker path.
+- Next step: fix the skyline boundary-fit under-packing in `frontend/src/lib/packing.ts`, then expand `npm run test:packing` so the 1m-cube boundary case becomes a passing regression fixture instead of a known limitation.
+- Blockers: live auth/contact launch blockers remain unchanged (`jbxncejtcbpcronndqlx.supabase.co`, Razorpay test keys, missing `VITE_SENTRY_DSN`, PhonePe preprod); `apps/web` coverage is still a separate close-day issue.
+
+### 2026-04-04
 - Changed: pushed the shared frontend packing-engine consolidation (`c513818b`, `71c40ad4`, `1c9bf5e6`, `4c10138c`) and tightened the close-day governance rollout with the operational-proof contract plus generated-artifact hygiene.
 - Verified: `git rev-parse --short HEAD` = `71c40ad4`; `cd frontend && npm run build` PASS; `npm run test:frontend-smoke` = 16/17 PASS with only `auth-service` failing; the earlier pre-cleanup `npm run close-day` produced 9 pass / 5 fail and correctly exposed git-dirt plus handoff-date issues instead of masking them.
 - Operational proof: repo-side operational proof was rerun today via `cd frontend && npm run build`, `npm run test:frontend-smoke`, and the close-day hook; live auth-backed proof is still blocked by the unreachable Supabase host.

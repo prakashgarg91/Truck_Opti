@@ -227,4 +227,24 @@ export const OTP_EXPIRY_SECONDS = 300
 
 ---
 
-*Last updated: 2026-03-05 | v50 | SONNET-004*
+## PACKING PATTERN: Shared Client-Side Engine
+
+```typescript
+import {
+  AdvancedBinPacker,
+  recommendTrucks,
+  type PackedBox,
+  type SaleOrderItem,
+  type TruckRecommendation,
+  type TruckType,
+} from '../lib/packing'
+```
+
+Rules:
+- Keep the packing heuristics in `frontend/src/lib/packing.ts` as the single source of truth.
+- `PackingPage.tsx` and `packingWorker.ts` should import the shared engine instead of carrying their own algorithm copies.
+- After changing packing heuristics, run `npm run test:packing` in `frontend/` for deterministic regression proof before relying only on browser smoke or build output.
+
+---
+
+*Last updated: 2026-04-04 | packing regression proof synced by GPT-002*

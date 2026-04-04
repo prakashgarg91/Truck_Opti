@@ -5,6 +5,7 @@
   "scripts": {
     "heroku-postbuild": "cd frontend && npm install --include=dev && npm run build",
     "start": "node server.js",
+    "test:packing": "cd frontend && npm run test:packing",
     "test:live-buttons": "node scripts/public_frontend_smoke.mjs",
     "test:public-smoke": "node scripts/public_frontend_smoke.mjs",
     "test:frontend-smoke": "node scripts/frontend_launch_smoke.mjs",

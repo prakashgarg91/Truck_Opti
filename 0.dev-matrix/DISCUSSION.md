@@ -88,6 +88,22 @@
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-04] GPT-002:
+  Deterministic regression proof has been added for the shared frontend packing engine.
+
+  NEW VERIFIED WORK:
+  - added `frontend/scripts/packing-regression.ts`
+  - added `npm run test:packing` in `frontend/` and at repo root
+  - `npm run test:packing`: PASS (4/4)
+  - `cd frontend && npm run build`: PASS
+  - root + frontend `npm audit --omit=dev`: 0 vulnerabilities
+
+  JUDGMENT:
+  - shared packing logic is now backed by machine-verifiable proof
+  - the next quality target is specific: skyline under-packs a boundary-aligned 1m cube load that `extreme_points` fits fully
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-04] GPT-001:
   Client-side packing duplication has been consolidated into one shared frontend engine.
 
