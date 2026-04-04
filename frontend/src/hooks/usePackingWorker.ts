@@ -1,7 +1,8 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
+import type { PackedBox, SaleOrderItem, TruckRecommendation, TruckType } from '../lib/packing'
 
 interface PackingWorkerResult {
-  packed: any[]
+  packed: PackedBox[]
   unpacked: string[]
   duration: number
   algorithm: string
@@ -9,8 +10,8 @@ interface PackingWorkerResult {
 }
 
 interface UsePackingWorkerReturn {
-  runPacking: (truck: any, items: any[], algorithm: string) => Promise<PackingWorkerResult>
-  runRecommendation: (items: any[], trucks: any[], algorithm: string) => Promise<any[]>
+  runPacking: (truck: TruckType, items: SaleOrderItem[], algorithm: string) => Promise<PackingWorkerResult>
+  runRecommendation: (items: SaleOrderItem[], trucks: TruckType[], algorithm: string) => Promise<TruckRecommendation[]>
   progress: number
   isProcessing: boolean
   isSupported: boolean
@@ -71,7 +72,7 @@ export function usePackingWorker(): UsePackingWorkerReturn {
     }
   }, [isSupported])
 
-  const runPacking = useCallback((truck: any, items: any[], algorithm: string): Promise<PackingWorkerResult> => {
+  const runPacking = useCallback((truck: TruckType, items: SaleOrderItem[], algorithm: string): Promise<PackingWorkerResult> => {
     return new Promise((resolve, reject) => {
       ensureWorker()
       
@@ -103,7 +104,7 @@ export function usePackingWorker(): UsePackingWorkerReturn {
     })
   }, [ensureWorker])
 
-  const runRecommendation = useCallback((items: any[], trucks: any[], algorithm: string): Promise<any[]> => {
+  const runRecommendation = useCallback((items: SaleOrderItem[], trucks: TruckType[], algorithm: string): Promise<TruckRecommendation[]> => {
     return new Promise((resolve, reject) => {
       ensureWorker()
       
