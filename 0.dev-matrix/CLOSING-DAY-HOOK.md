@@ -14,6 +14,7 @@ Run `npm run close-day` from repo root before ending the work day when you want 
 - runs deeper verification where available
 - checks Node and Python dependency surfaces
 - checks status-update discipline for `STATE.md`, `TASK.md`, and `DISCUSSION.md`
+- requires an explicit `Operational proof:` line in the newest `AI-HANDOFF.md` entry
 
 ## Guardrails
 
@@ -26,6 +27,7 @@ Run `npm run close-day` from repo root before ending the work day when you want 
 The newest `AI-HANDOFF.md` entry for the close-day run must include:
 - `Changed:`
 - `Verified:`
+- `Operational proof:`
 - `Continue from:`
 - `Next step:`
 - `Blockers:`

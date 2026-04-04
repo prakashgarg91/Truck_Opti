@@ -8,13 +8,15 @@ $LaunchCommand = 'npm run launch-check'
 $NodeAuditDirs = @('.', 'frontend', 'apps\web')
 $PythonRequirementFiles = @('apps\web\requirements.txt')
 $DeepVerificationTasks = @(
-  @{ Label = 'deep verification: live button audit'; Dir = '.'; Command = 'npm run test:live-buttons' }
+  @{ Label = 'deep verification: live button audit'; Dir = '.'; Command = 'npm run test:live-buttons' },
+  @{ Label = 'deep verification: app coverage'; Dir = 'apps\web'; Command = 'npm run test:coverage' }
 )
 $AllowedRuntimeDirtyFiles = @(
   '0.dev-matrix/STATE.md',
   '0.dev-matrix/TASK.md',
   '0.dev-matrix/DISCUSSION.md',
-  '0.dev-matrix/AI-HANDOFF.md'
+  '0.dev-matrix/AI-HANDOFF.md',
+  '0.dev-matrix/LAST-CLOSEOUT.md'
 )
 $AllowedRuntimeDirtyPrefixes = @(
   '0.dev-matrix/closeout-logs/',
@@ -40,13 +42,14 @@ $CanonicalRootDocPatterns = @(
   'OPERATIONS*.md'
 )
 $SuspiciousDocNamePattern = '(?i)(^|[-_. ])(copy|backup|old|new|tmp|temp|draft|final|v[2-9]\d*)([-_. ]|$)'
-$RequiredHandoffLabels = @('Changed:', 'Verified:', 'Continue from:', 'Next step:', 'Blockers:')
+$RequiredHandoffLabels = @('Changed:', 'Verified:', 'Operational proof:', 'Continue from:', 'Next step:', 'Blockers:')
 $pass = 0
 $fail = 0
 $reportLines = @()
 $outputLog = @()
 $todayStamp = Get-Date -Format 'yyyy-MM-dd'
 $latestHandoffDate = 'missing'
+$latestHandoffOperationalProof = 'missing'
 $latestHandoffContinue = 'missing'
 $latestHandoffNext = 'missing'
 
@@ -123,6 +126,11 @@ function Get-LatestHandoffEntry($content) {
     Date = $match.Groups['date'].Value
     Body = $match.Groups['body'].Value.Trim()
   }
+}
+
+function Test-IsMeaningfulOperationalProof($value) {
+  if ([string]::IsNullOrWhiteSpace($value)) { return $false }
+  return $value.Trim().ToLowerInvariant() -ne 'none'
 }
 
 function Invoke-InDir($relativeDir, $command) {
@@ -262,8 +270,10 @@ try {
     $latestHandoff = Get-LatestHandoffEntry (Get-Content $handoffFile -Raw)
     if ($null -eq $latestHandoff) {
       Gate 'handoff continuity' $false 'AI-HANDOFF.md has no parseable top entry'
+      Gate 'operational proof' $false 'AI-HANDOFF.md has no parseable top entry'
     } else {
       $latestHandoffDate = $latestHandoff.Date
+      $latestHandoffOperationalProof = Get-HandoffFieldValue $latestHandoff.Body 'Operational proof:'
       $latestHandoffContinue = Get-HandoffFieldValue $latestHandoff.Body 'Continue from:'
       $latestHandoffNext = Get-HandoffFieldValue $latestHandoff.Body 'Next step:'
       $missingHandoffLabels = @(
@@ -273,16 +283,27 @@ try {
       $handoffDateOk = $latestHandoff.Date -eq $todayStamp
       $handoffOk = $handoffDateOk -and $missingHandoffLabels.Count -eq 0
       $handoffDetail = if ($handoffOk) {
-        'latest entry is dated today and contains changed/verified/continue/next/blockers fields'
+        'latest entry is dated today and contains changed/verified/operational-proof/continue/next/blockers fields'
       } elseif (-not $handoffDateOk) {
         "latest entry dated $($latestHandoff.Date); expected $todayStamp"
       } else {
         'latest entry missing fields: ' + (($missingHandoffLabels | ForEach-Object { $_.TrimEnd(':') }) -join ', ')
       }
       Gate 'handoff continuity' $handoffOk $handoffDetail
+
+      $operationalProofOk = Test-IsMeaningfulOperationalProof $latestHandoffOperationalProof
+      $operationalProofDetail = if ($operationalProofOk) {
+        'latest entry records operational proof'
+      } elseif ($missingHandoffLabels -contains 'Operational proof:') {
+        'latest entry missing field: Operational proof'
+      } else {
+        'Operational proof cannot be none; record concrete proof or not run - reason'
+      }
+      Gate 'operational proof' $operationalProofOk $operationalProofDetail
     }
   } else {
     Gate 'handoff continuity' $false 'AI-HANDOFF.md not found'
+    Gate 'operational proof' $false 'AI-HANDOFF.md not found'
   }
 } finally {
   Pop-Location
@@ -328,6 +349,7 @@ $report = @(
 )
 $report += "## Handoff"
 $report += "- Latest handoff date: $latestHandoffDate"
+$report += "- Operational proof: $latestHandoffOperationalProof"
 $report += "- Continue from: $latestHandoffContinue"
 $report += "- Next step: $latestHandoffNext"
 $report += ""
@@ -344,4 +366,3 @@ Write-Host ""
 Write-Host "Summary: $pass pass, $fail fail"
 if ($regressionNote) { Write-Host "WARNING: $regressionNote" -ForegroundColor Yellow }
 if ($fail -gt 0) { exit 1 }
-

@@ -328,6 +328,7 @@ try {
         '0.dev-matrix\standards\DEFINITION-OF-DONE.md',
         '0.dev-matrix\standards\DOCUMENTATION-GOVERNANCE-STANDARD.md',
         '0.dev-matrix\standards\DEEP-VERIFICATION-STANDARD.md',
+        '0.dev-matrix\standards\OPERATIONAL-PROOF-STANDARD.md',
         '0.dev-matrix\standards\ROLLOUT-RULES.md',
         '0.dev-matrix\standards\TREE-HYGIENE-STANDARD.md',
         '0.dev-matrix\standards\VULNERABILITY-RESPONSE-STANDARD.md'
@@ -357,6 +358,18 @@ try {
         Write-Gate 'Runtime docs' 'PASS' 'tree hygiene, launch checklist, closing-day hook, documentation governance, and handoff present'
     } else {
         Write-Gate 'Runtime docs' 'FAIL' ('missing: ' + ($missingDocs -join ', '))
+    }
+
+    $handoffFile = Join-Path $RepoRoot '0.dev-matrix\AI-HANDOFF.md'
+    if (Test-Path $handoffFile) {
+        $handoffContent = Get-Content $handoffFile -Raw
+        if ($handoffContent -match 'Operational proof:') {
+            Write-Gate 'Operational proof contract' 'PASS' 'AI-HANDOFF includes the Operational proof handoff label'
+        } else {
+            Write-Gate 'Operational proof contract' 'FAIL' 'AI-HANDOFF missing Operational proof label in the handoff contract'
+        }
+    } else {
+        Write-Gate 'Operational proof contract' 'FAIL' 'AI-HANDOFF.md not found'
     }
 
     $docGovFile = Join-Path $RepoRoot '0.dev-matrix\DOCUMENTATION-GOVERNANCE.md'

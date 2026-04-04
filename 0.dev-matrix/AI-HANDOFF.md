@@ -14,6 +14,7 @@ Update protocol:
 - Every close-day entry must include these exact labels:
 	- `Changed:`
 	- `Verified:`
+	- `Operational proof:`
 	- `Continue from:`
 	- `Next step:`
 	- `Blockers:`
@@ -22,16 +23,18 @@ Update protocol:
 
 ## Handoff Log
 
-### 2026-04-03
-- Changed: synchronized `STATE.md`, `TASK.md`, and `DISCUSSION.md` with verified close-day evidence on the current `70e764c5` tree and queued the next repo-side handoff around packing-engine consolidation.
-- Verified: `git status -sb` clean before closeout docs; `git rev-parse --short HEAD` = `70e764c5`; `npm run launch-check` PASS 14/14; `cd frontend && npm run build` PASS; root + frontend `npm audit --omit=dev` = 0 vulnerabilities; `npm run test:frontend-smoke` = 16/17 PASS with only `auth-service` failing; `npm run test:prod-config` = 2/6 PASS with Supabase DNS, Razorpay live readiness, Sentry DSN, and PhonePe mode still failing.
-- Continue from: extract the shared client-side packing engine duplicated between `frontend/src/pages/PackingPage.tsx` and `frontend/src/workers/packingWorker.ts`, then rerun build plus targeted packing regression checks.
-- Next step: start `0.dev-matrix/BATCH22_AGENT_CONTINUATION_PROMPT.md` to move the duplicated packer/recommendation logic into one shared frontend module before any further 3D heuristic tuning.
-- Blockers: `jbxncejtcbpcronndqlx.supabase.co` still does not resolve; production Razorpay is still on test keys; `VITE_SENTRY_DSN` is missing; PhonePe still targets preprod; authenticated smoke and live contact submission remain blocked by those external config issues.
+### 2026-04-04
+- Changed: pushed the shared frontend packing-engine consolidation (`c513818b`, `71c40ad4`, `1c9bf5e6`, `4c10138c`) and tightened the close-day governance rollout with the operational-proof contract plus generated-artifact hygiene.
+- Verified: `git rev-parse --short HEAD` = `71c40ad4`; `cd frontend && npm run build` PASS; `npm run test:frontend-smoke` = 16/17 PASS with only `auth-service` failing; the earlier pre-cleanup `npm run close-day` produced 9 pass / 5 fail and correctly exposed git-dirt plus handoff-date issues instead of masking them.
+- Operational proof: repo-side operational proof was rerun today via `cd frontend && npm run build`, `npm run test:frontend-smoke`, and the close-day hook; live auth-backed proof is still blocked by the unreachable Supabase host.
+- Continue from: rerun `npm run launch-check` and `npm run close-day` on the cleaned governance tree after this rollout is committed, then address the remaining `apps/web` coverage failure separately from launch auth blockers.
+- Next step: improve heuristic quality inside `frontend/src/lib/packing.ts` now that page and worker share one engine, or switch to owner-side recovery of Supabase/Razorpay/Sentry/PhonePe if launch execution takes priority.
+- Blockers: `jbxncejtcbpcronndqlx.supabase.co` still fails DNS/auth smoke; production Razorpay is still on test keys; `VITE_SENTRY_DSN` is missing; PhonePe still targets preprod; `apps/web` coverage still fails in close-day deep verification.
 
 ### 2026-04-03
 - Changed: rolled Github-manager governance and handoff-continuity updates into local `QUALITY-BASELINE.md`, `TREE-HYGIENE.md`, standards, and repo-level `scripts/launch-readiness.ps1` plus `scripts/close-day.ps1`.
 - Verified: PowerShell diagnostics previously reported clean for the edited scripts.
+- Operational proof: not run - Truck_Opti keeps custom launch and close scripts under `scripts/`, and those repo-specific runtime checks were not rerun during this governance-only rollout.
 - Continue from: stage only the governance rollout files and keep the separate `frontend/package-lock.json` change out of the rollout commit unless it was intentionally produced by a dependency-remediation decision.
 - Next step: commit and push the rollout, then run Truck_Opti launch-readiness on a clean tree if deeper runtime verification is needed.
 - Blockers: `frontend/package-lock.json` currently has a separate local change outside the rollout scope.

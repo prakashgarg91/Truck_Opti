@@ -10,6 +10,7 @@ frontend/release/
 frontend/release/**
 frontend/dist/
 dist/
+apps/web/coverage/
 
 # Node modules
 node_modules/
@@ -29,6 +30,7 @@ client_secret_*.json
 # Logs
 logs/
 *.log
+0.dev-matrix/closeout-logs/
 
 # Screenshots and test images
 screenshots/
