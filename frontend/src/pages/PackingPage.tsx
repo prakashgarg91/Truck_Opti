@@ -16,6 +16,7 @@ import { usePackingWorker } from '../hooks/usePackingWorker'
 import { useSubscription } from '../hooks/useSubscription'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
+import { AdvancedBinPacker, PACKING_COLORS, recommendTrucks, type PackedBox, type SaleOrderItem, type TruckRecommendation, type TruckType } from '../lib/packing'
 import { logger } from '../utils/logger'
 import { formatPercent, formatCurrency } from '../utils/formatters'
 
@@ -117,52 +118,6 @@ const t = {
 }
 
 // ============= TYPES =============
-interface SaleOrderItem {
-  id: string
-  name: string
-  length: number
-  width: number
-  height: number
-  weight: number
-  quantity: number
-  fragile: boolean
-  stackable: boolean
-}
-
-interface TruckType {
-  id: string
-  name: string
-  nameHi: string
-  dimensions: { length: number; width: number; height: number }
-  capacity: number
-  costPerKm: number
-  available: number
-}
-
-interface PackedBox {
-  id: string
-  x: number
-  y: number
-  z: number
-  width: number
-  height: number
-  depth: number
-  color: string
-  label: string
-  itemId: string
-}
-
-interface TruckRecommendation {
-  truck: TruckType
-  itemsFit: number
-  totalItems: number
-  volumeUtilization: number
-  weightUtilization: number
-  estimatedCost: number
-  packedBoxes: PackedBox[]
-  unfitItems: string[]
-}
-
 interface Customer {
   id: string
   name: string
@@ -179,301 +134,6 @@ const ALGORITHMS = [
   { id: 'extreme_points', name: 'Extreme Points', nameHi: 'एक्सट्रीम पॉइंट्स', icon: Target, description: 'Balanced performance', speed: 'Medium', quality: 'Better' },
   { id: 'genetic', name: 'Genetic Algorithm', nameHi: 'जेनेटिक', icon: Brain, description: 'Best optimization', speed: 'Slow', quality: 'Best' },
 ]
-
-const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6']
-
-// ============= ADVANCED 3D BIN PACKING ALGORITHM =============
-class AdvancedBinPacker {
-  private truck: TruckType
-  private items: SaleOrderItem[]
-  private algorithm: string
-  
-  constructor(truck: TruckType, items: SaleOrderItem[], algorithm: string) {
-    this.truck = truck
-    this.items = items
-    this.algorithm = algorithm
-  }
-  
-  private cmToM(cm: number): number {
-    return cm / 100
-  }
-  
-  private getVolume(l: number, w: number, h: number): number {
-    return l * w * h
-  }
-  
-  private fitsAt(packed: PackedBox[], x: number, y: number, z: number, l: number, w: number, h: number): boolean {
-    const { length, width, height } = this.truck.dimensions
-    
-    if (x + l > length || y + h > height || z + w > width) return false
-    if (x < 0 || y < 0 || z < 0) return false
-    
-    for (const box of packed) {
-      const overlapX = x < box.x + box.width && x + l > box.x
-      const overlapY = y < box.y + box.height && y + h > box.y
-      const overlapZ = z < box.z + box.depth && z + w > box.z
-      
-      if (overlapX && overlapY && overlapZ) return false
-    }
-    
-    return true
-  }
-  
-  private packSkylineBL(): { packed: PackedBox[], unpacked: string[] } {
-    const packed: PackedBox[] = []
-    const unpacked: string[] = []
-    const { length, width, height } = this.truck.dimensions
-    
-    const expandedItems: { item: SaleOrderItem, index: number }[] = []
-    this.items.forEach(item => {
-      for (let i = 0; i < item.quantity; i++) {
-        expandedItems.push({ item, index: i })
-      }
-    })
-    
-    expandedItems.sort((a, b) => {
-      const volA = this.getVolume(a.item.length, a.item.width, a.item.height)
-      const volB = this.getVolume(b.item.length, b.item.width, b.item.height)
-      if (a.item.stackable !== b.item.stackable) return a.item.stackable ? 1 : -1
-      return volB - volA
-    })
-    
-    for (const { item, index } of expandedItems) {
-      const itemL = this.cmToM(item.length)
-      const itemW = this.cmToM(item.width)
-      const itemH = this.cmToM(item.height)
-      
-      let placed = false
-      
-      const rotations = [
-        { l: itemL, w: itemW, h: itemH },
-        { l: itemW, w: itemL, h: itemH },
-        { l: itemL, w: itemH, h: itemW },
-        { l: itemH, w: itemL, h: itemW },
-        { l: itemW, w: itemH, h: itemL },
-        { l: itemH, w: itemW, h: itemL },
-      ]
-      
-      const step = 0.1
-      
-      outerLoop:
-      for (const rot of rotations) {
-        for (let y = 0; y <= height - rot.h; y += step) {
-          for (let z = 0; z <= width - rot.w; z += step) {
-            for (let x = 0; x <= length - rot.l; x += step) {
-              if (this.fitsAt(packed, x, y, z, rot.l, rot.w, rot.h)) {
-                packed.push({
-                  id: `${item.id}-${index}`,
-                  x: Math.round(x * 100) / 100,
-                  y: Math.round(y * 100) / 100,
-                  z: Math.round(z * 100) / 100,
-                  width: rot.l,
-                  height: rot.h,
-                  depth: rot.w,
-                  color: COLORS[this.items.indexOf(item) % COLORS.length],
-                  label: `${item.name.substring(0, 3)}${index + 1}`,
-                  itemId: item.id
-                })
-                placed = true
-                break outerLoop
-              }
-            }
-          }
-        }
-      }
-      
-      if (!placed) {
-        unpacked.push(`${item.name} #${index + 1}`)
-      }
-    }
-    
-    return { packed, unpacked }
-  }
-  
-  private packExtremePoints(): { packed: PackedBox[], unpacked: string[] } {
-    const packed: PackedBox[] = []
-    const unpacked: string[] = []
-    const { length, width, height } = this.truck.dimensions
-    
-    let extremePoints: { x: number, y: number, z: number }[] = [{ x: 0, y: 0, z: 0 }]
-    
-    const expandedItems: { item: SaleOrderItem, index: number }[] = []
-    this.items.forEach(item => {
-      for (let i = 0; i < item.quantity; i++) {
-        expandedItems.push({ item, index: i })
-      }
-    })
-    
-    expandedItems.sort((a, b) => {
-      const volA = this.getVolume(a.item.length, a.item.width, a.item.height)
-      const volB = this.getVolume(b.item.length, b.item.width, b.item.height)
-      return volB - volA
-    })
-    
-    for (const { item, index } of expandedItems) {
-      const itemL = this.cmToM(item.length)
-      const itemW = this.cmToM(item.width)
-      const itemH = this.cmToM(item.height)
-      
-      let placed = false
-      let bestPoint = { x: 0, y: 0, z: 0 }
-      let bestRotation = { l: itemL, w: itemW, h: itemH }
-      let minWaste = Infinity
-      
-      const rotations = [
-        { l: itemL, w: itemW, h: itemH },
-        { l: itemW, w: itemL, h: itemH },
-        { l: itemL, w: itemH, h: itemW },
-        { l: itemH, w: itemL, h: itemW },
-        { l: itemW, w: itemH, h: itemL },
-        { l: itemH, w: itemW, h: itemL },
-      ]
-      
-      for (const rot of rotations) {
-        for (const ep of extremePoints) {
-          if (this.fitsAt(packed, ep.x, ep.y, ep.z, rot.l, rot.w, rot.h)) {
-            const waste = ep.x * 1 + ep.y * 2 + ep.z * 1.5
-            if (waste < minWaste) {
-              minWaste = waste
-              bestPoint = { ...ep }
-              bestRotation = { ...rot }
-              placed = true
-            }
-          }
-        }
-      }
-      
-      if (placed) {
-        packed.push({
-          id: `${item.id}-${index}`,
-          x: bestPoint.x,
-          y: bestPoint.y,
-          z: bestPoint.z,
-          width: bestRotation.l,
-          height: bestRotation.h,
-          depth: bestRotation.w,
-          color: COLORS[this.items.indexOf(item) % COLORS.length],
-          label: `${item.name.substring(0, 3)}${index + 1}`,
-          itemId: item.id
-        })
-        
-        extremePoints = extremePoints.filter(ep => 
-          !(ep.x === bestPoint.x && ep.y === bestPoint.y && ep.z === bestPoint.z)
-        )
-        
-        const newPoints = [
-          { x: bestPoint.x + bestRotation.l, y: bestPoint.y, z: bestPoint.z },
-          { x: bestPoint.x, y: bestPoint.y + bestRotation.h, z: bestPoint.z },
-          { x: bestPoint.x, y: bestPoint.y, z: bestPoint.z + bestRotation.w }
-        ]
-        
-        for (const np of newPoints) {
-          if (np.x < length && np.y < height && np.z < width) {
-            const exists = extremePoints.some(ep => 
-              Math.abs(ep.x - np.x) < 0.01 && Math.abs(ep.y - np.y) < 0.01 && Math.abs(ep.z - np.z) < 0.01
-            )
-            if (!exists) extremePoints.push(np)
-          }
-        }
-        
-        extremePoints.sort((a, b) => (a.x + a.y * 2 + a.z * 1.5) - (b.x + b.y * 2 + b.z * 1.5))
-      } else {
-        unpacked.push(`${item.name} #${index + 1}`)
-      }
-    }
-    
-    return { packed, unpacked }
-  }
-  
-  private packGenetic(): { packed: PackedBox[], unpacked: string[] } {
-    const iterations = 8
-    let bestResult = { packed: [] as PackedBox[], unpacked: [] as string[] }
-    let bestCount = 0
-    
-    for (let i = 0; i < iterations; i++) {
-      const shuffledItems = [...this.items].sort(() => Math.random() - 0.5)
-      
-      const tempPacker = new AdvancedBinPacker(this.truck, shuffledItems, 'extreme_points')
-      const result = tempPacker.packExtremePoints()
-      
-      if (result.packed.length > bestCount) {
-        bestCount = result.packed.length
-        bestResult = result
-      }
-    }
-    
-    return bestResult
-  }
-  
-  public pack(): { packed: PackedBox[], unpacked: string[] } {
-    switch (this.algorithm) {
-      case 'genetic':
-        return this.packGenetic()
-      case 'extreme_points':
-        return this.packExtremePoints()
-      default:
-        return this.packSkylineBL()
-    }
-  }
-}
-
-// ============= SMART TRUCK RECOMMENDATION ENGINE =============
-function recommendTrucks(items: SaleOrderItem[], algorithm: string, trucks: TruckType[]): TruckRecommendation[] {
-  const recommendations: TruckRecommendation[] = []
-  
-  const totalVolume = items.reduce((sum, item) => {
-    return sum + (item.length * item.width * item.height * item.quantity) / 1000000
-  }, 0)
-  
-  const totalWeight = items.reduce((sum, item) => {
-    return sum + item.weight * item.quantity
-  }, 0)
-  
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
-  
-  for (const truck of trucks) {
-    const truckVolume = truck.dimensions.length * truck.dimensions.width * truck.dimensions.height
-    
-    if (truckVolume < totalVolume * 0.2 || truck.capacity < totalWeight * 0.3) continue
-    
-    const packer = new AdvancedBinPacker(truck, items, algorithm)
-    const { packed, unpacked } = packer.pack()
-    
-    if (packed.length === 0) continue
-    
-    const packedVolume = packed.reduce((sum, box) => sum + box.width * box.height * box.depth, 0)
-    const packedWeight = packed.reduce((sum, box) => {
-      const item = items.find(i => i.id === box.itemId)
-      return sum + (item?.weight || 0)
-    }, 0)
-    
-    recommendations.push({
-      truck,
-      itemsFit: packed.length,
-      totalItems,
-      volumeUtilization: Math.round((packedVolume / truckVolume) * 100),
-      weightUtilization: Math.round((packedWeight / truck.capacity) * 100),
-      estimatedCost: truck.costPerKm * 100,
-      packedBoxes: packed,
-      unfitItems: unpacked
-    })
-  }
-  
-  recommendations.sort((a, b) => {
-    if (a.itemsFit === a.totalItems && b.itemsFit !== b.totalItems) return -1
-    if (b.itemsFit === b.totalItems && a.itemsFit !== a.totalItems) return 1
-    
-    if (a.itemsFit !== b.itemsFit) return b.itemsFit - a.itemsFit
-    
-    if (Math.abs(a.volumeUtilization - b.volumeUtilization) > 10) {
-      return b.volumeUtilization - a.volumeUtilization
-    }
-    
-    return a.estimatedCost - b.estimatedCost
-  })
-  
-  return recommendations.slice(0, 3)
-}
 
 // Memoized Packing Stats Component to prevent unnecessary re-renders
 const PackingStats = memo(({ 
@@ -810,22 +470,12 @@ export default function PackingPage() {
     try {
       if (workerSupported) {
         // Use Web Worker (runs on user's CPU, not server)
-        const recs = await runRecommendation(saleOrderItems, trucks, algorithm)
-        const mappedRecs: TruckRecommendation[] = recs.map((r: any) => ({
-          truck: r.truck,
-          itemsFit: r.itemsFit,
-          totalItems: r.totalItems,
-          volumeUtilization: Math.round(r.volumeUtilization),
-          weightUtilization: Math.round(r.weightUtilization),
-          estimatedCost: r.costEstimate,
-          packedBoxes: r.packed,
-          unfitItems: r.unpacked
-        }))
-        setRecommendations(mappedRecs.slice(0, 3))
-        if (mappedRecs.length > 0) {
-          setSelectedRecommendation(mappedRecs[0])
-          setSelectedTruck(mappedRecs[0].truck.id)
-          toast.success(`Found ${Math.min(mappedRecs.length, 3)} truck options! (processed locally)`, { id: 'recommend' })
+        const recs = await runRecommendation(saleOrderItems, trucks, algorithm) as TruckRecommendation[]
+        setRecommendations(recs)
+        if (recs.length > 0) {
+          setSelectedRecommendation(recs[0])
+          setSelectedTruck(recs[0].truck.id)
+          toast.success(`Found ${recs.length} truck options! (processed locally)`, { id: 'recommend' })
         } else {
           toast.error('No suitable truck found.', { id: 'recommend' })
         }
@@ -1216,7 +866,7 @@ export default function PackingPage() {
                     >
                       <div 
                         className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                        style={{ backgroundColor: PACKING_COLORS[idx % PACKING_COLORS.length] }}
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
