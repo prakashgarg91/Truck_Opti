@@ -3,7 +3,7 @@
 > **Mandatory testing rules for all AI agents and developers.**
 > **Read this BEFORE marking any feature or task as complete.**
 > 
-> Last Updated: 2026-03-03 | Author: SONNET-001 (Claude Sonnet 4.6)
+> Last Updated: 2026-04-05 | Authors: SONNET-001 (Claude Sonnet 4.6), GPT-003 (GPT-5.4)
 > Trigger: Full button/function audit found 8 critical bugs that were believed to be "working"
 
 ---
@@ -94,8 +94,8 @@ When testing any page, run through this script:
 | BUG-003 | Pricing | HIGH | 6 CTA buttons (Start Free, 4× Get Started, Contact Sales, Talk to Us) had no `onClick` | ✅ FIXED |
 | BUG-007 | Checkout | CRITICAL | `VITE_RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXX` placeholder — payment fails | 🔴 OPEN |
 | BUG-008 | Login | HIGH | Phone/WhatsApp OTP silently failed (Twilio not configured) — error now shown, but Twilio still needed | ⚠️ PARTIAL |
-| BUG-004 | Global | CRITICAL | Heroku deployment 7 commits stale — production runs old code | 🔴 OPEN (human action) |
-| BUG-005 | Auth system | CRITICAL | Supabase Site URL = Heroku URL — OTP emails link to wrong domain | 🔴 OPEN (human action) |
+| BUG-004 | Global | CRITICAL | Heroku deployment 7 commits stale — production runs old code | ✅ FIXED (2026-04-01 `552b424c` / `f8e93f07`) |
+| BUG-005 | Auth system | CRITICAL | Supabase Site URL = Heroku URL — OTP emails link to wrong domain | ✅ FIXED (2026-04-01 `70e764c5`) |
 
 ---
 

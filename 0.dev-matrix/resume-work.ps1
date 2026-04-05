@@ -33,9 +33,82 @@ function Get-ChecklistFieldValue($content, $label) {
   return $null
 }
 
+function Get-RepoAgeInfo() {
+  Push-Location $RepoRoot
+  try {
+    $firstCommitDate = @(git log --reverse --format=%ad --date=short -- . 2>$null | Select-Object -First 1)
+  } finally {
+    Pop-Location
+  }
+
+  if ([string]::IsNullOrWhiteSpace($firstCommitDate)) { return $null }
+
+  try {
+    $startDate = [datetime]::ParseExact($firstCommitDate.Trim(), 'yyyy-MM-dd', [System.Globalization.CultureInfo]::InvariantCulture)
+  } catch {
+    return $null
+  }
+
+  return [pscustomobject]@{
+    StartedAt = $startDate.ToString('yyyy-MM-dd')
+    AgeDays = (New-TimeSpan -Start $startDate -End (Get-Date)).Days
+  }
+}
+
+function Get-LaunchCheckStatus() {
+  $statusFile = Join-Path $RepoRoot '0.dev-matrix\test-reports\launch-check-status.json'
+  if (-not (Test-Path $statusFile)) { return $null }
+  try {
+    return Get-Content $statusFile -Raw | ConvertFrom-Json
+  } catch {
+    return $null
+  }
+}
+
+function Format-LaunchCheckStatus($status) {
+  if ($null -eq $status) { return 'not started' }
+  if ($status.State -eq 'passed' -or $status.State -eq 'failed') {
+    if ($status.FinishedAt) {
+      return "$($status.State) at $($status.FinishedAt)"
+    }
+    return "$($status.State)"
+  }
+  if ($status.State -eq 'running' -or $status.State -eq 'starting') {
+    return "$($status.State) since $($status.StartedAt)"
+  }
+  return "$($status.State)"
+}
+
 Write-Host ''
 Write-Host '=== Resume Work ===' -ForegroundColor Cyan
 Write-Host "Repo: $(Split-Path $RepoRoot -Leaf)"
+
+$repoAgeInfo = Get-RepoAgeInfo
+if ($repoAgeInfo) {
+  Write-Host ''
+  Write-Host 'Repo age' -ForegroundColor Yellow
+  Write-Host "- Started: $($repoAgeInfo.StartedAt)"
+  Write-Host "- Recorded effort window: $($repoAgeInfo.AgeDays) day(s) since first commit"
+}
+
+$launchStarterFile = Join-Path $RepoRoot '0.dev-matrix\start-launch-check.ps1'
+if (Test-Path $launchStarterFile) {
+  $launchStartResult = & $launchStarterFile -FreshMinutes 15
+  $launchStatus = Get-LaunchCheckStatus
+
+  Write-Host ''
+  Write-Host 'Background launch-check' -ForegroundColor Yellow
+  Write-Host "- Status: $(Format-LaunchCheckStatus $launchStatus)"
+  if ($launchStartResult -and $launchStartResult.Detail) {
+    Write-Host "- Action: $($launchStartResult.Detail)"
+  }
+  if ($launchStatus -and $launchStatus.Log) {
+    Write-Host "- Log: $($launchStatus.Log)"
+  } elseif ($launchStartResult -and $launchStartResult.Log) {
+    Write-Host "- Log: $($launchStartResult.Log)"
+  }
+  Write-Host '- Let this run while you work so close-day stays short and readiness evidence keeps moving.'
+}
 
 $handoffFile = Join-Path $RepoRoot '0.dev-matrix\AI-HANDOFF.md'
 if (Test-Path $handoffFile) {
@@ -83,4 +156,4 @@ if ($gitStatus.Count -eq 0) {
 Write-Host ''
 Write-Host 'Start rule' -ForegroundColor Yellow
 Write-Host '- Resume the current launch slice or clear the current blocker before opening new work.'
-Write-Host '- Use launch-check for readiness claims and close-day, not as the default first command for every short restart.'
+Write-Host '- Resume-work starts a background launch-check when available; do not wait for close-day to begin verification.'

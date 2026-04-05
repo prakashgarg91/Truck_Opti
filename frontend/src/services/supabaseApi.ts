@@ -1,7 +1,12 @@
 import { supabase } from '../lib/supabase'
+import { UserFacingError } from '../utils/userFacingError'
 
-const getAuthErrorMessage = (error: any, fallback: string): string => {
+const getAuthErrorMessage = (
+  error: { code?: string; message?: string } | null | undefined,
+  fallback: string
+): string => {
   const code = error?.code
+  const message = error?.message?.toLowerCase() || ''
 
   if (code === 'otp_disabled') {
     return 'Email OTP is not enabled for this project. Please use Google sign-in or ask admin to enable OTP signups.'
@@ -11,10 +16,22 @@ const getAuthErrorMessage = (error: any, fallback: string): string => {
     return 'Please enter a valid deliverable email address.'
   }
 
-  return error?.message || fallback
+  if (code === 'over_request_rate_limit' || code === 'over_email_send_rate_limit' || message.includes('rate limit')) {
+    return 'Too many OTP requests. Please wait a minute and try again.'
+  }
+
+  if (message.includes('signup is disabled')) {
+    return 'Email signup is currently unavailable. Please use Google sign-in or contact support.'
+  }
+
+  return fallback
 }
 
 const getSafeAuthFailureMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof UserFacingError) {
+    return error.message
+  }
+
   const message = error instanceof Error ? error.message : String(error ?? '')
   const lowered = message.toLowerCase()
 
@@ -26,6 +43,17 @@ const getSafeAuthFailureMessage = (error: unknown, fallback: string): string => 
     lowered.includes('load failed')
   ) {
     return 'Authentication service is currently unreachable. Please try again shortly or use Google sign-in if available.'
+  }
+
+  if (lowered.includes('expired') && (lowered.includes('otp') || lowered.includes('token'))) {
+    return 'This verification code has expired. Please request a new one.'
+  }
+
+  if (
+    (lowered.includes('invalid otp') || lowered.includes('invalid token')) ||
+    (lowered.includes('token') && lowered.includes('invalid'))
+  ) {
+    return 'The verification code is invalid. Please try again.'
   }
 
   return fallback
@@ -462,14 +490,14 @@ export const authSupabaseApi = {
           error.message?.toLowerCase().includes('not set up') ||
           error.message?.toLowerCase().includes('phone sign')
         ) {
-          throw new Error(
+          throw new UserFacingError(
             'Phone OTP is currently unavailable. Please use Email OTP or Google sign-in instead.'
           )
         }
         throw error
       }
     } catch (error) {
-      throw new Error(
+      throw new UserFacingError(
         getSafeAuthFailureMessage(
           error,
           'Unable to start phone verification right now. Please try again later or use another sign-in method.'
@@ -486,9 +514,9 @@ export const authSupabaseApi = {
           shouldCreateUser: false // Login only - don't create new users
         }
       })
-      if (error) throw new Error(getAuthErrorMessage(error, 'Failed to send email OTP'))
+      if (error) throw new UserFacingError(getAuthErrorMessage(error, 'Unable to send email OTP right now. Please try again later or use Google sign-in.'))
     } catch (error) {
-      throw new Error(
+      throw new UserFacingError(
         getSafeAuthFailureMessage(
           error,
           'Unable to send email OTP right now. Please try again later or use Google sign-in.'
@@ -506,9 +534,9 @@ export const authSupabaseApi = {
           data: name ? { full_name: name, name } : undefined
         }
       })
-      if (error) throw new Error(getAuthErrorMessage(error, 'Failed to create account'))
+      if (error) throw new UserFacingError(getAuthErrorMessage(error, 'Unable to start email signup right now. Please try again later or use Google sign-up.'))
     } catch (error) {
-      throw new Error(
+      throw new UserFacingError(
         getSafeAuthFailureMessage(
           error,
           'Unable to start email signup right now. Please try again later or use Google sign-up.'
@@ -527,7 +555,7 @@ export const authSupabaseApi = {
       if (error) throw error
       return data
     } catch (error) {
-      throw new Error(
+      throw new UserFacingError(
         getSafeAuthFailureMessage(
           error,
           'Unable to verify phone OTP right now. Please request a fresh code or try another sign-in method.'
@@ -546,7 +574,7 @@ export const authSupabaseApi = {
       if (error) throw error
       return data
     } catch (error) {
-      throw new Error(
+      throw new UserFacingError(
         getSafeAuthFailureMessage(
           error,
           'Unable to verify email OTP right now. Please request a fresh code or try Google sign-in.'
@@ -556,14 +584,23 @@ export const authSupabaseApi = {
   },
 
   async signInWithGoogle() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
-    if (error) throw error
-    return data
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      if (error) throw error
+      return data
+    } catch (error) {
+      throw new UserFacingError(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to start Google sign-in right now. Please try again later.'
+        )
+      )
+    }
   },
 
   async signOut() {

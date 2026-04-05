@@ -31,6 +31,8 @@ client_secret_*.json
 logs/
 *.log
 0.dev-matrix/closeout-logs/
+0.dev-matrix/test-reports/launch-check-*.log
+0.dev-matrix/test-reports/launch-check-status.json
 
 # Screenshots and test images
 screenshots/
@@ -52,6 +54,7 @@ supabase/.temp/
 
 # Local AI/tooling settings
 .claude/settings.local.json
+rzp-key.csv
 
 # Local SQLite artifacts
 *.db

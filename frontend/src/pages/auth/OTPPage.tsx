@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
+import { toUserFacingErrorMessage } from '../../utils/userFacingError'
 
 export default function OTPPage() {
   const navigate = useNavigate()
@@ -72,7 +73,7 @@ export default function OTPPage() {
     },
     onError: (error: unknown) => {
       setIsError(true)
-      toast.error(error instanceof Error ? error.message : 'Invalid OTP — please try again')
+      toast.error(toUserFacingErrorMessage(error, 'Invalid OTP — please try again'))
       setTimeout(() => {
         setIsError(false)
         setOtp(Array(OTP_LENGTH).fill(''))
@@ -99,7 +100,7 @@ export default function OTPPage() {
       inputRefs.current[0]?.focus()
     },
     onError: (error: unknown) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to resend OTP — please try again')
+      toast.error(toUserFacingErrorMessage(error, 'Failed to resend OTP — please try again'))
     }
   })
   

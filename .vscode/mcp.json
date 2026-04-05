@@ -6,6 +6,24 @@
 			"headers": {
 				"Authorization": "Bearer ${input:supabase_pat}"
 			}
+		},
+		"razorpay": {
+			"type": "stdio",
+			"command": "docker",
+			"args": [
+				"run",
+				"--rm",
+				"-i",
+				"-e",
+				"RAZORPAY_KEY_ID",
+				"-e",
+				"RAZORPAY_KEY_SECRET",
+				"mcp/razorpay"
+			],
+			"env": {
+				"RAZORPAY_KEY_ID": "${input:razorpay_key_id}",
+				"RAZORPAY_KEY_SECRET": "${input:razorpay_key_secret}"
+			}
 		}
 	},
 	"inputs": [
@@ -13,6 +31,18 @@
 			"id": "supabase_pat",
 			"type": "promptString",
 			"description": "Supabase Personal Access Token",
+			"password": true
+		},
+		{
+			"id": "razorpay_key_id",
+			"type": "promptString",
+			"description": "Razorpay Key ID (use live key for production)",
+			"password": true
+		},
+		{
+			"id": "razorpay_key_secret",
+			"type": "promptString",
+			"description": "Razorpay Key Secret",
 			"password": true
 		}
 	]

@@ -7,6 +7,7 @@ import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 import { useLanguageStore } from '../../stores/languageStore'
 import { phoneInputSchema, emailSchema } from '../../utils/validators'
+import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
 
 const features = [
   { icon: '📦', text: '3D Smart Packing' },
@@ -54,7 +55,7 @@ export default function LoginPage() {
     mutationFn: async () => {
       if (channel === 'email') {
         if (!isEmailOtpEnabled) {
-          throw new Error(language === 'en'
+          throw new UserFacingError(language === 'en'
             ? 'Email OTP is disabled. Please use SMS/WhatsApp or Google sign-in.'
             : 'ईमेल OTP अक्षम है। कृपया SMS/WhatsApp या Google साइन-इन का उपयोग करें।')
         }
@@ -79,10 +80,10 @@ export default function LoginPage() {
       })
       navigate('/otp', { state: { channel, contact: phone } })
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('[LoginPage] OTP error:', error)
       const errorMsg = language === 'en'
-        ? (error instanceof Error ? error.message : 'Failed to send OTP. Please try again.')
+        ? toUserFacingErrorMessage(error, 'Failed to send OTP. Please try again.')
         : 'OTP भेजने में विफल। कृपया पुनः प्रयास करें।'
       toast.error(errorMsg)
     }
@@ -151,8 +152,8 @@ export default function LoginPage() {
       setIsGoogleLoading(true)
       await authSupabaseApi.signInWithGoogle()
       // Note: The page will redirect to Google, so we won't reach here
-    } catch (error: any) {
-      toast.error('Failed to initiate Google login')
+    } catch (error: unknown) {
+      toast.error(toUserFacingErrorMessage(error, 'Failed to initiate Google login'))
       setIsGoogleLoading(false)
     }
   }

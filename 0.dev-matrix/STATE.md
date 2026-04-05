@@ -27,10 +27,11 @@
 
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
-| `SUPABASE-AUTH-DNS-20260401` | 🔴 BLOCKING | Live/frontend auth smoke failed because `jbxncejtcbpcronndqlx.supabase.co` did not resolve and `/auth/v1/otp` failed with `ERR_NAME_NOT_RESOLVED` | MANAGER + OWNER |
-| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit passed 2/6 only: Razorpay test key, missing `VITE_SENTRY_DSN`, and PhonePe sandbox/preprod still configured | MANAGER + OWNER |
+| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit now passes 3/6: Supabase auth DNS and email OTP flag are healthy, but Razorpay is still on test key, `VITE_SENTRY_DSN` is missing, and PhonePe is still sandbox/preprod | MANAGER + OWNER |
+| `AUTH-E2E-UNVERIFIED-20260405` | 🟡 WATCH | Supabase host now resolves again, but real email OTP / Google OAuth / authenticated page flows still need live browser verification with a real account | MANAGER + OWNER |
 | `PWA-SW-STALE-CHUNK-20260403` | 🟡 WATCH | Full browser audit reproduced stale lazy-chunk/module failures for returning clients until service worker + caches were cleared | MANAGER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
+| ~~SUPABASE-AUTH-DNS-20260401~~ | ✅ RESOLVED | Production Supabase project was resumed on 2026-04-05; DNS now resolves and auth health is reachable again (401 without API key is acceptable reachability evidence) | OWNER + GPT-004 |
 | ~~HEROKU-STALE~~ | ✅ RESOLVED | Deployed v22 (slug 337 MB). Added .slugignore; slug was 843 MB. | SONNET-001 (auto) |
 | ~~SUPABASE-SITE-URL~~ | ✅ RESOLVED | Site URL updated to https://www.truckopti.in via Management API. Allow-list: www+apex+Heroku. | SONNET-001 (auto) |
 
@@ -42,6 +43,8 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `GPT-004` | MANAGER | GPT-5.4 | Launch infra sync | Razorpay MCP setup + post-resume auth/prod-config reality sync | 2026-04-05 | ✅ DONE |
+| `GPT-003` | MANAGER | GPT-5.4 | Launch readiness | Re-run launch evidence + harden auth/payment failure UX | 2026-04-05 | ✅ DONE |
 | `GPT-002` | MANAGER | GPT-5.4 | Packing regression | Deterministic packing proof + dev-matrix reality sync | 2026-04-04 | ✅ DONE |
 | `GPT-001` | MANAGER | GPT-5.4 | Close-day verification | Verify `70e764c5`, sync dev-matrix closeout, queue packing-engine handoff | 2026-04-03 | ✅ DONE |
 | `GLM-001` | LEAD+JUDGE | GLM-5.1 | Full-stack audit | BATCH21 audit + security fixes + npm vuln cleanup + dev-matrix reality sync | 2026-03-29 | ✅ DONE |
@@ -79,6 +82,32 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-05] GPT-004 (MANAGER): ✅ RAZORPAY MCP WIRED + SUPABASE RESUME REALITY SYNCED
+
+                             VERIFIED EVIDENCE:
+                             - official Docker image `mcp/razorpay` pulled and inspected successfully
+                             - `.vscode/mcp.json` now includes a Docker-backed `razorpay` stdio server using secure input prompts for the key id and secret
+                             - `npm run test:frontend-smoke`: PASS (17/17) after fixing the auth-health probe to treat reachable 401/403 responses without an API key as service reachability
+                             - `npm run test:prod-config`: PASS (3/6); Supabase DNS now resolves again
+                             - `scripts/frontend_launch_smoke.mjs` now treats reachable 401/403 auth-health responses without an API key as service reachability instead of a false outage
+
+                             PRODUCT JUDGMENT:
+                             - the specific Supabase DNS blocker is resolved
+                             - launch is still blocked by live Razorpay config, missing Sentry DSN, PhonePe sandbox/preprod, and unverified authenticated browser flows
+------------------------------------------------------------------------------------------
+[2026-04-05] GPT-003 (MANAGER): ✅ LAUNCH EVIDENCE RE-RUN + SAFE FAILURE HARDENING SYNCED
+
+                             VERIFIED EVIDENCE:
+                             - last clean `npm run launch-check`: PASS (17/17) before the implementation pass; post-edit rerun failed only git cleanliness because the working tree is intentionally dirty
+                             - `npm run test:frontend-smoke`: PASS (16/17), failing only `auth-service`
+                             - `npm run test:prod-config`: PASS (2/6); failing on Supabase DNS, Razorpay test key, missing Sentry DSN, and PhonePe sandbox/preprod
+                             - auth pages now use `UserFacingError` + `toUserFacingErrorMessage`
+                             - PhonePe non-production detection now treats both `sandbox` and `preprod` as non-live in the frontend + prod-config audit
+
+                             PRODUCT JUDGMENT:
+                             - repo-side UX now fails safer during auth/payment outages
+                             - product is still not public-launch-ready until owner restores Supabase, pushes migrations, and sets live payment config
+------------------------------------------------------------------------------------------
 [2026-04-05] MANAGER-ADMIN: ✅ apps/web COVERAGE FAILURE IS NOW EXPLICIT INSTEAD OF OPAQUE
 
                              VERIFIED EVIDENCE:

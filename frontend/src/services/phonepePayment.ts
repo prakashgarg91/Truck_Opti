@@ -31,6 +31,27 @@ function getPhonePeConfigError(): string | null {
   return null;
 }
 
+function isPhonePeNonProductionUrl(value?: string): boolean {
+  const lowered = (value || '').toLowerCase();
+  return lowered.includes('sandbox') || lowered.includes('preprod');
+}
+
+function getSafePhonePeFailureMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error ?? '').toLowerCase();
+
+  if (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('network request failed') ||
+    message.includes('err_name_not_resolved') ||
+    message.includes('load failed')
+  ) {
+    return 'PhonePe payment service is currently unreachable. Please try again later.';
+  }
+
+  return 'Unable to start PhonePe payment right now. Please try Razorpay or contact support.';
+}
+
 export interface PhonePePaymentRequest {
   amount: number; // in paise
   orderId: string;
@@ -129,7 +150,7 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
     return {
       success: false,
       code: 'PAYMENT_ERROR',
-      message: error instanceof Error ? error.message : 'Payment initiation failed',
+      message: getSafePhonePeFailureMessage(error),
     };
   }
 }
@@ -221,7 +242,7 @@ export async function verifyAndActivateSubscription(
 export const getPaymentConfig = () => ({
   merchantId: PHONEPE_CONFIG.merchantId || '',
   isConfigured: !getPhonePeConfigError(),
-  isTestMode: (PHONEPE_CONFIG.apiUrl || '').includes('sandbox'),
-  isLaunchReady: !getPhonePeConfigError() && !(PHONEPE_CONFIG.apiUrl || '').includes('sandbox'),
-  launchBlocker: getPhonePeConfigError() || ((PHONEPE_CONFIG.apiUrl || '').includes('sandbox') ? 'PhonePe is still using sandbox/preprod' : null),
+  isTestMode: isPhonePeNonProductionUrl(PHONEPE_CONFIG.apiUrl),
+  isLaunchReady: !getPhonePeConfigError() && !isPhonePeNonProductionUrl(PHONEPE_CONFIG.apiUrl),
+  launchBlocker: getPhonePeConfigError() || (isPhonePeNonProductionUrl(PHONEPE_CONFIG.apiUrl) ? 'PhonePe is still using sandbox/preprod' : null),
 });

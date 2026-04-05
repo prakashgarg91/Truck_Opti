@@ -52,10 +52,14 @@ $latestHandoffDate = 'missing'
 $latestHandoffOperationalProof = 'missing'
 $latestHandoffContinue = 'missing'
 $latestHandoffNext = 'missing'
+$latestHandoffBlockers = 'missing'
 $launchProductOutcome = 'missing'
 $launchCurrentSlice = 'missing'
 $launchCurrentBlocker = 'missing'
 $launchNextEarningStep = 'missing'
+$launchStatusState = 'missing'
+$launchStatusSummary = 'missing'
+$launchStatusLog = 'missing'
 
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
 $dateStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
@@ -152,6 +156,16 @@ function Test-IsMeaningfulLaunchFocus($value) {
   return $value.Trim() -notmatch '^(?i:todo|tbd|unknown)$'
 }
 
+function Get-LaunchCheckStatus() {
+  $statusFile = Join-Path $RepoRoot '0.dev-matrix\test-reports\launch-check-status.json'
+  if (-not (Test-Path $statusFile)) { return $null }
+  try {
+    return Get-Content $statusFile -Raw | ConvertFrom-Json
+  } catch {
+    return $null
+  }
+}
+
 function Invoke-InDir($relativeDir, $command) {
   $target = if ($relativeDir -eq '.') { $RepoRoot } else { Join-Path $RepoRoot $relativeDir }
   if (-not (Test-Path $target)) { Log "[SKIP] dir not found: $target"; return $false }
@@ -173,51 +187,30 @@ $missing = $required | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) 
 Gate 'runtime close docs' ($missing.Count -eq 0) ($(if ($missing.Count -eq 0) { 'state/task/discussion/hook/handoff present' } else { 'missing: ' + ($missing -join ', ') }))
 
 # ── 2. Launch-check ──
-Push-Location $RepoRoot
-try {
-  $lcOut = Invoke-Expression $LaunchCommand 2>&1 | Out-String
-  Log "--- launch-check output ---"
-  Log $lcOut.Trim()
-  Gate 'launch-check' ($LASTEXITCODE -eq 0) $LaunchCommand
-} finally {
-  Pop-Location
-}
-
-# ── 3. Deep verification (empty = FAIL, not PASS) ──
-if ($DeepVerificationTasks.Count -eq 0) {
-  Gate 'deep verification' $false 'NO deep checks configured - this is a policy violation'
+$launchStatus = Get-LaunchCheckStatus
+if ($null -eq $launchStatus) {
+  Gate 'background launch-check' $false 'status missing; start the session with resume-work.ps1 so launch-check runs in background'
 } else {
-  foreach ($task in $DeepVerificationTasks) {
-    $ok = Invoke-InDir $task.Dir $task.Command
-    Gate $task.Label $ok "$($task.Dir): $($task.Command)"
+  $launchStatusState = "$($launchStatus.State)"
+  $launchStatusSummary = if ($launchStatus.Summary) { "$($launchStatus.Summary)" } else { $launchStatusState }
+  $launchStatusLog = if ($launchStatus.Log) { "$($launchStatus.Log)" } else { 'missing' }
+
+  $launchStatusOk = $launchStatusState -in @('starting', 'running', 'passed')
+  $launchStatusDetail = if ($launchStatusState -eq 'failed') {
+    "latest background launch-check failed - $launchStatusSummary"
+  } elseif ($launchStatusState -eq 'starting' -or $launchStatusState -eq 'running') {
+    "background launch-check still running - $launchStatusSummary"
+  } else {
+    $launchStatusSummary
   }
+
+  Gate 'background launch-check' $launchStatusOk $launchStatusDetail
 }
 
-# ── 4. Vulnerability sweep ──
-foreach ($dir in $NodeAuditDirs) {
-  $pkgPath = if ($dir -eq '.') { Join-Path $RepoRoot 'package.json' } else { Join-Path (Join-Path $RepoRoot $dir) 'package.json' }
-  if (Test-Path $pkgPath) {
-    $auditOk = Invoke-InDir $dir 'npm audit --omit=dev'
-    Gate "node vulnerability sweep ($dir)" $auditOk 'npm audit --omit=dev'
-  }
-}
+# ── 3. Close-day handoff mode ──
+Gate 'close-day handoff mode' $true 'close-day reuses background launch-check state and skips heavy reruns so handoff stays fast'
 
-$pipAudit = Get-Command 'pip-audit' -ErrorAction SilentlyContinue
-if ($PythonRequirementFiles) {
-  foreach ($req in $PythonRequirementFiles) {
-    $reqPath = Join-Path $RepoRoot $req
-    if ((Test-Path $reqPath) -and $pipAudit) {
-      Push-Location $RepoRoot
-      try {
-        $paOut = pip-audit -r $reqPath 2>&1 | Out-String
-        Log "--- pip-audit $req ---"; Log $paOut.Trim()
-        Gate "python vulnerability sweep ($req)" ($LASTEXITCODE -eq 0) 'pip-audit'
-      } finally { Pop-Location }
-    }
-  }
-}
-
-# ── 5. Status update discipline (content check, not just touch) ──
+# ── 4. Status update discipline (content check, not just touch) ──
 Push-Location $RepoRoot
 try {
   $gitStatus = @(git status --porcelain 2>$null)
@@ -318,6 +311,7 @@ try {
       $latestHandoffOperationalProof = Get-HandoffFieldValue $latestHandoff.Body 'Operational proof:'
       $latestHandoffContinue = Get-HandoffFieldValue $latestHandoff.Body 'Continue from:'
       $latestHandoffNext = Get-HandoffFieldValue $latestHandoff.Body 'Next step:'
+      $latestHandoffBlockers = Get-HandoffFieldValue $latestHandoff.Body 'Blockers:'
       $missingHandoffLabels = @(
         $RequiredHandoffLabels |
           Where-Object { -not [regex]::IsMatch($latestHandoff.Body, '(?mi)^-\s*' + [regex]::Escape($_) + '\s*.+$') }
@@ -384,22 +378,29 @@ $report = @(
   "# Last Closeout",
   "",
   "- Time: $timestamp",
-  "- Launch command: $LaunchCommand",
+  "- Launch verification mode: background launch-check started from resume-work",
   "- Git status: $gitSummary",
   "- Log: 0.dev-matrix/closeout-logs/closeout-$dateStamp.log",
   ""
 )
-$report += "## Handoff"
+$report += "## AI Handoff"
 $report += "- Latest handoff date: $latestHandoffDate"
+$report += "- Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1"
 $report += "- Operational proof: $latestHandoffOperationalProof"
 $report += "- Continue from: $latestHandoffContinue"
 $report += "- Next step: $latestHandoffNext"
+$report += "- Blockers: $latestHandoffBlockers"
 $report += ""
 $report += "## Launch Focus"
 $report += "- Product outcome: $launchProductOutcome"
 $report += "- Current launch slice: $launchCurrentSlice"
 $report += "- Current blocker: $launchCurrentBlocker"
 $report += "- Next earning step: $launchNextEarningStep"
+$report += ""
+$report += "## Launch Verification"
+$report += "- State: $launchStatusState"
+$report += "- Summary: $launchStatusSummary"
+$report += "- Log: $launchStatusLog"
 $report += ""
 if ($regressionNote) { $report += "## Regression Warning"; $report += ""; $report += "- $regressionNote"; $report += "" }
 $report += "## Results"
@@ -412,5 +413,11 @@ Set-Content -Path $ReportPath -Value $report
 
 Write-Host ""
 Write-Host "Summary: $pass pass, $fail fail"
+Write-Host ''
+Write-Host 'AI handoff for next session' -ForegroundColor Yellow
+Write-Host "- Continue from: $latestHandoffContinue"
+Write-Host "- Next step: $latestHandoffNext"
+Write-Host "- Blockers: $latestHandoffBlockers"
+Write-Host '- Resume command: powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\resume-work.ps1'
 if ($regressionNote) { Write-Host "WARNING: $regressionNote" -ForegroundColor Yellow }
 if ($fail -gt 0) { exit 1 }

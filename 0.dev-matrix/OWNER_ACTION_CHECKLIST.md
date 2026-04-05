@@ -91,13 +91,20 @@ supabase secrets set RAZORPAY_KEY_SECRET=live_secret_XXXXXX
 
 **Steps:**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
-2. Ensure OAuth 2.0 Client ID has these redirect URIs:
+2. Create or edit a **Web application** OAuth client.
+3. Under **Authorized JavaScript origins**, add:
+   - `https://www.truckopti.in`
+   - `https://truckopti.in`
+   - `https://truck-opti-app-efabf95bd306.herokuapp.com`
+4. Under **Authorized redirect URIs**, add the **Supabase callback URL** shown on Supabase Dashboard → Authentication → Providers → Google.
+   - For this project, it should be the Supabase-hosted callback, not the app's `/auth/callback` route.
+   - Typical format: `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
+5. Go to [Supabase Dashboard](https://supabase.com/dashboard) → Your Project → Authentication → Providers → Google
+6. Paste the Google Client ID and Client Secret there and enable the provider.
+7. In Supabase Auth settings, ensure the redirect allow-list / site URL includes:
    - `https://www.truckopti.in/auth/callback`
    - `https://truckopti.in/auth/callback`
    - `https://truck-opti-app-efabf95bd306.herokuapp.com/auth/callback`
-3. Go to [Supabase Dashboard](https://supabase.com/dashboard) → Your Project → Authentication → Providers → Google
-4. Ensure Client ID and Client Secret match the Google Console credentials
-5. Ensure "Authorized Client IDs" in Google Console includes the Supabase project
 
 **Verification:** Log out, click "Sign in with Google" on `/login`, verify redirect completes to dashboard.
 

@@ -22,6 +22,23 @@ const role = user?.user_metadata?.role  // 'customer' | 'driver' | 'agency' | 'a
 
 ---
 
+## AUTH PATTERN: User-Facing Errors Only
+
+```typescript
+import { UserFacingError, toUserFacingErrorMessage } from '../utils/userFacingError'
+
+throw new UserFacingError('Unable to send email OTP right now. Please try again later or use Google sign-in.')
+
+toast.error(toUserFacingErrorMessage(error, 'Something went wrong. Please try again.'))
+```
+
+Rules:
+- Map Supabase/auth/provider failures to `UserFacingError` inside the service layer.
+- In pages/components, render `toUserFacingErrorMessage(...)` instead of raw `error.message`.
+- Never show raw Supabase, Razorpay, or PhonePe errors directly in a toast.
+
+---
+
 ## SUPABASE PATTERN: Data Fetching
 
 ```typescript

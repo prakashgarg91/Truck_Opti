@@ -28,6 +28,14 @@ Update protocol:
 ## Handoff Log
 
 ### 2026-04-05
+- Changed: added user-facing auth/payment error hardening, corrected the frontend auth-health probe so reachable 401/403 Supabase responses are treated as service availability, wired the official Docker-backed Razorpay MCP in `.vscode/mcp.json`, and updated owner guidance for Google OAuth and launch blockers.
+- Verified: `cd frontend && npm run build` PASS; `npm run test:frontend-smoke` PASS (17/17); `npm run test:prod-config` PASS (3/6); `docker pull mcp/razorpay` PASS; `docker run --rm mcp/razorpay --help` shows the MCP server starts on stdio.
+- Operational proof: public/auth shell evidence is now green again, Supabase reachability is restored, and the remaining launch blockers are narrowed to live payment configuration, missing Sentry DSN, pending migration push, and authenticated real-account verification.
+- Continue from: finish owner-side launch execution with live Razorpay credentials, Sentry DSN, PhonePe production/disable decision, migration push, and then run authenticated browser smoke with real customer/driver/agency/admin accounts.
+- Next step: set production payment/monitoring config, verify Google OAuth with the Supabase callback URI, then run authenticated end-to-end launch smoke.
+- Blockers: Razorpay is still on test keys, `VITE_SENTRY_DSN` is missing, PhonePe still points at preprod, pending Supabase migrations still need pushing, and authenticated real-account flows are not yet verified.
+
+### 2026-04-05
 - Changed: added fast resume and pause scripts, updated AGENTS and handoff rules for short-session work, added launch focus lines, and merged the fast handoff contract into the custom `scripts/launch-readiness.ps1` and `scripts/close-day.ps1` flows.
 - Verified: PowerShell parser PASS for `0.dev-matrix/pause-work.ps1`, `scripts/launch-readiness.ps1`, and `scripts/close-day.ps1`.
 - Operational proof: the custom readiness and close-day scripts now enforce the same fast handoff and launch focus contract as the standard repos without dropping TruckOpti-specific verification.

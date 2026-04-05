@@ -329,11 +329,15 @@ async function collectAuthServiceHealth() {
   try {
     const response = await fetch(`${SUPABASE_URL}/auth/v1/health`, { method: 'GET', redirect: 'follow' });
     const body = await response.text();
+    const reachableWithoutApiKey =
+      (response.status === 401 || response.status === 403) &&
+      /no api key|apikey/i.test(body);
+
     return {
       ...result,
       status: response.status,
       bodySnippet: body.slice(0, 200),
-      passed: response.ok,
+      passed: response.ok || reachableWithoutApiKey,
     };
   } catch (error) {
     return {

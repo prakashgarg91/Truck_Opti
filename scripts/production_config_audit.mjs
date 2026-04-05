@@ -54,6 +54,11 @@ function summarizeSentry(dsn) {
   return { status: 'pass', detail: 'Sentry DSN present' };
 }
 
+function isPhonePeNonProduction(url) {
+  const lowered = (url || '').toLowerCase();
+  return lowered.includes('sandbox') || lowered.includes('preprod');
+}
+
 async function summarizeSupabase(url) {
   if (!url) {
     return { status: 'fail', detail: 'missing VITE_SUPABASE_URL' };
@@ -118,7 +123,7 @@ async function main() {
     },
     {
       name: 'phonepe_mode',
-      status: config.VITE_PHONEPE_API_URL?.includes('sandbox') ? 'fail' : 'pass',
+      status: isPhonePeNonProduction(config.VITE_PHONEPE_API_URL) ? 'fail' : 'pass',
       detail: config.VITE_PHONEPE_API_URL || 'missing VITE_PHONEPE_API_URL',
     },
   ];

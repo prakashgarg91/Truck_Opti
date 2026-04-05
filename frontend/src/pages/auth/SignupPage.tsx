@@ -7,6 +7,7 @@ import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 import { useLanguageStore } from '../../stores/languageStore'
 import { emailSchema } from '../../utils/validators'
+import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
 
 const features = [
   { icon: '📦', text: '3D Smart Packing' },
@@ -41,7 +42,7 @@ export default function SignupPage() {
   const signupMutation = useMutation({
     mutationFn: async () => {
       if (!isEmailOtpEnabled) {
-        throw new Error('Email signup is disabled. Please use Google sign up.')
+        throw new UserFacingError('Email signup is disabled. Please use Google sign up.')
       }
       await authSupabaseApi.signUpWithEmail(email, name)
       return { success: true }
@@ -54,7 +55,7 @@ export default function SignupPage() {
     onError: (error: unknown) => {
       toast.error(
         language === 'en'
-          ? (error instanceof Error ? error.message : 'Failed to create account')
+          ? toUserFacingErrorMessage(error, 'Failed to create account')
           : 'खाता बनाने में विफल'
       )
     }
@@ -85,8 +86,8 @@ export default function SignupPage() {
     try {
       setIsGoogleLoading(true)
       await authSupabaseApi.signInWithGoogle()
-    } catch (error: any) {
-      toast.error('Failed to initiate Google signup')
+    } catch (error: unknown) {
+      toast.error(toUserFacingErrorMessage(error, 'Failed to initiate Google signup'))
       setIsGoogleLoading(false)
     }
   }
