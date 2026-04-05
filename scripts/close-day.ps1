@@ -52,6 +52,10 @@ $latestHandoffDate = 'missing'
 $latestHandoffOperationalProof = 'missing'
 $latestHandoffContinue = 'missing'
 $latestHandoffNext = 'missing'
+$launchProductOutcome = 'missing'
+$launchCurrentSlice = 'missing'
+$launchCurrentBlocker = 'missing'
+$launchNextEarningStep = 'missing'
 
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
 $dateStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
@@ -118,6 +122,16 @@ function Get-HandoffFieldValue($body, $label) {
   return $null
 }
 
+function Get-ChecklistFieldValue($content, $label) {
+  if ([string]::IsNullOrWhiteSpace($content) -or [string]::IsNullOrWhiteSpace($label)) { return $null }
+  $pattern = '(?mi)^-\s*' + [regex]::Escape($label) + '\s*(?<value>.+)$'
+  $match = [regex]::Match($content, $pattern)
+  if ($match.Success) {
+    return $match.Groups['value'].Value.Trim()
+  }
+  return $null
+}
+
 function Get-LatestHandoffEntry($content) {
   if ([string]::IsNullOrWhiteSpace($content)) { return $null }
   $match = [regex]::Match($content, '(?ms)^###\s*(?<date>\d{4}-\d{2}-\d{2})(?<suffix>[^\r\n]*)\r?\n(?<body>.*?)(?=^###\s|\z)')
@@ -131,6 +145,11 @@ function Get-LatestHandoffEntry($content) {
 function Test-IsMeaningfulOperationalProof($value) {
   if ([string]::IsNullOrWhiteSpace($value)) { return $false }
   return $value.Trim().ToLowerInvariant() -ne 'none'
+}
+
+function Test-IsMeaningfulLaunchFocus($value) {
+  if ([string]::IsNullOrWhiteSpace($value)) { return $false }
+  return $value.Trim() -notmatch '^(?i:todo|tbd|unknown)$'
 }
 
 function Invoke-InDir($relativeDir, $command) {
@@ -265,6 +284,29 @@ try {
   $docNamingDetail = if ($docNamingOk) { 'no active docs use unstable duplicate-style names' } else { 'unstable doc names: ' + (($suspiciousDocPaths | Select-Object -First 5) -join ', ') }
   Gate 'documentation naming hygiene' $docNamingOk $docNamingDetail
 
+  $launchChecklistFile = Join-Path $RepoRoot '0.dev-matrix\LAUNCH_CHECKLIST.md'
+  if (Test-Path $launchChecklistFile) {
+    $launchChecklistContent = Get-Content $launchChecklistFile -Raw
+    $launchProductOutcome = Get-ChecklistFieldValue $launchChecklistContent 'Product outcome:'
+    $launchCurrentSlice = Get-ChecklistFieldValue $launchChecklistContent 'Current launch slice:'
+    $launchCurrentBlocker = Get-ChecklistFieldValue $launchChecklistContent 'Current blocker:'
+    $launchNextEarningStep = Get-ChecklistFieldValue $launchChecklistContent 'Next earning step:'
+    $launchFocusMissing = @()
+    if (-not (Test-IsMeaningfulLaunchFocus $launchProductOutcome)) { $launchFocusMissing += 'Product outcome' }
+    if (-not (Test-IsMeaningfulLaunchFocus $launchCurrentSlice)) { $launchFocusMissing += 'Current launch slice' }
+    if (-not (Test-IsMeaningfulLaunchFocus $launchCurrentBlocker)) { $launchFocusMissing += 'Current blocker' }
+    if (-not (Test-IsMeaningfulLaunchFocus $launchNextEarningStep)) { $launchFocusMissing += 'Next earning step' }
+    $launchFocusOk = $launchFocusMissing.Count -eq 0
+    $launchFocusDetail = if ($launchFocusOk) {
+      'launch checklist names product outcome/current launch slice/current blocker/next earning step'
+    } else {
+      'launch checklist missing focus lines: ' + ($launchFocusMissing -join ', ')
+    }
+    Gate 'launch focus' $launchFocusOk $launchFocusDetail
+  } else {
+    Gate 'launch focus' $false 'LAUNCH_CHECKLIST.md not found'
+  }
+
   $handoffFile = Join-Path $RepoRoot '0.dev-matrix\AI-HANDOFF.md'
   if (Test-Path $handoffFile) {
     $latestHandoff = Get-LatestHandoffEntry (Get-Content $handoffFile -Raw)
@@ -352,6 +394,12 @@ $report += "- Latest handoff date: $latestHandoffDate"
 $report += "- Operational proof: $latestHandoffOperationalProof"
 $report += "- Continue from: $latestHandoffContinue"
 $report += "- Next step: $latestHandoffNext"
+$report += ""
+$report += "## Launch Focus"
+$report += "- Product outcome: $launchProductOutcome"
+$report += "- Current launch slice: $launchCurrentSlice"
+$report += "- Current blocker: $launchCurrentBlocker"
+$report += "- Next earning step: $launchNextEarningStep"
 $report += ""
 if ($regressionNote) { $report += "## Regression Warning"; $report += ""; $report += "- $regressionNote"; $report += "" }
 $report += "## Results"

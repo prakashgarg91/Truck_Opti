@@ -86,6 +86,23 @@ function Test-IsAllowedRuntimeDirtyPath {
     return $false
 }
 
+function Get-ChecklistFieldValue {
+    param([string]$Content, [string]$Label)
+    if ([string]::IsNullOrWhiteSpace($Content) -or [string]::IsNullOrWhiteSpace($Label)) { return $null }
+    $pattern = '(?mi)^-\s*' + [regex]::Escape($Label) + '\s*(?<value>.+)$'
+    $match = [regex]::Match($Content, $pattern)
+    if ($match.Success) {
+        return $match.Groups['value'].Value.Trim()
+    }
+    return $null
+}
+
+function Test-IsMeaningfulLaunchFocus {
+    param([string]$Value)
+    if ([string]::IsNullOrWhiteSpace($Value)) { return $false }
+    return $Value.Trim() -notmatch '^(?i:todo|tbd|unknown)$'
+}
+
 # ---------- banner ----------
 
 Write-Host ''
@@ -329,6 +346,7 @@ try {
         '0.dev-matrix\standards\DOCUMENTATION-GOVERNANCE-STANDARD.md',
         '0.dev-matrix\standards\DEEP-VERIFICATION-STANDARD.md',
         '0.dev-matrix\standards\OPERATIONAL-PROOF-STANDARD.md',
+        '0.dev-matrix\standards\RESUME-LED-DELIVERY-STANDARD.md',
         '0.dev-matrix\standards\ROLLOUT-RULES.md',
         '0.dev-matrix\standards\TREE-HYGIENE-STANDARD.md',
         '0.dev-matrix\standards\VULNERABILITY-RESPONSE-STANDARD.md'
@@ -360,6 +378,17 @@ try {
         Write-Gate 'Runtime docs' 'FAIL' ('missing: ' + ($missingDocs -join ', '))
     }
 
+    $resumeScript = Join-Path $RepoRoot '0.dev-matrix\resume-work.ps1'
+    $pauseScript = Join-Path $RepoRoot '0.dev-matrix\pause-work.ps1'
+    $fastWorkflowMissing = @()
+    if (-not (Test-Path $resumeScript)) { $fastWorkflowMissing += 'resume-work.ps1' }
+    if (-not (Test-Path $pauseScript)) { $fastWorkflowMissing += 'pause-work.ps1' }
+    if ($fastWorkflowMissing.Count -eq 0) {
+        Write-Gate 'Fast handoff workflow' 'PASS' 'resume-work.ps1 and pause-work.ps1 present for fast session restart/stop'
+    } else {
+        Write-Gate 'Fast handoff workflow' 'FAIL' ('missing: ' + ($fastWorkflowMissing -join ', '))
+    }
+
     $handoffFile = Join-Path $RepoRoot '0.dev-matrix\AI-HANDOFF.md'
     if (Test-Path $handoffFile) {
         $handoffContent = Get-Content $handoffFile -Raw
@@ -370,6 +399,27 @@ try {
         }
     } else {
         Write-Gate 'Operational proof contract' 'FAIL' 'AI-HANDOFF.md not found'
+    }
+
+    $launchChecklistFile = Join-Path $RepoRoot '0.dev-matrix\LAUNCH_CHECKLIST.md'
+    if (Test-Path $launchChecklistFile) {
+        $launchChecklistContent = Get-Content $launchChecklistFile -Raw
+        $launchProductOutcome = Get-ChecklistFieldValue $launchChecklistContent 'Product outcome:'
+        $launchCurrentSlice = Get-ChecklistFieldValue $launchChecklistContent 'Current launch slice:'
+        $launchCurrentBlocker = Get-ChecklistFieldValue $launchChecklistContent 'Current blocker:'
+        $launchNextEarningStep = Get-ChecklistFieldValue $launchChecklistContent 'Next earning step:'
+        $launchFocusMissing = @()
+        if (-not (Test-IsMeaningfulLaunchFocus $launchProductOutcome)) { $launchFocusMissing += 'Product outcome' }
+        if (-not (Test-IsMeaningfulLaunchFocus $launchCurrentSlice)) { $launchFocusMissing += 'Current launch slice' }
+        if (-not (Test-IsMeaningfulLaunchFocus $launchCurrentBlocker)) { $launchFocusMissing += 'Current blocker' }
+        if (-not (Test-IsMeaningfulLaunchFocus $launchNextEarningStep)) { $launchFocusMissing += 'Next earning step' }
+        if ($launchFocusMissing.Count -eq 0) {
+            Write-Gate 'Launch focus contract' 'PASS' 'launch checklist includes product outcome/current launch slice/current blocker/next earning step'
+        } else {
+            Write-Gate 'Launch focus contract' 'FAIL' ('launch checklist missing focus lines: ' + ($launchFocusMissing -join ', '))
+        }
+    } else {
+        Write-Gate 'Launch focus contract' 'FAIL' 'LAUNCH_CHECKLIST.md not found'
     }
 
     $docGovFile = Join-Path $RepoRoot '0.dev-matrix\DOCUMENTATION-GOVERNANCE.md'

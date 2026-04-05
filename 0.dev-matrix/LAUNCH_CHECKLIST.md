@@ -3,6 +3,13 @@
 > Complete this before selling to dealer distributors.
 > Updated after each Kimi session. Judge verifies each item.
 
+## Current Launch Focus
+
+- Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
+- Current launch slice: clear the production configuration blockers so the already-built product can be sold and used live.
+- Current blocker: Supabase reachability plus missing production payment and monitoring credentials still block a clean live launch.
+- Next earning step: fix production infrastructure, complete live smoke verification, and onboard the first paying logistics customers.
+
 ---
 
 ## Phase 1: Core Infrastructure ✅ COMPLETE

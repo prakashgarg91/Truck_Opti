@@ -3,7 +3,9 @@
 Purpose: keep a short, durable handoff for future AI work in this repo.
 
 Working rules:
-- Start by reading this file, `git status`, and `AGENTS.md` if it exists.
+- Start every session by reading this file first, then `git status`, and `AGENTS.md` if it exists.
+- If `0.dev-matrix/resume-work.ps1` exists, run it before coding instead of starting with the full launch-check flow.
+- If `0.dev-matrix/pause-work.ps1` exists, use it before a short stop so the next restart can resume immediately.
 - Fix root causes when possible and avoid unrelated churn.
 - Do not commit generated logs, screenshots, or temporary test artifacts unless they are the intended deliverable.
 - Before pushing, record what changed, how it was verified, and what still needs work.
@@ -19,17 +21,19 @@ Update protocol:
 	- `Next step:`
 	- `Blockers:`
 - If a field has nothing to report, write `none` explicitly.
+- Keep each field to the minimum truthful line needed to resume; handoff is a checkpoint, not a long report.
+- Keep `Next step:` small enough that the next short work session can resume without re-planning the whole repo.
 - The latest entry should let the next AI continue from the exact checkpoint without re-discovering context.
 
 ## Handoff Log
 
 ### 2026-04-05
-- Changed: shipped `f1a03450` to GitHub and Heroku `v66`; hardened skyline boundary placement in `frontend/src/lib/packing.ts`; expanded `frontend/scripts/packing-regression.ts` to prove the 2x2x1 boundary-cube case; synced `TASK.md`, `STATE.md`, `DISCUSSION.md`, `TEST.md`, and `PATTERNS.md` to the new verified packing truth.
-- Verified: `npm run test:packing` PASS (5/5); `cd frontend && npm run build` PASS; `npm run launch-check` PASS (15/15); `heroku ps --app truck-opti-app` showed `web.1 up`; `logs/public_frontend_smoke_report.json` shows 7/7 public routes passing on 2026-04-05; `logs/frontend_launch_smoke_report.json` shows 16/17 passing on 2026-04-05 with only `auth-service` failing; `logs/production_config_audit.json` remains 2/6 PASS on 2026-04-05.
-- Operational proof: repo-side launch proof is green again on the committed tree, and the shared packing engine now has deterministic proof for the repaired skyline boundary case instead of a documented known issue.
-- Continue from: investigate why `npm run close-day` does not exit cleanly even though it writes fresh smoke artifacts, then decide whether to fix the hook itself or keep using manual closeout updates until the deep-verification path is stable.
-- Next step: fix the stalled close-day path around `npm run test:live-buttons` and the separate `apps/web` `npm run test:coverage` failure, or switch back to owner-side recovery of Supabase/Razorpay/Sentry/PhonePe if launch execution takes priority.
-- Blockers: `jbxncejtcbpcronndqlx.supabase.co` still fails DNS/auth smoke; Heroku still has Razorpay test keys; `VITE_SENTRY_DSN` is missing; PhonePe still points at preprod; `apps/web` coverage still fails with a Jest/Puppeteer teardown error; `npm run close-day` still does not finish cleanly.
+- Changed: added fast resume and pause scripts, updated AGENTS and handoff rules for short-session work, added launch focus lines, and merged the fast handoff contract into the custom `scripts/launch-readiness.ps1` and `scripts/close-day.ps1` flows.
+- Verified: PowerShell parser PASS for `0.dev-matrix/pause-work.ps1`, `scripts/launch-readiness.ps1`, and `scripts/close-day.ps1`.
+- Operational proof: the custom readiness and close-day scripts now enforce the same fast handoff and launch focus contract as the standard repos without dropping TruckOpti-specific verification.
+- Continue from: use `0.dev-matrix/resume-work.ps1` to restart production infrastructure recovery and live smoke verification instead of rediscovering repo state.
+- Next step: fix production infrastructure, complete live smoke verification, and onboard the first paying logistics customers.
+- Blockers: Supabase reachability plus missing production payment and monitoring credentials still block a clean live launch.
 
 ### 2026-04-04
 - Changed: added deterministic regression proof for the shared frontend packing engine via `frontend/scripts/packing-regression.ts`, `frontend/tsconfig.packing-regression.json`, `npm run test:packing`, and a seeded-random hook in `frontend/src/lib/packing.ts`.

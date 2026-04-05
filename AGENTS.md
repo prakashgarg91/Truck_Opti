@@ -19,7 +19,7 @@ These rules exist because AI agents have shipped nice-looking guesses instead of
 6. **No whitespace-only status touches.** Adding a blank line to STATE.md to pass the status-discipline gate is fraud. The system now detects this.
 7. **No claiming integration works without proving it.** "Backend works" means you hit the health endpoint and got a 200. "Frontend works" means the build succeeded AND at least one test passed.
 8. **Always run `npm run launch-check` before claiming a repo is ready.** If it fails, the repo is not ready. Period.
-9. **Always run `npm run close-day` at end of work session.** The close-day hook captures evidence. Skipping it means there is no proof the session produced anything.
+9. **Use the fast pause path for short stops, and reserve `npm run close-day` for true closeout.** For a short pause or context switch, update `AI-HANDOFF.md` and use `pause-work.ps1` when available. Run `npm run close-day` before push, before claiming readiness, or at a true end-of-day close.
 10. **Read `0.dev-matrix/standards/ANTI-HALLUCINATION-STANDARD.md` before starting work.** It exists in every repo. It is policy.
 
 ### Manager Mode Trigger
