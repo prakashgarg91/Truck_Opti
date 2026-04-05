@@ -18,8 +18,8 @@ These rules exist because AI agents have shipped nice-looking guesses instead of
 5. **No percentage inflation.** Completion percentage must correlate to measurable metrics: (tests passing / total tests), (features done / total features), (coverage %). Making up a number is forbidden.
 6. **No whitespace-only status touches.** Adding a blank line to STATE.md to pass the status-discipline gate is fraud. The system now detects this.
 7. **No claiming integration works without proving it.** "Backend works" means you hit the health endpoint and got a 200. "Frontend works" means the build succeeded AND at least one test passed.
-8. **Always run `npm run launch-check` before claiming a repo is ready.** If it fails, the repo is not ready. Period.
-9. **Use the fast pause path for short stops, and reserve `npm run close-day` for true closeout.** For a short pause or context switch, update `AI-HANDOFF.md` and use `pause-work.ps1` when available. Run `npm run close-day` before push, before claiming readiness, or at a true end-of-day close.
+8. **Launch-check must pass before claiming a repo is ready, and `resume-work.ps1` should start it as early as possible.** If the repo supports background launch-check, let `resume-work.ps1` start or reuse it so readiness evidence accumulates while work is in progress. Re-run it manually only when you need a fresh explicit result.
+9. **Use the fast pause path for short stops, and keep close-day handoff-first.** For a short pause or context switch, update `AI-HANDOFF.md` and use `pause-work.ps1` when available. Run `npm run close-day` before push, before claiming readiness, or at a true end-of-day close, but treat it as a short handoff that reuses the latest background launch-check state instead of rerunning heavy verification.
 10. **Read `0.dev-matrix/standards/ANTI-HALLUCINATION-STANDARD.md` before starting work.** It exists in every repo. It is policy.
 
 ### Manager Mode Trigger
