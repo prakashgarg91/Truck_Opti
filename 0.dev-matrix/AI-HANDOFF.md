@@ -23,6 +23,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-05
+- Changed: shipped `f1a03450` to GitHub and Heroku `v66`; hardened skyline boundary placement in `frontend/src/lib/packing.ts`; expanded `frontend/scripts/packing-regression.ts` to prove the 2x2x1 boundary-cube case; synced `TASK.md`, `STATE.md`, `DISCUSSION.md`, `TEST.md`, and `PATTERNS.md` to the new verified packing truth.
+- Verified: `npm run test:packing` PASS (5/5); `cd frontend && npm run build` PASS; `npm run launch-check` PASS (15/15); `heroku ps --app truck-opti-app` showed `web.1 up`; `logs/public_frontend_smoke_report.json` shows 7/7 public routes passing on 2026-04-05; `logs/frontend_launch_smoke_report.json` shows 16/17 passing on 2026-04-05 with only `auth-service` failing; `logs/production_config_audit.json` remains 2/6 PASS on 2026-04-05.
+- Operational proof: repo-side launch proof is green again on the committed tree, and the shared packing engine now has deterministic proof for the repaired skyline boundary case instead of a documented known issue.
+- Continue from: investigate why `npm run close-day` does not exit cleanly even though it writes fresh smoke artifacts, then decide whether to fix the hook itself or keep using manual closeout updates until the deep-verification path is stable.
+- Next step: fix the stalled close-day path around `npm run test:live-buttons` and the separate `apps/web` `npm run test:coverage` failure, or switch back to owner-side recovery of Supabase/Razorpay/Sentry/PhonePe if launch execution takes priority.
+- Blockers: `jbxncejtcbpcronndqlx.supabase.co` still fails DNS/auth smoke; Heroku still has Razorpay test keys; `VITE_SENTRY_DSN` is missing; PhonePe still points at preprod; `apps/web` coverage still fails with a Jest/Puppeteer teardown error; `npm run close-day` still does not finish cleanly.
+
 ### 2026-04-04
 - Changed: added deterministic regression proof for the shared frontend packing engine via `frontend/scripts/packing-regression.ts`, `frontend/tsconfig.packing-regression.json`, `npm run test:packing`, and a seeded-random hook in `frontend/src/lib/packing.ts`.
 - Verified: `cd frontend && npm run test:packing` PASS (4/4); `cd frontend && npm run build` PASS; root + frontend `npm audit --omit=dev` both returned 0 vulnerabilities.
