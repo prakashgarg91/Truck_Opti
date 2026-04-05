@@ -44,6 +44,22 @@ cd frontend && npm run build
 
 **Pass criteria:** Zero TypeScript errors. Warnings acceptable, errors are not.
 
+### Step 2a: Packing Regression Proof — `npm run test:packing`
+
+```powershell
+npm run test:packing
+```
+
+Verifies deterministic behavior in the shared client-side packing engine:
+
+- skyline packs the existing slim-box fixture
+- skyline packs a boundary-aligned 2x2x1 cube fixture at exact `x/z = 1` coordinates
+- extreme points keeps the known mini-truck limit behavior
+- recommendation ranking prefers the balanced full-fit truck
+- seeded genetic packing stays deterministic
+
+**Latest evidence:** 2026-04-05 manager verification passed 5/5 checks. The new boundary fixture proves skyline no longer misses exact truck-edge placements because of floating-step drift.
+
 ### Step 2b: Public Frontend Smoke — `npm run test:public-smoke`
 
 ```powershell
@@ -104,7 +120,7 @@ Verifies:
 
 Writes evidence to `logs/frontend_launch_smoke_report.json`.
 
-**Latest evidence:** 2026-04-03 manager verification passed 16/17 checks and failed only the auth-service reachability check. The passing checks now prove the live frontend degrades gracefully when backend-dependent actions fail and that the public onboarding wizards still progress: `/contact` shows `Support is temporarily unreachable` with `Retry send` and `Email support`, `/login` shows `Authentication service is currently unreachable...` when OTP transport is blocked in-browser, `/driver/register` advances through `Vehicle Details` to `Payment Details`, and `/agency/register` advances through `Contact & Address` to `Bank Details` without submitting live records. The single remaining failing check is still the real external blocker: `jbxncejtcbpcronndqlx.supabase.co` could not be resolved, and this was previously rechecked against Google Public DNS (`8.8.8.8`), which also returned NXDOMAIN.
+**Latest stable evidence:** 2026-04-03 manager verification passed 16/17 checks and failed only the auth-service reachability check. The passing checks now prove the live frontend degrades gracefully when backend-dependent actions fail and that the public onboarding wizards still progress: `/contact` shows `Support is temporarily unreachable` with `Retry send` and `Email support`, `/login` shows `Authentication service is currently unreachable...` when OTP transport is blocked in-browser, `/driver/register` advances through `Vehicle Details` to `Payment Details`, and `/agency/register` advances through `Contact & Address` to `Bank Details` without submitting live records. The single remaining failing check is still the real external blocker: `jbxncejtcbpcronndqlx.supabase.co` could not be resolved, and this was previously rechecked against Google Public DNS (`8.8.8.8`), which also returned NXDOMAIN. A 2026-04-05 rerun from the manager environment timed out navigating to `/login`; treat that as a fresh watch item until it is reproduced from a clean external browser, not as a confirmed production regression.
 
 ### Step 2d: Production Config Audit — `npm run test:prod-config`
 
@@ -123,7 +139,7 @@ Verifies the currently deployed Heroku production config for launch readiness:
 
 Writes evidence to `logs/production_config_audit.json`.
 
-**Latest evidence:** 2026-04-03 manager verification passed 2/6 checks and failed 4/6:
+**Latest evidence:** 2026-04-05 manager verification passed 2/6 checks and failed 4/6:
 - Supabase auth backend DNS lookup failed for `jbxncejtcbpcronndqlx.supabase.co`
 - Razorpay still uses `rzp_test_*`
 - `VITE_SENTRY_DSN` is missing
@@ -284,7 +300,7 @@ Login as admin. Auto-redirected to `/admin`.
 | 2 | Frontend build | Any dev | PASS | 2026-03-31 | No |
 | 2b | Public frontend smoke | Manager | 7/7 PASS | 2026-04-01 | No |
 | 2e | Full frontend route audit | Manager | 47/47 route outcomes verified + key public interactions exercised | 2026-04-03 | Yes (auth/contact backend unreachable; stale client cache risk) |
-| 2d | Production config audit | Manager | 2/6 PASS | 2026-04-03 | Yes |
+| 2d | Production config audit | Manager | 2/6 PASS | 2026-04-05 | Yes |
 | 4b | Public route smoke | Manager | PASS (7 routes, fresh bundle) | 2026-04-01 | No |
 | 5 | Auth smoke | Owner | — | — | Yes (Twilio/OAuth) |
 | 6 | Customer portal | Owner | — | — | Yes (auth) |

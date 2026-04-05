@@ -16,6 +16,21 @@
 ### Sign In Format
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-05] MANAGER-ADMIN:
+  Shared skyline packing quality has been improved in the single client-side engine.
+
+  NEW VERIFIED WORK:
+  - fixed floating-step boundary misses in `frontend/src/lib/packing.ts`
+  - added exact-boundary regression coverage in `frontend/scripts/packing-regression.ts`
+  - `npm run test:packing`: PASS (5/5)
+  - `cd frontend && npm run build`: PASS
+  - `npm run launch-check`: 14 passed, 1 failed only because the working tree was intentionally dirty during this implementation pass
+
+  JUDGMENT:
+  - skyline no longer stalls after the first 1m cube in the 2x2x1 boundary fixture
+  - launch remains blocked by external auth/payment/observability config, not by this client-side packing defect
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-03-30] MANAGER-AUDIT:
   Full launch-readiness audit performed. All dev-matrix files read and verified.
 
@@ -397,4 +412,18 @@ git push heroku main     # Heroku second
 
 ---
 
-*Last updated: 2026-04-03 | Manager admin sync*
+## 2026-04-05 Manager Admin Sync
+
+- Shared skyline packing quality improved from the single frontend source of truth.
+- `frontend/src/lib/packing.ts` now snaps skyline scan coordinates and allows exact boundary-aligned face fits.
+- `frontend/scripts/packing-regression.ts` now proves the 2x2x1 skyline boundary-cube case directly.
+- `npm run test:packing`: PASS (5/5)
+- `cd frontend && npm run build`: PASS
+- `npm run test:prod-config`: PASS (2/6), with the same four external failures still open
+- `npm run test:frontend-smoke`: timed out navigating to `/login` from the current manager environment, so the older 16/17 result remains the last stable full smoke evidence
+
+Judgment: the documented skyline boundary under-pack is no longer an open repo-side issue, but launch is still blocked by the external Supabase/payment/observability gaps.
+
+---
+
+*Last updated: 2026-04-05 | Manager admin sync*

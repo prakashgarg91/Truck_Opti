@@ -244,7 +244,8 @@ Rules:
 - Keep the packing heuristics in `frontend/src/lib/packing.ts` as the single source of truth.
 - `PackingPage.tsx` and `packingWorker.ts` should import the shared engine instead of carrying their own algorithm copies.
 - After changing packing heuristics, run `npm run test:packing` in `frontend/` for deterministic regression proof before relying only on browser smoke or build output.
+- Do not scan truck coordinates by repeated floating increments alone; generate snapped axis positions that explicitly include the exact boundary limit, or skyline-style packers will miss edge-aligned placements such as `x = 1` / `z = 1` in a `2x2x1` truck.
 
 ---
 
-*Last updated: 2026-04-04 | packing regression proof synced by GPT-002*
+*Last updated: 2026-04-05 | packing boundary-scan rule synced by MANAGER-ADMIN*

@@ -36,6 +36,13 @@ function simplifyResult(result: PackingResult): string {
   })
 }
 
+function simplifyPackedPositions(packed: PackedBox[]): string {
+  return packed
+    .map((box: PackedBox) => `${box.x},${box.y},${box.z}`)
+    .sort()
+    .join('|')
+}
+
 function logPass(label: string, detail: string): void {
   console.log(`PASS ${label}: ${detail}`)
 }
@@ -83,6 +90,32 @@ function runSkylineFixture(): void {
   assertEqual(result.packed.length, 4, 'Skyline should pack all four slim boxes into the medium truck')
   assertEqual(result.unpacked.length, 0, 'Skyline should leave no unpacked items in the medium truck slim-box fixture')
   logPass('skyline fixture', 'packed 4 of 4 slim boxes into the medium truck')
+}
+
+function runSkylineBoundaryFixture(): void {
+  const items: SaleOrderItem[] = [
+    {
+      id: 'cube',
+      name: 'Cube',
+      length: 100,
+      width: 100,
+      height: 100,
+      weight: 100,
+      quantity: 4,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const result = new AdvancedBinPacker(trucks[1], items, 'skyline').pack()
+  assertEqual(result.packed.length, 4, 'Skyline should pack all four cubes into the medium truck boundary fixture')
+  assertEqual(result.unpacked.length, 0, 'Skyline should leave no unpacked items in the medium truck boundary fixture')
+  assertEqual(
+    simplifyPackedPositions(result.packed),
+    '0,0,0|0,0,1|1,0,0|1,0,1',
+    'Skyline should place cubes on exact boundary-aligned coordinates in the medium truck boundary fixture',
+  )
+  logPass('skyline boundary fixture', 'packed 4 cubes on exact boundary-aligned coordinates')
 }
 
 function runExtremePointsFixture(): void {
@@ -173,10 +206,11 @@ function runGeneticDeterminismFixture(): void {
 
 function main(): void {
   runSkylineFixture()
+  runSkylineBoundaryFixture()
   runExtremePointsFixture()
   runRecommendationFixture()
   runGeneticDeterminismFixture()
-  console.log('Packing regression complete: 4 checks passed')
+  console.log('Packing regression complete: 5 checks passed')
 }
 
 try {

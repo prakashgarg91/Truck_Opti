@@ -49,6 +49,8 @@ export interface PackingResult {
   unpacked: string[]
 }
 
+const POSITION_EPSILON = 1e-9
+
 interface PackerOptions {
   geneticIterations?: number
   onProgress?: (progress: number) => void
@@ -78,16 +80,38 @@ export class AdvancedBinPacker {
     return length * width * height
   }
 
+  private snapCoordinate(value: number): number {
+    return Math.round(value * 100) / 100
+  }
+
+  private createAxisPositions(limit: number, step: number): number[] {
+    if (limit < 0) return []
+
+    const positions: number[] = []
+    const stepCount = Math.floor(limit / step)
+
+    for (let index = 0; index <= stepCount; index += 1) {
+      positions.push(this.snapCoordinate(index * step))
+    }
+
+    const boundary = this.snapCoordinate(limit)
+    if (positions.length === 0 || Math.abs(positions[positions.length - 1] - boundary) > POSITION_EPSILON) {
+      positions.push(boundary)
+    }
+
+    return positions
+  }
+
   private fitsAt(packed: PackedBox[], x: number, y: number, z: number, length: number, width: number, height: number): boolean {
     const truck = this.truck.dimensions
 
-    if (x + length > truck.length || y + height > truck.height || z + width > truck.width) return false
+    if (x + length > truck.length + POSITION_EPSILON || y + height > truck.height + POSITION_EPSILON || z + width > truck.width + POSITION_EPSILON) return false
     if (x < 0 || y < 0 || z < 0) return false
 
     for (const box of packed) {
-      const overlapX = x < box.x + box.width && x + length > box.x
-      const overlapY = y < box.y + box.height && y + height > box.y
-      const overlapZ = z < box.z + box.depth && z + width > box.z
+      const overlapX = x < box.x + box.width - POSITION_EPSILON && x + length > box.x + POSITION_EPSILON
+      const overlapY = y < box.y + box.height - POSITION_EPSILON && y + height > box.y + POSITION_EPSILON
+      const overlapZ = z < box.z + box.depth - POSITION_EPSILON && z + width > box.z + POSITION_EPSILON
 
       if (overlapX && overlapY && overlapZ) return false
     }
@@ -121,9 +145,9 @@ export class AdvancedBinPacker {
   private createPackedBox(item: SaleOrderItem, index: number, x: number, y: number, z: number, rotation: { l: number; w: number; h: number }): PackedBox {
     return {
       id: `${item.id}-${index}`,
-      x: Math.round(x * 100) / 100,
-      y: Math.round(y * 100) / 100,
-      z: Math.round(z * 100) / 100,
+      x: this.snapCoordinate(x),
+      y: this.snapCoordinate(y),
+      z: this.snapCoordinate(z),
       width: rotation.l,
       height: rotation.h,
       depth: rotation.w,
@@ -156,9 +180,13 @@ export class AdvancedBinPacker {
 
       outerLoop:
       for (const rotation of rotations) {
-        for (let y = 0; y <= height - rotation.h; y += step) {
-          for (let z = 0; z <= width - rotation.w; z += step) {
-            for (let x = 0; x <= length - rotation.l; x += step) {
+        const yPositions = this.createAxisPositions(height - rotation.h, step)
+        const zPositions = this.createAxisPositions(width - rotation.w, step)
+        const xPositions = this.createAxisPositions(length - rotation.l, step)
+
+        for (const y of yPositions) {
+          for (const z of zPositions) {
+            for (const x of xPositions) {
               if (this.fitsAt(packed, x, y, z, rotation.l, rotation.w, rotation.h)) {
                 packed.push(this.createPackedBox(item, index, x, y, z, rotation))
                 placed = true
