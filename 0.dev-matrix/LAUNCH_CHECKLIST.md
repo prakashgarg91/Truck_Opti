@@ -7,8 +7,8 @@
 
 - Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
 - Current launch slice: clear the production configuration blockers so the already-built product can be sold and used live.
-- Current blocker: Supabase reachability plus missing production payment and monitoring credentials still block a clean live launch.
-- Next earning step: fix production infrastructure, complete live smoke verification, and onboard the first paying logistics customers.
+- Current blocker: live Razorpay credentials, Sentry DSN, PhonePe production/disable decision, pending migration push, and authenticated real-account verification still block a clean public launch.
+- Next earning step: complete owner-side payment/monitoring configuration, verify authenticated flows, and onboard the first paying logistics customers.
 
 ---
 
@@ -23,16 +23,16 @@
 | 1.5 | 5 realtime tables | ✅ | — |
 | 1.6 | Seed data (8 trucks, 4 plans) | ✅ | — |
 
-## Phase 2: Authentication 🟡 IMPLEMENTED, BUT LIVE BACKEND BLOCKED
+## Phase 2: Authentication 🟡 IMPLEMENTED, LIVE ACCOUNT VERIFICATION STILL NEEDED
 
 | # | Item | Status | Commit |
 |---|------|--------|--------|
-| 2.1 | OTP login (SMS/WhatsApp/Telegram) | ❌ | Live auth backend unreachable in 2026-04-01 smoke |
-| 2.2 | Google OAuth | ❌ | Production credentials still owner-side and backend reachability unresolved |
+| 2.1 | OTP login (SMS/WhatsApp/Telegram) | 🟡 | Backend reachability is restored; real-account OTP verification still pending |
+| 2.2 | Google OAuth | 🟡 | Provider exists in code; production credentials and live verification remain owner-side |
 | 2.3 | Auth callback page | ✅ | `53827487` |
 | 2.4 | Zustand auth store | ✅ | `53827487` |
 | 2.5 | Protected routes | ✅ | `53827487` |
-| 2.6 | User profile sync to DB | 🟡 | Implemented, but cannot be live-verified until auth is restored |
+| 2.6 | User profile sync to DB | 🟡 | Implemented, but still needs live verification through a real authenticated flow |
 
 ## Phase 3: Frontend Data Wiring ✅ COMPLETE
 
@@ -62,19 +62,19 @@
 | # | Item | Status | Depends on |
 |---|------|--------|----------|
 | 5.1 | Supabase integration test script | ✅ 42/42 PASS | BATCH7 T-105 |
-| 5.2 | Browser smoke test (14 pages) | 🟡 Expanded to a full 47-route browser audit on 2026-04-03: public routes and protected redirects verified, but auth/contact/browser-full flow still blocked by auth backend outage | Requires auth fix + real accounts for full completion |
+| 5.2 | Browser smoke test (14 pages) | 🟡 Expanded to a full 47-route browser audit plus `npm run test:frontend-smoke` = 17/17 PASS for the public/auth shell on 2026-04-05 | Requires real authenticated accounts for full completion |
 | 5.3 | TypeScript 0 errors | ✅ | `npx tsc --noEmit` → 0 errors |
 | 5.4 | Vite build succeeds | ✅ | Built in 6.57s |
 | 5.5 | RLS policy verification | ✅ | Validated in test script |
-| 5.6 | Repo launch-readiness preflight (`npm run launch-check`) | ✅ 14/14 PASS | 2026-04-03 manager verification |
+| 5.6 | Repo launch-readiness preflight (`npm run launch-check`) | ✅ 17/17 PASS | 2026-04-05 committed-tree verification |
 
-## Phase 6: Production Readiness ❌ NOT STARTED
+## Phase 6: Production Readiness 🟡 PARTIAL
 
 | # | Item | Status | Priority |
 |---|------|--------|----------|
 | 6.1 | Razorpay production keys | ❌ | P0 — blocks payments, requires owner action |
-| 6.2 | Google OAuth production credentials | ❌ | P0 — blocks login, requires owner action |
-| 6.2b | Live Supabase auth/backend reachability | ❌ | P0 — blocking; configured host failed DNS/auth health on 2026-04-01 |
+| 6.2 | Google OAuth production credentials | ❌ | P0 — owner action still required before live verification |
+| 6.2b | Live Supabase auth/backend reachability | ✅ | P0 — restored on 2026-04-05 after the project was resumed |
 | 6.3 | Google Maps API key | ❌ | P1 — Leaflet fallback works |
 | 6.4 | Custom domain + SSL | ✅ | P0 — `truckopti.in` + `www.truckopti.in` live |
 | 6.5 | PWA icons (missing from public/) | ✅ | BATCH9 verified — pwa-192x192.png, pwa-512x512.png, apple-touch-icon.png exist |
