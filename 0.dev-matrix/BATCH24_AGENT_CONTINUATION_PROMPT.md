@@ -39,6 +39,7 @@ frontend/src/pages/auth/AuthCallbackPage.tsx
     - PhonePe still sandbox/preprod
 - Auth/payment UX now fails safely with `UserFacingError` instead of raw provider messages.
 - Official Docker-backed Razorpay MCP is configured in `.vscode/mcp.json`.
+- GitHub reported 17 default-branch vulnerabilities on the 2026-04-05 push, but local root `npm audit` and `frontend` `npm audit fix` both returned 0 vulnerabilities; this discrepancy is unresolved.
 
 ---
 
@@ -49,6 +50,7 @@ frontend/src/pages/auth/AuthCallbackPage.tsx
 3. PhonePe is still pointed at sandbox/preprod and must either be moved to production or disabled for launch.
 4. Pending Supabase migrations still need to be pushed.
 5. Authenticated real-account flows for customer, driver, agency, and admin are still unverified.
+6. GitHub Dependabot/security alerts still need reconciliation against the clean local audit results.
 
 ---
 
@@ -88,6 +90,16 @@ Update these files only after the above is verified:
 - `0.dev-matrix/TASK.md`
 - `0.dev-matrix/AI-HANDOFF.md`
 - `0.dev-matrix/LAST-CLOSEOUT.md`
+
+### T5 — Reconcile GitHub security alerts
+
+Because the latest `git push` still reported 17 vulnerabilities while local Node audits were clean:
+
+1. inspect the GitHub Security/Dependabot alert list directly
+2. determine whether the alerts are stale, from `apps/web`, Python, or another dependency surface
+3. remediate or explicitly document the remaining packages/ecosystems still affected
+
+Do not claim security closure from local `npm audit` output alone until the GitHub alert count matches reality.
 
 ---
 

@@ -8,8 +8,9 @@
 ## 🎯 ACTIVE TASKS
 
 > **Repo-side preflight/security work is green and public frontend smoke is green, but launch is still blocked by live production configuration.**
-> **Evidence:** `cd frontend && npm run build` passed on 2026-04-05; the last clean `npm run launch-check` passed 17/17 on 2026-04-05 before the current implementation pass, and the post-edit rerun failed only the git-cleanliness gate because this working tree is intentionally dirty; `npm run test:packing` passed 5/5 deterministic checks on 2026-04-05; `npm run test:frontend-smoke` now passes 17/17 on 2026-04-05 after fixing the auth-health probe; `npm run test:prod-config` now passes 3/6 on 2026-04-05 because Supabase auth DNS is healthy again.
+> **Evidence:** `cd frontend && npm run build` passed on 2026-04-05; a fresh committed-tree `launch-check` now records PASS via `0.dev-matrix/launch-check-runner.ps1` on 2026-04-05; `npm run test:packing` passed 5/5 deterministic checks on 2026-04-05; `npm run test:frontend-smoke` now passes 17/17 on 2026-04-05 after fixing the auth-health probe; `npm run test:prod-config` now passes 3/6 on 2026-04-05 because Supabase auth DNS is healthy again.
 > **2026-04-05 update:** the production Supabase project was resumed and the auth host now resolves again. The remaining external launch blockers are Razorpay test keys, missing `VITE_SENTRY_DSN`, PhonePe sandbox/preprod, pending migration push, and unverified authenticated browser flows.
+> **2026-04-05 security note:** GitHub still reports 17 default-branch vulnerabilities after push, even though local `npm audit fix` in `frontend` and root `npm audit` both returned 0 vulnerabilities on 2026-04-05. The next batch must reconcile whether those alerts are stale, come from another ecosystem, or still require package updates outside the audited Node surfaces.
 > **2026-04-03 repo-side note:** T-130 mitigation landed locally and the smoke evidence is stronger now. `frontend/src/main.tsx`, `frontend/src/utils/runtimeRecovery.ts`, and `frontend/src/components/ErrorBoundary.tsx` recover stale lazy-chunk failures by forcing a safe reload path; `frontend/vite.config.ts` enables Workbox `cleanupOutdatedCaches` and `navigateFallback: '/index.html'`; and `npm run test:frontend-smoke` now exercises 17 checks with 16 passing, including contact-page degraded-mode fallback, login-page auth fallback, and both public onboarding wizards progressing to their next major steps without creating live backend side effects. Live returning-user retest is still pending.
 > **2026-04-04 repo-side note:** the duplicated client-side packer has now been consolidated into `frontend/src/lib/packing.ts`, with `PackingPage.tsx`, `packingWorker.ts`, and `usePackingWorker.ts` all using the shared engine/types. The frontend build still passes, and public frontend smoke still lands at 16/17 with only the external `auth-service` check failing.
 > **2026-04-04 packing proof note:** `frontend/scripts/packing-regression.ts` now gives deterministic proof for skyline, extreme points, recommendation ranking, and seeded genetic behavior. It also exposed the next quality target: skyline still under-packs boundary-aligned 1m cubes in a 2x2x1 truck while `extreme_points` fits all 4.
@@ -33,6 +34,7 @@
 | T-116 | Sentry DSN configuration | P1 | 🔑 External | 🔴 Blocking for observability: `VITE_SENTRY_DSN` missing in 2026-04-03 prod-config audit |
 | T-117 | Supabase db push (6 pending migrations) | P0 | 🔑 External | 🟡 Owner: run `supabase db push` |
 | T-129 | PhonePe production configuration | P1 | 🔑 External | 🔴 Blocking if PhonePe remains enabled: Heroku still points at `api-preprod.phonepe.com/apis/pg-sandbox` |
+| T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | 🔐 Security | 🟡 GitHub reported 17 alerts on 2026-04-05 push, but local root `npm audit` and `frontend` `npm audit fix` both returned 0 vulnerabilities; verify whether the alerts are stale or come from another package ecosystem |
 | T-130 | Fix stale service-worker chunk invalidation for returning users | P1 | 🧪 Product | 🟡 Repo-side recovery is in place; live returning-user retest is still pending |
 | ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
@@ -115,6 +117,7 @@
 | T-129 | PhonePe production configuration | P1 | External | Replace sandbox/preprod env values or disable PhonePe before launch |
 | T-115 | Verify production DB backup / PITR | P1 | External | Supabase dashboard → Backups |
 | T-114 | Authenticated smoke test (all pages) | P1 | Manual | Browser test with real account |
+| T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | Security | Check GitHub Security tab and any non-Node ecosystems; root and `frontend` audits were clean on 2026-04-05 |
 | T-107 | Google Maps API key (optional) | P2 | External | Leaflet fallback works; nice-to-have |
 
 ---
