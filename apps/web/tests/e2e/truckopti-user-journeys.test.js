@@ -1,27 +1,50 @@
 const puppeteer = require('puppeteer');
+const path = require('path');
 
 describe('TruckOpti End-to-End User Journeys', () => {
     let browser;
     let page;
+    const baseUrl = global.TEST_BASE_URL || 'http://localhost:5000';
+
+    async function gotoOrFail(route = '/') {
+        try {
+            const response = await page.goto(`${baseUrl}${route}`, {
+                waitUntil: 'domcontentloaded'
+            });
+
+            if (!response || !response.ok()) {
+                const status = response ? response.status() : 'no-response';
+                throw new Error(`status ${status}`);
+            }
+        } catch (error) {
+            throw new Error(
+                `apps/web E2E prerequisite failed for ${baseUrl}${route}. ` +
+                `Start the local apps/web server or set TRUCKOPTI_E2E_BASE_URL. ` +
+                `Original error: ${error.message}`
+            );
+        }
+    }
 
     beforeAll(async () => {
-        browser = await puppeteer.launch({
-            headless: false,
-            defaultViewport: null,
-            args: ['--start-maximized']
-        });
+        browser = await global.launchBrowser();
         page = await browser.newPage();
         await page.setDefaultTimeout(10000);
     });
 
     afterAll(async () => {
-        await browser.close();
+        if (page && !page.isClosed()) {
+            await page.close();
+        }
+
+        if (browser) {
+            await browser.close();
+        }
     });
 
     // 1. NEW USER ONBOARDING TEST
     describe('New User Onboarding', () => {
         beforeEach(async () => {
-            await page.goto('http://localhost:5000');
+            await gotoOrFail();
         });
 
         test('Dashboard Comprehension', async () => {
@@ -72,7 +95,7 @@ describe('TruckOpti End-to-End User Journeys', () => {
     // 2. TRUCK RECOMMENDATION WORKFLOW TEST
     describe('Truck Recommendation Workflow', () => {
         beforeEach(async () => {
-            await page.goto('http://localhost:5000/truck-recommendation');
+            await gotoOrFail('/truck-recommendation');
         });
 
         test('Carton Requirements Input', async () => {
@@ -117,7 +140,7 @@ describe('TruckOpti End-to-End User Journeys', () => {
     // 3. PACKING ANALYSIS & DECISION MAKING TEST
     describe('Packing Analysis Workflow', () => {
         beforeEach(async () => {
-            await page.goto('http://localhost:5000/packing-analysis');
+            await gotoOrFail('/packing-analysis');
         });
 
         test('Unfitted Items and Alternative Solutions', async () => {
@@ -157,13 +180,13 @@ describe('TruckOpti End-to-End User Journeys', () => {
     // 4. SALE ORDER BATCH PROCESSING TEST
     describe('Sale Order Batch Processing', () => {
         beforeEach(async () => {
-            await page.goto('http://localhost:5000/batch-processing');
+            await gotoOrFail('/batch-processing');
         });
 
         test('CSV Upload and Processing', async () => {
             // Upload test CSV file
             const fileInput = await page.$('#csv-upload');
-            await fileInput.uploadFile('./test-data/sample-order-batch.csv');
+            await fileInput.uploadFile(path.resolve(__dirname, '..', 'test-data', 'sample-order-batch.csv'));
 
             // Wait for processing
             await page.click('#process-batch-btn');
@@ -200,7 +223,7 @@ describe('TruckOpti End-to-End User Journeys', () => {
     // 5. ANALYTICS & PERFORMANCE MONITORING TEST
     describe('Analytics and Performance Monitoring', () => {
         beforeEach(async () => {
-            await page.goto('http://localhost:5000/analytics');
+            await gotoOrFail('/analytics');
         });
 
         test('Performance Trends Visualization', async () => {

@@ -14,6 +14,9 @@ if (!fs.existsSync(screenshotDir)) {
 // Global timeout settings
 jest.setTimeout(30000);
 
+global.TEST_BASE_URL = process.env.TRUCKOPTI_E2E_BASE_URL || 'http://localhost:5000';
+global.TEST_HEADLESS = process.env.TRUCKOPTI_E2E_HEADLESS !== 'false';
+
 // Optional: Add global error handling
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -22,9 +25,9 @@ process.on('unhandledRejection', (reason, promise) => {
 // Helper functions for common testing scenarios
 global.launchBrowser = async () => {
     return await puppeteer.launch({
-        headless: false,
-        defaultViewport: null,
-        args: ['--start-maximized']
+        headless: global.TEST_HEADLESS,
+        defaultViewport: { width: 1440, height: 900 },
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 };
 

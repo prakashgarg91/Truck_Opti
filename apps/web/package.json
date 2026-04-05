@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "test:e2e": "jest tests/e2e",
+    "test:e2e": "jest tests/e2e --runInBand --detectOpenHandles",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage --runInBand --detectOpenHandles --forceExit"
   },
   "dependencies": {},
   "devDependencies": {

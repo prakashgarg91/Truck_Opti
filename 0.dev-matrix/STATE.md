@@ -79,6 +79,17 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-05] MANAGER-ADMIN: ✅ apps/web COVERAGE FAILURE IS NOW EXPLICIT INSTEAD OF OPAQUE
+
+                             VERIFIED EVIDENCE:
+                             - updated `apps/web/tests/e2e/truckopti-user-journeys.test.js`, `apps/web/jest.setup.js`, and `apps/web/package.json`
+                             - `cd apps/web && npm run test:coverage`: FAILS FAST in ~24s instead of hanging or crashing after teardown
+                             - new failure message: local prerequisite missing at `http://localhost:5000`; start the local server or set `TRUCKOPTI_E2E_BASE_URL`
+
+                             PRODUCT JUDGMENT:
+                             - this does not make `apps/web` coverage green yet
+                             - it removes low-signal Puppeteer/Jest noise and makes the remaining deep-verification blocker operationally understandable
+------------------------------------------------------------------------------------------
 [2026-04-05] MANAGER-ADMIN: ✅ SKYLINE BOUNDARY REGRESSION NOW PROVED + LAUNCH BLOCKERS RECHECKED
 
                              VERIFIED EVIDENCE:

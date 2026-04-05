@@ -421,6 +421,7 @@ git push heroku main     # Heroku second
 - `cd frontend && npm run build`: PASS
 - `npm run test:prod-config`: PASS (2/6), with the same four external failures still open
 - `npm run test:frontend-smoke`: timed out navigating to `/login` from the current manager environment, so the older 16/17 result remains the last stable full smoke evidence
+- `cd apps/web && npm run test:coverage`: now fails fast with a clear prerequisite message (`http://localhost:5000` / `TRUCKOPTI_E2E_BASE_URL`) instead of the old Puppeteer/Jest teardown crash after environment shutdown
 
 Judgment: the documented skyline boundary under-pack is no longer an open repo-side issue, but launch is still blocked by the external Supabase/payment/observability gaps.
 
