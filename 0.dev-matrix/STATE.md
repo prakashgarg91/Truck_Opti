@@ -3,7 +3,7 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.0 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
-> 2026-04-09: `apps/web` dependency drift was remediated locally; launch-check is back to passing all technical gates, GitHub default-branch alerts dropped from 17 to 2 moderate after push, PhonePe sandbox was disabled in production, Google OAuth redirect now reaches Google Accounts correctly, and launch remains blocked by live Razorpay config, missing Sentry DSN, pending migrations, plus authenticated live-account verification.
+> 2026-04-09: `apps/web` dependency drift was remediated locally; launch-check is back to passing all technical gates, GitHub default-branch alerts dropped from 17 to 2 moderate after push, PhonePe sandbox was disabled in production, Google OAuth redirect now reaches Google Accounts correctly, and the refreshed background launch-check status now records PASS again for close-day. Launch remains blocked by live Razorpay config, missing Sentry DSN, pending migrations, plus authenticated live-account verification.
 
 ---
 
