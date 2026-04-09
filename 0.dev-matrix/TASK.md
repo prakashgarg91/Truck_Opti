@@ -10,7 +10,7 @@
 > **Repo-side preflight/security work is green and public frontend smoke is green, but launch is still blocked by live production configuration.**
 > **Evidence:** `cd frontend && npm run build` passed on 2026-04-09 inside `npm run launch-check`; `cd apps/web && npm audit` now passes 0 vulnerabilities after a lockfile-only refresh on 2026-04-09; `python -m pip_audit -r .\apps\web\requirements.txt` is back to 0 known vulnerabilities after bumping `cryptography` to `46.0.7`; `npm run test:frontend-smoke` passes 17/17 on 2026-04-09; `npm run test:prod-config` passes 3/6 on 2026-04-09; and the post-fix `npm run launch-check` passed every technical gate and failed only git cleanliness because the intended fix files were uncommitted during the verification pass.
 > **2026-04-09 update:** repo-side dependency drift in `apps/web` is fixed again. The remaining external launch blockers are Razorpay test keys, missing `VITE_SENTRY_DSN`, PhonePe sandbox/preprod, pending migration push, and unverified authenticated browser flows.
-> **2026-04-09 security note:** the local audit surface is now green across root, `frontend`, and `apps/web`, but GitHub's previously reported default-branch alert count still needs a post-push reconciliation check.
+> **2026-04-09 security note:** the local audit surface is now green across root, `frontend`, and `apps/web`, and the next push dropped GitHub's default-branch alert count from 17 to 4. The remaining 4 alerts still need manual GitHub Security-tab review because `gh` is not authenticated in this workspace.
 > **2026-04-03 repo-side note:** T-130 mitigation landed locally and the smoke evidence is stronger now. `frontend/src/main.tsx`, `frontend/src/utils/runtimeRecovery.ts`, and `frontend/src/components/ErrorBoundary.tsx` recover stale lazy-chunk failures by forcing a safe reload path; `frontend/vite.config.ts` enables Workbox `cleanupOutdatedCaches` and `navigateFallback: '/index.html'`; and `npm run test:frontend-smoke` now exercises 17 checks with 16 passing, including contact-page degraded-mode fallback, login-page auth fallback, and both public onboarding wizards progressing to their next major steps without creating live backend side effects. Live returning-user retest is still pending.
 > **2026-04-04 repo-side note:** the duplicated client-side packer has now been consolidated into `frontend/src/lib/packing.ts`, with `PackingPage.tsx`, `packingWorker.ts`, and `usePackingWorker.ts` all using the shared engine/types. The frontend build still passes, and public frontend smoke still lands at 16/17 with only the external `auth-service` check failing.
 > **2026-04-04 packing proof note:** `frontend/scripts/packing-regression.ts` now gives deterministic proof for skyline, extreme points, recommendation ranking, and seeded genetic behavior. It also exposed the next quality target: skyline still under-packs boundary-aligned 1m cubes in a 2x2x1 truck while `extreme_points` fits all 4.
@@ -34,7 +34,7 @@
 | T-116 | Sentry DSN configuration | P1 | 🔑 External | 🔴 Blocking for observability: `VITE_SENTRY_DSN` missing in 2026-04-03 prod-config audit |
 | T-117 | Supabase db push (6 pending migrations) | P0 | 🔑 External | 🟡 Owner: run `supabase db push` |
 | T-129 | PhonePe production configuration | P1 | 🔑 External | 🔴 Blocking if PhonePe remains enabled: Heroku still points at `api-preprod.phonepe.com/apis/pg-sandbox` |
-| T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | 🔐 Security | 🟡 Local root, `frontend`, and `apps/web` audits are green again on 2026-04-09, but GitHub's earlier alert count still needs post-push verification to confirm whether it has cleared or remains stale |
+| T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | 🔐 Security | 🟡 Local root, `frontend`, and `apps/web` audits are green again on 2026-04-09, and pushing the fixes dropped GitHub's alert count from 17 to 4; the remaining 4 still need manual GitHub Security-tab review |
 | T-130 | Fix stale service-worker chunk invalidation for returning users | P1 | 🧪 Product | 🟡 Repo-side recovery is in place; live returning-user retest is still pending |
 | ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
@@ -117,7 +117,7 @@
 | T-129 | PhonePe production configuration | P1 | External | Replace sandbox/preprod env values or disable PhonePe before launch |
 | T-115 | Verify production DB backup / PITR | P1 | External | Supabase dashboard → Backups |
 | T-114 | Authenticated smoke test (all pages) | P1 | Manual | Browser test with real account |
-| T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | Security | Check GitHub Security tab and any non-Node ecosystems after the 2026-04-09 `apps/web` audit fixes; local root, `frontend`, and `apps/web` audits are now clean |
+| T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | Security | Check GitHub Security tab and any non-Node ecosystems after the 2026-04-09 `apps/web` audit fixes; the push reduced GitHub's count from 17 to 4, but `gh` is not authenticated here |
 | T-107 | Google Maps API key (optional) | P2 | External | Leaflet fallback works; nice-to-have |
 
 ---

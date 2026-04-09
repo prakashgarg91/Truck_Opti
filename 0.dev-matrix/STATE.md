@@ -3,7 +3,7 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.0 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
-> 2026-04-09: `apps/web` dependency drift was remediated locally; launch-check is back to passing all technical gates, and launch remains blocked only by owner-side production config plus authenticated live-account verification.
+> 2026-04-09: `apps/web` dependency drift was remediated locally; launch-check is back to passing all technical gates, GitHub default-branch alerts dropped from 17 to 4 after push, and launch remains blocked only by owner-side production config plus authenticated live-account verification.
 
 ---
 
@@ -29,6 +29,7 @@
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
 | `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit now passes 3/6: Supabase auth DNS and email OTP flag are healthy, but Razorpay is still on test key, `VITE_SENTRY_DSN` is missing, and PhonePe is still sandbox/preprod | MANAGER + OWNER |
+| `DEPENDABOT-REMAINING-20260409` | 🟡 WATCH | After the 2026-04-09 `apps/web` audit fixes were pushed, GitHub still reports 4 default-branch vulnerabilities (1 high, 3 moderate). The remaining packages were not queryable from this workspace because `gh` is not authenticated. | MANAGER + OWNER |
 | `AUTH-E2E-UNVERIFIED-20260405` | 🟡 WATCH | Supabase host now resolves again, but real email OTP / Google OAuth / authenticated page flows still need live browser verification with a real account | MANAGER + OWNER |
 | `PWA-SW-STALE-CHUNK-20260403` | 🟡 WATCH | Full browser audit reproduced stale lazy-chunk/module failures for returning clients until service worker + caches were cleared | MANAGER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
@@ -91,10 +92,11 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
                              - `python -m pip_audit -r .\apps\web\requirements.txt`: the only finding was `cryptography 46.0.6` → `CVE-2026-39892`; updating to `46.0.7` cleared the audit
                              - `npm run test:frontend-smoke`: PASS (17/17) on 2026-04-09
                              - `npm run test:prod-config`: still PASS (3/6) on 2026-04-09, failing only Razorpay live readiness, missing Sentry DSN, and PhonePe preprod
-                             - `npm run launch-check`: all technical gates passed on 2026-04-09; the implementation-time rerun failed only git cleanliness because `apps/web/package-lock.json` and `apps/web/requirements.txt` were intentionally dirty during the fix
+                             - `npm run launch-check`: PASS (17/17) on the clean committed tree on 2026-04-09
+                             - `git push origin main`: GitHub default-branch alert count dropped from 17 to 4 (1 high, 3 moderate)
 
                              PRODUCT JUDGMENT:
-                             - repo-side launch blockers are green again
+                             - repo-side launch blockers are green again and the previous 17-alert mismatch was mostly resolved by the `apps/web` audit fixes
                              - product is still not public-launch-ready because the remaining blockers are external production config and authenticated real-account verification
 ------------------------------------------------------------------------------------------
 [2026-04-05] GPT-004 (MANAGER): ✅ RAZORPAY MCP WIRED + SUPABASE RESUME REALITY SYNCED
