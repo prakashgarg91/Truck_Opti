@@ -7,7 +7,7 @@
 
 - Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
 - Current launch slice: clear the production configuration blockers so the already-built product can be sold and used live.
-- Current blocker: live Razorpay credentials, Sentry DSN, PhonePe production/disable decision, pending migration push, and authenticated real-account verification still block a clean public launch.
+- Current blocker: live Razorpay credentials, Sentry DSN, pending migration push, and authenticated real-account verification still block a clean public launch.
 - Next earning step: complete owner-side payment/monitoring configuration, verify authenticated flows, and onboard the first paying logistics customers.
 
 ---
@@ -28,7 +28,7 @@
 | # | Item | Status | Commit |
 |---|------|--------|--------|
 | 2.1 | OTP login (SMS/WhatsApp/Telegram) | 🟡 | Backend reachability is restored; real-account OTP verification still pending |
-| 2.2 | Google OAuth | 🟡 | Provider exists in code; production credentials and live verification remain owner-side |
+| 2.2 | Google OAuth | 🟡 | Live redirect to Google Accounts via the Supabase callback is verified on 2026-04-09; successful real-account sign-in is still pending |
 | 2.3 | Auth callback page | ✅ | `53827487` |
 | 2.4 | Zustand auth store | ✅ | `53827487` |
 | 2.5 | Protected routes | ✅ | `53827487` |
@@ -62,18 +62,18 @@
 | # | Item | Status | Depends on |
 |---|------|--------|----------|
 | 5.1 | Supabase integration test script | ✅ 42/42 PASS | BATCH7 T-105 |
-| 5.2 | Browser smoke test (14 pages) | 🟡 Expanded to a full 47-route browser audit plus `npm run test:frontend-smoke` = 17/17 PASS for the public/auth shell on 2026-04-05 | Requires real authenticated accounts for full completion |
+| 5.2 | Browser smoke test (14 pages) | 🟡 Expanded to a full 47-route browser audit plus `npm run test:frontend-smoke` = 17/17 PASS for the public/auth shell on 2026-04-09 | Requires real authenticated accounts for full completion |
 | 5.3 | TypeScript 0 errors | ✅ | `npx tsc --noEmit` → 0 errors |
 | 5.4 | Vite build succeeds | ✅ | Built in 6.57s |
 | 5.5 | RLS policy verification | ✅ | Validated in test script |
-| 5.6 | Repo launch-readiness preflight (`npm run launch-check`) | ✅ 17/17 PASS | 2026-04-05 committed-tree verification |
+| 5.6 | Repo launch-readiness preflight (`npm run launch-check`) | ✅ 17/17 PASS | 2026-04-09 committed-tree verification |
 
 ## Phase 6: Production Readiness 🟡 PARTIAL
 
 | # | Item | Status | Priority |
 |---|------|--------|----------|
 | 6.1 | Razorpay production keys | ❌ | P0 — blocks payments, requires owner action |
-| 6.2 | Google OAuth production credentials | ❌ | P0 — owner action still required before live verification |
+| 6.2 | Google OAuth production credentials | 🟡 | P0 — live redirect is verified on 2026-04-09; final successful sign-in still needs manual verification |
 | 6.2b | Live Supabase auth/backend reachability | ✅ | P0 — restored on 2026-04-05 after the project was resumed |
 | 6.3 | Google Maps API key | ❌ | P1 — Leaflet fallback works |
 | 6.4 | Custom domain + SSL | ✅ | P0 — `truckopti.in` + `www.truckopti.in` live |

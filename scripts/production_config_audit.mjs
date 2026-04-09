@@ -34,17 +34,26 @@ function isPlaceholder(value) {
   );
 }
 
-function summarizeRazorpay(keyId, secret) {
+function summarizeRazorpay(keyId, clientExposedSecret) {
   if (!keyId) {
     return { status: 'fail', detail: 'missing VITE_RAZORPAY_KEY_ID' };
   }
-  if (keyId.startsWith('rzp_live_') && secret && !isPlaceholder(secret)) {
-    return { status: 'pass', detail: 'live Razorpay key + non-placeholder secret present' };
+  if (clientExposedSecret && !isPlaceholder(clientExposedSecret)) {
+    return {
+      status: 'fail',
+      detail: 'client-exposed VITE_RAZORPAY_KEY_SECRET must be removed; keep RAZORPAY_KEY_SECRET server-side only',
+    };
+  }
+  if (keyId.startsWith('rzp_live_')) {
+    return {
+      status: 'pass',
+      detail: 'live Razorpay public key present; verify server-side RAZORPAY_KEY_SECRET via real payment flow',
+    };
   }
   if (keyId.startsWith('rzp_test_')) {
     return { status: 'fail', detail: 'test Razorpay key is still configured' };
   }
-  return { status: 'fail', detail: 'Razorpay key/secret is not launch-ready' };
+  return { status: 'fail', detail: 'Razorpay public key is not launch-ready' };
 }
 
 function summarizeSentry(dsn) {

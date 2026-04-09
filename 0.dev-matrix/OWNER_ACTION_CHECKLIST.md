@@ -4,6 +4,8 @@
 > **Date verified:** 2026-04-09 | **Verifier:** GPT-005 (Manager Audit)
 > **Pre-requisite:** All code changes are committed and pushed to GitHub (main branch).
 
+> **2026-04-09 note:** PhonePe sandbox has already been disabled in Heroku for launch. Do not re-enable PhonePe unless production credentials are ready.
+
 ---
 
 ## 🔴 CRITICAL (blocks core functionality)
@@ -75,6 +77,8 @@ supabase secrets set RAZORPAY_KEY_SECRET=live_secret_XXXXXX
 
 ### Action 3: Configure Google OAuth for Production
 
+**Status:** 🟡 Redirect wiring verified on 2026-04-09; live account sign-in still needs final manual verification.
+
 **Why:** Google login button exists but production OAuth credentials may not be configured.
 
 **Steps:**
@@ -94,7 +98,7 @@ supabase secrets set RAZORPAY_KEY_SECRET=live_secret_XXXXXX
    - `https://truckopti.in/auth/callback`
    - `https://truck-opti-app-efabf95bd306.herokuapp.com/auth/callback`
 
-**Verification:** Log out, click "Sign in with Google" on `/login`, verify redirect completes to dashboard.
+**Verification:** Log out, click "Sign in with Google" on `/login`, verify redirect completes to dashboard. As of 2026-04-09, the live button already redirects correctly to `accounts.google.com` using the Supabase callback URL.
 
 ---
 
