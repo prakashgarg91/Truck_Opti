@@ -29,11 +29,11 @@ Update protocol:
 
 ### 2026-04-09
 - Changed: refreshed `apps/web/package-lock.json` with a lockfile-only `npm audit fix`, bumped `apps/web/requirements.txt` from `cryptography==46.0.6` to `46.0.7`, and synced the owner checklist plus launch-tracking docs to the current post-Supabase-recovery reality.
-- Verified: `cd apps/web && npm audit` PASS (0 vulnerabilities); `python -m pip_audit -r .\apps\web\requirements.txt` PASS (0 known vulnerabilities after the cryptography bump); `npm run test:frontend-smoke` PASS (17/17); `npm run test:prod-config` PASS (3/6); `npm run launch-check` PASS (17/17) on the clean committed tree; `git push origin main` reduced GitHub's default-branch alert count from 17 to 4.
+- Verified: `cd apps/web && npm audit` PASS (0 vulnerabilities); `python -m pip_audit -r .\apps\web\requirements.txt` PASS (0 known vulnerabilities after the cryptography bump); `npm run test:frontend-smoke` PASS (17/17); `npm run test:prod-config` PASS (3/6); `npm run launch-check` PASS (17/17) on the clean committed tree; `git push origin main` reduced GitHub's default-branch alert count from 17 to 2 moderate alerts.
 - Operational proof: repo-side launch-readiness is green again, public/auth shell smoke is still green, and the only remaining blockers are owner-side production configuration plus authenticated real-account verification.
-- Continue from: inspect the remaining 4 GitHub Security alerts with authenticated GitHub access, then clear the owner-side production config blockers and run authenticated browser smoke with real accounts.
+- Continue from: inspect the remaining 2 GitHub Security alerts with authenticated GitHub access, then clear the owner-side production config blockers and run authenticated browser smoke with real accounts.
 - Next step: set live Razorpay config, configure `VITE_SENTRY_DSN`, move or disable PhonePe, push pending Supabase migrations, and run authenticated browser smoke with real accounts.
-- Blockers: Razorpay is still on test keys, `VITE_SENTRY_DSN` is missing, PhonePe still points at preprod, pending Supabase migrations still need pushing, authenticated real-account flows are still unverified, and 4 GitHub default-branch alerts still require authenticated Security-tab review.
+- Blockers: Razorpay is still on test keys, `VITE_SENTRY_DSN` is missing, PhonePe still points at preprod, pending Supabase migrations still need pushing, authenticated real-account flows are still unverified, and 2 GitHub default-branch moderate alerts still require authenticated Security-tab review.
 
 ### 2026-04-05
 - Changed: added user-facing auth/payment error hardening, corrected the frontend auth-health probe so reachable 401/403 Supabase responses are treated as service availability, wired the official Docker-backed Razorpay MCP in `.vscode/mcp.json`, and updated owner guidance for Google OAuth and launch blockers.
