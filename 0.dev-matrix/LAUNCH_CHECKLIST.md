@@ -62,11 +62,11 @@
 | # | Item | Status | Depends on |
 |---|------|--------|----------|
 | 5.1 | Supabase integration test script | ✅ 42/42 PASS | BATCH7 T-105 |
-| 5.2 | Browser smoke test (14 pages) | 🟡 Expanded to a full 47-route browser audit plus `npm run test:frontend-smoke` = 17/17 PASS for the public/auth shell on 2026-04-09 | Requires real authenticated accounts for full completion |
+| 5.2 | Browser smoke test (14 pages) | 🟡 Expanded to a full 47-route browser audit plus `npm run test:frontend-smoke` = 17/17 PASS for the public/auth shell on 2026-04-10 | Requires real authenticated accounts for full completion |
 | 5.3 | TypeScript 0 errors | ✅ | `npx tsc --noEmit` → 0 errors |
 | 5.4 | Vite build succeeds | ✅ | Built in 6.57s |
 | 5.5 | RLS policy verification | ✅ | Validated in test script |
-| 5.6 | Repo launch-readiness preflight (`npm run launch-check`) | ✅ 17/17 PASS | 2026-04-09 committed-tree verification |
+| 5.6 | Repo launch-readiness preflight (`npm run launch-check`) | ✅ 17/17 PASS | 2026-04-10 current-tree verification |
 
 ## Phase 6: Production Readiness 🟡 PARTIAL
 
@@ -78,7 +78,7 @@
 | 6.3 | Google Maps API key | ❌ | P1 — Leaflet fallback works |
 | 6.4 | Custom domain + SSL | ✅ | P0 — `truckopti.in` + `www.truckopti.in` live |
 | 6.5 | PWA icons (missing from public/) | ✅ | BATCH9 verified — pwa-192x192.png, pwa-512x512.png, apple-touch-icon.png exist |
-| 6.6 | Error tracking (Sentry or similar) | ✅ | BATCH21 T2 |
+| 6.6 | Error tracking (Sentry or similar) | 🟡 | Client integration is implemented, but production monitoring is not live until `VITE_SENTRY_DSN` is set |
 | 6.7 | Terms of Service / Privacy Policy pages | ✅ | BATCH6 T9 — `/terms` and `/privacy` pages live |
 | 6.8 | Admin panel for subscriber management | ✅ | AdminSubscriptionsPage |
 | 6.9 | Database backups (PITR) | ❌ | P1 — requires owner action |
@@ -103,8 +103,8 @@
 | 3. Frontend Wiring | 6 | 6 | 0 |
 | 4. Subscriptions | 7 | 7 | 0 |
 | 5. Testing | 6 | 5 | 1 |
-| 6. Production | 19 | 12 | 7 |
-| **TOTAL** | **50** | **39** | **11** |
+| 6. Production | 19 | 11 | 8 |
+| **TOTAL** | **50** | **38** | **12** |
 
 ---
 

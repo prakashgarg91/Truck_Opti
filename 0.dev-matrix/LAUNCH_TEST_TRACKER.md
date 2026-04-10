@@ -1,8 +1,8 @@
 # TruckOpti — Launch Test Tracker
 
-> **Updated by**: GitHub Copilot (Claude Sonnet 4.6)
+> **Updated by**: GitHub Copilot (GPT-5.4)
 > **Prompt reference**: `BATCH6_PROMPT.md`, `0.dev-matrix/BATCH7_AGENT_CONTINUATION_PROMPT.md`
-> **Last updated**: 2026-03-03
+> **Last updated**: 2026-04-10
 
 ---
 
@@ -10,14 +10,18 @@
 
 | Section | Tests | Passed | Failed | Skipped |
 |---------|-------|--------|--------|---------|
-| A. Supabase Integration | 14 | 14 | 0 | 0 |
-| B. ProfilePage Fixes | 6 | 6 | 0 | 0 |
-| C. PricingPage Fixes | 4 | 4 | 0 | 0 |
-| D. MobileLayout Fixes | 4 | 4 | 0 | 0 |
-| E. Subscription Lifecycle | 4 | 4 | 0 | 0 |
-| F. Browser Smoke Test | 14 | 0 | 0 | 14 |
-| G. Build Verification | 2 | 2 | 0 | 0 |
-| **TOTAL** | **48** | **34** | **0** | **14** |
+| A. Repo Launch-Check | 17 | 17 | 0 | 0 |
+| B. Frontend Launch Smoke | 17 | 17 | 0 | 0 |
+| C. Production Config Audit | 6 | 4 | 2 | 0 |
+| D. Authenticated Browser Smoke | 0 | 0 | 0 | 0 |
+| **TOTAL** | **40** | **38** | **2** | **0** |
+
+## Current Manager Snapshot — 2026-04-10
+
+- `npm run launch-check` passes `17/17` on the current tree.
+- `npm run test:frontend-smoke` passes `17/17` and now confirms Supabase auth-service reachability via `401` without an API key.
+- `npm run test:prod-config` passes `4/6`; the only remaining failures are Razorpay still on `rzp_test_*` and missing `VITE_SENTRY_DSN`.
+- Historical March sections below are preserved for audit trail, but the April 10 manager snapshot above is the current source of launch truth.
 
 ---
 

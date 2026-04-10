@@ -120,7 +120,7 @@ Verifies:
 
 Writes evidence to `logs/frontend_launch_smoke_report.json`.
 
-**Latest stable evidence:** 2026-04-03 manager verification passed 16/17 checks and failed only the auth-service reachability check. The passing checks now prove the live frontend degrades gracefully when backend-dependent actions fail and that the public onboarding wizards still progress: `/contact` shows `Support is temporarily unreachable` with `Retry send` and `Email support`, `/login` shows `Authentication service is currently unreachable...` when OTP transport is blocked in-browser, `/driver/register` advances through `Vehicle Details` to `Payment Details`, and `/agency/register` advances through `Contact & Address` to `Bank Details` without submitting live records. The single remaining failing check is still the real external blocker: `jbxncejtcbpcronndqlx.supabase.co` could not be resolved, and this was previously rechecked against Google Public DNS (`8.8.8.8`), which also returned NXDOMAIN. A 2026-04-05 rerun from the manager environment timed out navigating to `/login`; treat that as a fresh watch item until it is reproduced from a clean external browser, not as a confirmed production regression.
+**Latest stable evidence:** 2026-04-10 manager verification passed 17/17 checks. The current evidence proves the live frontend degrades gracefully when backend-dependent actions fail, the public onboarding wizards still progress, and Supabase auth reachability is restored: `/contact` shows the offline fallback without creating a live row, `/login` shows the safe unreachable-auth message when OTP transport is blocked in-browser, `/driver/register` advances through `Vehicle Details` to `Payment Details`, `/agency/register` advances through `Contact & Address` to `Bank Details` without submitting live records, and the auth-service probe now resolves `jbxncejtcbpcronndqlx.supabase.co` and receives `401` without an API key, which counts as reachability proof.
 
 ### Step 2d: Production Config Audit — `npm run test:prod-config`
 
@@ -139,11 +139,11 @@ Verifies the currently deployed Heroku production config for launch readiness:
 
 Writes evidence to `logs/production_config_audit.json`.
 
-**Latest evidence:** 2026-04-05 manager verification passed 2/6 checks and failed 4/6:
-- Supabase auth backend DNS lookup failed for `jbxncejtcbpcronndqlx.supabase.co`
+**Latest evidence:** 2026-04-10 manager verification passed 4/6 checks and failed only 2/6:
+- Supabase auth backend DNS resolves for `jbxncejtcbpcronndqlx.supabase.co`
+- PhonePe is acceptable for launch because `VITE_PHONEPE_API_URL` is now missing/disabled
 - Razorpay still uses `rzp_test_*`
-- `VITE_SENTRY_DSN` is missing
-- PhonePe is still configured for `api-preprod.phonepe.com/apis/pg-sandbox`
+- `VITE_SENTRY_DSN` is still missing
 
 ### Step 3: Supabase Data Integrity (run after key user flows)
 
