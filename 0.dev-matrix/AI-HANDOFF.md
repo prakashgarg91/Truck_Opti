@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-10 (COP-001 judge pass)
+- Changed: fixed stale "2 moderate alerts" reference in BATCH24 prompt (reality: 1 moderate); registered COP-001 in STATE.md agent table; logged machine-verified judgment block in STATE.md agent messages.
+- Verified: `npm run build` PASS (2997 modules, 0 TS errors); `npm audit` PASS (0 vulnerabilities); `npm run test:prod-config` 4/6 PASS unchanged; `git status` clean on `main`.
+- Operational proof: all 5 competitor-claimed blocked tasks validated as genuinely human-blocked; no code regression; BATCH24 doc integrity restored.
+- Continue from: owner must supply live Razorpay keys + VITE_SENTRY_DSN + Supabase PAT for migration push + real browser accounts for E2E smoke + authenticated GitHub access for alert #69.
+- Next step: resume with BATCH25 once owner provides at least one of: live Razorpay config OR Supabase PAT for migration push — those are the two highest-impact unblocks.
+- Blockers: no live Razorpay creds, no VITE_SENTRY_DSN, no Supabase PAT, no real-account browser credentials, no GitHub auth token; 1 moderate GitHub alert (#69) unresolved.
+
 ### 2026-04-10
 - Changed: removed unused `frontend` Electron packaging, deleted the stale Electron entrypoint, upgraded `frontend` to `axios@1.15.0`, `vite@7.3.2`, and `@vitejs/plugin-react@5.2.0`, updated the pricing copy to describe the shipped PWA instead of a desktop Electron app, and synced launch-tracking docs to the current 2026-04-10 reality.
 - Verified: `cd frontend && npm audit` PASS (0 vulnerabilities); `cd frontend && npm ls dompurify jspdf` resolves `jspdf@4.2.1` -> `dompurify@3.3.2`; `npm run launch-check` PASS (17/17); `npm run test:frontend-smoke` PASS (17/17); `npm run test:prod-config` PASS (4/6) with only Razorpay live readiness and missing `VITE_SENTRY_DSN` still failing; the project Supabase auth health endpoint and the Supabase MCP endpoint both return `401` without credentials, proving reachability while this session still lacks a usable PAT/token; the latest GitHub push banner is now down to 1 moderate default-branch alert.

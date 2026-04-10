@@ -34,7 +34,7 @@ Read these before acting:
   - `https://jbxncejtcbpcronndqlx.supabase.co/auth/v1/health` returns `401` without credentials
   - `https://mcp.supabase.com/mcp?project_ref=jbxncejtcbpcronndqlx` returns `401` without credentials
 - This machine still has no usable `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, live Razorpay credentials, Sentry DSN vars, GitHub auth token, or real-account login credentials.
-- GitHub still reports `2 moderate` default-branch alerts after the latest push.
+- GitHub still reports `1 moderate` default-branch alert after the latest push. (CORRECTED: earlier BATCH24 draft incorrectly said 2 — the 2026-04-10 push banner confirmed only 1 remains.)
 
 ---
 
@@ -46,10 +46,11 @@ Finish the remaining external launch blockers or produce the shortest truthful o
 
 ## BATCH24 Tasks
 
-### T1 — Review the last 2 GitHub alerts with authenticated access
+### T1 — Review the last 1 GitHub alert with authenticated access
 
 - Use authenticated GitHub Security access.
-- Identify the exact packages/ecosystems still triggering the 2 moderate alerts.
+- Identify the exact package/ecosystem still triggering the 1 moderate alert at `/security/dependabot/69`.
+- **Local evidence strongly suggests stale scan**: `cd frontend && npm audit` → 0 vulnerabilities; `npm ls jspdf dompurify` → `jspdf@4.2.1` → `dompurify@3.3.2` (patched). Confirm and dismiss if stale.
 - Fix them only if the change is low-risk for launch.
 - Re-run the relevant local audit after any change.
 
