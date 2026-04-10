@@ -348,7 +348,7 @@ export const COMPETITIVE_PRICING = {
     'Indian Truck Catalog - 17+ truck types with accurate dimensions',
     'Hindi Language Support - First in segment',
     'Affordable Entry Point - ₹499/month vs ₹5,000+ competitors',
-    'Desktop App - Offline-capable Electron app',
+    'Offline-capable PWA - installable web app experience',
   ],
 }
 

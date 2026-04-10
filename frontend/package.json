@@ -3,42 +3,13 @@
   "version": "1.1.0",
   "description": "TruckOpti - Advanced Logistics Solution for India",
   "type": "module",
-  "main": "electron/main.cjs",
   "author": "TruckOpti Team",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "test:packing": "tsc -p tsconfig.packing-regression.json && node .tmp/packing-regression/scripts/packing-regression.js",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run build && electron-builder --win --x64",
-    "electron:build:dir": "npm run build && electron-builder --win --x64 --dir"
-  },
-  "build": {
-    "appId": "com.truckopti.app",
-    "productName": "TruckOpti",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
-    "win": {
-      "target": [
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "signAndEditExecutable": false
-    },
-    "portable": {
-      "artifactName": "TruckOpti-${version}-Portable.exe"
-    }
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.8",
@@ -48,7 +19,7 @@
     "@supabase/supabase-js": "^2.90.0",
     "@tanstack/react-query": "^5.59.0",
     "@types/crypto-js": "^4.2.2",
-    "axios": "^1.7.0",
+    "axios": "^1.15.0",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
@@ -75,18 +46,14 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.169.0",
-    "@vitejs/plugin-react": "^4.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
     "autoprefixer": "^10.4.20",
-    "concurrently": "^9.2.1",
-    "electron": "^39.2.7",
-    "electron-builder": "^26.4.0",
     "eslint": "^9.14.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.0",
-    "vite": "^5.4.0",
-    "vite-plugin-pwa": "^1.2.0",
-    "wait-on": "^9.0.3"
+    "vite": "^7.3.2",
+    "vite-plugin-pwa": "^1.2.0"
   },
   "keywords": [
     "logistics",
