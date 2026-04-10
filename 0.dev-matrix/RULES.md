@@ -228,3 +228,27 @@ migration: add licence_url and rc_url columns to drivers table
 ## Baseline Reference
 
 Use `QUALITY-BASELINE.md` as the standing companion to these rules. It captures the repo-local software quality bar, integration expectations, and documentation discipline for this application.
+
+---
+
+## Phase Gate Rule
+
+**You cannot proceed to the next phase until all tasks in the current phase have passing validation output.**
+
+- A phase with even one failing test, broken build, or unresolved FAIL is not done
+- Post the exact passing command output in TASK.md when marking a phase complete
+- Tasks with no validation command do not count as done
+
+## Human-Blocked Task Rule
+
+**Tasks tagged `[HUMAN-BLOCKED]` require Razorpay keys, Google OAuth browser sign-in, Supabase migrations, Sentry DSN, or Twilio configuration the AI cannot perform.**
+
+```
+When you encounter a [HUMAN-BLOCKED] task:
+  1. DO NOT attempt workarounds or use test/sandbox credentials as substitutes
+  2. Write in AI-HANDOFF.md: "Blocked: [task ID] — needs [specific human action]"
+  3. Move immediately to the next AI-executable task
+  4. Never mark a [HUMAN-BLOCKED] task done without explicit human confirmation
+```
+
+AI-executable tasks must never be left waiting while human-blocked ones pile up.

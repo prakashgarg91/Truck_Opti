@@ -21,8 +21,8 @@ These rules exist because AI agents have shipped nice-looking guesses instead of
 8. **Launch-check must pass before claiming a repo is ready, and `resume-work.ps1` should start it as early as possible.** If the repo supports background launch-check, let `resume-work.ps1` start or reuse it so readiness evidence accumulates while work is in progress. Re-run it manually only when you need a fresh explicit result.
 9. **Use the fast pause path for short stops, and keep close-day handoff-first.** For a short pause or context switch, update `AI-HANDOFF.md` and use `pause-work.ps1` when available. Run `npm run close-day` before push, before claiming readiness, or at a true end-of-day close, but treat it as a short handoff that reuses the latest background launch-check state instead of rerunning heavy verification.
 10. **Read `0.dev-matrix/standards/ANTI-HALLUCINATION-STANDARD.md` before starting work.** It exists in every repo. It is policy.
-
-### Manager Mode Trigger
+11. **Skip `[HUMAN-BLOCKED]` tasks immediately.** If a task requires Razorpay keys, Google OAuth, Supabase migrations, Sentry DSN, or Twilio — document the block in `AI-HANDOFF.md` under `Blockers:` and move to the next AI-executable task. Do not spin on blocked tasks.
+12. **Check the cross-project sprint board** at `D:\Github\0.dev-matrix\SPRINT-APRIL-2026.md` when resuming work. It shows the current 2-3 day delivery target and which tasks belong to which day.
 
 If the user explicitly asks the assistant to act as manager, software development manager, orchestrator, coordinator, or reviewer-in-charge:
 
@@ -57,6 +57,18 @@ Testing is the key to quality.
 - Do not call work complete without relevant verification evidence.
 - Prefer proof over claims: tests, builds, typechecks, health checks, runtime checks, and repo-state verification.
 - Do not blindly trust OpenCode output without independent validation.
+
+### On-Failure Feedback Protocol
+
+When a validation command fails, follow the spiral correction loop:
+
+1. **Capture exact output** — copy the raw terminal output verbatim, do not summarize or paraphrase.
+2. **Prefix the next task** — paste the exact output under `## CURRENT DIAGNOSTICS` at the top of the next fix prompt.
+3. **Fix only what diagnostics show** — make the minimal change needed to pass the validation command.
+4. **Re-run and verify** — do not move on until the validation returns PASS.
+5. **Post evidence** — paste the passing output in TASK.md when marking a task done.
+
+The system self-heals only when exact error text is fed forward. Summarizing or paraphrasing errors breaks the loop.
 
 ### Executive Reporting
 

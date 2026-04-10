@@ -1,13 +1,13 @@
 # BATCH24 Agent Continuation Prompt
 **Project:** TruckOpti India Logistics SaaS  
 **URL:** https://www.truckopti.in | Heroku app: `truck-opti-app`  
-**Date:** 2026-04-05
+**Date:** 2026-04-10
 
 ---
 
 ## Mandatory Reading
 
-Read these before editing:
+Read these before acting:
 
 ```
 0.dev-matrix/SECURITY.md
@@ -16,104 +16,80 @@ Read these before editing:
 0.dev-matrix/TASK.md
 0.dev-matrix/AI-HANDOFF.md
 0.dev-matrix/OWNER_ACTION_CHECKLIST.md
-scripts/frontend_launch_smoke.mjs
-scripts/production_config_audit.mjs
-frontend/src/services/supabaseApi.ts
-frontend/src/services/razorpayPayment.ts
-frontend/src/services/phonepePayment.ts
-frontend/src/pages/auth/AuthCallbackPage.tsx
+0.dev-matrix/LAUNCH_CHECKLIST.md
 ```
 
 ---
 
 ## Current Reality
 
-- Supabase project reachability is restored.
-- Public/auth shell smoke is now green:
-  - `npm run test:frontend-smoke` → PASS (17/17)
-- Production config is still blocked:
-  - `npm run test:prod-config` → PASS (3/6)
-  - failing checks are:
-    - Razorpay still on test key
-    - `VITE_SENTRY_DSN` missing
-    - PhonePe still sandbox/preprod
-- Auth/payment UX now fails safely with `UserFacingError` instead of raw provider messages.
-- Official Docker-backed Razorpay MCP is configured in `.vscode/mcp.json`.
-- GitHub reported 17 default-branch vulnerabilities on the 2026-04-05 push, but local root `npm audit` and `frontend` `npm audit fix` both returned 0 vulnerabilities; this discrepancy is unresolved.
+- Repo-side readiness is green on the current tree.
+- `npm run launch-check` passes `17/17` on 2026-04-10.
+- `npm run test:frontend-smoke` passes `17/17` on 2026-04-10.
+- `npm run test:prod-config` passes `4/6` on 2026-04-10.
+- The only `prod-config` failures are:
+  - `razorpay_launch_readiness: test Razorpay key is still configured`
+  - `sentry_dsn: missing VITE_SENTRY_DSN`
+- Supabase is reachable:
+  - `https://jbxncejtcbpcronndqlx.supabase.co/auth/v1/health` returns `401` without credentials
+  - `https://mcp.supabase.com/mcp?project_ref=jbxncejtcbpcronndqlx` returns `401` without credentials
+- This machine still has no usable `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, live Razorpay credentials, Sentry DSN vars, GitHub auth token, or real-account login credentials.
+- GitHub still reports `2 moderate` default-branch alerts after the latest push.
 
 ---
 
-## Remaining Launch Blockers
+## BATCH24 Goal
 
-1. Live Razorpay key id + secret are not configured in production.
-2. Sentry DSN is not configured in Heroku.
-3. PhonePe is still pointed at sandbox/preprod and must either be moved to production or disabled for launch.
-4. Pending Supabase migrations still need to be pushed.
-5. Authenticated real-account flows for customer, driver, agency, and admin are still unverified.
-6. GitHub Dependabot/security alerts still need reconciliation against the clean local audit results.
+Finish the remaining external launch blockers or produce the shortest truthful owner-action list needed to launch.
 
 ---
 
 ## BATCH24 Tasks
 
-### T1 — Finish owner-side launch configuration
+### T1 — Review the last 2 GitHub alerts with authenticated access
 
-If credentials are available in the session:
+- Use authenticated GitHub Security access.
+- Identify the exact packages/ecosystems still triggering the 2 moderate alerts.
+- Fix them only if the change is low-risk for launch.
+- Re-run the relevant local audit after any change.
 
-- set live Razorpay config in Heroku and Supabase secrets
-- set `VITE_SENTRY_DSN`
-- either switch PhonePe to production or disable it before launch
-- verify Google OAuth provider configuration uses the Supabase callback URI and the app callback allow-list
+### T2 — Complete live payment and monitoring config
 
-Do not claim success without rerunning `npm run test:prod-config`.
+- Set live Razorpay credentials in the correct production locations.
+- Set `VITE_SENTRY_DSN` in production.
+- Do not use test or placeholder values.
 
-### T2 — Push pending Supabase migrations
+### T3 — Push pending Supabase migrations
 
-Run the production migration push if owner access is available, then verify the required tables/columns exist.
+- Use authenticated Supabase access.
+- Run the real migration push from project root.
+- Verify the migration state after the push.
 
-### T3 — Run authenticated browser smoke
+### T4 — Run authenticated browser smoke with real accounts
 
-With real accounts, verify at minimum:
+- Verify at least one successful real login flow.
+- Verify key authenticated pages for customer, driver, agency, and admin if credentials exist.
+- Record exactly what was tested and what remains unverified.
 
-1. customer login and booking flow
-2. driver login and trip flow
-3. agency login and dispatch flow
-4. admin login and management flow
+### T5 — Sync dev-matrix and close-day evidence
 
-Document exact passes/failures with real evidence. Do not summarize vaguely.
-
-### T4 — Sync dev-matrix truth
-
-Update these files only after the above is verified:
-
-- `0.dev-matrix/STATE.md`
-- `0.dev-matrix/TASK.md`
-- `0.dev-matrix/AI-HANDOFF.md`
-- `0.dev-matrix/LAST-CLOSEOUT.md`
-
-### T5 — Reconcile GitHub security alerts
-
-Because the latest `git push` still reported 17 vulnerabilities while local Node audits were clean:
-
-1. inspect the GitHub Security/Dependabot alert list directly
-2. determine whether the alerts are stale, from `apps/web`, Python, or another dependency surface
-3. remediate or explicitly document the remaining packages/ecosystems still affected
-
-Do not claim security closure from local `npm audit` output alone until the GitHub alert count matches reality.
+- Update `STATE.md`, `TASK.md`, and `AI-HANDOFF.md` only after verification.
+- Run `npm run close-day`.
+- If launch is still blocked, leave the blocker list concrete and short.
 
 ---
 
 ## Constraints
 
-- Do not expose raw `error.message` to users.
-- Do not mark launch ready unless authenticated flows are actually verified.
-- Do not leave Razorpay in test mode while claiming payment readiness.
-- Do not keep PhonePe enabled in sandbox/preprod for a public launch.
+- Do not claim full launch readiness without machine-verifiable proof.
+- Do not substitute sandbox/test credentials for owner-blocked production tasks.
+- Do not reopen repo-side code churn unless a verified alert or blocker requires it.
+- Keep changes minimal and launch-focused.
 
 ---
 
 ## Suggested Commit Shape
 
 ```text
-chore: complete launch configuration and authenticated smoke
+docs: sync launch blocker handoff
 ```

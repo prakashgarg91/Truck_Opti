@@ -4,6 +4,7 @@
 > Version: 3.0 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
 > 2026-04-09: `apps/web` dependency drift was remediated locally; launch-check is back to passing all technical gates, GitHub default-branch alerts dropped from 17 to 2 moderate after push, PhonePe sandbox was disabled in production, Google OAuth redirect now reaches Google Accounts correctly, and the refreshed background launch-check status now records PASS again for close-day. Launch remains blocked by live Razorpay config, missing Sentry DSN, pending migrations, plus authenticated live-account verification.
+> 2026-04-10: unused frontend Electron packaging was removed, `frontend` was upgraded to `axios@1.15.0`, `vite@7.3.2`, and `@vitejs/plugin-react@5.2.0`, `npm run launch-check` passed 17/17 again on the current tree, and `npm run test:frontend-smoke` stayed 17/17 PASS. Launch is still blocked by external credentials/access: live Razorpay, missing `VITE_SENTRY_DSN`, pending Supabase migration push, authenticated real-account verification, and 2 remaining GitHub moderate alerts that still require authenticated Security-tab review.
 
 ---
 
@@ -28,8 +29,8 @@
 
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
-| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit now passes 4/6: app URL, Supabase auth DNS, email OTP flag, and PhonePe disable state are healthy, but Razorpay is still on a test key and `VITE_SENTRY_DSN` is still missing | MANAGER + OWNER |
-| `DEPENDABOT-REMAINING-20260409` | 🟡 WATCH | After the 2026-04-09 `apps/web` audit fixes were pushed, GitHub's default-branch alert count dropped from 17 to 2 moderate vulnerabilities. The remaining packages were not queryable from this workspace because `gh` is not authenticated. | MANAGER + OWNER |
+| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit still passes only 4/6 on 2026-04-10: app URL, Supabase auth DNS, email OTP flag, and PhonePe disable state are healthy, but Razorpay is still on a test key and `VITE_SENTRY_DSN` is still missing | MANAGER + OWNER |
+| `DEPENDABOT-REMAINING-20260409` | 🟡 WATCH | After the 2026-04-09 `apps/web` audit fixes and the 2026-04-10 `frontend` packaging cleanup were pushed, GitHub's default-branch alert count still sits at 2 moderate vulnerabilities. Local root, `frontend`, and `apps/web` audits are green, so the remaining packages still require authenticated GitHub Security-tab review. | MANAGER + OWNER |
 | `AUTH-E2E-UNVERIFIED-20260405` | 🟡 WATCH | Supabase host resolves and live Google OAuth now redirects correctly to Google Accounts, but real email OTP / Google OAuth / authenticated page flows still need live browser verification with a real account | MANAGER + OWNER |
 | `PWA-SW-STALE-CHUNK-20260403` | 🟡 WATCH | Full browser audit reproduced stale lazy-chunk/module failures for returning clients until service worker + caches were cleared | MANAGER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
@@ -46,6 +47,7 @@
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
 | `GPT-005` | MANAGER | GPT-5.4 | Launch recovery | Fix `apps/web` audit drift + sync dev-matrix to 2026-04-09 launch reality | 2026-04-09 | ✅ DONE |
+| `GPT-006` | MANAGER | GPT-5.4 | Launch recovery | Remove unused frontend packaging surface, reverify gates, and sync 2026-04-10 launch reality | 2026-04-10 | ✅ DONE |
 | `GPT-004` | MANAGER | GPT-5.4 | Launch infra sync | Razorpay MCP setup + post-resume auth/prod-config reality sync | 2026-04-05 | ✅ DONE |
 | `GPT-003` | MANAGER | GPT-5.4 | Launch readiness | Re-run launch evidence + harden auth/payment failure UX | 2026-04-05 | ✅ DONE |
 | `GPT-002` | MANAGER | GPT-5.4 | Packing regression | Deterministic packing proof + dev-matrix reality sync | 2026-04-04 | ✅ DONE |
@@ -85,6 +87,23 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-10] GPT-006 (MANAGER): ✅ FRONTEND PACKAGING SURFACE REMOVED + CURRENT-COMMIT READINESS RE-PROVED
+
+                             VERIFIED EVIDENCE:
+                             - removed unused Electron desktop packaging from `frontend` and deleted the stale Electron entrypoint
+                             - upgraded `frontend` to `axios@1.15.0`, `vite@7.3.2`, and `@vitejs/plugin-react@5.2.0`
+                             - `cd frontend && npm audit`: PASS (0 vulnerabilities) after the cleanup and upgrades
+                             - `npm run launch-check`: PASS (17/17) on 2026-04-10 on the current tree
+                             - `npm run test:frontend-smoke`: PASS (17/17) on 2026-04-10
+                             - `npm run test:prod-config`: PASS (4/6) on 2026-04-10; only remaining failures are Razorpay live readiness and missing Sentry DSN
+                             - `https://jbxncejtcbpcronndqlx.supabase.co/auth/v1/health` and `https://mcp.supabase.com/mcp?project_ref=jbxncejtcbpcronndqlx` both return `401` without credentials, proving Supabase reachability while the session still lacks a usable PAT/token
+                             - machine env sweep found no usable `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, Razorpay live creds, Sentry DSN vars, or GitHub auth token
+                             - `git push origin main` for `04ddf809` succeeded, but GitHub still reports 2 moderate default-branch alerts
+
+                             PRODUCT JUDGMENT:
+                             - repo-side launch readiness is green on the current commit and the remaining blockers are external credentials/access, not code or local dependency debt
+                             - tomorrow's launch is still blocked until the owner supplies live Razorpay config, `VITE_SENTRY_DSN`, Supabase migration access, authenticated real-account verification, and GitHub Security-tab review for the last 2 moderate alerts
+------------------------------------------------------------------------------------------
 [2026-04-09] GPT-005 (MANAGER): ✅ APPS/WEB AUDIT DRIFT FIXED + LAUNCH REALITY RESYNCED
 
                              VERIFIED EVIDENCE:

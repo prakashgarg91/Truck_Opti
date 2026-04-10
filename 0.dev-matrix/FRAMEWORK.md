@@ -126,4 +126,55 @@ See `ROADMAP.md 🔴 OPEN BUGS` for current bug list.
 
 ---
 
+## 🔄 SPIRAL CORRECTION LOOP (MANDATORY — No Claimed Completion Without Evidence)
+
+> **A task is DONE only when its validation command passes and the output is posted.**
+> Writing code is not completion. Passing validation is completion.
+
+```
+Run Validation Command
+        ↓
+   PASS ✅ → Mark DONE + Post exact output in TASK.md
+   FAIL ❌ → Copy EXACT terminal output (do NOT summarize)
+             → Paste verbatim as "## CURRENT DIAGNOSTICS" in next fix prompt
+             → Fix minimal code to make validation pass
+             → Re-run validation → Repeat
+```
+
+### Validation Commands
+
+| Gate | Command | Pass Condition |
+|------|---------|----------------|
+| Build | `cd frontend && npm run build` | Exit 0, 0 TS errors |
+| Packing tests | `npm run test:packing` | 5/5 pass |
+| Frontend smoke | `npm run test:frontend-smoke` | 17/17 checks pass |
+| Prod config | `npm run test:prod-config` | 6/6 pass |
+| Launch | `npm run launch-check` | All gates PASS |
+| Security | `cd frontend && npm audit` | 0 high/critical |
+
+> **External blockers (human action required before AI can close these):**
+> - T-110: Razorpay prod keys → set in Heroku env vars
+> - T-111: Google OAuth → complete browser sign-in with real account
+> - T-117: `supabase db push` → apply 6 pending migrations
+> - T-116: `VITE_SENTRY_DSN` → set in Heroku env vars
+
+### On-Failure Agent Prompt Template
+
+```
+## TASK
+[what you were doing]
+
+## VALIDATION COMMAND
+npm run launch-check
+
+## CURRENT DIAGNOSTICS (exact output — do not summarize)
+[paste raw terminal output here]
+
+## INSTRUCTION
+Fix only what the diagnostics show. Run the validation command again.
+Do not claim success without showing me the passing output.
+```
+
+---
+
 *Last updated: 2026-03-05 | v50 | SONNET-004*
