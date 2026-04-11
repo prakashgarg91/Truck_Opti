@@ -6,6 +6,7 @@ import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePay
 import { initiateRazorpayPayment, getRazorpayConfig } from '../services/razorpayPayment';
 import toast from 'react-hot-toast'
 import { useLanguageStore } from '../stores/languageStore'
+import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
 
 type PaymentMethod = 'phonepe' | 'razorpay';
@@ -13,11 +14,10 @@ type PaymentMethod = 'phonepe' | 'razorpay';
 const TestPaymentPage: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useLanguageStore();
+  const { user, isLoading: loading } = useAuthStore();
   const [processing, setProcessing] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [phone, setPhone] = useState('');
   const [amount, setAmount] = useState(1); // Default ₹1 for testing
-  const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('phonepe');
 
   const phonePeConfig = getPaymentConfig();
@@ -26,16 +26,6 @@ const TestPaymentPage: React.FC = () => {
   useEffect(() => {
     document.title = 'Test Payment - TruckOpti'
   }, [])
-
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    setLoading(false);
-  };
 
   const handleTestPayment = async () => {
     if (!phone || phone.length < 10) {
@@ -117,11 +107,9 @@ const TestPaymentPage: React.FC = () => {
         password: testPassword,
       });
       if (!signUpError && signUpData.user) {
-        setUser(signUpData.user);
         toast.success('Test user created! Please verify your email.');
       }
     } else if (data.user) {
-      setUser(data.user);
       toast.success('Logged in!');
     }
   };

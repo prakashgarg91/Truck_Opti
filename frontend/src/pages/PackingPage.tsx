@@ -9,7 +9,6 @@ import {
 const TruckViewer = lazy(() => import('../components/TruckViewer'))
 import toast from 'react-hot-toast'
 import { trucksSupabaseApi, packingJobsSupabaseApi, shipmentsSupabaseApi, customersSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
-import { supabase } from '../lib/supabase'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
 import { usePackingWorker } from '../hooks/usePackingWorker'
@@ -595,8 +594,7 @@ export default function PackingPage() {
 
     try {
       setIsSaving(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (!user) {
         toast.error('Please login to save packing job')
         return
@@ -687,8 +685,7 @@ export default function PackingPage() {
     setBookError('')
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (!user) {
         setBookError('Please login to book truck')
         return
