@@ -1,4 +1,4 @@
-﻿# PATTERNS — TruckOpti
+# PATTERNS — TruckOpti
 
 > **Established code patterns for this project.**
 > Before writing new code, check if a pattern already exists here.
@@ -266,3 +266,28 @@ Rules:
 ---
 
 *Last updated: 2026-04-05 | packing boundary-scan rule synced by MANAGER-ADMIN*
+
+---
+
+## TOOLING PATTERN: Qdrant Semantic Search
+
+Use `D:\Github\tools\qdrant_gap_audit.py` when you want to find code by **concept or behaviour**:
+
+```powershell
+# Search by meaning — better than grep for intent-based queries
+python D:\Github\tools\qdrant_gap_audit.py -q "your query here" --workspace .
+
+# With file context (shows real source lines)
+python D:\Github\tools\qdrant_gap_audit.py -q "your query here" --context-lines 3 --workspace .
+
+# Full gap audit — writes 0.dev-matrix/QDRANT_GAP_REPORT.md
+python D:\Github\tools\qdrant_gap_audit.py --workspace .
+```
+
+| When | Use |
+|------|-----|
+| Exact function/string known | `grep` / `ripgrep` |
+| Searching by intent/concept | Qdrant `-q` |
+| Full codebase health check | Qdrant gap audit (no `-q`) |
+
+Collection is auto-discovered. Requires `pip install requests` in project venv.
