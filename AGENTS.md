@@ -1,6 +1,8 @@
 # AGENTS.md
 
 Cross-repo working instructions for AI coding agents.
+
+Repo-specific Supabase, hook, and closing guidance lives in `.github/instructions/repo-guide.instructions.md`.
 ---
 
 ## Cross-Repo Working Agreement

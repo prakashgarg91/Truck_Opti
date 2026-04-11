@@ -1,4 +1,8 @@
-# GitHub Copilot Instructions — TruckOpti
+---
+description: Repository-specific architecture, Supabase rules, closing hooks, and quality gates preserved from the legacy Copilot workspace instructions. Consult when working broadly across Truck_Opti.
+---
+
+# TruckOpti Repository Guide
 
 ## What is this project?
 
@@ -100,4 +104,4 @@ At the end of every session (or when the user says "close the day" / "update dev
 
 ---
 
-*Auto-loaded by VS Code Copilot. Last updated: 2026-03-10 | v55*
+*Legacy repo guide preserved during the AGENTS and .github/instructions migration. Last updated: 2026-03-10 | v55*

@@ -1,5 +1,21 @@
 {
 	"servers": {
+		"qdrant": {
+			"type": "stdio",
+			"command": "uvx",
+			"args": [
+				"mcp-server-qdrant"
+			],
+			"env": {
+				"QDRANT_URL": "${input:qdrant_url}",
+				"QDRANT_API_KEY": "${input:qdrant_api_key}",
+				"COLLECTION_NAME": "${input:qdrant_collection_name}",
+				"EMBEDDING_MODEL": "sentence-transformers/all-MiniLM-L6-v2",
+				"QDRANT_SEARCH_LIMIT": "12",
+				"TOOL_STORE_DESCRIPTION": "Store curated repo context for later retrieval. Save stable summaries of validated code, canonical docs, module contracts, handoff checkpoints, dependency maps, and implementation patterns. Do not store secrets, credentials, or temporary logs.",
+				"TOOL_FIND_DESCRIPTION": "Search curated repo context with natural language. Use this to shortlist relevant docs, code patterns, module contracts, and handoff checkpoints before reading the real files. Treat results as references, not source of truth; confirm against actual workspace files before editing."
+			}
+		},
 		"supabase": {
 			"type": "http",
 			"url": "https://mcp.supabase.com/mcp?project_ref=jbxncejtcbpcronndqlx",
@@ -27,6 +43,22 @@
 		}
 	},
 	"inputs": [
+		{
+			"id": "qdrant_url",
+			"type": "promptString",
+			"description": "Qdrant URL (for local Qdrant use http://localhost:6333)"
+		},
+		{
+			"id": "qdrant_api_key",
+			"type": "promptString",
+			"description": "Qdrant API Key",
+			"password": true
+		},
+		{
+			"id": "qdrant_collection_name",
+			"type": "promptString",
+			"description": "Qdrant Collection Name (for example truck-opti-context)"
+		},
 		{
 			"id": "supabase_pat",
 			"type": "promptString",
