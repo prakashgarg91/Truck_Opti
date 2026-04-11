@@ -309,14 +309,20 @@ export default function PackingPage() {
     document.title = lang === 'en' ? '3D Packing - TruckOpti' : '3D पैकिंग - TruckOpti'
   }, [lang])
 
-  // Pre-populate items if navigated from SaleOrdersPage
+  // Pre-populate items if navigated from SaleOrdersPage — validate each item before accepting
   useEffect(() => {
     const state = location.state as { saleOrderItems?: SaleOrderItem[]; saleOrderId?: string } | null
     if (state?.saleOrderItems && state.saleOrderItems.length > 0) {
-      setSaleOrderItems(state.saleOrderItems)
+      const validItems = state.saleOrderItems.filter(
+        (item) => item.length > 0 && item.width > 0 && item.height > 0 && item.weight > 0 && item.quantity > 0
+      )
+      const dropped = state.saleOrderItems.length - validItems.length
+      if (dropped > 0) {
+        toast.error(`${dropped} item(s) from sale order skipped due to invalid dimensions`)
+      }
+      setSaleOrderItems(validItems)
       if (state.saleOrderId) setLinkedSaleOrderId(state.saleOrderId)
-      toast.success(`${state.saleOrderItems.length} items loaded from sale order`)
-      // Clear location state to prevent re-loading on internal navigation
+      if (validItems.length > 0) toast.success(`${validItems.length} items loaded from sale order`)
       window.history.replaceState({}, '', window.location.pathname)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -331,15 +337,22 @@ export default function PackingPage() {
     try {
       setLoadingTrucks(true)
       const data = await trucksSupabaseApi.getAll()
-      const mappedTrucks: TruckType[] = data.map((t: any) => ({
-        id: t.id,
-        name: t.name,
-        nameHi: t.name_hi || t.name,
-        dimensions: { length: t.length / 100, width: t.width / 100, height: t.height / 100 },
-        capacity: t.capacity,
-        costPerKm: t.cost_per_km,
-        available: t.available
-      }))
+      const mappedTrucks: TruckType[] = data
+        .map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          nameHi: t.name_hi || t.name,
+          dimensions: { length: t.length / 100, width: t.width / 100, height: t.height / 100 },
+          capacity: t.capacity,
+          costPerKm: t.cost_per_km,
+          available: t.available
+        }))
+        .filter((truck: TruckType) =>
+          truck.dimensions.length > 0 &&
+          truck.dimensions.width > 0 &&
+          truck.dimensions.height > 0 &&
+          truck.capacity > 0
+        )
       setTrucks(mappedTrucks)
     } catch (error) {
       logger.error('Failed to fetch trucks:', error)

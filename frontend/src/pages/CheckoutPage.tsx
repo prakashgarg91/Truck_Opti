@@ -7,6 +7,7 @@ import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePay
 import toast from 'react-hot-toast';
 import { logger } from '../utils/logger';
 import { useSubscription } from '../hooks/useSubscription';
+import { useAuthStore } from '../stores/authStore';
 
 interface Plan {
   id: string;
@@ -26,10 +27,11 @@ const CheckoutPage: React.FC = () => {
   const planId = searchParams.get('plan');
   const billingCycle = (searchParams.get('billing') || 'monthly') as 'monthly' | 'yearly';
 
+  const { user } = useAuthStore();
+
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
@@ -52,13 +54,11 @@ const CheckoutPage: React.FC = () => {
   const loadData = async () => {
     try {
       // Get user
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error(language === 'en' ? 'Please login to continue' : 'कृपया जारी रखने के लिए लॉगिन करें');
         navigate('/login');
         return;
       }
-      setUser(user);
       setEmail(user.email || '');
 
       // Get plan details
@@ -167,7 +167,7 @@ const CheckoutPage: React.FC = () => {
         billingCycle: billingCycle === 'yearly' ? 'yearly' : 'monthly',
         customerPhone: phone,
         customerEmail: email,
-        customerName: user.user_metadata?.name || 'Customer',
+          customerName: user.name || 'Customer',
       });
 
       if (result.success) {

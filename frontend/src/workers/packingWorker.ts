@@ -33,7 +33,7 @@ self.onmessage = (e: MessageEvent) => {
     } catch (error: any) {
       self.postMessage({
         type: 'error',
-        error: error.message || 'Packing failed',
+        error: 'Packing failed',
       })
     }
   }
@@ -50,7 +50,7 @@ self.onmessage = (e: MessageEvent) => {
     } catch (error: any) {
       self.postMessage({
         type: 'error',
-        error: error.message || 'Recommendation failed',
+        error: 'Recommendation failed',
       })
     }
   }

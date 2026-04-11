@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, FileText, Calculator } from 'lucide-react'
+import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, FileText, Calculator, AlertCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
@@ -269,6 +269,20 @@ export default function Dashboard() {
           <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded mb-4" />
           <ActivitySkeleton />
         </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+          {language === 'en' ? 'Failed to load dashboard' : 'डैशबोर्ड लोड नहीं हो सका'}
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {language === 'en' ? 'Please check your connection and try again' : 'अपना कनेक्शन जांचें और फिर प्रयास करें'}
+        </p>
       </div>
     )
   }

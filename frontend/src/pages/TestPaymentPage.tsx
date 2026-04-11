@@ -108,13 +108,17 @@ const TestPaymentPage: React.FC = () => {
 
     if (error) {
       // Create test user
+      if (!testPassword) {
+        toast.error('Set VITE_TEST_PASSWORD env var to use test login');
+        return;
+      }
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: `test${Date.now()}@example.com`,
-        password: testPassword || 'test123456',
+        password: testPassword,
       });
       if (!signUpError && signUpData.user) {
         setUser(signUpData.user);
-        toast.success('Test user created!');
+        toast.success('Test user created! Please verify your email.');
       }
     } else if (data.user) {
       setUser(data.user);
