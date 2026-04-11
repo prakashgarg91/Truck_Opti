@@ -162,6 +162,10 @@ Move task from QUEUE to ACTIVE TASKS:
 
 | ID | Task | Completed By | Date | Notes |
 |----|------|--------------|------|-------|
+| T-130 | Qdrant semantic gap audit (16 checks, 44 issues) | COP-003 / Copilot | 2026-04-11 | tools/qdrant_gap_audit.py; QDRANT_GAP_REPORT.md; live Qdrant index ws-6df6af38d373c83b |
+| T-131 | Auth mismatch fixes (5 pages) | COP-003 / Copilot | 2026-04-11 | InvoicePage, CompanyProfilePage, TrucksPage, PaymentCallbackPage, DriverRegisterPage |
+| T-132 | Error handling fixes (3 pages) | COP-003 / Copilot | 2026-04-11 | Dashboard Promise.all, AgencyBillingPage try/catch, AgencyFleetPage try/catch |
+| T-133 | Error UI fixes (3 pages) | COP-003 / Copilot | 2026-04-11 | RoutesPage + ManagementPage toast.error; AgencyRatesPage try/catch |
 | T-111 | ToS/Privacy Policy pages | SONNET-001 | 2026-03-03 | TermsPage.tsx + PrivacyPage.tsx created; routes added; links fixed in Login/Signup |
 | T-109 | Browser smoke test all public pages | SONNET-001 | 2026-03-03 | B1-B8 bugs found and documented; see KNOWN ISSUES in STATE.md |
 | T-112 | Enable Email OTP | SONNET-001 | 2026-03-03 | VITE_AUTH_EMAIL_OTP_ENABLED=true in .env + .env.production |

@@ -1,9 +1,9 @@
 # Last Closeout
 
-- Time: 2026-04-11 08:25:18
+- Time: 2026-04-11 08:57:06
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/STATE.md
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-11_082518.log
+- Git status:  D .github/copilot-instructions.md |  M .vscode/mcp.json |  M AGENTS.md | ?? .github/agents/ | ?? .github/hooks/ | ?? .github/instructions/
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-11_085706.log
 
 ## AI Handoff
 - Latest handoff date: 2026-04-11
@@ -24,12 +24,16 @@
 - Summary: launch-check passed
 - Log: 0.dev-matrix/test-reports/launch-check-20260410_191449.log
 
+## Regression Warning
+
+- REGRESSION: pass count dropped from 10 to 8; fail count rose from 0 to 2
+
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
 - [PASS] background launch-check - launch-check passed
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [PASS] status update discipline - runtime status files have real content changes
-- [PASS] working tree cleanliness - only runtime handoff/evidence files are dirty before report write
+- [FAIL] status update discipline - repo changed without state/task/discussion update
+- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: .github/copilot-instructions.md, .vscode/mcp.json, AGENTS.md, .github/agents/, .github/hooks/
 - [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
@@ -37,5 +41,5 @@
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 10
-- Fail: 0
+- Pass: 8
+- Fail: 2
