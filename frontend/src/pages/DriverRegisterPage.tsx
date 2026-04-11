@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
+import { useAuthStore } from '../stores/authStore'
 
 // Vehicle type options (must match trucks in DB)
 const VEHICLE_TYPES = [
@@ -51,6 +52,7 @@ const INITIAL: FormData = {
 
 export default function DriverRegisterPage() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
   const [submitting, setSubmitting] = useState(false)
@@ -63,7 +65,6 @@ export default function DriverRegisterPage() {
     setUploading(prev => ({ ...prev, [isLicence ? 'licence' : 'rc']: true }))
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user?.id) {
         toast.error('Please login to upload documents')
         return

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { shipmentsSupabaseApi, type Shipment } from '../services/supabaseApi'
-import { supabase } from '../lib/supabase'
+import { useAuthStore } from '../stores/authStore'
 import {
   calculateInvoice,
   generateInvoiceNumber,
@@ -122,6 +122,7 @@ const t = {
 export default function InvoicePage() {
   const { shipmentId } = useParams<{ shipmentId: string }>()
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const { language } = useLanguageStore()
   const lang = (language === 'hi' ? 'hi' : 'en') as 'en' | 'hi'
   const invoiceRef = useRef<HTMLDivElement>(null)
@@ -149,8 +150,7 @@ export default function InvoicePage() {
       setShipment(data)
 
       if (data) {
-        // Get user profile for company info
-        const { data: { user } } = await supabase.auth.getUser();
+        // Get company info from auth store (populated at login)
         const companyInfo = user?.user_metadata?.company || {};
 
         // Generate invoice from shipment data

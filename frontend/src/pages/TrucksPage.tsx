@@ -9,6 +9,7 @@ import { truckTypeSchema, validateWithZod } from '../utils/validators'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
+import { useAuthStore } from '../stores/authStore'
 import { useDebouncedCallback } from '../hooks/useDebounce'
 import { logger } from '../utils/logger'
 import { formatCurrency } from '../utils/formatters'
@@ -109,6 +110,7 @@ const DEFAULT_INDIAN_TRUCKS = [
 export default function TrucksPage() {
   const navigate = useNavigate()
   const { language } = useLanguageStore()
+  const { user } = useAuthStore()
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTruck, setEditingTruck] = useState<TruckType | null>(null)
@@ -184,8 +186,6 @@ export default function TrucksPage() {
   // React Query: Seed default trucks mutation
   const seedMutation = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
       if (!user) {
         throw new Error('Please login to seed trucks')
       }

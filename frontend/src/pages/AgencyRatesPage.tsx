@@ -55,18 +55,26 @@ export default function AgencyRatesPage() {
 
   const fetchData = useCallback(async () => {
     if (!user?.id) return
-    const { data: agency } = await supabase
-      .from('transport_agencies').select('id').eq('user_id', user.id).maybeSingle()
-    if (!agency?.id) { setLoading(false); return }
-    setAgencyId(agency.id)
+    try {
+      const { data: agency, error: agencyErr } = await supabase
+        .from('transport_agencies').select('id').eq('user_id', user.id).maybeSingle()
+      if (agencyErr) throw agencyErr
+      if (!agency?.id) return
+      setAgencyId(agency.id)
 
-    const { data } = await supabase
-      .from('agency_rate_cards')
-      .select('*')
-      .eq('agency_id', agency.id)
-      .order('created_at', { ascending: false })
-    setRates((data ?? []) as RateCard[])
-    setLoading(false)
+      const { data, error: ratesErr } = await supabase
+        .from('agency_rate_cards')
+        .select('*')
+        .eq('agency_id', agency.id)
+        .order('created_at', { ascending: false })
+      if (ratesErr) throw ratesErr
+      setRates((data ?? []) as RateCard[])
+    } catch (e) {
+      console.error('[AgencyRatesPage]', e)
+      toast.error('Failed to load rate cards')
+    } finally {
+      setLoading(false)
+    }
   }, [user?.id])
 
   useEffect(() => { fetchData() }, [fetchData])

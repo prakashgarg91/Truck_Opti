@@ -58,22 +58,29 @@ export default function AgencyFleetPage() {
 
   const fetchData = useCallback(async () => {
     if (!user?.id) return
-    const { data: agencyData } = await supabase
-      .from('transport_agencies')
-      .select('id, fleet_size')
-      .eq('user_id', user.id)
-      .maybeSingle()
-    setAgency(agencyData)
+    try {
+      const { data: agencyData, error: agencyErr } = await supabase
+        .from('transport_agencies')
+        .select('id, fleet_size')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (agencyErr) throw agencyErr
+      setAgency(agencyData)
 
-    if (agencyData?.id) {
-      const { data: truckData } = await supabase
-        .from('agency_trucks')
-        .select('*')
-        .eq('agency_id', agencyData.id)
-        .order('created_at', { ascending: false })
-      setTrucks((truckData ?? []) as FleetTruck[])
+      if (agencyData?.id) {
+        const { data: truckData, error: truckErr } = await supabase
+          .from('agency_trucks')
+          .select('*')
+          .eq('agency_id', agencyData.id)
+          .order('created_at', { ascending: false })
+        if (truckErr) throw truckErr
+        setTrucks((truckData ?? []) as FleetTruck[])
+      }
+    } catch (e) {
+      console.error('[AgencyFleetPage]', e)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [user?.id])
 
   useEffect(() => { fetchData() }, [fetchData])

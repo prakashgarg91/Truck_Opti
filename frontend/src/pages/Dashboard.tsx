@@ -85,6 +85,10 @@ const fetchDashboardData = async (language: string): Promise<DashboardData> => {
     supabase.from('packing_jobs').select('id', { count: 'exact' }).eq('status', 'draft')
   ])
 
+  // Surface any query-level errors before computing stats
+  const firstError = trucksRes.error || shipmentsRes.error || routesRes.error || pendingJobsRes.error
+  if (firstError) throw firstError
+
   const activeShipments = shipmentsRes.data?.filter(s => s.status === 'in_transit').length || 0
   const deliveriesDone = shipmentsRes.data?.filter(s => s.status === 'delivered').length || 0
 

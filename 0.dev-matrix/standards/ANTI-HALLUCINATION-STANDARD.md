@@ -75,7 +75,7 @@ No AI agent may declare work complete, claim a percentage, or close a day withou
 These rules are enforced by:
 - Hardened close-day scripts that capture output and detect regression
 - Launch-check gates that validate JSON schemas and STATE.md freshness
-- AGENTS.md instructions that AI agents read before starting work
+- `AGENTS.md` workspace instructions plus targeted `.github/instructions`, `.github/agents`, and `.github/hooks` customizations that load the right policy for the task
 - Human review of LAST-CLOSEOUT.md evidence
 
 ## For AI Agents Reading This

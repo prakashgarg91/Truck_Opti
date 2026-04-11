@@ -3,7 +3,7 @@
 Purpose: keep a short, durable handoff for future AI work in this repo.
 
 Working rules:
-- Start every session by reading this file first, then `git status`, and `AGENTS.md` if it exists.
+- Start every session by reading this file first, then `git status`, `AGENTS.md`, and any relevant `.github/instructions` or `.github/agents` files if they exist.
 - If `0.dev-matrix/resume-work.ps1` exists, run it before coding instead of starting with the full launch-check flow.
 - If `0.dev-matrix/pause-work.ps1` exists, use it before a short stop so the next restart can resume immediately.
 - Fix root causes when possible and avoid unrelated churn.

@@ -26,6 +26,7 @@ A task is not done until:
 ## Documentation Discipline
 
 - Search for existing docs before creating new ones.
+- Keep `AGENTS.md`, `.github` customizations, and `0.dev-matrix` docs aligned so agent instructions, hooks, and context files do not drift into parallel systems.
 - Keep active docs in canonical locations instead of scattering report-style markdown through the repo.
 - Keep `AI-HANDOFF.md` current so work continues from a specific checkpoint instead of restarting from scratch.
 

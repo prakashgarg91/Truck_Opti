@@ -31,43 +31,52 @@ export default function AgencyBillingPage() {
 
   const fetchBilling = useCallback(async () => {
     if (!user?.id) return
-    const { data: agency } = await supabase
-      .from('transport_agencies').select('id').eq('user_id', user.id).maybeSingle()
-    if (!agency?.id) { setLoading(false); return }
+    try {
+      const { data: agency, error: agencyErr } = await supabase
+        .from('transport_agencies').select('id').eq('user_id', user.id).maybeSingle()
+      if (agencyErr) throw agencyErr
+      if (!agency?.id) return
 
-    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-    const [monthRes, pendingRes, paidRes, deliveredRes] = await Promise.all([
-      supabase.from('agency_jobs').select('fare').eq('agency_id', agency.id)
-        .eq('status', 'delivered').gte('updated_at', monthStart),
-      supabase.from('agency_jobs').select('fare').eq('agency_id', agency.id)
-        .in('status', ['accepted', 'in_transit']),
-      supabase.from('agency_jobs').select('fare').eq('agency_id', agency.id).eq('status', 'delivered'),
-      supabase.from('agency_jobs').select('id, fare, updated_at, shipments(origin, destination, shipment_id)')
-        .eq('agency_id', agency.id).eq('status', 'delivered')
-        .order('updated_at', { ascending: false }),
-    ])
-    const sum = (rows: { fare: number | null }[]) =>
-      rows.reduce((a, r) => a + (r.fare ?? 0), 0)
-    const thisMonth = sum(monthRes.data ?? [])
-    const pending = sum(pendingRes.data ?? [])
-    const totalPaid = sum(paidRes.data ?? [])
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+      const [monthRes, pendingRes, paidRes, deliveredRes] = await Promise.all([
+        supabase.from('agency_jobs').select('fare').eq('agency_id', agency.id)
+          .eq('status', 'delivered').gte('updated_at', monthStart),
+        supabase.from('agency_jobs').select('fare').eq('agency_id', agency.id)
+          .in('status', ['accepted', 'in_transit']),
+        supabase.from('agency_jobs').select('fare').eq('agency_id', agency.id).eq('status', 'delivered'),
+        supabase.from('agency_jobs').select('id, fare, updated_at, shipments(origin, destination, shipment_id)')
+          .eq('agency_id', agency.id).eq('status', 'delivered')
+          .order('updated_at', { ascending: false }),
+      ])
+      const billingError = monthRes.error || pendingRes.error || paidRes.error || deliveredRes.error
+      if (billingError) throw billingError
 
-    // Map delivered jobs
-    const jobs: DeliveredJob[] = (deliveredRes.data ?? []).map((j: Record<string, unknown>) => {
-      const s = (Array.isArray(j.shipments) ? j.shipments[0] : j.shipments) as Record<string, unknown> | null
-      return {
-        id: j.id as string,
-        fare: Number(j.fare ?? 0),
-        origin: s?.origin as string ?? '—',
-        destination: s?.destination as string ?? '—',
-        updated_at: j.updated_at as string,
-        shipment_id: (s?.shipment_id as string) ?? '',
-      }
-    })
+      const sum = (rows: { fare: number | null }[]) =>
+        rows.reduce((a, r) => a + (r.fare ?? 0), 0)
+      const thisMonth = sum(monthRes.data ?? [])
+      const pending = sum(pendingRes.data ?? [])
+      const totalPaid = sum(paidRes.data ?? [])
 
-    setDeliveredJobs(jobs)
-    setSummary({ thisMonth, pending, totalPaid, gstDue: Math.round(thisMonth * GST_RATE) })
-    setLoading(false)
+      // Map delivered jobs
+      const jobs: DeliveredJob[] = (deliveredRes.data ?? []).map((j: Record<string, unknown>) => {
+        const s = (Array.isArray(j.shipments) ? j.shipments[0] : j.shipments) as Record<string, unknown> | null
+        return {
+          id: j.id as string,
+          fare: Number(j.fare ?? 0),
+          origin: s?.origin as string ?? '—',
+          destination: s?.destination as string ?? '—',
+          updated_at: j.updated_at as string,
+          shipment_id: (s?.shipment_id as string) ?? '',
+        }
+      })
+
+      setDeliveredJobs(jobs)
+      setSummary({ thisMonth, pending, totalPaid, gstDue: Math.round(thisMonth * GST_RATE) })
+    } catch (e) {
+      console.error('[AgencyBillingPage] fetchBilling failed:', e)
+    } finally {
+      setLoading(false)
+    }
   }, [user?.id])
 
   useEffect(() => { fetchBilling() }, [fetchBilling])

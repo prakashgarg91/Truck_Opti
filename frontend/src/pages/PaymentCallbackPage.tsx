@@ -4,10 +4,12 @@ import { CheckCircle, XCircle, Loader2, Home, RefreshCw } from 'lucide-react';
 import { checkPaymentStatus, verifyAndActivateSubscription } from '../services/phonepePayment';
 import { supabase } from '../lib/supabase';
 import { logger } from '../utils/logger';
+import { useAuthStore } from '../stores/authStore';
 
 const PaymentCallbackPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useAuthStore();
 
   const txnId = searchParams.get('txnId');
   const paymentId = searchParams.get('payment_id');
@@ -53,7 +55,6 @@ const PaymentCallbackPage: React.FC = () => {
           .single();
 
         if (paymentData?.metadata) {
-          const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             // Activate subscription
             const activationResult = await verifyAndActivateSubscription(

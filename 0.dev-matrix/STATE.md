@@ -569,8 +569,8 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
                              HOOKS ADDED:
                              - Hook 1: Dependabot Closure (RULES.md §19)
                              - Hook 2: Judge External Agent Output (RULES.md §21)
-                             - Hook 3: Skill/Pattern Drift Update (copilot-instructions.md)
-                             - Hook 4: End-of-Day Closing Checklist (copilot-instructions.md)
+                             - Hook 3: Skill/Pattern Drift Update (.github/instructions/repo-guide.instructions.md)
+                             - Hook 4: End-of-Day Closing Checklist (.github/instructions/repo-guide.instructions.md)
                              - Rule 21: Column Name Verification (RULES.md §21)
                              - Rule 22: End-of-Day Closing Questions (RULES.md §22)
 

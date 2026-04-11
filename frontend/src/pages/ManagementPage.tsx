@@ -4,6 +4,7 @@ import { Truck, Package, Users, ChevronRight, Settings, Database, ShieldCheck, L
 import { useLanguageStore } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
 import { logger } from '../utils/logger'
+import toast from 'react-hot-toast'
 
 interface ManagementCounts {
   trucks: number
@@ -41,6 +42,7 @@ export default function ManagementPage() {
       })
     } catch (error) {
       logger.error('Failed to fetch counts:', error)
+      toast.error('Failed to load management data')
     } finally {
       setLoading(false)
     }

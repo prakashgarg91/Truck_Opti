@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/authStore'
 import { MapPin, Navigation, Clock, IndianRupee, Plus, X, Search, ChevronRight, Map as MapIcon, TrendingUp, Zap, Eye } from 'lucide-react'
 import { routesSupabaseApi } from '../services/supabaseApi'
 import { logger } from '../utils/logger'
+import toast from 'react-hot-toast'
 import { useSubscription } from '../hooks/useSubscription'
 import MapViewWrapper from '../components/MapViewWrapper'
 import { formatDistance, formatDuration, formatCurrency } from '../utils/formatters'
@@ -156,6 +157,7 @@ export default function RoutesPage() {
       setRoutes(parsedRoutes)
     } catch (error) {
       logger.error('Failed to fetch routes:', error)
+      toast.error('Failed to load routes')
     } finally {
       setLoading(false)
     }
@@ -214,6 +216,7 @@ export default function RoutesPage() {
       fetchRoutes()
     } catch (error) {
       logger.error('Optimization failed:', error)
+      toast.error('Failed to save route. Please try again.')
     } finally {
       setOptimizing(false)
     }

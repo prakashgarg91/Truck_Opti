@@ -25,6 +25,18 @@ interface AppUser {
       push: boolean
       email: boolean
     }
+    company?: {
+      name?: string
+      gstin?: string
+      pan?: string
+      address?: string
+      address_line1?: string
+      address_line2?: string
+      city?: string
+      state?: string
+      pincode?: string
+      [key: string]: string | undefined
+    }
   }
 }
 

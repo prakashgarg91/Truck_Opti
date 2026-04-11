@@ -6,6 +6,7 @@ import {
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { useLanguageStore } from '../stores/languageStore'
+import { useAuthStore } from '../stores/authStore'
 
 interface CompanyData {
   name: string
@@ -41,6 +42,7 @@ export default function CompanyProfilePage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const { language } = useLanguageStore()
+  const { user } = useAuthStore()
 
   useEffect(() => {
     loadProfile()
@@ -49,7 +51,6 @@ export default function CompanyProfilePage() {
   const loadProfile = async () => {
     setLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (user?.user_metadata?.company) {
         setForm({ ...EMPTY, ...user.user_metadata.company })
       }
