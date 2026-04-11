@@ -1,9 +1,9 @@
 # Last Closeout
 
-- Time: 2026-04-11 08:57:06
+- Time: 2026-04-11 09:01:41
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  D .github/copilot-instructions.md |  M .vscode/mcp.json |  M AGENTS.md | ?? .github/agents/ | ?? .github/hooks/ | ?? .github/instructions/
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-11_085706.log
+- Git status: clean
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-11_090140.log
 
 ## AI Handoff
 - Latest handoff date: 2026-04-11
@@ -24,16 +24,12 @@
 - Summary: launch-check passed
 - Log: 0.dev-matrix/test-reports/launch-check-20260410_191449.log
 
-## Regression Warning
-
-- REGRESSION: pass count dropped from 10 to 8; fail count rose from 0 to 2
-
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
 - [PASS] background launch-check - launch-check passed
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [FAIL] status update discipline - repo changed without state/task/discussion update
-- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: .github/copilot-instructions.md, .vscode/mcp.json, AGENTS.md, .github/agents/, .github/hooks/
+- [PASS] status update discipline - repo clean
+- [PASS] working tree cleanliness - repo clean before closeout report
 - [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
@@ -41,5 +37,5 @@
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 8
-- Fail: 2
+- Pass: 10
+- Fail: 0
