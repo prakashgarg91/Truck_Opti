@@ -189,3 +189,21 @@ Collection is **auto-discovered** — pass `--collection ws-xxx` only if auto-di
 Falls back to Roo Code's Qdrant (port 6335) if no standalone index exists.
 
 Full reference: skill file at `c:\Users\Prakash\.copilot\skills\qdrant-gap-audit\SKILL.md`
+
+### AI Workflow
+
+**Search before editing.** Before touching any files, run a semantic search to find all relevant code:
+
+```powershell
+# Use .venv\Scripts\python instead of python if this repo has a virtual environment
+python tools/qdrant_gap_audit.py -q "<concept you're about to change>"
+python tools/qdrant_gap_audit.py -q "<concept>" --context-lines 3  # show source lines
+```
+
+**Full health audit** (writes 33-check report to `0.dev-matrix/QDRANT_GAP_REPORT.md`):
+
+```powershell
+python tools/qdrant_gap_audit.py
+```
+
+**Rule:** Prefer `tools/qdrant_gap_audit.py -q "..."` over grep when the query is about intent or behaviour. Use grep only for exact strings.
