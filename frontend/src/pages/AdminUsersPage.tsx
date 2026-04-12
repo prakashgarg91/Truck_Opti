@@ -48,7 +48,7 @@ export default function AdminUsersPage() {
       } else {
         setUsers((data as UserRecord[]) || [])
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error(language === 'en' ? 'Failed to load users' : 'उपयोगकर्ता लोड करने में विफल')
     } finally {
       setLoading(false)
@@ -73,7 +73,7 @@ export default function AdminUsersPage() {
         setSelectedUser(null)
         fetchUsers()
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error(language === 'en' ? 'Failed to delete user' : 'उपयोगकर्ता हटाने में विफल')
     }
   }

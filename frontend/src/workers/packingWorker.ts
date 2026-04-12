@@ -30,7 +30,7 @@ self.onmessage = (e: MessageEvent) => {
         algorithm,
         processedOn: 'client',
       })
-    } catch (error: any) {
+    } catch (_error: any) {
       self.postMessage({
         type: 'error',
         error: 'Packing failed',
@@ -47,7 +47,7 @@ self.onmessage = (e: MessageEvent) => {
         recommendations,
         processedOn: 'client',
       })
-    } catch (error: any) {
+    } catch (_error: any) {
       self.postMessage({
         type: 'error',
         error: 'Recommendation failed',

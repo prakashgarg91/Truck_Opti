@@ -257,7 +257,7 @@ export async function initiateRazorpayPayment(
         });
       });
       razorpay.open();
-    } catch (error) {
+    } catch (_error) {
       resolve({ success: false, error: 'Failed to open Razorpay checkout' });
     }
   });

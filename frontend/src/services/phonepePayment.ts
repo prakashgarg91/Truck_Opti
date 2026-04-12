@@ -186,7 +186,7 @@ export async function checkPaymentStatus(merchantTransactionId: string): Promise
       message: data?.message || '',
       data: data?.data,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       status: 'PENDING',
@@ -230,7 +230,7 @@ export async function verifyAndActivateSubscription(
       success: true,
       message: 'Subscription activated successfully!',
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       message: 'Payment successful but subscription activation failed. Please contact support.',

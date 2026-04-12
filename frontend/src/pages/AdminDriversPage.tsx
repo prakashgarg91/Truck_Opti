@@ -113,7 +113,7 @@ export default function AdminDriversPage() {
       if (error) throw error
       toast.success(language === 'en' ? `${driverName} approved!` : `${driverName} को स्वीकृत किया गया!`)
       setDrivers(prev => prev.filter(d => d.id !== driverId))
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
       toast.error(language === 'en' ? 'Approval failed' : 'स्वीकृति विफल')
     } finally {
       setActionLoading(null)
@@ -134,7 +134,7 @@ export default function AdminDriversPage() {
       setDrivers(prev => prev.filter(d => d.id !== rejectModal!.driverId))
       setRejectModal(null)
       setRejectReason('')
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
       toast.error(language === 'en' ? 'Rejection failed' : 'अस्वीकृति विफल')
     } finally {
       setActionLoading(null)

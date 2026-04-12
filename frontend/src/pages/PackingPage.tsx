@@ -503,7 +503,7 @@ export default function PackingPage() {
           toast.error('No suitable truck found.', { id: 'recommend' })
         }
       }
-    } catch (err) {
+    } catch (_err) {
       // Fallback to main thread on error
       const recs = recommendTrucks(saleOrderItems, algorithm, trucks)
       setRecommendations(recs)
@@ -562,7 +562,7 @@ export default function PackingPage() {
       
       setSelectedRecommendation(rec)
       setRecommendations([rec])
-    } catch (err) {
+    } catch (_err) {
       // Fallback
       const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
       const { packed, unpacked } = packer.pack()

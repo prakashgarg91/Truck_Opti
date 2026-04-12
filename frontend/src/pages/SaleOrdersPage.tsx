@@ -338,7 +338,7 @@ export default function SaleOrdersPage() {
       await saleOrdersSupabaseApi.delete(id)
       toast.success(t[lang].deleteSuccess)
       fetchOrders()
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to delete')
     }
   }

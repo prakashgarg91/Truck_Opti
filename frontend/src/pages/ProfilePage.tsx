@@ -187,7 +187,7 @@ export default function ProfilePage() {
       await supabase.auth.updateUser({
         data: { location_sharing: enabled }
       })
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update preference')
     }
   }
@@ -200,7 +200,7 @@ export default function ProfilePage() {
       await supabase.auth.updateUser({
         data: { notification_prefs: newPrefs }
       })
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update preference')
     }
   }

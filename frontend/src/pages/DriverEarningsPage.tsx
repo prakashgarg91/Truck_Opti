@@ -114,7 +114,7 @@ export default function DriverEarningsPage() {
         setWithdrawAmount('')
         fetchDriverId() // Refresh driver data
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error(language === 'en' ? 'Something went wrong' : 'कुछ गलत हुआ')
     } finally {
       setWithdrawLoading(false)

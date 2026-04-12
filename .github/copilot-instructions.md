@@ -48,6 +48,28 @@ npm run launch-check  # must pass 17/17
 - Auth: use `supabase.auth.getUser()` server-side (never `getSession()` alone)
 - Input validation: all form values trimmed/validated before DB insert
 
+## Qdrant Search
+
+**Collection**: `truck-opti-context` | Use `/qdrant` prompt for full reference.
+
+```powershell
+# Semantic search (intent-based — better than grep for concepts)
+cd D:\Github\Truck_Opti
+.\.venv\Scripts\python D:\Github\tools\qdrant_gap_audit.py -q "YOUR QUERY" --context-lines 3
+
+# Index this repo (required before first search)
+.\.venv\Scripts\python D:\Github\tools\qdrant_gap_audit.py --auto-index
+
+# Full 33-check gap audit (run before deploy)
+.\.venv\Scripts\python D:\Github\tools\qdrant_gap_audit.py
+# → writes 0.dev-matrix/QDRANT_GAP_REPORT.md
+
+# Critical security checks only (C1 auth, C11/C12 RLS, C14 N+1, C21 secrets, C27 unguarded write)
+.\.venv\Scripts\python D:\Github\tools\qdrant_gap_audit.py --checks 1,11,12,14,21,27
+```
+
+> Use `/qdrant` in chat for the complete guide with score interpretation and check catalog.
+
 ## Close-Day
 
 ```powershell

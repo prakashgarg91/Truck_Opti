@@ -1,10 +1,10 @@
 # Qdrant Gap & Mismatch Audit  v3
-Generated  : 2026-04-12 12:11
+Generated  : 2026-04-12 14:53
 Workspace  : `D:\Github\Truck_Opti`
 Collection : `ws-6df6af38d373c83b` (http://localhost:6335)
 Embedding  : `nomic-embed-text-v2-moe` (http://localhost:11434)
 Checks run : 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34
-Source path: `frontend/src` -- 88 files indexed
+Source path: `frontend/src` -- 87 files indexed
 
 C1-C18   Structural: Qdrant semantic search finds candidates -> regex confirms.
 C21-C26  Classic semantic: pure Qdrant vector similarity.
@@ -112,3 +112,4 @@ Next steps:
 - Create TASK.md entries for [WARN] findings
 - Review [INFO] advisories in next sprint
 - Re-run: python D:/Github/tools/qdrant_gap_audit.py
+

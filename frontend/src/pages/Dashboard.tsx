@@ -109,7 +109,7 @@ const fetchDashboardData = async (language: string): Promise<DashboardData> => {
 
   // Fetch recent packing jobs for activity
   const recentJobs = await packingJobsSupabaseApi.getUserJobs(5)
-  let activities = recentJobs.map((job: PackingJob) => ({
+  const activities = recentJobs.map((job: PackingJob) => ({
     id: job.id || '',
     type: 'packing',
     message: language === 'en'

@@ -197,7 +197,7 @@ export default function InvoicePage() {
     try {
       await generateInvoicePDF('invoice-content', `invoice-${invoiceData?.invoiceNumber}.pdf`)
       toast.success('Invoice downloaded!')
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to download PDF')
     }
   }
