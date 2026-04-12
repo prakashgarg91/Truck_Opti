@@ -43,7 +43,7 @@ xlsxwriter==3.1.9  # Excel export
 
 # PDF Generation
 reportlab==4.0.7
-PyPDF2==3.0.1
+pypdf>=3.17.0
 
 # Image Processing
 
