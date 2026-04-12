@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-12 (GPT-008)
+- Changed: fixed three frontend bugs and committed `68a72a53` (`fix: harden payment and async ui flows`): TrackingPage OTP/detail modal no longer gets stuck loading on query failure, AgencyDrivers clipboard copy now handles unavailable/rejected clipboard writes, and `phonepePayment.ts` now matches the Edge Function contract, checks `payment_history` insert errors, removes the hidden service redirect, and rejects non-allowlisted redirect URLs.
+- Verified: `cd frontend && npx tsc --noEmit` PASS (0 errors); `cd frontend && npm run build` PASS; `npm run launch-check` PASS (17/17) on a clean tree.
+- Operational proof: `npm run launch-check` -> `RESULT: ALL GATES PASSED (17/17)` at 2026-04-12 20:53:41 after commit `68a72a53`.
+- Continue from: AI-executable code issues found in the layered audit are fixed; remaining launch blockers are still owner-side credentials/access plus live-account verification.
+- Next step: once owner supplies live Razorpay + `VITE_SENTRY_DSN` and real-account credentials, run authenticated E2E plus a real PhonePe payment/callback smoke.
+- Blockers: no live Razorpay keys in production, no `VITE_SENTRY_DSN`, no real-account browser credentials for authenticated E2E, GitHub alert #69 still needs authenticated review, Twilio SMS not configured, Supabase PITR not verified.
+
 ### 2026-04-12 (COP-004)
 - Changed: (1) `pip_audit` installed in `.venv` so Gate 5 passes with `python -m pip_audit`; (2) committed `.vscode/mcp.json` (Razorpay Docker MCP + Qdrant hardcoded + Supabase PAT prompt), `.vscode/settings.json`, `.github/copilot-instructions.md`, `.github/hooks/watch-session.json`; (3) T-117 Supabase migrations fully synced (12/12 Local=Remote, done prior sub-session); (4) Razorpay Docker MCP `mcp/razorpay:latest` confirmed — 45 tools, handshake verified; (5) Supabase PAT `sbp_2d3986853442d1109caedc59d93b2461ed8eafd0` verified — Management API + MCP cloud endpoint both return 200/ACTIVE_HEALTHY.
 - Verified: `npm run launch-check` PASS (17/17); `npm run test:packing` PASS (9/9); live Playwright SW retest PASS — all 6 public routes load, 0 chunk errors, Workbox precache 69 entries, SW `activated`, no stale-chunk failures; Supabase `ACTIVE_HEALTHY` Postgres 17.6.1 ap-south-1.
