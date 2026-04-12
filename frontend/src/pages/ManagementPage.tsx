@@ -34,7 +34,7 @@ export default function ManagementPage() {
         supabase.from('cartons').select('id', { count: 'exact', head: true }),
         supabase.from('customers').select('id', { count: 'exact', head: true })
       ])
-      
+
       setCounts({
         trucks: trucksResult.count || 0,
         cartons: cartonsResult.count || 0,
@@ -51,8 +51,8 @@ export default function ManagementPage() {
   const managementCards = [
     {
       title: language === 'en' ? 'Truck Fleet' : 'ट्रक बेड़ा',
-      description: language === 'en' 
-        ? 'Manage your vehicle types, dimensions, and capacities.' 
+      description: language === 'en'
+        ? 'Manage your vehicle types, dimensions, and capacities.'
         : 'अपने वाहन प्रकार, आयाम और क्षमता प्रबंधित करें।',
       icon: Truck,
       path: '/management/trucks',
@@ -141,8 +141,8 @@ export default function ManagementPage() {
           <div>
             <h4 className="font-bold">{language === 'en' ? 'System Health' : 'सिस्टम स्थिति'}</h4>
             <p className="text-sm text-slate-400">
-              {language === 'en' 
-                ? 'All databases are synchronized and secure.' 
+              {language === 'en'
+                ? 'All databases are synchronized and secure.'
                 : 'सभी डेटाबेस सिंक्रनाइज़ और सुरक्षित हैं।'}
             </p>
           </div>

@@ -60,7 +60,7 @@ export default function CartonsPage() {
       setIsModalOpen(false)
       resetForm()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       void error
       toast.error(language === 'en' ? 'Failed to create carton' : 'कार्टन बनाने में विफल')
     },
@@ -76,7 +76,7 @@ export default function CartonsPage() {
       setIsModalOpen(false)
       resetForm()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       void error
       toast.error(language === 'en' ? 'Failed to update carton' : 'कार्टन अपडेट करने में विफल')
     },
@@ -89,7 +89,7 @@ export default function CartonsPage() {
       queryClient.invalidateQueries({ queryKey: ['cartons'] })
       toast.success(language === 'en' ? 'Carton type deleted' : 'कार्टन प्रकार हटा दिया गया')
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       void error
       toast.error(language === 'en' ? 'Failed to delete carton' : 'कार्टन हटाने में विफल')
     },

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   DollarSign, CheckCircle2, XCircle, Clock, Search,
   RefreshCw, AlertTriangle
@@ -44,7 +44,7 @@ export default function AdminPayoutsPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [processingId, setProcessingId] = useState<string | null>(null)
 
-  const fetchPayouts = async () => {
+  const fetchPayouts = useCallback(async () => {
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -64,11 +64,11 @@ export default function AdminPayoutsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [language])
 
   useEffect(() => {
     fetchPayouts()
-  }, [language])
+  }, [fetchPayouts])
 
   const handleApprove = async (payoutId: string) => {
     setProcessingId(payoutId)

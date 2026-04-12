@@ -77,7 +77,7 @@ export default function AdminDriversPage() {
       toast.error(language === 'en' ? 'Admin access required' : 'एडमिन एक्सेस आवश्यक है')
       navigate('/dashboard', { replace: true })
     }
-  }, [user, navigate])
+  }, [user, navigate, language])
 
   const fetchDrivers = useCallback(async () => {
     setLoading(true)
@@ -95,7 +95,7 @@ export default function AdminDriversPage() {
     } finally {
       setLoading(false)
     }
-  }, [tab])
+  }, [tab, language])
 
   useEffect(() => { fetchDrivers() }, [fetchDrivers])
 
@@ -185,7 +185,7 @@ export default function AdminDriversPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `drivers_${tab}_${new Date().toISOString().slice(0,10)}.csv`
+    a.download = `drivers_${tab}_${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
     toast.success(`Exported ${filtered.length} drivers`)
@@ -224,11 +224,10 @@ export default function AdminDriversPage() {
           const Icon = TAB_ICONS[t]
           return (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm whitespace-nowrap transition-colors ${
-                tab === t
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm whitespace-nowrap transition-colors ${tab === t
                   ? 'bg-primary-600 text-white shadow-md shadow-primary-500/20'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
-              }`}>
+                }`}>
               <Icon className="w-4 h-4" />
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
@@ -308,37 +307,37 @@ export default function AdminDriversPage() {
                 >
                   Details
                 </button>
-              {(tab === 'pending' || tab === 'approved') && (
-                <>
-                  {tab === 'pending' && (
-                    <>
+                {(tab === 'pending' || tab === 'approved') && (
+                  <>
+                    {tab === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => handleApprove(driver.id, driver.full_name)}
+                          disabled={actionLoading === driver.id}
+                          className="flex-1 py-2 bg-emerald-500 text-white rounded-xl text-sm font-semibold hover:bg-emerald-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
+                          {actionLoading === driver.id
+                            ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            : <><CheckCircle2 className="w-4 h-4" /> Approve</>
+                          }
+                        </button>
+                        <button
+                          onClick={() => { setRejectModal({ driverId: driver.id, name: driver.full_name }); setRejectReason('') }}
+                          disabled={actionLoading === driver.id}
+                          className="flex-1 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
+                          <XCircle className="w-4 h-4" /> Reject
+                        </button>
+                      </>
+                    )}
+                    {tab === 'approved' && (
                       <button
-                        onClick={() => handleApprove(driver.id, driver.full_name)}
+                        onClick={() => handleSuspend(driver.id, driver.full_name)}
                         disabled={actionLoading === driver.id}
-                        className="flex-1 py-2 bg-emerald-500 text-white rounded-xl text-sm font-semibold hover:bg-emerald-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
-                        {actionLoading === driver.id
-                          ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          : <><CheckCircle2 className="w-4 h-4" /> Approve</>
-                        }
+                        className="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4" /> Suspend
                       </button>
-                      <button
-                        onClick={() => { setRejectModal({ driverId: driver.id, name: driver.full_name }); setRejectReason('') }}
-                        disabled={actionLoading === driver.id}
-                        className="flex-1 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
-                        <XCircle className="w-4 h-4" /> Reject
-                      </button>
-                    </>
-                  )}
-                  {tab === 'approved' && (
-                    <button
-                      onClick={() => handleSuspend(driver.id, driver.full_name)}
-                      disabled={actionLoading === driver.id}
-                      className="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4" /> Suspend
-                    </button>
-                  )}
-                </>
-              )}
+                    )}
+                  </>
+                )}
               </div>
             </div>
           ))}

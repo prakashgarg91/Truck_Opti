@@ -1,0 +1,41 @@
+﻿# Build / package outputs
+target/**
+build/**
+dist/**
+out/**
+__pycache__/**
+*.pyc
+*.pyo
+node_modules/**
+.next/**
+.nuxt/**
+venv/**
+.venv/**
+env/**
+*.egg-info/**
+
+# Generated files
+*.generated.java
+*.generated.ts
+*.min.js
+*.min.css
+
+# IDE / tooling
+.idea/**
+.vscode/**
+.git/**
+*.iml
+
+# Test fixtures
+src/test/resources/**
+fixtures/**
+__snapshots__/**
+
+# Environment and secrets
+.env
+.env.*
+
+# Logs and temp
+*.log
+tmp/**
+temp/**

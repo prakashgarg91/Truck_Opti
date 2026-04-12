@@ -76,3 +76,22 @@ cd D:\Github\Truck_Opti
 npm run close-day
 # Update 0.dev-matrix/AI-HANDOFF.md with: Changed, Verified, Operational proof, Continue from, Next step, Blockers
 ```
+
+## code-review-graph (AST Graph — active MCP server)
+
+Graph is pre-built at .code-review-graph/graph.db. Query it BEFORE reading files.
+
+| Step | Tool / Command |
+|------|----------------|
+| 1. Get context | get_minimal_context(task="<description>") — start every task here |
+| 2. Look up symbol | query_graph with specific target |
+| 3. Blast radius | get_call_graph before changing any function/class |
+| 4. Review PR | eview_changes — full diff with impact context |
+| 5. Risk check | detect_changes — scored risk before merging |
+
+**Daily CLI** (auto-runs at session start):
+```powershell
+code-review-graph update          # incremental refresh (<2s)
+code-review-graph watch           # live auto-update in background
+code-review-graph detect-changes  # risk analysis before PR
+```

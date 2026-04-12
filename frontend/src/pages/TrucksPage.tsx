@@ -130,8 +130,8 @@ export default function TrucksPage() {
   }, [language])
 
   // React Query: Fetch trucks data
-  const { 
-    data: trucks = [], 
+  const {
+    data: trucks = [],
     isLoading: loading,
     isError: loadError
   } = useQuery({
@@ -148,7 +148,7 @@ export default function TrucksPage() {
       setIsModalOpen(false)
       resetForm()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       logger.error('Failed to create truck:', error)
       toast.error(language === 'en' ? 'Failed to create truck' : 'ट्रक बनाने में विफल')
     },
@@ -164,7 +164,7 @@ export default function TrucksPage() {
       setIsModalOpen(false)
       resetForm()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       logger.error('Failed to update truck:', error)
       toast.error(language === 'en' ? 'Failed to update truck' : 'ट्रक अपडेट करने में विफल')
     },
@@ -177,7 +177,7 @@ export default function TrucksPage() {
       queryClient.invalidateQueries({ queryKey: ['trucks'] })
       toast.success('Truck deleted successfully')
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       logger.error('Failed to delete truck:', error)
       toast.error(language === 'en' ? 'Failed to delete truck' : 'ट्रक हटाने में विफल')
     },
@@ -196,7 +196,7 @@ export default function TrucksPage() {
         .select('name')
         .in('name', DEFAULT_INDIAN_TRUCKS.map(t => t.name))
 
-      const existingNames = new Set(existingTrucks?.map((t: any) => t.name) || [])
+      const existingNames = new Set(existingTrucks?.map((t: { name: string }) => t.name) || [])
       const trucksToAdd = DEFAULT_INDIAN_TRUCKS.filter(t => !existingNames.has(t.name))
 
       if (trucksToAdd.length === 0) {
@@ -215,7 +215,7 @@ export default function TrucksPage() {
       queryClient.invalidateQueries({ queryKey: ['trucks'] })
       toast.success(`Added ${count} default Indian trucks!`)
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       logger.error('Failed to seed trucks:', error)
       if (error.message === 'All default trucks already exist!') {
         toast(language === 'en' ? 'Default trucks already added.' : 'डिफॉल्ट ट्रक पहले से जोड़ गए हैं')
@@ -315,7 +315,7 @@ export default function TrucksPage() {
     }
   }
 
-  const filteredTrucks = trucks.filter((t: TruckType) => 
+  const filteredTrucks = trucks.filter((t: TruckType) =>
     t.name.toLowerCase().includes(search.toLowerCase()) ||
     (t.name_hi && t.name_hi.toLowerCase().includes(search.toLowerCase()))
   )
@@ -330,7 +330,7 @@ export default function TrucksPage() {
   return (
     <div className="p-4 space-y-6 pb-8">
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => navigate('/management')}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
         >
@@ -349,7 +349,7 @@ export default function TrucksPage() {
             {language === 'en' ? 'No Trucks Found' : 'कोई ट्रक नहीं मिला'}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            {language === 'en' 
+            {language === 'en'
               ? 'Seed the database with 7 standard Indian truck types'
               : '7 मानक भारतीय ट्रक प्रकारों के साथ डेटाबेस सीड करें'}
           </p>
@@ -394,7 +394,7 @@ export default function TrucksPage() {
             {seedMutation.isPending ? <div className="spinner w-5 h-5" /> : <Database className="w-5 h-5" />}
           </button>
         )}
-        <button 
+        <button
           onClick={() => handleOpenModal()}
           className="bg-primary-600 hover:bg-primary-700 text-white p-2.5 rounded-xl shadow-lg shadow-primary-600/20 transition-all"
         >
@@ -430,7 +430,7 @@ export default function TrucksPage() {
       ) : (
         <div className="grid gap-4">
           {filteredTrucks.map((truck: TruckType) => (
-            <div 
+            <div
               key={truck.id}
               className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm"
             >
@@ -450,14 +450,14 @@ export default function TrucksPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button 
+                  <button
                     onClick={() => handleOpenModal(truck)}
                     disabled={isMutating}
                     className="p-2 text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDelete(truck.id)}
                     disabled={deleteMutation.isPending}
                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
@@ -466,7 +466,7 @@ export default function TrucksPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="mt-4 grid grid-cols-4 gap-2">
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Dimensions</p>
@@ -500,31 +500,31 @@ export default function TrucksPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Truck Name (English)</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   placeholder="e.g. Tata 407, Eicher 10.50"
                 />
                 {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Truck Name (Hindi)</label>
                 <input
                   type="text"
                   value={formData.name_hi}
-                  onChange={(e) => setFormData({...formData, name_hi: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name_hi: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   placeholder="e.g. टाटा 407"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Capacity (kg)</label>
@@ -580,13 +580,13 @@ export default function TrucksPage() {
                   {formErrors.height && <p className="text-red-500 text-xs mt-1">{formErrors.height}</p>}
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Available Count</label>
                 <input
                   type="number"
                   value={formData.available}
-                  onChange={(e) => setFormData({...formData, available: Number(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, available: Number(e.target.value) })}
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                   min={0}
                 />
@@ -594,13 +594,13 @@ export default function TrucksPage() {
             </div>
 
             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleSave}
                 disabled={createMutation.isPending || updateMutation.isPending}
                 className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"

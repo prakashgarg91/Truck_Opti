@@ -25,10 +25,10 @@ interface AgencyRecord {
 }
 
 const VEHICLE_LABELS: Record<string, string> = {
-  tata_407:      'Tata 407 (1T)',
-  eicher_14ft:   'Eicher 14ft (3T)',
-  eicher_17ft:   'Eicher 17ft (5T)',
-  ashok_19ft:    'Ashok Leyland 19ft (7T)',
+  tata_407: 'Tata 407 (1T)',
+  eicher_14ft: 'Eicher 14ft (3T)',
+  eicher_17ft: 'Eicher 17ft (5T)',
+  ashok_19ft: 'Ashok Leyland 19ft (7T)',
   bharatbenz_24ft: 'BharatBenz 24ft (10T)',
   bharatbenz_32ft: 'BharatBenz 32ft (15T)',
 }
@@ -226,11 +226,10 @@ export default function AgencyFleetPage() {
         return (
           <div key={truck.id} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                truck.is_available
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${truck.is_available
                   ? 'bg-green-100 dark:bg-green-900/30'
                   : 'bg-amber-100 dark:bg-amber-900/30'
-              }`}>
+                }`}>
                 <Truck size={20} className={truck.is_available ? 'text-green-600' : 'text-amber-600'} />
               </div>
               <div className="flex-1 min-w-0">
@@ -238,11 +237,10 @@ export default function AgencyFleetPage() {
                   <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate">
                     {VEHICLE_LABELS[truck.vehicle_type] || truck.vehicle_type}
                   </p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${
-                    truck.is_available
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${truck.is_available
                       ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                       : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                  }`}>
+                    }`}>
                     {truck.is_available ? 'Available' : 'On Trip'}
                   </span>
                 </div>
@@ -257,16 +255,15 @@ export default function AgencyFleetPage() {
                 { label: 'Fitness', status: fitnessStatus, expiry: truck.fitness_expiry },
                 { label: 'Permit', status: expiryStatus(truck.permit_expiry), expiry: truck.permit_expiry },
               ].map(doc => (
-                <div key={doc.label} className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg ${
-                  doc.status === 'expired'
+                <div key={doc.label} className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg ${doc.status === 'expired'
                     ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                     : doc.status === 'soon'
-                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                    : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
-                }`}>
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                      : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                  }`}>
                   {doc.status === 'expired' ? <XCircle size={10} /> :
-                   doc.status === 'soon' ? <Clock size={10} /> :
-                   <FileCheck size={10} />}
+                    doc.status === 'soon' ? <Clock size={10} /> :
+                      <FileCheck size={10} />}
                   {doc.label}
                   {doc.expiry && ` · ${new Date(doc.expiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}`}
                 </div>

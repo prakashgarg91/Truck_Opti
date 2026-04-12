@@ -199,6 +199,9 @@ export default function ContactPage() {
 
     window.addEventListener('online', handleOnline)
     return () => window.removeEventListener('online', handleOnline)
+    // sendInquiry references language but language is already a dep; adding the function
+    // would require useCallback wrapping which adds churn without fixing real staleness
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingSubmission, submitting, language])
 
   const handleSubmit = async (e: React.FormEvent) => {

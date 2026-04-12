@@ -160,6 +160,7 @@ export async function checkPaymentStatus(merchantTransactionId: string): Promise
   success: boolean;
   status: 'PENDING' | 'SUCCESS' | 'FAILED';
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PhonePe Edge Function response is dynamically typed
   data?: any;
 }> {
   try {

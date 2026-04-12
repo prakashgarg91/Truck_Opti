@@ -309,7 +309,7 @@ export const REVENUE_PROJECTIONS = {
     growthCustomers: 200,
     professionalCustomers: 50,
     enterpriseCustomers: 10,
-    monthlyRecurringRevenue: 
+    monthlyRecurringRevenue:
       500 * 499 + 200 * 1999 + 50 * 4999 + 10 * 14999, // ₹9,49,390
     annualRecurringRevenue: 9_49_390 * 12, // ₹1.14 Cr
   },
@@ -318,7 +318,7 @@ export const REVENUE_PROJECTIONS = {
     growthCustomers: 500,
     professionalCustomers: 150,
     enterpriseCustomers: 30,
-    monthlyRecurringRevenue: 
+    monthlyRecurringRevenue:
       1000 * 499 + 500 * 1999 + 150 * 4999 + 30 * 14999, // ₹25,48,320
     annualRecurringRevenue: 25_48_320 * 12, // ₹3.06 Cr
   },
@@ -327,7 +327,7 @@ export const REVENUE_PROJECTIONS = {
     growthCustomers: 1200,
     professionalCustomers: 400,
     enterpriseCustomers: 80,
-    monthlyRecurringRevenue: 
+    monthlyRecurringRevenue:
       2000 * 499 + 1200 * 1999 + 400 * 4999 + 80 * 14999, // ₹65,96,720
     annualRecurringRevenue: 65_96_720 * 12, // ₹7.92 Cr
   },

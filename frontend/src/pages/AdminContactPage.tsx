@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MessageSquare, ChevronLeft, RefreshCw, CheckCircle2, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -37,11 +37,7 @@ export default function AdminContactPage() {
     document.title = language === 'en' ? 'Contact Inquiries - Admin' : 'संपर्क पूछताछ - एडमिन'
   }, [language])
 
-  useEffect(() => {
-    fetchInquiries()
-  }, [])
-
-  const fetchInquiries = async () => {
+  const fetchInquiries = useCallback(async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from('contact_inquiries')
@@ -53,7 +49,11 @@ export default function AdminContactPage() {
       setInquiries(data || [])
     }
     setLoading(false)
-  }
+  }, [language])
+
+  useEffect(() => {
+    fetchInquiries()
+  }, [fetchInquiries])
 
   const handleResolve = async (id: string) => {
     setUpdatingId(id)

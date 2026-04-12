@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2, Home, RefreshCw } from 'lucide-react';
 import { checkPaymentStatus, verifyAndActivateSubscription } from '../services/phonepePayment';
@@ -18,34 +18,11 @@ const PaymentCallbackPage: React.FC = () => {
   const [status, setStatus] = useState<'checking' | 'success' | 'failed' | 'pending'>('checking');
   const [message, setMessage] = useState('Verifying payment...');
 
-  useEffect(() => {
-    document.title = 'Payment Status - TruckOpti'
-  }, [])
-
-  useEffect(() => {
-    if (paymentId) {
-      // Razorpay flow — payment already verified in razorpayPayment.ts
-      if (callbackStatus === 'success' || !callbackStatus) {
-        setStatus('success');
-        setMessage('Payment successful! Your subscription is now active.');
-      } else {
-        setStatus('failed');
-        setMessage('Payment failed. Please try again.');
-      }
-    } else if (txnId) {
-      // PhonePe flow — verify via Edge Function
-      verifyPayment();
-    } else {
-      setStatus('failed');
-      setMessage('Invalid payment callback');
-    }
-  }, [txnId, paymentId, callbackStatus]);
-
-  const verifyPayment = async () => {
+  const verifyPayment = useCallback(async () => {
     try {
       // Check payment status
       const result = await checkPaymentStatus(txnId!);
-      
+
       if (result.status === 'SUCCESS') {
         // Get payment details from our database
         const { data: paymentData } = await supabase
@@ -88,7 +65,30 @@ const PaymentCallbackPage: React.FC = () => {
       setStatus('failed');
       setMessage('Unable to verify payment. Please contact support.');
     }
-  };
+  }, [txnId, user]);
+
+  useEffect(() => {
+    document.title = 'Payment Status - TruckOpti'
+  }, [])
+
+  useEffect(() => {
+    if (paymentId) {
+      // Razorpay flow — payment already verified in razorpayPayment.ts
+      if (callbackStatus === 'success' || !callbackStatus) {
+        setStatus('success');
+        setMessage('Payment successful! Your subscription is now active.');
+      } else {
+        setStatus('failed');
+        setMessage('Payment failed. Please try again.');
+      }
+    } else if (txnId) {
+      // PhonePe flow — verify via Edge Function
+      verifyPayment();
+    } else {
+      setStatus('failed');
+      setMessage('Invalid payment callback');
+    }
+  }, [txnId, paymentId, callbackStatus, verifyPayment]);
 
   const handleRetry = () => {
     setStatus('checking');
@@ -155,7 +155,7 @@ const PaymentCallbackPage: React.FC = () => {
               Go to Dashboard
             </button>
           )}
-          
+
           {status === 'failed' && (
             <>
               <button

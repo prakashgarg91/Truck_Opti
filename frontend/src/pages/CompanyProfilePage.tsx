@@ -29,11 +29,11 @@ const EMPTY: CompanyData = {
 }
 
 const INDIAN_STATES = [
-  'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
-  'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
-  'Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan',
-  'Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal',
-  'Delhi','Jammu & Kashmir','Ladakh','Chandigarh','Puducherry',
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
+  'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
+  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan',
+  'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Chandigarh', 'Puducherry',
 ]
 
 export default function CompanyProfilePage() {
@@ -46,6 +46,8 @@ export default function CompanyProfilePage() {
 
   useEffect(() => {
     loadProfile()
+    // loadProfile reads user metadata; intentionally runs once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadProfile = async () => {
@@ -124,11 +126,10 @@ export default function CompanyProfilePage() {
           <p className="text-sm text-slate-500 mt-1">Used on invoices, delivery notes, and reports</p>
         </div>
         <button onClick={handleSave} disabled={saving}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all ${
-            saved
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all ${saved
               ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
               : 'bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50'
-          }`}>
+            }`}>
           {saving ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : saved ? (
@@ -168,11 +169,10 @@ export default function CompanyProfilePage() {
                 <span className="flex items-center gap-1"><FileText className="w-3.5 h-3.5" /> GSTIN</span>
               </label>
               <input value={form.gstin} onChange={set('gstin')} placeholder="22AAAAA0000A1Z5" maxLength={15}
-                className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase ${
-                  form.gstin && !validateGSTIN(form.gstin.toUpperCase())
+                className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase ${form.gstin && !validateGSTIN(form.gstin.toUpperCase())
                     ? 'border-red-400 focus:ring-red-400'
                     : 'border-slate-200 dark:border-slate-600'
-                }`} />
+                  }`} />
               {form.gstin && !validateGSTIN(form.gstin.toUpperCase()) && (
                 <p className="text-xs text-red-500 mt-1">Invalid GSTIN format</p>
               )}
@@ -180,11 +180,10 @@ export default function CompanyProfilePage() {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PAN Number</label>
               <input value={form.pan} onChange={set('pan')} placeholder="AAAPZ1234C" maxLength={10}
-                className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase ${
-                  form.pan && !validatePAN(form.pan.toUpperCase())
+                className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase ${form.pan && !validatePAN(form.pan.toUpperCase())
                     ? 'border-red-400 focus:ring-red-400'
                     : 'border-slate-200 dark:border-slate-600'
-                }`} />
+                  }`} />
             </div>
           </div>
         </div>

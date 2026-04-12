@@ -74,6 +74,9 @@ export default function MobileLayout() {
     // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
+    // fetchNotifications reads notificationsOpen but the interval handles freshness;
+    // restarting it on every panel toggle would cause excessive API calls
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Subscribe to real-time notifications
@@ -85,6 +88,7 @@ export default function MobileLayout() {
 
     const subscription = notificationsSupabaseApi.subscribeToNotifications(
       user.id,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase realtime payload shape varies by table
       (payload: any) => {
         // When a new notification is received, immediately update the count
         if (payload.eventType === 'INSERT') {
@@ -104,6 +108,9 @@ export default function MobileLayout() {
     return () => {
       notificationsSupabaseApi.unsubscribe(subscription)
     }
+    // fetchNotifications intentionally excluded: adding it would recreate the realtime
+    // subscription on every notification panel open/close, causing connection churn
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
   const fetchNotifications = async () => {

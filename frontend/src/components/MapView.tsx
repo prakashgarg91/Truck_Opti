@@ -70,15 +70,15 @@ interface MapViewProps {
 }
 
 // Map controller component for external control
-function MapController({ 
-  center, 
-  markers 
-}: { 
+function MapController({
+  center,
+  markers
+}: {
   center?: [number, number]
-  markers?: MapMarker[] 
+  markers?: MapMarker[]
 }) {
   const map = useMap()
-  
+
   useEffect(() => {
     if (center) {
       map.setView(center, map.getZoom())
@@ -128,10 +128,9 @@ export default function MapView({
   }
 
   return (
-    <div 
-      className={`relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 ${
-        isFullscreen ? 'fixed inset-0 z-[100] rounded-none' : ''
-      } ${className}`}
+    <div
+      className={`relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 ${isFullscreen ? 'fixed inset-0 z-[100] rounded-none' : ''
+        } ${className}`}
       style={{ height: isFullscreen ? '100vh' : height }}
     >
       <MapContainer

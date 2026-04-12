@@ -26,7 +26,7 @@ export default function LoginPage() {
   const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>(isEmailOtpEnabled ? 'email' : 'sms')
   const [isFocused, setIsFocused] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
-  
+
   // Rotate features
   useEffect(() => {
     const interval = setInterval(() => {
@@ -43,14 +43,14 @@ export default function LoginPage() {
     if (!isEmailOtpEnabled && channel === 'email') {
       setChannel('sms')
     }
-  }, [channel, isEmailOtpEnabled])
-  
+  }, [channel])
+
   // Clear input when channel changes
   useEffect(() => {
     setPhone('')
     setPhoneError('')
   }, [channel])
-  
+
   const sendOTPMutation = useMutation({
     mutationFn: async () => {
       if (channel === 'email') {
@@ -88,10 +88,10 @@ export default function LoginPage() {
       toast.error(errorMsg)
     }
   })
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validate based on channel
     if (channel === 'email') {
       const result = emailSchema.safeParse(phone)
@@ -107,7 +107,7 @@ export default function LoginPage() {
         return
       }
     }
-    
+
     setPhoneError('')
     sendOTPMutation.mutate()
   }
@@ -121,15 +121,15 @@ export default function LoginPage() {
       }
       return
     }
-    
+
     const digits = value.replace(/\D/g, '').slice(0, 10)
     setPhone(digits)
-    
+
     // Clear error when user starts typing
     if (phoneError && digits.length > 0) {
       setPhoneError('')
     }
-    
+
     // Validate on complete
     if (digits.length === 10) {
       const result = phoneInputSchema.safeParse(digits)
@@ -140,13 +140,13 @@ export default function LoginPage() {
       }
     }
   }
-  
+
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
   const isContactValid = channel === 'email'
     ? emailSchema.safeParse(phone).success
     : phoneInputSchema.safeParse(phone).success
-  
+
   const handleGoogleLogin = async () => {
     try {
       setIsGoogleLoading(true)
@@ -157,14 +157,14 @@ export default function LoginPage() {
       setIsGoogleLoading(false)
     }
   }
-  
+
   // Format phone number for display (only for phone inputs)
   const formatPhone = (value: string) => {
     if (channel === 'email') return value
     if (value.length <= 5) return value
     return `${value.slice(0, 5)} ${value.slice(5)}`
   }
-  
+
   return (
     <div className="p-6 animate-fade-in">
       {/* Animated Feature Badge */}
@@ -176,7 +176,7 @@ export default function LoginPage() {
           </span>
         </div>
       </div>
-      
+
       {/* Header */}
       <div className="text-center mb-8">
         <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/30">
@@ -189,7 +189,7 @@ export default function LoginPage() {
           Log in to your <span className="text-gradient font-semibold">TruckOpti</span> account
         </p>
       </div>
-      
+
       {/* Phone Input Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Phone/Email Input */}
@@ -236,41 +236,39 @@ export default function LoginPage() {
             </p>
           )}
         </div>
-        
+
         {/* OTP Channel Selection */}
         <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Receive OTP via
           </label>
           <div className={`grid ${isEmailOtpEnabled ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
-              {isEmailOtpEnabled && (
-                <button
-                  type="button"
-                  onClick={() => setChannel('email')}
-                  className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${
-                    channel === 'email'
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+            {isEmailOtpEnabled && (
+              <button
+                type="button"
+                onClick={() => setChannel('email')}
+                className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'email'
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
-                  aria-pressed={channel === 'email'}
-                >
-                  <Send className={`w-4 h-4 ${channel === 'email' ? 'animate-bounce-subtle' : ''}`} />
-                  <span className="font-medium text-sm">Email</span>
-                  {channel === 'email' && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center animate-scale-in">
-                      <span className="text-white text-xs">✓</span>
-                    </span>
-                  )}
-                </button>
-              )}
+                aria-pressed={channel === 'email'}
+              >
+                <Send className={`w-4 h-4 ${channel === 'email' ? 'animate-bounce-subtle' : ''}`} />
+                <span className="font-medium text-sm">Email</span>
+                {channel === 'email' && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center animate-scale-in">
+                    <span className="text-white text-xs">✓</span>
+                  </span>
+                )}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setChannel('whatsapp')}
-              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${
-                channel === 'whatsapp'
+              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'whatsapp'
                   ? 'border-green-600 bg-green-50 dark:bg-green-900/30 text-green-600 shadow-lg shadow-green-500/20 scale-[1.02]'
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}
+                }`}
               aria-pressed={channel === 'whatsapp'}
             >
               <MessageCircle className={`w-4 h-4 ${channel === 'whatsapp' ? 'animate-bounce-subtle' : ''}`} />
@@ -284,11 +282,10 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setChannel('sms')}
-              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${
-                channel === 'sms'
+              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'sms'
                   ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20 scale-[1.02]'
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}
+                }`}
               aria-pressed={channel === 'sms'}
             >
               <Phone className={`w-4 h-4 ${channel === 'sms' ? 'animate-bounce-subtle' : ''}`} />
@@ -306,7 +303,7 @@ export default function LoginPage() {
             </p>
           )}
         </div>
-        
+
         {/* Submit Button */}
         <button
           type="submit"
@@ -327,7 +324,7 @@ export default function LoginPage() {
           )}
         </button>
       </form>
-      
+
       {/* Divider */}
       <div className="relative my-8 animate-fade-in" style={{ animationDelay: '400ms' }}>
         <div className="absolute inset-0 flex items-center">
@@ -339,7 +336,7 @@ export default function LoginPage() {
           </span>
         </div>
       </div>
-      
+
       {/* Google Login */}
       <button
         onClick={handleGoogleLogin}
@@ -376,7 +373,7 @@ export default function LoginPage() {
           </>
         )}
       </button>
-      
+
       {/* Trust Badges */}
       <div className="mt-8 flex items-center justify-center gap-6 text-slate-400 animate-fade-in" style={{ animationDelay: '600ms' }}>
         <div className="flex items-center gap-1 text-xs">
@@ -402,7 +399,7 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
-      
+
       {/* Terms */}
       <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 animate-fade-in" style={{ animationDelay: '700ms' }}>
         By continuing, you agree to our{' '}

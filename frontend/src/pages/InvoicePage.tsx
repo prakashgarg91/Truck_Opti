@@ -126,7 +126,7 @@ export default function InvoicePage() {
   const { language } = useLanguageStore()
   const lang = (language === 'hi' ? 'hi' : 'en') as 'en' | 'hi'
   const invoiceRef = useRef<HTMLDivElement>(null)
-  
+
   const [shipment, setShipment] = useState<Shipment | null>(null)
   const [loading, setLoading] = useState(true)
   const [invoiceData, setInvoiceData] = useState<ReturnType<typeof calculateInvoice> | null>(null)
@@ -135,11 +135,13 @@ export default function InvoicePage() {
     if (shipmentId) {
       fetchShipment()
     }
+    // fetchShipment only uses shipmentId which is already the dep trigger
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shipmentId])
 
   useEffect(() => {
-    document.title = invoiceData?.invoiceNumber 
-      ? `Invoice ${invoiceData.invoiceNumber} - TruckOpti` 
+    document.title = invoiceData?.invoiceNumber
+      ? `Invoice ${invoiceData.invoiceNumber} - TruckOpti`
       : 'Invoice - TruckOpti'
   }, [invoiceData])
 
@@ -177,7 +179,9 @@ export default function InvoicePage() {
             dimensions: `${data.total_volume.toFixed(2)} m³`
           }],
           freightCharges: data.estimated_cost || 0,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loading/unloading_charges are optional DB columns not in the base Shipment type
           loadingCharges: (data as any).loading_charges || 0,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           unloadingCharges: (data as any).unloading_charges || 0,
           isInterState: getState(data.origin || '') !== getState(data.destination || ''),
           gstRate: 18
@@ -232,7 +236,7 @@ export default function InvoicePage() {
     return (
       <div className="p-8 text-center">
         <p className="text-slate-500">{t[lang].notAvailable}</p>
-        <button 
+        <button
           onClick={() => navigate('/tracking')}
           className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg"
         >
@@ -293,7 +297,7 @@ export default function InvoicePage() {
 
       {/* Invoice Content */}
       <div className="p-4 max-w-5xl mx-auto">
-        <div 
+        <div
           id="invoice-content"
           ref={invoiceRef}
           className="bg-white rounded-xl shadow-lg p-8 print:shadow-none"
@@ -411,7 +415,7 @@ export default function InvoicePage() {
                 <span className="text-slate-600">{t[lang].taxableAmount}</span>
                 <span className="font-medium">{formatCurrency(invoiceData.taxableAmount)}</span>
               </div>
-              
+
               {invoiceData.isInterState ? (
                 <div className="flex justify-between">
                   <span className="text-slate-600">{t[lang].igst}</span>
@@ -429,12 +433,12 @@ export default function InvoicePage() {
                   </div>
                 </>
               )}
-              
+
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-slate-600">{t[lang].totalGst}</span>
                 <span className="font-medium">{formatCurrency(invoiceData.totalGst)}</span>
               </div>
-              
+
               <div className="flex justify-between pt-2 border-t-2 border-slate-300">
                 <span className="text-lg font-bold text-slate-900">{t[lang].grandTotal}</span>
                 <span className="text-lg font-bold text-slate-900">{formatCurrency(invoiceData.grandTotal)}</span>

@@ -325,11 +325,11 @@ export const shipmentsSupabaseApi = {
       .from('shipments')
       .select('*')
       .order('created_at', { ascending: false })
-    
+
     if (filters?.status) {
       query = query.eq('status', filters.status)
     }
-    
+
     const { data, error } = await query
     if (error) throw error
     return (data as Shipment[]) || []
@@ -486,6 +486,7 @@ export const authSupabaseApi = {
         if (
           error.message?.toLowerCase().includes('provider') ||
           error.message?.toLowerCase().includes('sms') ||
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AuthError may include a 'code' field not in the official type definition
           (error as any).code === 'phone_provider_disabled' ||
           error.message?.toLowerCase().includes('not set up') ||
           error.message?.toLowerCase().includes('phone sign')
@@ -684,7 +685,7 @@ export const packingJobsSupabaseApi = {
   async getUserJobs(limit = 10): Promise<PackingJob[]> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
-    
+
     const { data, error } = await supabase
       .from('packing_jobs')
       .select('*')
@@ -743,7 +744,7 @@ export const notificationsSupabaseApi = {
   async create(notification: { title: string; message: string; type: Notification['type']; action_url?: string; action_label?: string }): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    
+
     const { error } = await supabase
       .from('notifications')
       .insert({ ...notification, user_id: user.id, is_read: false })
@@ -753,7 +754,7 @@ export const notificationsSupabaseApi = {
   async getUnreadCount(): Promise<number> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 0
-    
+
     const { count, error } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
@@ -766,7 +767,7 @@ export const notificationsSupabaseApi = {
   async getNotifications(limit = 20): Promise<Notification[]> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
-    
+
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
@@ -788,7 +789,7 @@ export const notificationsSupabaseApi = {
   async markAllAsRead(): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    
+
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true, read_at: new Date().toISOString() })
@@ -800,7 +801,7 @@ export const notificationsSupabaseApi = {
   async clearAll(): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    
+
     const { error } = await supabase
       .from('notifications')
       .delete()
@@ -811,8 +812,8 @@ export const notificationsSupabaseApi = {
   subscribeToNotifications(userId: string, callback: (payload: unknown) => void) {
     return supabase
       .channel(`notifications:${userId}`)
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, 
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
         callback
       )
       .subscribe()
@@ -844,35 +845,36 @@ export const analyticsSupabaseApi = {
   async getWeeklyPackingCounts(): Promise<{ day: string; count: number }[]> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
-    
+
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    
+
     const { data, error } = await supabase
       .from('packing_jobs')
       .select('created_at')
       .eq('user_id', user.id)
       .gte('created_at', sevenDaysAgo.toISOString())
-    
+
     if (error) throw error
-    
+
     // Group by day
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     const counts = days.map(day => ({ day, count: 0 }))
-    
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- packingJobs join result doesn't have a generated Supabase type
     data?.forEach((job: any) => {
       const date = new Date(job.created_at)
       const dayIndex = date.getDay()
       counts[dayIndex].count++
     })
-    
+
     return counts
   },
 
   async getRecentActivity(limit = 5): Promise<AnalyticsEvent[]> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
-    
+
     const { data, error } = await supabase
       .from('analytics_events')
       .select('*')
@@ -917,7 +919,7 @@ export const saleOrdersSupabaseApi = {
   async getAll(): Promise<SaleOrder[]> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
-    
+
     const { data, error } = await supabase
       .from('sale_orders')
       .select('*')
@@ -934,20 +936,20 @@ export const saleOrdersSupabaseApi = {
       .eq('id', id)
       .single()
     if (orderError) throw orderError
-    
+
     const { data: items, error: itemsError } = await supabase
       .from('sale_order_items')
       .select('*')
       .eq('order_id', id)
     if (itemsError) throw itemsError
-    
+
     return { ...order, items: items || [] } as SaleOrder & { items: SaleOrderItem[] }
   },
 
   async create(order: Omit<SaleOrder, 'id' | 'created_at' | 'updated_at'>, items: Omit<SaleOrderItem, 'id' | 'created_at' | 'order_id'>[]): Promise<SaleOrder> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
-    
+
     // Create order
     const { data: newOrder, error: orderError } = await supabase
       .from('sale_orders')
@@ -955,7 +957,7 @@ export const saleOrdersSupabaseApi = {
       .select()
       .single()
     if (orderError) throw orderError
-    
+
     // Create items
     if (items.length > 0) {
       const { error: itemsError } = await supabase
@@ -967,7 +969,7 @@ export const saleOrdersSupabaseApi = {
         })))
       if (itemsError) throw itemsError
     }
-    
+
     return newOrder as SaleOrder
   },
 
@@ -994,7 +996,7 @@ export const saleOrdersSupabaseApi = {
   async getRecent(limit = 3): Promise<SaleOrder[]> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
-    
+
     const { data, error } = await supabase
       .from('sale_orders')
       .select('*')

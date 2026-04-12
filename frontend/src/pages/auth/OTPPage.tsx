@@ -19,11 +19,11 @@ export default function OTPPage() {
   const [isError, setIsError] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
-  
+
   // Get channel from navigation state
   const channel = channel_pre
   const contact = (location.state as { contact?: string })?.contact || pendingPhone
-  
+
   // Redirect if no pending phone/email
   useEffect(() => {
     if (!contact) {
@@ -34,7 +34,7 @@ export default function OTPPage() {
   useEffect(() => {
     document.title = 'Verify OTP - TruckOpti'
   }, [])
-  
+
   // Timer countdown
   useEffect(() => {
     if (timer > 0) {
@@ -42,7 +42,7 @@ export default function OTPPage() {
       return () => clearInterval(interval)
     }
   }, [timer])
-  
+
   const verifyOTPMutation = useMutation({
     mutationFn: async () => {
       if (channel === 'email') {
@@ -81,7 +81,7 @@ export default function OTPPage() {
       }, 600)
     }
   })
-  
+
   const resendOTPMutation = useMutation({
     mutationFn: async () => {
       if (channel === 'email') {
@@ -103,31 +103,31 @@ export default function OTPPage() {
       toast.error(toUserFacingErrorMessage(error, 'Failed to resend OTP — please try again'))
     }
   })
-  
+
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return
-    
+
     const newOtp = [...otp]
     newOtp[index] = value.slice(-1)
     setOtp(newOtp)
-    
+
     // Auto-advance to next input
     if (value && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus()
     }
-    
+
     // Auto-submit when complete
     if (newOtp.every(d => d) && newOtp.join('').length === OTP_LENGTH) {
       verifyOTPMutation.mutate()
     }
   }
-  
+
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus()
     }
   }
-  
+
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
     const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH)
@@ -138,17 +138,17 @@ export default function OTPPage() {
       setTimeout(() => verifyOTPMutation.mutate(), 100)
     }
   }
-  
+
   // Mask contact info for display
-  const maskedContact = channel === 'email' 
+  const maskedContact = channel === 'email'
     ? contact?.replace(/(.{2}).*@/, '$1***@') || ''
-    : contact 
+    : contact
       ? `+91 ${contact.slice(0, 5)} ****${contact.slice(-2)}`
       : ''
-  
+
   const filledCount = otp.filter(d => d).length
   const progress = (filledCount / OTP_LENGTH) * 100
-  
+
   return (
     <div className="p-6 animate-fade-in">
       {/* Back Button */}
@@ -159,7 +159,7 @@ export default function OTPPage() {
         <ArrowLeft className="w-5 h-5" />
         <span>Back</span>
       </button>
-      
+
       {/* Header */}
       <div className="text-center mb-8 animate-slide-up">
         <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/30">
@@ -175,22 +175,20 @@ export default function OTPPage() {
           {maskedContact}
         </p>
       </div>
-      
+
       {/* Progress Bar */}
       <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mb-6 overflow-hidden">
-        <div 
-          className={`h-full rounded-full transition-all duration-300 ${
-            isError ? 'bg-red-500' : isSuccess ? 'bg-green-500' : 'bg-primary-500'
-          }`}
+        <div
+          className={`h-full rounded-full transition-all duration-300 ${isError ? 'bg-red-500' : isSuccess ? 'bg-green-500' : 'bg-primary-500'
+            }`}
           style={{ width: `${isSuccess ? 100 : progress}%` }}
         />
       </div>
-      
+
       {/* OTP Input */}
-      <div 
-        className={`flex justify-center ${OTP_LENGTH >= 8 ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-3'} mb-8 transition-all duration-300 ${
-          isError ? 'animate-shake' : ''
-        } ${isSuccess ? 'scale-95 opacity-50' : ''}`}
+      <div
+        className={`flex justify-center ${OTP_LENGTH >= 8 ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-3'} mb-8 transition-all duration-300 ${isError ? 'animate-shake' : ''
+          } ${isSuccess ? 'scale-95 opacity-50' : ''}`}
         onPaste={handlePaste}
       >
         {otp.map((digit, index) => (
@@ -204,15 +202,14 @@ export default function OTPPage() {
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             disabled={isSuccess || verifyOTPMutation.isPending}
-            className={`${OTP_LENGTH >= 8 ? 'otp-input-sm' : 'otp-input'} ${digit ? 'filled' : ''} ${
-              isError ? 'border-red-500 bg-red-50 dark:bg-red-900/30' : ''
-            } ${isSuccess ? 'border-green-500 bg-green-50 dark:bg-green-900/30' : ''}`}
+            className={`${OTP_LENGTH >= 8 ? 'otp-input-sm' : 'otp-input'} ${digit ? 'filled' : ''} ${isError ? 'border-red-500 bg-red-50 dark:bg-red-900/30' : ''
+              } ${isSuccess ? 'border-green-500 bg-green-50 dark:bg-green-900/30' : ''}`}
             autoFocus={index === 0}
             aria-label={`Digit ${index + 1}`}
           />
         ))}
       </div>
-      
+
       {/* Status Indicator */}
       {(isSuccess || verifyOTPMutation.isPending) && (
         <div className="flex items-center justify-center gap-2 mb-6 animate-scale-in">
@@ -229,7 +226,7 @@ export default function OTPPage() {
           )}
         </div>
       )}
-      
+
       {/* Verify Button */}
       {!isSuccess && (
         <button
@@ -250,7 +247,7 @@ export default function OTPPage() {
           )}
         </button>
       )}
-      
+
       {/* Resend OTP */}
       <div className="text-center animate-fade-in" style={{ animationDelay: '300ms' }}>
         {timer > 0 ? (
@@ -277,7 +274,7 @@ export default function OTPPage() {
           </button>
         )}
       </div>
-      
+
       {/* Help Text */}
       <div className="mt-8 p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700/50 rounded-2xl border border-slate-200 dark:border-slate-700 animate-slide-up" style={{ animationDelay: '400ms' }}>
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">

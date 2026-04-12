@@ -214,6 +214,7 @@ export function validateField<T>(schema: z.ZodSchema<T>, value: unknown): string
  * @param data - Data to validate
  * @returns Record of field names to error messages
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zod ZodObject requires 'any' in its generic constraint
 export function getFieldErrors<T extends z.ZodObject<any>>(
   schema: T,
   data: unknown

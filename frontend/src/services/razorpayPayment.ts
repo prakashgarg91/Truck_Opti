@@ -47,11 +47,12 @@ export interface RazorpayPaymentResult {
 // Load Razorpay script dynamically
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Razorpay SDK is loaded via CDN; no type declarations available
     if ((window as any).Razorpay) {
       resolve(true);
       return;
     }
-    
+
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.onload = () => resolve(true);
@@ -149,7 +150,7 @@ export async function initiateRazorpayPayment(
   }
 
   const orderId = serverOrderId || request.orderId || `order_${Date.now()}`;
-  
+
   // Store pending transaction in Supabase
   try {
     await supabase.from('payment_history').insert({
@@ -190,6 +191,7 @@ export async function initiateRazorpayPayment(
       theme: {
         color: '#f97316', // Orange
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Razorpay SDK handler response type is untyped (CDN-loaded)
       handler: async function (response: any) {
         // Payment successful
         try {
@@ -237,7 +239,9 @@ export async function initiateRazorpayPayment(
     };
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Razorpay SDK loaded via CDN; no official TS declarations
       const razorpay = new (window as any).Razorpay(options);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Razorpay SDK event payload type
       razorpay.on('payment.failed', async function (response: any) {
         try {
           await supabase

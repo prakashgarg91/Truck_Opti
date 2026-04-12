@@ -46,7 +46,7 @@ interface AuthState {
   isLoading: boolean
   isAuthenticated: boolean
   pendingPhone: string | null
-  
+
   // Actions
   initialize: () => Promise<void>
   setUser: (user: AppUser) => void
@@ -64,14 +64,14 @@ interface AuthState {
  */
 async function syncUserProfile(session: Session | null): Promise<AppUser | null> {
   if (!session?.user) return null
-  
+
   const authUser = session.user
   const metadata = authUser.user_metadata || {}
-  
+
   // Determine if signed in via Google
-  const isGoogleAuth = authUser.app_metadata?.provider === 'google' || 
-                       authUser.identities?.some(i => i.provider === 'google')
-  
+  const isGoogleAuth = authUser.app_metadata?.provider === 'google' ||
+    authUser.identities?.some(i => i.provider === 'google')
+
   // Upsert user profile WITHOUT role (never overwrite role via sync)
   const upsertData = {
     id: authUser.id,
@@ -82,16 +82,16 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
     google_linked: !!isGoogleAuth,
     profile_picture: metadata.avatar_url || metadata.picture || null,
   }
-  
+
   try {
     // Upsert user profile to public.users — role column is NOT included so it is preserved
     const { error } = await supabase
       .from('users')
-      .upsert(upsertData, { 
+      .upsert(upsertData, {
         onConflict: 'id',
         ignoreDuplicates: false
       })
-    
+
     if (error) {
       logger.error('Failed to sync user profile:', error)
     }
@@ -123,7 +123,7 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
     profile_picture: metadata.avatar_url || metadata.picture || null,
     role
   }
-  
+
   return userData
 }
 
@@ -135,24 +135,24 @@ export const useAuthStore = create<AuthState>()(
       isLoading: true,
       isAuthenticated: false,
       pendingPhone: null,
-      
+
       initialize: async () => {
         try {
           set({ isLoading: true })
-          
+
           // Get current session
           const { data: { session }, error } = await supabase.auth.getSession()
-          
+
           if (error) {
             logger.error('Error getting session:', error)
             set({ isLoading: false, isAuthenticated: false })
             return
           }
-          
+
           if (session) {
             // Sync user profile and get app user data
             const appUser = await syncUserProfile(session)
-            
+
             if (appUser) {
               set({
                 user: appUser,
@@ -166,7 +166,7 @@ export const useAuthStore = create<AuthState>()(
           } else {
             set({ isLoading: false, isAuthenticated: false })
           }
-          
+
           // Subscribe to auth state changes (only once)
           if (!authSubscription) {
             const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -203,28 +203,28 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false, isAuthenticated: false })
         }
       },
-      
+
       setUser: (user) => set({ user, isAuthenticated: true }),
-      
+
       setSession: (session) => set({ session }),
-      
+
       setPendingPhone: (phone) => set({ pendingPhone: phone }),
-      
-      login: (user, session) => set({ 
-        user, 
+
+      login: (user, session) => set({
+        user,
         session,
         isAuthenticated: true,
         pendingPhone: null,
         isLoading: false
       }),
-      
+
       logout: async () => {
         try {
           const { error } = await supabase.auth.signOut()
           if (error) throw error
-          
-          set({ 
-            user: null, 
+
+          set({
+            user: null,
             session: null,
             isAuthenticated: false,
             isLoading: false,
@@ -235,11 +235,11 @@ export const useAuthStore = create<AuthState>()(
           throw err
         }
       },
-      
+
       updateUser: (updates) => set((state) => ({
         user: state.user ? { ...state.user, ...updates } : null
       })),
-      
+
       setIsLoading: (loading) => set({ isLoading: loading })
     }),
     {

@@ -150,7 +150,7 @@ export default function AgencyBillingPage() {
               </div>
               <button
                 className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium"
-                onClick={() => {}}
+                onClick={() => { }}
               >
                 <Download size={12} />
                 CSV

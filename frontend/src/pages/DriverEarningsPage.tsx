@@ -153,9 +153,8 @@ export default function DriverEarningsPage() {
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-                period === p ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'
-              }`}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${period === p ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400'
+                }`}
             >
               {p === 'week' ? 'This Week' : p === 'month' ? 'This Month' : 'All Time'}
             </button>
@@ -170,26 +169,26 @@ export default function DriverEarningsPage() {
           <>
             {/* Summary cards */}
             {/* Wallet card with earned and pending */}
-              <div className="col-span-2 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-5 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-green-100 text-sm font-medium">{language === 'en' ? 'Wallet Balance' : 'वॉलेट बैलेंस'}</p>
-                    <p className="text-3xl font-bold text-white mt-1">₹{payoutEarned.toLocaleString('en-IN')}</p>
-                    {payoutPending > 0 && (
-                      <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-400/20 rounded-lg">
-                        <span className="text-amber-100 text-xs font-medium">{language === 'en' ? 'Pending' : 'लंबित'}: ₹{payoutPending.toLocaleString('en-IN')}</span>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setShowWithdrawModal(true)}
-                    disabled={payoutEarned <= 0}
-                    className="px-5 py-2.5 bg-white text-green-600 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-50 transition-colors"
-                  >
-                    {language === 'en' ? 'Withdraw' : 'निकालें'}
-                  </button>
+            <div className="col-span-2 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-5 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm font-medium">{language === 'en' ? 'Wallet Balance' : 'वॉलेट बैलेंस'}</p>
+                  <p className="text-3xl font-bold text-white mt-1">₹{payoutEarned.toLocaleString('en-IN')}</p>
+                  {payoutPending > 0 && (
+                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-400/20 rounded-lg">
+                      <span className="text-amber-100 text-xs font-medium">{language === 'en' ? 'Pending' : 'लंबित'}: ₹{payoutPending.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
                 </div>
+                <button
+                  onClick={() => setShowWithdrawModal(true)}
+                  disabled={payoutEarned <= 0}
+                  className="px-5 py-2.5 bg-white text-green-600 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-50 transition-colors"
+                >
+                  {language === 'en' ? 'Withdraw' : 'निकालें'}
+                </button>
               </div>
+            </div>
 
             {/* Summary cards */}
             <div className="grid grid-cols-2 gap-3">

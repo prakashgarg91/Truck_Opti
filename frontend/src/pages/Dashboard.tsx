@@ -528,11 +528,10 @@ export default function Dashboard() {
                     <p className="text-xs text-slate-500">{order.total_items} items • {order.delivery_city}</p>
                   </div>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  order.status === 'completed' ? 'bg-green-100 text-green-700' :
-                  order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
-                  'bg-amber-100 text-amber-700'
-                }`}>
+                <span className={`text-xs px-2 py-1 rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                    order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                      'bg-amber-100 text-amber-700'
+                  }`}>
                   {order.status}
                 </span>
               </div>
@@ -556,15 +555,13 @@ export default function Dashboard() {
           {recentActivity.map((activity, index) => (
             <div
               key={activity.id}
-              className={`p-4 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer ${
-                index !== recentActivity.length - 1 ? 'border-b border-slate-100 dark:border-slate-700' : ''
-              }`}
+              className={`p-4 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer ${index !== recentActivity.length - 1 ? 'border-b border-slate-100 dark:border-slate-700' : ''
+                }`}
             >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                activity.status === 'success' ? 'bg-green-100 dark:bg-green-900/30' :
-                activity.status === 'warning' ? 'bg-orange-100 dark:bg-orange-900/30' :
-                'bg-blue-100 dark:bg-blue-900/30'
-              }`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${activity.status === 'success' ? 'bg-green-100 dark:bg-green-900/30' :
+                  activity.status === 'warning' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                    'bg-blue-100 dark:bg-blue-900/30'
+                }`}>
                 {activity.type === 'delivery' && <Package className={`w-5 h-5 ${activity.status === 'success' ? 'text-green-600' : 'text-blue-600'}`} />}
                 {activity.type === 'packing' && <Truck className="w-5 h-5 text-blue-600" />}
                 {activity.type === 'route' && <Route className="w-5 h-5 text-blue-600" />}
@@ -621,7 +618,7 @@ export default function Dashboard() {
           ))}
         </div>
         <div className="flex justify-around mt-3 text-xs text-slate-500 font-medium">
-          {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day, i) => (
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
             <span key={day} className={i === new Date().getDay() ? 'text-primary-600 font-bold' : ''}>
               {day}
             </span>

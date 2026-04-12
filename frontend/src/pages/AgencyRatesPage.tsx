@@ -305,9 +305,8 @@ export default function AgencyRatesPage() {
       {rates.map(rate => (
         <div
           key={rate.id}
-          className={`bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm ${
-            !rate.is_active ? 'opacity-60' : ''
-          }`}
+          className={`bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm ${!rate.is_active ? 'opacity-60' : ''
+            }`}
         >
           <div className="flex items-start justify-between mb-2">
             <div>

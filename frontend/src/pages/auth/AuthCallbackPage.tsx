@@ -44,7 +44,9 @@ export default function AuthCallbackPage() {
           }
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase getSession() return type requires destructuring; using let to accumulate retry results
         let data: any = null
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let error: any = null
         for (let i = 0; i < 5; i++) {
           const result = await supabase.auth.getSession()
@@ -81,7 +83,7 @@ export default function AuthCallbackPage() {
           window.clearTimeout(timeoutId)
           window.location.replace('/login')
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Unexpected error during auth callback:', err)
         setError(language === 'en' ? 'An unexpected error occurred.' : 'एक अप्रत्याशित त्रुटि हुई।')
         toast.error('Authentication failed. Please try again.')
@@ -94,7 +96,7 @@ export default function AuthCallbackPage() {
 
     handleAuthCallback()
     return () => window.clearTimeout(timeoutId)
-  }, [navigate])
+  }, [navigate, language])
 
   if (error) {
     return (

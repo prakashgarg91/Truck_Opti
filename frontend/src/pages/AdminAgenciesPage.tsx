@@ -67,7 +67,7 @@ export default function AdminAgenciesPage() {
       toast.error(language === 'en' ? 'Admin access required' : 'एडमिन एक्सेस आवश्यक है')
       navigate('/', { replace: true })
     }
-  }, [user, navigate])
+  }, [user, navigate, language])
 
   const fetchAgencies = useCallback(async () => {
     setLoading(true)

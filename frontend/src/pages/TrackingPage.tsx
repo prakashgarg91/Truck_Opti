@@ -40,7 +40,9 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
   const data = await shipmentsSupabaseApi.getAll()
 
   const mappedData: ShipmentLocation[] = data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shipmentsApi returns untyped DB rows
     .filter((s: any) => s.status !== 'cancelled')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((s: any) => ({
     id: s.id,
     shipment_id: s.shipment_id || s.id.slice(0, 8).toUpperCase(),
@@ -148,6 +150,7 @@ export default function TrackingPage() {
   }
 
   const handleShareWhatsApp = (shipment: ShipmentLocation) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shareTrackingLink expects a superset of ShipmentLocation
     shareTrackingLink(shipment as any)
   }
 
@@ -163,7 +166,7 @@ export default function TrackingPage() {
       queryClient.invalidateQueries({ queryKey: ['shipments'] })
       setSelectedId(null)
       toast.success('Shipment cancelled')
-    } catch (err: any) {
+    } catch (err: unknown) {
       void err
       toast.error(language === 'en' ? 'Failed to cancel shipment' : 'शिपमेंट रद्द करने में विफल')
     } finally {
@@ -193,7 +196,7 @@ export default function TrackingPage() {
           await saleOrdersSupabaseApi.updateStatus(shipment.sale_order_id, 'completed')
         } catch { /* non-critical */ }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       void err
       toast.error(language === 'en' ? 'Failed to update status' : 'स्टेटस अपडेट करने में विफल')
     } finally {

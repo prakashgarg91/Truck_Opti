@@ -221,6 +221,7 @@ export function useSubscription(): SubscriptionStatus {
     trialHasExpired,
     daysRemaining,
     periodEndDate: periodEnd,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- callers access dynamic plan-key properties
     limits: limits as any,
     usagePercent,
     checkLimit,

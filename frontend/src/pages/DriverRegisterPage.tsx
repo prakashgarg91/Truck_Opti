@@ -208,11 +208,10 @@ export default function DriverRegisterPage() {
           {STEPS.slice(0, 3).map((s, i) => (
             <div key={s.id} className="flex items-center flex-1">
               <div className={`flex flex-col items-center ${i < STEPS.length - 1 ? 'flex-1' : ''}`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                  step > s.id ? 'bg-emerald-500 text-white'
-                  : step === s.id ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
-                }`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${step > s.id ? 'bg-emerald-500 text-white'
+                    : step === s.id ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
+                  }`}>
                   {step > s.id ? <CheckCircle2 className="w-5 h-5" /> : <s.icon className="w-5 h-5" />}
                 </div>
                 <span className={`text-[10px] font-medium mt-1 ${step === s.id ? 'text-primary-600' : 'text-slate-400'}`}>

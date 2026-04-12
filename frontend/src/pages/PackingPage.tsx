@@ -135,12 +135,12 @@ const ALGORITHMS = [
 ]
 
 // Memoized Packing Stats Component to prevent unnecessary re-renders
-const PackingStats = memo(({ 
-  selectedRecommendation, 
-  lang 
-}: { 
+const PackingStats = memo(({
+  selectedRecommendation,
+  lang
+}: {
   selectedRecommendation: TruckRecommendation
-  lang: Language 
+  lang: Language
 }) => {
   const stats = useMemo(() => ({
     itemsPacked: `${selectedRecommendation.itemsFit}/${selectedRecommendation.totalItems}`,
@@ -191,11 +191,10 @@ const RecommendationCard = memo(({
   return (
     <button
       onClick={onSelect}
-      className={`p-4 rounded-xl text-left transition-all border-2 relative ${
-        isSelected
+      className={`p-4 rounded-xl text-left transition-all border-2 relative ${isSelected
           ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 shadow-lg'
           : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
-      }`}
+        }`}
     >
       {index === 0 && (
         <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
@@ -209,9 +208,8 @@ const RecommendationCard = memo(({
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-slate-500">{t[lang].itemsFit}</span>
-          <span className={`font-medium ${
-            rec.itemsFit === rec.totalItems ? 'text-green-600' : 'text-amber-600'
-          }`}>
+          <span className={`font-medium ${rec.itemsFit === rec.totalItems ? 'text-green-600' : 'text-amber-600'
+            }`}>
             {rec.itemsFit}/{rec.totalItems}
           </span>
         </div>
@@ -219,11 +217,10 @@ const RecommendationCard = memo(({
           <span className="text-slate-500">{t[lang].volume}</span>
           <div className="flex items-center gap-2">
             <div className="w-16 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div 
-                className={`h-full rounded-full ${
-                  rec.volumeUtilization > 70 ? 'bg-green-500' : 
-                  rec.volumeUtilization > 40 ? 'bg-amber-500' : 'bg-red-500'
-                }`}
+              <div
+                className={`h-full rounded-full ${rec.volumeUtilization > 70 ? 'bg-green-500' :
+                    rec.volumeUtilization > 40 ? 'bg-amber-500' : 'bg-red-500'
+                  }`}
                 style={{ width: `${Math.min(rec.volumeUtilization, 100)}%` }}
               />
             </div>
@@ -295,7 +292,7 @@ export default function PackingPage() {
 
   // Web Worker for client-side algorithm processing
   const { runPacking, runRecommendation, isSupported: workerSupported, terminate } = usePackingWorker()
-  
+
   // Cleanup: Terminate worker on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -324,7 +321,7 @@ export default function PackingPage() {
       if (validItems.length > 0) toast.success(`${validItems.length} items loaded from sale order`)
       window.history.replaceState({}, '', window.location.pathname)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Fetch trucks from Supabase on mount
@@ -337,6 +334,7 @@ export default function PackingPage() {
       setLoadingTrucks(true)
       const data = await trucksSupabaseApi.getAll()
       const mappedTrucks: TruckType[] = data
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- DB result shape matches TruckType but lacks precise TS type
         .map((t: any) => ({
           id: t.id,
           name: t.name,
@@ -364,7 +362,7 @@ export default function PackingPage() {
   const totalStats = useMemo(() => {
     const totalItems = saleOrderItems.reduce((sum, item) => sum + item.quantity, 0)
     const totalWeight = saleOrderItems.reduce((sum, item) => sum + item.weight * item.quantity, 0)
-    const totalVolume = saleOrderItems.reduce((sum, item) => 
+    const totalVolume = saleOrderItems.reduce((sum, item) =>
       sum + (item.length * item.width * item.height * item.quantity) / 1000000, 0
     )
     return { totalItems, totalWeight, totalVolume: totalVolume.toFixed(2) }
@@ -385,27 +383,27 @@ export default function PackingPage() {
       fragile: item.fragile,
       stackable: item.stackable
     }
-    
+
     // Use Zod schema for validation
     const errors = getFieldErrors(itemSchema, itemData)
-    
+
     // Map 'product_name' error back to 'name' for UI compatibility
     if (errors.product_name && !errors.name) {
       errors.name = errors.product_name
       delete errors.product_name
     }
-    
+
     return errors
   }
 
   const handleAddItem = useCallback(() => {
     const errors = validateItem(newItem)
     setValidationErrors(errors)
-    
+
     if (Object.keys(errors).length > 0) {
       return
     }
-    
+
     const item: SaleOrderItem = {
       id: Date.now().toString(),
       name: newItem.name || 'Item',
@@ -417,13 +415,13 @@ export default function PackingPage() {
       fragile: newItem.fragile || false,
       stackable: newItem.stackable ?? true
     }
-    
+
     setSaleOrderItems(prev => [...prev, item])
     setNewItem({ name: '', length: 0, width: 0, height: 0, weight: 0, quantity: 1, fragile: false, stackable: true })
     setShowItemForm(false)
     setValidationErrors({})
     toast.success('Item added!')
-  }, [newItem, lang])
+  }, [newItem])
 
   const handleEditItem = (item: SaleOrderItem) => {
     setNewItem({ ...item })
@@ -434,15 +432,15 @@ export default function PackingPage() {
   const handleUpdateItem = useCallback(() => {
     const errors = validateItem(newItem)
     setValidationErrors(errors)
-    
+
     if (Object.keys(errors).length > 0) {
       return
     }
-    
+
     if (!editingItem) return
-    
-    setSaleOrderItems(prev => prev.map(item => 
-      item.id === editingItem 
+
+    setSaleOrderItems(prev => prev.map(item =>
+      item.id === editingItem
         ? { ...item, ...newItem } as SaleOrderItem
         : item
     ))
@@ -475,10 +473,10 @@ export default function PackingPage() {
       showUpgradePrompt('packing optimizations')
       return
     }
-    
+
     setIsProcessing(true)
     toast.loading('Processing on your device...', { id: 'recommend', icon: '💻' })
-    
+
     try {
       if (workerSupported) {
         // Use Web Worker (runs on user's CPU, not server)
@@ -515,21 +513,21 @@ export default function PackingPage() {
     } finally {
       setIsProcessing(false)
     }
-  }, [saleOrderItems, algorithm, trucks, workerSupported, runRecommendation])
+  }, [saleOrderItems, algorithm, trucks, workerSupported, runRecommendation, checkLimit, showUpgradePrompt])
 
   const handleManualPack = useCallback(async () => {
     if (!selectedTruck || saleOrderItems.length === 0) {
       toast.error('Select truck and add items')
       return
     }
-    
+
     setIsProcessing(true)
-    
+
     const truck = trucks.find(t => t.id === selectedTruck)!
-    
+
     try {
       let packed: PackedBox[], unpacked: string[]
-      
+
       if (workerSupported) {
         // Use Web Worker (runs on user's CPU)
         const result = await runPacking(truck, saleOrderItems, algorithm)
@@ -544,11 +542,11 @@ export default function PackingPage() {
         unpacked = result.unpacked
         toast.success(`Packed ${packed.length} items!`)
       }
-      
+
       const truckVolume = truck.dimensions.length * truck.dimensions.width * truck.dimensions.height
       const packedVolume = packed.reduce((sum, box) => sum + box.width * box.height * box.depth, 0)
       const packedWeight = saleOrderItems.reduce((sum, item) => sum + item.weight * item.quantity, 0)
-      
+
       const rec: TruckRecommendation = {
         truck,
         itemsFit: packed.length,
@@ -559,7 +557,7 @@ export default function PackingPage() {
         packedBoxes: packed,
         unfitItems: unpacked
       }
-      
+
       setSelectedRecommendation(rec)
       setRecommendations([rec])
     } catch (_err) {
@@ -569,7 +567,7 @@ export default function PackingPage() {
       const truckVolume = truck.dimensions.length * truck.dimensions.width * truck.dimensions.height
       const packedVolume = packed.reduce((sum, box) => sum + box.width * box.height * box.depth, 0)
       const packedWeight = saleOrderItems.reduce((sum, item) => sum + item.weight * item.quantity, 0)
-      
+
       setSelectedRecommendation({
         truck,
         itemsFit: packed.length,
@@ -635,7 +633,7 @@ export default function PackingPage() {
       await packingJobsSupabaseApi.addJobItems(packingItems)
 
       toast.success('Packing job saved successfully!')
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Failed to save packing job:', error)
       toast.error(lang === 'en' ? 'Failed to save packing job' : 'पैकिंग जॉब सेव करने में विफल')
     } finally {
@@ -660,7 +658,7 @@ export default function PackingPage() {
       toast.error('No truck selected')
       return
     }
-    
+
     fetchCustomers()
     setShowBookModal(true)
   }
@@ -739,7 +737,7 @@ export default function PackingPage() {
         vehicleNumber: ''
       })
       navigate('/tracking')
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Failed to book truck:', error)
       console.error('[PackingPage]', error)
       setBookError(language === 'en' ? 'Failed to book truck.' : 'ट्रक बुक करने में विफल।')
@@ -789,7 +787,7 @@ export default function PackingPage() {
                 {t[lang].subtitle}
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}
@@ -802,22 +800,20 @@ export default function PackingPage() {
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <button
                   onClick={() => setMode('smart')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    mode === 'smart' 
-                      ? 'bg-primary-600 text-white shadow-md' 
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'smart'
+                      ? 'bg-primary-600 text-white shadow-md'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
+                    }`}
                 >
                   <Wand2 className="w-4 h-4" />
                   <span className="hidden sm:inline">{t[lang].smartMode}</span>
                 </button>
                 <button
                   onClick={() => setMode('manual')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    mode === 'manual' 
-                      ? 'bg-slate-700 text-white shadow-md' 
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'manual'
+                      ? 'bg-slate-700 text-white shadow-md'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
+                    }`}
                 >
                   <Settings className="w-4 h-4" />
                   <span className="hidden sm:inline">{t[lang].manualMode}</span>
@@ -830,13 +826,13 @@ export default function PackingPage() {
 
       <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4 lg:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-          
+
           {/* Left Panel - Items & Controls */}
           <div className="lg:col-span-5 xl:col-span-4 space-y-4">
-            
+
             {/* Sale Order Items */}
             <div className="card overflow-hidden">
-              <button 
+              <button
                 onClick={() => toggleSection('items')}
                 className="w-full flex items-center justify-between p-4 text-left"
               >
@@ -849,7 +845,7 @@ export default function PackingPage() {
                 </h3>
                 <ChevronDown className={`w-5 h-5 text-slate-400 lg:hidden transition-transform ${expandedSection === 'items' ? 'rotate-180' : ''}`} />
               </button>
-              
+
               <div className={`${expandedSection === 'items' ? 'block' : 'hidden lg:block'}`}>
                 {/* Stats Summary */}
                 <div className="px-4 pb-3 grid grid-cols-3 gap-2 text-center">
@@ -866,15 +862,15 @@ export default function PackingPage() {
                     <p className="font-bold text-slate-900 dark:text-white">{totalStats.totalVolume}m³</p>
                   </div>
                 </div>
-                
+
                 {/* Items List */}
                 <div className="px-4 pb-4 max-h-48 lg:max-h-64 overflow-y-auto space-y-2">
                   {saleOrderItems.map((item, idx) => (
-                    <div 
+                    <div
                       key={item.id}
                       className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg group"
                     >
-                      <div 
+                      <div
                         className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: PACKING_COLORS[idx % PACKING_COLORS.length] }}
                       />
@@ -903,7 +899,7 @@ export default function PackingPage() {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Add Item Form */}
                 {showItemForm ? (
                   <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-4 animate-fade-in">
@@ -1001,20 +997,20 @@ export default function PackingPage() {
                       </label>
                     </div>
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => {
                           setShowItemForm(false)
                           setEditingItem(null)
                           setNewItem({ name: '', length: 0, width: 0, height: 0, weight: 0, quantity: 1, fragile: false, stackable: true })
                           setValidationErrors({})
-                        }} 
+                        }}
                         className="btn btn-secondary flex-1 py-2"
                       >
                         <X className="w-4 h-4" />
                         {lang === 'en' ? 'Cancel' : 'रद्द करें'}
                       </button>
-                      <button 
-                        onClick={editingItem ? handleUpdateItem : handleAddItem} 
+                      <button
+                        onClick={editingItem ? handleUpdateItem : handleAddItem}
                         className="btn btn-primary flex-1 py-2"
                       >
                         <Check className="w-4 h-4" />
@@ -1047,22 +1043,20 @@ export default function PackingPage() {
                   <button
                     key={algo.id}
                     onClick={() => setAlgorithm(algo.id)}
-                    className={`p-3 rounded-xl text-left transition-all border-2 ${
-                      algorithm === algo.id
+                    className={`p-3 rounded-xl text-left transition-all border-2 ${algorithm === algo.id
                         ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 shadow-md'
                         : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <algo.icon className={`w-4 h-4 ${algorithm === algo.id ? 'text-primary-500' : 'text-slate-400'}`} />
                       <span className="text-sm font-medium text-slate-900 dark:text-white">{lang === 'en' ? algo.name : algo.nameHi}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <span className={`px-1.5 py-0.5 rounded ${
-                        algo.speed === 'Fast' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                        algo.speed === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      }`}>
+                      <span className={`px-1.5 py-0.5 rounded ${algo.speed === 'Fast' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                          algo.speed === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
                         {algo.speed}
                       </span>
                       <span className="text-slate-500">{algo.quality}</span>
@@ -1089,11 +1083,10 @@ export default function PackingPage() {
                       <button
                         key={truck.id}
                         onClick={() => setSelectedTruck(truck.id)}
-                        className={`w-full p-3 rounded-xl text-left transition-all border-2 ${
-                          selectedTruck === truck.id
+                        className={`w-full p-3 rounded-xl text-left transition-all border-2 ${selectedTruck === truck.id
                             ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500'
                             : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between">
                           <div>
@@ -1117,11 +1110,10 @@ export default function PackingPage() {
             <button
               onClick={mode === 'smart' ? handleSmartRecommend : handleManualPack}
               disabled={saleOrderItems.length === 0 || (mode === 'manual' && !selectedTruck) || isProcessing || loadingTrucks}
-              className={`btn w-full py-4 text-lg shadow-lg ${
-                mode === 'smart' 
-                  ? 'bg-gradient-to-r from-primary-600 to-saffron text-white hover:from-primary-700 hover:to-orange-500' 
+              className={`btn w-full py-4 text-lg shadow-lg ${mode === 'smart'
+                  ? 'bg-gradient-to-r from-primary-600 to-saffron text-white hover:from-primary-700 hover:to-orange-500'
                   : 'btn-primary'
-              }`}
+                }`}
             >
               {isProcessing ? (
                 <div className="spinner w-6 h-6" />
@@ -1141,7 +1133,7 @@ export default function PackingPage() {
 
           {/* Right Panel - Visualization & Results */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-4">
-            
+
             {/* Smart Recommendations */}
             {mode === 'smart' && recommendations.length > 0 && (
               <div className="card p-4 animate-fade-in">
@@ -1229,10 +1221,10 @@ export default function PackingPage() {
                     </button>
                   </div>
                 </div>
-                
+
                 {/* Memoized packing stats for better performance */}
                 <PackingStats selectedRecommendation={selectedRecommendation} lang={lang} />
-                
+
                 {selectedRecommendation.unfitItems.length > 0 && (
                   <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
                     <p className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Loader2, CreditCard, Smartphone, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -47,11 +47,7 @@ const CheckoutPage: React.FC = () => {
     document.title = 'Checkout - TruckOpti'
   }, [])
 
-  useEffect(() => {
-    loadData();
-  }, [planId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       // Get user
       if (!user) {
@@ -102,11 +98,15 @@ const CheckoutPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, language, navigate, planId, currentSubscription, currentPlan]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handlePayment = async () => {
     if (!plan || !user) return;
-    
+
     if (!phone || phone.length < 10) {
       toast.error(language === 'en' ? 'Please enter a valid phone number' : 'कृपया सही फ़ोन नंबर दर्ज करें');
       return;
@@ -118,7 +118,7 @@ const CheckoutPage: React.FC = () => {
     }
 
     setProcessing(true);
-    
+
     try {
       const amount = billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
       const taxAmount = Math.round(amount * 0.18); // 18% GST
@@ -167,7 +167,7 @@ const CheckoutPage: React.FC = () => {
         billingCycle: billingCycle === 'yearly' ? 'yearly' : 'monthly',
         customerPhone: phone,
         customerEmail: email,
-          customerName: user.name || 'Customer',
+        customerName: user.name || 'Customer',
       });
 
       if (result.success) {
@@ -233,8 +233,8 @@ const CheckoutPage: React.FC = () => {
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
             <span>
-              {language === 'en' 
-                ? 'Test Mode: PhonePe primary, Razorpay fallback. No real payment will be processed in sandbox.' 
+              {language === 'en'
+                ? 'Test Mode: PhonePe primary, Razorpay fallback. No real payment will be processed in sandbox.'
                 : 'टेस्ट मोड: कोई वास्तविक भुगतान नहीं होगा'}
             </span>
           </div>
@@ -413,8 +413,8 @@ const CheckoutPage: React.FC = () => {
 
               {/* Security Note */}
               <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-                🔒 {language === 'en' 
-                  ? 'Secured by PhonePe (fallback Razorpay). Your payment information is encrypted.' 
+                🔒 {language === 'en'
+                  ? 'Secured by PhonePe (fallback Razorpay). Your payment information is encrypted.'
                   : 'फोनपे द्वारा सुरक्षित। आपकी भुगतान जानकारी एन्क्रिप्टेड है।'}
               </p>
             </div>

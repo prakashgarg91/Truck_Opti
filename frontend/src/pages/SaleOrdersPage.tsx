@@ -105,7 +105,7 @@ export default function SaleOrdersPage() {
   const lang = (language === 'hi' ? 'hi' : 'en') as 'en' | 'hi'
   const { checkLimit, showUpgradePrompt } = useSubscription()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [orders, setOrders] = useState<SaleOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -140,10 +140,10 @@ export default function SaleOrdersPage() {
     if (!file) return
 
     setUploading(true)
-    
+
     try {
       let data: Record<string, unknown>[] = []
-      
+
       if (file.name.endsWith('.csv')) {
         // Parse CSV
         const text = await file.text()
@@ -172,7 +172,7 @@ export default function SaleOrdersPage() {
           return strVal !== '' && strVal !== '0'
         })
       })
-      
+
       const items: ParsedItem[] = nonEmptyRows.map((row, index) => {
         // Extract fields with flexible column names
         const product_name = String(row.product_name || row['Product Name'] || row['product name'] || '').trim()
@@ -196,7 +196,7 @@ export default function SaleOrdersPage() {
 
         // Validate with Zod
         const validation = validateWithZod(saleOrderItemSchema, itemData)
-        
+
         // Format errors for display
         const errors = validation.errors?.map(err => {
           // Extract just the message part (remove field path)
@@ -219,7 +219,7 @@ export default function SaleOrdersPage() {
 
       setParsedItems(items)
       setShowPreview(true)
-      
+
       const validCount = items.filter(i => i.isValid).length
       toast.success(`Parsed ${validCount} valid items`)
     } catch (error) {
@@ -246,12 +246,12 @@ export default function SaleOrdersPage() {
     }
 
     setImporting(true)
-    
+
     try {
       // Calculate totals
       const totalItems = validItems.reduce((sum, item) => sum + item.quantity, 0)
       const totalWeight = validItems.reduce((sum, item) => sum + (item.weight * item.quantity), 0)
-      const totalVolume = validItems.reduce((sum, item) => 
+      const totalVolume = validItems.reduce((sum, item) =>
         sum + ((item.length * item.width * item.height * item.quantity) / 1000000), 0
       )
       const deliveryCity = validItems[0]?.delivery_city || 'Unknown'
@@ -280,7 +280,7 @@ export default function SaleOrdersPage() {
       toast.success(t[lang].importSuccess)
       setShowPreview(false)
       setParsedItems([])
-      
+
       // Navigate to packing with pre-loaded items
       const packingItems = validItems.map(item => ({
         id: `item-${Date.now()}-${Math.random()}`,
@@ -293,7 +293,7 @@ export default function SaleOrdersPage() {
         stackable: true,
         fragile: false
       }))
-      
+
       navigate('/packing', { state: { saleOrderItems: packingItems, saleOrderId: order.id } })
     } catch (error) {
       logger.error('Import error:', error)
@@ -311,6 +311,7 @@ export default function SaleOrdersPage() {
         toast.error('No items found for this order')
         return
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- saleOrdersApi returns untyped item rows
       const packingItems = orderWithItems.items.map((item: any) => ({
         id: `item-${Date.now()}-${Math.random()}`,
         name: item.product_name,
@@ -333,7 +334,7 @@ export default function SaleOrdersPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm(t[lang].confirmDelete)) return
-    
+
     try {
       await saleOrdersSupabaseApi.delete(id)
       toast.success(t[lang].deleteSuccess)
@@ -348,7 +349,7 @@ export default function SaleOrdersPage() {
 Box A,50,40,30,5,10,Mumbai
 Box B,60,50,40,8,5,Delhi
 Carton C,30,20,15,2,20,Bangalore`
-    
+
     const blob = new Blob([template], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -372,7 +373,7 @@ Carton C,30,20,15,2,20,Bangalore`
       {/* Upload Section */}
       {!showPreview && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-          <div 
+          <div
             className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -475,7 +476,7 @@ Carton C,30,20,15,2,20,Bangalore`
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t[lang].pastOrders}</h2>
-          <button 
+          <button
             onClick={fetchOrders}
             className="p-2 text-slate-400 hover:text-slate-600"
           >
@@ -502,7 +503,7 @@ Carton C,30,20,15,2,20,Bangalore`
         ) : (
           <div className="space-y-3">
             {orders.map(order => (
-              <div 
+              <div
                 key={order.id}
                 className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
               >
@@ -511,11 +512,10 @@ Carton C,30,20,15,2,20,Bangalore`
                     <div className="flex items-center gap-2">
                       <Package className="w-5 h-5 text-primary-500" />
                       <span className="font-semibold text-slate-900 dark:text-white">{order.order_number}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        order.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                          order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                            'bg-amber-100 text-amber-700'
+                        }`}>
                         {t[lang][order.status as keyof typeof t.en] || order.status}
                       </span>
                     </div>

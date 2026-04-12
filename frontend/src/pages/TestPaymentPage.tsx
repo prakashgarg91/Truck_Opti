@@ -34,7 +34,7 @@ const TestPaymentPage: React.FC = () => {
     }
 
     setProcessing(true);
-    
+
     try {
       const amountInPaise = amount * 100; // Convert to paise
       const userId = user?.id || 'test-user-' + Date.now();
@@ -145,11 +145,10 @@ const TestPaymentPage: React.FC = () => {
         <div className="mb-6 grid grid-cols-2 gap-3">
           <button
             onClick={() => setPaymentMethod('razorpay')}
-            className={`p-4 rounded-xl border-2 transition-all ${
-              paymentMethod === 'razorpay'
+            className={`p-4 rounded-xl border-2 transition-all ${paymentMethod === 'razorpay'
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                 : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
-            }`}
+              }`}
           >
             <CreditCard className={`w-6 h-6 mx-auto mb-2 ${paymentMethod === 'razorpay' ? 'text-blue-600' : 'text-gray-400'}`} />
             <p className={`text-sm font-medium ${paymentMethod === 'razorpay' ? 'text-blue-600' : 'text-gray-600 dark:text-gray-400'}`}>
@@ -159,11 +158,10 @@ const TestPaymentPage: React.FC = () => {
           </button>
           <button
             onClick={() => setPaymentMethod('phonepe')}
-            className={`p-4 rounded-xl border-2 transition-all ${
-              paymentMethod === 'phonepe'
+            className={`p-4 rounded-xl border-2 transition-all ${paymentMethod === 'phonepe'
                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
                 : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
-            }`}
+              }`}
           >
             <Smartphone className={`w-6 h-6 mx-auto mb-2 ${paymentMethod === 'phonepe' ? 'text-purple-600' : 'text-gray-400'}`} />
             <p className={`text-sm font-medium ${paymentMethod === 'phonepe' ? 'text-purple-600' : 'text-gray-600 dark:text-gray-400'}`}>
@@ -198,11 +196,10 @@ const TestPaymentPage: React.FC = () => {
                 <button
                   key={amt}
                   onClick={() => setAmount(amt)}
-                  className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all ${
-                    amount === amt
+                  className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all ${amount === amt
                       ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-600'
                       : 'border-gray-200 dark:border-gray-600 hover:border-orange-300'
-                  }`}
+                    }`}
                 >
                   <IndianRupee className="w-4 h-4 inline" />
                   {amt}
@@ -281,13 +278,12 @@ const TestPaymentPage: React.FC = () => {
           <button
             onClick={handleTestPayment}
             disabled={processing || phone.length < 10}
-            className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 ${
-              processing || phone.length < 10
+            className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 ${processing || phone.length < 10
                 ? 'bg-gray-400 cursor-not-allowed'
                 : paymentMethod === 'razorpay'
                   ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 shadow-lg hover:shadow-xl'
                   : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl'
-            }`}
+              }`}
           >
             {processing ? (
               <>
@@ -311,7 +307,7 @@ const TestPaymentPage: React.FC = () => {
           <div className="text-center text-xs text-gray-500 dark:text-gray-400">
             <p>Powered by {paymentMethod === 'razorpay' ? 'Razorpay' : 'PhonePe'} • Secure Payment</p>
             <p className="mt-1">
-              {isTestMode 
+              {isTestMode
                 ? '⚠️ This is a TEST transaction - No real money will be charged'
                 : '💰 Live transaction - Real money will be charged'}
             </p>
@@ -325,28 +321,28 @@ const TestPaymentPage: React.FC = () => {
           </h3>
           <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
             <li>1. Enter your phone number (must have UPI app)</li>
-          {paymentMethod === 'razorpay' ? (
-            <>
-              <li>2. Select test amount (₹1 recommended)</li>
-              <li>3. Click "Pay with Razorpay"</li>
-              <li>4. Use test UPI ID: <code className="bg-gray-100 px-1 rounded">success@razorpay</code></li>
-              <li>5. Or use test card: <code className="bg-gray-100 px-1 rounded">4111 1111 1111 1111</code></li>
-              <li>6. Payment will complete in test mode</li>
-            </>
-          ) : (
-            <>
-              <li>2. Select test amount (₹1 recommended)</li>
-              <li>3. Click "Pay with PhonePe"</li>
-              <li>4. Complete payment in PhonePe app</li>
-              <li>5. You'll be redirected back after payment</li>
-            </>
-          )}
+            {paymentMethod === 'razorpay' ? (
+              <>
+                <li>2. Select test amount (₹1 recommended)</li>
+                <li>3. Click "Pay with Razorpay"</li>
+                <li>4. Use test UPI ID: <code className="bg-gray-100 px-1 rounded">success@razorpay</code></li>
+                <li>5. Or use test card: <code className="bg-gray-100 px-1 rounded">4111 1111 1111 1111</code></li>
+                <li>6. Payment will complete in test mode</li>
+              </>
+            ) : (
+              <>
+                <li>2. Select test amount (₹1 recommended)</li>
+                <li>3. Click "Pay with PhonePe"</li>
+                <li>4. Complete payment in PhonePe app</li>
+                <li>5. You'll be redirected back after payment</li>
+              </>
+            )}
           </ol>
-          
+
           {paymentMethod === 'razorpay' && (
             <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
               <p className="text-xs text-green-600 dark:text-green-400">
-                <strong>✓ Razorpay Test Mode:</strong> Use test credentials to simulate payment. 
+                <strong>✓ Razorpay Test Mode:</strong> Use test credentials to simulate payment.
                 No real money will be charged.
               </p>
               <div className="mt-2 text-xs">
@@ -355,11 +351,11 @@ const TestPaymentPage: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           {paymentMethod === 'phonepe' && (
             <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg">
               <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                <strong>⚠ PhonePe Sandbox:</strong> In sandbox mode, the payment redirects 
+                <strong>⚠ PhonePe Sandbox:</strong> In sandbox mode, the payment redirects
                 to a test page. For real ₹1 testing, we need production PhonePe credentials.
               </p>
             </div>

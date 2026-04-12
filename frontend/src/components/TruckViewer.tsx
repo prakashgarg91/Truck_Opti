@@ -212,6 +212,7 @@ function TruckContainer({ dimensions }: { dimensions: { length: number; width: n
 }
 
 export default function TruckViewer({ truckDimensions, packedBoxes = [], onBoxClick }: TruckViewerProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OrbitControls from drei exposes a complex 3D type; we only call .reset()
   const controlsRef = useRef<any>(null)
   const [hoveredBox, setHoveredBox] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'3d' | 'top' | 'side'>('3d')
