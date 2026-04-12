@@ -1,0 +1,12 @@
+﻿{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "description": "Inject 0.dev-matrix watch context — reads AI-HANDOFF.md and STATE.md at session start",
+        "windows": "powershell -ExecutionPolicy Bypass -File D:\\Github\\0.dev-matrix\\watch-session-start.ps1",
+        "timeout": 30
+      }
+    ]
+  }
+}

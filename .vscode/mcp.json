@@ -1,81 +1,54 @@
+﻿{
+"servers": {
+"qdrant": {
+"type": "stdio",
+"command": "uvx",
+"args": ["mcp-server-qdrant"],
+"env": {
+"QDRANT_URL": "http://localhost:6333",
+"QDRANT_API_KEY": "",
+"COLLECTION_NAME": "truck-opti-context",
+"EMBEDDING_MODEL": "sentence-transformers/all-MiniLM-L6-v2",
+"QDRANT_SEARCH_LIMIT": "12",
+"TOOL_STORE_DESCRIPTION": "Store curated repo context for later retrieval. Save stable summaries of validated code, canonical docs, module contracts, handoff checkpoints, dependency maps, and implementation patterns. Do not store secrets, credentials, or temporary logs.",
+"TOOL_FIND_DESCRIPTION": "Search curated repo context with natural language. Use this to shortlist relevant docs, code patterns, module contracts, and handoff checkpoints before reading the real files. Treat results as references, not source of truth; confirm against actual workspace files before editing."
+}
+},
+"supabase": {
+"type": "http",
+"url": "https://mcp.supabase.com/mcp?project_ref=jbxncejtcbpcronndqlx",
+"headers": {
+"Authorization": "Bearer ${input:supabase_pat}"
+}
+},
+"razorpay": {
+"type": "stdio",
+"command": "docker",
+"args": ["run", "--rm", "-i", "-e", "RAZORPAY_KEY_ID", "-e", "RAZORPAY_KEY_SECRET", "mcp/razorpay"],
+"env": {
+"RAZORPAY_KEY_ID": "${input:razorpay_key_id}",
+"RAZORPAY_KEY_SECRET": "${input:razorpay_key_secret}"
+}
+}
+},
+"inputs": [
 {
-	"servers": {
-		"qdrant": {
-			"type": "stdio",
-			"command": "uvx",
-			"args": [
-				"mcp-server-qdrant"
-			],
-			"env": {
-				"QDRANT_URL": "${input:qdrant_url}",
-				"QDRANT_API_KEY": "${input:qdrant_api_key}",
-				"COLLECTION_NAME": "${input:qdrant_collection_name}",
-				"EMBEDDING_MODEL": "sentence-transformers/all-MiniLM-L6-v2",
-				"QDRANT_SEARCH_LIMIT": "12",
-				"TOOL_STORE_DESCRIPTION": "Store curated repo context for later retrieval. Save stable summaries of validated code, canonical docs, module contracts, handoff checkpoints, dependency maps, and implementation patterns. Do not store secrets, credentials, or temporary logs.",
-				"TOOL_FIND_DESCRIPTION": "Search curated repo context with natural language. Use this to shortlist relevant docs, code patterns, module contracts, and handoff checkpoints before reading the real files. Treat results as references, not source of truth; confirm against actual workspace files before editing."
-			}
-		},
-		"supabase": {
-			"type": "http",
-			"url": "https://mcp.supabase.com/mcp?project_ref=jbxncejtcbpcronndqlx",
-			"headers": {
-				"Authorization": "Bearer ${input:supabase_pat}"
-			}
-		},
-		"razorpay": {
-			"type": "stdio",
-			"command": "docker",
-			"args": [
-				"run",
-				"--rm",
-				"-i",
-				"-e",
-				"RAZORPAY_KEY_ID",
-				"-e",
-				"RAZORPAY_KEY_SECRET",
-				"mcp/razorpay"
-			],
-			"env": {
-				"RAZORPAY_KEY_ID": "${input:razorpay_key_id}",
-				"RAZORPAY_KEY_SECRET": "${input:razorpay_key_secret}"
-			}
-		}
-	},
-	"inputs": [
-		{
-			"id": "qdrant_url",
-			"type": "promptString",
-			"description": "Qdrant URL (for local Qdrant use http://localhost:6333)"
-		},
-		{
-			"id": "qdrant_api_key",
-			"type": "promptString",
-			"description": "Qdrant API Key",
-			"password": true
-		},
-		{
-			"id": "qdrant_collection_name",
-			"type": "promptString",
-			"description": "Qdrant Collection Name (for example truck-opti-context)"
-		},
-		{
-			"id": "supabase_pat",
-			"type": "promptString",
-			"description": "Supabase Personal Access Token",
-			"password": true
-		},
-		{
-			"id": "razorpay_key_id",
-			"type": "promptString",
-			"description": "Razorpay Key ID (use live key for production)",
-			"password": true
-		},
-		{
-			"id": "razorpay_key_secret",
-			"type": "promptString",
-			"description": "Razorpay Key Secret",
-			"password": true
-		}
-	]
+"id": "supabase_pat",
+"type": "promptString",
+"description": "Supabase Personal Access Token",
+"password": true
+},
+{
+"id": "razorpay_key_id",
+"type": "promptString",
+"description": "Razorpay Key ID (use live key for production)",
+"password": true
+},
+{
+"id": "razorpay_key_secret",
+"type": "promptString",
+"description": "Razorpay Key Secret",
+"password": true
+}
+]
 }
