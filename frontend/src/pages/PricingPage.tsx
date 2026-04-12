@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { useSubscription } from '../hooks/useSubscription'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 // ── Data fetcher ────────────────────────────────────────────────────────────
 const fetchPricingPlans = async (): Promise<PricingTier[]> => {
@@ -252,7 +253,7 @@ export default function PricingPage() {
         .eq('id', subscription.id)
 
       if (error) {
-        console.error('[PricingPage] Plan update error:', error)
+        logger.error('[PricingPage] Plan update error:', error)
         toast.error(lang === 'en' ? 'Failed to update plan' : 'प्लान अपडेट करने में विफल')
         return
       }

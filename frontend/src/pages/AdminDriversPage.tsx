@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface Driver {
   id: string
@@ -90,7 +91,7 @@ export default function AdminDriversPage() {
       if (error) throw error
       setDrivers(data ?? [])
     } catch (err: unknown) {
-      console.error('[AdminDriversPage]', err)
+      logger.error('[AdminDriversPage]', err)
       toast.error(language === 'en' ? 'Failed to load drivers.' : 'ड्राइवर लोड करने में विफल।')
     } finally {
       setLoading(false)
@@ -225,8 +226,8 @@ export default function AdminDriversPage() {
           return (
             <button key={t} onClick={() => setTab(t)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm whitespace-nowrap transition-colors ${tab === t
-                  ? 'bg-primary-600 text-white shadow-md shadow-primary-500/20'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                ? 'bg-primary-600 text-white shadow-md shadow-primary-500/20'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}>
               <Icon className="w-4 h-4" />
               {t.charAt(0).toUpperCase() + t.slice(1)}

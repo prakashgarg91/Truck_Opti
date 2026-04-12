@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface Subscription {
   id: string
@@ -57,7 +58,7 @@ export default function AdminSubscriptionsPage() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('[AdminSubscriptions] fetch:', error)
+      logger.error('[AdminSubscriptions] fetch:', error)
       toast.error(language === 'en' ? 'Failed to load subscriptions' : 'सदस्यता लोड करने में विफल')
       setLoading(false)
       return

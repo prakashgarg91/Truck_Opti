@@ -6,6 +6,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface DriverPayout {
   id: string
@@ -53,13 +54,13 @@ export default function AdminPayoutsPage() {
         .order('requested_at', { ascending: false })
 
       if (error) {
-        console.error('[AdminPayouts] Fetch error:', error)
+        logger.error('[AdminPayouts] Fetch error:', error)
         toast.error(language === 'en' ? 'Failed to load payouts' : 'भुगतान लोड करने में विफल')
         return
       }
       setPayouts(data || [])
     } catch (err) {
-      console.error('[AdminPayouts] Exception:', err)
+      logger.error('[AdminPayouts] Exception:', err)
       toast.error(language === 'en' ? 'Something went wrong' : 'कुछ गलत हुआ')
     } finally {
       setLoading(false)
@@ -79,7 +80,7 @@ export default function AdminPayoutsPage() {
         .eq('id', payoutId)
 
       if (error) {
-        console.error('[AdminPayouts] Approve error:', error)
+        logger.error('[AdminPayouts] Approve error:', error)
         toast.error(language === 'en' ? 'Failed to approve payout' : 'भुगतान स्वीकृत करने में विफल')
         return
       }
@@ -104,7 +105,7 @@ export default function AdminPayoutsPage() {
         .eq('id', rejectModal.payoutId)
 
       if (error) {
-        console.error('[AdminPayouts] Reject error:', error)
+        logger.error('[AdminPayouts] Reject error:', error)
         toast.error(language === 'en' ? 'Failed to reject payout' : 'भुगतान अस्वीकार करने में विफल')
         return
       }
@@ -129,7 +130,7 @@ export default function AdminPayoutsPage() {
         .eq('id', payoutId)
 
       if (error) {
-        console.error('[AdminPayouts] Mark paid error:', error)
+        logger.error('[AdminPayouts] Mark paid error:', error)
         toast.error(language === 'en' ? 'Failed to mark as paid' : 'भुगतान चिह्नित करने में विफल')
         return
       }
@@ -201,18 +202,17 @@ export default function AdminPayoutsPage() {
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  statusFilter === status
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${statusFilter === status
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                  }`}
               >
                 {language === 'en'
                   ? status.charAt(0).toUpperCase() + status.slice(1)
                   : status === 'all' ? 'सभी' :
                     status === 'pending' ? 'लंबित' :
-                    status === 'approved' ? 'स्वीकृत' :
-                    status === 'paid' ? 'भुगतान किया' : 'अस्वीकृत'
+                      status === 'approved' ? 'स्वीकृत' :
+                        status === 'paid' ? 'भुगतान किया' : 'अस्वीकृत'
                 } ({statusCounts[status]})
               </button>
             ))}
@@ -282,7 +282,7 @@ export default function AdminPayoutsPage() {
                             ? payout.status.charAt(0).toUpperCase() + payout.status.slice(1)
                             : payout.status === 'pending' ? 'लंबित' :
                               payout.status === 'approved' ? 'स्वीकृत' :
-                              payout.status === 'paid' ? 'भुगतान किया' : 'अस्वीकृत'
+                                payout.status === 'paid' ? 'भुगतान किया' : 'अस्वीकृत'
                           }
                         </span>
                       </td>

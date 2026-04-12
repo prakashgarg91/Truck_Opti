@@ -9,6 +9,7 @@ import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { formatCurrency } from '../utils/formatters'
+import { logger } from '../utils/logger'
 
 interface Analytics {
   totalRevenue: number
@@ -146,7 +147,7 @@ export default function AdminDashboardPage() {
         platformFee: totalRevenue * 0.10 // 10% platform fee
       })
     } catch (err) {
-      console.error('Failed to fetch analytics:', err)
+      logger.error('Failed to fetch analytics:', err)
       toast.error('Failed to load analytics')
     } finally {
       setLoading(false)
@@ -228,7 +229,7 @@ export default function AdminDashboardPage() {
 
       toast.success(language === 'en' ? 'CSV exported successfully!' : 'CSV सफलतापूर्वक निर्यात हुई!')
     } catch (err) {
-      console.error('Export error:', err)
+      logger.error('Export error:', err)
       toast.error(language === 'en' ? 'Failed to export CSV' : 'CSV निर्यात करने में विफल')
     } finally {
       setExporting(false)

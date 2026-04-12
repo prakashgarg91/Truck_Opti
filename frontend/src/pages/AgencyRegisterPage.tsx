@@ -7,6 +7,7 @@ import {
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { useLanguageStore } from '../stores/languageStore'
+import { logger } from '../utils/logger'
 
 const INDIAN_STATES = [
   'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
@@ -117,7 +118,7 @@ export default function AgencyRegisterPage() {
       if (error) throw error
       setStep(4)
     } catch (err: unknown) {
-      console.error('[AgencyRegisterPage]', err)
+      logger.error('[AgencyRegisterPage]', err)
       toast.error(language === 'en' ? 'Registration failed. Please try again.' : 'पंजीकरण विफल। कृपया पुनः प्रयास करें।')
     } finally {
       setSubmitting(false)

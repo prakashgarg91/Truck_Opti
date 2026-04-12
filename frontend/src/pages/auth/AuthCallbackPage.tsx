@@ -17,7 +17,7 @@ export default function AuthCallbackPage() {
     const timeoutId = window.setTimeout(() => {
       window.location.replace('/login')
     }, 8000)
-    
+
     const handleAuthCallback = async () => {
       try {
         const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
@@ -55,7 +55,7 @@ export default function AuthCallbackPage() {
           if (data?.session) break
           await new Promise(resolve => setTimeout(resolve, 250))
         }
-        
+
         if (error) {
           logger.error('Auth callback error:', error)
           setError(language === 'en' ? 'Authentication failed. Please try again.' : 'प्रमाणीकरण विफल। कृपया पुनः प्रयास करें।')
@@ -74,7 +74,7 @@ export default function AuthCallbackPage() {
             icon: '✅',
             duration: 2000
           })
-          
+
           window.clearTimeout(timeoutId)
           window.location.replace('/')
         } else {

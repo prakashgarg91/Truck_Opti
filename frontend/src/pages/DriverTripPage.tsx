@@ -10,6 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
 import { useLanguageStore } from '../stores/languageStore'
+import { logger } from '../utils/logger'
 
 interface ShipmentInfo {
   shipment_id: string
@@ -164,7 +165,7 @@ export default function DriverTripPage() {
       .eq('id', job.id)
     setSubmitting(false)
     if (error) {
-      console.error('[DriverTripPage]', error)
+      logger.error('[DriverTripPage]', error)
       toast.error(language === 'en' ? 'Failed to update trip status.' : 'यात्रा स्थिति अपडेट करने में विफल।')
       return false
     }

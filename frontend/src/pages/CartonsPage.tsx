@@ -42,8 +42,8 @@ export default function CartonsPage() {
   }, [language])
 
   // React Query: Fetch cartons data
-  const { 
-    data: cartons = [], 
+  const {
+    data: cartons = [],
     isLoading: loading,
     isError: loadError
   } = useQuery({
@@ -129,7 +129,7 @@ export default function CartonsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Map form data to schema format (name -> product_name, add quantity default)
     const validationData = {
       product_name: formData.name,
@@ -141,9 +141,9 @@ export default function CartonsPage() {
       fragile: formData.fragile,
       stackable: formData.stackable
     }
-    
+
     const result = validateWithZod(itemSchema, validationData)
-    
+
     if (!result.success) {
       // Map schema field names back to form field names for display
       const formattedErrors = result.errors?.reduce((acc: Record<string, string>, err: string) => {
@@ -156,10 +156,10 @@ export default function CartonsPage() {
       setErrors(formattedErrors)
       return
     }
-    
+
     // Clear errors and proceed with save
     setErrors({})
-    
+
     if (editingCarton) {
       updateMutation.mutate({ id: editingCarton.id, data: formData })
     } else {
@@ -173,7 +173,7 @@ export default function CartonsPage() {
     }
   }
 
-  const filteredCartons = cartons.filter((c: CartonType) => 
+  const filteredCartons = cartons.filter((c: CartonType) =>
     c.name.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -182,7 +182,7 @@ export default function CartonsPage() {
   return (
     <div className="p-4 space-y-6 pb-8">
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => navigate('/management')}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
         >
@@ -204,7 +204,7 @@ export default function CartonsPage() {
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
           />
         </div>
-        <button 
+        <button
           onClick={() => handleOpenModal()}
           className="bg-primary-600 hover:bg-primary-700 text-white p-2.5 rounded-xl shadow-lg shadow-primary-600/20 transition-all"
         >
@@ -230,7 +230,7 @@ export default function CartonsPage() {
           icon={Package}
           title={language === 'en' ? 'No carton types found' : 'कोई कार्टन प्रकार नहीं मिला'}
           description={
-            search 
+            search
               ? (language === 'en' ? 'Try adjusting your search' : 'अपनी खोज समायोजित करने का प्रयास करें')
               : (language === 'en' ? 'Add your first carton type to get started' : 'शुरू करने के लिए अपना पहला कार्टन प्रकार जोड़ें')
           }
@@ -240,7 +240,7 @@ export default function CartonsPage() {
       ) : (
         <div className="grid gap-4">
           {filteredCartons.map((carton: CartonType) => (
-            <div 
+            <div
               key={carton.id}
               className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm"
             >
@@ -266,13 +266,13 @@ export default function CartonsPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button 
+                  <button
                     onClick={() => handleOpenModal(carton)}
                     className="p-2 text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDelete(carton.id)}
                     disabled={deleteMutation.isPending}
                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all disabled:opacity-50"
@@ -281,7 +281,7 @@ export default function CartonsPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Dimensions</p>
@@ -307,19 +307,19 @@ export default function CartonsPage() {
           <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {editingCarton 
+                {editingCarton
                   ? (language === 'en' ? 'Edit Carton Type' : 'कार्टन प्रकार संपादित करें')
                   : (language === 'en' ? 'Add Carton Type' : 'कार्टन प्रकार जोड़ें')
                 }
               </h2>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -328,13 +328,13 @@ export default function CartonsPage() {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
                   placeholder={language === 'en' ? 'e.g., Standard Box' : 'जैसे, स्टैंडर्ड बॉक्स'}
                 />
                 {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
               </div>
-              
+
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -343,7 +343,7 @@ export default function CartonsPage() {
                   <input
                     type="number"
                     value={formData.length || ''}
-                    onChange={(e) => setFormData({...formData, length: Number(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, length: Number(e.target.value) })}
                     className={`w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.length ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
                   />
                   {errors.length && <p className="mt-1 text-xs text-red-500">{errors.length}</p>}
@@ -355,7 +355,7 @@ export default function CartonsPage() {
                   <input
                     type="number"
                     value={formData.width || ''}
-                    onChange={(e) => setFormData({...formData, width: Number(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, width: Number(e.target.value) })}
                     className={`w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.width ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
                   />
                   {errors.width && <p className="mt-1 text-xs text-red-500">{errors.width}</p>}
@@ -367,13 +367,13 @@ export default function CartonsPage() {
                   <input
                     type="number"
                     value={formData.height || ''}
-                    onChange={(e) => setFormData({...formData, height: Number(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, height: Number(e.target.value) })}
                     className={`w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.height ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
                   />
                   {errors.height && <p className="mt-1 text-xs text-red-500">{errors.height}</p>}
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {language === 'en' ? 'Weight (kg)' : 'वजन (किलो)'}
@@ -381,18 +381,18 @@ export default function CartonsPage() {
                 <input
                   type="number"
                   value={formData.weight || ''}
-                  onChange={(e) => setFormData({...formData, weight: Number(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, weight: Number(e.target.value) })}
                   className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.weight ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
                 />
                 {errors.weight && <p className="mt-1 text-xs text-red-500">{errors.weight}</p>}
               </div>
-              
+
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.fragile}
-                    onChange={(e) => setFormData({...formData, fragile: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, fragile: e.target.checked })}
                     className="w-4 h-4 text-primary-600 rounded"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">
@@ -403,7 +403,7 @@ export default function CartonsPage() {
                   <input
                     type="checkbox"
                     checked={formData.stackable}
-                    onChange={(e) => setFormData({...formData, stackable: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, stackable: e.target.checked })}
                     className="w-4 h-4 text-primary-600 rounded"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">
@@ -411,7 +411,7 @@ export default function CartonsPage() {
                   </span>
                 </label>
               </div>
-              
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"

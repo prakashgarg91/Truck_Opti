@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import MapViewWrapper, { MapMarker, MapRoute } from '../components/MapViewWrapper'
+import { logger } from '../utils/logger'
 
 type JobFilter = 'all' | 'in_transit' | 'pending' | 'accepted' | 'delivered' | 'cancelled'
 
@@ -226,7 +227,7 @@ export default function AgencyJobsPage() {
       setSelectedJob(null)
       fetchAgency()
     } catch (err) {
-      console.error('Assign error:', err)
+      logger.error('Assign error:', err)
       toast.error('Failed to assign driver')
     } finally {
       setAssigning(false)

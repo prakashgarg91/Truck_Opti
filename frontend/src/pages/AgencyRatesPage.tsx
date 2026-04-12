@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface RateCard {
   id: string
@@ -70,7 +71,7 @@ export default function AgencyRatesPage() {
       if (ratesErr) throw ratesErr
       setRates((data ?? []) as RateCard[])
     } catch (e) {
-      console.error('[AgencyRatesPage]', e)
+      logger.error('[AgencyRatesPage]', e)
       toast.error('Failed to load rate cards')
     } finally {
       setLoading(false)

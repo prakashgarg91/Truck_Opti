@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface AssignedDriver {
   id: string
@@ -144,7 +145,7 @@ export default function AgencyDriversPage() {
       note: payNote || null
     })
     if (error) {
-      console.error('[AgencyDrivers] pay:', error)
+      logger.error('[AgencyDrivers] pay:', error)
       toast.error(language === 'en' ? 'Payment failed' : 'भुगतान विफल')
       setSaving(false)
       return

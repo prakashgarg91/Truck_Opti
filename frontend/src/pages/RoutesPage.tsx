@@ -301,8 +301,8 @@ export default function RoutesPage() {
             key={f}
             onClick={() => setFilter(f)}
             className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${filter === f
-                ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+              ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20'
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
               }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -377,8 +377,8 @@ export default function RoutesPage() {
                         {route.name || `Route #${route.id.slice(0, 8)}`}
                       </h3>
                       <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${route.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
-                          route.status === 'planned' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
-                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
+                        route.status === 'planned' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                          'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
                         }`}>
                         {route.status}
                       </span>

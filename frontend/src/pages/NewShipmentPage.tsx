@@ -6,6 +6,7 @@ import { useLanguageStore } from '../stores/languageStore'
 import { useSubscription } from '../hooks/useSubscription'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 const VEHICLE_TYPES = [
   { value: 'tata_407', label: 'Tata 407', capacity: '1.5 Ton' },
@@ -89,7 +90,7 @@ export default function NewShipmentPage() {
         .single()
 
       if (shipmentError) {
-        console.error('Shipment insert error:', shipmentError)
+        logger.error('Shipment insert error:', shipmentError)
         toast.error(language === 'en' ? 'Failed to create booking' : 'बुकिंग बनाने में विफल')
         setIsSubmitting(false)
         return
@@ -102,7 +103,7 @@ export default function NewShipmentPage() {
       })
 
       if (dispatchError) {
-        console.error('Dispatch error:', dispatchError)
+        logger.error('Dispatch error:', dispatchError)
         // Shipment created, but dispatch failed - show warning but continue
         toast(language === 'en'
           ? 'Booking created! Drivers will be notified shortly.'
@@ -120,7 +121,7 @@ export default function NewShipmentPage() {
       setShowSuccess(true)
 
     } catch (error) {
-      console.error('Unexpected error:', error)
+      logger.error('Unexpected error:', error)
       toast.error(language === 'en' ? 'Something went wrong' : 'कुछ गलत हो गया')
     } finally {
       setIsSubmitting(false)
@@ -163,7 +164,7 @@ export default function NewShipmentPage() {
       .eq('id', newShipmentId)
 
     if (error) {
-      console.error('[NewShipment] eway:', error)
+      logger.error('[NewShipment] eway:', error)
       toast.error(language === 'en' ? 'Failed to save e-way bill' : 'ई-वे बिल सेव नहीं हुआ')
       setIsSubmittingEWayBill(false)
       return

@@ -10,6 +10,7 @@ import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface DriverRecord {
   id: string
@@ -149,7 +150,7 @@ export default function DriverDashboardPage() {
       status: 'pending'
     })
     if (error) {
-      console.error('[Withdrawal]', error)
+      logger.error('[Withdrawal]', error)
       toast.error(language === 'en' ? 'Failed to submit withdrawal request' : 'निकासी अनुरोध सबमिट करने में विफल')
     } else {
       toast.success(language === 'en' ? 'Withdrawal request submitted' : 'निकासी अनुरोध सबमिट किया गया')

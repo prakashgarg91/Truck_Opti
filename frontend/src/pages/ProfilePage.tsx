@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore, LANGUAGE_NAMES, type Language } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
+import { logger } from '../utils/logger'
 
 const translations = {
   en: {
@@ -241,7 +242,7 @@ export default function ProfilePage() {
       updateUser({ profile_picture: publicUrl })
       toast.success('Profile photo updated!')
     } catch (err: unknown) {
-      console.error('[ProfilePage]', err)
+      logger.error('[ProfilePage]', err)
       toast.error(language === 'en' ? 'Upload failed. Please try again.' : 'अपलोड विफल। कृपया पुनः प्रयास करें।')
     } finally {
       setIsUploadingAvatar(false)
@@ -706,8 +707,8 @@ export default function ProfilePage() {
               key={lang}
               onClick={() => setLanguage(lang)}
               className={`p-3 rounded-xl text-sm font-medium transition-all ${language === lang
-                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 border-2 border-primary-500'
-                  : 'bg-slate-50 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-2 border-transparent hover:bg-slate-100'
+                ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 border-2 border-primary-500'
+                : 'bg-slate-50 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-2 border-transparent hover:bg-slate-100'
                 }`}
             >
               {LANGUAGE_NAMES[lang]}

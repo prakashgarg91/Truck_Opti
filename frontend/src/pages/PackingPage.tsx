@@ -192,8 +192,8 @@ const RecommendationCard = memo(({
     <button
       onClick={onSelect}
       className={`p-4 rounded-xl text-left transition-all border-2 relative ${isSelected
-          ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 shadow-lg'
-          : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
+        ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 shadow-lg'
+        : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
         }`}
     >
       {index === 0 && (
@@ -219,7 +219,7 @@ const RecommendationCard = memo(({
             <div className="w-16 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full ${rec.volumeUtilization > 70 ? 'bg-green-500' :
-                    rec.volumeUtilization > 40 ? 'bg-amber-500' : 'bg-red-500'
+                  rec.volumeUtilization > 40 ? 'bg-amber-500' : 'bg-red-500'
                   }`}
                 style={{ width: `${Math.min(rec.volumeUtilization, 100)}%` }}
               />
@@ -739,7 +739,7 @@ export default function PackingPage() {
       navigate('/tracking')
     } catch (error: unknown) {
       logger.error('Failed to book truck:', error)
-      console.error('[PackingPage]', error)
+      logger.error('[PackingPage]', error)
       setBookError(language === 'en' ? 'Failed to book truck.' : 'ट्रक बुक करने में विफल।')
     } finally {
       setBookingInProgress(false)
@@ -801,8 +801,8 @@ export default function PackingPage() {
                 <button
                   onClick={() => setMode('smart')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'smart'
-                      ? 'bg-primary-600 text-white shadow-md'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                 >
                   <Wand2 className="w-4 h-4" />
@@ -811,8 +811,8 @@ export default function PackingPage() {
                 <button
                   onClick={() => setMode('manual')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'manual'
-                      ? 'bg-slate-700 text-white shadow-md'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    ? 'bg-slate-700 text-white shadow-md'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                 >
                   <Settings className="w-4 h-4" />
@@ -1044,8 +1044,8 @@ export default function PackingPage() {
                     key={algo.id}
                     onClick={() => setAlgorithm(algo.id)}
                     className={`p-3 rounded-xl text-left transition-all border-2 ${algorithm === algo.id
-                        ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 shadow-md'
-                        : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700'
+                      ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 shadow-md'
+                      : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700'
                       }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -1054,8 +1054,8 @@ export default function PackingPage() {
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <span className={`px-1.5 py-0.5 rounded ${algo.speed === 'Fast' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                          algo.speed === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        algo.speed === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                          'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                         }`}>
                         {algo.speed}
                       </span>
@@ -1084,8 +1084,8 @@ export default function PackingPage() {
                         key={truck.id}
                         onClick={() => setSelectedTruck(truck.id)}
                         className={`w-full p-3 rounded-xl text-left transition-all border-2 ${selectedTruck === truck.id
-                            ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500'
-                            : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
+                          ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500'
+                          : 'bg-slate-50 dark:bg-slate-800 border-transparent hover:border-slate-200'
                           }`}
                       >
                         <div className="flex items-center justify-between">
@@ -1111,8 +1111,8 @@ export default function PackingPage() {
               onClick={mode === 'smart' ? handleSmartRecommend : handleManualPack}
               disabled={saleOrderItems.length === 0 || (mode === 'manual' && !selectedTruck) || isProcessing || loadingTrucks}
               className={`btn w-full py-4 text-lg shadow-lg ${mode === 'smart'
-                  ? 'bg-gradient-to-r from-primary-600 to-saffron text-white hover:from-primary-700 hover:to-orange-500'
-                  : 'btn-primary'
+                ? 'bg-gradient-to-r from-primary-600 to-saffron text-white hover:from-primary-700 hover:to-orange-500'
+                : 'btn-primary'
                 }`}
             >
               {isProcessing ? (

@@ -103,17 +103,16 @@ export default function AdminContactPage() {
           <button
             key={tab}
             onClick={() => setStatusFilter(tab)}
-            className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors ${
-              statusFilter === tab
+            className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors ${statusFilter === tab
                 ? 'bg-primary-600 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
+              }`}
           >
             {tab === 'all'
               ? (language === 'en' ? 'All' : 'सभी')
               : tab === 'open'
-              ? (language === 'en' ? 'Open' : 'खुला')
-              : (language === 'en' ? 'Resolved' : 'हल')}
+                ? (language === 'en' ? 'Open' : 'खुला')
+                : (language === 'en' ? 'Resolved' : 'हल')}
           </button>
         ))}
       </div>
@@ -143,11 +142,10 @@ export default function AdminContactPage() {
                     <p className="text-sm text-slate-500">{inquiry.phone}</p>
                   )}
                 </div>
-                <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 whitespace-nowrap ${
-                  inquiry.status === 'open'
+                <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 whitespace-nowrap ${inquiry.status === 'open'
                     ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                     : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                }`}>
+                  }`}>
                   {inquiry.status === 'open'
                     ? <><Clock className="w-3 h-3" />{language === 'en' ? 'Open' : 'खुला'}</>
                     : <><CheckCircle2 className="w-3 h-3" />{language === 'en' ? 'Resolved' : 'हल'}</>}

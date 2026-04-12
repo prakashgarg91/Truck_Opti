@@ -7,6 +7,7 @@ import {
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
+import { logger } from '../utils/logger'
 
 // Vehicle type options (must match trucks in DB)
 const VEHICLE_TYPES = [
@@ -86,7 +87,7 @@ export default function DriverRegisterPage() {
       setForm(prev => ({ ...prev, [field]: publicUrl }))
       toast.success(isLicence ? 'Driving licence uploaded' : 'RC uploaded')
     } catch (err) {
-      console.error('Upload error:', err)
+      logger.error('Upload error:', err)
       toast.error('Failed to upload document')
     } finally {
       setUploading(prev => ({ ...prev, [isLicence ? 'licence' : 'rc']: false }))
@@ -148,7 +149,7 @@ export default function DriverRegisterPage() {
       if (error) throw error
       setStep(4)
     } catch (err: unknown) {
-      console.error('[DriverRegisterPage]', err)
+      logger.error('[DriverRegisterPage]', err)
       toast.error('Submission failed. Please try again.')
     } finally {
       setSubmitting(false)

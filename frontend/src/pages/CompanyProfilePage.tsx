@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { useLanguageStore } from '../stores/languageStore'
 import { useAuthStore } from '../stores/authStore'
+import { logger } from '../utils/logger'
 
 interface CompanyData {
   name: string
@@ -96,7 +97,7 @@ export default function CompanyProfilePage() {
       toast.success('Company profile saved!')
       setTimeout(() => setSaved(false), 3000)
     } catch (err: unknown) {
-      console.error('[CompanyProfilePage]', err)
+      logger.error('[CompanyProfilePage]', err)
       toast.error(language === 'en' ? 'Profile update failed.' : 'प्रोफ़ाइल अपडेट करने में विफल।')
     } finally {
       setSaving(false)
@@ -127,8 +128,8 @@ export default function CompanyProfilePage() {
         </div>
         <button onClick={handleSave} disabled={saving}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all ${saved
-              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-              : 'bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50'
+            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+            : 'bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50'
             }`}>
           {saving ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -170,8 +171,8 @@ export default function CompanyProfilePage() {
               </label>
               <input value={form.gstin} onChange={set('gstin')} placeholder="22AAAAA0000A1Z5" maxLength={15}
                 className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase ${form.gstin && !validateGSTIN(form.gstin.toUpperCase())
-                    ? 'border-red-400 focus:ring-red-400'
-                    : 'border-slate-200 dark:border-slate-600'
+                  ? 'border-red-400 focus:ring-red-400'
+                  : 'border-slate-200 dark:border-slate-600'
                   }`} />
               {form.gstin && !validateGSTIN(form.gstin.toUpperCase()) && (
                 <p className="text-xs text-red-500 mt-1">Invalid GSTIN format</p>
@@ -181,8 +182,8 @@ export default function CompanyProfilePage() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PAN Number</label>
               <input value={form.pan} onChange={set('pan')} placeholder="AAAPZ1234C" maxLength={10}
                 className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase ${form.pan && !validatePAN(form.pan.toUpperCase())
-                    ? 'border-red-400 focus:ring-red-400'
-                    : 'border-slate-200 dark:border-slate-600'
+                  ? 'border-red-400 focus:ring-red-400'
+                  : 'border-slate-200 dark:border-slate-600'
                   }`} />
             </div>
           </div>

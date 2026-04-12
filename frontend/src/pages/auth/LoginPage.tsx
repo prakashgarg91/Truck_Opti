@@ -8,6 +8,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useLanguageStore } from '../../stores/languageStore'
 import { phoneInputSchema, emailSchema } from '../../utils/validators'
 import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
+import { logger } from '../../utils/logger'
 
 const features = [
   { icon: '📦', text: '3D Smart Packing' },
@@ -81,7 +82,7 @@ export default function LoginPage() {
       navigate('/otp', { state: { channel, contact: phone } })
     },
     onError: (error: unknown) => {
-      console.error('[LoginPage] OTP error:', error)
+      logger.error('[LoginPage] OTP error:', error)
       const errorMsg = language === 'en'
         ? toUserFacingErrorMessage(error, 'Failed to send OTP. Please try again.')
         : 'OTP भेजने में विफल। कृपया पुनः प्रयास करें।'
@@ -248,8 +249,8 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setChannel('email')}
                 className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'email'
-                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 aria-pressed={channel === 'email'}
               >
@@ -266,8 +267,8 @@ export default function LoginPage() {
               type="button"
               onClick={() => setChannel('whatsapp')}
               className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'whatsapp'
-                  ? 'border-green-600 bg-green-50 dark:bg-green-900/30 text-green-600 shadow-lg shadow-green-500/20 scale-[1.02]'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                ? 'border-green-600 bg-green-50 dark:bg-green-900/30 text-green-600 shadow-lg shadow-green-500/20 scale-[1.02]'
+                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               aria-pressed={channel === 'whatsapp'}
             >
@@ -283,8 +284,8 @@ export default function LoginPage() {
               type="button"
               onClick={() => setChannel('sms')}
               className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'sms'
-                  ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20 scale-[1.02]'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20 scale-[1.02]'
+                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               aria-pressed={channel === 'sms'}
             >

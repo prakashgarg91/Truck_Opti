@@ -3,6 +3,7 @@ import { FileText, TrendingUp, Download, Clock, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { formatCurrency } from '../utils/formatters'
+import { logger } from '../utils/logger'
 
 interface BillingSummary {
   thisMonth: number
@@ -73,7 +74,7 @@ export default function AgencyBillingPage() {
       setDeliveredJobs(jobs)
       setSummary({ thisMonth, pending, totalPaid, gstDue: Math.round(thisMonth * GST_RATE) })
     } catch (e) {
-      console.error('[AgencyBillingPage] fetchBilling failed:', e)
+      logger.error('[AgencyBillingPage] fetchBilling failed:', e)
     } finally {
       setLoading(false)
     }

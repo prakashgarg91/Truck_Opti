@@ -6,6 +6,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface FleetTruck {
   id: string
@@ -77,7 +78,7 @@ export default function AgencyFleetPage() {
         setTrucks((truckData ?? []) as FleetTruck[])
       }
     } catch (e) {
-      console.error('[AgencyFleetPage]', e)
+      logger.error('[AgencyFleetPage]', e)
     } finally {
       setLoading(false)
     }

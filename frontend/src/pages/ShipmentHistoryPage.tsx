@@ -7,6 +7,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface Shipment {
   id: string
@@ -43,7 +44,7 @@ export default function ShipmentHistoryPage() {
       if (error) throw error
       setShipments(data ?? [])
     } catch (err) {
-      console.error('Failed to load shipments:', err)
+      logger.error('Failed to load shipments:', err)
       toast.error('Failed to load shipment history')
     } finally {
       setLoading(false)

@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface EarningSummary {
   date: string
@@ -50,7 +51,7 @@ export default function DriverEarningsPage() {
       .eq('driver_id', drId)
 
     if (payErr) {
-      console.error('[DriverEarnings] balance:', payErr)
+      logger.error('[DriverEarnings] balance:', payErr)
       toast.error(language === 'en' ? 'Failed to load balance' : 'बैलेंस लोड नहीं हुआ')
       return
     }

@@ -44,22 +44,22 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
     .filter((s: any) => s.status !== 'cancelled')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((s: any) => ({
-    id: s.id,
-    shipment_id: s.shipment_id || s.id.slice(0, 8).toUpperCase(),
-    latitude: s.latitude,
-    longitude: s.longitude,
-    driver_name: s.driver_name,
-    driver_phone: s.driver_phone,
-    vehicle_number: s.vehicle_number,
-    origin: s.origin,
-    destination: s.destination,
-    status: s.status,
-    updated_at: s.updated_at,
-    customer_id: s.customer_id,
-    total_weight: s.total_weight,
-    total_volume: s.total_volume,
-    sale_order_id: s.sale_order_id || null
-  }))
+      id: s.id,
+      shipment_id: s.shipment_id || s.id.slice(0, 8).toUpperCase(),
+      latitude: s.latitude,
+      longitude: s.longitude,
+      driver_name: s.driver_name,
+      driver_phone: s.driver_phone,
+      vehicle_number: s.vehicle_number,
+      origin: s.origin,
+      destination: s.destination,
+      status: s.status,
+      updated_at: s.updated_at,
+      customer_id: s.customer_id,
+      total_weight: s.total_weight,
+      total_volume: s.total_volume,
+      sale_order_id: s.sale_order_id || null
+    }))
 
   if (mappedData.length === 0) {
     return []
@@ -269,16 +269,14 @@ export default function TrackingPage() {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
-                statusFilter === s
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${statusFilter === s
                   ? `${colors[s]} text-white shadow-md`
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-              }`}
+                }`}
             >
               {labels[s]}
-              {count > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                statusFilter === s ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
-              }`}>{count}</span>}
+              {count > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${statusFilter === s ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                }`}>{count}</span>}
             </button>
           )
         })}
@@ -339,11 +337,10 @@ export default function TrackingPage() {
             <div
               key={s.id}
               onClick={() => setSelectedId(s.id)}
-              className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all cursor-pointer ${
-                selectedId === s.id
+              className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all cursor-pointer ${selectedId === s.id
                   ? 'border-primary-500 ring-1 ring-primary-500 shadow-md'
                   : 'border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-300'
-              }`}
+                }`}
             >
               {/* Pending Status Card - Special UI */}
               {s.status === 'pending' && (
@@ -364,11 +361,10 @@ export default function TrackingPage() {
 
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl ${
-                    s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
-                    s.status === 'pending' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
-                    'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
-                  }`}>
+                  <div className={`p-2.5 rounded-xl ${s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
+                      s.status === 'pending' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
+                        'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
+                    }`}>
                     <Truck className="w-5 h-5" />
                   </div>
                   <div>
@@ -377,11 +373,10 @@ export default function TrackingPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                    s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
-                    s.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
-                    'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
-                  }`}>{s.status.replace('_', ' ')}</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
+                      s.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
+                    }`}>{s.status.replace('_', ' ')}</span>
                   {s.status === 'in_transit' && (
                     <p className="text-[10px] text-slate-400 mt-0.5">
                       {s.latitude ? (s.speed ? `${s.speed}` : '—') : '0'} km/h
@@ -627,15 +622,15 @@ export default function TrackingPage() {
             </div>
 
             {/* Book Another Truck CTA for delivered shipments */}
-              {selectedShipment.status === 'delivered' && (
-                <button
-                  onClick={() => { setShowDetailModal(false); navigate('/booking/new') }}
-                  className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 mb-3"
-                >
-                  <Truck className="w-4 h-4" />
-                  {language === 'en' ? 'Book Another Truck' : 'एक और ट्रक बुक करें'}
-                </button>
-              )}
+            {selectedShipment.status === 'delivered' && (
+              <button
+                onClick={() => { setShowDetailModal(false); navigate('/booking/new') }}
+                className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 mb-3"
+              >
+                <Truck className="w-4 h-4" />
+                {language === 'en' ? 'Book Another Truck' : 'एक और ट्रक बुक करें'}
+              </button>
+            )}
 
             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
               <button
