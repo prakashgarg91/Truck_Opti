@@ -33,10 +33,10 @@
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | 🧪 Manual | 🟡 Owner: browser test with real account |
 | T-115 | Verify production DB backup / PITR setup | P1 | 🔑 External | 🟡 Owner: Supabase dashboard |
 | T-116 | Sentry DSN configuration | P1 | 🔑 External | 🔴 Blocking for observability: `VITE_SENTRY_DSN` missing in 2026-04-03 prod-config audit |
-| T-117 | Supabase db push (6 pending migrations) | P0 | 🔑 External | 🟡 Owner: run `supabase db push` |
+| T-117 | Supabase db push (6 pending migrations) | P0 | 🔑 External | ✅ DONE — all 12 migrations synced Local=Remote on 2026-04-12 via `migration repair` + `db push` |
 | T-129 | PhonePe production configuration | P1 | 🔑 External | ✅ PhonePe sandbox was disabled in Heroku on 2026-04-09 for launch; only reopen if PhonePe must ship with production credentials |
 | T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | 🔐 Security | 🟡 Local root, `frontend`, and `apps/web` audits are green again on 2026-04-10, including after the unused frontend packaging cleanup; GitHub now reports 1 moderate alert, and the final alert still needs manual GitHub Security-tab review |
-| T-130 | Fix stale service-worker chunk invalidation for returning users | P1 | 🧪 Product | 🟡 Repo-side recovery is in place; live returning-user retest is still pending |
+| T-130 | Fix stale service-worker chunk invalidation for returning users | P1 | 🧪 Product | ✅ DONE — live Playwright retest 2026-04-12: all 6 public routes clean, 0 chunk errors, 0 page errors, Workbox precache 69 entries, SW `activated` state |
 | ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T3~~ | ~~Driver GPS broadcast on trip~~ | ~~P2~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |

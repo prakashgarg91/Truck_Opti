@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-12 (COP-004)
+- Changed: (1) `pip_audit` installed in `.venv` so Gate 5 passes with `python -m pip_audit`; (2) committed `.vscode/mcp.json` (Razorpay Docker MCP + Qdrant hardcoded + Supabase PAT prompt), `.vscode/settings.json`, `.github/copilot-instructions.md`, `.github/hooks/watch-session.json`; (3) T-117 Supabase migrations fully synced (12/12 Local=Remote, done prior sub-session); (4) Razorpay Docker MCP `mcp/razorpay:latest` confirmed — 45 tools, handshake verified; (5) Supabase PAT `sbp_2d3986853442d1109caedc59d93b2461ed8eafd0` verified — Management API + MCP cloud endpoint both return 200/ACTIVE_HEALTHY.
+- Verified: `npm run launch-check` PASS (17/17); `npm run test:packing` PASS (9/9); live Playwright SW retest PASS — all 6 public routes load, 0 chunk errors, Workbox precache 69 entries, SW `activated`, no stale-chunk failures; Supabase `ACTIVE_HEALTHY` Postgres 17.6.1 ap-south-1.
+- Operational proof: `npm run launch-check` — ALL GATES PASSED (17/17, 2026-04-12 13:36:30). Live SW test — 6/6 routes clean, 0 chunk errors, 0 page errors. T-130 RESOLVED. T-117 RESOLVED.
+- Continue from: all AI-executable work is verified complete. T-130 and T-117 closed. Remaining blockers are all owner-account actions (Razorpay live keys, Sentry DSN, authenticated E2E, GitHub alert, Twilio, PITR).
+- Next step: owner to set `VITE_SENTRY_DSN` + live Razorpay keys in Heroku, then run authenticated E2E smoke with a real customer/driver/agency/admin account.
+- Blockers: no live Razorpay keys (Heroku still has `rzp_test_*`), no `VITE_SENTRY_DSN`, no real-account browser credentials for authenticated E2E (T-127), GitHub alert #69 needs authenticated review (T-131), Twilio SMS not configured (T-113), Supabase PITR not verified (T-115).
+
 ### 2026-04-12
 - Changed: (1) `tools/qdrant_gap_audit.py` wrapper hardcoded `--qdrant http://localhost:6335` so search mode works without manual flag; (2) packing regression expanded from 5 to 9 checks — added oversized-item rejection, rotation-benefit, weight-capacity filter, and volume-utilisation accuracy test.
 - Verified: `npm run test:packing` PASS (9/9); `cd frontend && npm run build` PASS (0 TS errors, 13.84s); Qdrant gap audit (33 checks) CRIT=0 WARN=0 INFO=0.
