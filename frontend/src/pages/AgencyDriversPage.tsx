@@ -157,9 +157,21 @@ export default function AgencyDriversPage() {
     setSaving(false)
   }
 
-  const copyInviteLink = () => {
+  const copyInviteLink = async () => {
     const link = `${window.location.origin}/driver/register?ref=${agencyId}`
-    navigator.clipboard.writeText(link).then(() => toast.success('Invite link copied!'))
+
+    if (!navigator.clipboard?.writeText) {
+      toast.error(language === 'en' ? 'Clipboard access is unavailable' : 'क्लिपबोर्ड उपलब्ध नहीं है')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(link)
+      toast.success(language === 'en' ? 'Invite link copied!' : 'इनवाइट लिंक कॉपी हो गया!')
+    } catch (error) {
+      logger.error('Failed to copy invite link:', error)
+      toast.error(language === 'en' ? 'Failed to copy invite link' : 'इनवाइट लिंक कॉपी नहीं हो सका')
+    }
   }
 
   if (loading) {

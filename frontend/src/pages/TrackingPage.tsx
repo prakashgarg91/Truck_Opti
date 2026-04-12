@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import MapViewWrapper from '../components/MapViewWrapper'
 import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 import { shareTrackingLink } from '../utils/whatsappShare'
 
 interface ShipmentLocation {
@@ -116,25 +117,60 @@ export default function TrackingPage() {
 
   // Fetch job offer OTP and photos when modal opens
   useEffect(() => {
-    if (showDetailModal && selectedShipment) {
-      setLoadingOTP(true)
-      supabase
-        .from('job_offers')
-        .select('pickup_otp, delivery_otp, status, drivers(full_name), photo_loading_url, photo_delivery_url')
-        .eq('shipment_id', selectedShipment.id)
-        .in('status', ['pending', 'accepted', 'pickup_arrived', 'in_transit', 'delivery_arrived', 'delivered'])
-        .limit(1)
-        .maybeSingle()
-        .then(({ data }) => {
-          setJobOffer(data as JobOffer | null)
-          setJobPhotos({ loading_url: data?.photo_loading_url, delivery_url: data?.photo_delivery_url })
-          setLoadingOTP(false)
-        })
-    } else {
+    if (!showDetailModal || !selectedShipment) {
       setJobOffer(null)
       setJobPhotos(null)
+      setLoadingOTP(false)
+      return
     }
-  }, [showDetailModal, selectedShipment])
+
+    let isActive = true
+
+    const loadJobOffer = async () => {
+      setLoadingOTP(true)
+
+      try {
+        const { data, error } = await supabase
+          .from('job_offers')
+          .select('pickup_otp, delivery_otp, status, drivers(full_name), photo_loading_url, photo_delivery_url')
+          .eq('shipment_id', selectedShipment.id)
+          .in('status', ['pending', 'accepted', 'pickup_arrived', 'in_transit', 'delivery_arrived', 'delivered'])
+          .limit(1)
+          .maybeSingle()
+
+        if (!isActive) return
+
+        if (error) {
+          logger.error('Error loading job offer details:', error)
+          setJobOffer(null)
+          setJobPhotos(null)
+          toast.error(language === 'en' ? 'Failed to load shipment details' : 'शिपमेंट विवरण लोड करने में विफल')
+          return
+        }
+
+        setJobOffer(data as JobOffer | null)
+        setJobPhotos(data
+          ? { loading_url: data.photo_loading_url, delivery_url: data.photo_delivery_url }
+          : null)
+      } catch (error) {
+        if (!isActive) return
+        logger.error('Unexpected error loading job offer details:', error)
+        setJobOffer(null)
+        setJobPhotos(null)
+        toast.error(language === 'en' ? 'Failed to load shipment details' : 'शिपमेंट विवरण लोड करने में विफल')
+      } finally {
+        if (isActive) {
+          setLoadingOTP(false)
+        }
+      }
+    }
+
+    void loadJobOffer()
+
+    return () => {
+      isActive = false
+    }
+  }, [language, showDetailModal, selectedShipment])
 
   const handleContactDriver = (phone?: string) => {
     if (phone) {

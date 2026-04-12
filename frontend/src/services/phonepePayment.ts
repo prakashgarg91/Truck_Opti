@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 
 function isUnset(value?: string): boolean {
   if (!value) return true;
@@ -19,6 +20,8 @@ const PHONEPE_CONFIG = {
   apiUrl: import.meta.env.VITE_PHONEPE_API_URL,
   redirectUrl: import.meta.env.VITE_APP_URL || window.location.origin,
 };
+
+const ALLOWED_PHONEPE_DOMAINS = ['api.phonepe.com', 'mercury.phonepe.com', 'api-preprod.phonepe.com'];
 
 function isLiveTruckOptiSite(): boolean {
   if (typeof window === 'undefined') return false;
@@ -50,6 +53,24 @@ function getSafePhonePeFailureMessage(error: unknown): string {
   }
 
   return 'Unable to start PhonePe payment right now. Please try Razorpay or contact support.';
+}
+
+function getValidatedPhonePeRedirectUrl(response?: PhonePePaymentResponse | null): string | null {
+  const redirectUrl = response?.data?.instrumentResponse?.redirectInfo?.url;
+
+  if (!redirectUrl) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(redirectUrl);
+    const isAllowed = parsed.protocol === 'https:' &&
+      ALLOWED_PHONEPE_DOMAINS.some(domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`));
+
+    return isAllowed ? redirectUrl : null;
+  } catch {
+    return null;
+  }
 }
 
 export interface PhonePePaymentRequest {
@@ -102,7 +123,7 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
 
   try {
     // Store pending transaction in Supabase
-    await supabase.from('payment_history').insert({
+    const { error: paymentHistoryError } = await supabase.from('payment_history').insert({
       user_id: request.userId,
       amount: request.amount,
       currency: 'INR',
@@ -116,36 +137,38 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
       },
     });
 
+    if (paymentHistoryError) throw paymentHistoryError;
+
     // Call Supabase Edge Function to generate checksum and get redirect URL
-    const { data, error } = await supabase.functions.invoke('phonepe-checkout', {
+    const { data, error } = await supabase.functions.invoke<PhonePePaymentResponse>('phonepe-checkout', {
       body: {
-        merchantId: PHONEPE_CONFIG.merchantId,
         merchantTransactionId,
-        merchantUserId: request.userId.substring(0, 36),
+        userId: request.userId.substring(0, 36),
         amount: request.amount,
-        redirectUrl: `${PHONEPE_CONFIG.redirectUrl}/payment/callback?txnId=${merchantTransactionId}`,
-        redirectMode: 'REDIRECT',
-        callbackUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phonepe-webhook`,
-        mobileNumber: request.customerPhone.replace(/\D/g, '').slice(-10),
+        callbackUrl: `${PHONEPE_CONFIG.redirectUrl}/payment/callback?txnId=${merchantTransactionId}`,
       },
     });
 
     if (error) throw error;
 
-    // Redirect to PhonePe payment page
-    if (data?.redirectUrl) {
-      window.location.href = data.redirectUrl;
+    if (!data) {
+      throw new Error('PhonePe checkout returned an empty response');
     }
 
-    return {
-      success: true,
-      code: 'PAYMENT_INITIATED',
-      message: 'Redirecting to PhonePe...',
-      data: {
-        merchantId: PHONEPE_CONFIG.merchantId || '',
-        merchantTransactionId,
-      },
-    };
+    if (data.success) {
+      const redirectUrl = getValidatedPhonePeRedirectUrl(data);
+
+      if (data.data?.instrumentResponse?.redirectInfo?.url && !redirectUrl) {
+        logger.error('PhonePe redirect URL failed domain validation:', data.data.instrumentResponse.redirectInfo.url);
+        return {
+          success: false,
+          code: 'INVALID_REDIRECT_URL',
+          message: 'Payment redirect validation failed. Please try again.',
+        };
+      }
+    }
+
+    return data;
   } catch (error) {
     return {
       success: false,
