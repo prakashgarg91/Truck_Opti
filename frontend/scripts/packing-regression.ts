@@ -204,13 +204,115 @@ function runGeneticDeterminismFixture(): void {
   logPass('genetic determinism fixture', 'produced stable seeded output and packed all boxes')
 }
 
+function runOversizedItemFixture(): void {
+  // An item bigger than the truck in every dimension must remain unpacked
+  const items: SaleOrderItem[] = [
+    {
+      id: 'giant',
+      name: 'Giant Crate',
+      length: 300, // 3 m — larger than mini truck (2 m)
+      width: 200,
+      height: 200,
+      weight: 50,
+      quantity: 1,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const result = new AdvancedBinPacker(trucks[0], items, 'extreme_points').pack()
+  assertEqual(result.packed.length, 0, 'Oversized item should have 0 packed boxes in a mini truck')
+  assertEqual(result.unpacked.length, 1, 'Oversized item should appear as 1 unpacked entry')
+  assertEqual(result.unpacked[0], 'Giant Crate #1', 'Unpacked entry should match the oversized item name')
+  logPass('oversized item fixture', 'giant crate correctly rejected from mini truck')
+}
+
+function runRotationBenefitFixture(): void {
+  // A 50 x 200 x 50 cm plank cannot fit upright (200 cm > medium truck height 100 cm)
+  // but can fit rotated flat (200 → length dimension, height 50 cm ≤ 100 cm truck height)
+  const items: SaleOrderItem[] = [
+    {
+      id: 'plank',
+      name: 'Plank',
+      length: 50,
+      width: 200,
+      height: 50,
+      weight: 30,
+      quantity: 1,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const result = new AdvancedBinPacker(trucks[1], items, 'extreme_points').pack()
+  assertEqual(result.packed.length, 1, 'Rotation benefit: plank fitting flat should be packed (1 of 1)')
+  assertEqual(result.unpacked.length, 0, 'Rotation benefit: no items should be unpacked when rotation fits')
+  logPass('rotation benefit fixture', 'plank packed via dimension rotation in medium truck')
+}
+
+function runWeightCapacityFilterFixture(): void {
+  // Items whose combined weight is far above every truck's capacity
+  // recommendTrucks guards: truck.capacity < totalWeight * 0.3  → excludes truck
+  // For mini (capacity 250 kg): totalWeight = 3000 kg → 250 < 900 → excluded
+  // For medium (600 kg): 600 < 900 → excluded
+  // For large (900 kg): 900 < 900 → NOT excluded (equal, fails the strict-less-than)
+  const heavyItems: SaleOrderItem[] = [
+    {
+      id: 'lead-block',
+      name: 'Lead Block',
+      length: 50,
+      width: 50,
+      height: 50,
+      weight: 1000, // 1000 kg each × 3 = 3000 kg total
+      quantity: 3,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const recs = recommendTrucks(heavyItems, 'extreme_points', trucks)
+  // Mini (250 kg) and Medium (600 kg) should be filtered out (250 < 900, 600 < 900)
+  const truckIds = recs.map(r => r.truck.id)
+  assert(!truckIds.includes('mini'), 'Mini truck should be excluded when load weight far exceeds capacity')
+  assert(!truckIds.includes('medium'), 'Medium truck should be excluded when load weight far exceeds capacity')
+  logPass('weight capacity filter fixture', 'mini and medium excluded for overweight load')
+}
+
+function runVolumeUtilizationFixture(): void {
+  // A single 1m×1m×1m cube in a 2×2×1 medium truck should give 25% volume utilisation
+  const items: SaleOrderItem[] = [
+    {
+      id: 'unit-cube',
+      name: 'Unit Cube',
+      length: 100,
+      width: 100,
+      height: 100,
+      weight: 10,
+      quantity: 1,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const recs = recommendTrucks(items, 'extreme_points', trucks)
+  const mediumRec = recs.find(r => r.truck.id === 'medium')
+  assert(mediumRec !== undefined, 'Volume utilisation fixture: medium truck recommendation must exist')
+  // Truck volume = 2 × 2 × 1 = 4 m³; one 1m³ cube = 25%
+  assertEqual(mediumRec!.volumeUtilization, 25, 'Volume utilisation should be 25% for one 1m³ cube in a 4m³ truck')
+  logPass('volume utilisation fixture', `medium truck reports ${mediumRec!.volumeUtilization}% for single 1m³ cube in 4m³ truck`)
+}
+
 function main(): void {
   runSkylineFixture()
   runSkylineBoundaryFixture()
   runExtremePointsFixture()
   runRecommendationFixture()
   runGeneticDeterminismFixture()
-  console.log('Packing regression complete: 5 checks passed')
+  runOversizedItemFixture()
+  runRotationBenefitFixture()
+  runWeightCapacityFilterFixture()
+  runVolumeUtilizationFixture()
+  console.log('Packing regression complete: 9 checks passed')
 }
 
 try {

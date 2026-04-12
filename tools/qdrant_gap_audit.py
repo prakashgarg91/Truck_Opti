@@ -35,5 +35,6 @@ sys.exit(subprocess.call([
     "--workspace",   WORKSPACE,
     "--src-subpath", "frontend/src",
     "--framework",   "react",
-    *sys.argv[1:],   # pass through any extra CLI args
+    "--qdrant",      "http://localhost:6335",  # collection ws-6df6af38d373c83b lives on Roo Code Qdrant
+    *sys.argv[1:],   # pass through any extra CLI args (can override --qdrant)
 ]))

@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-12
+- Changed: (1) `tools/qdrant_gap_audit.py` wrapper hardcoded `--qdrant http://localhost:6335` so search mode works without manual flag; (2) packing regression expanded from 5 to 9 checks — added oversized-item rejection, rotation-benefit, weight-capacity filter, and volume-utilisation accuracy test.
+- Verified: `npm run test:packing` PASS (9/9); `cd frontend && npm run build` PASS (0 TS errors, 13.84s); Qdrant gap audit (33 checks) CRIT=0 WARN=0 INFO=0.
+- Operational proof: 9/9 packing regression green, build clean, full gap audit clean. Semantic search via `tools/qdrant_gap_audit.py -q "..."` now works correctly without extra flags.
+- Continue from: all AI-executable code work is done. Only human-supplied credentials and accounts remain.
+- Next step: owner to supply live Razorpay keys + VITE_SENTRY_DSN + Supabase PAT for migration push + real-account browser credentials for authenticated E2E smoke.
+- Blockers: no live Razorpay creds, no VITE_SENTRY_DSN, no Supabase PAT, no real-account browser credentials, no GitHub auth token; 1 moderate GitHub alert (#69) still pending owner confirmation.
+
 ### 2026-04-11
 - Changed: applied 5 code fixes from multi-agent security + code quality audit: (1) CheckoutPage `useState<any>` user replaced with `useAuthStore()`, (2) Dashboard `loadError` now shows bilingual error UI, (3) PackingPage `fetchTrucks` filters zero-dimension trucks, (4) PackingPage state-injected items validated, (5) packingWorker `error.message` replaced with fixed string; also removed hardcoded password in TestPaymentPage.
 - Verified: `cd frontend && npm run build` PASS (2997 modules, 0 TS errors); `cd frontend && npm audit` PASS (0 vulnerabilities); `npm run test:frontend-smoke` PASS (17/17); Playwright production browser smoke PASS (6/6 public routes: /, /login, /pricing, /contact, /terms, /privacy all load with correct titles).
