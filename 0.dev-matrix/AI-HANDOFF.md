@@ -27,6 +27,38 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-13 (GPT-010)
+- Changed: authenticated GitHub CLI as `prakashgarg91`, reran the Dependabot inventory with `state=open`, confirmed the earlier 17-alert list was historical fixed alerts, restored the missing recent handoff entries, and resynced STATE/TASK to the live security truth.
+- Verified: `gh auth status` reports an authenticated session; `gh api repos/Prakashgarg91/Truck_Opti/dependabot/alerts?state=open` returns no open alerts; repo-wide diagnostics still report no workspace errors.
+- Operational proof: the live GitHub security inventory currently has no open Dependabot alerts for this repo, so the mismatch was a query-state mistake rather than an unresolved manifest gap.
+- Continue from: owner-side launch blockers only remain: live Razorpay keys, `VITE_SENTRY_DSN`, Twilio, PITR, and any final business sign-off.
+- Next step: continue owner-blocked launch prep or rerun `npm run launch-check` only after the next real code/config change.
+- Blockers: none on the AI side; remaining blockers are external credentials/config.
+
+### 2026-04-13 (GPT-009)
+- Changed: fixed the real current skyline gap by changing shared skyline candidate selection to compare all valid lowest-layer placements across rotations, added the mixed-load regression fixture, and synced packing/dev-matrix tracking.
+- Verified: `npm run test:packing` PASS (10/10); `cd frontend && npm run build` PASS; `npm run test:frontend-smoke` PASS (17/17); `npm run test:live-buttons` PASS (7/7).
+- Operational proof: the mixed load that previously stalled skyline at 3/4 now packs 4/4, and the repaired heuristic stays green in both regression and live public smoke.
+- Continue from: triage the GitHub/default-branch alert mismatch with authenticated `gh`, because local npm/pip audits were already clean.
+- Next step: authenticate `gh`, fetch live alert manifest paths, and separate live alerts from historical/fixed inventory.
+- Blockers: `gh` authentication was missing during this packing pass; live Razorpay keys and `VITE_SENTRY_DSN` remain owner-side.
+
+### 2026-04-12 (GPT-008)
+- Changed: layered audit fixed the TrackingPage modal loading deadlock, AgencyDrivers clipboard rejection path, and PhonePe client contract/redirect validation flow, then synced the close-day handoff.
+- Verified: `cd frontend && npx tsc --noEmit` PASS; `cd frontend && npm run build` PASS; `npm run launch-check` PASS (17/17).
+- Operational proof: those frontend error paths no longer hang or silently fail, and the current tree cleared the full launch-check after the fixes.
+- Continue from: resume hidden-gap hunting or packing quality work; remaining launch blockers stay owner-side.
+- Next step: start the BATCH23 packing follow-up or authenticated E2E/live-alert verification, depending on priority.
+- Blockers: live Razorpay keys, `VITE_SENTRY_DSN`, authenticated GitHub security access, Twilio, PITR.
+
+### 2026-04-12 (COP-004)
+- Changed: installed `pip_audit` in `.venv`, committed MCP/Copilot/watch-session config files, verified Supabase PAT and migrations, reran the live returning-user stale-service-worker retest, and synced launch-tracking docs.
+- Verified: `npm run launch-check` PASS (17/17); live public-route stale-client retest PASS (6/6) with 0 chunk errors; Supabase PAT and migration sync verified.
+- Operational proof: AI-executable launch work was green on this tree at close-day, including the service-worker retest and migration sync.
+- Continue from: remaining blockers were owner-side config and authenticated verification.
+- Next step: owner to supply live Razorpay keys and `VITE_SENTRY_DSN`, or continue authenticated E2E/dependency review.
+- Blockers: live Razorpay keys, `VITE_SENTRY_DSN`, Twilio, PITR, authenticated live-account verification.
+
 ### 2026-04-11
 - Changed: applied 5 code fixes from multi-agent security + code quality audit: (1) CheckoutPage `useState<any>` user replaced with `useAuthStore()`, (2) Dashboard `loadError` now shows bilingual error UI, (3) PackingPage `fetchTrucks` filters zero-dimension trucks, (4) PackingPage state-injected items validated, (5) packingWorker `error.message` replaced with fixed string; also removed hardcoded password in TestPaymentPage.
 - Verified: `cd frontend && npm run build` PASS (2997 modules, 0 TS errors); `cd frontend && npm audit` PASS (0 vulnerabilities); `npm run test:frontend-smoke` PASS (17/17); Playwright production browser smoke PASS (6/6 public routes: /, /login, /pricing, /contact, /terms, /privacy all load with correct titles).
