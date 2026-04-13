@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-13 (GPT-009)
+- Changed: fixed the next real skyline heuristic gap in `frontend/src/lib/packing.ts` by evaluating all valid lowest-layer skyline candidates across rotations instead of locking onto the first valid placement; added a new mixed-load regression in `frontend/scripts/packing-regression.ts` that previously left one floor beam unpacked while `extreme_points` fit all 4 items; separately triaged the GitHub Dependabot mismatch and confirmed local Node/Python manifests are green while Docker Scout reports high-severity base-image CVEs on `node:20-alpine` and `python:3.11-slim`.
+- Verified: `cd frontend && npm run test:packing` PASS (10/10); `cd frontend && npm run build` PASS; `npm run test:frontend-smoke` PASS (17/17); `npm run test:live-buttons` PASS (7/7); `npm audit` PASS at repo root, `frontend`, and `apps/web`; `python -m pip_audit -r .\apps\web\requirements.txt` PASS; `python -m pip_audit -r .\apps\desktop\TruckOptimum\requirements_test.txt` PASS.
+- Operational proof: `npm run test:packing` -> `Packing regression complete: 10 checks passed`; `npm run test:frontend-smoke` -> `Checks run: 17` / `Passed checks: 17`; `npm run test:live-buttons` -> `Routes tested: 7` / `Passed routes: 7`; `docker scout cves node:20-alpine --only-severity high,critical` -> `17 vulnerabilities`; `docker scout cves python:3.11-slim --only-severity high,critical` -> `4 vulnerabilities`.
+- Continue from: skyline boundary-fit was already fixed before this session; the newly verified mixed-load skyline rotation issue is now fixed too. Remaining repo-side work is broader packing-quality benchmarking plus mapping the remote GitHub alert list to exact manifest paths once GitHub auth is available.
+- Next step: authenticate `gh` and fetch the Dependabot alert list by manifest path; then decide whether to refresh Docker base images (`node:20-alpine`, `python:3.11-slim`) or scope GitHub's alert interpretation before continuing broader packing heuristics.
+- Blockers: `gh` is not authenticated, so the exact remote Dependabot manifest paths cannot be machine-verified from this workspace; owner-side launch blockers still remain (live Razorpay, `VITE_SENTRY_DSN`, Twilio, PITR, real-account auth verification).
+
 ### 2026-04-12 (GPT-008)
 - Changed: fixed three frontend bugs and committed `68a72a53` (`fix: harden payment and async ui flows`): TrackingPage OTP/detail modal no longer gets stuck loading on query failure, AgencyDrivers clipboard copy now handles unavailable/rejected clipboard writes, and `phonepePayment.ts` now matches the Edge Function contract, checks `payment_history` insert errors, removes the hidden service redirect, and rejects non-allowlisted redirect URLs.
 - Verified: `cd frontend && npx tsc --noEmit` PASS (0 errors); `cd frontend && npm run build` PASS; `npm run launch-check` PASS (17/17) on a clean tree.

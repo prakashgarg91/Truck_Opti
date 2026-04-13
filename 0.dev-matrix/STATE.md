@@ -10,6 +10,7 @@
 > 2026-04-11 (COP-002): security audit + code quality audit run via multi-agent pass. 5 code fixes applied: (1) CheckoutPage auth — replaced `useState<any>` for user with `useAuthStore()` [HIGH security fix]; (2) Dashboard — added `loadError` error UI instead of silent blank render; (3) PackingPage — added zero-dimension truck guard in `fetchTrucks`; (4) PackingPage state-injected sale items now validated with positive-dimension filter; (5) packingWorker — `error.message` no longer forwarded in postMessage. `npm run build` PASS (2997 modules, 0 TS errors), `npm audit` PASS (0 vulnerabilities), `npm run test:frontend-smoke` PASS (17/17), production browser smoke PASS (6/6 public routes). Launch blockers unchanged (Razorpay live keys, VITE_SENTRY_DSN, Supabase migrations, authenticated E2E, alert #69). Close-day run 2026-04-11 — all AI-executable fixes committed; only human-blocked items remain for launch.
 > 2026-04-12 (COP-004): `pip_audit` installed in `.venv` fixing Gate 5 false-failure; config files committed (`.vscode/mcp.json`, `.vscode/settings.json`, `.github/copilot-instructions.md`, `.github/hooks/watch-session.json`); Razorpay Docker MCP `mcp/razorpay:latest` confirmed with 45 tools; Supabase PAT verified (`ACTIVE_HEALTHY`, Postgres 17.6.1, all 12 migrations synced); T-130 live returning-user SW retest RESOLVED — 6/6 public routes load, 0 chunk errors, Workbox precache 69 entries; `npm run launch-check` PASS (17/17). All AI-executable tasks complete. Remaining blockers: live Razorpay keys, VITE_SENTRY_DSN, authenticated E2E, GitHub alert #69, Twilio, PITR.
 > 2026-04-12 (GPT-008): layered CRG + Qdrant + grep audit found and fixed 3 additional frontend/runtime bugs: TrackingPage modal loading deadlock on job-offer query failure, AgencyDrivers clipboard rejection path, and a PhonePe client contract/redirect mismatch. Commit `68a72a53` is verified with `cd frontend && npx tsc --noEmit` PASS, `cd frontend && npm run build` PASS, and `npm run launch-check` PASS (17/17) on a clean tree at 20:53:41. Remaining launch blockers are unchanged and still owner-side.
+> 2026-04-13 (GPT-009): BATCH23's original skyline boundary-fit target is stale on the current tree; the real reproducible skyline gap was a mixed-load rotation/placement-order miss where `extreme_points` fit 4 items and skyline only fit 3. The shared engine now evaluates all valid lowest-layer skyline candidates across rotations, the new mixed-load regression is green, `npm run test:packing` passes 10/10, `cd frontend && npm run build` passes, `npm run test:frontend-smoke` stays 17/17 PASS, and `npm run test:live-buttons` passes 7/7. Dependabot/local mismatch is reopened: full local Node and Python manifest audits are clean, but Docker Scout reports `node:20-alpine` with 17 high CVEs and `python:3.11-slim` with 4 high CVEs; exact remote alert mapping is blocked until `gh` auth is available.
 
 ---
 
@@ -35,7 +36,7 @@
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
 | `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit still passes only 4/6 on 2026-04-10: app URL, Supabase auth DNS, email OTP flag, and PhonePe disable state are healthy, but Razorpay is still on a test key and `VITE_SENTRY_DSN` is still missing | MANAGER + OWNER |
-| `DEPENDABOT-REMAINING-20260409` | 🟡 WATCH | After the 2026-04-09 `apps/web` audit fixes and the 2026-04-10 `frontend` packaging cleanup were pushed, GitHub's default-branch alert count is down to 1 moderate vulnerability. Local root, `frontend`, and `apps/web` audits are green, and `frontend` currently resolves `dompurify@3.3.2` via `jspdf`, so the final alert still requires authenticated GitHub Security-tab review to confirm whether it is stale or tied to another ecosystem. | MANAGER + OWNER |
+| `DEPENDABOT-REMOTE-MISMATCH-20260413` | 🟡 WATCH | User-reported GitHub default-branch alerts are back up to 17 (5 high, 9 moderate, 3 low) even though full local npm audits are green at repo root, `frontend`, and `apps/web`, and both audited Python manifests are clean. Docker Scout now shows a plausible blind spot: `node:20-alpine` carries 17 high CVEs and `python:3.11-slim` carries 4 high CVEs. `gh` is unauthenticated here, so the exact remote alert manifest paths are still unverified. | MANAGER + OWNER |
 | `AUTH-E2E-UNVERIFIED-20260405` | 🟡 WATCH | Supabase host resolves and live Google OAuth now redirects correctly to Google Accounts, but real email OTP / Google OAuth / authenticated page flows still need live browser verification with a real account | MANAGER + OWNER |
 | `PWA-SW-STALE-CHUNK-20260403` | 🟡 WATCH | Full browser audit reproduced stale lazy-chunk/module failures for returning clients until service worker + caches were cleared | MANAGER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
@@ -51,6 +52,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `GPT-009` | MANAGER+IMPL | GPT-5.4 | Packing heuristics + dependency triage | Fixed skyline mixed-load rotation gap, extended regression proof, and reopened Dependabot triage with Docker evidence | 2026-04-13 | ✅ DONE |
 | `GPT-008` | MANAGER+IMPL | GPT-5.4 | Layered bug sweep + close-day | Fixed TrackingPage/AgencyDrivers/PhonePe issues, revalidated 17/17, and prepared close-day handoff | 2026-04-12 | ✅ DONE |
 | `COP-003` | JUDGE | Claude Sonnet 4.6 (GitHub Copilot) | Gap audit + packing quality | Qdrant gap audit (0 issues), wrapper fix, packing regression 5→9 checks | 2026-04-12 | ✅ DONE |
 | `COP-002` | MANAGER+JUDGE | Claude Sonnet 4.6 (GitHub Copilot) | Security + code quality | Multi-agent security audit + 5 code fixes (CheckoutPage auth, Dashboard error UI, PackingPage validation, worker error leak) | 2026-04-11 | ✅ DONE |
@@ -97,6 +99,29 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-13] GPT-009 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ SKYLINE MIXED-LOAD FIX + DEPENDABOT MISMATCH TRIAGE
+
+                             WORK COMPLETED:
+                             - verified the old skyline boundary-fit bug is already fixed on the current tree (9/9 packing regressions were green before editing)
+                             - found the next real skyline gap with a brute-force search over simple medium-truck mixed loads: one `Tall Panel` (50×150×100 cm) + three `Floor Beam` items (200×50×50 cm) where skyline packed 3 and `extreme_points` packed 4
+                             - fixed skyline in `frontend/src/lib/packing.ts` by evaluating all valid lowest-layer candidates across rotations before choosing a placement instead of stopping at the first valid fit
+                             - extended `frontend/scripts/packing-regression.ts` with the new mixed-load skyline fixture; packing proof is now 10/10
+                             - triaged the GitHub Dependabot/local mismatch: full npm audits are green for root, `frontend`, and `apps/web`; `pip_audit` is green for `apps/web/requirements.txt` and `apps/desktop/TruckOptimum/requirements_test.txt`; Docker Scout shows `node:20-alpine` with 17 high CVEs and `python:3.11-slim` with 4 high CVEs, which local manifest audits do not cover
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npm run test:packing`: PASS (10/10)
+                             - `cd frontend && npm run build`: PASS
+                             - `npm run test:frontend-smoke`: PASS (17/17)
+                             - `npm audit`: PASS at repo root, `frontend`, and `apps/web`
+                             - `python -m pip_audit -r .\apps\web\requirements.txt`: PASS
+                             - `python -m pip_audit -r .\apps\desktop\TruckOptimum\requirements_test.txt`: PASS
+                             - `docker scout cves node:20-alpine --only-severity high,critical`: 17 high vulnerabilities
+                             - `docker scout cves python:3.11-slim --only-severity high,critical`: 4 high vulnerabilities
+
+                             PRODUCT JUDGMENT:
+                             - the packing engine improved again on a real reproducible heuristic gap without breaking the public frontend smoke path
+                             - the current Dependabot mismatch should no longer be described as a solved single-alert issue; remote manifest mapping is still blocked on GitHub auth, but Docker image advisories are now a concrete likely contributor
+------------------------------------------------------------------------------------------
 [2026-04-12] GPT-008 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ LAYERED BUG SWEEP + CLEAN-TREE LAUNCH CHECK
 
                                                                        WORK COMPLETED:

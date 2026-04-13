@@ -118,6 +118,46 @@ function runSkylineBoundaryFixture(): void {
   logPass('skyline boundary fixture', 'packed 4 cubes on exact boundary-aligned coordinates')
 }
 
+function runSkylineMixedLoadFixture(): void {
+  const items: SaleOrderItem[] = [
+    {
+      id: 'tall-panel',
+      name: 'Tall Panel',
+      length: 50,
+      width: 150,
+      height: 100,
+      weight: 10,
+      quantity: 1,
+      fragile: false,
+      stackable: true,
+    },
+    {
+      id: 'floor-beam',
+      name: 'Floor Beam',
+      length: 200,
+      width: 50,
+      height: 50,
+      weight: 10,
+      quantity: 3,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const result = new AdvancedBinPacker(trucks[1], items, 'skyline').pack()
+  assertEqual(result.packed.length, 4, 'Skyline should pack the mixed tall-panel and floor-beam load into the medium truck')
+  assertEqual(result.unpacked.length, 0, 'Skyline should leave no unpacked items in the mixed-load fixture')
+
+  const beamPlacements = result.packed.filter(box => box.itemId === 'floor-beam')
+  assertEqual(beamPlacements.length, 3, 'Skyline should pack all three floor beams in the mixed-load fixture')
+  assert(
+    beamPlacements.some(box => box.depth === 2 && box.width === 0.5),
+    'Skyline should rotate at least one floor beam to use the full truck depth in the mixed-load fixture',
+  )
+
+  logPass('skyline mixed-load fixture', 'packed the mixed tall-panel and floor-beam load without leaving a beam unpacked')
+}
+
 function runExtremePointsFixture(): void {
   const items: SaleOrderItem[] = [
     {
@@ -305,6 +345,7 @@ function runVolumeUtilizationFixture(): void {
 function main(): void {
   runSkylineFixture()
   runSkylineBoundaryFixture()
+  runSkylineMixedLoadFixture()
   runExtremePointsFixture()
   runRecommendationFixture()
   runGeneticDeterminismFixture()
@@ -312,7 +353,7 @@ function main(): void {
   runRotationBenefitFixture()
   runWeightCapacityFilterFixture()
   runVolumeUtilizationFixture()
-  console.log('Packing regression complete: 9 checks passed')
+  console.log('Packing regression complete: 10 checks passed')
 }
 
 try {

@@ -51,6 +51,13 @@ export interface PackingResult {
 
 const POSITION_EPSILON = 1e-9
 
+interface SkylinePlacementCandidate {
+  x: number
+  y: number
+  z: number
+  rotation: { l: number; w: number; h: number }
+}
+
 interface PackerOptions {
   geneticIterations?: number
   onProgress?: (progress: number) => void
@@ -157,6 +164,24 @@ export class AdvancedBinPacker {
     }
   }
 
+  private isBetterSkylineCandidate(candidate: SkylinePlacementCandidate, best: SkylinePlacementCandidate | null): boolean {
+    if (!best) return true
+
+    if (candidate.y < best.y - POSITION_EPSILON) return true
+    if (candidate.y > best.y + POSITION_EPSILON) return false
+
+    if (candidate.z < best.z - POSITION_EPSILON) return true
+    if (candidate.z > best.z + POSITION_EPSILON) return false
+
+    if (candidate.x < best.x - POSITION_EPSILON) return true
+    if (candidate.x > best.x + POSITION_EPSILON) return false
+
+    if (candidate.rotation.w > best.rotation.w + POSITION_EPSILON) return true
+    if (candidate.rotation.w < best.rotation.w - POSITION_EPSILON) return false
+
+    return candidate.rotation.l < best.rotation.l - POSITION_EPSILON
+  }
+
   private packSkylineBL(): PackingResult {
     const packed: PackedBox[] = []
     const unpacked: string[] = []
@@ -176,9 +201,8 @@ export class AdvancedBinPacker {
       const itemHeight = this.cmToM(item.height)
       const rotations = this.getRotations(itemLength, itemWidth, itemHeight)
       const step = 0.1
-      let placed = false
+      let bestPlacement: SkylinePlacementCandidate | null = null
 
-      outerLoop:
       for (const rotation of rotations) {
         const yPositions = this.createAxisPositions(height - rotation.h, step)
         const zPositions = this.createAxisPositions(width - rotation.w, step)
@@ -188,16 +212,21 @@ export class AdvancedBinPacker {
           for (const z of zPositions) {
             for (const x of xPositions) {
               if (this.fitsAt(packed, x, y, z, rotation.l, rotation.w, rotation.h)) {
-                packed.push(this.createPackedBox(item, index, x, y, z, rotation))
-                placed = true
-                break outerLoop
+                const candidate = { x, y, z, rotation }
+                if (this.isBetterSkylineCandidate(candidate, bestPlacement)) {
+                  bestPlacement = candidate
+                }
               }
             }
           }
         }
       }
 
-      if (!placed) unpacked.push(`${item.name} #${index + 1}`)
+      if (bestPlacement) {
+        packed.push(this.createPackedBox(item, index, bestPlacement.x, bestPlacement.y, bestPlacement.z, bestPlacement.rotation))
+      } else {
+        unpacked.push(`${item.name} #${index + 1}`)
+      }
     }
 
     return { packed, unpacked }
