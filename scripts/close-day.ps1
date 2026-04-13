@@ -161,7 +161,8 @@ function Get-LaunchCheckStatus() {
   if (-not (Test-Path $statusFile)) { return $null }
   try {
     return Get-Content $statusFile -Raw | ConvertFrom-Json
-  } catch {
+  }
+  catch {
     return $null
   }
 }
@@ -176,7 +177,8 @@ function Invoke-InDir($relativeDir, $command) {
     Log $cmdOutput.Trim()
     Log "--- exit: $LASTEXITCODE ---"
     return ($LASTEXITCODE -eq 0)
-  } finally {
+  }
+  finally {
     Pop-Location
   }
 }
@@ -190,7 +192,8 @@ Gate 'runtime close docs' ($missing.Count -eq 0) ($(if ($missing.Count -eq 0) { 
 $launchStatus = Get-LaunchCheckStatus
 if ($null -eq $launchStatus) {
   Gate 'background launch-check' $false 'status missing; start the session with resume-work.ps1 so launch-check runs in background'
-} else {
+}
+else {
   $launchStatusState = "$($launchStatus.State)"
   $launchStatusSummary = if ($launchStatus.Summary) { "$($launchStatus.Summary)" } else { $launchStatusState }
   $launchStatusLog = if ($launchStatus.Log) { "$($launchStatus.Log)" } else { 'missing' }
@@ -198,9 +201,11 @@ if ($null -eq $launchStatus) {
   $launchStatusOk = $launchStatusState -in @('starting', 'running', 'passed')
   $launchStatusDetail = if ($launchStatusState -eq 'failed') {
     "latest background launch-check failed - $launchStatusSummary"
-  } elseif ($launchStatusState -eq 'starting' -or $launchStatusState -eq 'running') {
+  }
+  elseif ($launchStatusState -eq 'starting' -or $launchStatusState -eq 'running') {
     "background launch-check still running - $launchStatusSummary"
-  } else {
+  }
+  else {
     $launchStatusSummary
   }
 
@@ -219,18 +224,21 @@ try {
   if ($gitStatus.Count -eq 0) {
     $statusOk = $true
     $statusDetail = 'repo clean'
-  } elseif ($statusTouch.Count -gt 0) {
+  }
+  elseif ($statusTouch.Count -gt 0) {
     # verify the touch is real content, not just whitespace
     $diffBytes = git diff --stat -- '0.dev-matrix/STATE.md' '0.dev-matrix/TASK.md' '0.dev-matrix/DISCUSSION.md' 2>$null | Out-String
     if ($diffBytes.Trim().Length -gt 0) {
       $statusOk = $true
       $statusDetail = 'runtime status files have real content changes'
       Log "--- status diff ---"; Log $diffBytes.Trim()
-    } else {
+    }
+    else {
       $statusOk = $false
       $statusDetail = 'status files touched but no real content change detected (whitespace-only edits do not count)'
     }
-  } else {
+  }
+  else {
     $statusOk = $false
     $statusDetail = 'repo changed without state/task/discussion update'
   }
@@ -242,36 +250,38 @@ try {
   $workingTreeOk = $blockingDirty.Count -eq 0
   $workingTreeDetail = if ($workingTreeOk) {
     if ($dirtyPaths.Count -eq 0) { 'repo clean before closeout report' } else { 'only runtime handoff/evidence files are dirty before report write' }
-  } else {
+  }
+  else {
     'dirty working tree outside runtime handoff: ' + (($blockingDirty | Select-Object -First 5) -join ', ')
   }
   Gate 'working tree cleanliness' $workingTreeOk $workingTreeDetail
 
   $newDocPaths = @(
     $gitStatus |
-      Where-Object { $_ -match '^(A.|.A|\?\?)\s' } |
-      ForEach-Object { Get-StatusPath $_ } |
-      Where-Object { $_ -and $_ -match '\.(md|txt|rst)$' } |
-      Select-Object -Unique
+    Where-Object { $_ -match '^(A.|.A|\?\?)\s' } |
+    ForEach-Object { Get-StatusPath $_ } |
+    Where-Object { $_ -and $_ -match '\.(md|txt|rst)$' } |
+    Select-Object -Unique
   )
   $misplacedDocs = @($newDocPaths | Where-Object { -not (Test-IsApprovedDocPath $_) })
   $docPlacementOk = $misplacedDocs.Count -eq 0
   $docPlacementDetail = if ($docPlacementOk) {
     if ($newDocPaths.Count -eq 0) { 'no newly created docs pending placement review' } else { 'new docs are in approved zones' }
-  } else {
+  }
+  else {
     'new docs in nonstandard locations: ' + (($misplacedDocs | Select-Object -First 5) -join ', ')
   }
   Gate 'documentation placement' $docPlacementOk $docPlacementDetail
 
   $activeDocChanges = @(
     $dirtyPaths |
-      Where-Object { $_ -match '\.(md|txt|rst)$' -and $_ -notlike '0.dev-matrix/closeout-logs/*' } |
-      Select-Object -Unique
+    Where-Object { $_ -match '\.(md|txt|rst)$' -and $_ -notlike '0.dev-matrix/closeout-logs/*' } |
+    Select-Object -Unique
   )
   $suspiciousDocPaths = @(
     $activeDocChanges |
-      Where-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) -match $SuspiciousDocNamePattern } |
-      Select-Object -Unique
+    Where-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) -match $SuspiciousDocNamePattern } |
+    Select-Object -Unique
   )
   $docNamingOk = $suspiciousDocPaths.Count -eq 0
   $docNamingDetail = if ($docNamingOk) { 'no active docs use unstable duplicate-style names' } else { 'unstable doc names: ' + (($suspiciousDocPaths | Select-Object -First 5) -join ', ') }
@@ -292,11 +302,13 @@ try {
     $launchFocusOk = $launchFocusMissing.Count -eq 0
     $launchFocusDetail = if ($launchFocusOk) {
       'launch checklist names product outcome/current launch slice/current blocker/next earning step'
-    } else {
+    }
+    else {
       'launch checklist missing focus lines: ' + ($launchFocusMissing -join ', ')
     }
     Gate 'launch focus' $launchFocusOk $launchFocusDetail
-  } else {
+  }
+  else {
     Gate 'launch focus' $false 'LAUNCH_CHECKLIST.md not found'
   }
 
@@ -306,7 +318,8 @@ try {
     if ($null -eq $latestHandoff) {
       Gate 'handoff continuity' $false 'AI-HANDOFF.md has no parseable top entry'
       Gate 'operational proof' $false 'AI-HANDOFF.md has no parseable top entry'
-    } else {
+    }
+    else {
       $latestHandoffDate = $latestHandoff.Date
       $latestHandoffOperationalProof = Get-HandoffFieldValue $latestHandoff.Body 'Operational proof:'
       $latestHandoffContinue = Get-HandoffFieldValue $latestHandoff.Body 'Continue from:'
@@ -314,15 +327,17 @@ try {
       $latestHandoffBlockers = Get-HandoffFieldValue $latestHandoff.Body 'Blockers:'
       $missingHandoffLabels = @(
         $RequiredHandoffLabels |
-          Where-Object { -not [regex]::IsMatch($latestHandoff.Body, '(?mi)^-\s*' + [regex]::Escape($_) + '\s*.+$') }
+        Where-Object { -not [regex]::IsMatch($latestHandoff.Body, '(?mi)^-\s*' + [regex]::Escape($_) + '\s*.+$') }
       )
       $handoffDateOk = $latestHandoff.Date -eq $todayStamp
       $handoffOk = $handoffDateOk -and $missingHandoffLabels.Count -eq 0
       $handoffDetail = if ($handoffOk) {
         'latest entry is dated today and contains changed/verified/operational-proof/continue/next/blockers fields'
-      } elseif (-not $handoffDateOk) {
+      }
+      elseif (-not $handoffDateOk) {
         "latest entry dated $($latestHandoff.Date); expected $todayStamp"
-      } else {
+      }
+      else {
         'latest entry missing fields: ' + (($missingHandoffLabels | ForEach-Object { $_.TrimEnd(':') }) -join ', ')
       }
       Gate 'handoff continuity' $handoffOk $handoffDetail
@@ -330,18 +345,22 @@ try {
       $operationalProofOk = Test-IsMeaningfulOperationalProof $latestHandoffOperationalProof
       $operationalProofDetail = if ($operationalProofOk) {
         'latest entry records operational proof'
-      } elseif ($missingHandoffLabels -contains 'Operational proof:') {
+      }
+      elseif ($missingHandoffLabels -contains 'Operational proof:') {
         'latest entry missing field: Operational proof'
-      } else {
+      }
+      else {
         'Operational proof cannot be none; record concrete proof or not run - reason'
       }
       Gate 'operational proof' $operationalProofOk $operationalProofDetail
     }
-  } else {
+  }
+  else {
     Gate 'handoff continuity' $false 'AI-HANDOFF.md not found'
     Gate 'operational proof' $false 'AI-HANDOFF.md not found'
   }
-} finally {
+}
+finally {
   Pop-Location
 }
 

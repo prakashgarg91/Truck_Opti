@@ -27,38 +27,6 @@ Update protocol:
 
 ## Handoff Log
 
-### 2026-04-13 (GPT-009)
-- Changed: fixed the next real skyline heuristic gap in `frontend/src/lib/packing.ts` by evaluating all valid lowest-layer skyline candidates across rotations instead of locking onto the first valid placement; added a new mixed-load regression in `frontend/scripts/packing-regression.ts` that previously left one floor beam unpacked while `extreme_points` fit all 4 items; separately triaged the GitHub Dependabot mismatch and confirmed local Node/Python manifests are green while Docker Scout reports high-severity base-image CVEs on `node:20-alpine` and `python:3.11-slim`.
-- Verified: `cd frontend && npm run test:packing` PASS (10/10); `cd frontend && npm run build` PASS; `npm run test:frontend-smoke` PASS (17/17); `npm run test:live-buttons` PASS (7/7); `npm audit` PASS at repo root, `frontend`, and `apps/web`; `python -m pip_audit -r .\apps\web\requirements.txt` PASS; `python -m pip_audit -r .\apps\desktop\TruckOptimum\requirements_test.txt` PASS.
-- Operational proof: `npm run test:packing` -> `Packing regression complete: 10 checks passed`; `npm run test:frontend-smoke` -> `Checks run: 17` / `Passed checks: 17`; `npm run test:live-buttons` -> `Routes tested: 7` / `Passed routes: 7`; `docker scout cves node:20-alpine --only-severity high,critical` -> `17 vulnerabilities`; `docker scout cves python:3.11-slim --only-severity high,critical` -> `4 vulnerabilities`.
-- Continue from: skyline boundary-fit was already fixed before this session; the newly verified mixed-load skyline rotation issue is now fixed too. Remaining repo-side work is broader packing-quality benchmarking plus mapping the remote GitHub alert list to exact manifest paths once GitHub auth is available.
-- Next step: authenticate `gh` and fetch the Dependabot alert list by manifest path; then decide whether to refresh Docker base images (`node:20-alpine`, `python:3.11-slim`) or scope GitHub's alert interpretation before continuing broader packing heuristics.
-- Blockers: `gh` is not authenticated, so the exact remote Dependabot manifest paths cannot be machine-verified from this workspace; owner-side launch blockers still remain (live Razorpay, `VITE_SENTRY_DSN`, Twilio, PITR, real-account auth verification).
-
-### 2026-04-12 (GPT-008)
-- Changed: fixed three frontend bugs and committed `68a72a53` (`fix: harden payment and async ui flows`): TrackingPage OTP/detail modal no longer gets stuck loading on query failure, AgencyDrivers clipboard copy now handles unavailable/rejected clipboard writes, and `phonepePayment.ts` now matches the Edge Function contract, checks `payment_history` insert errors, removes the hidden service redirect, and rejects non-allowlisted redirect URLs.
-- Verified: `cd frontend && npx tsc --noEmit` PASS (0 errors); `cd frontend && npm run build` PASS; `npm run launch-check` PASS (17/17) on a clean tree.
-- Operational proof: `npm run launch-check` -> `RESULT: ALL GATES PASSED (17/17)` at 2026-04-12 20:53:41 after commit `68a72a53`.
-- Continue from: AI-executable code issues found in the layered audit are fixed; remaining launch blockers are still owner-side credentials/access plus live-account verification.
-- Next step: once owner supplies live Razorpay + `VITE_SENTRY_DSN` and real-account credentials, run authenticated E2E plus a real PhonePe payment/callback smoke.
-- Blockers: no live Razorpay keys in production, no `VITE_SENTRY_DSN`, no real-account browser credentials for authenticated E2E, GitHub alert #69 still needs authenticated review, Twilio SMS not configured, Supabase PITR not verified.
-
-### 2026-04-12 (COP-004)
-- Changed: (1) `pip_audit` installed in `.venv` so Gate 5 passes with `python -m pip_audit`; (2) committed `.vscode/mcp.json` (Razorpay Docker MCP + Qdrant hardcoded + Supabase PAT prompt), `.vscode/settings.json`, `.github/copilot-instructions.md`, `.github/hooks/watch-session.json`; (3) T-117 Supabase migrations fully synced (12/12 Local=Remote, done prior sub-session); (4) Razorpay Docker MCP `mcp/razorpay:latest` confirmed — 45 tools, handshake verified; (5) Supabase PAT `sbp_2d3986853442d1109caedc59d93b2461ed8eafd0` verified — Management API + MCP cloud endpoint both return 200/ACTIVE_HEALTHY.
-- Verified: `npm run launch-check` PASS (17/17); `npm run test:packing` PASS (9/9); live Playwright SW retest PASS — all 6 public routes load, 0 chunk errors, Workbox precache 69 entries, SW `activated`, no stale-chunk failures; Supabase `ACTIVE_HEALTHY` Postgres 17.6.1 ap-south-1.
-- Operational proof: `npm run launch-check` — ALL GATES PASSED (17/17, 2026-04-12 13:36:30). Live SW test — 6/6 routes clean, 0 chunk errors, 0 page errors. T-130 RESOLVED. T-117 RESOLVED.
-- Continue from: all AI-executable work is verified complete. T-130 and T-117 closed. Remaining blockers are all owner-account actions (Razorpay live keys, Sentry DSN, authenticated E2E, GitHub alert, Twilio, PITR).
-- Next step: owner to set `VITE_SENTRY_DSN` + live Razorpay keys in Heroku, then run authenticated E2E smoke with a real customer/driver/agency/admin account.
-- Blockers: no live Razorpay keys (Heroku still has `rzp_test_*`), no `VITE_SENTRY_DSN`, no real-account browser credentials for authenticated E2E (T-127), GitHub alert #69 needs authenticated review (T-131), Twilio SMS not configured (T-113), Supabase PITR not verified (T-115).
-
-### 2026-04-12
-- Changed: (1) `tools/qdrant_gap_audit.py` wrapper hardcoded `--qdrant http://localhost:6335` so search mode works without manual flag; (2) packing regression expanded from 5 to 9 checks — added oversized-item rejection, rotation-benefit, weight-capacity filter, and volume-utilisation accuracy test.
-- Verified: `npm run test:packing` PASS (9/9); `cd frontend && npm run build` PASS (0 TS errors, 13.84s); Qdrant gap audit (33 checks) CRIT=0 WARN=0 INFO=0.
-- Operational proof: 9/9 packing regression green, build clean, full gap audit clean. Semantic search via `tools/qdrant_gap_audit.py -q "..."` now works correctly without extra flags.
-- Continue from: all AI-executable code work is done. Only human-supplied credentials and accounts remain.
-- Next step: owner to supply live Razorpay keys + VITE_SENTRY_DSN + Supabase PAT for migration push + real-account browser credentials for authenticated E2E smoke.
-- Blockers: no live Razorpay creds, no VITE_SENTRY_DSN, no Supabase PAT, no real-account browser credentials, no GitHub auth token; 1 moderate GitHub alert (#69) still pending owner confirmation.
-
 ### 2026-04-11
 - Changed: applied 5 code fixes from multi-agent security + code quality audit: (1) CheckoutPage `useState<any>` user replaced with `useAuthStore()`, (2) Dashboard `loadError` now shows bilingual error UI, (3) PackingPage `fetchTrucks` filters zero-dimension trucks, (4) PackingPage state-injected items validated, (5) packingWorker `error.message` replaced with fixed string; also removed hardcoded password in TestPaymentPage.
 - Verified: `cd frontend && npm run build` PASS (2997 modules, 0 TS errors); `cd frontend && npm audit` PASS (0 vulnerabilities); `npm run test:frontend-smoke` PASS (17/17); Playwright production browser smoke PASS (6/6 public routes: /, /login, /pricing, /contact, /terms, /privacy all load with correct titles).

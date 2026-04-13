@@ -8,7 +8,13 @@
     "outDir": ".tmp/packing-regression",
     "rootDir": ".",
     "noEmit": false,
-    "lib": ["ES2020", "DOM"]
+    "lib": [
+      "ES2020",
+      "DOM"
+    ]
   },
-  "include": ["src/lib/packing.ts", "scripts/packing-regression.ts"]
+  "include": [
+    "src/lib/packing.ts",
+    "scripts/packing-regression.ts"
+  ]
 }
