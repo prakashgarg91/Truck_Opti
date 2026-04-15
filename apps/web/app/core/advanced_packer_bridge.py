@@ -25,6 +25,13 @@ class AdvancedPackerBridge:
     def __init__(self):
         self._dwave_solver = None
 
+    def _emit_lifecycle_event(self, event: str, payload: Dict[str, Any]) -> None:
+        if getattr(socketio, 'server', None) is None:
+            logger.debug('Skipping %s emit because Socket.IO is not initialized', event)
+            return
+
+        socketio.emit(event, payload)
+
     def get_available_algorithms(self) -> Dict[str, str]:
         """Return available algorithms with descriptions"""
         return self.ALGORITHMS.copy()
@@ -48,7 +55,7 @@ class AdvancedPackerBridge:
         logger.info(f"Packing with algorithm: {algorithm}, goal: {optimization_goal}, job: {job_id}")
 
         # Emit start event
-        socketio.emit('packing_started', {
+        self._emit_lifecycle_event('packing_started', {
             'job_id': job_id,
             'algorithm': algorithm,
             'total_items': len(cartons)
@@ -68,10 +75,11 @@ class AdvancedPackerBridge:
             result = self._pack_py3dbp(trucks, cartons, optimization_goal)
 
         # Emit completion event
-        socketio.emit('packing_completed', {
+        packed_items = result.get('packed_cartons') or result.get('packed_items') or []
+        self._emit_lifecycle_event('packing_completed', {
             'job_id': job_id,
             'success': result.get('success', True),
-            'packed_count': len(result.get('packed_items', [])) if result else 0
+            'packed_count': len(packed_items) if result else 0
         })
 
         return result

@@ -69,6 +69,7 @@
   "overrides": {
     "dompurify": "^3.3.2",
     "esbuild": "^0.25.0",
+    "follow-redirects": "^1.15.12",
     "serialize-javascript": "^7.0.3",
     "rollup": "^4.0.0"
   }

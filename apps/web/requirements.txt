@@ -64,7 +64,7 @@ apispec==6.3.1
 marshmallow==3.26.2
 
 # Testing
-pytest==7.4.3
+pytest==9.0.3
 pytest-flask==1.3.0
 pytest-cov==4.1.0
 pytest-mock==3.12.0
@@ -91,8 +91,8 @@ click==8.1.7
 python-slugify==8.0.1
 faker==21.0.0  # For testing/seeding
 
-# 3D Packing (install from source if needed)
-# py3dbp - Note: May need manual installation or alternative
+# 3D Packing
+py3dbp==1.1.2
 
 # Performance
 ujson==5.12.0  # Faster JSON
