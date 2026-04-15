@@ -27,6 +27,43 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-15 (GPT-013)
+- Changed: committed repo-side launch hardening in `85e78615` (`fix: harden launch dependencies and packing bridge`), which guards `apps/web` packing lifecycle emits when Socket.IO is uninitialized, declares `py3dbp` in `apps/web/requirements.txt`, hardens frontend `follow-redirects` resolution, and removes the tracked generated SQLite log database.
+- Verified: `npm run launch-check` -> `RESULT: ALL GATES PASSED (17/17)` at 2026-04-15 21:20:04; `d:\Github\Truck_Opti\.venv\Scripts\python.exe -m pytest apps\web\tests\unit\test_dwave_adapter.py -q` -> `8 passed`; `npm run test:frontend-smoke` -> `17/17`; `npm run test:live-buttons` -> `7/7`.
+- Operational proof: the committed repo tree now passes launch-check fully, the backend py3dbp bridge no longer crashes in non-SocketIO test contexts, and the public frontend smoke surface remains fully green.
+- Continue from: owner-side launch blockers only remain: live Razorpay keys/config, `VITE_SENTRY_DSN`, Twilio/PITR decisions, and final real-account verification.
+- Next step: complete owner-side production config and real-account verification, then rerun authenticated/browser production proof after those credentials are in place.
+- Blockers: external credentials/config only — live Razorpay, `VITE_SENTRY_DSN`, Twilio, PITR, and manual real-account verification.
+
+### 2026-04-15 (code-review-graph MCP overhaul — Claude Sonnet 4.6)
+- Changed: progressive 4-session fix of `code-review-graph` MCP server across `D:\Github\code-review-graph\`. All changes are uncommitted in that repo (git diff shows 535 net insertions across 6 files).
+  — `tools/context.py` + `tools/review.py` + `tools/query.py`: replaced `with ThreadPoolExecutor as pool:` (blocks MCP on `__exit__` via `shutdown(wait=True)`) with explicit `try/finally: _pool.shutdown(wait=False)` in all 4 call sites.
+  — `graph.py`: moved `PRAGMA optimize` from `__init__` to `close()` to avoid cold-start ANALYZE on 19.9MB DB; added 32MB cache, 256MB mmap, `synchronous=NORMAL`, `temp_store=MEMORY`.
+  — `changes.py`: added `_ANALYSIS_CACHE` (keyed to git HEAD sha + files hash) + `batch_risk_data()` + `_compute_risk_from_batch` — 4 SQL queries total vs 4N per node.
+  — `main.py`: added `_setup_file_logging()` (writes to `~/.code-review-graph/crg-server.log`, 5MB rotating × 3; NO git calls during startup), `_log_tool_call()` timing on all 8 main tools, `_auto_embed_background()` daemon thread (delay=300s, raw sqlite3 check so no torch import at startup).
+  — `tools/context.py`: `_RISK_ANALYSIS_TIMEOUT` lowered 120→8s so `get_minimal_context` fails fast and returns "unknown risk" within 8s; analysis thread continues in background and populates cache; second call is instant.
+- Verified: `D:\Github\code-review-graph\.venv\Scripts\python.exe -c "from code_review_graph.main import ..." → OK`; timeouts confirmed: context=8s, detect_changes=120s, impact=90s; log file at `C:\Users\Prakash\.code-review-graph\crg-server.log` writing correctly; `get_minimal_context_tool` returned in <1s on live test.
+- Operational proof: log shows `get_minimal_context status=ok 120.02s` (before 8s fix), `detect_changes status=ok 238.52s` (analysis completes fully in background, caches result). After 8s fix, `get_minimal_context` returns "unknown risk" instantly then populates cache; second call instant.
+- Continue from: restart the `code-review-graph` MCP server (Command Palette → MCP: List Servers → code-review-graph → Restart). Run `get_minimal_context_tool` twice: first call returns in <8s with unknown/low risk, second call returns instantly with full risk.
+- Next step: commit the 6-file change in `D:\Github\code-review-graph` with message `fix: cold-start hang, file logging, auto-embed, fail-fast context timeout`. Then run `get_minimal_context_tool` for Truck_Opti and confirm the analysis eventually caches (check log after ~3 min).
+- Blockers: `analyze_changes` for Truck_Opti still takes 2-4 min to complete (fills cache in background). First `get_minimal_context` call always returns "unknown risk". This is acceptable UX but root cause (likely `get_affected_flows` BFS on large graph) should be investigated next session.
+
+### 2026-04-15 (GPT-012)
+- Changed: hardened the remaining dependency manifests in the working tree (`frontend/package.json`, `frontend/package-lock.json`, `apps/web/requirements.txt`), left the tracked `app/logs/advanced_logs.db` deleted in the working tree, and prepared the repo for close-day with current validation evidence.
+- Verified: `npm run launch-check` -> 16 passed, 1 failed; the only failing gate is git cleanliness on `app/logs/advanced_logs.db`, `apps/web/requirements.txt`, `frontend/package-lock.json`, and `frontend/package.json`. `npm run test:frontend-smoke` -> 17 checks run, 17 passed.
+- Operational proof: repo-side readiness checks are green except for the still-dirty working tree, and the public frontend smoke suite remains fully green at 17/17 on 2026-04-15.
+- Continue from: decide whether to commit or discard the current dependency and log-file changes, then rerun launch-check on a clean tree before making any new readiness claim.
+- Next step: review the dirty changes (`app/logs/advanced_logs.db`, `apps/web/requirements.txt`, `frontend/package-lock.json`, `frontend/package.json`), commit or revert them intentionally, and rerun close-day once the tree is clean.
+- Blockers: uncommitted repo-side changes keep the working tree dirty; owner-side launch blockers still include live Razorpay keys, `VITE_SENTRY_DSN`, Twilio, and PITR.
+
+### 2026-04-13 (GPT-011)
+- Changed: classified the remaining dirty workspace files after the Dependabot truth fix, isolated the verified dev-matrix sync into commit `03143cb5` (`docs: sync dev-matrix with live dependabot truth`), reran `npm run launch-check`, and attempted close-day with the remaining local MCP drift still present.
+- Verified: `git show --stat --oneline -1 03143cb5` shows only `0.dev-matrix/AI-HANDOFF.md`, `0.dev-matrix/STATE.md`, and `0.dev-matrix/TASK.md`; `npm run launch-check` now passes 16 checks with the only failure being git cleanliness on `.vscode/mcp.json` and `.mcp.json`; `git status --short` shows only those two MCP paths outside runtime docs.
+- Operational proof: the repo truth for handoff/state/task is committed on `main`, launch validation is green except for MCP working-tree dirt, and the remaining uncommitted changes are local MCP configuration only rather than unfinished product code or truncated docs.
+- Continue from: either clean up the MCP config drift (`.vscode/mcp.json`, `.mcp.json`) or leave it as local-only workspace state and continue owner-blocked launch prep.
+- Next step: if resuming code work, decide whether to revert the MCP-only local changes before the next close-day so working-tree cleanliness can go green.
+- Blockers: local-only MCP config drift keeps the working tree dirty; external launch blockers still include live Razorpay keys, `VITE_SENTRY_DSN`, Twilio, and PITR.
+
 ### 2026-04-13 (GPT-010)
 - Changed: authenticated GitHub CLI as `prakashgarg91`, reran the Dependabot inventory with `state=open`, confirmed the earlier 17-alert list was historical fixed alerts, restored the missing recent handoff entries, and resynced STATE/TASK to the live security truth.
 - Verified: `gh auth status` reports an authenticated session; `gh api repos/Prakashgarg91/Truck_Opti/dependabot/alerts?state=open` returns no open alerts; repo-wide diagnostics still report no workspace errors.

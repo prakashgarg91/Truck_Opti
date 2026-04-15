@@ -16,6 +16,47 @@
 ### Sign In Format
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-15] MANAGER-LAUNCH:
+  Repo-side launch hardening landed and the committed tree is green again.
+
+  CURRENT VERIFIED STATE:
+  - `85e78615`: launch dependency and packing bridge hardening committed
+  - `npm run launch-check`: PASS (17/17)
+  - `apps/web` focused pytest: PASS (8/8)
+  - `npm run test:frontend-smoke`: PASS (17/17)
+  - `npm run test:live-buttons`: PASS (7/7)
+
+  CONCLUSION:
+  - AI-fixable repo blockers are cleared on the committed tree
+  - launch is now blocked only by owner-side production config and manual real-account verification
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-15] MANAGER-CLOSEOUT:
+  Close-day resumed after dependency hardening and git-cleanliness triage.
+
+  CURRENT VERIFIED STATE:
+  - `npm run launch-check`: 16 passed, 1 failed only because the working tree is dirty
+  - dirty paths are `app/logs/advanced_logs.db`, `apps/web/requirements.txt`, `frontend/package-lock.json`, and `frontend/package.json`
+  - `npm run test:frontend-smoke`: PASS (17/17)
+
+  CONCLUSION:
+  - repo-side validation is green apart from uncommitted working-tree changes
+  - launch remains blocked by intentional review/commit decisions plus owner-side production credentials/config
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-13] MANAGER-CLOSEOUT:
+  Day-close checkpoint recorded after the live Dependabot truth sync commit.
+
+  CURRENT VERIFIED STATE:
+  - `03143cb5`: committed dev-matrix truth fix for AI-HANDOFF/STATE/TASK
+  - `npm run launch-check`: 16 passed, 1 failed only because local MCP files remain dirty
+  - dirty paths are limited to `.vscode/mcp.json` and untracked `.mcp.json`
+
+  CONCLUSION:
+  - repo truth is committed and current
+  - close-day cannot go fully green until the local MCP config drift is either reverted or intentionally preserved outside cleanliness expectations
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-05] MANAGER-ADMIN:
   Shared skyline packing quality has been improved in the single client-side engine.
 
