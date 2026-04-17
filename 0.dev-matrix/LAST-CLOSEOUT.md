@@ -1,9 +1,9 @@
 # Last Closeout
 
-- Time: 2026-04-17 19:59:50
+- Time: 2026-04-17 20:43:20
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M .github/copilot-instructions.md |  M .github/instructions/context-engineering.instructions.md |  M .gitignore |  M .vscode/mcp.json |  M .vscode/settings.json |  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/CONTEXT-ENGINEERING.md |  M 0.dev-matrix/DEPENDENCIES.md |  M 0.dev-matrix/DISCUSSION.md |  M 0.dev-matrix/FRAMEWORK.md
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-17_195950.log
+- Git status:  M 0.dev-matrix/LAST-CLOSEOUT.md
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-17_204320.log
 
 ## AI Handoff
 - Latest handoff date: 2026-04-17
@@ -20,22 +20,22 @@
 - Next earning step: finish live payment credentials, verify authenticated flows, and onboard the first paying logistics customers.
 
 ## Launch Verification
-- State: failed
-- Summary: launch-check failed; see log
-- Log: 0.dev-matrix/test-reports/launch-check-20260417_192203.log
+- State: passed
+- Summary: launch-check passed
+- Log: 0.dev-matrix/test-reports/launch-check-20260417_2042.log
 
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
-- [FAIL] background launch-check - latest background launch-check failed - launch-check failed; see log
+- [PASS] background launch-check - launch-check passed
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [PASS] status update discipline - runtime status files have real content changes
-- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: .github/copilot-instructions.md, .github/instructions/context-engineering.instructions.md, .gitignore, .vscode/mcp.json, .vscode/settings.json
-- [PASS] documentation placement - new docs are in approved zones
+- [FAIL] status update discipline - repo changed without state/task/discussion update
+- [PASS] working tree cleanliness - only runtime handoff/evidence files are dirty before report write
+- [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
 - [PASS] handoff continuity - latest entry is dated today and contains changed/verified/operational-proof/continue/next/blockers fields
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 8
-- Fail: 2
+- Pass: 9
+- Fail: 1
