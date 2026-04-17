@@ -12,7 +12,7 @@ TruckOpti has **two separate authentication systems** that are **not connected t
 1. **Production frontend** (`frontend/`): Uses **Supabase Auth** exclusively — OTP delivery, Google OAuth, session management, JWT handling are all handled by Supabase.
 2. **Legacy Flask backend** (`apps/web/`): Has a custom OTP service (`otp_service.py`) that delivers OTPs via Telegram bot or Gmail SMTP. This is **not wired into the React frontend** and runs on a completely separate stack (Flask + SQLite + custom JWT).
 
-**Key decision for launch:** Configure Twilio in Supabase Auth (5-minute task) OR accept Email OTP + Google OAuth as the launch auth methods and defer phone OTP.
+**Key decision for launch:** Configure Twilio in Supabase Auth (5-minute task) OR accept Email OTP + Google OAuth as the launch auth methods and defer phone OTP. If phone OTP is enabled later, keep it inside Supabase Phone Auth with Twilio/Twilio Verify instead of introducing Firebase Auth as a second production auth system.
 
 ---
 
@@ -144,6 +144,13 @@ Telegram private channels are useful for **notifications and logging** (append-o
 
 **For launch: Option A (Twilio in Supabase) or Option B (Email + Google only).**
 
+If TruckOpti decides to add phone OTP later, the implementation path should remain:
+
+- Supabase Auth for session issuance and identity storage
+- Supabase Phone provider backed by Twilio or Twilio Verify for SMS/WhatsApp delivery
+
+Do **not** add Firebase Auth as a parallel production phone-OTP path for this app. That would introduce a second auth stack, extra identity-linking work, and additional third-party auth billing without reducing the current migration risk.
+
 Option C is a separate project for after launch, not a launch blocker.
 
 ---
@@ -182,6 +189,7 @@ All session tokens, refresh, and expiry are managed by `@supabase/supabase-js`. 
 | Custom OTP in apps/web is NOT production-ready | GLM-005 | 2026-03-31 | In-memory store, separate user model, not wired to frontend (see §2) |
 | Twilio config in Supabase is the fastest path to phone OTP | GLM-005 | 2026-03-31 | 5-minute setup, zero code changes (see §3, Option A) |
 | Email OTP + Google OAuth is a viable launch alternative | GLM-005 | 2026-03-31 | Already working, ₹0 additional cost (see §3, Option B) |
+| If phone OTP is added later, keep it on Supabase Phone + Twilio only | GPT-020 | 2026-04-16 | Avoids splitting production auth across Supabase and Firebase while preserving the current session/RLS model |
 | Full custom OTP migration is a post-launch project | GLM-005 | 2026-03-31 | 2–3 weeks effort, high risk, not blocking launch (see §3, Option C) |
 
 ---

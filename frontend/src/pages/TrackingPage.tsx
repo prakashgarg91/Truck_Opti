@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, Trash2, Loader2 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { shipmentsSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
@@ -42,8 +42,6 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
 
   const mappedData: ShipmentLocation[] = data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shipmentsApi returns untyped DB rows
-    .filter((s: any) => s.status !== 'cancelled')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((s: any) => ({
       id: s.id,
       shipment_id: s.shipment_id || s.id.slice(0, 8).toUpperCase(),
@@ -72,9 +70,10 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
 export default function TrackingPage() {
   const { language } = useLanguageStore()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_transit' | 'delivered'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'in_transit' | 'delivered' | 'cancelled'>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedShipment, setSelectedShipment] = useState<ShipmentLocation | null>(null)
@@ -97,6 +96,16 @@ export default function TrackingPage() {
   useEffect(() => {
     document.title = language === 'en' ? 'Live Tracking - TruckOpti' : 'लाइव ट्रैकिंग - TruckOpti'
   }, [language])
+
+  useEffect(() => {
+    const shipmentId = searchParams.get('shipment')
+    if (!shipmentId || shipments.length === 0) return
+
+    const matchedShipment = shipments.find((shipment) => shipment.id === shipmentId)
+    if (matchedShipment) {
+      setSelectedId(matchedShipment.id)
+    }
+  }, [searchParams, shipments])
 
   // Subscribe to realtime updates
   useEffect(() => {
@@ -248,6 +257,8 @@ export default function TrackingPage() {
     return matchesSearch && matchesStatus
   })
 
+  const activeShipmentCount = shipments.filter(s => s.status === 'pending' || s.status === 'in_transit').length
+
   const mapMarkers = shipments
     .filter(s => s.latitude && s.longitude && s.status === 'in_transit')
     .map(s => ({
@@ -297,17 +308,17 @@ export default function TrackingPage() {
 
       {/* Status Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {(['all', 'pending', 'in_transit', 'delivered'] as const).map((s) => {
+        {(['all', 'pending', 'in_transit', 'delivered', 'cancelled'] as const).map((s) => {
           const count = s === 'all' ? shipments.length : shipments.filter(sh => sh.status === s).length
-          const labels: Record<string, string> = { all: 'All', pending: 'Pending', in_transit: 'In Transit', delivered: 'Delivered' }
-          const colors: Record<string, string> = { all: 'bg-primary-600', pending: 'bg-amber-500', in_transit: 'bg-emerald-500', delivered: 'bg-blue-500' }
+          const labels: Record<string, string> = { all: 'All', pending: 'Pending', in_transit: 'In Transit', delivered: 'Delivered', cancelled: 'Cancelled' }
+          const colors: Record<string, string> = { all: 'bg-primary-600', pending: 'bg-amber-500', in_transit: 'bg-emerald-500', delivered: 'bg-blue-500', cancelled: 'bg-red-500' }
           return (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${statusFilter === s
-                  ? `${colors[s]} text-white shadow-md`
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                ? `${colors[s]} text-white shadow-md`
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                 }`}
             >
               {labels[s]}
@@ -333,7 +344,7 @@ export default function TrackingPage() {
         <div className="flex gap-2">
           <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 px-4 py-2 rounded-2xl flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{shipments.length} Active</span>
+            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{activeShipmentCount} Active</span>
           </div>
         </div>
       </div>
@@ -374,8 +385,8 @@ export default function TrackingPage() {
               key={s.id}
               onClick={() => setSelectedId(s.id)}
               className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all cursor-pointer ${selectedId === s.id
-                  ? 'border-primary-500 ring-1 ring-primary-500 shadow-md'
-                  : 'border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-300'
+                ? 'border-primary-500 ring-1 ring-primary-500 shadow-md'
+                : 'border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-300'
                 }`}
             >
               {/* Pending Status Card - Special UI */}
@@ -398,7 +409,8 @@ export default function TrackingPage() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl ${s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
-                      s.status === 'pending' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
+                    s.status === 'pending' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
+                      s.status === 'cancelled' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
                         'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
                     }`}>
                     <Truck className="w-5 h-5" />
@@ -410,7 +422,8 @@ export default function TrackingPage() {
                 </div>
                 <div className="text-right">
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
-                      s.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                    s.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                      s.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' :
                         'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
                     }`}>{s.status.replace('_', ' ')}</span>
                   {s.status === 'in_transit' && (
@@ -530,7 +543,7 @@ export default function TrackingPage() {
 
             <div className="p-6 space-y-4">
               {/* Pickup OTP - Show for pending/accepted/in_transit */}
-              {selectedShipment.status !== 'delivered' && (
+              {selectedShipment.status !== 'delivered' && selectedShipment.status !== 'cancelled' && (
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 p-4 rounded-2xl">
                   <p className="text-xs font-medium text-green-700 dark:text-green-300 mb-2">
                     {language === 'en' ? '📋 Pickup OTP' : '📋 पिकअप OTP'}

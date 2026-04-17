@@ -58,28 +58,28 @@ export const SAC_CODE = '996511' // Goods transport services
  * Calculate GST and totals for invoice
  */
 export function calculateInvoice(data: InvoiceData): GeneratedInvoice {
-  const taxableAmount = 
-    data.freightCharges + 
-    data.loadingCharges + 
-    data.unloadingCharges + 
-    (data.insuranceCharges || 0) + 
+  const taxableAmount =
+    data.freightCharges +
+    data.loadingCharges +
+    data.unloadingCharges +
+    (data.insuranceCharges || 0) +
     (data.otherCharges || 0)
-  
+
   const gstAmount = Math.round(taxableAmount * data.gstRate / 100)
-  
+
   let cgstAmount = 0
   let sgstAmount = 0
   let igstAmount = 0
-  
+
   if (data.isInterState) {
     igstAmount = gstAmount
   } else {
     cgstAmount = Math.round(gstAmount / 2)
     sgstAmount = Math.round(gstAmount / 2)
   }
-  
+
   const grandTotal = taxableAmount + gstAmount
-  
+
   return {
     ...data,
     taxableAmount,
@@ -93,32 +93,13 @@ export function calculateInvoice(data: InvoiceData): GeneratedInvoice {
 }
 
 /**
- * Generate LR Number (Lorry Receipt)
- */
-export function generateLRNumber(): string {
-  const timestamp = Date.now().toString(36).toUpperCase()
-  return `LR-${timestamp.slice(-8)}`
-}
-
-/**
- * Generate Invoice Number
- */
-export function generateInvoiceNumber(): string {
-  const date = new Date()
-  const year = date.getFullYear().toString().slice(-2)
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
-  return `INV-${year}${month}-${random}`
-}
-
-/**
  * Convert number to words for Indian currency
  */
 function numberToWords(num: number): string {
   const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
   const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
   const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
-  
+
   function convert(n: number): string {
     if (n === 0) return ''
     if (n < 10) return units[n]
@@ -129,18 +110,18 @@ function numberToWords(num: number): string {
     if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + convert(n % 100000) : '')
     return convert(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + convert(n % 10000000) : '')
   }
-  
+
   if (num === 0) return 'Zero Rupees Only'
-  
+
   const rupees = Math.floor(num)
   const paise = Math.round((num - rupees) * 100)
-  
+
   let result = convert(rupees) + ' Rupees'
   if (paise > 0) {
     result += ' and ' + convert(paise) + ' Paise'
   }
   result += ' Only'
-  
+
   return result
 }
 
@@ -160,19 +141,19 @@ export async function generateInvoicePDF(elementId: string, fileName?: string): 
   })
 
   const imgData = canvas.toDataURL('image/png')
-  
+
   // A4 dimensions in mm
   const pdf = new jsPDF('p', 'mm', 'a4')
   const pdfWidth = pdf.internal.pageSize.getWidth()
   const pdfHeight = pdf.internal.pageSize.getHeight()
-  
+
   const imgWidth = canvas.width
   const imgHeight = canvas.height
   const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
-  
+
   const imgX = (pdfWidth - imgWidth * ratio) / 2
   const imgY = 10
-  
+
   pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio)
   pdf.save(fileName || 'invoice.pdf')
 }

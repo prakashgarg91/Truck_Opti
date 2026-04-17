@@ -10,7 +10,7 @@
 
 ```typescript
 // Every component that needs user context:
-import { useAuthStore } from '../store/authStore'
+import { useAuthStore } from '../stores/authStore'
 
 const { user, agencyId, driverId, isLoading } = useAuthStore()
 
@@ -145,6 +145,66 @@ function safePhonePeRedirect(url: string) {
 }
 ```
 
+## SHIPMENT DOCUMENT IDENTITY PATTERN
+
+```typescript
+// Never generate invoice/LR numbers in the page layer.
+// The database owns shipment document identity.
+const shipment = await shipmentsSupabaseApi.getById(shipmentId)
+
+const documentNumbers = shipment?.invoice_number && shipment?.lr_number
+  ? shipment
+  : await shipmentsSupabaseApi.ensureDocumentNumbers(shipmentId)
+```
+
+Rules:
+- `shipments.invoice_number` and `shipments.lr_number` are DB-owned fields.
+- New rows get document numbers from the shipment trigger.
+- Existing rows are backfilled through `ensure_shipment_document_numbers(...)`.
+- Do not add new client-side invoice/LR generators.
+
+## DRIVER TRIP PROGRESS PATTERN
+
+```typescript
+const result = await supabase.rpc('persist_driver_job_offer_progress', {
+  p_job_offer_id: job.id,
+  p_status: 'delivery_arrived',
+  p_extra: { delivery_arrived_at: new Date().toISOString() }
+})
+```
+
+Rules:
+- Driver trip status changes, milestone timestamps, proof-photo URLs, and final `active_job_id` cleanup belong in the RPC.
+- Do not split these writes across separate `job_offers` and `drivers` updates in the page.
+- Keep storage upload in the client, but persist the resulting URL through the RPC.
+
+## CONTACT INQUIRY RELIABILITY PATTERN
+
+```typescript
+import { submitContactInquiry, queuePendingContactInquiry } from '../services/contactInquiry'
+
+await submitContactInquiry(payload, pendingSubmission?.clientSubmissionId)
+```
+
+Rules:
+- Contact draft/pending storage lives in `services/contactInquiry.ts`, not in the page.
+- Retries must reuse `client_submission_id` so reconnects cannot create duplicate inquiries.
+- Treat duplicate-key submission errors as idempotent success.
+
+## PAYMENT HISTORY OWNERSHIP PATTERN
+
+```typescript
+// Client starts checkout.
+await supabase.functions.invoke('phonepe-checkout', { body })
+
+// Edge functions own payment_history persistence and status transitions.
+```
+
+Rules:
+- Page/service code may initiate checkout, but `payment_history` rows are server-owned for PhonePe.
+- Use the table's real status contract: `pending | success | failed | refunded`.
+- Keep subscription activation functions aligned to `subscription_plans.price_monthly`, `price_yearly`, and `billing_cycle = monthly | yearly`.
+
 ---
 
 ## PDF PATTERN: Agency Invoice (jsPDF v4.1.0)
@@ -194,16 +254,25 @@ Language comes from authStore or a language context — do NOT fetch from Supaba
 ## ROUTE GUARD PATTERN
 
 ```typescript
-// useRequireAuth hook (already exists):
-import { useRequireAuth } from '../hooks/useRequireAuth'
+// Route groups live in App.tsx and use the shared ProtectedRoute wrapper:
+import ProtectedRoute from '../components/ProtectedRoute'
 
-function AgencyDashboardPage() {
-  useRequireAuth('agency')  // redirects to /login if wrong role
-  // ...
-}
+<Route element={
+  <ProtectedRoute allowedRoles={['agency']}>
+    <AgencyLayout />
+  </ProtectedRoute>
+}>
+  <Route path="/agency/dashboard" element={<AgencyDashboardPage />} />
+</Route>
 ```
 
 Roles: `'customer'` | `'driver'` | `'agency'` | `'admin'`
+
+Rules:
+- Enforce role access at the route layer first; do not rely on page-local redirect guards.
+- Use `allowedRoles` for admin, driver, and agency route groups.
+- Shared customer routes can use `ProtectedRoute` without `allowedRoles`.
+- Use `getDefaultHomePathForRole(...)` for consistent post-auth and wrong-role redirects.
 
 ---
 

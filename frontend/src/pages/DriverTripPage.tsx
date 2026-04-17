@@ -40,6 +40,19 @@ interface DriverRecord {
   id: string
   full_name: string
   active_job_id: string | null
+  total_trips: number | null
+}
+
+interface JobProgressResult {
+  job_offer_id: string
+  status: string
+  pickup_arrived_at: string | null
+  journey_started_at: string | null
+  delivery_arrived_at: string | null
+  delivered_at: string | null
+  photo_loading_url: string | null
+  photo_delivery_url: string | null
+  total_trips: number
 }
 
 type TripStep = 'navigate' | 'pickup_otp' | 'loading_photo' | 'in_transit' | 'destination_otp' | 'delivery_photo' | 'complete'
@@ -56,12 +69,12 @@ const STEPS: { key: TripStep; label: string }[] = [
 
 function statusToStep(status: string): TripStep {
   switch (status) {
-    case 'accepted':       return 'navigate'
+    case 'accepted': return 'navigate'
     case 'pickup_arrived': return 'pickup_otp'
-    case 'in_transit':     return 'in_transit'
+    case 'in_transit': return 'in_transit'
     case 'delivery_arrived': return 'destination_otp'
-    case 'delivered':      return 'complete'
-    default:               return 'navigate'
+    case 'delivered': return 'complete'
+    default: return 'navigate'
   }
 }
 
@@ -89,7 +102,7 @@ export default function DriverTripPage() {
     if (!jobId || !user?.id) return
     const { data: driverData } = await supabase
       .from('drivers')
-      .select('id, full_name, active_job_id')
+      .select('id, full_name, active_job_id, total_trips')
       .eq('user_id', user.id)
       .maybeSingle()
     setDriver(driverData)
@@ -156,28 +169,51 @@ export default function DriverTripPage() {
     }
   }, [step, driver?.id])
 
-  const updateJobStatus = async (newStatus: string, extra?: Record<string, unknown>) => {
+  const persistJobProgress = async (newStatus?: string | null, extra: Record<string, unknown> = {}) => {
     if (!job?.id) return false
     setSubmitting(true)
-    const { error } = await supabase
-      .from('job_offers')
-      .update({ status: newStatus, ...extra })
-      .eq('id', job.id)
+    const { data, error } = await supabase.rpc('persist_driver_job_offer_progress', {
+      p_job_offer_id: job.id,
+      p_status: newStatus ?? null,
+      p_extra: extra,
+    })
     setSubmitting(false)
     if (error) {
       logger.error('[DriverTripPage]', error)
       toast.error(language === 'en' ? 'Failed to update trip status.' : 'यात्रा स्थिति अपडेट करने में विफल।')
       return false
     }
-    return true
+
+    const result = (Array.isArray(data) ? data[0] : data) as JobProgressResult | null
+    if (!result) {
+      return false
+    }
+
+    setJob(current => current ? {
+      ...current,
+      status: result.status,
+      pickup_arrived_at: result.pickup_arrived_at,
+      journey_started_at: result.journey_started_at,
+      delivery_arrived_at: result.delivery_arrived_at,
+      delivered_at: result.delivered_at,
+      photo_loading_url: result.photo_loading_url,
+      photo_delivery_url: result.photo_delivery_url,
+    } : current)
+
+    setDriver(current => current ? {
+      ...current,
+      active_job_id: result.status === 'delivered' ? null : current.active_job_id,
+      total_trips: result.total_trips,
+    } : current)
+
+    return result
   }
 
   const handleArrivedAtPickup = async () => {
-    const ok = await updateJobStatus('pickup_arrived', {
+    const result = await persistJobProgress('pickup_arrived', {
       pickup_arrived_at: new Date().toISOString(),
     })
-    if (ok) {
-      setJob(j => j ? { ...j, status: 'pickup_arrived' } : j)
+    if (result) {
       setStep('pickup_otp')
       toast.success('Arrived at pickup — enter customer OTP')
     }
@@ -199,27 +235,25 @@ export default function DriverTripPage() {
   }
 
   const handleStartJourney = async () => {
-    const ok = await updateJobStatus('in_transit', {
+    const result = await persistJobProgress('in_transit', {
       journey_started_at: new Date().toISOString(),
     })
-    if (ok) {
-      setJob(j => j ? { ...j, status: 'in_transit' } : j)
+    if (result) {
       setStep('in_transit')
       toast.success('Journey started — GPS tracking active')
     }
   }
 
   const handleArrivedAtDestination = async () => {
-    const ok = await updateJobStatus('delivery_arrived', {
+    const result = await persistJobProgress('delivery_arrived', {
       delivery_arrived_at: new Date().toISOString(),
     })
-    if (ok) {
+    if (result) {
       // Stop GPS
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current)
         watchIdRef.current = null
       }
-      setJob(j => j ? { ...j, status: 'delivery_arrived' } : j)
       setStep('destination_otp')
       toast.success('Arrived at destination — enter recipient OTP')
     }
@@ -256,8 +290,7 @@ export default function DriverTripPage() {
       const { data: urlData } = supabase.storage.from('trip-photos').getPublicUrl(path)
       const publicUrl = urlData?.publicUrl || null
       if (publicUrl) {
-        await supabase.from('job_offers').update({ [field]: publicUrl }).eq('id', job.id)
-        setJob(j => j ? { ...j, [field]: publicUrl } : j)
+        await persistJobProgress(null, { [field]: publicUrl })
       }
       return publicUrl
     } finally {
@@ -275,16 +308,12 @@ export default function DriverTripPage() {
     toast.success('Photo captured!')
   }
 
-  const handleCompleteDelivery = async () => {    if (!driver?.id) return
-    const ok = await updateJobStatus('delivered', {
+  const handleCompleteDelivery = async () => {
+    const result = await persistJobProgress('delivered', {
       delivered_at: new Date().toISOString(),
     })
-    if (ok) {
-      // Clear active_job_id on driver
-      await supabase
-        .from('drivers')
-        .update({ active_job_id: null, total_trips: (driver as unknown as { total_trips: number }).total_trips + 1 })
-        .eq('id', driver.id)
+    if (result) {
+      setStep('complete')
       toast.success('🎉 Delivery complete! Great job.')
       navigate('/driver/dashboard')
     }
@@ -352,20 +381,18 @@ export default function DriverTripPage() {
         <div className="flex items-center gap-1 min-w-max">
           {STEPS.map((s, idx) => (
             <div key={s.key} className="flex items-center gap-1">
-              <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors ${
-                idx < currentStepIdx
-                  ? 'bg-green-500 text-white'
-                  : idx === currentStepIdx
+              <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors ${idx < currentStepIdx
+                ? 'bg-green-500 text-white'
+                : idx === currentStepIdx
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
-              }`}>
+                }`}>
                 {idx < currentStepIdx ? '✓' : idx + 1}
               </div>
-              <span className={`text-xs ${
-                idx === currentStepIdx
-                  ? 'text-blue-600 dark:text-blue-400 font-semibold'
-                  : 'text-slate-400'
-              }`}>
+              <span className={`text-xs ${idx === currentStepIdx
+                ? 'text-blue-600 dark:text-blue-400 font-semibold'
+                : 'text-slate-400'
+                }`}>
                 {s.label}
               </span>
               {idx < STEPS.length - 1 && (
@@ -475,11 +502,10 @@ export default function DriverTripPage() {
                   setOtpError('')
                   if (e.target.value.length <= 4) setOtpInput(e.target.value)
                 }}
-                className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${
-                  otpError
-                    ? 'border-red-400 focus:border-red-500'
-                    : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
-                }`}
+                className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${otpError
+                  ? 'border-red-400 focus:border-red-500'
+                  : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
+                  }`}
               />
               {otpError && (
                 <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
@@ -609,11 +635,10 @@ export default function DriverTripPage() {
                   setOtpError('')
                   if (e.target.value.length <= 4) setOtpInput(e.target.value)
                 }}
-                className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${
-                  otpError
-                    ? 'border-red-400 focus:border-red-500'
-                    : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
-                }`}
+                className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${otpError
+                  ? 'border-red-400 focus:border-red-500'
+                  : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
+                  }`}
               />
               {otpError && (
                 <p className="text-red-500 text-xs mt-2 flex items-center gap-1">

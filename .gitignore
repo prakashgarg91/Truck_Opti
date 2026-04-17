@@ -11,6 +11,7 @@ frontend/release/**
 frontend/dist/
 dist/
 apps/web/coverage/
+graphify-out/
 
 # Node modules
 node_modules/

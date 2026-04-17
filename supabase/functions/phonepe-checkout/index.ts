@@ -29,7 +29,16 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, merchantTransactionId, userId, callbackUrl } = await req.json()
+    const {
+      amount,
+      merchantTransactionId,
+      userId,
+      planId,
+      billingCycle,
+      customerPhone,
+      customerEmail,
+      callbackUrl,
+    } = await req.json()
 
     if (!amount || amount < 100) {
       throw new Error('Amount must be at least ₹1 (100 paise)')
@@ -78,17 +87,28 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    await supabase.from('payment_history').insert({
-      amount: amount / 100, // Convert from paise to rupees
+    const { error: paymentHistoryError } = await supabase.from('payment_history').insert({
+      user_id: userId,
+      amount,
       currency: 'INR',
-      payment_method: 'phonepe',
+      payment_method: 'upi',
       status: 'pending',
+      razorpay_order_id: merchantTransactionId,
       metadata: {
         merchantTransactionId,
         userId,
+        plan_id: planId,
+        billing_cycle: billingCycle,
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
         phonepe_response: result
       }
     })
+
+    if (paymentHistoryError) {
+      console.error('Failed to persist PhonePe payment history:', paymentHistoryError)
+      throw paymentHistoryError
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

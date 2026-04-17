@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-04-12T14:11:36.201Z",
+  "generatedAt": "2026-04-16T07:10:01.858Z",
   "summary": {
     "hardGaps": 0,
-    "warnings": 34,
+    "warnings": 33,
     "sealed": true
   },
   "details": [
@@ -21,13 +21,13 @@
     {
       "type": "STUB_SERVICE",
       "file": "frontend/src/services/supabaseApi.ts",
-      "line": 687,
+      "line": 702,
       "detail": "if (!user) throw new Error('Not authenticated')"
     },
     {
       "type": "STUB_SERVICE",
       "file": "frontend/src/services/supabaseApi.ts",
-      "line": 951,
+      "line": 966,
       "detail": "if (!user) throw new Error('Not authenticated')"
     },
     {
@@ -103,11 +103,6 @@
     {
       "type": "DIRECT_SUPABASE_IN_PAGE",
       "file": "frontend/src/pages/CheckoutPage.tsx",
-      "detail": "Page calls supabase.from() directly — should use services/*.ts"
-    },
-    {
-      "type": "DIRECT_SUPABASE_IN_PAGE",
-      "file": "frontend/src/pages/ContactPage.tsx",
       "detail": "Page calls supabase.from() directly — should use services/*.ts"
     },
     {

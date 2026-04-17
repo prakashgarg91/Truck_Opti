@@ -10,13 +10,13 @@ import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
 
 const INDIAN_STATES = [
-  'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
-  'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
-  'Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab',
-  'Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh',
-  'Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh',
-  'Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir',
-  'Ladakh','Lakshadweep','Puducherry',
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
+  'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
+  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
+  'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands', 'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Jammu and Kashmir',
+  'Ladakh', 'Lakshadweep', 'Puducherry',
 ]
 
 interface FormData {
@@ -148,11 +148,10 @@ export default function AgencyRegisterPage() {
             {STEPS.map(({ id, label, icon: Icon }, idx) => (
               <div key={id} className="flex items-center flex-1">
                 <div className={`flex flex-col items-center flex-shrink-0 ${id <= step ? 'opacity-100' : 'opacity-40'}`}>
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                    id < step ? 'bg-blue-600 text-white' :
-                    id === step ? 'bg-blue-600 text-white ring-4 ring-blue-200 dark:ring-blue-900/40' :
-                    'bg-slate-200 dark:bg-slate-700 text-slate-500'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center ${id < step ? 'bg-blue-600 text-white' :
+                      id === step ? 'bg-blue-600 text-white ring-4 ring-blue-200 dark:ring-blue-900/40' :
+                        'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                    }`}>
                     {id < step ? <CheckCircle2 size={16} /> : <Icon size={16} />}
                   </div>
                   <span className="text-xs mt-1 text-slate-500 dark:text-slate-400 hidden sm:block">{label}</span>

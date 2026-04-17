@@ -15,7 +15,7 @@ import { usePackingWorker } from '../hooks/usePackingWorker'
 import { useSubscription } from '../hooks/useSubscription'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
-import { AdvancedBinPacker, PACKING_COLORS, recommendTrucks, type PackedBox, type SaleOrderItem, type TruckRecommendation, type TruckType } from '../lib/packing'
+import { AdvancedBinPacker, PACKING_COLORS, createTruckRecommendation, recommendTrucks, type PackedBox, type SaleOrderItem, type TruckRecommendation, type TruckType } from '../lib/packing'
 import { logger } from '../utils/logger'
 import { formatPercent, formatCurrency } from '../utils/formatters'
 
@@ -524,61 +524,31 @@ export default function PackingPage() {
     setIsProcessing(true)
 
     const truck = trucks.find(t => t.id === selectedTruck)!
+    const applyManualRecommendation = (result: { packed: PackedBox[]; unpacked: string[] }) => {
+      const recommendation = createTruckRecommendation(truck, saleOrderItems, result)
+      setSelectedRecommendation(recommendation)
+      setRecommendations([recommendation])
+      return recommendation
+    }
 
     try {
-      let packed: PackedBox[], unpacked: string[]
-
       if (workerSupported) {
         // Use Web Worker (runs on user's CPU)
         const result = await runPacking(truck, saleOrderItems, algorithm)
-        packed = result.packed
-        unpacked = result.unpacked
-        toast.success(`Packed ${packed.length} items in ${result.duration}ms (on your device)`, { icon: '💻' })
+        const recommendation = applyManualRecommendation(result)
+        toast.success(`Packed ${recommendation.itemsFit} items in ${result.duration}ms (on your device)`, { icon: '💻' })
       } else {
         // Fallback: main thread
         const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
         const result = packer.pack()
-        packed = result.packed
-        unpacked = result.unpacked
-        toast.success(`Packed ${packed.length} items!`)
+        const recommendation = applyManualRecommendation(result)
+        toast.success(`Packed ${recommendation.itemsFit} items!`)
       }
-
-      const truckVolume = truck.dimensions.length * truck.dimensions.width * truck.dimensions.height
-      const packedVolume = packed.reduce((sum, box) => sum + box.width * box.height * box.depth, 0)
-      const packedWeight = saleOrderItems.reduce((sum, item) => sum + item.weight * item.quantity, 0)
-
-      const rec: TruckRecommendation = {
-        truck,
-        itemsFit: packed.length,
-        totalItems: saleOrderItems.reduce((sum, item) => sum + item.quantity, 0),
-        volumeUtilization: Math.round((packedVolume / truckVolume) * 100),
-        weightUtilization: Math.round((packedWeight / truck.capacity) * 100),
-        estimatedCost: truck.costPerKm * 100,
-        packedBoxes: packed,
-        unfitItems: unpacked
-      }
-
-      setSelectedRecommendation(rec)
-      setRecommendations([rec])
     } catch (_err) {
       // Fallback
       const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
-      const { packed, unpacked } = packer.pack()
-      const truckVolume = truck.dimensions.length * truck.dimensions.width * truck.dimensions.height
-      const packedVolume = packed.reduce((sum, box) => sum + box.width * box.height * box.depth, 0)
-      const packedWeight = saleOrderItems.reduce((sum, item) => sum + item.weight * item.quantity, 0)
-
-      setSelectedRecommendation({
-        truck,
-        itemsFit: packed.length,
-        totalItems: saleOrderItems.reduce((sum, item) => sum + item.quantity, 0),
-        volumeUtilization: Math.round((packedVolume / truckVolume) * 100),
-        weightUtilization: Math.round((packedWeight / truck.capacity) * 100),
-        estimatedCost: truck.costPerKm * 100,
-        packedBoxes: packed,
-        unfitItems: unpacked
-      })
-      toast.success(`Packed ${packed.length} items!`)
+      const recommendation = applyManualRecommendation(packer.pack())
+      toast.success(`Packed ${recommendation.itemsFit} items!`)
     } finally {
       setIsProcessing(false)
     }

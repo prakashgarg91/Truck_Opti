@@ -56,26 +56,39 @@ serve(async (req) => {
 
     const result = await response.json()
 
+    const providerStatus = result.code || result.state || result?.data?.state
+    const transactionId = result.transactionId || result?.data?.transactionId || merchantTransactionId
+
     // Update payment status in Supabase if we have a transactionId
-    if (result.transactionId) {
+    if (transactionId) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
       const supabase = createClient(supabaseUrl, supabaseKey)
 
       const statusMap: Record<string, string> = {
-        'PAYMENT_SUCCESS': 'completed',
+        'PAYMENT_SUCCESS': 'success',
         'PAYMENT_PENDING': 'pending',
         'PAYMENT_FAILED': 'failed'
       }
 
-      await supabase.from('payment_history')
-        .update({
-          status: statusMap[result.state] || 'pending',
-          metadata: {
-            phonepe_response: result
-          }
-        })
-        .like('metadata::text', `%${merchantTransactionId}%`)
+      const { data: paymentRow } = await supabase
+        .from('payment_history')
+        .select('id, metadata')
+        .eq('razorpay_order_id', merchantTransactionId)
+        .maybeSingle()
+
+      if (paymentRow) {
+        await supabase.from('payment_history')
+          .update({
+            status: statusMap[providerStatus] || 'pending',
+            metadata: {
+              ...(paymentRow.metadata || {}),
+              phonepe_response: result,
+              phonepe_transaction_id: transactionId,
+            }
+          })
+          .eq('id', paymentRow.id)
+      }
     }
 
     return new Response(JSON.stringify(result), {

@@ -25,6 +25,7 @@ VITE_SUPABASE_URL=https://jbxncejtcbpcronndqlx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...          # public anon key (safe in VITE_)
 VITE_RAZORPAY_KEY_ID=rzp_test_XXX      # test key for local dev
 VITE_AUTH_EMAIL_OTP_ENABLED=true
+VITE_AUTH_PHONE_OTP_ENABLED=false      # set true only when Supabase Phone is configured with Twilio/Twilio Verify
 VITE_APP_URL=http://localhost:5173
 ```
 
@@ -98,6 +99,7 @@ supabase secrets set KEY=value --project-ref jbxncejtcbpcronndqlx
 | `VITE_SUPABASE_ANON_KEY` | `.env` | ✅ Public | Supabase client |
 | `VITE_RAZORPAY_KEY_ID` | `.env` | ✅ Public | Razorpay SDK init |
 | `VITE_AUTH_EMAIL_OTP_ENABLED` | `.env` | ✅ Public | Feature flag |
+| `VITE_AUTH_PHONE_OTP_ENABLED` | `.env` | ✅ Public | Feature flag |
 | `RAZORPAY_KEY_SECRET` | Heroku config vars | ❌ Secret | Server-side Razorpay |
 | `RAZORPAY_WEBHOOK_SECRET` | Heroku config vars + Supabase secrets | ❌ Secret | Webhook HMAC verify |
 | `PHONEPE_MERCHANT_SECRET` | Heroku config vars | ❌ Secret | PhonePe HMAC |

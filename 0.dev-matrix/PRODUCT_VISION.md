@@ -3,6 +3,8 @@
 > Document Owner: Prakash Gupta | Last Updated: 2026-03-04
 > Status: APPROVED — Begin Phase 1 Development
 
+> **2026-04-17 strategic extension:** future-state planning for password login, role-specific demo identities, partner interfaces, and TruckOpti office-team permissions is now tracked in `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md`. Treat that file as the canonical roadmap for interface expansion and rights segmentation; keep this document focused on the product mission and portal model.
+
 ---
 
 ## 🎯 THE MISSION

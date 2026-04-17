@@ -1,4 +1,4 @@
-import { AdvancedBinPacker, recommendTrucks, type PackedBox, type PackingResult, type SaleOrderItem, type TruckRecommendation, type TruckType } from '../src/lib/packing.js'
+import { AdvancedBinPacker, createTruckRecommendation, recommendTrucks, type PackedBox, type PackingResult, type SaleOrderItem, type TruckRecommendation, type TruckType } from '../src/lib/packing.js'
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -342,6 +342,29 @@ function runVolumeUtilizationFixture(): void {
   logPass('volume utilisation fixture', `medium truck reports ${mediumRec!.volumeUtilization}% for single 1m³ cube in 4m³ truck`)
 }
 
+function runPackedWeightUtilizationFixture(): void {
+  const items: SaleOrderItem[] = [
+    {
+      id: 'dense-cube',
+      name: 'Dense Cube',
+      length: 100,
+      width: 100,
+      height: 100,
+      weight: 100,
+      quantity: 3,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const result = new AdvancedBinPacker(trucks[0], items, 'extreme_points').pack()
+  const recommendation = createTruckRecommendation(trucks[0], items, result)
+
+  assertEqual(recommendation.itemsFit, 2, 'Packed weight utilisation fixture should pack only two dense cubes into the mini truck')
+  assertEqual(recommendation.weightUtilization, 80, 'Weight utilisation should be based on packed cubes only, not the full requested load')
+  logPass('packed weight utilisation fixture', `mini truck reports ${recommendation.weightUtilization}% for the two packed cubes only`)
+}
+
 function main(): void {
   runSkylineFixture()
   runSkylineBoundaryFixture()
@@ -353,7 +376,8 @@ function main(): void {
   runRotationBenefitFixture()
   runWeightCapacityFilterFixture()
   runVolumeUtilizationFixture()
-  console.log('Packing regression complete: 10 checks passed')
+  runPackedWeightUtilizationFixture()
+  console.log('Packing regression complete: 11 checks passed')
 }
 
 try {

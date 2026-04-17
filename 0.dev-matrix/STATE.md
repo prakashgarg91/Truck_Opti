@@ -3,6 +3,9 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.0 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
+> 2026-04-17 (GPT-021 planning follow-up): three native `opencode` planning lanes were used to deepen `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md` with onboarding tracks, shared tenant boundaries (`organization_id`, `branch_id`, `booking_type`, `delegated_by`, `source_system`), explicit internal API/event-plane guidance, additional future subtypes (`agency_micro_fleet`, `customer_consignee`, `auditor`), refined office permission bundles (`security_admin`, `support_lead`, `demo_operator`), and sharper backlog items `T-145`/`T-146`. Current technical proof is unchanged: `npm run launch-check` still fails only git working-tree cleanliness (16 passed, 1 failed).
+> 2026-04-17 (GPT-021): cleaned the user-level `opencode` runtime back to native mode. `oh-my-openagent` was removed from `C:\Users\Prakash\.config\opencode`, the default model is now `zai-coding-plan/glm-5.1`, and both `opencode run` and `opencode run --agent build` now pass without `--pure`. Launch status is otherwise unchanged: repo-side blockers are still git cleanliness plus owner-side production credentials and real-account verification.
+> 2026-04-17 (GPT-020): `apps/web` briefly regressed because `basic-ftp@5.2.2` reappeared through the Puppeteer test chain; `npm audit fix` refreshed one package and restored `cd apps/web && npm audit` to 0 vulnerabilities. Current-tree verification is now `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), `npm run test:prod-config` PASS (5/6) with only Razorpay failing, and `npm run launch-check` FAIL only on git working-tree cleanliness (16 passed, 1 failed).
 > 2026-04-09: `apps/web` dependency drift was remediated locally; launch-check is back to passing all technical gates, GitHub default-branch alerts dropped from 17 to 2 moderate after push, PhonePe sandbox was disabled in production, Google OAuth redirect now reaches Google Accounts correctly, and the refreshed background launch-check status now records PASS again for close-day. Launch remains blocked by live Razorpay config, missing Sentry DSN, pending migrations, plus authenticated live-account verification.
 > 2026-04-10: unused frontend Electron packaging was removed, `frontend` was upgraded to `axios@1.15.0`, `vite@7.3.2`, and `@vitejs/plugin-react@5.2.0`, `npm run launch-check` passed 17/17 again on the current tree, and `npm run test:frontend-smoke` stayed 17/17 PASS. Launch is still blocked by external credentials/access: live Razorpay, missing `VITE_SENTRY_DSN`, pending Supabase migration push, authenticated real-account verification, and 2 remaining GitHub moderate alerts that still require authenticated Security-tab review.
 > 2026-04-10 (manager follow-up): `npm run test:frontend-smoke` revalidated 17/17 PASS, `npm run test:prod-config` stayed 4/6 with only Razorpay test keys and missing `VITE_SENTRY_DSN` failing, local `npm ls dompurify jspdf` resolves `dompurify@3.3.2` via `jspdf`, and GitHub's default-branch security banner is now down to 1 moderate alert after the latest push.
@@ -13,6 +16,13 @@
 > 2026-04-13 (GPT-009): BATCH23's original skyline boundary-fit target is stale on the current tree; the real reproducible skyline gap was a mixed-load rotation/placement-order miss where `extreme_points` fit 4 items and skyline only fit 3. The shared engine now evaluates all valid lowest-layer skyline candidates across rotations, the new mixed-load regression is green, `npm run test:packing` passes 10/10, `cd frontend && npm run build` passes, `npm run test:frontend-smoke` stays 17/17 PASS, and `npm run test:live-buttons` passes 7/7. Dependabot/local mismatch is reopened: full local Node and Python manifest audits are clean, but Docker Scout reports `node:20-alpine` with 17 high CVEs and `python:3.11-slim` with 4 high CVEs; exact remote alert mapping is blocked until `gh` auth is available.
 > 2026-04-13 (GPT-010): GitHub CLI is now authenticated as `prakashgarg91`; the live Dependabot API query filtered to `state=open` returns no open alerts, proving the earlier 17-alert inventory was historical fixed-state data rather than an active repo mismatch. `AI-HANDOFF.md` was restored after a local truncation check, and STATE/TASK were resynced to the live security truth.
 > 2026-04-15 (GPT-013): repo-side launch hardening is committed in `85e78615`: `apps/web` now guards packing Socket.IO emits when uninitialized, `py3dbp` is declared explicitly in `apps/web/requirements.txt`, frontend `follow-redirects` resolves to a non-vulnerable version, and the tracked generated SQLite log database was removed. Verification is back to green on the committed tree: `npm run launch-check` PASS (17/17), focused apps/web pytest PASS (8/8), `npm run test:frontend-smoke` PASS (17/17), and `npm run test:live-buttons` PASS (7/7). Remaining blockers are owner-side only.
+> 2026-04-16 (GPT-014): Graphify-driven architecture cleanup landed locally. `shipments` now owns invoice/LR identity, `DriverTripPage` routes workflow updates through a DB RPC, payment-history writes/statuses were normalized to the real schema, contact retries now use a shared deduped service, and `npm run graph:update` syncs root `graphify-out/`. Verification: `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), `npm run graph:update` PASS, and `npm run launch-check` now fails only on git working-tree cleanliness (16 passed, 1 failed).
+> 2026-04-16 (GPT-014 follow-up): the Supabase live rollout is complete. After authenticating the CLI, the April 16 migrations were repaired for remote schema drift (`contact_inquiries` missing, ambiguous RLS outer-column references), `npx supabase db push` finished successfully, `npx supabase db push --dry-run --yes` now reports `Remote database is up to date`, and the four payment-related edge functions (`phonepe-checkout`, `phonepe-status`, `verify-payment`, `verify-razorpay-payment`) were deployed to project `jbxncejtcbpcronndqlx`. Pending Supabase migration push is no longer a launch blocker.
+> 2026-04-16 (GPT-015): the next packing hotspot slice is complete. `frontend/src/lib/packing.ts` now routes skyline sorting/search, extreme-point search/state mutation, item rotation derivation, and runtime dispatch through helpers so `packSkylineBL()`, `packExtremePoints()`, and `packItemsForTruck()` are thinner orchestration functions. Verification: `cd frontend && npm run test:packing` PASS (10/10), `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), `npm run graph:update` PASS (`387 nodes`, `427 edges`, `75 communities`), and `npm run launch-check` remains 16/17 with only git working-tree cleanliness failing. Graphify now shows remaining helper-level packing hotspots instead of the previous entry-point nodes.
+> 2026-04-16 (GPT-016): the last safe packing consistency gap is now closed. `PackingPage.tsx` no longer rebuilds truck-recommendation metrics itself; the shared engine now owns that summary via `createTruckRecommendation(...)`, which fixes manual-pack `weightUtilization` so it counts only packed boxes. Verification: `cd frontend && npm run test:packing` PASS (11/11), `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), `npm run graph:update` PASS (`398 nodes`, `453 edges`, `76 communities`), and `npm run launch-check` still fails only on git working-tree cleanliness (16 passed, 1 failed). Current Graphify hotspots are service/algorithm-core nodes rather than a clear remaining AI-owned architecture gap.
+> 2026-04-16 (GPT-017): marketing-surface follow-up is complete. `LandingPage.tsx` and `PricingPage.tsx` now have a stronger desktop hierarchy, spacing rhythm, and comparison framing, and the rest of the public pages were re-audited to confirm they still render as standalone full-page routes outside `AuthLayout`. Verification: `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17). Residual gap: local preview/browser proof is blocked until `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set because the preview crashes at startup without them.
+> 2026-04-16 (GPT-018): the local public-browser gap is closed. An ignored `frontend/.env.local` now supplies the documented public Supabase URL/anon key for local preview, live desktop browser proof for `/` and `/pricing` is complete with zero console errors, Sentry project `light9/truck-opti` was created, Heroku `VITE_SENTRY_DSN` is now set, and `npm run test:prod-config` now passes 5/6 with only Razorpay still failing on a deployed `rzp_test_*` key.
+> 2026-04-16 (GPT-019): launch-safe auth is now explicit in the shipped UI. `LoginPage.tsx` hides SMS/WhatsApp unless `VITE_AUTH_PHONE_OTP_ENABLED=true`, Email OTP now defaults on unless explicitly disabled, `SignupPage.tsx` follows the same default, and `frontend/.env.example` plus `0.dev-matrix/FRAMEWORK.md` now document Email OTP + Google with phone OTP deferred by default. Verification: `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), `npm run test:prod-config` still 5/6 with only Razorpay failing, and Playwright local preview proof on `/login` shows Email OTP + Google while phone OTP is hidden. Twilio is now a deferred optional feature rather than a launch-path blocker unless phone OTP is intentionally re-enabled.
 
 ---
 
@@ -37,9 +47,9 @@
 
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
-| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit still passes only 4/6 on 2026-04-10: app URL, Supabase auth DNS, email OTP flag, and PhonePe disable state are healthy, but Razorpay is still on a test key and `VITE_SENTRY_DSN` is still missing | MANAGER + OWNER |
+| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit now passes 5/6 on 2026-04-17: app URL, Supabase auth DNS, email OTP flag, Sentry DSN, and PhonePe disable state are healthy, but Razorpay is still on a test key | MANAGER + OWNER |
 | ~~`DEPENDABOT-REMOTE-MISMATCH-20260413`~~ | ✅ RESOLVED | Authenticated GitHub API queries on 2026-04-13 show `state=open` returns no open Dependabot alerts for this repo. The earlier 17-alert inventory was historical fixed-state data, not a live mismatch. Docker Scout base-image CVEs remain separate container-hygiene evidence rather than an active GitHub default-branch alert. | GPT-010 |
-| `AUTH-E2E-UNVERIFIED-20260405` | 🟡 WATCH | Supabase host resolves and live Google OAuth now redirects correctly to Google Accounts, but real email OTP / Google OAuth / authenticated page flows still need live browser verification with a real account | MANAGER + OWNER |
+| `AUTH-E2E-UNVERIFIED-20260405` | 🟡 WATCH | Supabase host resolves, live Google OAuth redirects correctly to Google Accounts, and the public login UI now defaults to Email OTP + Google while phone OTP stays feature-flagged off; real email OTP / Google OAuth / authenticated page flows still need live browser verification with a real account | MANAGER + OWNER |
 | `PWA-SW-STALE-CHUNK-20260403` | 🟡 WATCH | Full browser audit reproduced stale lazy-chunk/module failures for returning clients until service worker + caches were cleared | MANAGER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
 | ~~SUPABASE-AUTH-DNS-20260401~~ | ✅ RESOLVED | Production Supabase project was resumed on 2026-04-05; DNS now resolves and auth health is reachable again (401 without API key is acceptable reachability evidence) | OWNER + GPT-004 |
@@ -54,7 +64,13 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `GPT-021` | MANAGER+IMPL | GPT-5.4 | Native opencode cleanup + multi-lane orchestration | Removed the `oh-my-opencode` dependency, restored native GLM 5.1 opencode, updated dev-matrix truth, and launched parallel opencode review lanes | 2026-04-17 | ✅ DONE |
+| `GPT-020` | MANAGER+IMPL | GPT-5.4 | Launch closure + audit regression repair | Cleared the `apps/web` audit regression, reran launch evidence, and synced dev-matrix reality | 2026-04-17 | ✅ DONE |
+| `GPT-019` | MANAGER+IMPL | GPT-5.4 | Auth launch-scope hardening + verification | Made Email OTP + Google the explicit default auth path, hid phone OTP behind a feature flag, and revalidated login/runtime docs | 2026-04-16 | ✅ DONE |
+| `GPT-016` | MANAGER+IMPL | GPT-5.4 | Packing consistency cleanup + final graph judgment | Moved manual recommendation math into the shared packer, added packed-weight regression proof, and rechecked Graphify/launch readiness | 2026-04-16 | ✅ DONE |
 | `GPT-013` | MANAGER+IMPL | GPT-5.4 | Launch hardening + final repo proof | Landed repo-side dependency/runtime fixes and restored 17/17 launch-check on committed tree | 2026-04-15 | ✅ DONE |
+| `GPT-015` | MANAGER+IMPL | GPT-5.4 | Packing hotspot decomposition + readiness check | Thinned packing algorithm entry points, reran graph/build/tests, and rechecked launch readiness after the live rollout | 2026-04-16 | ✅ DONE |
+| `GPT-014` | MANAGER+IMPL | GPT-5.4 | Graphify cleanup + contract repair | Closed Graphify gaps around shipment identity, driver-trip ownership, payment contract drift, contact dedupe, and graph refresh sync | 2026-04-16 | ✅ DONE |
 | `GPT-010` | MANAGER+IMPL | GPT-5.4 | Handoff recovery + security truth | Restored AI-HANDOFF and resolved the Dependabot mismatch with authenticated GitHub evidence | 2026-04-13 | ✅ DONE |
 | `GPT-009` | MANAGER+IMPL | GPT-5.4 | Packing heuristics + dependency triage | Fixed skyline mixed-load rotation gap, extended regression proof, and reopened Dependabot triage with Docker evidence | 2026-04-13 | ✅ DONE |
 | `GPT-008` | MANAGER+IMPL | GPT-5.4 | Layered bug sweep + close-day | Fixed TrackingPage/AgencyDrivers/PhonePe issues, revalidated 17/17, and prepared close-day handoff | 2026-04-12 | ✅ DONE |
@@ -103,6 +119,113 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-17] GPT-021 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ FUTURE-STATE ROADMAP DEEPENED VIA PARALLEL OPENCODE PLANNING
+
+                             WORK COMPLETED:
+                             - ran three native `opencode` planning lanes against `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md`
+                             - expanded the canonical plan with onboarding tracks, tenant/delegation boundaries, internal API + event-plane guidance, refined office permission bundles, and sharper interface/interlinking detail
+                             - sharpened the future backlog in `TASK.md` with `T-145` and `T-146` and scheduled delayed close-day via Windows task `TruckOptiCloseDay_20260417_2044`
+
+                             VERIFIED EVIDENCE:
+                             - `opencode run ... architecture/interface segmentation`: PASS
+                             - `opencode run --agent plan ... auth, onboarding, demo-account strategy`: PASS
+                             - `opencode run --agent plan ... roles, permissions, office-team operating model`: PASS
+                             - `npm run launch-check`: 16/17 PASS-equivalent, only failing gate = git working-tree cleanliness
+
+                             PRODUCT JUDGMENT:
+                             - the future-course plan is now materially more implementation-ready: auth, onboarding, demo personas, tenant boundaries, office rights, and partner/API/event flows are aligned in one canonical roadmap
+                             - the clean execution order is now T-142 -> T-145 -> T-144 -> T-146 rather than broad ad-hoc role or portal changes
+------------------------------------------------------------------------------------------
+[2026-04-17] GPT-021 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ NATIVE OPENCODE RESTORED FOR PARALLEL GLM 5.1 WORK
+
+                             WORK COMPLETED:
+                             - removed the user-level `oh-my-openagent` plugin hook from `C:\Users\Prakash\.config\opencode\opencode.json`
+                             - uninstalled `@opencode-ai/plugin` and disabled the stale `oh-my-opencode` config files
+                             - switched native `opencode` defaults to `zai-coding-plan/glm-5.1` with built-in `build`, `plan`, `general`, and `explore` agents
+
+                             VERIFIED EVIDENCE:
+                             - `opencode run "Reply with exactly: OPENCODE-CLEAN-DEFAULT-OK"`: PASS
+                             - `opencode run --agent build "Reply with exactly: OPENCODE-CLEAN-BUILD-OK"`: PASS
+                             - `opencode agent list`: native built-in agent surface is back; no plugin-only alias is required
+
+                             PRODUCT JUDGMENT:
+                             - this machine can now use parallel native `opencode` lanes directly on paid GLM 5.1 without `--pure`
+                             - repo launch truth is unchanged: owner-side credentials/verification and git cleanliness still dominate launch closure
+------------------------------------------------------------------------------------------
+[2026-04-17] GPT-020 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ APPS/WEB AUDIT REGRESSION CLEARED + CURRENT GATE STATUS RESYNCED
+
+                             WORK COMPLETED:
+                             - refreshed `apps/web/package-lock.json` with `npm audit fix` after `basic-ftp@5.2.2` reappeared through Puppeteer's transitive dependency chain
+                             - reran the current-tree validation stack and resynced the dev-matrix gate counts
+
+                             VERIFIED EVIDENCE:
+                             - `cd apps/web && npm audit`: PASS (0 vulnerabilities)
+                             - `cd frontend && npm run build`: PASS
+                             - `npm run test:frontend-smoke`: PASS (17/17)
+                             - `npm run test:prod-config`: 5/6 PASS, only Razorpay live readiness failing
+                             - `npm run launch-check`: 16/17 PASS, only failing gate = git working-tree cleanliness
+
+                             PRODUCT JUDGMENT:
+                             - repo-side launch gates are green again on the current tree
+                             - remaining blockers are external live Razorpay config, real-account auth/payment verification, PITR, and the still-dirty local worktree
+------------------------------------------------------------------------------------------
+[2026-04-16] GPT-016 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ PACKING SUMMARY OWNERSHIP FIX + FINAL GRAPH CHECK
+
+                             WORK COMPLETED:
+                             - moved manual `TruckRecommendation` summarization into the shared packing module with `createTruckRecommendation(...)`
+                             - fixed `PackingPage` so weight utilization is computed from packed boxes instead of the full requested load
+                             - added regression proof for the packed-weight utilization contract and reran Graphify/readiness checks
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npm run test:packing`: PASS (11/11)
+                             - `cd frontend && npm run build`: PASS
+                             - `npm run test:frontend-smoke`: PASS (17/17)
+                             - `npm run graph:update`: PASS -> `398 nodes`, `453 edges`, `76 communities`
+                             - `npm run launch-check`: 16/17 PASS, only failing gate = git working-tree cleanliness
+
+                             PRODUCT JUDGMENT:
+                             - the remaining safe AI-owned packing consistency gap is closed
+                             - the current graph is dominated by stable service/algorithm-core nodes rather than a clear unresolved architecture defect
+------------------------------------------------------------------------------------------
+[2026-04-16] GPT-015 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ PACKING ENTRY-POINT DECOMPOSITION + READINESS RECHECK
+
+                             WORK COMPLETED:
+                             - refactored `frontend/src/lib/packing.ts` again so the public packer API stays stable while skyline sorting/search, extreme-point search/state mutation, item rotation derivation, and runtime dispatch moved behind smaller helper boundaries
+                             - reduced `packSkylineBL()` and `packItemsForTruck()` from graph hotspots into thinner orchestration functions
+                             - reran the graph refresh and launch-readiness flow after the now-live Supabase rollout
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npm run test:packing`: PASS (10/10)
+                             - `cd frontend && npm run build`: PASS
+                             - `npm run test:frontend-smoke`: PASS (17/17)
+                             - `npm run graph:update`: PASS -> `387 nodes`, `427 edges`, `75 communities`
+                             - `npm run launch-check`: 16/17 PASS, only failing gate = git working-tree cleanliness
+
+                             PRODUCT JUDGMENT:
+                             - packing maintainability improved again without a regression in the tested surface
+                             - repo-side launch readiness is still technically green except for dirty-tree evidence and the known owner-side production configuration blockers
+------------------------------------------------------------------------------------------
+[2026-04-16] GPT-014 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ GRAPHIFY GAP CLEANUP + PERSISTED BACKLOG
+
+                             WORK COMPLETED:
+                             - persisted the latest Graphify findings into `0.dev-matrix/GRAPHIFY_GAPS.md`
+                             - moved shipment invoice/LR identity into the database with a trigger + backfill RPC
+                             - replaced DriverTripPage's split status/photo/driver writes with `persist_driver_job_offer_progress(...)`
+                             - unified payment-history ownership/status values across PhonePe/Razorpay surfaces and updated subscription activation code to the live schema
+                             - extracted contact submission draft/pending/retry logic into `frontend/src/services/contactInquiry.ts` with stable `client_submission_id` dedupe
+                             - added `npm run graph:update` to refresh `frontend/src` and sync root `graphify-out/`
+                             - reran Graphify after cleanup; the main remaining frontend hotspot is now `AdvancedBinPacker`
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npm run build`: PASS
+                             - `npm run test:frontend-smoke`: PASS (17/17)
+                             - `npm run graph:update`: PASS → `372 nodes`, `399 edges`, `76 communities`
+                             - `npm run launch-check`: 16/17 PASS, only failing gate = git working-tree cleanliness
+
+                             PRODUCT JUDGMENT:
+                             - the previously identified ownership gaps are now closed in local code and recorded for future sessions
+                             - the remaining Graphify cleanup target is architectural, not operational: `AdvancedBinPacker` is still the dominant god node
+------------------------------------------------------------------------------------------
 [2026-04-13] GPT-009 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ SKYLINE MIXED-LOAD FIX + DEPENDABOT MISMATCH TRIAGE
 
                              WORK COMPLETED:
@@ -1614,7 +1737,7 @@ If stuck:
 
 ---
 
-**Last Updated:** 2026-03-30 by GLM-002 Manager (full launch audit: build+audit+routes verified, OWNER_ACTION_CHECKLIST.md created)
+**Last Updated:** 2026-04-17 by GPT-021 Manager (native opencode restored, dev-matrix resynced, parallel opencode lanes started)
 
 ## 📝 AGENT MESSAGES
 

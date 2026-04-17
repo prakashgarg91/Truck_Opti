@@ -14,9 +14,10 @@ Purpose: keep AI context focused enough that modular changes remain accurate, ma
 
 ## Semantic Retrieval
 
-If Qdrant MCP or another vector retrieval layer is available:
+If Roo bridge MCP is available:
 
-- use it to shortlist likely code, docs, and handoff references
+- use `search_roo_index` as the default semantic retrieval layer for code, docs, and handoff references
+- use `detect_roo_index_collection` when workspace mapping needs confirmation
 - treat results as hints, not source of truth
 - confirm every hit against real files before editing
 - store only curated, durable context after validation

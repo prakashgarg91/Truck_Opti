@@ -29,8 +29,8 @@ cd .\frontend ; npm run build ; npm run test:frontend-smoke
 # Full launch check
 npm run launch-check  # must pass 17/17
 
-# Qdrant gap audit (run before deploy)
-.\.venv\Scripts\python D:\Github\tools\qdrant_gap_audit.py
+# Roo bridge health check
+node D:\Github\tools\roo-index-smoke.mjs --workspace D:\Github\Truck_Opti
 ```
 
 ## Architecture
@@ -39,7 +39,7 @@ npm run launch-check  # must pass 17/17
 - `backend/` Ã¢â‚¬â€ Node.js API (check for auth on every write endpoint)
 - `apps/web/` Ã¢â‚¬â€ alternate entrypoint
 - Supabase project: `jbxncejtcbpcronndqlx`
-- MCP available: qdrant (truck-opti-context), supabase, razorpay
+- MCP available: roo-index-bridge, supabase, razorpay
 
 ## Security Non-Negotiables
 
@@ -48,27 +48,28 @@ npm run launch-check  # must pass 17/17
 - Auth: use `supabase.auth.getUser()` server-side (never `getSession()` alone)
 - Input validation: all form values trimmed/validated before DB insert
 
-## Qdrant Search
+\
+## Roo Bridge MCP
+Use the workspace MCP server `roo-index-bridge` as the default semantic retrieval surface before falling back to grep or regex.
 
-**Collection**: `truck-opti-context` | Use `/qdrant` prompt for full reference.
+- `search_roo_index`: primary code-first semantic search for this repo and sibling repos under `D:\Github`
+- `detect_roo_index_collection`: verify workspace mapping when results look suspicious or the repo is newly onboarded
+- `list_roo_index_collections`: backend sanity check only
 
+Preferred retrieval stack for code work:
+
+1. Roo bridge targeted search
+2. Graphify structure map
+3. code-review-graph exact blast radius
+4. grep or regex for exact confirmation and registry cleanup
+
+Validation:
 ```powershell
-# Semantic search (intent-based Ã¢â‚¬â€ better than grep for concepts)
-cd D:\Github\Truck_Opti
-.\.venv\Scripts\python D:\Github\tools\qdrant_gap_audit.py -q "YOUR QUERY" --context-lines 3
-
-# Index this repo (required before first search)
-.\.venv\Scripts\python D:\Github\tools\qdrant_gap_audit.py --auto-index
-
-# Full 33-check gap audit (run before deploy)
-.\.venv\Scripts\python D:\Github\tools\qdrant_gap_audit.py
-# Ã¢â€ â€™ writes 0.dev-matrix/QDRANT_GAP_REPORT.md
-
-# Critical security checks only (C1 auth, C11/C12 RLS, C14 N+1, C21 secrets, C27 unguarded write)
-.\.venv\Scripts\python D:\Github\tools\qdrant_gap_audit.py --checks 1,11,12,14,21,27
+node D:\Github\tools\roo-index-smoke.mjs --workspace D:\Github\Truck_Opti
+node D:\Github\tools\roo-index-sync-mcp.mjs --all --apply
 ```
 
-> Use `/qdrant` in chat for the complete guide with score interpretation and check catalog.
+> Docs-mode can still rely partly on the shared local markdown fallback when vector recall misses the best chunk, so confirm hits against real files before editing.
 
 ## Close-Day
 
@@ -95,3 +96,9 @@ code-review-graph update          # incremental refresh (<2s)
 code-review-graph watch           # live auto-update in background
 code-review-graph detect-changes  # risk analysis before PR
 ```
+
+## graphify
+
+Before answering architecture or codebase questions, read `graphify-out/GRAPH_REPORT.md` if it exists.
+If `graphify-out/wiki/index.md` exists, navigate it for deep questions.
+Type `/graphify` in Copilot Chat to build or update the knowledge graph.

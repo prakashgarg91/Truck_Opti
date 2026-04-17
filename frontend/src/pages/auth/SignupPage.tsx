@@ -15,7 +15,7 @@ const features = [
   { icon: '📍', text: 'Live GPS Tracking' },
 ]
 
-const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED === 'true'
+const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED !== 'false'
 
 export default function SignupPage() {
   const navigate = useNavigate()

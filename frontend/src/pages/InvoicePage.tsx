@@ -9,8 +9,6 @@ import { shipmentsSupabaseApi, type Shipment } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import {
   calculateInvoice,
-  generateInvoiceNumber,
-  generateLRNumber,
   generateInvoicePDF,
   formatCurrency,
   getSacDescription,
@@ -149,46 +147,63 @@ export default function InvoicePage() {
     try {
       setLoading(true)
       const data = await shipmentsSupabaseApi.getById(shipmentId!)
-      setShipment(data)
 
-      if (data) {
-        // Get company info from auth store (populated at login)
-        const companyInfo = user?.user_metadata?.company || {};
-
-        // Generate invoice from shipment data
-        const invoiceInput: InvoiceData = {
-          invoiceNumber: generateInvoiceNumber(),
-          lrNumber: generateLRNumber(),
-          date: new Date().toISOString(),
-          companyName: companyInfo.name || 'Your Company Name',
-          companyGstin: companyInfo.gstin || '',
-          companyAddress: companyInfo.address ||
-            [companyInfo.address_line1, companyInfo.address_line2, companyInfo.city, companyInfo.state, companyInfo.pincode]
-              .filter(Boolean).join(', ') || '',
-          shipperName: data.origin || 'Unknown',
-          shipperAddress: data.origin || '',
-          consigneeName: data.destination || 'Unknown',
-          consigneeAddress: data.destination || '',
-          shipmentId: data.shipment_id,
-          origin: data.origin,
-          destination: data.destination,
-          items: [{
-            description: `Transportation of goods from ${data.origin} to ${data.destination}`,
-            quantity: 1,
-            weight: data.total_weight,
-            dimensions: `${data.total_volume.toFixed(2)} m³`
-          }],
-          freightCharges: data.estimated_cost || 0,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loading/unloading_charges are optional DB columns not in the base Shipment type
-          loadingCharges: (data as any).loading_charges || 0,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          unloadingCharges: (data as any).unloading_charges || 0,
-          isInterState: getState(data.origin || '') !== getState(data.destination || ''),
-          gstRate: 18
-        }
-
-        setInvoiceData(calculateInvoice(invoiceInput))
+      if (!data) {
+        setShipment(null)
+        setInvoiceData(null)
+        return
       }
+
+      const documentNumbers = data.invoice_number && data.lr_number
+        ? {
+          invoice_number: data.invoice_number,
+          lr_number: data.lr_number,
+        }
+        : await shipmentsSupabaseApi.ensureDocumentNumbers(data.id)
+
+      const shipmentWithDocuments: Shipment = {
+        ...data,
+        invoice_number: documentNumbers.invoice_number,
+        lr_number: documentNumbers.lr_number,
+      }
+
+      setShipment(shipmentWithDocuments)
+
+      // Get company info from auth store (populated at login)
+      const companyInfo = user?.user_metadata?.company || {};
+
+      const invoiceInput: InvoiceData = {
+        invoiceNumber: shipmentWithDocuments.invoice_number || 'INV-PENDING',
+        lrNumber: shipmentWithDocuments.lr_number || 'LR-PENDING',
+        date: new Date().toISOString(),
+        companyName: companyInfo.name || 'Your Company Name',
+        companyGstin: companyInfo.gstin || '',
+        companyAddress: companyInfo.address ||
+          [companyInfo.address_line1, companyInfo.address_line2, companyInfo.city, companyInfo.state, companyInfo.pincode]
+            .filter(Boolean).join(', ') || '',
+        shipperName: shipmentWithDocuments.origin || 'Unknown',
+        shipperAddress: shipmentWithDocuments.origin || '',
+        consigneeName: shipmentWithDocuments.destination || 'Unknown',
+        consigneeAddress: shipmentWithDocuments.destination || '',
+        shipmentId: shipmentWithDocuments.shipment_id,
+        origin: shipmentWithDocuments.origin,
+        destination: shipmentWithDocuments.destination,
+        items: [{
+          description: `Transportation of goods from ${shipmentWithDocuments.origin} to ${shipmentWithDocuments.destination}`,
+          quantity: 1,
+          weight: shipmentWithDocuments.total_weight,
+          dimensions: `${shipmentWithDocuments.total_volume.toFixed(2)} m³`
+        }],
+        freightCharges: shipmentWithDocuments.estimated_cost || 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loading/unloading_charges are optional DB columns not in the base Shipment type
+        loadingCharges: (shipmentWithDocuments as any).loading_charges || 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        unloadingCharges: (shipmentWithDocuments as any).unloading_charges || 0,
+        isInterState: getState(shipmentWithDocuments.origin || '') !== getState(shipmentWithDocuments.destination || ''),
+        gstRate: 18
+      }
+
+      setInvoiceData(calculateInvoice(invoiceInput))
     } catch (error) {
       logger.error('Failed to fetch shipment:', error)
       toast.error('Failed to load shipment')

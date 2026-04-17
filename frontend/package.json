@@ -67,7 +67,7 @@
     "india"
   ],
   "overrides": {
-    "dompurify": "^3.3.2",
+    "dompurify": "^3.4.0",
     "esbuild": "^0.25.0",
     "follow-redirects": "^1.15.12",
     "serialize-javascript": "^7.0.3",

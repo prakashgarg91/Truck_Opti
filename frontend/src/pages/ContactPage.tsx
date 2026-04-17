@@ -2,22 +2,21 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, Phone, MessageCircle, Send, ChevronLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { supabase } from '../lib/supabase'
 import { useLanguageStore } from '../stores/languageStore'
+import {
+  clearStoredContactState,
+  getPendingContactInquiry,
+  getStoredContactDraft,
+  persistContactDraft,
+  queuePendingContactInquiry,
+  submitContactInquiry,
+  type ContactInquiryPayload,
+  type StoredContactInquiry,
+} from '../services/contactInquiry'
 
 const SUBJECTS = ['General', 'Support', 'Sales', 'Partnership']
 const SUBJECTS_HI = ['à¤¸à¤¾à¤®à¤¾à¤¨à¥à¤¯', 'à¤¸à¤¹à¤¾à¤¯à¤¤à¤¾', 'à¤¬à¤¿à¤•à¥à¤°à¥€', 'à¤¸à¤¾à¤à¥‡à¤¦à¤¾à¤°à¥€']
-const CONTACT_DRAFT_KEY = 'truckopti:contact-draft'
-const CONTACT_PENDING_KEY = 'truckopti:contact-pending'
 const SUPPORT_EMAIL = 'support@truckopti.in'
-
-interface ContactInquiryPayload {
-  name: string
-  email: string
-  phone: string
-  subject: string
-  message: string
-}
 
 const getContactFailureMessage = (error: unknown, language: string) => {
   const message = error instanceof Error ? error.message : String(error ?? '')
@@ -38,36 +37,6 @@ const getContactFailureMessage = (error: unknown, language: string) => {
   return language === 'en'
     ? 'Unable to send your message right now. It has been saved here for retry.'
     : 'à¤…à¤­à¥€ à¤†à¤ªà¤•à¤¾ à¤¸à¤‚à¤¦à¥‡à¤¶ à¤­à¥‡à¤œà¤¾ à¤¨à¤¹à¥€à¤‚ à¤œà¤¾ à¤¸à¤•à¤¾à¥¤ à¤‡à¤¸à¥‡ à¤«à¤¿à¤° à¤¸à¥‡ à¤­à¥‡à¤œà¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤¯à¤¹à¤¾à¤ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¤–à¤¾ à¤—à¤¯à¤¾ à¤¹à¥ˆà¥¤'
-}
-
-const readStoredInquiry = (key: string): ContactInquiryPayload | null => {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  try {
-    const raw = window.localStorage.getItem(key)
-    return raw ? (JSON.parse(raw) as ContactInquiryPayload) : null
-  } catch {
-    return null
-  }
-}
-
-const writeStoredInquiry = (key: string, value: ContactInquiryPayload | null) => {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  try {
-    if (value) {
-      window.localStorage.setItem(key, JSON.stringify(value))
-      return
-    }
-
-    window.localStorage.removeItem(key)
-  } catch {
-    // Ignore storage failures and keep the primary submission path working.
-  }
 }
 
 const buildSupportMailto = (payload: ContactInquiryPayload) => {
@@ -92,7 +61,7 @@ export default function ContactPage() {
   const { language } = useLanguageStore()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [pendingSubmission, setPendingSubmission] = useState<ContactInquiryPayload | null>(null)
+  const [pendingSubmission, setPendingSubmission] = useState<StoredContactInquiry | null>(null)
   const [form, setForm] = useState<ContactInquiryPayload>({
     name: '',
     email: '',
@@ -107,8 +76,8 @@ export default function ContactPage() {
   }, [language])
 
   useEffect(() => {
-    const savedDraft = readStoredInquiry(CONTACT_DRAFT_KEY)
-    const pending = readStoredInquiry(CONTACT_PENDING_KEY)
+    const savedDraft = getStoredContactDraft()
+    const pending = getPendingContactInquiry()
 
     if (savedDraft) {
       setForm(savedDraft)
@@ -120,8 +89,7 @@ export default function ContactPage() {
   }, [])
 
   useEffect(() => {
-    const hasContent = Object.values(form).some((value) => value.trim().length > 0)
-    writeStoredInquiry(CONTACT_DRAFT_KEY, hasContent ? form : null)
+    persistContactDraft(form)
   }, [form])
 
   const validate = () => {
@@ -134,51 +102,46 @@ export default function ContactPage() {
     return errs
   }
 
-  const clearStoredContactState = () => {
-    writeStoredInquiry(CONTACT_DRAFT_KEY, null)
-    writeStoredInquiry(CONTACT_PENDING_KEY, null)
+  const clearContactState = () => {
+    clearStoredContactState()
     setPendingSubmission(null)
     setSubmitError(null)
   }
 
-  const queuePendingSubmission = (payload: ContactInquiryPayload, message: string) => {
-    writeStoredInquiry(CONTACT_PENDING_KEY, payload)
-    writeStoredInquiry(CONTACT_DRAFT_KEY, payload)
-    setPendingSubmission(payload)
+  const queuePendingSubmission = (
+    payload: ContactInquiryPayload,
+    message: string,
+    existingClientSubmissionId?: string
+  ) => {
+    const queued = queuePendingContactInquiry(payload, existingClientSubmissionId || pendingSubmission?.clientSubmissionId)
+    setPendingSubmission(queued)
     setSubmitError(message)
   }
 
-  const submitInquiry = async (payload: ContactInquiryPayload) => {
-    const { error } = await supabase.from('contact_inquiries').insert({
-      name: payload.name.trim(),
-      email: payload.email.trim().toLowerCase(),
-      phone: payload.phone.trim() || null,
-      subject: payload.subject,
-      message: payload.message.trim()
-    })
-
-    if (error) {
-      throw error
-    }
-  }
-
-  const sendInquiry = async (payload: ContactInquiryPayload, showSuccessToast: boolean) => {
+  const sendInquiry = async (
+    payload: ContactInquiryPayload,
+    options: { showSuccessToast: boolean; showFailureToast: boolean }
+  ) => {
     setSubmitting(true)
+    const clientSubmissionId = pendingSubmission?.clientSubmissionId
 
     try {
-      await submitInquiry(payload)
-      clearStoredContactState()
+      const storedSubmission = await submitContactInquiry(payload, clientSubmissionId)
+      clearContactState()
       setForm({ name: '', email: '', phone: '', subject: 'General', message: '' })
-      if (showSuccessToast) {
+      if (options.showSuccessToast) {
         toast.success(language === 'en'
           ? 'Thank you! We will get back to you soon.'
           : 'à¤§à¤¨à¥à¤¯à¤µà¤¾à¤¦! à¤¹à¤® à¤œà¤²à¥à¤¦ à¤†à¤ªà¤¸à¥‡ à¤¸à¤‚à¤ªà¤°à¥à¤• à¤•à¤°à¥‡à¤‚à¤—à¥‡à¥¤')
       }
-      return true
+      return storedSubmission
     } catch (error) {
       const fallbackMessage = getContactFailureMessage(error, language)
-      queuePendingSubmission(payload, fallbackMessage)
-      return false
+      queuePendingSubmission(payload, fallbackMessage, clientSubmissionId)
+      if (options.showFailureToast) {
+        toast.error(fallbackMessage)
+      }
+      return null
     } finally {
       setSubmitting(false)
     }
@@ -194,7 +157,7 @@ export default function ContactPage() {
         return
       }
 
-      void sendInquiry(pendingSubmission, false)
+      void sendInquiry(pendingSubmission, { showSuccessToast: false, showFailureToast: false })
     }
 
     window.addEventListener('online', handleOnline)
@@ -228,12 +191,7 @@ export default function ContactPage() {
       return
     }
 
-    const sent = await sendInquiry(payload, true)
-    if (!sent && submitError) {
-      toast.error(submitError)
-    } else if (!sent) {
-      toast.error(getContactFailureMessage(new Error('network request failed'), language))
-    }
+    await sendInquiry(payload, { showSuccessToast: true, showFailureToast: true })
   }
 
   const activeInquiry = pendingSubmission ?? form
@@ -296,7 +254,7 @@ export default function ContactPage() {
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
-                onClick={() => void sendInquiry(pendingSubmission, true)}
+                onClick={() => void sendInquiry(pendingSubmission, { showSuccessToast: true, showFailureToast: true })}
                 disabled={submitting}
                 className="flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-60"
               >

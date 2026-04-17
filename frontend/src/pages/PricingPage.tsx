@@ -39,7 +39,15 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
 type Language = 'en' | 'hi'
 const LABELS = {
   en: {
+    eyebrow: 'Plans & Billing',
     title: 'Choose Your Plan', subtitle: 'Smart logistics optimization for every business size',
+    planNote: 'Start free, switch billing cadence when you need to, and move enterprise fleets to tailored onboarding only when scale demands it.',
+    summaryEyebrow: 'What changes by plan',
+    summaryTitle: 'Capacity grows with your users, trucks, and shipment volume.',
+    summarySubtitle: 'Every tier keeps the same core workflow: packing, dispatch, tracking, and billing. Upgrade only when usage expands.',
+    highlightFree: 'No card required for the free tier',
+    highlightBilling: 'Monthly and yearly billing available',
+    highlightScale: 'Enterprise rollout support for larger fleets',
     monthly: 'Monthly', yearly: 'Yearly', saveTag: 'Save 17%',
     perMonth: '/mo', perYear: '/yr',
     getStarted: 'Get Started', contactSales: 'Contact Sales', startFree: 'Start Free →',
@@ -50,6 +58,7 @@ const LABELS = {
     storage: 'Storage', apiCalls: 'API Calls/mo', sms: 'SMS OTP/mo',
     support: 'Support', unlimited: 'Unlimited',
     compareTitle: 'Full Feature Comparison',
+    compareNote: 'Compare the limits before you lock a billing cycle.',
     freeForever: 'Start for Free', freeDesc: 'No credit card required. Full access to free tier.',
     enterprise: 'Need a custom plan?',
     enterpriseDesc: 'Large fleet or multiple locations? Get a tailored quote from our team.',
@@ -58,7 +67,15 @@ const LABELS = {
     back: 'Back',
   },
   hi: {
+    eyebrow: 'प्लान और बिलिंग',
     title: 'अपना प्लान चुनें', subtitle: 'हर व्यवसाय के लिए स्मार्ट लॉजिस्टिक्स',
+    planNote: 'मुफ्त शुरू करें, ज़रूरत पड़ने पर बिलिंग बदलें, और बड़े फ्लीट के लिए तभी टेलर्ड ऑनबोर्डिंग लें जब स्केल इसकी मांग करे।',
+    summaryEyebrow: 'प्लान के साथ क्या बदलता है',
+    summaryTitle: 'यूज़र्स, ट्रक और शिपमेंट वॉल्यूम के साथ आपकी क्षमता बढ़ती है।',
+    summarySubtitle: 'हर टियर में वही मुख्य वर्कफ़्लो रहता है: पैकिंग, डिस्पैच, ट्रैकिंग और बिलिंग। अपग्रेड तभी करें जब उपयोग बढ़े।',
+    highlightFree: 'फ्री टियर के लिए कार्ड की ज़रूरत नहीं',
+    highlightBilling: 'मासिक और वार्षिक बिलिंग उपलब्ध',
+    highlightScale: 'बड़े फ्लीट के लिए एंटरप्राइज़ रोलआउट सपोर्ट',
     monthly: 'मासिक', yearly: 'वार्षिक', saveTag: '17% बचाएं',
     perMonth: '/माह', perYear: '/वर्ष',
     getStarted: 'शुरू करें', contactSales: 'संपर्क करें', startFree: 'मुफ्त शुरू करें →',
@@ -69,6 +86,7 @@ const LABELS = {
     storage: 'स्टोरेज', apiCalls: 'API कॉल/माह', sms: 'SMS OTP/माह',
     support: 'सपोर्ट', unlimited: 'अनलिमिटेड',
     compareTitle: 'सभी सुविधाएं',
+    compareNote: 'बिलिंग साइकिल तय करने से पहले लिमिट्स की तुलना करें।',
     freeForever: 'मुफ्त शुरू करें', freeDesc: 'कोई क्रेडिट कार्ड नहीं।',
     enterprise: 'कस्टम समाधान चाहिए?',
     enterpriseDesc: 'बड़े फ्लीट के लिए टेलर्ड प्लान।',
@@ -79,10 +97,10 @@ const LABELS = {
 }
 
 const TIER_CFG: Record<string, { icon: React.ComponentType<{ className?: string }>, grad: string, bg: string, txt: string }> = {
-  starter:      { icon: Rocket, grad: 'from-blue-500 to-blue-600',    bg: 'bg-blue-50 dark:bg-blue-900/20',     txt: 'text-blue-700 dark:text-blue-300' },
-  growth:       { icon: Zap,    grad: 'from-emerald-500 to-green-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', txt: 'text-emerald-700 dark:text-emerald-300' },
-  professional: { icon: Star,   grad: 'from-violet-500 to-purple-600', bg: 'bg-violet-50 dark:bg-violet-900/20',  txt: 'text-violet-700 dark:text-violet-300' },
-  enterprise:   { icon: Crown,  grad: 'from-orange-500 to-amber-600',  bg: 'bg-orange-50 dark:bg-orange-900/20',  txt: 'text-orange-700 dark:text-orange-300' },
+  starter: { icon: Rocket, grad: 'from-blue-500 to-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', txt: 'text-blue-700 dark:text-blue-300' },
+  growth: { icon: Zap, grad: 'from-emerald-500 to-green-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', txt: 'text-emerald-700 dark:text-emerald-300' },
+  professional: { icon: Star, grad: 'from-violet-500 to-purple-600', bg: 'bg-violet-50 dark:bg-violet-900/20', txt: 'text-violet-700 dark:text-violet-300' },
+  enterprise: { icon: Crown, grad: 'from-orange-500 to-amber-600', bg: 'bg-orange-50 dark:bg-orange-900/20', txt: 'text-orange-700 dark:text-orange-300' },
 }
 
 const fmtINR = (n: number) =>
@@ -142,9 +160,9 @@ function PricingCard({ tier, isYearly, lang, L, isCurrent, isUpgrade, isDowngrad
   }
 
   return (
-    <div className={`relative flex flex-col rounded-2xl overflow-hidden border-2 bg-white dark:bg-slate-800 transition-shadow
+    <div className={`relative flex h-full flex-col overflow-hidden rounded-[28px] border-2 bg-white/90 backdrop-blur-sm transition-all duration-300
       ${isPopular && !isCurrent ? 'border-emerald-500 dark:border-emerald-400 shadow-xl shadow-emerald-500/10' : isCurrent ? 'border-blue-500 dark:border-blue-400 shadow-xl shadow-blue-500/10' : 'border-slate-200 dark:border-slate-700'}
-      hover:shadow-xl ${className}`}
+      hover:-translate-y-1 hover:shadow-2xl ${className}`}
     >
       {/* Top badge strip */}
       {hasBadge && (
@@ -161,11 +179,11 @@ function PricingCard({ tier, isYearly, lang, L, isCurrent, isUpgrade, isDowngrad
             <Icon className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <div className="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+            <div className="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-tight break-words">
               {lang === 'en' ? tier.name : tier.nameHi}
             </div>
             {tier.targetAudience && (
-              <div className="text-[11px] text-slate-400 mt-0.5 leading-tight line-clamp-1">{tier.targetAudience}</div>
+              <div className="text-[11px] text-slate-400 mt-0.5 leading-tight line-clamp-2 sm:line-clamp-1">{tier.targetAudience}</div>
             )}
           </div>
         </div>
@@ -195,10 +213,10 @@ function PricingCard({ tier, isYearly, lang, L, isCurrent, isUpgrade, isDowngrad
         {/* Key limits */}
         <div className="space-y-2 mb-4">
           {([
-            [L.trucks,    tier.limits.trucksManaged],
+            [L.trucks, tier.limits.trucksManaged],
             [L.shipments, tier.limits.shipmentsPerMonth],
-            [L.packing,   tier.limits.packingOptimizations],
-            [L.users,     tier.limits.users],
+            [L.packing, tier.limits.packingOptimizations],
+            [L.users, tier.limits.users],
           ] as [string, number][]).map(([label, val]) => (
             <div key={label} className="flex items-center justify-between text-sm">
               <span className="text-slate-500 dark:text-slate-400">{label}</span>
@@ -214,7 +232,7 @@ function PricingCard({ tier, isYearly, lang, L, isCurrent, isUpgrade, isDowngrad
               {tier.features.slice(0, 5).map((f, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
                   <Check className={`w-4 h-4 shrink-0 mt-0.5 ${cfg.txt}`} />
-                  <span>{f}</span>
+                  <span className="leading-snug">{f}</span>
                 </li>
               ))}
             </ul>
@@ -238,6 +256,7 @@ export default function PricingPage() {
   const [updating, setUpdating] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const L = LABELS[lang]
+  const languageFont = lang === 'hi' ? 'font-hindi' : ''
 
   useEffect(() => { document.title = 'Pricing — TruckOpti' }, [])
 
@@ -302,22 +321,27 @@ export default function PricingPage() {
   }
 
   const COMPARE_ROWS: { label: string; key: keyof PricingTier['limits'] }[] = [
-    { label: L.users,     key: 'users' },
-    { label: L.trucks,    key: 'trucksManaged' },
+    { label: L.users, key: 'users' },
+    { label: L.trucks, key: 'trucksManaged' },
     { label: L.shipments, key: 'shipmentsPerMonth' },
-    { label: L.packing,   key: 'packingOptimizations' },
-    { label: L.routes,    key: 'routeOptimizations' },
-    { label: L.storage,   key: 'storageGB' },
-    { label: L.apiCalls,  key: 'apiCallsPerMonth' },
-    { label: L.sms,       key: 'smsOtpPerMonth' },
-    { label: L.support,   key: 'supportLevel' },
+    { label: L.packing, key: 'packingOptimizations' },
+    { label: L.routes, key: 'routeOptimizations' },
+    { label: L.storage, key: 'storageGB' },
+    { label: L.apiCalls, key: 'apiCallsPerMonth' },
+    { label: L.sms, key: 'smsOtpPerMonth' },
+    { label: L.support, key: 'supportLevel' },
   ]
 
+  const planHighlights = [L.highlightFree, L.highlightBilling, L.highlightScale]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className={`relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#eef4ff_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_transparent_28%),linear-gradient(180deg,#020617_0%,#0f172a_45%,#111827_100%)] ${languageFont}`}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary-100/60 via-primary-50/20 to-transparent dark:from-primary-950/50 dark:via-primary-950/10 dark:to-transparent" />
+      <div className="pointer-events-none absolute -left-20 top-28 h-56 w-56 rounded-full bg-primary-300/15 blur-3xl dark:bg-primary-500/15" />
+      <div className="pointer-events-none absolute right-0 top-36 h-72 w-72 rounded-full bg-orange-300/15 blur-3xl dark:bg-orange-500/10" />
 
       {/* Sticky top bar */}
-      <div className="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+      <div className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <button
             onClick={() => navigate(-1)}
@@ -352,32 +376,76 @@ export default function PricingPage() {
       <div className="max-w-7xl mx-auto px-4 pt-8 pb-20">
 
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">{L.title}</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-lg max-w-xl mx-auto">{L.subtitle}</p>
-          {isAdmin && (
-            <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-sm font-semibold">
-              {L.adminBadge}
+        <div className="mb-10 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px] xl:items-start">
+          <div className="relative overflow-hidden rounded-[32px] border border-slate-200/80 bg-white/90 p-7 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur dark:border-slate-700/70 dark:bg-slate-900/80 sm:p-8">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-500 via-orange-400 to-emerald-500" />
+            <div className="inline-flex items-center rounded-full border border-primary-200/80 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700 dark:border-primary-800/80 dark:bg-primary-950/40 dark:text-primary-300">
+              {L.eyebrow}
             </div>
-          )}
-          {isYearly && (
-            <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold ml-3">
-              🎉 {L.saveTag} on yearly billing
+            <h1 className="mt-6 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl lg:text-5xl">
+              {L.title}
+            </h1>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">
+              {L.subtitle}
+            </p>
+            <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
+              {L.planNote}
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              {isAdmin && (
+                <div className="inline-flex items-center gap-2 rounded-full bg-purple-100 px-4 py-2 text-sm font-semibold text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                  {L.adminBadge}
+                </div>
+              )}
+              {isYearly && (
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                  🎉 {L.saveTag} on yearly billing
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="rounded-[32px] bg-slate-900 p-6 text-white shadow-[0_24px_80px_-40px_rgba(15,23,42,0.75)] dark:bg-slate-950 sm:p-7">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary-300">{L.summaryEyebrow}</p>
+            <h2 className="mt-4 text-2xl font-bold leading-tight">{L.summaryTitle}</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-300">{L.summarySubtitle}</p>
+
+            <div className="mt-6 space-y-3">
+              {planHighlights.map((item) => (
+                <div key={item} className="flex items-start gap-3 rounded-2xl bg-white/5 p-3 ring-1 ring-white/10">
+                  <div className="mt-0.5 rounded-full bg-primary-500/20 p-1 text-primary-200">
+                    <Check className="h-3.5 w-3.5" />
+                  </div>
+                  <p className="text-sm leading-6 text-slate-200">{item}</p>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => navigate('/contact')}
+              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-100"
+            >
+              {L.talkToUs}
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Free banner */}
-        <div className="mb-8 rounded-2xl overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 p-px">
-          <div className="bg-blue-50 dark:bg-blue-950/50 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <p className="font-bold text-slate-900 dark:text-white text-base">{L.freeForever}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{L.freeDesc}</p>
-            </div>
+        <div className="mb-10 overflow-hidden rounded-[28px] bg-gradient-to-r from-primary-500 via-primary-600 to-orange-500 p-px shadow-lg shadow-primary-500/10">
+          <div className="rounded-[27px] bg-white/95 p-6 dark:bg-slate-900/95 sm:p-7">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.26em] text-primary-600 dark:text-primary-300">{L.freeForever}</p>
+                <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">{L.freeDesc}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{L.compareNote}</p>
+              </div>
             <button
               onClick={() => navigate('/signup')}
-              className="shrink-0 px-5 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl text-sm font-semibold shadow-sm transition-all active:scale-95"
+                className="shrink-0 rounded-2xl bg-primary-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary-700 active:scale-95"
             >{L.startFree}</button>
+            </div>
           </div>
         </div>
 
@@ -397,26 +465,27 @@ export default function PricingPage() {
               className="lg:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 pb-4"
               style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
             >
-            {tiers.map((tier, idx) => {
-                  const { isUpgrade, isDowngrade } = getTierRelation(idx)
-                  return (
-                <PricingCard
-                  key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
-                  isCurrent={currentPlan?.id === tier.id}
-                  isUpgrade={isUpgrade}
-                  isDowngrade={isDowngrade}
-                  className="snap-center shrink-0 w-[82vw] sm:w-[55vw]"
-                  onCta={() => {
-                    if (tier.id === 'enterprise') {
-                      navigate('/contact')
-                    } else if (subscription && (isUpgrade || isDowngrade)) {
-                      handlePlanChange(tier.id)
-                    } else {
-                      navigate('/signup')
-                    }
-                  }}
-                />
-              )})}
+              {tiers.map((tier, idx) => {
+                const { isUpgrade, isDowngrade } = getTierRelation(idx)
+                return (
+                  <PricingCard
+                    key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
+                    isCurrent={currentPlan?.id === tier.id}
+                    isUpgrade={isUpgrade}
+                    isDowngrade={isDowngrade}
+                      className="snap-center shrink-0 w-[88vw] max-w-sm sm:w-[55vw]"
+                    onCta={() => {
+                      if (tier.id === 'enterprise') {
+                        navigate('/contact')
+                      } else if (subscription && (isUpgrade || isDowngrade)) {
+                        handlePlanChange(tier.id)
+                      } else {
+                        navigate('/signup')
+                      }
+                    }}
+                  />
+                )
+              })}
             </div>
 
             {/* Mobile dots */}
@@ -430,26 +499,27 @@ export default function PricingPage() {
             </div>
 
             {/* Desktop grid */}
-            <div className="hidden lg:grid grid-cols-4 gap-5 items-stretch">
+            <div className="hidden lg:grid grid-cols-4 gap-6 items-stretch">
               {tiers.map((tier, idx) => {
                 const { isUpgrade, isDowngrade } = getTierRelation(idx)
                 return (
-                <PricingCard
-                  key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
-                  isCurrent={currentPlan?.id === tier.id}
-                  isUpgrade={isUpgrade}
-                  isDowngrade={isDowngrade}
-                  onCta={() => {
-                    if (tier.id === 'enterprise') {
-                      navigate('/contact')
-                    } else if (subscription && (isUpgrade || isDowngrade)) {
-                      handlePlanChange(tier.id)
-                    } else {
-                      navigate('/signup')
-                    }
-                  }}
-                />
-              )})}
+                  <PricingCard
+                    key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
+                    isCurrent={currentPlan?.id === tier.id}
+                    isUpgrade={isUpgrade}
+                    isDowngrade={isDowngrade}
+                    onCta={() => {
+                      if (tier.id === 'enterprise') {
+                        navigate('/contact')
+                      } else if (subscription && (isUpgrade || isDowngrade)) {
+                        handlePlanChange(tier.id)
+                      } else {
+                        navigate('/signup')
+                      }
+                    }}
+                  />
+                )
+              })}
             </div>
           </>
         )}
@@ -457,7 +527,10 @@ export default function PricingPage() {
         {/* Comparison table */}
         {!isLoading && tiers.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white text-center mb-6">{L.compareTitle}</h2>
+            <div className="mx-auto mb-6 max-w-2xl text-center">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{L.compareTitle}</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">{L.compareNote}</p>
+            </div>
             <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
               <table className="w-full text-sm min-w-[500px]">
                 <thead>
@@ -522,13 +595,15 @@ export default function PricingPage() {
         )}
 
         {/* Enterprise CTA */}
-        <div className="mt-12 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-700 p-8 sm:p-10 text-center">
-          <Building2 className="w-10 h-10 text-orange-400 mx-auto mb-4" />
-          <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">{L.enterprise}</h3>
-          <p className="text-slate-300 text-sm sm:text-base mb-6 max-w-md mx-auto">{L.enterpriseDesc}</p>
+        <div className="mt-14 rounded-[32px] bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 p-8 text-center shadow-2xl shadow-slate-900/20 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700 sm:p-10">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-orange-400">
+            <Building2 className="h-7 w-7" />
+          </div>
+          <h3 className="mt-5 text-xl font-bold text-white sm:text-2xl">{L.enterprise}</h3>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-300 sm:text-base">{L.enterpriseDesc}</p>
           <button
             onClick={() => (window.location.href = 'mailto:sales@truckopti.in')}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-900 rounded-xl font-semibold hover:bg-slate-100 transition-colors text-sm"
+            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-100"
           >
             {L.talkToUs} <ChevronRight className="w-4 h-4" />
           </button>

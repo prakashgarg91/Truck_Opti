@@ -108,6 +108,8 @@ export interface Shipment {
   customer_id: string
   created_by?: string
   truck_id: string
+  invoice_number?: string | null
+  lr_number?: string | null
   origin: string
   destination: string
   status: 'pending' | 'in_transit' | 'delivered' | 'cancelled'
@@ -345,6 +347,19 @@ export const shipmentsSupabaseApi = {
     return data as Shipment
   },
 
+  async ensureDocumentNumbers(id: string): Promise<Pick<Shipment, 'invoice_number' | 'lr_number'>> {
+    const { data, error } = await supabase
+      .rpc('ensure_shipment_document_numbers', { p_shipment_id: id })
+
+    if (error) throw error
+
+    const row = Array.isArray(data) ? data[0] : data
+    return {
+      invoice_number: row?.invoice_number ?? null,
+      lr_number: row?.lr_number ?? null,
+    }
+  },
+
   async create(shipment: Omit<Shipment, 'id' | 'created_at' | 'updated_at'>): Promise<Shipment> {
     const { data, error } = await supabase
       .from('shipments')
@@ -492,7 +507,7 @@ export const authSupabaseApi = {
           error.message?.toLowerCase().includes('phone sign')
         ) {
           throw new UserFacingError(
-            'Phone OTP is currently unavailable. Please use Email OTP or Google sign-in instead.'
+            'Phone OTP is currently unavailable. This app only re-enables phone OTP after Supabase Phone is configured with Twilio. Please use Email OTP or Google sign-in instead.'
           )
         }
         throw error

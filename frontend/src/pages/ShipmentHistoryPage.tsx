@@ -114,11 +114,10 @@ export default function ShipmentHistoryPage() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-              filter === f
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-            }`}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filter === f
+              ? 'bg-indigo-600 text-white'
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+              }`}
           >
             {f === 'all' ? 'All' : f === 'in_transit' ? 'In Transit' : f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
@@ -143,7 +142,7 @@ export default function ShipmentHistoryPage() {
             return (
               <div
                 key={shipment.id}
-                onClick={() => navigate('/tracking')}
+                onClick={() => navigate(`/tracking?shipment=${shipment.id}`)}
                 className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-3">

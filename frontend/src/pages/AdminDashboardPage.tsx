@@ -124,10 +124,10 @@ export default function AdminDashboardPage() {
 
       // Group by month
       const monthlyRevenue: Record<string, number> = {}
-      ;(trendData || []).forEach(job => {
-        const monthKey = new Date(job.created_at).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })
-        monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + (job.fare || 0)
-      })
+        ; (trendData || []).forEach(job => {
+          const monthKey = new Date(job.created_at).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })
+          monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + (job.fare || 0)
+        })
 
       // Convert to array and ensure last 6 months are present
       const months = []

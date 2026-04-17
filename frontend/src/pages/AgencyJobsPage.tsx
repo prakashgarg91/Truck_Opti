@@ -39,16 +39,16 @@ interface AvailableDriver {
 }
 
 interface DriverLocation {
-  latitude: number
-  longitude: number
+  lat: number
+  lng: number
   updated_at: string
   speed_kmh: number | null
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending:   { label: 'Pending',   color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  accepted:  { label: 'Accepted',  color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-  in_transit:{ label: 'In Transit',color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+  pending: { label: 'Pending', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  accepted: { label: 'Accepted', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
+  in_transit: { label: 'In Transit', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
   delivered: { label: 'Delivered', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 }
@@ -189,6 +189,10 @@ export default function AgencyJobsPage() {
     setAssigning(true)
 
     try {
+      const pickupOTP = Math.floor(1000 + Math.random() * 9000).toString()
+      const deliveryOTP = Math.floor(1000 + Math.random() * 9000).toString()
+      const expiresAt = new Date(Date.now() + 30 * 1000).toISOString()
+
       // 1. Update agency_jobs with selected driver
       const { error: updateError } = await supabase
         .from('agency_jobs')
@@ -198,10 +202,18 @@ export default function AgencyJobsPage() {
       if (updateError) throw updateError
 
       // 2. Mark truck as not available
-      await supabase
+      const { error: truckError } = await supabase
         .from('agency_trucks')
         .update({ is_available: false })
         .eq('id', driver.truck_id)
+
+      if (truckError) {
+        await supabase
+          .from('agency_jobs')
+          .update({ driver_id: null, truck_id: null })
+          .eq('id', selectedJob.id)
+        throw truckError
+      }
 
       // 3. Check if job_offer already exists
       const { data: existing } = await supabase
@@ -213,13 +225,26 @@ export default function AgencyJobsPage() {
 
       // 4. Insert job_offer if not exists
       if (!existing) {
-        const pickupOTP = Math.floor(1000 + Math.random() * 9000).toString()
-        await supabase.from('job_offers').insert({
+        const { error: offerError } = await supabase.from('job_offers').insert({
           shipment_id: selectedJob.shipment_id,
           driver_id: driver.id,
           status: 'pending',
+          expires_at: expiresAt,
           pickup_otp: pickupOTP,
+          delivery_otp: deliveryOTP,
         })
+
+        if (offerError) {
+          await supabase
+            .from('agency_trucks')
+            .update({ is_available: true })
+            .eq('id', driver.truck_id)
+          await supabase
+            .from('agency_jobs')
+            .update({ driver_id: null, truck_id: null })
+            .eq('id', selectedJob.id)
+          throw offerError
+        }
       }
 
       toast.success(`Driver ${driver.driver_name} assigned!`)
@@ -273,7 +298,7 @@ export default function AgencyJobsPage() {
     if (job.driver_id) {
       const { data: loc } = await supabase
         .from('driver_locations')
-        .select('latitude, longitude, updated_at, speed_kmh')
+        .select('lat, lng, updated_at, speed_kmh')
         .eq('driver_id', job.driver_id)
         .order('updated_at', { ascending: false })
         .limit(1)
@@ -333,7 +358,7 @@ export default function AgencyJobsPage() {
   const trackingMarkers: MapMarker[] = driverLocation ? [
     {
       id: 'driver',
-      position: [driverLocation.latitude, driverLocation.longitude],
+      position: [driverLocation.lat, driverLocation.lng],
       label: '🚚',
       type: 'truck'
     }
@@ -355,11 +380,10 @@ export default function AgencyJobsPage() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-              filter === f
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-            }`}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filter === f
+              ? 'bg-indigo-600 text-white'
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+              }`}
           >
             {f === 'in_transit' ? 'In Transit' : f.charAt(0).toUpperCase() + f.slice(1)}
             {f !== 'all' && (
@@ -593,7 +617,7 @@ export default function AgencyJobsPage() {
                 <MapViewWrapper
                   markers={trackingMarkers}
                   routes={trackingRoutes}
-                  center={[driverLocation.latitude, driverLocation.longitude]}
+                  center={[driverLocation.lat, driverLocation.lng]}
                   zoom={14}
                   height="100%"
                 />

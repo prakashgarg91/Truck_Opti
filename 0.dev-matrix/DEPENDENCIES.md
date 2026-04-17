@@ -37,12 +37,14 @@ frontend/src/
 ├── App.tsx                      Router (all routes defined here)
 ├── lib/
 │   └── supabase.ts               Supabase client singleton
-├── store/
+├── stores/
 │   └── authStore.ts             Zustand: user, role, agencyId, driverId
 ├── hooks/
 │   ├── useSubscription.ts       Trial/plan status, usage limits
-│   └── useRequireAuth.ts        Route protection
+├── components/
+│   └── ProtectedRoute.tsx       Shared auth + role gate for route groups
 ├── services/
+│   ├── contactInquiry.ts        Contact draft/pending/retry persistence with dedupe key
 │   ├── razorpayPayment.ts       Razorpay checkout → server /api/razorpay
 │   └── phonepePayment.ts        PhonePe checkout → server /api/phonepe
 ├── utils/
@@ -85,15 +87,23 @@ frontend/src/
 | `transport_agencies` | `auth.uid() = user_id` | Agency profile |
 | `drivers` | `auth.uid() = user_id` | Driver profile + wallet |
 | `agency_jobs` | `auth.uid() via agency_id` | Main job dispatch table |
-| `job_offers` | driver-scoped | Realtime job offers |  
-| `driver_locations` | driver-scoped | GPS updates from driver |
+| `job_offers` | shipment-stakeholder read, agency/driver managed | Driver offer + trip-state record with OTPs, proof photos, and delivery milestones |
+| `driver_locations` | driver-managed, shipment-stakeholder read | Live GPS feed for agency/customer/admin tracking |
 | `agency_trucks` | agency-scoped | Truck assignments |
-| `shipments` | **⚠️ BUG-RLS-002** `USING (true)` | Cross-tenant exposure — fix needed |
+| `shipments` | **⚠️ BUG-RLS-002** `USING (true)` | Cross-tenant exposure — fix needed; now also persists `invoice_number` + `lr_number` |
 | `customers` | **⚠️ BUG-RLS-001** `USING (true)` | Cross-tenant exposure — fix needed |
 | `routes` | **⚠️ BUG-RLS-003** `USING (true)` | Cross-tenant exposure — fix needed |
 | `trucks` | Public read +⚠️ `USING (true)` UPDATE/DELETE | BUG-RLS-005 |
 | `cartons` | Public read +⚠️ `USING (true)` UPDATE/DELETE | BUG-RLS-006 |
 | `packing_results` | **⚠️ BUG-RLS-004** `USING (true)` | See SECURITY.md |
+| `contact_inquiries` | public insert, admin read/update | Contact form submissions; deduped via `client_submission_id` |
+| `payment_history` | `auth.uid() = user_id` | Provider order reference reused for PhonePe + Razorpay; status contract is `pending|success|failed|refunded` |
+
+### Key DB Functions
+| Function | Purpose |
+|----------|---------|
+| `ensure_shipment_document_numbers(p_shipment_id)` | Backfill/read persisted shipment invoice + LR numbers |
+| `persist_driver_job_offer_progress(p_job_offer_id, p_status, p_extra)` | Owns driver trip progress, timestamps, photo URLs, and finalize cleanup |
 
 ### Storage Buckets
 | Bucket | Access | Path pattern |
@@ -130,9 +140,16 @@ DriverDashboardPage Realtime subscription on job_offers
 PricingPage → CheckoutPage
     → initiatePhonePePayment() → domain-validated redirect (BUG-REDIRECT-001 fixed)
     → OR initiateRazorpayPayment() → Razorpay SDK popup
-    → supabase.from('subscriptions').insert()
-    → [PENDING] razorpay-webhook Edge Function (BATCH12 T1)
-       verifies HMAC → updates subscription to 'active'
+    → provider edge function owns `payment_history`
+    → verify-payment / verify-razorpay-payment activate subscription + create invoice
+```
+
+### Graph Refresh Flow
+```
+npm run graph:update
+    → scripts/graphify-refresh.ps1
+    → python -m graphify update frontend/src
+    → sync frontend/src/graphify-out/* to root graphify-out/*
 ```
 
 ### Auth Flow
@@ -142,7 +159,7 @@ LoginPage
     → OR Google OAuth (supabase.auth.signInWithOAuth)
     → /auth/callback → AuthCallbackPage
     → authStore populated (user, role, agencyId, driverId)
-    → role-based redirect: /dashboard | /driver/dashboard | /agency/dashboard | /admin
+    → role-based redirect: / | /driver/dashboard | /agency/dashboard | /admin
 ```
 
 ---

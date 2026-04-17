@@ -1,12 +1,12 @@
-﻿{
-    "kimi.yoloMode":  true,
-    "kimi.autosave":  true,
-    "github.copilot.chat.codeGeneration.useInstructionFiles":  true,
-    "chat.promptFiles":  true,
-    "chat.promptFilesLocations":  {
-                                      ".github/prompts":  true
-                                  },
-    "editor.formatOnSave":  true,
-    "files.encoding":  "utf8",
-    "terminal.integrated.defaultProfile.windows":  "PowerShell"
+{
+    "kimi.yoloMode": true,
+    "kimi.autosave": true,
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "chat.promptFiles": true,
+    "chat.promptFilesLocations": {
+        ".github/prompts": true
+    },
+    "editor.formatOnSave": true,
+    "files.encoding": "utf8",
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
 }

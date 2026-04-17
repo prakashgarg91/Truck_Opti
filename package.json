@@ -10,6 +10,7 @@
     "test:public-smoke": "node scripts/public_frontend_smoke.mjs",
     "test:frontend-smoke": "node scripts/frontend_launch_smoke.mjs",
     "test:prod-config": "node scripts/production_config_audit.mjs",
+    "graph:update": "powershell -ExecutionPolicy Bypass -File scripts/graphify-refresh.ps1",
     "deep-scan": "node 0.dev-matrix/deep-error-scanner.mjs",
     "glue:check": "node tools/glue-check.mjs",
     "launch-check": "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",

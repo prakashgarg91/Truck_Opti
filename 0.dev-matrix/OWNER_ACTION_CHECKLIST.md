@@ -104,21 +104,25 @@ supabase secrets set RAZORPAY_KEY_SECRET=live_secret_XXXXXX
 
 ## 🟠 HIGH PRIORITY (important but non-blocking)
 
-### Action 4: Configure Twilio SMS OTP in Supabase
+### Action 4: Re-enable Supabase Phone OTP via Twilio
 
-**Why:** Phone OTP silently fails — Twilio is not configured as SMS provider.
+**Why:** Phone OTP is intentionally hidden by default for launch. If you enable it later, TruckOpti should use the existing Supabase Phone provider with Twilio/Twilio Verify only, not Firebase Auth as a second production auth system.
 
 **Steps:**
 1. Create a Twilio account at twilio.com
-2. Get Account SID, Auth Token, and a phone number
-3. Go to Supabase Dashboard → Authentication → Providers → Phone
-4. Enter Twilio credentials (Account SID, Auth Token, Sender Number)
-5. Enable SMS provider
-6. (Optional) For WhatsApp OTP: configure Twilio WhatsApp Business API
+2. Choose Twilio Verify (preferred) or Twilio Programmable Messaging for your OTP delivery path
+3. If using Twilio Verify: create a Verification Service and copy the Verification Service SID
+4. Go to Supabase Dashboard → Authentication → Providers → Phone
+5. Configure the Phone provider with the matching Twilio credentials:
+   - Twilio Verify: Verification Service SID
+   - Programmable Messaging: Account SID, Auth Token, and Sender Number or Messaging Service SID
+6. Save the provider configuration and verify OTP delivery directly through Supabase
+7. Only after provider verification succeeds, set deployed frontend `VITE_AUTH_PHONE_OTP_ENABLED=true`
+8. (Optional) For WhatsApp OTP: use Twilio Verify or configure the Twilio Content SID path in Supabase
 
 **Verification:** Log out, enter a real phone number on `/login`, verify OTP SMS is received.
 
-> **⚠️ Twilio is OPTIONAL for launch.** If you accept Email OTP + Google OAuth as the launch auth methods (both already working), you can defer Twilio configuration. Phone OTP can be added later. See `docs/AUTH_ARCHITECTURE_DECISIONS.md` for the full analysis.
+> **⚠️ Twilio is OPTIONAL for launch.** If you accept Email OTP + Google OAuth as the launch auth methods (both already working), you can defer Twilio configuration. If phone OTP is added later, keep the implementation on Supabase Phone + Twilio only. See `docs/AUTH_ARCHITECTURE_DECISIONS.md` for the full analysis.
 
 ---
 
@@ -161,7 +165,7 @@ Once all actions are complete, perform a final end-to-end smoke test:
 3. **Driver flow:** Login → Accept Job → Complete Trip → Check Earnings
 4. **Admin flow:** Login → View Dashboard → Manage Users/Subscriptions/Payouts
 5. **Payment flow:** Subscribe to a plan via Razorpay
-6. **Auth flow:** Login with Google OAuth + Phone OTP + Email OTP
+6. **Auth flow:** Login with Google OAuth + Email OTP, and include Phone OTP only if Action 4 is intentionally re-enabled later
 
 If all 6 flows work → **PROJECT IS LAUNCHED.**
 

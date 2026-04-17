@@ -16,6 +16,19 @@
 ### Sign In Format
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-15] MANAGER-CLOSEOUT-2:
+  Close-day rerun requested after the committed tree was already restored to green.
+
+  CURRENT VERIFIED STATE:
+  - background launch-check status: PASS (`launch-check passed`)
+  - repo code is already pushed; only runtime evidence files are expected to remain dirty during closeout
+  - owner-side launch blockers remain unchanged
+
+  CONCLUSION:
+  - close-day can finalize cleanly from the current committed repo state
+  - remaining launch work is external configuration and manual real-account proof, not repo code
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-15] MANAGER-LAUNCH:
   Repo-side launch hardening landed and the committed tree is green again.
 
@@ -143,6 +156,45 @@
 > Newest messages at TOP.
 
 ```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-17] GPT-021:
+  Future-state planning was pressure-tested with parallel native `opencode` lanes and expanded into a fuller execution roadmap.
+
+  NEW VERIFIED WORK:
+  - canonical plan expanded with onboarding tracks, tenant/delegation boundaries, internal API + event-plane guidance, and tighter office rights segmentation
+  - future backlog sharpened with `T-145` and `T-146` so follow-up implementation work is less ambiguous
+  - delayed close-day scheduled for 20:44 via Windows task `TruckOptiCloseDay_20260417_2044`
+
+  JUDGMENT:
+  - the repo now has a more implementation-ready future-course plan rather than only a high-level role/interface note
+  - next roadmap execution should start with password auth, then tenant/onboarding contracts, then office permissions, then partner/API/event work
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-17] GPT-021:
+  Native `opencode` runtime was cleaned and revalidated for manager-led parallel work.
+
+  NEW VERIFIED WORK:
+  - removed the user-level `oh-my-openagent` plugin hook and uninstalled `@opencode-ai/plugin`
+  - disabled the old `oh-my-opencode` config files and set native `opencode` defaults to `zai-coding-plan/glm-5.1`
+  - verified both the default native invocation and explicit `build` agent work without `--pure`
+
+  JUDGMENT:
+  - this machine can now use parallel native `opencode` lanes directly on GLM 5.1 without the stale plugin-alias problem
+  - repo launch truth is unchanged: owner-side credentials and git cleanliness still dominate launch closure
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-17] GPT-020:
+  Future-state planning was expanded and anchored in a dedicated strategy doc.
+
+  NEW DOCUMENTED DIRECTION:
+  - canonical roadmap added at `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md`
+  - future scope now explicitly covers password login as a secondary auth path, role-scoped demo IDs, partner interfaces, and permission bundles for TruckOpti office teams
+  - current launch-safe auth is unchanged: Email OTP + Google remain the live default until the password path is implemented safely
+
+  JUDGMENT:
+  - the repo now has one planning source of truth for future portals, user families, reviewer/demo identities, and office-team rights
+  - implementation should follow staged backlog items T-142 to T-144 instead of ad-hoc auth or role changes
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-09] GPT-005:
   Close-day checkpoint refreshed after the final launch-reality sync.
@@ -482,4 +534,4 @@ Judgment: the documented skyline boundary under-pack is no longer an open repo-s
 
 ---
 
-*Last updated: 2026-04-05 | Manager admin sync*
+*Last updated: 2026-04-17 | Manager admin sync*

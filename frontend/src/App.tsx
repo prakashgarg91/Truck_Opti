@@ -16,7 +16,7 @@ import AuthCallbackPage from './pages/auth/AuthCallbackPage'
 
 // Components
 import PageSkeleton from './components/PageSkeleton'
-import ProtectedRoute from './components/ProtectedRoute'
+import ProtectedRoute, { getDefaultHomePathForRole } from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 
 // Pages - Lazy loaded (code-split for performance)
@@ -67,13 +67,11 @@ const AdminUsersPage = React.lazy(() => import('./pages/AdminUsersPage'))
 const AdminSubscriptionsPage = React.lazy(() => import('./pages/AdminSubscriptionsPage'))
 const LandingPage = React.lazy(() => import('./pages/LandingPage'))
 
-// Role-based home: redirects drivers/agencies to their portal, shows landing page to non-authenticated users
+// Role-based home: shows the landing page to guests and sends authenticated users to their portal.
 function RoleHome() {
   const { user } = useAuthStore()
   if (!user) return <LandingPage />
-  if (user.role === 'driver') return <Navigate to="/driver/dashboard" replace />
-  if (user.role === 'agency') return <Navigate to="/agency/dashboard" replace />
-  return <Dashboard />
+  return <Navigate to={getDefaultHomePathForRole(user.role)} replace />
 }
 
 function AppContent() {
@@ -88,12 +86,8 @@ function AppContent() {
     <ErrorBoundary>
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
-        {/* Auth routes - accessible without authentication */}
-        <Route element={<AuthLayout />}>
+          {/* Public full-page routes */}
           <Route path="/" element={<RoleHome />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/otp" element={<OTPPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
@@ -108,67 +102,81 @@ function AppContent() {
           {import.meta.env.DEV && (
             <Route path="/test-payment" element={<TestPaymentPage />} />
           )}
-        </Route>
 
-        {/* Protected routes - require authentication */}
-        <Route element={
-          <ProtectedRoute>
-            <MobileLayout />
-          </ProtectedRoute>
-        }>
-          <Route path="/packing" element={<PackingPage />} />
-          <Route path="/routes" element={<RoutesPage />} />
-          <Route path="/tracking" element={<TrackingPage />} />
-          <Route path="/booking/new" element={<NewShipmentPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/management" element={<ManagementPage />} />
-          <Route path="/management/trucks" element={<TrucksPage />} />
-          <Route path="/management/cartons" element={<CartonsPage />} />
-          <Route path="/management/customers" element={<CustomersPage />} />
-          <Route path="/sale-orders" element={<SaleOrdersPage />} />
-          <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
-          <Route path="/settings/company" element={<CompanyProfilePage />} />
-          <Route path="/admin" element={<AdminDashboardPage />} />
-          <Route path="/admin/drivers" element={<AdminDriversPage />} />
-          <Route path="/admin/drivers/:id" element={<DriverDetailPage />} />
-          <Route path="/admin/agencies" element={<AdminAgenciesPage />} />
-          <Route path="/admin/payouts" element={<AdminPayoutsPage />} />
-          <Route path="/admin/contact" element={<AdminContactPage />} />
-          <Route path="/admin/users" element={<AdminUsersPage />} />
-          <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
-          <Route path="/history" element={<ShipmentHistoryPage />} />
-        </Route>
+          {/* Auth card routes */}
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/otp" element={<OTPPage />} />
+          </Route>
 
-        {/* Driver Portal — separate layout with driver bottom nav */}
-        <Route element={
-          <ProtectedRoute>
-            <DriverLayout />
-          </ProtectedRoute>
-        }>
-          <Route path="/driver/dashboard" element={<DriverDashboardPage />} />
-          <Route path="/driver/trip/:jobId" element={<DriverTripPage />} />
-          <Route path="/driver/earnings" element={<DriverEarningsPage />} />
-          <Route path="/driver/history" element={<DriverHistoryPage />} />
-        </Route>
+          {/* Protected routes - require authentication */}
+          <Route element={
+            <ProtectedRoute>
+              <MobileLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/packing" element={<PackingPage />} />
+            <Route path="/routes" element={<RoutesPage />} />
+            <Route path="/tracking" element={<TrackingPage />} />
+            <Route path="/booking/new" element={<NewShipmentPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/management" element={<ManagementPage />} />
+            <Route path="/management/trucks" element={<TrucksPage />} />
+            <Route path="/management/cartons" element={<CartonsPage />} />
+            <Route path="/management/customers" element={<CustomersPage />} />
+            <Route path="/sale-orders" element={<SaleOrdersPage />} />
+            <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
+            <Route path="/settings/company" element={<CompanyProfilePage />} />
+            <Route path="/history" element={<ShipmentHistoryPage />} />
+          </Route>
 
-        {/* Agency Portal — separate layout with agency bottom nav */}
-        <Route element={
-          <ProtectedRoute>
-            <AgencyLayout />
-          </ProtectedRoute>
-        }>
-          <Route path="/agency/dashboard" element={<AgencyDashboardPage />} />
-          <Route path="/agency/fleet" element={<AgencyFleetPage />} />
-          <Route path="/agency/jobs" element={<AgencyJobsPage />} />
-          <Route path="/agency/billing" element={<AgencyBillingPage />} />
-          <Route path="/agency/drivers" element={<AgencyDriversPage />} />
-          <Route path="/agency/rates" element={<AgencyRatesPage />} />
-        </Route>
+          <Route element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <MobileLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/drivers" element={<AdminDriversPage />} />
+            <Route path="/admin/drivers/:id" element={<DriverDetailPage />} />
+            <Route path="/admin/agencies" element={<AdminAgenciesPage />} />
+            <Route path="/admin/payouts" element={<AdminPayoutsPage />} />
+            <Route path="/admin/contact" element={<AdminContactPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+          </Route>
 
-        {/* Catch all - show 404 page */}
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+          {/* Driver Portal — separate layout with driver bottom nav */}
+          <Route element={
+            <ProtectedRoute allowedRoles={['driver']}>
+              <DriverLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="/driver/dashboard" element={<DriverDashboardPage />} />
+            <Route path="/driver/trip/:jobId" element={<DriverTripPage />} />
+            <Route path="/driver/earnings" element={<DriverEarningsPage />} />
+            <Route path="/driver/history" element={<DriverHistoryPage />} />
+          </Route>
+
+          {/* Agency Portal — separate layout with agency bottom nav */}
+          <Route element={
+            <ProtectedRoute allowedRoles={['agency']}>
+              <AgencyLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="/agency/dashboard" element={<AgencyDashboardPage />} />
+            <Route path="/agency/fleet" element={<AgencyFleetPage />} />
+            <Route path="/agency/jobs" element={<AgencyJobsPage />} />
+            <Route path="/agency/billing" element={<AgencyBillingPage />} />
+            <Route path="/agency/drivers" element={<AgencyDriversPage />} />
+            <Route path="/agency/rates" element={<AgencyRatesPage />} />
+          </Route>
+
+          {/* Catch all - show 404 page */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </ErrorBoundary>
   )
 }

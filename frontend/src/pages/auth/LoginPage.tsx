@@ -16,7 +16,8 @@ const features = [
   { icon: '📍', text: 'Live GPS Tracking' },
 ]
 
-const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED === 'true'
+const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED !== 'false'
+const isPhoneOtpEnabled = import.meta.env.VITE_AUTH_PHONE_OTP_ENABLED === 'true'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -24,9 +25,12 @@ export default function LoginPage() {
   const { language } = useLanguageStore()
   const [phone, setPhone] = useState('')
   const [phoneError, setPhoneError] = useState('')
-  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>(isEmailOtpEnabled ? 'email' : 'sms')
+  const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>(
+    isEmailOtpEnabled ? 'email' : isPhoneOtpEnabled ? 'sms' : 'email'
+  )
   const [isFocused, setIsFocused] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
+  const availableOtpChannelCount = (isEmailOtpEnabled ? 1 : 0) + (isPhoneOtpEnabled ? 2 : 0)
 
   // Rotate features
   useEffect(() => {
@@ -41,7 +45,12 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
-    if (!isEmailOtpEnabled && channel === 'email') {
+    if (!isPhoneOtpEnabled && channel !== 'email') {
+      setChannel('email')
+      return
+    }
+
+    if (!isEmailOtpEnabled && channel === 'email' && isPhoneOtpEnabled) {
       setChannel('sms')
     }
   }, [channel])
@@ -63,6 +72,12 @@ export default function LoginPage() {
         await authSupabaseApi.signInWithEmail(phone) // phone variable holds email in this case
         return { success: true, channel: 'email' }
       } else {
+        if (!isPhoneOtpEnabled) {
+          throw new UserFacingError(language === 'en'
+            ? 'Phone OTP is disabled in this environment. Please use Email OTP or Google sign-in.'
+            : 'फ़ोन OTP इस वातावरण में अक्षम है। कृपया ईमेल OTP या Google साइन-इन का उपयोग करें।')
+        }
+
         // Format phone with country code for Supabase
         const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`
         await authSupabaseApi.signInWithPhone(formattedPhone, channel as 'sms' | 'whatsapp')
@@ -144,9 +159,11 @@ export default function LoginPage() {
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
-  const isContactValid = channel === 'email'
+  const isOtpChannelAvailable = channel === 'email' ? isEmailOtpEnabled : isPhoneOtpEnabled
+
+  const isContactValid = isOtpChannelAvailable && (channel === 'email'
     ? emailSchema.safeParse(phone).success
-    : phoneInputSchema.safeParse(phone).success
+    : phoneInputSchema.safeParse(phone).success)
 
   const handleGoogleLogin = async () => {
     try {
@@ -243,7 +260,7 @@ export default function LoginPage() {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Receive OTP via
           </label>
-          <div className={`grid ${isEmailOtpEnabled ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
+          <div className={`grid gap-3 ${availableOtpChannelCount >= 3 ? 'grid-cols-3' : availableOtpChannelCount === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
             {isEmailOtpEnabled && (
               <button
                 type="button"
@@ -263,44 +280,58 @@ export default function LoginPage() {
                 )}
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setChannel('whatsapp')}
-              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'whatsapp'
-                ? 'border-green-600 bg-green-50 dark:bg-green-900/30 text-green-600 shadow-lg shadow-green-500/20 scale-[1.02]'
-                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              aria-pressed={channel === 'whatsapp'}
-            >
-              <MessageCircle className={`w-4 h-4 ${channel === 'whatsapp' ? 'animate-bounce-subtle' : ''}`} />
-              <span className="font-medium text-sm">WhatsApp</span>
-              {channel === 'whatsapp' && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-600 rounded-full flex items-center justify-center animate-scale-in">
-                  <span className="text-white text-xs">✓</span>
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setChannel('sms')}
-              className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'sms'
-                ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20 scale-[1.02]'
-                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              aria-pressed={channel === 'sms'}
-            >
-              <Phone className={`w-4 h-4 ${channel === 'sms' ? 'animate-bounce-subtle' : ''}`} />
-              <span className="font-medium text-sm">SMS</span>
-              {channel === 'sms' && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center animate-scale-in">
-                  <span className="text-white text-xs">✓</span>
-                </span>
-              )}
-            </button>
+            {isPhoneOtpEnabled && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setChannel('whatsapp')}
+                  className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'whatsapp'
+                    ? 'border-green-600 bg-green-50 dark:bg-green-900/30 text-green-600 shadow-lg shadow-green-500/20 scale-[1.02]'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  aria-pressed={channel === 'whatsapp'}
+                >
+                  <MessageCircle className={`w-4 h-4 ${channel === 'whatsapp' ? 'animate-bounce-subtle' : ''}`} />
+                  <span className="font-medium text-sm">WhatsApp</span>
+                  {channel === 'whatsapp' && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-600 rounded-full flex items-center justify-center animate-scale-in">
+                      <span className="text-white text-xs">✓</span>
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChannel('sms')}
+                  className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'sms'
+                    ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20 scale-[1.02]'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  aria-pressed={channel === 'sms'}
+                >
+                  <Phone className={`w-4 h-4 ${channel === 'sms' ? 'animate-bounce-subtle' : ''}`} />
+                  <span className="font-medium text-sm">SMS</span>
+                  {channel === 'sms' && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center animate-scale-in">
+                      <span className="text-white text-xs">✓</span>
+                    </span>
+                  )}
+                </button>
+              </>
+            )}
           </div>
-          {!isEmailOtpEnabled && (
+          {!isPhoneOtpEnabled && isEmailOtpEnabled && (
+            <p className="mt-2 text-xs text-slate-500">
+              Phone OTP is disabled in this environment. Use Email OTP or Google login.
+            </p>
+          )}
+          {!isEmailOtpEnabled && isPhoneOtpEnabled && (
             <p className="mt-2 text-xs text-slate-500">
               Email OTP is disabled in this environment. Use SMS, WhatsApp, or Google login.
+            </p>
+          )}
+          {!isEmailOtpEnabled && !isPhoneOtpEnabled && (
+            <p className="mt-2 text-xs text-slate-500">
+              OTP login is disabled in this environment. Use Google login.
             </p>
           )}
         </div>

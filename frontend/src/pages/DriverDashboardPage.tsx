@@ -80,7 +80,7 @@ export default function DriverDashboardPage() {
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false)
   const [withdrawalAmount, setWithdrawalAmount] = useState('')
   const [withdrawing, setWithdrawing] = useState(false)
-  const [payoutHistory, setPayoutHistory] = useState<{id: string, amount: number, status: string, requested_at: string}[]>([])
+  const [payoutHistory, setPayoutHistory] = useState<{ id: string, amount: number, status: string, requested_at: string }[]>([])
 
   const fetchDriver = useCallback(async () => {
     if (!user?.id) return
@@ -358,9 +358,8 @@ export default function DriverDashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">New Job Offer! 🚛</h3>
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
-                  countdown <= 10 ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
-                }`}
+                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${countdown <= 10 ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
+                  }`}
               >
                 {countdown}
               </div>
@@ -431,8 +430,8 @@ export default function DriverDashboardPage() {
                   {driver.status === 'pending'
                     ? 'Your application is under review. We\'ll notify you within 24-48 hours.'
                     : driver.status === 'rejected'
-                    ? 'Contact support to reapply or resolve issues.'
-                    : 'Contact support for more information.'}
+                      ? 'Contact support to reapply or resolve issues.'
+                      : 'Contact support for more information.'}
                 </p>
               </div>
             </div>
@@ -456,15 +455,13 @@ export default function DriverDashboardPage() {
               <button
                 onClick={toggleOnline}
                 disabled={togglingOnline}
-                className={`relative w-16 h-8 rounded-full transition-colors duration-200 ${
-                  driver.is_online ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
-                } disabled:opacity-60`}
+                className={`relative w-16 h-8 rounded-full transition-colors duration-200 ${driver.is_online ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
+                  } disabled:opacity-60`}
               >
                 <Power
                   size={16}
-                  className={`absolute top-1 transition-all duration-200 ${
-                    driver.is_online ? 'left-9 text-white' : 'left-1 text-slate-500'
-                  }`}
+                  className={`absolute top-1 transition-all duration-200 ${driver.is_online ? 'left-9 text-white' : 'left-1 text-slate-500'
+                    }`}
                 />
               </button>
             </div>
@@ -577,16 +574,15 @@ export default function DriverDashboardPage() {
                       })}
                     </p>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    payout.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                    payout.status === 'approved' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                    payout.status === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                  }`}>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${payout.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                      payout.status === 'approved' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                        payout.status === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
                     {payout.status === 'pending' ? (language === 'en' ? 'Pending' : 'लंबित') :
-                     payout.status === 'approved' ? (language === 'en' ? 'Approved' : 'स्वीकृत') :
-                     payout.status === 'paid' ? (language === 'en' ? 'Paid' : 'भुगतान किया') :
-                     (language === 'en' ? 'Rejected' : 'अस्वीकृत')}
+                      payout.status === 'approved' ? (language === 'en' ? 'Approved' : 'स्वीकृत') :
+                        payout.status === 'paid' ? (language === 'en' ? 'Paid' : 'भुगतान किया') :
+                          (language === 'en' ? 'Rejected' : 'अस्वीकृत')}
                   </span>
                 </div>
               ))}
@@ -608,9 +604,8 @@ export default function DriverDashboardPage() {
                 {driver.home_city} • {driver.total_trips} total trips
               </p>
             </div>
-            <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${
-              statusInfo.color
-            }`}>
+            <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${statusInfo.color
+              }`}>
               {statusInfo.label}
             </span>
           </div>
@@ -674,10 +669,9 @@ export default function DriverDashboardPage() {
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {tripHistory.map((trip) => (
                 <div key={trip.id} className="px-4 py-3 flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    trip.status === 'accepted' ? 'bg-green-500' :
-                    trip.status === 'declined' ? 'bg-red-400' : 'bg-slate-300'
-                  }`} />
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${trip.status === 'accepted' ? 'bg-green-500' :
+                      trip.status === 'declined' ? 'bg-red-400' : 'bg-slate-300'
+                    }`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
                       {trip.shipments?.origin_address
@@ -691,13 +685,12 @@ export default function DriverDashboardPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      trip.status === 'accepted'
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${trip.status === 'accepted'
                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                         : trip.status === 'declined'
-                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                    }`}>
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                      }`}>
                       {trip.status}
                     </span>
                     <TrendingUp size={14} className="text-slate-300" />

@@ -333,11 +333,10 @@ export default function AgencyDriversPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-slate-800 dark:text-slate-100">{driver.full_name}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${
-                    driver.is_online
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${driver.is_online
                       ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                       : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
-                  }`}>
+                    }`}>
                     {driver.is_online ? 'Online' : 'Offline'}
                   </span>
                 </div>

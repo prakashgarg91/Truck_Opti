@@ -12,6 +12,22 @@ const corsHeaders = {
 
 const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET') || ''
 
+function getBillingWindow(billingCycle: 'monthly' | 'yearly') {
+  const startDate = new Date()
+  const endDate = new Date(startDate)
+
+  if (billingCycle === 'yearly') {
+    endDate.setFullYear(endDate.getFullYear() + 1)
+  } else {
+    endDate.setMonth(endDate.getMonth() + 1)
+  }
+
+  return {
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -44,45 +60,37 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Update payment status
-    const { error: paymentError } = await supabase
-      .from('payment_history')
-      .update({
-        status: 'completed',
-        razorpay_payment_id: razorpay_payment_id,
-        razorpay_signature: razorpay_signature,
-        updated_at: new Date().toISOString()
-      })
-      .eq('razorpay_order_id', razorpay_order_id)
+    const normalizedBillingCycle: 'monthly' | 'yearly' = billing_cycle === 'yearly' ? 'yearly' : 'monthly'
 
-    if (paymentError) {
-      console.error('Failed to update payment:', paymentError)
+    const { data: paymentRow, error: paymentLookupError } = await supabase
+      .from('payment_history')
+      .select('id, user_id, invoice_id, metadata')
+      .eq('razorpay_order_id', razorpay_order_id)
+      .maybeSingle()
+
+    if (paymentLookupError) {
+      throw paymentLookupError
     }
 
     // Get user by phone
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('phone', customer_phone)
-      .single()
+    const { data: userData } = paymentRow?.user_id
+      ? { data: { id: paymentRow.user_id } }
+      : await supabase
+        .from('users')
+        .select('id')
+        .eq('phone', customer_phone)
+        .single()
 
     if (userData && plan_id) {
       // Get plan details
       const { data: planData } = await supabase
         .from('subscription_plans')
-        .select('*')
+        .select('id, price_monthly, price_yearly')
         .eq('id', plan_id)
         .single()
 
       if (planData) {
-        // Calculate subscription period
-        const startDate = new Date()
-        const endDate = new Date()
-        if (billing_cycle === 'annual') {
-          endDate.setFullYear(endDate.getFullYear() + 1)
-        } else {
-          endDate.setMonth(endDate.getMonth() + 1)
-        }
+        const { startDate, endDate } = getBillingWindow(normalizedBillingCycle)
 
         // Create or update subscription
         const { data: subscription, error: subError } = await supabase
@@ -91,15 +99,14 @@ serve(async (req) => {
             user_id: userData.id,
             plan_id: plan_id,
             status: 'active',
-            billing_cycle: billing_cycle || 'monthly',
-            current_period_start: startDate.toISOString(),
-            current_period_end: endDate.toISOString(),
-            payment_method: 'razorpay',
-            auto_renew: true
+            billing_cycle: normalizedBillingCycle,
+            current_period_start: startDate,
+            current_period_end: endDate,
+            payment_method_id: razorpay_payment_id || razorpay_order_id,
           }, {
             onConflict: 'user_id'
           })
-          .select()
+          .select('id')
           .single()
 
         if (subError) {
@@ -107,19 +114,47 @@ serve(async (req) => {
         }
 
         // Create invoice
-        await supabase.from('invoices').insert({
-          user_id: userData.id,
-          subscription_id: subscription?.id,
-          amount: billing_cycle === 'annual' 
-            ? planData.annual_price 
-            : planData.monthly_price,
-          currency: 'INR',
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          invoice_number: `INV-${Date.now()}`,
-          billing_period_start: startDate.toISOString(),
-          billing_period_end: endDate.toISOString()
-        })
+        let invoiceId = paymentRow?.invoice_id || null
+        if (!invoiceId) {
+          const { data: invoiceNumber } = await supabase.rpc('generate_invoice_number')
+          const amount = normalizedBillingCycle === 'yearly'
+            ? planData.price_yearly
+            : planData.price_monthly
+
+          const { data: invoice } = await supabase.from('invoices').insert({
+            user_id: userData.id,
+            subscription_id: subscription?.id,
+            amount,
+            tax_amount: 0,
+            total_amount: amount,
+            currency: 'INR',
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+            invoice_number: invoiceNumber,
+            billing_period_start: startDate,
+            billing_period_end: endDate,
+            razorpay_payment_id,
+          }).select('id').single()
+
+          invoiceId = invoice?.id || null
+        }
+
+        if (paymentRow) {
+          await supabase
+            .from('payment_history')
+            .update({
+              status: 'success',
+              subscription_id: subscription?.id,
+              invoice_id: invoiceId,
+              razorpay_payment_id,
+              metadata: {
+                ...(paymentRow.metadata || {}),
+                razorpay_signature,
+                customer_email,
+              },
+            })
+            .eq('id', paymentRow.id)
+        }
 
         return new Response(JSON.stringify({
           success: true,

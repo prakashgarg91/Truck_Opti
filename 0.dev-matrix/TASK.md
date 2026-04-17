@@ -22,6 +22,15 @@
 > **2026-04-05 apps/web verification note:** the legacy `apps/web` Jest/Puppeteer coverage harness now fails fast and explicitly instead of crashing during teardown. `cd apps/web && npm run test:coverage` still fails, but it now reports the real prerequisite: no server is listening on `http://localhost:5000` (or `TRUCKOPTI_E2E_BASE_URL`) rather than throwing a confusing post-teardown Puppeteer import error.
 > **2026-04-05 auth/payment hardening note:** auth pages now render only `UserFacingError` messages from the service layer instead of raw provider error text, and PhonePe launch-readiness checks now treat both `sandbox` and `preprod` URLs as non-production in the frontend and the production-config audit.
 > **2026-04-04 close-day note:** governance rollout now requires `Operational proof:` in `AI-HANDOFF.md`, ignores generated closeout/coverage artifacts, and keeps Node vulnerability sweeps non-mutating. The next close-day rerun should isolate the real remaining deep-verification failure in `apps/web` coverage.
+> **2026-04-16 Graphify note:** the latest Graphify gap sweep is now persisted in `0.dev-matrix/GRAPHIFY_GAPS.md`. Shipment document identity, driver trip progress ownership, payment-history contract cleanup, contact inquiry dedupe, Graphify output-path sync, packing entry-point decomposition, and manual packing summary ownership have all been implemented and revalidated locally. The refreshed graph is now led by stable service/algorithm-core nodes (`initiatePhonePePayment()`, `sendInquiry()`, `initiateRazorpayPayment()`, `createExtremePointPackingAttempt()`, `packSkylineBL()`, `packExtremePoints()`) rather than a clear remaining AI-owned architecture gap.
+> **2026-04-16 Supabase rollout note:** the linked remote project `jbxncejtcbpcronndqlx` is now live on the April 16 contract changes. `npx supabase db push` applied `20260416000000_sync_trip_offer_tracking.sql` and `20260416010000_graphify_gap_contract_fixes.sql` after repairing ambiguous RLS references and making the contact-inquiries migration self-heal remote drift; `npx supabase db push --dry-run --yes` now reports `Remote database is up to date`; and `phonepe-checkout`, `phonepe-status`, `verify-payment`, and `verify-razorpay-payment` are deployed.
+> **2026-04-16 packing-architecture note:** the graph-driven packing cleanup is complete for now. `frontend/src/lib/packing.ts` now owns shared recommendation summarization via `createTruckRecommendation(...)`, and `PackingPage.tsx` no longer duplicates or miscomputes manual-pack metrics. Verification: `cd frontend && npm run test:packing` PASS (11/11), `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), `npm run graph:update` PASS (`398 nodes`, `453 edges`, `76 communities`), `npm run launch-check` -> 16 passed / 1 failed (git cleanliness only).
+> **2026-04-16 marketing note:** the public marketing shell is stronger on desktop now. `LandingPage.tsx` and `PricingPage.tsx` received a second-pass typography/spacing treatment, and the remaining public pages (`CheckoutPage`, `ContactPage`, `DriverRegisterPage`, `AgencyRegisterPage`, `TermsPage`, `PrivacyPage`, `PaymentCallbackPage`, `AuthCallbackPage`) were re-audited to confirm they still own standalone full-page layouts outside `AuthLayout`. Verification: `cd frontend && npm run build` PASS; `npm run test:frontend-smoke` PASS (17/17). Pending proof: a local browser screenshot pass still needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` because preview boot currently crashes without them.
+> **2026-04-16 launch-execution note:** the local public-browser gap is now closed. An ignored `frontend/.env.local` let preview boot against the documented public Supabase URL/anon key; `/` and `/pricing` were revalidated at desktop width with zero console errors and screenshots; Sentry project `light9/truck-opti` was created; Heroku `VITE_SENTRY_DSN` is now set; and `npm run test:prod-config` now passes 5/6 with only Razorpay live-readiness still failing because Heroku still serves `rzp_test_*`.
+> **2026-04-16 auth-scope note:** launch-safe auth is now enforced in the public UI. `LoginPage.tsx` defaults to Email OTP + Google, hides SMS/WhatsApp unless `VITE_AUTH_PHONE_OTP_ENABLED=true`, and `SignupPage.tsx` now treats Email OTP as on unless explicitly disabled. Verification: `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), Playwright preview on `/login` shows Email OTP + Google with phone OTP deferred. If phone OTP is re-enabled later, the supported path is Supabase Phone + Twilio/Twilio Verify only.
+> **2026-04-17 repo-side note:** transitive `basic-ftp@5.2.2` drift reappeared in `apps/web` through Puppeteer's test stack; `cd apps/web && npm audit fix` refreshed one package and restored `cd apps/web && npm audit` to 0 vulnerabilities. Current-tree verification is `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), `npm run test:prod-config` PASS (5/6) with only Razorpay failing, and `npm run launch-check` now fails only on git working-tree cleanliness (16 passed, 1 failed).
+> **2026-04-17 strategy note:** the canonical future-state plan for password login, role-specific demo IDs, onboarding tracks, partner/internal API flows, and TruckOpti office-team permissions now lives in `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md`. Current launch-safe auth remains Email OTP + Google; password auth is now an approved next-stage roadmap item rather than an ad-hoc request.
+> **2026-04-17 tooling note:** native `opencode` on this machine now runs directly on `zai-coding-plan/glm-5.1` without the `oh-my-opencode` plugin and without `--pure`, so parallel native `opencode` lanes are available again for AI-executable repo work.
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
@@ -30,15 +39,16 @@
 | T-126 | Move packing algorithm execution to client side where required UX/perf needs it | P0 | 🏗️ Architecture | 🟡 Client-side execution is now cleaner: both the page fallback and the Web Worker use the shared frontend packing module, and regression proof exists; remaining work is deeper perf evidence rather than architectural duplication |
 | T-127 | Test all major paths and end-to-end flows, not just preflight gates | P0 | 🧪 Product | ✅ DONE — authenticated E2E 2026-04-12: logged in as admin (prakashgarg91@gmail.com OTP), 9 routes all 200 (/, /packing, /routes, /profile, /admin, /bookings, /sale-orders, /tracking, /history), 0 console errors, "⚡ Admin" badge confirmed, user = Prakash Gupta |
 | T-128 | Restore live Supabase auth/backend reachability for production frontend | P0 | 🔑 External | ✅ Reachability restored on 2026-04-05 after the Supabase project was resumed; next step is authenticated E2E verification rather than DNS recovery |
-| T-110 | Production Razorpay keys + test | P0 | 🔑 External | 🔴 Blocking: Heroku still has `rzp_test_*` and placeholder secret in 2026-04-03 prod-config audit |
+| T-110 | Production Razorpay keys + test | P0 | 🔑 External | 🔴 Blocking: Heroku still has `VITE_RAZORPAY_KEY_ID=rzp_test_*` on the 2026-04-16 prod-config audit; live public key plus matching server-side live secret still required |
 | T-111 | Google OAuth production credentials verification | P0 | 🔑 External | 🟡 Live redirect to Google Accounts via Supabase callback verified on 2026-04-09; remaining step is successful real-account sign-in verification |
-| T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P1 | 🔑 External | � [HUMAN-BLOCKED] Needs Twilio Account SID + Auth Token + Messaging Service SID. Code fully wired: `supabase.auth.signInWithOtp({ phone, options: { channel } })` in `supabaseApi.ts:476`. Owner action: Supabase dashboard → Auth → Phone providers → Twilio |
+| T-113 | SMS/WhatsApp OTP — configure Twilio in Supabase | P2 | 🔑 External | 🟡 Deferred optional feature: public auth now launches on Email OTP + Google by default, and phone OTP stays hidden unless `VITE_AUTH_PHONE_OTP_ENABLED=true`. If re-enabled later, use Supabase Phone with Twilio Verify or Twilio Programmable Messaging only. |
 | T-114 | Smoke test all authenticated pages (post-login) | P1 | 🧪 Manual | 🟡 Owner: browser test with real account |
 | T-115 | Verify production DB backup / PITR setup | P1 | 🔑 External | � [HUMAN-BLOCKED] PITR requires Supabase Pro plan. Owner action: supabase.com/dashboard → project `jbxncejtcbpcronndqlx` → Settings → Database → Backups → enable PITR |
-| T-116 | Sentry DSN configuration | P1 | 🔑 External | 🔴 [HUMAN-BLOCKED] `@sentry/react` installed + wired in `main.tsx` (guarded by `VITE_SENTRY_DSN`). Owner action: create free Sentry project → `heroku config:set VITE_SENTRY_DSN=https://xxx@sentry.io/yyy --app truck-opti-app` → redeploy |
-| T-117 | Supabase db push (6 pending migrations) | P0 | 🔑 External | ✅ DONE — all 12 migrations synced Local=Remote on 2026-04-12 via `migration repair` + `db push` |
+| T-116 | Sentry DSN configuration | P1 | 🔑 External | ✅ DONE — created Sentry project `light9/truck-opti` and set Heroku `VITE_SENTRY_DSN` on 2026-04-16; `npm run test:prod-config` now passes the Sentry check |
+| T-117 | Supabase db push (linked live rollout) | P0 | 🔑 External | ✅ DONE — linked project `jbxncejtcbpcronndqlx` is up to date on 2026-04-16 after applying `20260416000000_sync_trip_offer_tracking.sql` and `20260416010000_graphify_gap_contract_fixes.sql` |
 | T-129 | PhonePe production configuration | P1 | 🔑 External | ✅ PhonePe sandbox was disabled in Heroku on 2026-04-09 for launch; only reopen if PhonePe must ship with production credentials |
 | T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | 🔐 Security | ✅ DONE — authenticated `gh api` verification on 2026-04-13 shows `state=open` returns no open Dependabot alerts; the earlier 17-alert inventory was historical fixed-state data, not a live repo mismatch |
+| T-140 | Decompose packing algorithm hotspots | P1 | 🏗️ Architecture | ✅ DONE — wrapper, dispatch, and page-layer summary ownership drift are closed; current Graphify hotspots are stable service/algorithm-core nodes rather than a clear remaining AI-owned architecture gap |
 | T-130 | Fix stale service-worker chunk invalidation for returning users | P1 | 🧪 Product | ✅ DONE — live Playwright retest 2026-04-12: all 6 public routes clean, 0 chunk errors, 0 page errors, Workbox precache 69 entries, SW `activated` state |
 | ~~BATCH21-T1~~ | ~~Admin payout workflow (approve/pay)~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
 | ~~BATCH21-T2~~ | ~~Sentry error tracking~~ | ~~P1~~ | Pre-impl | 2026-03-11 | ✅ DONE (verified GLM-001) |
@@ -106,6 +116,18 @@
 
 ---
 
+## 🧭 FUTURE STRATEGY BACKLOG
+
+| ID | Task | Priority | Type | Status |
+|----|------|----------|------|--------|
+| T-142 | Add password auth as a secondary login path for demo, reviewer, partner, and office accounts | P0 | 🏗️ Architecture | 🟡 PLANNED — keep Email OTP + Google intact while adding password login, signup, and reset flow |
+| T-143 | Provision role-scoped demo IDs and reviewer identities for each major interface | P1 | 🧪 Product | 🟡 PLANNED — target two seeded demo IDs per interface family plus dedicated reviewer accounts; scenario mapping now includes retail, enterprise, micro-fleet, super-admin, ops, and partner personas; credentials must stay outside git |
+| T-144 | Introduce office-permission bundles and partner-console access model | P1 | 🏗️ Platform | 🟡 PLANNED — refined bundle targets now include `security_admin`, `support_lead`, and `demo_operator`; partner API onboarding and office-team rights stay defined in `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md` |
+| T-145 | Define onboarding-track and tenant-boundary contract for customer, driver, agency, partner, and office users | P1 | 🏗️ Architecture | 🟡 PLANNED — formalize `organization_id`, `branch_id`, `booking_type`, `delegated_by`, `source_system`, and onboarding-track ownership before portal expansion |
+| T-146 | Define internal API and typed event taxonomy for partner, agency, customer, and office flows | P1 | 🏗️ Platform | 🟡 PLANNED — establish the canonical service and event contract before building the partner console or deeper office workflow automation |
+
+---
+
 ## 📝 TASK QUEUE
 
 > **All repo-side code tasks are COMPLETE and preflight-verified. Remaining launch blockers are now concrete external production-config and owner-action items.**
@@ -113,12 +135,9 @@
 
 | ID | Task | Priority | Nature | Owner Action |
 |----|------|----------|--------|--------------|
-| T-117 | Supabase db push (6 pending migrations) | P0 | External | `supabase db push` from project root |
 | T-110 | Production Razorpay keys + test | P0 | External | Heroku config:set + Supabase secrets |
 | T-111 | Google OAuth production credentials | P0 | External | Supabase dashboard + Google Console |
-| T-113 | SMS/WhatsApp OTP via Twilio | P1 | External | Supabase Auth → Phone Providers |
-| T-116 | Sentry DSN configuration | P1 | External | `heroku config:set VITE_SENTRY_DSN=...` |
-| T-129 | PhonePe production configuration | P1 | External | Replace sandbox/preprod env values or disable PhonePe before launch |
+| T-113 | SMS/WhatsApp OTP via Twilio | P2 | External | Optional after launch unless SMS/WhatsApp auth must be re-enabled; use Supabase Phone with Twilio Verify or Twilio Programmable Messaging, then set `VITE_AUTH_PHONE_OTP_ENABLED=true` |
 | T-115 | Verify production DB backup / PITR | P1 | External | Supabase dashboard → Backups |
 | T-114 | Authenticated smoke test (all pages) | P1 | Manual | Browser test with real account |
 | T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | Security | RESOLVED 2026-04-13: authenticated `gh api` query with `state=open` returned no open alerts; the larger alert inventory was historical fixed-state data |
@@ -165,7 +184,14 @@ Move task from QUEUE to ACTIVE TASKS:
 
 | ID | Task | Completed By | Date | Notes |
 |----|------|--------------|------|-------|
+| T-141 | Restore `apps/web` audit gate after transitive `basic-ftp` drift | GPT-020 / GitHub Copilot | 2026-04-17 | `npm audit fix` refreshed one package in `apps/web`; `npm audit` is back to 0 vulnerabilities and launch-check now fails only git cleanliness |
 | T-130 | Qdrant semantic gap audit (16 checks, 44 issues) | COP-003 / Copilot | 2026-04-11 | tools/qdrant_gap_audit.py; QDRANT_GAP_REPORT.md; live Qdrant index ws-6df6af38d373c83b |
+| T-117 | Supabase linked live rollout | GPT-014 / GitHub Copilot | 2026-04-16 | authenticated CLI, repaired the April 16 migrations for remote drift, pushed the linked DB to current state, and deployed `phonepe-checkout`, `phonepe-status`, `verify-payment`, and `verify-razorpay-payment` |
+| T-139 | Graphify refresh workflow + gap ledger | GPT-014 / GitHub Copilot | 2026-04-16 | `npm run graph:update` now refreshes `frontend/src` and syncs root `graphify-out/`; gap backlog persisted in `0.dev-matrix/GRAPHIFY_GAPS.md` |
+| T-138 | Contact inquiry dedupe + service extraction | GPT-014 / GitHub Copilot | 2026-04-16 | `contactInquiry.ts` owns draft/pending storage + stable `client_submission_id`; build PASS, smoke PASS 17/17 |
+| T-137 | Payment history contract cleanup | GPT-014 / GitHub Copilot | 2026-04-16 | PhonePe client/server ownership unified, provider status normalized to `success`, subscription activation updated to current schema |
+| T-136 | Driver trip progress RPC consolidation | GPT-014 / GitHub Copilot | 2026-04-16 | `persist_driver_job_offer_progress(...)` owns status/timestamp/photo/finalize flow; build PASS, smoke PASS 17/17 |
+| T-135 | Shipment document identity persistence | GPT-014 / GitHub Copilot | 2026-04-16 | `shipments.invoice_number/lr_number` now DB-owned with trigger + backfill RPC; InvoicePage reads persisted values |
 | T-131 | Auth mismatch fixes (5 pages) | COP-003 / Copilot | 2026-04-11 | InvoicePage, CompanyProfilePage, TrucksPage, PaymentCallbackPage, DriverRegisterPage |
 | T-132 | Error handling fixes (3 pages) | COP-003 / Copilot | 2026-04-11 | Dashboard Promise.all, AgencyBillingPage try/catch, AgencyFleetPage try/catch |
 | T-133 | Error UI fixes (3 pages) | COP-003 / Copilot | 2026-04-11 | RoutesPage + ManagementPage toast.error; AgencyRatesPage try/catch |
@@ -364,4 +390,4 @@ Move back to QUEUE, not delete.
 
 ---
 
-**Last Updated:** 2026-04-03 | **Framework Version:** 2.0
+**Last Updated:** 2026-04-17 | **Framework Version:** 2.0

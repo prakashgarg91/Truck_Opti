@@ -378,7 +378,9 @@ export type Database = {
           driver_name: string | null
           estimated_cost: number | null
           id: string
+          invoice_number: string | null
           latitude: number | null
+          lr_number: string | null
           longitude: number | null
           origin: string
           shipment_id: string
@@ -396,7 +398,9 @@ export type Database = {
           driver_name?: string | null
           estimated_cost?: number | null
           id?: string
+          invoice_number?: string | null
           latitude?: number | null
+          lr_number?: string | null
           longitude?: number | null
           origin: string
           shipment_id: string
@@ -414,7 +418,9 @@ export type Database = {
           driver_name?: string | null
           estimated_cost?: number | null
           id?: string
+          invoice_number?: string | null
           latitude?: number | null
+          lr_number?: string | null
           longitude?: number | null
           origin?: string
           shipment_id?: string
@@ -704,6 +710,13 @@ export type Database = {
         Args: { p_resource: string; p_user_id: string }
         Returns: boolean
       }
+      ensure_shipment_document_numbers: {
+        Args: { p_shipment_id: string }
+        Returns: {
+          invoice_number: string
+          lr_number: string
+        }[]
+      }
       generate_invoice_number: { Args: Record<string, never>; Returns: string }
       get_user_plan: {
         Args: { p_user_id: string }
@@ -718,6 +731,20 @@ export type Database = {
       increment_usage: {
         Args: { p_amount?: number; p_resource: string; p_user_id: string }
         Returns: undefined
+      }
+      persist_driver_job_offer_progress: {
+        Args: { p_extra?: Json; p_job_offer_id: string; p_status?: string }
+        Returns: {
+          delivered_at: string | null
+          delivery_arrived_at: string | null
+          job_offer_id: string
+          journey_started_at: string | null
+          photo_delivery_url: string | null
+          photo_loading_url: string | null
+          pickup_arrived_at: string | null
+          status: string
+          total_trips: number
+        }[]
       }
     }
     Enums: {

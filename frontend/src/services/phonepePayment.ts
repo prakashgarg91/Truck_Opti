@@ -122,29 +122,16 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
   const merchantTransactionId = `TRK${Date.now()}${Math.random().toString(36).substring(7)}`;
 
   try {
-    // Store pending transaction in Supabase
-    const { error: paymentHistoryError } = await supabase.from('payment_history').insert({
-      user_id: request.userId,
-      amount: request.amount,
-      currency: 'INR',
-      payment_method: 'upi',
-      status: 'pending',
-      razorpay_order_id: merchantTransactionId, // Using this field for PhonePe txn ID
-      metadata: {
-        plan_id: request.planId,
-        billing_cycle: request.billingCycle,
-        phonepe_merchant_txn_id: merchantTransactionId,
-      },
-    });
-
-    if (paymentHistoryError) throw paymentHistoryError;
-
     // Call Supabase Edge Function to generate checksum and get redirect URL
     const { data, error } = await supabase.functions.invoke<PhonePePaymentResponse>('phonepe-checkout', {
       body: {
         merchantTransactionId,
         userId: request.userId.substring(0, 36),
         amount: request.amount,
+        planId: request.planId,
+        billingCycle: request.billingCycle,
+        customerPhone: request.customerPhone,
+        customerEmail: request.customerEmail,
         callbackUrl: `${PHONEPE_CONFIG.redirectUrl}/payment/callback?txnId=${merchantTransactionId}`,
       },
     });
