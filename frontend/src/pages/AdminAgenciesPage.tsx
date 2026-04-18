@@ -14,6 +14,7 @@ interface Agency {
   id: string
   company_name: string
   gstin: string | null
+  pan_number: string | null
   transport_license: string
   contact_name: string | null
   contact_phone: string | null
@@ -221,8 +222,8 @@ export default function AdminAgenciesPage() {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors ${tab === t
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
               >
                 <Icon size={14} />
@@ -313,6 +314,13 @@ export default function AdminAgenciesPage() {
                 <div className="bg-slate-50 dark:bg-slate-700/30 rounded-xl px-3 py-2 mb-3">
                   <p className="text-xs text-slate-500 dark:text-slate-400">GSTIN</p>
                   <p className="text-sm font-mono text-slate-700 dark:text-slate-300">{agency.gstin}</p>
+                </div>
+              )}
+
+              {agency.pan_number && (
+                <div className="bg-slate-50 dark:bg-slate-700/30 rounded-xl px-3 py-2 mb-3">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">PAN</p>
+                  <p className="text-sm font-mono text-slate-700 dark:text-slate-300">{agency.pan_number}</p>
                 </div>
               )}
 

@@ -35,7 +35,7 @@ const getPasswordAuthErrorMessage = (
   const message = error?.message?.toLowerCase() || ''
 
   if (code === 'invalid_credentials' || message.includes('invalid login credentials')) {
-    return 'Incorrect email or password. Please try again.'
+    return 'Incorrect login ID, email, or password. Please try again.'
   }
 
   if (message.includes('email not confirmed')) {
@@ -55,6 +55,39 @@ const getPasswordAuthErrorMessage = (
   }
 
   return fallback
+}
+
+const normalizeEmailAddress = (email: string) => email.trim().toLowerCase()
+
+const resolvePasswordLoginEmail = async (
+  identifier: string,
+  options?: { allowMissing?: boolean }
+): Promise<string | null> => {
+  const normalizedIdentifier = identifier.trim()
+
+  if (normalizedIdentifier.includes('@')) {
+    return normalizeEmailAddress(normalizedIdentifier)
+  }
+
+  const { data, error } = await supabase.rpc('resolve_login_identifier', {
+    p_identifier: normalizedIdentifier.toLowerCase(),
+  })
+
+  if (error) {
+    throw new UserFacingError(
+      getPasswordAuthErrorMessage(error, 'Unable to resolve this login ID right now. Please try again later.')
+    )
+  }
+
+  if (!data || typeof data !== 'string') {
+    if (options?.allowMissing) {
+      return null
+    }
+
+    throw new UserFacingError('Incorrect login ID, email, or password. Please try again.')
+  }
+
+  return normalizeEmailAddress(data)
 }
 
 const getSafeAuthFailureMessage = (error: unknown, fallback: string): string => {
@@ -127,6 +160,7 @@ export interface Customer {
   state?: string
   pincode?: string
   gst_number?: string | null
+  pan_number: string
   created_at?: string
   updated_at?: string
   created_by?: string
@@ -555,7 +589,7 @@ export const authSupabaseApi = {
   async signInWithEmail(email: string): Promise<void> {
     try {
       const { error } = await supabase.auth.signInWithOtp({
-        email,
+        email: normalizeEmailAddress(email),
         options: {
           shouldCreateUser: false // Login only - don't create new users
         }
@@ -574,7 +608,7 @@ export const authSupabaseApi = {
   async signUpWithEmail(email: string, name?: string): Promise<void> {
     try {
       const { error } = await supabase.auth.signInWithOtp({
-        email,
+        email: normalizeEmailAddress(email),
         options: {
           shouldCreateUser: true,
           data: name ? { full_name: name, name } : undefined
@@ -591,8 +625,14 @@ export const authSupabaseApi = {
     }
   },
 
-  async signInWithEmailPassword(email: string, password: string) {
+  async signInWithEmailPassword(identifier: string, password: string) {
     try {
+      const email = await resolvePasswordLoginEmail(identifier)
+
+      if (!email) {
+        throw new UserFacingError('Incorrect login ID, email, or password. Please try again.')
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -616,7 +656,7 @@ export const authSupabaseApi = {
   async signUpWithEmailPassword(email: string, password: string, name?: string) {
     try {
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizeEmailAddress(email),
         password,
         options: {
           data: name ? { full_name: name, name } : undefined,
@@ -638,8 +678,14 @@ export const authSupabaseApi = {
     }
   },
 
-  async resetPasswordForEmail(email: string): Promise<void> {
+  async resetPasswordForEmail(identifier: string): Promise<void> {
     try {
+      const email = await resolvePasswordLoginEmail(identifier, { allowMissing: true })
+
+      if (!email) {
+        return
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
       })

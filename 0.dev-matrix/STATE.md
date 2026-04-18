@@ -3,6 +3,7 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.0 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
+> 2026-04-18 (GPT-022): local auth/PAN completion landed on top of the April 18 rollout. Password auth now accepts email or DB-backed `login_id`, PAN is mandatory across the main onboarding/profile/customer/admin paths, login IDs are surfaced in-profile, code-review-graph and Graphify were refreshed, `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), and `npx supabase db push --dry-run --yes` validates the two new migrations. Remaining work is rollout sequencing: deploy the updated frontend and apply `20260418003000` / `20260418004000` together before rerunning authenticated live proof.
 > 2026-04-17 (GPT-021 planning follow-up): three native `opencode` planning lanes were used to deepen `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md` with onboarding tracks, shared tenant boundaries (`organization_id`, `branch_id`, `booking_type`, `delegated_by`, `source_system`), explicit internal API/event-plane guidance, additional future subtypes (`agency_micro_fleet`, `customer_consignee`, `auditor`), refined office permission bundles (`security_admin`, `support_lead`, `demo_operator`), and sharper backlog items `T-145`/`T-146`. Current technical proof is unchanged: `npm run launch-check` still fails only git working-tree cleanliness (16 passed, 1 failed).
 > 2026-04-17 (GPT-021): cleaned the user-level `opencode` runtime back to native mode. `oh-my-openagent` was removed from `C:\Users\Prakash\.config\opencode`, the default model is now `zai-coding-plan/glm-5.1`, and both `opencode run` and `opencode run --agent build` now pass without `--pure`. Launch status is otherwise unchanged: repo-side blockers are still git cleanliness plus owner-side production credentials and real-account verification.
 > 2026-04-17 (GPT-020): `apps/web` briefly regressed because `basic-ftp@5.2.2` reappeared through the Puppeteer test chain; `npm audit fix` refreshed one package and restored `cd apps/web && npm audit` to 0 vulnerabilities. Current-tree verification is now `cd frontend && npm run build` PASS, `npm run test:frontend-smoke` PASS (17/17), `npm run test:prod-config` PASS (5/6) with only Razorpay failing, and `npm run launch-check` FAIL only on git working-tree cleanliness (16 passed, 1 failed).
@@ -66,6 +67,7 @@
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
 | `GPT-021` | MANAGER+IMPL | GPT-5.4 | Native opencode cleanup + multi-lane orchestration | Removed the `oh-my-opencode` dependency, restored native GLM 5.1 opencode, updated dev-matrix truth, and launched parallel opencode review lanes | 2026-04-17 | ✅ DONE |
+| `GPT-022` | MANAGER+IMPL | GPT-5.4 | Auth hardening + PAN rollout completion | Added email-or-login-ID password auth, mandatory PAN wiring, graph refreshes, and validated the pending Supabase rollout via dry-run | 2026-04-18 | ✅ DONE |
 | `GPT-020` | MANAGER+IMPL | GPT-5.4 | Launch closure + audit regression repair | Cleared the `apps/web` audit regression, reran launch evidence, and synced dev-matrix reality | 2026-04-17 | ✅ DONE |
 | `GPT-019` | MANAGER+IMPL | GPT-5.4 | Auth launch-scope hardening + verification | Made Email OTP + Google the explicit default auth path, hid phone OTP behind a feature flag, and revalidated login/runtime docs | 2026-04-16 | ✅ DONE |
 | `GPT-016` | MANAGER+IMPL | GPT-5.4 | Packing consistency cleanup + final graph judgment | Moved manual recommendation math into the shared packer, added packed-weight regression proof, and rechecked Graphify/launch readiness | 2026-04-16 | ✅ DONE |
@@ -120,6 +122,26 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-18] GPT-022 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ LOGIN ID + PAN COMPLETION LANDED LOCALLY, GRAPH ARTIFACTS REFRESHED, SUPABASE ROLLOUT DRY-RUN VERIFIED
+
+                             WORK COMPLETED:
+                             - added DB-backed password login and reset support for email or `login_id` in the frontend auth service and login/forgot-password screens
+                             - removed frontend trust in mutable `user_metadata.role` and switched app-role resolution back to `public.users.role` plus agency/driver linkage
+                             - added `20260418003000_harden_role_claims_and_add_login_ids.sql` for login IDs + DB-backed admin helpers and `20260418004000_enforce_pan_contracts.sql` for PAN normalization/enforcement
+                             - made PAN mandatory in driver registration, agency registration, customer create/edit, company profile, and quick company edits; surfaced PAN in admin driver/agency review surfaces
+                             - surfaced the assigned login ID in profile and refreshed both code-review-graph and Graphify after the final tree changed
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npm run build`: PASS
+                             - `npm run test:frontend-smoke`: PASS (17/17)
+                             - code-review-graph incremental refresh: PASS (`62 files re-parsed`, `304 nodes`, `2780 edges` updated)
+                             - `npm run graph:update`: PASS (`411 nodes`, `475 edges`, `74 communities`)
+                             - `npx supabase db push --dry-run --yes`: PASS; pending migrations = `20260418003000_harden_role_claims_and_add_login_ids.sql`, `20260418004000_enforce_pan_contracts.sql`
+
+                             PRODUCT JUDGMENT:
+                             - the implementation work requested in this slice is complete in the local tree: login-by-ID exists end-to-end in UI/service/store, PAN is mandatory across the main flows, and graph artifacts are current
+                             - the remaining work is release sequencing, not more coding: the updated frontend should ship together with the two pending Supabase migrations so the new PAN DB contract does not get applied ahead of the UI
+------------------------------------------------------------------------------------------
 [2026-04-18] GPT-5.4 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ APRIL 18 SUPABASE PUSH COMPLETE + DRIVER/AGENCY ENTRY SURFACES VERIFIED
 
                              WORK COMPLETED:

@@ -25,6 +25,7 @@ interface FormData {
   full_name: string
   phone: string
   aadhaar_last4: string
+  pan_number: string
   home_city: string
   // Step 2
   vehicle_type: string
@@ -47,7 +48,7 @@ const STEPS = [
 ]
 
 const INITIAL: FormData = {
-  full_name: '', phone: '', aadhaar_last4: '', home_city: '',
+  full_name: '', phone: '', aadhaar_last4: '', pan_number: '', home_city: '',
   vehicle_type: '', rc_number: '', license_number: '',
   dl_url: '', rc_url: '', bank_account: '', ifsc_code: '', upi_id: '',
 }
@@ -107,6 +108,7 @@ export default function DriverRegisterPage() {
     if (step === 1) {
       if (!form.full_name.trim()) { toast.error('Enter your full name'); return false }
       if (!/^\d{10}$/.test(form.phone)) { toast.error('Enter a valid 10-digit mobile number'); return false }
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_number.toUpperCase().trim())) { toast.error('Enter a valid PAN number (e.g. ABCDE1234F)'); return false }
       if (!form.home_city.trim()) { toast.error('Enter your home city'); return false }
     }
     if (step === 2) {
@@ -142,6 +144,7 @@ export default function DriverRegisterPage() {
         full_name: form.full_name.trim(),
         phone: form.phone.trim(),
         aadhaar_last4: form.aadhaar_last4.trim() || null,
+        pan_number: form.pan_number.toUpperCase().trim(),
         home_city: form.home_city.trim(),
         vehicle_type: form.vehicle_type,
         rc_number: form.rc_number.trim() || null,
@@ -288,6 +291,12 @@ export default function DriverRegisterPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Aadhaar Last 4 Digits</label>
                   <input value={form.aadhaar_last4} onChange={set('aadhaar_last4')} placeholder="XXXX" maxLength={4}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PAN Number *</label>
+                  <input value={form.pan_number} onChange={set('pan_number')} placeholder="ABCDE1234F" maxLength={10}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase" />
+                  <p className="text-xs text-slate-500 mt-1">Required for payout verification and driver approval.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Home City *</label>

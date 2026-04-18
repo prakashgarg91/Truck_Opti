@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 import { useLanguageStore } from '../../stores/languageStore'
-import { emailSchema, passwordSchema, phoneInputSchema } from '../../utils/validators'
+import { emailOrLoginIdSchema, emailSchema, passwordSchema, phoneInputSchema } from '../../utils/validators'
 import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
 import { logger } from '../../utils/logger'
 import { buildAuthReturnTo, storeAuthReturnTo, type AuthRouteState } from '../../utils/authReturnTo'
@@ -49,7 +49,7 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupIntro: "Don't have an account?",
     signupAction: 'Create Account',
     supportText: null,
-    passwordHint: 'Password sign-in is intended for seeded demo, reviewer, partner, and office accounts.',
+    passwordHint: 'Password sign-in accepts your seeded email address or login ID.',
     showTrustBadges: true,
   },
   driver: {
@@ -62,7 +62,7 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupIntro: 'Need to join as a driver?',
     signupAction: 'Register Driver',
     supportText: null,
-    passwordHint: 'Password sign-in works for seeded driver demo and reviewer accounts when enabled.',
+    passwordHint: 'Password sign-in accepts your seeded driver email address or login ID when enabled.',
     showTrustBadges: true,
   },
   agency: {
@@ -75,7 +75,7 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupIntro: 'New transport agency?',
     signupAction: 'Register Agency',
     supportText: null,
-    passwordHint: 'Password sign-in works for seeded agency demo and reviewer accounts when enabled.',
+    passwordHint: 'Password sign-in accepts your seeded agency email address or login ID when enabled.',
     showTrustBadges: true,
   },
   office: {
@@ -87,8 +87,8 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupHref: null,
     signupIntro: '',
     signupAction: '',
-    supportText: 'Office, reviewer, and demo accounts are provisioned by TruckOpti admins. Use password sign-in when your seeded account is ready.',
-    passwordHint: 'Password sign-in is the recommended path for office, reviewer, and seeded demo accounts.',
+    supportText: 'Office, reviewer, and demo accounts are provisioned by TruckOpti admins. Use your seeded email address or login ID once the account is ready.',
+    passwordHint: 'Password sign-in accepts your seeded office, reviewer, or demo email address or login ID.',
     showTrustBadges: false,
   },
   partner: {
@@ -100,8 +100,8 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupHref: null,
     signupIntro: '',
     signupAction: '',
-    supportText: 'Partner accounts are provisioned by TruckOpti. Use password sign-in or a linked mailbox when your seeded account is ready.',
-    passwordHint: 'Password sign-in is the recommended path for partner and external reviewer accounts.',
+    supportText: 'Partner accounts are provisioned by TruckOpti. Use your seeded email address or login ID when the account is ready.',
+    passwordHint: 'Password sign-in accepts your partner or reviewer email address or login ID.',
     showTrustBadges: false,
   },
 }
@@ -135,7 +135,7 @@ export default function LoginPage() {
   )
   const [contact, setContact] = useState('')
   const [contactError, setContactError] = useState('')
-  const [passwordEmail, setPasswordEmail] = useState('')
+  const [passwordIdentifier, setPasswordIdentifier] = useState('')
   const [emailError, setEmailError] = useState('')
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
@@ -245,7 +245,7 @@ export default function LoginPage() {
   })
 
   const passwordLoginMutation = useMutation({
-    mutationFn: async () => authSupabaseApi.signInWithEmailPassword(passwordEmail, password),
+    mutationFn: async () => authSupabaseApi.signInWithEmailPassword(passwordIdentifier, password),
     onSuccess: () => {
       storeAuthReturnTo(returnTo)
       navigate('/auth/callback', { replace: true })
@@ -260,9 +260,9 @@ export default function LoginPage() {
     e.preventDefault()
 
     if (authMode === 'password') {
-      const emailResult = emailSchema.safeParse(passwordEmail)
-      if (!emailResult.success) {
-        setEmailError(emailResult.error.issues[0]?.message || 'Invalid email address')
+      const identifierResult = emailOrLoginIdSchema.safeParse(passwordIdentifier)
+      if (!identifierResult.success) {
+        setEmailError(identifierResult.error.issues[0]?.message || 'Invalid email address or login ID')
         return
       }
 
@@ -333,7 +333,7 @@ export default function LoginPage() {
     ? emailSchema.safeParse(contact).success
     : phoneInputSchema.safeParse(contact).success)
 
-  const isPasswordLoginValid = emailSchema.safeParse(passwordEmail).success && passwordSchema.safeParse(password).success
+  const isPasswordLoginValid = emailOrLoginIdSchema.safeParse(passwordIdentifier).success && passwordSchema.safeParse(password).success
 
   const handleGoogleLogin = async () => {
     try {
@@ -435,20 +435,20 @@ export default function LoginPage() {
           <>
             <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Email Address
+                Email or Login ID
               </label>
               <div className={`relative transition-all duration-300 ${focusedField === 'password-email' ? 'scale-[1.02]' : ''}`}>
                 <input
-                  type="email"
+                  type="text"
                   inputMode="email"
-                  value={passwordEmail}
+                  value={passwordIdentifier}
                   onChange={(event) => {
-                    setPasswordEmail(event.target.value)
+                    setPasswordIdentifier(event.target.value)
                     if (emailError) setEmailError('')
                   }}
                   onFocus={() => setFocusedField('password-email')}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="your@email.com"
+                  placeholder="your@email.com or demo.driver"
                   className={`input text-lg tracking-wide font-medium ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
                   autoFocus
                   aria-invalid={!!emailError}
@@ -462,7 +462,7 @@ export default function LoginPage() {
               ) : (
                 <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
                   <Shield className="w-3 h-3" />
-                  Use the seeded mailbox connected to your TruckOpti account.
+                  Use the seeded mailbox or assigned login ID connected to your TruckOpti account.
                 </p>
               )}
             </div>

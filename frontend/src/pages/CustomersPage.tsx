@@ -20,6 +20,7 @@ interface Customer {
   state?: string
   pincode?: string
   gst_number?: string | null
+  pan_number: string
   created_by?: string
 }
 
@@ -38,7 +39,8 @@ export default function CustomersPage() {
     city: '',
     state: '',
     pincode: '',
-    gst_number: ''
+    gst_number: '',
+    pan_number: ''
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -47,8 +49,8 @@ export default function CustomersPage() {
   }, [language])
 
   // React Query: Fetch customers data
-  const { 
-    data: customers = [], 
+  const {
+    data: customers = [],
     isLoading: loading,
     isError: loadError
   } = useQuery({
@@ -107,7 +109,8 @@ export default function CustomersPage() {
       city: '',
       state: '',
       pincode: '',
-      gst_number: ''
+      gst_number: '',
+      pan_number: ''
     })
     setErrors({})
   }
@@ -123,7 +126,8 @@ export default function CustomersPage() {
         city: customer.city,
         state: customer.state || '',
         pincode: customer.pincode || '',
-        gst_number: customer.gst_number || ''
+        gst_number: customer.gst_number || '',
+        pan_number: customer.pan_number || ''
       })
     } else {
       resetForm()
@@ -139,11 +143,12 @@ export default function CustomersPage() {
       address: formData.address,
       city: formData.city,
       state: formData.state || '',
-      pincode: formData.pincode
+      pincode: formData.pincode,
+      pan_number: formData.pan_number
     }
-    
+
     const fieldErrors = getFieldErrors(customerSchema, customerData)
-    
+
     // Additional GST validation if provided
     if (formData.gst_number && formData.gst_number.length > 0) {
       const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/
@@ -151,7 +156,11 @@ export default function CustomersPage() {
         fieldErrors.gst_number = 'Invalid GSTIN format (e.g., 22AAAAA0000A1Z5)'
       }
     }
-    
+
+    if (formData.pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.pan_number.toUpperCase())) {
+      fieldErrors.pan_number = 'Invalid PAN format (e.g., ABCDE1234F)'
+    }
+
     setErrors(fieldErrors)
     return Object.keys(fieldErrors).length === 0
   }
@@ -168,6 +177,7 @@ export default function CustomersPage() {
       state: formData.state || '',
       pincode: formData.pincode || '',
       gst_number: formData.gst_number || null,
+      pan_number: formData.pan_number.toUpperCase(),
       created_by: (!editingCustomer && user) ? user.id : undefined
     }
 
@@ -184,8 +194,8 @@ export default function CustomersPage() {
     }
   }
 
-  const filteredCustomers = customers.filter((c: Customer) => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredCustomers = customers.filter((c: Customer) =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.city.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -194,7 +204,7 @@ export default function CustomersPage() {
   return (
     <div className="p-4 space-y-6 pb-8">
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => navigate('/management')}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
         >
@@ -216,7 +226,7 @@ export default function CustomersPage() {
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
           />
         </div>
-        <button 
+        <button
           onClick={() => handleOpenModal()}
           className="bg-primary-600 hover:bg-primary-700 text-white p-2.5 rounded-xl shadow-lg shadow-primary-600/20 transition-all"
         >
@@ -242,7 +252,7 @@ export default function CustomersPage() {
           icon={Users}
           title={language === 'en' ? 'No customers found' : 'कोई ग्राहक नहीं मिला'}
           description={
-            search 
+            search
               ? (language === 'en' ? 'Try adjusting your search' : 'अपनी खोज समायोजित करने का प्रयास करें')
               : (language === 'en' ? 'Add your first customer to get started' : 'शुरू करने के लिए अपना पहला ग्राहक जोड़ें')
           }
@@ -252,7 +262,7 @@ export default function CustomersPage() {
       ) : (
         <div className="grid gap-4">
           {filteredCustomers.map((customer: Customer) => (
-            <div 
+            <div
               key={customer.id}
               className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm"
             >
@@ -270,14 +280,14 @@ export default function CustomersPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button 
+                  <button
                     onClick={() => handleOpenModal(customer)}
                     disabled={isMutating}
                     className="p-2 text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDelete(customer.id)}
                     disabled={deleteMutation.isPending}
                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
@@ -286,7 +296,7 @@ export default function CustomersPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
                   <Phone className="w-4 h-4 text-slate-400" />
@@ -298,6 +308,10 @@ export default function CustomersPage() {
                     {customer.email}
                   </div>
                 )}
+                <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
+                  <Users className="w-4 h-4 text-slate-400" />
+                  PAN: {customer.pan_number}
+                </div>
                 <div className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-400">
                   <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
                   {customer.address}
@@ -314,8 +328,8 @@ export default function CustomersPage() {
           <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-in max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {editingCustomer 
-                  ? (language === 'en' ? 'Edit Customer' : 'ग्राहक संपादित करें') 
+                {editingCustomer
+                  ? (language === 'en' ? 'Edit Customer' : 'ग्राहक संपादित करें')
                   : (language === 'en' ? 'Add New Customer' : 'नया ग्राहक जोड़ें')
                 }
               </h2>
@@ -323,7 +337,7 @@ export default function CustomersPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -332,13 +346,13 @@ export default function CustomersPage() {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
                   placeholder={language === 'en' ? 'e.g. Reliance Retail' : 'जैसे, रिलायंस रिटेल'}
                 />
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -347,7 +361,7 @@ export default function CustomersPage() {
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.phone ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
                     placeholder="+91 98765 43210"
                   />
@@ -360,7 +374,7 @@ export default function CustomersPage() {
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.email ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
                     placeholder="contact@company.com"
                   />
@@ -376,7 +390,7 @@ export default function CustomersPage() {
                   <input
                     type="text"
                     value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.city ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
                     placeholder={language === 'en' ? 'e.g. Mumbai' : 'जैसे, मुंबई'}
                   />
@@ -389,7 +403,7 @@ export default function CustomersPage() {
                   <input
                     type="text"
                     value={formData.state}
-                    onChange={(e) => setFormData({...formData, state: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                     className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.state ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
                     placeholder={language === 'en' ? 'e.g. Maharashtra' : 'जैसे, महाराष्ट्र'}
                   />
@@ -405,7 +419,7 @@ export default function CustomersPage() {
                   <input
                     type="text"
                     value={formData.pincode}
-                    onChange={(e) => setFormData({...formData, pincode: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
                     className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.pincode ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
                     placeholder="400001"
                   />
@@ -413,17 +427,32 @@ export default function CustomersPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'GSTIN (Optional)' : 'GSTIN (वैकल्पिक)'}
+                    {language === 'en' ? 'PAN Number' : 'पैन नंबर'}
                   </label>
                   <input
                     type="text"
-                    value={formData.gst_number}
-                    onChange={(e) => setFormData({...formData, gst_number: e.target.value})}
-                    className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.gst_number ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
-                    placeholder="22AAAAA0000A1Z5"
+                    value={formData.pan_number}
+                    onChange={(e) => setFormData({ ...formData, pan_number: e.target.value.toUpperCase() })}
+                    className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.pan_number ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
+                    placeholder="ABCDE1234F"
+                    maxLength={10}
                   />
-                  {errors.gst_number && <p className="text-red-500 text-sm mt-1">{errors.gst_number}</p>}
+                  {errors.pan_number && <p className="text-red-500 text-sm mt-1">{errors.pan_number}</p>}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'en' ? 'GSTIN (Optional)' : 'GSTIN (वैकल्पिक)'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.gst_number}
+                  onChange={(e) => setFormData({ ...formData, gst_number: e.target.value })}
+                  className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.gst_number ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
+                  placeholder="22AAAAA0000A1Z5"
+                />
+                {errors.gst_number && <p className="text-red-500 text-sm mt-1">{errors.gst_number}</p>}
               </div>
 
               <div>
@@ -432,7 +461,7 @@ export default function CustomersPage() {
                 </label>
                 <textarea
                   value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   rows={3}
                   className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none resize-none ${errors.address ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
                   placeholder={language === 'en' ? 'Street address, Landmark' : 'सड़क पता, लैंडमार्क'}
@@ -442,13 +471,13 @@ export default function CustomersPage() {
             </div>
 
             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
               >
                 {language === 'en' ? 'Cancel' : 'रद्द करें'}
               </button>
-              <button 
+              <button
                 onClick={handleSave}
                 disabled={isMutating}
                 className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"

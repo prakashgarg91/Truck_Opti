@@ -75,6 +75,9 @@ export default function AgencyRegisterPage() {
         toast.error('Enter a valid 15-digit GSTIN'); return false
       }
       if (!form.transport_license.trim()) { toast.error('Enter transport license number'); return false }
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_number.toUpperCase().trim())) {
+        toast.error('Enter a valid PAN number (e.g. ABCDE1234F)'); return false
+      }
     }
     if (step === 2) {
       if (!form.contact_name.trim()) { toast.error('Enter contact person name'); return false }
@@ -112,7 +115,7 @@ export default function AgencyRegisterPage() {
         company_name: form.company_name.trim(),
         gstin: form.gstin.toUpperCase().trim() || null,
         transport_license: form.transport_license.trim(),
-        pan_number: form.pan_number.toUpperCase().trim() || null,
+        pan_number: form.pan_number.toUpperCase().trim(),
         contact_name: form.contact_name.trim(),
         contact_phone: form.contact_phone.trim(),
         contact_email: form.contact_email.trim() || null,
@@ -186,8 +189,8 @@ export default function AgencyRegisterPage() {
               <div key={id} className="flex items-center flex-1">
                 <div className={`flex flex-col items-center flex-shrink-0 ${id <= step ? 'opacity-100' : 'opacity-40'}`}>
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center ${id < step ? 'bg-blue-600 text-white' :
-                      id === step ? 'bg-blue-600 text-white ring-4 ring-blue-200 dark:ring-blue-900/40' :
-                        'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                    id === step ? 'bg-blue-600 text-white ring-4 ring-blue-200 dark:ring-blue-900/40' :
+                      'bg-slate-200 dark:bg-slate-700 text-slate-500'
                     }`}>
                     {id < step ? <CheckCircle2 size={16} /> : <Icon size={16} />}
                   </div>
@@ -221,8 +224,9 @@ export default function AgencyRegisterPage() {
               <input value={form.transport_license} onChange={set('transport_license')} className={inputCls} placeholder="TR/2024/12345" />
             </div>
             <div>
-              <label className={labelCls}>PAN Number <span className="text-slate-400 font-normal">(optional)</span></label>
+              <label className={labelCls}>PAN Number *</label>
               <input value={form.pan_number} onChange={set('pan_number')} className={inputCls} placeholder="ABCDE1234F" maxLength={10} style={{ textTransform: 'uppercase' }} />
+              <p className="text-xs text-slate-400 mt-1">Required before your agency can be approved for live jobs and payouts.</p>
             </div>
           </div>
         )}

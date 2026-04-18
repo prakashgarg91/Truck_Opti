@@ -90,10 +90,10 @@ export default function DriverEarningsPage() {
         status: job.status as string,
         shipments: shipment
           ? {
-              origin: (shipment as Record<string, unknown>).origin as string,
-              destination: (shipment as Record<string, unknown>).destination as string,
-              estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
-            }
+            origin: (shipment as Record<string, unknown>).origin as string,
+            destination: (shipment as Record<string, unknown>).destination as string,
+            estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
+          }
           : undefined,
       }
     }))

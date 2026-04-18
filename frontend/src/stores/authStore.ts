@@ -10,6 +10,7 @@ let authSubscription: Subscription | null = null
 interface AppUser {
   id: string
   email: string
+  login_id?: string | null
   name: string | null
   phone: string | null
   phone_verified: boolean
@@ -59,16 +60,11 @@ interface AuthState {
 }
 
 async function resolveAppRole(authUser: Session['user']): Promise<string> {
-  const metadataRole = authUser.user_metadata?.role
-  if (metadataRole && metadataRole !== 'user') {
-    return metadataRole
-  }
-
   try {
     const [roleResult, agencyResult, driverResult] = await Promise.all([
       supabase
         .from('users')
-        .select('role')
+        .select('role, login_id')
         .eq('id', authUser.id)
         .maybeSingle(),
       supabase
@@ -83,15 +79,15 @@ async function resolveAppRole(authUser: Session['user']): Promise<string> {
         .maybeSingle(),
     ])
 
-    if (roleResult.data?.role && roleResult.data.role !== 'user') {
-      return roleResult.data.role
+    if (roleResult.data?.role === 'admin') {
+      return 'admin'
     }
 
     if (agencyResult.data?.id) {
       return 'agency'
     }
 
-    if (driverResult.data?.id) {
+    if (driverResult.data?.id || roleResult.data?.role === 'driver') {
       return 'driver'
     }
   } catch (err) {
@@ -142,16 +138,32 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
     logger.error('Error syncing user profile:', err)
   }
 
+  let loginId: string | null = null
+
+  try {
+    const { data } = await supabase
+      .from('users')
+      .select('login_id')
+      .eq('id', authUser.id)
+      .maybeSingle()
+
+    loginId = data?.login_id ?? null
+  } catch (err) {
+    logger.error('Error loading user login ID:', err)
+  }
+
   const role = await resolveAppRole(authUser)
 
   const userData = {
     id: authUser.id,
     email: authUser.email || '',
+    login_id: loginId,
     name: metadata.full_name || metadata.name || null,
     phone: authUser.phone || metadata.phone || null,
     phone_verified: !!authUser.phone_confirmed_at,
     google_linked: !!isGoogleAuth,
     profile_picture: metadata.avatar_url || metadata.picture || null,
+    user_metadata: metadata,
     role
   }
 

@@ -15,6 +15,7 @@ interface DriverDetail {
   full_name: string
   phone: string
   aadhaar_last4: string | null
+  pan_number: string | null
   date_of_birth: string | null
   vehicle_type: string
   rc_number: string | null
@@ -72,11 +73,10 @@ function DocBadge({ label, url }: { label: string; url: string | null }) {
       href={url || undefined}
       target={url ? '_blank' : undefined}
       rel="noopener noreferrer"
-      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
-        url
+      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${url
           ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/40'
           : 'bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
-      }`}
+        }`}
     >
       {url ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
       {label}
@@ -319,6 +319,7 @@ export default function DriverDetailPage() {
           <InfoRow label="Full Name" value={driver.full_name} />
           <InfoRow label="Phone" value={driver.phone} />
           <InfoRow label="Aadhaar (last 4)" value={driver.aadhaar_last4 ? `****${driver.aadhaar_last4}` : null} />
+          <InfoRow label="PAN" value={driver.pan_number} />
           <InfoRow label="Date of Birth" value={driver.date_of_birth ? new Date(driver.date_of_birth).toLocaleDateString('en-IN') : null} />
           <InfoRow label="Home City" value={driver.home_city} />
           <InfoRow label="Registered" value={<><Calendar size={12} className="inline mr-1" />{new Date(driver.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</>} />

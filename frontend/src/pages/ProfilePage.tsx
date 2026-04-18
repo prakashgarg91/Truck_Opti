@@ -219,6 +219,7 @@ export default function ProfilePage() {
   const [editPhone, setEditPhone] = useState(user?.phone?.replace('+91', '') || '')
   const [editCompanyName, setEditCompanyName] = useState(companyInfo.name || '')
   const [editGstin, setEditGstin] = useState(companyInfo.gstin || '')
+  const [editPan, setEditPan] = useState(companyInfo.pan || '')
   const [editCompanyAddress, setEditCompanyAddress] = useState(companyInfo.address || '')
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
@@ -281,6 +282,17 @@ export default function ProfilePage() {
   const handleSaveCompany = async () => {
     setIsSaving(true)
     try {
+      if (!editPan.trim()) {
+        toast.error(language === 'en' ? 'PAN is required' : 'पैन आवश्यक है')
+        return
+      }
+
+      const normalizedPan = editPan.toUpperCase().trim()
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(normalizedPan)) {
+        toast.error(language === 'en' ? 'Invalid PAN format' : 'अमान्य पैन प्रारूप')
+        return
+      }
+
       // Read current user data to MERGE (not overwrite) CompanyProfilePage fields
       const { data: { user: freshUser } } = await supabase.auth.getUser()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase user_metadata typed as unknown; merging with runtime company shape
@@ -291,6 +303,7 @@ export default function ProfilePage() {
             ...existingCompany,          // Preserve address_line1/city/state/pincode etc.
             name: editCompanyName,
             gstin: editGstin.toUpperCase(),
+            pan: normalizedPan,
             address: editCompanyAddress  // legacy flat-string field
           }
         }
@@ -351,6 +364,11 @@ export default function ProfilePage() {
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           {user?.email || ''}
         </p>
+        {user?.login_id && (
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {language === 'en' ? 'Login ID:' : 'लॉगिन आईडी:'} <span className="font-semibold text-slate-700 dark:text-slate-200">{user.login_id}</span>
+          </p>
+        )}
         <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600">
           <Shield className="w-4 h-4" />
           <span>{t.verifiedAccount}</span>
@@ -463,6 +481,17 @@ export default function ProfilePage() {
             <ChevronRight className="w-5 h-5 text-slate-400" />
           )}
         </div>
+        {user?.login_id && (
+          <div className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-slate-500">{language === 'en' ? 'Login ID' : 'लॉगिन आईडी'}</p>
+              <p className="font-medium text-slate-900 dark:text-white">{user.login_id}</p>
+            </div>
+          </div>
+        )}
         <div className="p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
             <MapPin className="w-5 h-5" />
@@ -499,6 +528,7 @@ export default function ProfilePage() {
                   const company = (user?.user_metadata as any)?.company || {}
                   setEditCompanyName(company.name || '')
                   setEditGstin(company.gstin || '')
+                  setEditPan(company.pan || '')
                   setEditCompanyAddress(company.address || '')
                 }
               }}
@@ -532,6 +562,17 @@ export default function ProfilePage() {
                 <p className="text-sm text-slate-500">{t.gstin}</p>
                 <p className="font-medium text-slate-900 dark:text-white">
                   {companyInfo.gstin || t.notAdded}
+                </p>
+              </div>
+            </div>
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-slate-500">{language === 'en' ? 'PAN Number' : 'पैन नंबर'}</p>
+                <p className="font-medium text-slate-900 dark:text-white">
+                  {companyInfo.pan || t.notAdded}
                 </p>
               </div>
             </div>
@@ -579,6 +620,19 @@ export default function ProfilePage() {
                 placeholder={t.gstinPlaceholder}
               />
               <p className="text-xs text-slate-500 mt-1">15 characters (e.g., 27AABCU9603R1ZX)</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {language === 'en' ? 'PAN Number' : 'पैन नंबर'}
+              </label>
+              <input
+                type="text"
+                value={editPan}
+                onChange={(e) => setEditPan(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10))}
+                className="input w-full font-mono"
+                placeholder={language === 'en' ? 'ABCDE1234F' : 'ABCDE1234F'}
+              />
+              <p className="text-xs text-slate-500 mt-1">10 characters (e.g., ABCDE1234F)</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

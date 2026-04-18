@@ -198,7 +198,7 @@ export default function SignupPage() {
           </div>
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             {signupMode === 'password'
-              ? 'Password signup is available when seeded demo or internal accounts need a direct password path.'
+              ? 'Password signup assigns a login ID automatically and shows it in your profile after sign-in.'
               : 'Email OTP remains the default public signup path.'}
           </p>
         </div>

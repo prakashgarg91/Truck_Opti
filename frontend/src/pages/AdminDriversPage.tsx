@@ -14,6 +14,7 @@ interface Driver {
   id: string
   full_name: string
   phone: string
+  pan_number: string | null
   vehicle_type: string
   home_city: string
   rc_number: string | null
@@ -162,10 +163,11 @@ export default function AdminDriversPage() {
   )
 
   const exportCSV = () => {
-    const headers = ['Name', 'Phone', 'Vehicle Type', 'Home City', 'RC Number', 'License Number', 'Aadhaar Last4', 'Bank Account', 'IFSC', 'UPI', 'Status', 'Rating', 'Total Trips', 'Registered On']
+    const headers = ['Name', 'Phone', 'PAN', 'Vehicle Type', 'Home City', 'RC Number', 'License Number', 'Aadhaar Last4', 'Bank Account', 'IFSC', 'UPI', 'Status', 'Rating', 'Total Trips', 'Registered On']
     const rows = filtered.map(d => [
       d.full_name,
       d.phone,
+      d.pan_number ?? '',
       vehicleLabel(d.vehicle_type),
       d.home_city ?? '',
       d.rc_number ?? '',
@@ -290,6 +292,9 @@ export default function AdminDriversPage() {
                   </div>
                   {driver.home_city && (
                     <p className="text-xs text-slate-400 mt-0.5">📍 {driver.home_city}</p>
+                  )}
+                  {driver.pan_number && (
+                    <p className="text-xs text-slate-400">PAN: {driver.pan_number}</p>
                   )}
                   {driver.rc_number && (
                     <p className="text-xs text-slate-400">RC: {driver.rc_number}</p>

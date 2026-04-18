@@ -65,11 +65,11 @@ export default function DriverHistoryPage() {
         status: trip.status as TripRecord['status'],
         shipments: shipment
           ? {
-              origin: (shipment as Record<string, unknown>).origin as string,
-              destination: (shipment as Record<string, unknown>).destination as string,
-              estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
-              total_weight: Number((shipment as Record<string, unknown>).total_weight ?? 0),
-            }
+            origin: (shipment as Record<string, unknown>).origin as string,
+            destination: (shipment as Record<string, unknown>).destination as string,
+            estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
+            total_weight: Number((shipment as Record<string, unknown>).total_weight ?? 0),
+          }
           : undefined,
       }
     }))
@@ -98,11 +98,10 @@ export default function DriverHistoryPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${
-                filter === f
+              className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${filter === f
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-              }`}
+                }`}
             >
               {f === 'all' ? 'All' : f}
             </button>

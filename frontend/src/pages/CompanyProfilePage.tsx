@@ -69,14 +69,17 @@ export default function CompanyProfilePage() {
       setForm(prev => ({ ...prev, [field]: e.target.value }))
 
   const validateGSTIN = (v: string) => !v || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v)
-  const validatePAN = (v: string) => !v || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v)
+  const validatePAN = (v: string) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v)
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Company name is required'); return }
     if (form.gstin && !validateGSTIN(form.gstin.toUpperCase())) {
       toast.error('Invalid GSTIN format'); return
     }
-    if (form.pan && !validatePAN(form.pan.toUpperCase())) {
+    if (!form.pan.trim()) {
+      toast.error('PAN is required'); return
+    }
+    if (!validatePAN(form.pan.toUpperCase())) {
       toast.error('Invalid PAN format (e.g. AAAPZ1234C)'); return
     }
 
@@ -104,7 +107,7 @@ export default function CompanyProfilePage() {
     }
   }
 
-  const completionFields: (keyof CompanyData)[] = ['name', 'gstin', 'address_line1', 'city', 'state', 'pincode', 'phone']
+  const completionFields: (keyof CompanyData)[] = ['name', 'pan', 'gstin', 'address_line1', 'city', 'state', 'pincode', 'phone']
   const filledCount = completionFields.filter(f => form[f]?.trim()).length
   const completionPct = Math.round((filledCount / completionFields.length) * 100)
 
@@ -179,12 +182,17 @@ export default function CompanyProfilePage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PAN Number</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PAN Number *</label>
               <input value={form.pan} onChange={set('pan')} placeholder="AAAPZ1234C" maxLength={10}
                 className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase ${form.pan && !validatePAN(form.pan.toUpperCase())
                   ? 'border-red-400 focus:ring-red-400'
                   : 'border-slate-200 dark:border-slate-600'
                   }`} />
+              {!form.pan.trim() ? (
+                <p className="text-xs text-red-500 mt-1">PAN is required for billing and KYC.</p>
+              ) : form.pan && !validatePAN(form.pan.toUpperCase()) ? (
+                <p className="text-xs text-red-500 mt-1">Invalid PAN format</p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -261,6 +269,7 @@ export default function CompanyProfilePage() {
             )}
             {form.phone && <p className="text-xs text-slate-500">Tel: {form.phone}</p>}
             {form.gstin && <p className="text-xs text-slate-500">GSTIN: {form.gstin.toUpperCase()}</p>}
+            {form.pan && <p className="text-xs text-slate-500">PAN: {form.pan.toUpperCase()}</p>}
           </div>
         </div>
       )}

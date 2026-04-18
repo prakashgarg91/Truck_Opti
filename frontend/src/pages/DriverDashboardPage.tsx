@@ -159,10 +159,10 @@ export default function DriverDashboardPage() {
         estimated_fare: normalizedShipment?.estimated_cost ?? 0,
         shipments: normalizedShipment
           ? {
-              origin: normalizedShipment.origin,
-              destination: normalizedShipment.destination,
-              estimated_cost: normalizedShipment.estimated_cost,
-            }
+            origin: normalizedShipment.origin,
+            destination: normalizedShipment.destination,
+            estimated_cost: normalizedShipment.estimated_cost,
+          }
           : undefined,
       }
     })
@@ -647,9 +647,9 @@ export default function DriverDashboardPage() {
                     </p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${payout.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                      payout.status === 'approved' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                        payout.status === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    payout.status === 'approved' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                      payout.status === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                     }`}>
                     {payout.status === 'pending' ? (language === 'en' ? 'Pending' : 'लंबित') :
                       payout.status === 'approved' ? (language === 'en' ? 'Approved' : 'स्वीकृत') :
@@ -742,7 +742,7 @@ export default function DriverDashboardPage() {
               {tripHistory.map((trip) => (
                 <div key={trip.id} className="px-4 py-3 flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full flex-shrink-0 ${trip.status === 'accepted' ? 'bg-green-500' :
-                      trip.status === 'declined' ? 'bg-red-400' : 'bg-slate-300'
+                    trip.status === 'declined' ? 'bg-red-400' : 'bg-slate-300'
                     }`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
@@ -758,10 +758,10 @@ export default function DriverDashboardPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${trip.status === 'accepted'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                        : trip.status === 'declined'
-                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : trip.status === 'declined'
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                       }`}>
                       {trip.status}
                     </span>

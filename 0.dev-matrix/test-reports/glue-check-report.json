@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-18T10:20:41.064Z",
+  "generatedAt": "2026-04-18T11:31:04.673Z",
   "summary": {
     "hardGaps": 0,
     "warnings": 33,
@@ -21,13 +21,13 @@
     {
       "type": "STUB_SERVICE",
       "file": "frontend/src/services/supabaseApi.ts",
-      "line": 817,
+      "line": 863,
       "detail": "if (!user) throw new Error('Not authenticated')"
     },
     {
       "type": "STUB_SERVICE",
       "file": "frontend/src/services/supabaseApi.ts",
-      "line": 1081,
+      "line": 1127,
       "detail": "if (!user) throw new Error('Not authenticated')"
     },
     {

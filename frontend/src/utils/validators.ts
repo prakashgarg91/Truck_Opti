@@ -36,6 +36,27 @@ export const gstinSchema = z.string().regex(
   'Invalid GSTIN format. Expected: 22AAAAA0000A1Z5'
 )
 
+export const panSchema = z.string()
+  .trim()
+  .transform((value) => value.toUpperCase())
+  .refine(
+    (value) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value),
+    'Invalid PAN format. Expected: AAAAA1234A'
+  )
+
+export const loginIdSchema = z.string()
+  .trim()
+  .min(3, 'Login ID must be at least 3 characters')
+  .max(64, 'Login ID must be 64 characters or less')
+  .regex(/^[A-Za-z0-9._-]+$/, 'Login ID can only include letters, numbers, dot, underscore, and hyphen')
+
+export const emailOrLoginIdSchema = z.string()
+  .trim()
+  .refine(
+    (value) => emailSchema.safeParse(value).success || loginIdSchema.safeParse(value).success,
+    'Enter a valid email address or login ID'
+  )
+
 // Pincode: exactly 6 digits (Indian postal code)
 export const pincodeSchema = z.string().regex(
   /^[0-9]{6}$/,
@@ -164,7 +185,8 @@ export const customerSchema = z.object({
   state: z.string()
     .min(1, 'State is required')
     .max(50, 'State too long'),
-  pincode: pincodeSchema
+  pincode: pincodeSchema,
+  pan_number: panSchema
 })
 
 // Type inference helpers

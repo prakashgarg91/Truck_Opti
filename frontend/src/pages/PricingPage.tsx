@@ -441,10 +441,10 @@ export default function PricingPage() {
                 <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">{L.freeDesc}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{L.compareNote}</p>
               </div>
-            <button
-              onClick={() => navigate('/signup')}
+              <button
+                onClick={() => navigate('/signup')}
                 className="shrink-0 rounded-2xl bg-primary-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary-700 active:scale-95"
-            >{L.startFree}</button>
+              >{L.startFree}</button>
             </div>
           </div>
         </div>
@@ -473,7 +473,7 @@ export default function PricingPage() {
                     isCurrent={currentPlan?.id === tier.id}
                     isUpgrade={isUpgrade}
                     isDowngrade={isDowngrade}
-                      className="snap-center shrink-0 w-[88vw] max-w-sm sm:w-[55vw]"
+                    className="snap-center shrink-0 w-[88vw] max-w-sm sm:w-[55vw]"
                     onCta={() => {
                       if (tier.id === 'enterprise') {
                         navigate('/contact')
