@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ArrowRight, Shield, Sparkles, Send, UserPlus } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, KeyRound, Send, Shield, Sparkles, UserPlus } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 import { useLanguageStore } from '../../stores/languageStore'
-import { emailSchema } from '../../utils/validators'
+import { emailSchema, passwordSchema } from '../../utils/validators'
 import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
 
 const features = [
@@ -16,6 +16,9 @@ const features = [
 ]
 
 const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED !== 'false'
+const isPasswordEnabled = import.meta.env.VITE_AUTH_PASSWORD_ENABLED === 'true'
+
+type SignupMode = 'otp' | 'password'
 
 export default function SignupPage() {
   const navigate = useNavigate()
@@ -24,8 +27,12 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [emailError, setEmailError] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [signupMode, setSignupMode] = useState<SignupMode>(isEmailOtpEnabled ? 'otp' : 'password')
   const [isFocused, setIsFocused] = useState<string | null>(null)
   const [currentFeature, setCurrentFeature] = useState(0)
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
   // Rotate features
   useEffect(() => {
@@ -39,15 +46,51 @@ export default function SignupPage() {
     document.title = 'Sign Up - TruckOpti'
   }, [])
 
+  useEffect(() => {
+    if (!isEmailOtpEnabled && isPasswordEnabled) {
+      setSignupMode('password')
+      return
+    }
+
+    if (!isEmailOtpEnabled && !isPasswordEnabled) {
+      setSignupMode('otp')
+    }
+  }, [])
+
+  useEffect(() => {
+    setEmailError('')
+    setPasswordError('')
+  }, [signupMode])
+
   const signupMutation = useMutation({
     mutationFn: async () => {
+      if (signupMode === 'password') {
+        const data = await authSupabaseApi.signUpWithEmailPassword(email, password, name)
+        return { mode: 'password' as const, data }
+      }
+
       if (!isEmailOtpEnabled) {
         throw new UserFacingError('Email signup is disabled. Please use Google sign up.')
       }
+
       await authSupabaseApi.signUpWithEmail(email, name)
-      return { success: true }
+      return { mode: 'otp' as const }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (result.mode === 'password') {
+        setPendingPhone(null)
+
+        if (result.data.session) {
+          toast.success('Account created. Completing sign in...')
+          navigate('/auth/callback', { replace: true })
+          return
+        }
+
+        toast.success('Account created. Check your email to confirm your new password.')
+        navigate('/login', { replace: true })
+        return
+      }
+
       setPendingPhone(email)
       toast.success('Verification code sent to your email 📧', { duration: 3000 })
       navigate('/otp', { state: { channel: 'email', contact: email, isSignup: true } })
@@ -64,23 +107,31 @@ export default function SignupPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!isEmailOtpEnabled) {
-      toast.error('Email signup is disabled. Please use Google sign up.')
-      return
-    }
-
     const result = emailSchema.safeParse(email)
     if (!result.success) {
       setEmailError(result.error.issues[0]?.message || 'Invalid email address')
       return
     }
 
+    if (signupMode === 'password') {
+      const passwordResult = passwordSchema.safeParse(password)
+      if (!passwordResult.success) {
+        setPasswordError(passwordResult.error.issues[0]?.message || 'Invalid password')
+        return
+      }
+    } else if (!isEmailOtpEnabled) {
+      toast.error('Email signup is disabled. Please use Google sign up.')
+      return
+    }
+
     setEmailError('')
+    setPasswordError('')
     signupMutation.mutate()
   }
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const isEmailValid = emailSchema.safeParse(email).success
+  const isPasswordValid = passwordSchema.safeParse(password).success
 
   const handleGoogleSignup = async () => {
     try {
@@ -116,6 +167,42 @@ export default function SignupPage() {
           Join India's smartest logistics platform 🇮🇳
         </p>
       </div>
+
+      {isPasswordEnabled && (
+        <div className="animate-slide-up mb-6" style={{ animationDelay: '75ms' }}>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Choose signup method
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSignupMode('otp')}
+              disabled={!isEmailOtpEnabled}
+              className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 transition-all duration-300 ${signupMode === 'otp'
+                ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20'
+                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <Send className="w-4 h-4" />
+              <span className="font-medium text-sm">Email OTP</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSignupMode('password')}
+              className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 transition-all duration-300 ${signupMode === 'password'
+                ? 'border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:border-slate-200 dark:bg-slate-100 dark:text-slate-900'
+                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+            >
+              <KeyRound className="w-4 h-4" />
+              <span className="font-medium text-sm">Password</span>
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            {signupMode === 'password'
+              ? 'Password signup is available when seeded demo or internal accounts need a direct password path.'
+              : 'Email OTP remains the default public signup path.'}
+          </p>
+        </div>
+      )}
 
       {/* Signup Form */}
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -181,26 +268,69 @@ export default function SignupPage() {
           )}
         </div>
 
+        {signupMode === 'password' && (
+          <div className="animate-slide-up" style={{ animationDelay: '250ms' }}>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Password
+            </label>
+            <div className={`relative transition-all duration-300 ${isFocused === 'password' ? 'scale-[1.02]' : ''}`}>
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <input
+                type={isPasswordVisible ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value)
+                  if (passwordError) setPasswordError('')
+                }}
+                onFocus={() => setIsFocused('password')}
+                onBlur={() => setIsFocused(null)}
+                placeholder="Use at least 8 characters"
+                className={`input pl-12 pr-12 text-lg font-medium ${passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                aria-invalid={!!passwordError}
+              />
+              <button
+                type="button"
+                onClick={() => setIsPasswordVisible((current) => !current)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                {isPasswordVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            {passwordError ? (
+              <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                <span>⚠️</span> {passwordError}
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+                <KeyRound className="w-3 h-3" />
+                Use letters and numbers for a stronger password.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={!isEmailValid || signupMutation.isPending || !isEmailOtpEnabled}
+          disabled={signupMutation.isPending || !isEmailValid || (signupMode === 'otp' ? !isEmailOtpEnabled : !isPasswordValid)}
           className="btn btn-primary w-full text-base shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all duration-300 animate-slide-up disabled:shadow-none"
           style={{ animationDelay: '300ms' }}
         >
           {signupMutation.isPending ? (
             <>
               <div className="spinner w-5 h-5" />
-              <span>Creating account...</span>
+              <span>{signupMode === 'password' ? 'Creating password account...' : 'Creating account...'}</span>
             </>
           ) : (
             <>
-              <span>{isEmailOtpEnabled ? 'Create Account' : 'Email Signup Disabled'}</span>
+              <span>{signupMode === 'password' ? 'Create Password Account' : (isEmailOtpEnabled ? 'Create Account' : 'Email Signup Disabled')}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </>
           )}
         </button>
-        {!isEmailOtpEnabled && (
+        {!isEmailOtpEnabled && signupMode === 'otp' && (
           <p className="mt-2 text-xs text-slate-500">
             Email OTP signup is disabled in this environment. Use Google signup below.
           </p>

@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import { logger } from '../../utils/logger'
 import { useLanguageStore } from '../../stores/languageStore'
+import { consumeAuthReturnTo, storeAuthReturnTo } from '../../utils/authReturnTo'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -36,6 +37,10 @@ export default function AuthCallbackPage() {
         }
 
         const queryParams = new URLSearchParams(window.location.search)
+        const requestedReturnTo = queryParams.get('returnTo')
+        if (requestedReturnTo) {
+          storeAuthReturnTo(requestedReturnTo)
+        }
         const code = queryParams.get('code')
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
@@ -76,7 +81,7 @@ export default function AuthCallbackPage() {
           })
 
           window.clearTimeout(timeoutId)
-          window.location.replace('/')
+          window.location.replace(consumeAuthReturnTo() || '/')
         } else {
           // No session found - might be a direct visit to this page
           logger.warn('No session found in callback')

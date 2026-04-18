@@ -15,12 +15,14 @@ interface EarningSummary {
 
 interface JobRecord {
   id: string
-  offered_at: string
+  delivered_at: string | null
   status: string
-  shipments?: { origin_address: string; destination_address: string; estimated_distance_km: number }
+  shipments?: {
+    origin: string
+    destination: string
+    estimated_cost: number
+  }
 }
-
-const PER_KM_RATE = 15 // ₹15/km placeholder
 
 export default function DriverEarningsPage() {
   const { user } = useAuthStore()
@@ -67,20 +69,34 @@ export default function DriverEarningsPage() {
     setLoading(true)
     let query = supabase
       .from('job_offers')
-      .select('id, offered_at, status, shipments(origin_address, destination_address, estimated_distance_km)')
+      .select('id, delivered_at, status, shipments(origin, destination, estimated_cost)')
       .eq('driver_id', drId)
-      .eq('status', 'accepted')
-      .order('offered_at', { ascending: false })
+      .eq('status', 'delivered')
+      .order('delivered_at', { ascending: false })
 
     if (period !== 'total') {
       const days = period === 'week' ? 7 : 30
       const since = new Date(Date.now() - days * 86400000).toISOString()
-      query = query.gte('offered_at', since)
+      query = query.gte('delivered_at', since)
     }
 
     const { data, error } = await query.limit(100)
     if (error) toast.error('Failed to load earnings')
-    setJobs((data as unknown as JobRecord[]) || [])
+    setJobs(((data ?? []) as Record<string, unknown>[]).map((job) => {
+      const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
+      return {
+        id: job.id as string,
+        delivered_at: (job.delivered_at as string | null) ?? null,
+        status: job.status as string,
+        shipments: shipment
+          ? {
+              origin: (shipment as Record<string, unknown>).origin as string,
+              destination: (shipment as Record<string, unknown>).destination as string,
+              estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
+            }
+          : undefined,
+      }
+    }))
     setLoading(false)
   }, [period])
 
@@ -122,16 +138,15 @@ export default function DriverEarningsPage() {
     }
   }
 
-  const totalEarnings = jobs.reduce((sum, j) => sum + (j.shipments?.estimated_distance_km || 0) * PER_KM_RATE, 0)
-  const totalKm = jobs.reduce((sum, j) => sum + (j.shipments?.estimated_distance_km || 0), 0)
+  const totalEarnings = jobs.reduce((sum, j) => sum + (j.shipments?.estimated_cost || 0), 0)
 
   // Group by date
   const byDate: Record<string, EarningSummary> = {}
   jobs.forEach(j => {
-    const date = new Date(j.offered_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    const date = new Date(j.delivered_at || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
     if (!byDate[date]) byDate[date] = { date, trips: 0, earnings: 0 }
     byDate[date].trips++
-    byDate[date].earnings += (j.shipments?.estimated_distance_km || 0) * PER_KM_RATE
+    byDate[date].earnings += j.shipments?.estimated_cost || 0
   })
   const dailySummary = Object.values(byDate).slice(0, 10)
 
@@ -205,8 +220,8 @@ export default function DriverEarningsPage() {
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
                 <TrendingUp size={20} className="text-purple-500 mb-2" />
-                <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{Math.round(totalKm)} km</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Distance</p>
+                <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(payoutPending)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Pending</p>
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
                 <Calendar size={20} className="text-amber-500 mb-2" />

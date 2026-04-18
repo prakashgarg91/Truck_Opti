@@ -6,11 +6,12 @@ import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 import { toUserFacingErrorMessage } from '../../utils/userFacingError'
+import { storeAuthReturnTo } from '../../utils/authReturnTo'
 
 export default function OTPPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { pendingPhone, login } = useAuthStore()
+  const { pendingPhone } = useAuthStore()
   // Supabase now sends 8-digit OTPs for email, 6 for SMS
   const channel_pre = (location.state as { channel?: string })?.channel || 'sms'
   const OTP_LENGTH = channel_pre === 'email' ? 8 : 6
@@ -23,6 +24,8 @@ export default function OTPPage() {
   // Get channel from navigation state
   const channel = channel_pre
   const contact = (location.state as { contact?: string })?.contact || pendingPhone
+  const isSignup = (location.state as { isSignup?: boolean } | null)?.isSignup === true
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo || null
 
   // Redirect if no pending phone/email
   useEffect(() => {
@@ -54,22 +57,12 @@ export default function OTPPage() {
         return { session, user }
       }
     },
-    onSuccess: ({ session, user }) => {
+    onSuccess: () => {
       setIsSuccess(true)
-      if (user && session) {
-        login({
-          id: user.id,
-          email: user.email || '',
-          name: user.user_metadata?.name || null,
-          phone: user.phone || (channel !== 'email' ? contact : null),
-          phone_verified: channel !== 'email',
-          google_linked: false,
-          profile_picture: user.user_metadata?.avatar_url || null,
-          role: 'user'
-        }, session)
+      if (returnTo) {
+        storeAuthReturnTo(returnTo)
       }
-      toast.success('Login successful! 🎉', { duration: 2000 })
-      setTimeout(() => navigate('/'), 1000)
+      setTimeout(() => navigate('/auth/callback', { replace: true }), 350)
     },
     onError: (error: unknown) => {
       setIsError(true)
@@ -85,7 +78,11 @@ export default function OTPPage() {
   const resendOTPMutation = useMutation({
     mutationFn: async () => {
       if (channel === 'email') {
-        await authSupabaseApi.signInWithEmail(contact!)
+        if (isSignup) {
+          await authSupabaseApi.signUpWithEmail(contact!)
+        } else {
+          await authSupabaseApi.signInWithEmail(contact!)
+        }
       } else {
         const formattedPhone = contact!.startsWith('+') ? contact! : `+91${contact!}`
         await authSupabaseApi.signInWithPhone(formattedPhone, channel as 'sms' | 'whatsapp')

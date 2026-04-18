@@ -58,6 +58,49 @@ interface AuthState {
   setIsLoading: (loading: boolean) => void
 }
 
+async function resolveAppRole(authUser: Session['user']): Promise<string> {
+  const metadataRole = authUser.user_metadata?.role
+  if (metadataRole && metadataRole !== 'user') {
+    return metadataRole
+  }
+
+  try {
+    const [roleResult, agencyResult, driverResult] = await Promise.all([
+      supabase
+        .from('users')
+        .select('role')
+        .eq('id', authUser.id)
+        .maybeSingle(),
+      supabase
+        .from('transport_agencies')
+        .select('id')
+        .eq('user_id', authUser.id)
+        .maybeSingle(),
+      supabase
+        .from('drivers')
+        .select('id')
+        .eq('user_id', authUser.id)
+        .maybeSingle(),
+    ])
+
+    if (roleResult.data?.role && roleResult.data.role !== 'user') {
+      return roleResult.data.role
+    }
+
+    if (agencyResult.data?.id) {
+      return 'agency'
+    }
+
+    if (driverResult.data?.id) {
+      return 'driver'
+    }
+  } catch (err) {
+    logger.error('Error resolving app role:', err)
+  }
+
+  return 'user'
+}
+
 /**
  * Sync user profile to public.users table
  * Called on auth state change to ensure profile exists
@@ -99,19 +142,7 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
     logger.error('Error syncing user profile:', err)
   }
 
-  // Read role from JWT user_metadata first (set via admin API, never overwritten by sync)
-  // Fall back to DB lookup, then default to 'user'
-  let role: string = authUser.user_metadata?.role || 'user'
-  if (role === 'user') {
-    try {
-      const { data: roleData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', authUser.id)
-        .maybeSingle()
-      if (roleData?.role && roleData.role !== 'user') role = roleData.role
-    } catch { /* keep default */ }
-  }
+  const role = await resolveAppRole(authUser)
 
   const userData = {
     id: authUser.id,

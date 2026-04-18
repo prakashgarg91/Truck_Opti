@@ -279,7 +279,7 @@ export default function DriverTripPage() {
     setUploading(true)
     try {
       const ext = file.name.split('.').pop() || 'jpg'
-      const path = `trip-photos/${driver.id}/${job.id}/${field}.${ext}`
+      const path = `${driver.id}/${job.id}/${field}.${ext}`
       const { error: uploadError } = await supabase.storage
         .from('trip-photos')
         .upload(path, file, { upsert: true, contentType: file.type })

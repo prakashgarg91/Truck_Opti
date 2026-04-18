@@ -7,6 +7,7 @@ import { useSubscription } from '../hooks/useSubscription'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import { generateShipmentId } from '../utils/shipmentId'
 
 const VEHICLE_TYPES = [
   { value: 'tata_407', label: 'Tata 407', capacity: '1.5 Ton' },
@@ -71,16 +72,20 @@ export default function NewShipmentPage() {
     setIsSubmitting(true)
 
     try {
+      const shipmentId = generateShipmentId()
+
       // Step 1: Insert into shipments table
       const { data: shipmentData, error: shipmentError } = await supabase
         .from('shipments')
         .insert({
-          customer_id: user.id,
+          shipment_id: shipmentId,
+          customer_id: null,
           created_by: user.id,
           origin: formData.origin_city,
           destination: formData.destination_city,
           status: 'pending',
           total_weight: formData.weight_kg,
+          estimated_cost: formData.estimated_value,
           vehicle_type: formData.vehicle_type,
           pickup_date: formData.pickup_date,
           goods_description: formData.goods_description,

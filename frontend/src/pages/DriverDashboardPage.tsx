@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Power, Truck, Star, TrendingUp, Clock, MapPin,
+  Power, Truck, Star, TrendingUp, Clock,
   CheckCircle2, XCircle, AlertTriangle,
   Wallet, Navigation, PhoneCall, RefreshCw, UserCircle, X, DollarSign
 } from 'lucide-react'
@@ -33,10 +33,10 @@ interface JobOffer {
   expires_at: string
   status: string
   shipments?: {
-    origin_address: string
-    destination_address: string
-    weight_kg: number
-    estimated_distance_km: number
+    origin: string
+    destination: string
+    total_weight: number
+    estimated_cost: number
   }
 }
 
@@ -44,11 +44,13 @@ interface TripHistory {
   id: string
   offered_at: string
   responded_at: string | null
+  delivered_at: string | null
   status: string
-  fare: number | null
+  estimated_fare: number
   shipments?: {
-    origin_address: string
-    destination_address: string
+    origin: string
+    destination: string
+    estimated_cost: number
   }
 }
 
@@ -59,6 +61,17 @@ const VEHICLE_LABELS: Record<string, string> = {
   ashok_19ft: 'Ashok Leyland 19ft (7T)',
   bharatbenz_24ft: 'BharatBenz 24ft (10T)',
   bharatbenz_32ft: 'BharatBenz 32ft (15T)',
+}
+
+function normalizeShipmentSummary(shipment: Record<string, unknown> | null | undefined) {
+  if (!shipment) return undefined
+
+  return {
+    origin: typeof shipment.origin === 'string' ? shipment.origin : '—',
+    destination: typeof shipment.destination === 'string' ? shipment.destination : '—',
+    total_weight: Number(shipment.total_weight ?? 0),
+    estimated_cost: Number(shipment.estimated_cost ?? 0),
+  }
 }
 
 export default function DriverDashboardPage() {
@@ -82,6 +95,29 @@ export default function DriverDashboardPage() {
   const [withdrawing, setWithdrawing] = useState(false)
   const [payoutHistory, setPayoutHistory] = useState<{ id: string, amount: number, status: string, requested_at: string }[]>([])
 
+  const fetchIncomingJob = useCallback(async (jobOfferId: string): Promise<JobOffer | null> => {
+    const { data, error } = await supabase
+      .from('job_offers')
+      .select('id, shipment_id, offered_at, expires_at, status, shipments(origin, destination, total_weight, estimated_cost)')
+      .eq('id', jobOfferId)
+      .maybeSingle()
+
+    if (error || !data) {
+      return null
+    }
+
+    const shipment = Array.isArray(data.shipments) ? data.shipments[0] : data.shipments
+
+    return {
+      id: data.id,
+      shipment_id: data.shipment_id,
+      offered_at: data.offered_at,
+      expires_at: data.expires_at,
+      status: data.status,
+      shipments: normalizeShipmentSummary(shipment as Record<string, unknown> | null | undefined),
+    }
+  }, [])
+
   const fetchDriver = useCallback(async () => {
     if (!user?.id) return
     const { data, error } = await supabase
@@ -97,27 +133,53 @@ export default function DriverDashboardPage() {
   }, [user?.id])
 
   const fetchHistory = useCallback(async (driverId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('job_offers')
-      .select('id, offered_at, responded_at, status, fare, shipments(origin_address, destination_address)')
+      .select('id, offered_at, responded_at, delivered_at, status, shipments(origin, destination, estimated_cost)')
       .eq('driver_id', driverId)
       .in('status', ['accepted', 'declined', 'expired', 'delivered'])
       .order('offered_at', { ascending: false })
       .limit(10)
-    setTripHistory((data as unknown as TripHistory[]) || [])
+
+    if (error) {
+      toast.error('Failed to load trip history')
+      return
+    }
+
+    const rawData: TripHistory[] = (data ?? []).map((job: Record<string, unknown>) => {
+      const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
+      const normalizedShipment = normalizeShipmentSummary(shipment as Record<string, unknown> | null | undefined)
+
+      return {
+        id: job.id as string,
+        offered_at: job.offered_at as string,
+        responded_at: (job.responded_at as string | null) ?? null,
+        delivered_at: (job.delivered_at as string | null) ?? null,
+        status: job.status as string,
+        estimated_fare: normalizedShipment?.estimated_cost ?? 0,
+        shipments: normalizedShipment
+          ? {
+              origin: normalizedShipment.origin,
+              destination: normalizedShipment.destination,
+              estimated_cost: normalizedShipment.estimated_cost,
+            }
+          : undefined,
+      }
+    })
+
+    setTripHistory(rawData)
 
     // Count today's accepted trips
     const today = new Date().toISOString().split('T')[0]
-    const rawData = (data || []) as unknown as TripHistory[]
-    const todayAccepted = rawData.filter(
-      (j: TripHistory) => j.status === 'accepted' && j.offered_at.startsWith(today)
+    const delivered = rawData.filter((j: TripHistory) => j.status === 'delivered')
+    const todayDelivered = delivered.filter(
+      (j: TripHistory) => (j.delivered_at || j.responded_at || j.offered_at).startsWith(today)
     )
-    setTodayTrips(todayAccepted.length)
-    setTodayEarnings(todayAccepted.length * 1200) // Placeholder ₹1200 per trip
+    setTodayTrips(todayDelivered.length)
+    setTodayEarnings(todayDelivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0))
 
     // Calculate wallet earnings from delivered trips
-    const delivered = rawData.filter((j: TripHistory) => j.status === 'delivered')
-    const total = delivered.reduce((sum: number, j: TripHistory) => sum + (j.fare ?? 0), 0)
+    const total = delivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0)
     setTotalEarned(total)
     setWalletBalance(total) // Available = total (no withdrawals yet)
     setCompletedTrips(delivered.slice(0, 5))
@@ -193,10 +255,12 @@ export default function DriverDashboardPage() {
           filter: `driver_id=eq.${driver.id}`,
         },
         (payload) => {
-          const job = payload.new as JobOffer
-          if (job.status === 'pending') {
-            setIncomingJob(job)
-            setCountdown(30)
+          const job = payload.new as { id?: string; status?: string }
+          if (job.status === 'pending' && job.id) {
+            void fetchIncomingJob(job.id).then((fullJob) => {
+              setIncomingJob(fullJob ?? { id: job.id as string, shipment_id: '', offered_at: '', expires_at: '', status: 'pending' })
+              setCountdown(30)
+            })
           }
         }
       )
@@ -205,7 +269,7 @@ export default function DriverDashboardPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [driver?.id, driver?.status])
+  }, [driver?.id, driver?.status, fetchIncomingJob])
 
   // Countdown timer for incoming job
   useEffect(() => {
@@ -370,7 +434,7 @@ export default function DriverDashboardPage() {
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Pickup</p>
                   <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">
-                    {incomingJob.shipments?.origin_address || 'Pickup Location'}
+                    {incomingJob.shipments?.origin || 'Pickup Location'}
                   </p>
                 </div>
               </div>
@@ -379,20 +443,28 @@ export default function DriverDashboardPage() {
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Drop</p>
                   <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">
-                    {incomingJob.shipments?.destination_address || 'Drop Location'}
+                    {incomingJob.shipments?.destination || 'Drop Location'}
                   </p>
                 </div>
               </div>
-              {incomingJob.shipments?.estimated_distance_km && (
+              {incomingJob.shipments && (
                 <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                  <MapPin size={14} />
-                  <span>{incomingJob.shipments.estimated_distance_km} km</span>
-                  <span className="mx-1">•</span>
-                  <Wallet size={14} />
-                  <span className="text-green-600 font-semibold">
-                    {formatCurrency(incomingJob.shipments.estimated_distance_km * 15)}
-                  </span>
-                  <span className="text-xs text-slate-400"> est.</span>
+                  {incomingJob.shipments.total_weight > 0 && (
+                    <>
+                      <Truck size={14} />
+                      <span>{incomingJob.shipments.total_weight} kg</span>
+                    </>
+                  )}
+                  {incomingJob.shipments.estimated_cost > 0 && (
+                    <>
+                      <span className="mx-1">•</span>
+                      <Wallet size={14} />
+                      <span className="text-green-600 font-semibold">
+                        {formatCurrency(incomingJob.shipments.estimated_cost)}
+                      </span>
+                      <span className="text-xs text-slate-400"> est.</span>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -533,8 +605,8 @@ export default function DriverDashboardPage() {
                 <div key={trip.id} className="px-4 py-3 flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                      {trip.shipments?.origin_address
-                        ? `${trip.shipments.origin_address} → ${trip.shipments.destination_address}`
+                      {trip.shipments?.origin
+                        ? `${trip.shipments.origin} → ${trip.shipments.destination}`
                         : 'Trip completed'}
                     </p>
                     <p className="text-xs text-slate-400">
@@ -544,7 +616,7 @@ export default function DriverDashboardPage() {
                     </p>
                   </div>
                   <span className="text-sm font-bold text-green-600">
-                    +{formatCurrency(trip.fare ?? 0)}
+                    +{formatCurrency(trip.estimated_fare)}
                   </span>
                 </div>
               ))}
@@ -674,8 +746,8 @@ export default function DriverDashboardPage() {
                     }`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                      {trip.shipments?.origin_address
-                        ? `${trip.shipments.origin_address} → ${trip.shipments.destination_address}`
+                      {trip.shipments?.origin
+                        ? `${trip.shipments.origin} → ${trip.shipments.destination}`
                         : 'Trip details unavailable'}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">

@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
+import { storeAuthReturnTo } from '../utils/authReturnTo'
 
 // Vehicle type options (must match trucks in DB)
 const VEHICLE_TYPES = [
@@ -53,7 +54,7 @@ const INITIAL: FormData = {
 
 export default function DriverRegisterPage() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
   const [submitting, setSubmitting] = useState(false)
@@ -127,11 +128,17 @@ export default function DriverRegisterPage() {
   }
 
   const handleSubmit = async () => {
+    if (!user?.id) {
+      toast.error('Please log in before submitting your driver application')
+      storeAuthReturnTo('/driver/register')
+      navigate('/login?mode=driver')
+      return
+    }
+
     setSubmitting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       const { error } = await supabase.from('drivers').insert({
-        user_id: user?.id ?? null,
+        user_id: user.id,
         full_name: form.full_name.trim(),
         phone: form.phone.trim(),
         aadhaar_last4: form.aadhaar_last4.trim() || null,
@@ -147,6 +154,7 @@ export default function DriverRegisterPage() {
         status: 'pending',
       })
       if (error) throw error
+      updateUser({ role: 'driver' })
       setStep(4)
     } catch (err: unknown) {
       logger.error('[DriverRegisterPage]', err)
@@ -154,6 +162,31 @@ export default function DriverRegisterPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (!user?.id) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+            <User className="w-8 h-8 text-primary-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Log In To Start Driver Registration</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">
+            Driver applications must be linked to your authenticated account so documents, approvals, and trips stay attached to the right profile.
+          </p>
+          <button
+            onClick={() => {
+              storeAuthReturnTo('/driver/register')
+              navigate('/login?mode=driver')
+            }}
+            className="w-full py-3 bg-primary-600 text-white rounded-2xl font-semibold hover:bg-primary-700 transition-colors"
+          >
+            Continue To Driver Login
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (step === 4) {
@@ -179,10 +212,10 @@ export default function DriverRegisterPage() {
             </ol>
           </div>
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/driver/dashboard')}
             className="w-full py-3 bg-primary-600 text-white rounded-2xl font-semibold hover:bg-primary-700 transition-colors"
           >
-            Go to Login
+            Open Driver Portal
           </button>
         </div>
       </div>
@@ -194,7 +227,7 @@ export default function DriverRegisterPage() {
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8 pt-4">
-          <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate('/login')}
+          <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate('/login?mode=driver')}
             className="p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm">
             {step > 1 ? <ChevronLeft className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
           </button>
@@ -442,7 +475,7 @@ export default function DriverRegisterPage() {
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-4">
-          Already registered? <button onClick={() => navigate('/login')} className="text-primary-600 underline">Sign In</button>
+          Already registered? <button onClick={() => navigate('/login?mode=driver')} className="text-primary-600 underline">Sign In</button>
         </p>
       </div>
     </div>

@@ -6,8 +6,10 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
+import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
+import { storeAuthReturnTo } from '../utils/authReturnTo'
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
@@ -56,6 +58,7 @@ const INITIAL: FormData = {
 
 export default function AgencyRegisterPage() {
   const navigate = useNavigate()
+  const { user, updateUser } = useAuthStore()
   const { language } = useLanguageStore()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
@@ -95,9 +98,17 @@ export default function AgencyRegisterPage() {
   }
 
   const handleSubmit = async () => {
+    if (!user?.id) {
+      toast.error(language === 'en' ? 'Please log in before submitting your agency registration.' : 'कृपया एजेंसी पंजीकरण जमा करने से पहले लॉग इन करें।')
+      storeAuthReturnTo('/agency/register')
+      navigate('/login?mode=agency')
+      return
+    }
+
     setSubmitting(true)
     try {
       const { error } = await supabase.from('transport_agencies').insert({
+        user_id: user.id,
         company_name: form.company_name.trim(),
         gstin: form.gstin.toUpperCase().trim() || null,
         transport_license: form.transport_license.trim(),
@@ -116,6 +127,7 @@ export default function AgencyRegisterPage() {
         status: 'pending',
       })
       if (error) throw error
+      updateUser({ role: 'agency' })
       setStep(4)
     } catch (err: unknown) {
       logger.error('[AgencyRegisterPage]', err)
@@ -128,11 +140,36 @@ export default function AgencyRegisterPage() {
   const inputCls = 'w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400'
   const labelCls = 'text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block'
 
+  if (!user?.id) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm max-w-md w-full text-center">
+          <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+            <Building2 size={28} className="text-blue-600 dark:text-blue-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">Log In To Register Your Agency</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+            Agency registrations must be tied to your account so approvals, fleet access, jobs, and billing stay scoped to the correct owner.
+          </p>
+          <button
+            onClick={() => {
+              storeAuthReturnTo('/agency/register')
+              navigate('/login?mode=agency')
+            }}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold"
+          >
+            Continue To Agency Login
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center gap-3 z-10">
-        <button onClick={() => step > 1 && step < 4 ? setStep(s => s - 1) : navigate('/login')} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700">
+        <button onClick={() => step > 1 && step < 4 ? setStep(s => s - 1) : navigate('/login?mode=agency')} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700">
           <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
         </button>
         <div>
@@ -277,10 +314,10 @@ export default function AgencyRegisterPage() {
               📧 Check your email for confirmation and next steps.
             </div>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/agency/dashboard')}
               className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold"
             >
-              Back to Home
+              Open Agency Portal
             </button>
           </div>
         )}

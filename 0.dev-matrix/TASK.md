@@ -120,7 +120,7 @@
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
-| T-142 | Add password auth as a secondary login path for demo, reviewer, partner, and office accounts | P0 | 🏗️ Architecture | 🟡 PLANNED — keep Email OTP + Google intact while adding password login, signup, and reset flow |
+| T-142 | Add password auth as a secondary login path for demo, reviewer, partner, and office accounts | P0 | 🏗️ Architecture | 🟡 IN PROGRESS — password login/signup/reset ships behind `VITE_AUTH_PASSWORD_ENABLED`, the April 18 Supabase migrations are live, and driver/agency entry-surface browser proof is complete; seeded-account auth proof is still blocked because the live project has no demo/reviewer identities and no linked driver/agency `user_id` rows |
 | T-143 | Provision role-scoped demo IDs and reviewer identities for each major interface | P1 | 🧪 Product | 🟡 PLANNED — target two seeded demo IDs per interface family plus dedicated reviewer accounts; scenario mapping now includes retail, enterprise, micro-fleet, super-admin, ops, and partner personas; credentials must stay outside git |
 | T-144 | Introduce office-permission bundles and partner-console access model | P1 | 🏗️ Platform | 🟡 PLANNED — refined bundle targets now include `security_admin`, `support_lead`, and `demo_operator`; partner API onboarding and office-team rights stay defined in `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md` |
 | T-145 | Define onboarding-track and tenant-boundary contract for customer, driver, agency, partner, and office users | P1 | 🏗️ Architecture | 🟡 PLANNED — formalize `organization_id`, `branch_id`, `booking_type`, `delegated_by`, `source_system`, and onboarding-track ownership before portal expansion |

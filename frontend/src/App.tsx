@@ -13,6 +13,8 @@ import LoginPage from './pages/auth/LoginPage'
 import SignupPage from './pages/auth/SignupPage'
 import OTPPage from './pages/auth/OTPPage'
 import AuthCallbackPage from './pages/auth/AuthCallbackPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 
 // Components
 import PageSkeleton from './components/PageSkeleton'
@@ -108,6 +110,8 @@ function AppContent() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/otp" element={<OTPPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
           </Route>
 
           {/* Protected routes - require authentication */}

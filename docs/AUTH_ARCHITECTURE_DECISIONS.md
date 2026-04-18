@@ -161,6 +161,7 @@ Option C is a separate project for after launch, not a launch blocker.
 LoginPage.tsx
   → SMS/WhatsApp OTP: supabase.auth.signInWithOtp({ phone, channel })
   → Email OTP:        supabase.auth.signInWithOtp({ email })
+  → Password:         supabase.auth.signInWithPassword({ email, password })
   → Google OAuth:     supabase.auth.signInWithOAuth({ provider: 'google' })
       ↓
 OTPPage.tsx
@@ -169,6 +170,13 @@ OTPPage.tsx
 AuthCallbackPage.tsx (Google only)
   → supabase.auth.exchangeCodeForSession(code)
   → supabase.auth.setSession({ access_token, refresh_token })
+  → role-safe redirect to stored returnTo or role home
+      ↓
+ForgotPasswordPage.tsx
+  → supabase.auth.resetPasswordForEmail(email, { redirectTo: '/reset-password' })
+      ↓
+ResetPasswordPage.tsx
+  → supabase.auth.updateUser({ password })
       ↓
 authStore.ts (Zustand + persist)
   → supabase.auth.getSession()
@@ -190,6 +198,7 @@ All session tokens, refresh, and expiry are managed by `@supabase/supabase-js`. 
 | Twilio config in Supabase is the fastest path to phone OTP | GLM-005 | 2026-03-31 | 5-minute setup, zero code changes (see §3, Option A) |
 | Email OTP + Google OAuth is a viable launch alternative | GLM-005 | 2026-03-31 | Already working, ₹0 additional cost (see §3, Option B) |
 | If phone OTP is added later, keep it on Supabase Phone + Twilio only | GPT-020 | 2026-04-16 | Avoids splitting production auth across Supabase and Firebase while preserving the current session/RLS model |
+| Password auth is a feature-flagged secondary path | GPT-5.4 | 2026-04-18 | Enables seeded demo, reviewer, partner, office, and optional customer password flows while keeping Email OTP + Google as the default public launch path |
 | Full custom OTP migration is a post-launch project | GLM-005 | 2026-03-31 | 2–3 weeks effort, high risk, not blocking launch (see §3, Option C) |
 
 ---

@@ -38,7 +38,7 @@ export default function ShipmentHistoryPage() {
       const { data, error } = await supabase
         .from('shipments')
         .select('*')
-        .eq('customer_id', user.id)
+        .eq('created_by', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error

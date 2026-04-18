@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { Phone, ArrowRight, MessageCircle, Shield, Truck, Sparkles, Send, LogIn } from 'lucide-react'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
+import { ArrowRight, Building2, Eye, EyeOff, KeyRound, LogIn, MessageCircle, Phone, Send, Shield, Sparkles, Truck, UserCog, type LucideIcon } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 import { useLanguageStore } from '../../stores/languageStore'
-import { phoneInputSchema, emailSchema } from '../../utils/validators'
+import { emailSchema, passwordSchema, phoneInputSchema } from '../../utils/validators'
 import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
 import { logger } from '../../utils/logger'
+import { buildAuthReturnTo, storeAuthReturnTo, type AuthRouteState } from '../../utils/authReturnTo'
 
 const features = [
   { icon: '📦', text: '3D Smart Packing' },
@@ -18,18 +19,133 @@ const features = [
 
 const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED !== 'false'
 const isPhoneOtpEnabled = import.meta.env.VITE_AUTH_PHONE_OTP_ENABLED === 'true'
+const isPasswordEnabled = import.meta.env.VITE_AUTH_PASSWORD_ENABLED === 'true'
+
+type AuthMode = 'otp' | 'password'
+type LoginSurfaceMode = 'default' | 'driver' | 'agency' | 'office' | 'partner'
+
+type SurfaceConfig = {
+  badge: string
+  icon: LucideIcon
+  iconClasses: string
+  title: string
+  subtitle: string
+  signupHref: string | null
+  signupIntro: string
+  signupAction: string
+  supportText: string | null
+  passwordHint: string
+  showTrustBadges: boolean
+}
+
+const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
+  default: {
+    badge: '',
+    icon: LogIn,
+    iconClasses: 'from-primary-500 to-primary-600 shadow-primary-500/30',
+    title: 'Welcome Back',
+    subtitle: 'Log in to your TruckOpti account',
+    signupHref: '/signup',
+    signupIntro: "Don't have an account?",
+    signupAction: 'Create Account',
+    supportText: null,
+    passwordHint: 'Password sign-in is intended for seeded demo, reviewer, partner, and office accounts.',
+    showTrustBadges: true,
+  },
+  driver: {
+    badge: '🚚 Driver trips, earnings, and dispatch access',
+    icon: Truck,
+    iconClasses: 'from-emerald-500 to-green-600 shadow-emerald-500/30',
+    title: 'Driver Login',
+    subtitle: 'Access live trips, earnings, and delivery updates.',
+    signupHref: '/driver/register',
+    signupIntro: 'Need to join as a driver?',
+    signupAction: 'Register Driver',
+    supportText: null,
+    passwordHint: 'Password sign-in works for seeded driver demo and reviewer accounts when enabled.',
+    showTrustBadges: true,
+  },
+  agency: {
+    badge: '🏢 Agency fleet, jobs, and billing access',
+    icon: Building2,
+    iconClasses: 'from-sky-500 to-indigo-600 shadow-sky-500/30',
+    title: 'Agency Login',
+    subtitle: 'Manage fleet operations, drivers, jobs, and billing in one place.',
+    signupHref: '/agency/register',
+    signupIntro: 'New transport agency?',
+    signupAction: 'Register Agency',
+    supportText: null,
+    passwordHint: 'Password sign-in works for seeded agency demo and reviewer accounts when enabled.',
+    showTrustBadges: true,
+  },
+  office: {
+    badge: '🛡️ Backoffice, demo, and reviewer workspace access',
+    icon: UserCog,
+    iconClasses: 'from-slate-700 to-slate-900 shadow-slate-700/30',
+    title: 'Office Login',
+    subtitle: 'Access admin, operations, demo, and reviewer workflows.',
+    signupHref: null,
+    signupIntro: '',
+    signupAction: '',
+    supportText: 'Office, reviewer, and demo accounts are provisioned by TruckOpti admins. Use password sign-in when your seeded account is ready.',
+    passwordHint: 'Password sign-in is the recommended path for office, reviewer, and seeded demo accounts.',
+    showTrustBadges: false,
+  },
+  partner: {
+    badge: '🔗 Partner and reseller access',
+    icon: KeyRound,
+    iconClasses: 'from-indigo-600 to-violet-700 shadow-indigo-600/30',
+    title: 'Partner Login',
+    subtitle: 'Use your provisioned partner or reviewer account to access TruckOpti.',
+    signupHref: null,
+    signupIntro: '',
+    signupAction: '',
+    supportText: 'Partner accounts are provisioned by TruckOpti. Use password sign-in or a linked mailbox when your seeded account is ready.',
+    passwordHint: 'Password sign-in is the recommended path for partner and external reviewer accounts.',
+    showTrustBadges: false,
+  },
+}
+
+const resolveSurfaceMode = (requestedMode: string | null, returnTo: string | null): LoginSurfaceMode => {
+  if (requestedMode === 'driver') return 'driver'
+  if (requestedMode === 'agency') return 'agency'
+  if (requestedMode === 'partner') return 'partner'
+  if (requestedMode === 'admin' || requestedMode === 'office') return 'office'
+
+  if (returnTo?.startsWith('/driver')) return 'driver'
+  if (returnTo?.startsWith('/agency')) return 'agency'
+  if (returnTo?.startsWith('/admin')) return 'office'
+
+  return 'default'
+}
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { setPendingPhone } = useAuthStore()
   const { language } = useLanguageStore()
-  const [phone, setPhone] = useState('')
-  const [phoneError, setPhoneError] = useState('')
+  const returnTo = buildAuthReturnTo(location.state as AuthRouteState)
+  const requestedMode = new URLSearchParams(location.search).get('mode')
+  const surfaceMode = resolveSurfaceMode(requestedMode, returnTo)
+  const surface = SURFACE_CONFIG[surfaceMode]
+  const SurfaceIcon = surface.icon
+  const modeParam = surfaceMode === 'default' ? '' : `?mode=${surfaceMode === 'office' ? 'admin' : surfaceMode}`
+  const [authMode, setAuthMode] = useState<AuthMode>(
+    isPasswordEnabled && (surfaceMode === 'office' || surfaceMode === 'partner') ? 'password' : 'otp'
+  )
+  const [contact, setContact] = useState('')
+  const [contactError, setContactError] = useState('')
+  const [passwordEmail, setPasswordEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
   const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>(
     isEmailOtpEnabled ? 'email' : isPhoneOtpEnabled ? 'sms' : 'email'
   )
-  const [isFocused, setIsFocused] = useState(false)
+  const [focusedField, setFocusedField] = useState<string | null>(null)
   const [currentFeature, setCurrentFeature] = useState(0)
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const availableOtpChannelCount = (isEmailOtpEnabled ? 1 : 0) + (isPhoneOtpEnabled ? 2 : 0)
 
   // Rotate features
@@ -41,8 +157,25 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
-    document.title = 'Login - TruckOpti'
-  }, [])
+    document.title = `${surface.title} - TruckOpti`
+  }, [surface.title])
+
+  useEffect(() => {
+    if (!returnTo) {
+      storeAuthReturnTo(null)
+    }
+  }, [returnTo])
+
+  useEffect(() => {
+    if (!isPasswordEnabled) {
+      setAuthMode('otp')
+      return
+    }
+
+    if (surfaceMode === 'office' || surfaceMode === 'partner') {
+      setAuthMode('password')
+    }
+  }, [surfaceMode])
 
   useEffect(() => {
     if (!isPhoneOtpEnabled && channel !== 'email') {
@@ -57,9 +190,15 @@ export default function LoginPage() {
 
   // Clear input when channel changes
   useEffect(() => {
-    setPhone('')
-    setPhoneError('')
+    setContact('')
+    setContactError('')
   }, [channel])
+
+  useEffect(() => {
+    setContactError('')
+    setEmailError('')
+    setPasswordError('')
+  }, [authMode])
 
   const sendOTPMutation = useMutation({
     mutationFn: async () => {
@@ -69,7 +208,7 @@ export default function LoginPage() {
             ? 'Email OTP is disabled. Please use SMS/WhatsApp or Google sign-in.'
             : 'ईमेल OTP अक्षम है। कृपया SMS/WhatsApp या Google साइन-इन का उपयोग करें।')
         }
-        await authSupabaseApi.signInWithEmail(phone) // phone variable holds email in this case
+        await authSupabaseApi.signInWithEmail(contact)
         return { success: true, channel: 'email' }
       } else {
         if (!isPhoneOtpEnabled) {
@@ -79,13 +218,13 @@ export default function LoginPage() {
         }
 
         // Format phone with country code for Supabase
-        const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`
+        const formattedPhone = contact.startsWith('+') ? contact : `+91${contact}`
         await authSupabaseApi.signInWithPhone(formattedPhone, channel as 'sms' | 'whatsapp')
         return { success: true, channel }
       }
     },
     onSuccess: (data) => {
-      setPendingPhone(phone)
+      setPendingPhone(contact)
       const channelLabel = data.channel === 'email' ? 'Email' : data.channel === 'whatsapp' ? 'WhatsApp' : 'SMS'
       const successMsg = data.channel === 'email'
         ? (language === 'en' ? 'OTP sent to email' : 'ईमेल पर OTP भेजा गया')
@@ -94,7 +233,7 @@ export default function LoginPage() {
         icon: data.channel === 'email' ? '📧' : '📱',
         duration: 3000
       })
-      navigate('/otp', { state: { channel, contact: phone } })
+      navigate('/otp', { state: { channel, contact, returnTo } })
     },
     onError: (error: unknown) => {
       logger.error('[LoginPage] OTP error:', error)
@@ -105,69 +244,101 @@ export default function LoginPage() {
     }
   })
 
+  const passwordLoginMutation = useMutation({
+    mutationFn: async () => authSupabaseApi.signInWithEmailPassword(passwordEmail, password),
+    onSuccess: () => {
+      storeAuthReturnTo(returnTo)
+      navigate('/auth/callback', { replace: true })
+    },
+    onError: (error: unknown) => {
+      logger.error('[LoginPage] Password login error:', error)
+      toast.error(toUserFacingErrorMessage(error, 'Failed to sign in with password. Please try again.'))
+    },
+  })
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (authMode === 'password') {
+      const emailResult = emailSchema.safeParse(passwordEmail)
+      if (!emailResult.success) {
+        setEmailError(emailResult.error.issues[0]?.message || 'Invalid email address')
+        return
+      }
+
+      const passwordResult = passwordSchema.safeParse(password)
+      if (!passwordResult.success) {
+        setPasswordError(passwordResult.error.issues[0]?.message || 'Invalid password')
+        return
+      }
+
+      setEmailError('')
+      setPasswordError('')
+      passwordLoginMutation.mutate()
+      return
+    }
+
     // Validate based on channel
     if (channel === 'email') {
-      const result = emailSchema.safeParse(phone)
+      const result = emailSchema.safeParse(contact)
       if (!result.success) {
-        setPhoneError(result.error.issues[0]?.message || 'Invalid email address')
+        setContactError(result.error.issues[0]?.message || 'Invalid email address')
         return
       }
     } else {
       // Validate phone number with Zod
-      const result = phoneInputSchema.safeParse(phone)
+      const result = phoneInputSchema.safeParse(contact)
       if (!result.success) {
-        setPhoneError(result.error.issues[0]?.message || 'Invalid phone number')
+        setContactError(result.error.issues[0]?.message || 'Invalid phone number')
         return
       }
     }
 
-    setPhoneError('')
+    setContactError('')
     sendOTPMutation.mutate()
   }
 
-  const handlePhoneChange = (value: string) => {
+  const handleContactChange = (value: string) => {
     if (channel === 'email') {
-      setPhone(value)
+      setContact(value)
       // Clear error when user starts typing
-      if (phoneError && value.length > 0) {
-        setPhoneError('')
+      if (contactError && value.length > 0) {
+        setContactError('')
       }
       return
     }
 
     const digits = value.replace(/\D/g, '').slice(0, 10)
-    setPhone(digits)
+    setContact(digits)
 
     // Clear error when user starts typing
-    if (phoneError && digits.length > 0) {
-      setPhoneError('')
+    if (contactError && digits.length > 0) {
+      setContactError('')
     }
 
     // Validate on complete
     if (digits.length === 10) {
       const result = phoneInputSchema.safeParse(digits)
       if (!result.success) {
-        setPhoneError(result.error.issues[0]?.message || 'Invalid phone number')
+        setContactError(result.error.issues[0]?.message || 'Invalid phone number')
       } else {
-        setPhoneError('')
+        setContactError('')
       }
     }
   }
 
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-
   const isOtpChannelAvailable = channel === 'email' ? isEmailOtpEnabled : isPhoneOtpEnabled
 
-  const isContactValid = isOtpChannelAvailable && (channel === 'email'
-    ? emailSchema.safeParse(phone).success
-    : phoneInputSchema.safeParse(phone).success)
+  const isContactValid = authMode === 'otp' && isOtpChannelAvailable && (channel === 'email'
+    ? emailSchema.safeParse(contact).success
+    : phoneInputSchema.safeParse(contact).success)
+
+  const isPasswordLoginValid = emailSchema.safeParse(passwordEmail).success && passwordSchema.safeParse(password).success
 
   const handleGoogleLogin = async () => {
     try {
       setIsGoogleLoading(true)
+      storeAuthReturnTo(returnTo)
       await authSupabaseApi.signInWithGoogle()
       // Note: The page will redirect to Google, so we won't reach here
     } catch (error: unknown) {
@@ -183,6 +354,14 @@ export default function LoginPage() {
     return `${value.slice(0, 5)} ${value.slice(5)}`
   }
 
+  const activeBadgeText = surfaceMode === 'default'
+    ? `${features[currentFeature].icon} ${features[currentFeature].text}`
+    : surface.badge
+
+  const modeNotice = !isPasswordEnabled && (surfaceMode === 'office' || surfaceMode === 'partner')
+    ? 'Password login is hidden in this environment until VITE_AUTH_PASSWORD_ENABLED=true.'
+    : null
+
   return (
     <div className="p-6 animate-fade-in">
       {/* Animated Feature Badge */}
@@ -190,160 +369,299 @@ export default function LoginPage() {
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-50 to-saffron/10 dark:from-primary-900/30 dark:to-saffron/10 rounded-full border border-primary-100 dark:border-primary-800 animate-scale-in">
           <Sparkles className="w-4 h-4 text-saffron animate-pulse" />
           <span className="text-sm font-medium text-primary-700 dark:text-primary-300 transition-all duration-500">
-            {features[currentFeature].icon} {features[currentFeature].text}
+            {activeBadgeText}
           </span>
         </div>
       </div>
 
       {/* Header */}
       <div className="text-center mb-8">
-        <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/30">
-          <LogIn className="w-7 h-7 text-white" />
+        <div className={`w-14 h-14 bg-gradient-to-br ${surface.iconClasses} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+          <SurfaceIcon className="w-7 h-7 text-white" />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Welcome Back
+          {surface.title}
         </h2>
         <p className="text-slate-500 dark:text-slate-400">
-          Log in to your <span className="text-gradient font-semibold">TruckOpti</span> account
+          {surface.subtitle}
         </p>
+        {modeNotice && (
+          <p className="mt-3 text-xs font-medium text-amber-600 dark:text-amber-400">
+            {modeNotice}
+          </p>
+        )}
       </div>
 
-      {/* Phone Input Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Phone/Email Input */}
-        <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+      {isPasswordEnabled && (
+        <div className="animate-slide-up mb-6" style={{ animationDelay: '75ms' }}>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            {channel === 'email' ? 'Email Address' : 'Mobile Number'}
+            Choose sign-in method
           </label>
-          <div className={`relative transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
-            {channel !== 'email' && (
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-500 pointer-events-none">
-                <span className="text-lg">🇮🇳</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">+91</span>
-                <div className="w-px h-5 bg-slate-300 dark:bg-slate-600" />
-              </div>
-            )}
-            <input
-              type={channel === 'email' ? 'email' : 'tel'}
-              inputMode={channel === 'email' ? 'email' : 'numeric'}
-              value={channel === 'email' ? phone : formatPhone(phone)}
-              onChange={(e) => handlePhoneChange(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              placeholder={channel === 'email' ? 'your@email.com' : '98765 43210'}
-              className={`input ${channel !== 'email' ? 'pl-[105px]' : ''} text-lg tracking-wide font-medium ${phoneError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
-              autoFocus
-              aria-label={channel === 'email' ? 'Enter your email address' : 'Enter your 10-digit mobile number'}
-              aria-invalid={!!phoneError}
-            />
-            {phone.length === 10 && !phoneError && (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 animate-scale-in">
-                <Shield className="w-5 h-5" />
-              </div>
-            )}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setAuthMode('otp')}
+              className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 transition-all duration-300 ${authMode === 'otp'
+                ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20'
+                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+            >
+              <Send className="w-4 h-4" />
+              <span className="font-medium text-sm">OTP</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthMode('password')}
+              className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 transition-all duration-300 ${authMode === 'password'
+                ? 'border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:border-slate-200 dark:bg-slate-100 dark:text-slate-900'
+                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+            >
+              <KeyRound className="w-4 h-4" />
+              <span className="font-medium text-sm">Password</span>
+            </button>
           </div>
-          {phoneError ? (
-            <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-              <span>⚠️</span>
-              {phoneError}
-            </p>
-          ) : (
-            <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
-              <Shield className="w-3 h-3" />
-              Your number is secure and never shared
-            </p>
-          )}
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            {authMode === 'password'
+              ? surface.passwordHint
+              : 'Email OTP + Google remain the default public launch sign-in paths.'}
+          </p>
         </div>
+      )}
 
-        {/* OTP Channel Selection */}
-        <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Receive OTP via
-          </label>
-          <div className={`grid gap-3 ${availableOtpChannelCount >= 3 ? 'grid-cols-3' : availableOtpChannelCount === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {isEmailOtpEnabled && (
-              <button
-                type="button"
-                onClick={() => setChannel('email')}
-                className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'email'
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                aria-pressed={channel === 'email'}
-              >
-                <Send className={`w-4 h-4 ${channel === 'email' ? 'animate-bounce-subtle' : ''}`} />
-                <span className="font-medium text-sm">Email</span>
-                {channel === 'email' && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center animate-scale-in">
-                    <span className="text-white text-xs">✓</span>
-                  </span>
+      {/* Auth Form */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {authMode === 'password' ? (
+          <>
+            <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Email Address
+              </label>
+              <div className={`relative transition-all duration-300 ${focusedField === 'password-email' ? 'scale-[1.02]' : ''}`}>
+                <input
+                  type="email"
+                  inputMode="email"
+                  value={passwordEmail}
+                  onChange={(event) => {
+                    setPasswordEmail(event.target.value)
+                    if (emailError) setEmailError('')
+                  }}
+                  onFocus={() => setFocusedField('password-email')}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="your@email.com"
+                  className={`input text-lg tracking-wide font-medium ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                  autoFocus
+                  aria-invalid={!!emailError}
+                />
+              </div>
+              {emailError ? (
+                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {emailError}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  Use the seeded mailbox connected to your TruckOpti account.
+                </p>
+              )}
+            </div>
+
+            <div className="animate-slide-up" style={{ animationDelay: '150ms' }}>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Password
+                </label>
+                <Link to={`/forgot-password${modeParam}`} className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className={`relative transition-all duration-300 ${focusedField === 'password' ? 'scale-[1.02]' : ''}`}>
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <input
+                  type={isPasswordVisible ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value)
+                    if (passwordError) setPasswordError('')
+                  }}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="Enter your password"
+                  className={`input pl-12 pr-12 text-lg tracking-wide font-medium ${passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                  aria-invalid={!!passwordError}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordVisible((current) => !current)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  {isPasswordVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {passwordError ? (
+                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {passwordError}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+                  <KeyRound className="w-3 h-3" />
+                  Use at least 8 characters with letters and numbers.
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                {channel === 'email' ? 'Email Address' : 'Mobile Number'}
+              </label>
+              <div className={`relative transition-all duration-300 ${focusedField === 'contact' ? 'scale-[1.02]' : ''}`}>
+                {channel !== 'email' && (
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-500 pointer-events-none">
+                    <span className="text-lg">🇮🇳</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">+91</span>
+                    <div className="w-px h-5 bg-slate-300 dark:bg-slate-600" />
+                  </div>
                 )}
-              </button>
-            )}
-            {isPhoneOtpEnabled && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setChannel('whatsapp')}
-                  className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'whatsapp'
-                    ? 'border-green-600 bg-green-50 dark:bg-green-900/30 text-green-600 shadow-lg shadow-green-500/20 scale-[1.02]'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  aria-pressed={channel === 'whatsapp'}
-                >
-                  <MessageCircle className={`w-4 h-4 ${channel === 'whatsapp' ? 'animate-bounce-subtle' : ''}`} />
-                  <span className="font-medium text-sm">WhatsApp</span>
-                  {channel === 'whatsapp' && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-600 rounded-full flex items-center justify-center animate-scale-in">
-                      <span className="text-white text-xs">✓</span>
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setChannel('sms')}
-                  className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'sms'
-                    ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20 scale-[1.02]'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  aria-pressed={channel === 'sms'}
-                >
-                  <Phone className={`w-4 h-4 ${channel === 'sms' ? 'animate-bounce-subtle' : ''}`} />
-                  <span className="font-medium text-sm">SMS</span>
-                  {channel === 'sms' && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center animate-scale-in">
-                      <span className="text-white text-xs">✓</span>
-                    </span>
-                  )}
-                </button>
-              </>
-            )}
-          </div>
-          {!isPhoneOtpEnabled && isEmailOtpEnabled && (
-            <p className="mt-2 text-xs text-slate-500">
-              Phone OTP is disabled in this environment. Use Email OTP or Google login.
-            </p>
-          )}
-          {!isEmailOtpEnabled && isPhoneOtpEnabled && (
-            <p className="mt-2 text-xs text-slate-500">
-              Email OTP is disabled in this environment. Use SMS, WhatsApp, or Google login.
-            </p>
-          )}
-          {!isEmailOtpEnabled && !isPhoneOtpEnabled && (
-            <p className="mt-2 text-xs text-slate-500">
-              OTP login is disabled in this environment. Use Google login.
-            </p>
-          )}
-        </div>
+                <input
+                  type={channel === 'email' ? 'email' : 'tel'}
+                  inputMode={channel === 'email' ? 'email' : 'numeric'}
+                  value={channel === 'email' ? contact : formatPhone(contact)}
+                  onChange={(event) => handleContactChange(event.target.value)}
+                  onFocus={() => setFocusedField('contact')}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder={channel === 'email' ? 'your@email.com' : '98765 43210'}
+                  className={`input ${channel !== 'email' ? 'pl-[105px]' : ''} text-lg tracking-wide font-medium ${contactError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                  autoFocus
+                  aria-label={channel === 'email' ? 'Enter your email address' : 'Enter your 10-digit mobile number'}
+                  aria-invalid={!!contactError}
+                />
+                {contact.length === 10 && !contactError && channel !== 'email' && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 animate-scale-in">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                )}
+              </div>
+              {contactError ? (
+                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {contactError}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  {channel === 'email' ? 'Your email is secure and never shared.' : 'Your number is secure and never shared.'}
+                </p>
+              )}
+            </div>
+
+            <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Receive OTP via
+              </label>
+              <div className={`grid gap-3 ${availableOtpChannelCount >= 3 ? 'grid-cols-3' : availableOtpChannelCount === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {isEmailOtpEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => setChannel('email')}
+                    className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'email'
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 shadow-lg shadow-blue-500/20 scale-[1.02]'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                    aria-pressed={channel === 'email'}
+                  >
+                    <Send className={`w-4 h-4 ${channel === 'email' ? 'animate-bounce-subtle' : ''}`} />
+                    <span className="font-medium text-sm">Email</span>
+                    {channel === 'email' && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center animate-scale-in">
+                        <span className="text-white text-xs">✓</span>
+                      </span>
+                    )}
+                  </button>
+                )}
+                {isPhoneOtpEnabled && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setChannel('whatsapp')}
+                      className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'whatsapp'
+                        ? 'border-green-600 bg-green-50 dark:bg-green-900/30 text-green-600 shadow-lg shadow-green-500/20 scale-[1.02]'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      aria-pressed={channel === 'whatsapp'}
+                    >
+                      <MessageCircle className={`w-4 h-4 ${channel === 'whatsapp' ? 'animate-bounce-subtle' : ''}`} />
+                      <span className="font-medium text-sm">WhatsApp</span>
+                      {channel === 'whatsapp' && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-600 rounded-full flex items-center justify-center animate-scale-in">
+                          <span className="text-white text-xs">✓</span>
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChannel('sms')}
+                      className={`relative flex items-center justify-center gap-2 py-4 px-2 rounded-xl border-2 transition-all duration-300 ripple ${channel === 'sms'
+                        ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20 scale-[1.02]'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      aria-pressed={channel === 'sms'}
+                    >
+                      <Phone className={`w-4 h-4 ${channel === 'sms' ? 'animate-bounce-subtle' : ''}`} />
+                      <span className="font-medium text-sm">SMS</span>
+                      {channel === 'sms' && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 rounded-full flex items-center justify-center animate-scale-in">
+                          <span className="text-white text-xs">✓</span>
+                        </span>
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+              {!isPhoneOtpEnabled && isEmailOtpEnabled && (
+                <p className="mt-2 text-xs text-slate-500">
+                  Phone OTP is disabled in this environment. Use Email OTP or Google login.
+                </p>
+              )}
+              {!isEmailOtpEnabled && isPhoneOtpEnabled && (
+                <p className="mt-2 text-xs text-slate-500">
+                  Email OTP is disabled in this environment. Use SMS, WhatsApp, or Google login.
+                </p>
+              )}
+              {!isEmailOtpEnabled && !isPhoneOtpEnabled && (
+                <p className="mt-2 text-xs text-slate-500">
+                  OTP login is disabled in this environment. Use Google login.
+                </p>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={!isContactValid || sendOTPMutation.isPending}
+          disabled={authMode === 'password'
+            ? !isPasswordLoginValid || passwordLoginMutation.isPending
+            : !isContactValid || sendOTPMutation.isPending}
           className="btn btn-primary w-full text-base shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all duration-300 animate-slide-up disabled:shadow-none"
           style={{ animationDelay: '300ms' }}
         >
-          {sendOTPMutation.isPending ? (
+          {authMode === 'password' ? (passwordLoginMutation.isPending ? (
+            <>
+              <div className="spinner w-5 h-5" />
+              <span>Signing you in...</span>
+            </>
+          ) : (
+            <>
+              <span>Sign In with Password</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </>
+          )) : sendOTPMutation.isPending ? (
             <>
               <div className="spinner w-5 h-5" />
               <span>Sending OTP...</span>
@@ -406,31 +724,39 @@ export default function LoginPage() {
         )}
       </button>
 
-      {/* Trust Badges */}
-      <div className="mt-8 flex items-center justify-center gap-6 text-slate-400 animate-fade-in" style={{ animationDelay: '600ms' }}>
-        <div className="flex items-center gap-1 text-xs">
-          <Shield className="w-4 h-4" />
-          <span>Secure</span>
+      {surface.showTrustBadges ? (
+        <div className="mt-8 flex items-center justify-center gap-6 text-slate-400 animate-fade-in" style={{ animationDelay: '600ms' }}>
+          <div className="flex items-center gap-1 text-xs">
+            <Shield className="w-4 h-4" />
+            <span>Secure</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <Truck className="w-4 h-4" />
+            <span>1000+ Trucks</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <span>🇮🇳</span>
+            <span>Made in India</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-xs">
-          <Truck className="w-4 h-4" />
-          <span>1000+ Trucks</span>
+      ) : surface.supportText ? (
+        <div className="mt-8 p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-2xl animate-fade-in" style={{ animationDelay: '600ms' }}>
+          <p className="text-sm text-slate-600 dark:text-slate-300 text-center">
+            {surface.supportText}
+          </p>
         </div>
-        <div className="flex items-center gap-1 text-xs">
-          <span>🇮🇳</span>
-          <span>Made in India</span>
-        </div>
-      </div>
+      ) : null}
 
-      {/* Signup Link */}
-      <div className="mt-6 text-center animate-fade-in" style={{ animationDelay: '650ms' }}>
-        <p className="text-slate-500 dark:text-slate-400">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-semibold hover:underline">
-            Create Account
-          </Link>
-        </p>
-      </div>
+      {surface.signupHref && (
+        <div className="mt-6 text-center animate-fade-in" style={{ animationDelay: '650ms' }}>
+          <p className="text-slate-500 dark:text-slate-400">
+            {surface.signupIntro}{' '}
+            <Link to={surface.signupHref} className="text-primary-600 hover:text-primary-700 font-semibold hover:underline">
+              {surface.signupAction}
+            </Link>
+          </p>
+        </div>
+      )}
 
       {/* Terms */}
       <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 animate-fade-in" style={{ animationDelay: '700ms' }}>

@@ -3,22 +3,24 @@ import { Clock, MapPin, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lu
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
+import { formatCurrency } from '../utils/formatters'
 
 interface TripRecord {
   id: string
   offered_at: string
   responded_at: string | null
-  status: 'accepted' | 'declined' | 'expired' | 'cancelled'
+  status: 'accepted' | 'declined' | 'expired' | 'cancelled' | 'delivered'
   shipments?: {
-    origin_address: string
-    destination_address: string
-    estimated_distance_km: number
-    weight_kg: number
+    origin: string
+    destination: string
+    estimated_cost: number
+    total_weight: number
   }
 }
 
 const STATUS_CONFIG = {
-  accepted: { label: 'Completed', icon: CheckCircle2, color: 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400' },
+  delivered: { label: 'Completed', icon: CheckCircle2, color: 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400' },
+  accepted: { label: 'Accepted', icon: CheckCircle2, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
   declined: { label: 'Declined', icon: XCircle, color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400' },
   expired: { label: 'Expired', icon: AlertCircle, color: 'text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400' },
   cancelled: { label: 'Cancelled', icon: XCircle, color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400' },
@@ -29,7 +31,7 @@ export default function DriverHistoryPage() {
   const [driverId, setDriverId] = useState<string | null>(null)
   const [trips, setTrips] = useState<TripRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'accepted' | 'declined'>('all')
+  const [filter, setFilter] = useState<'all' | 'delivered' | 'declined'>('all')
 
   const fetchDriverId = useCallback(async () => {
     if (!user?.id) return
@@ -42,9 +44,9 @@ export default function DriverHistoryPage() {
     setLoading(true)
     let query = supabase
       .from('job_offers')
-      .select('id, offered_at, responded_at, status, shipments(origin_address, destination_address, estimated_distance_km, weight_kg)')
+      .select('id, offered_at, responded_at, status, shipments(origin, destination, estimated_cost, total_weight)')
       .eq('driver_id', drId)
-      .in('status', ['accepted', 'declined', 'expired', 'cancelled'])
+      .in('status', ['delivered', 'accepted', 'declined', 'expired', 'cancelled'])
       .order('offered_at', { ascending: false })
       .limit(50)
 
@@ -54,7 +56,23 @@ export default function DriverHistoryPage() {
 
     const { data, error } = await query
     if (error) toast.error('Failed to load trip history')
-    setTrips((data as unknown as TripRecord[]) || [])
+    setTrips(((data ?? []) as Record<string, unknown>[]).map((trip) => {
+      const shipment = Array.isArray(trip.shipments) ? trip.shipments[0] : trip.shipments
+      return {
+        id: trip.id as string,
+        offered_at: trip.offered_at as string,
+        responded_at: (trip.responded_at as string | null) ?? null,
+        status: trip.status as TripRecord['status'],
+        shipments: shipment
+          ? {
+              origin: (shipment as Record<string, unknown>).origin as string,
+              destination: (shipment as Record<string, unknown>).destination as string,
+              estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
+              total_weight: Number((shipment as Record<string, unknown>).total_weight ?? 0),
+            }
+          : undefined,
+      }
+    }))
     setLoading(false)
   }, [filter])
 
@@ -76,7 +94,7 @@ export default function DriverHistoryPage() {
 
         {/* Filter */}
         <div className="flex gap-2 px-4 pb-3">
-          {(['all', 'accepted', 'declined'] as const).map(f => (
+          {(['all', 'delivered', 'declined'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -115,13 +133,13 @@ export default function DriverHistoryPage() {
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
                           <p className="text-sm text-slate-700 dark:text-slate-300 truncate">
-                            {trip.shipments.origin_address}
+                            {trip.shipments.origin}
                           </p>
                         </div>
                         <div className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
                           <p className="text-sm text-slate-700 dark:text-slate-300 truncate">
-                            {trip.shipments.destination_address}
+                            {trip.shipments.destination}
                           </p>
                         </div>
                       </>
@@ -137,11 +155,13 @@ export default function DriverHistoryPage() {
 
                 {trip.shipments && (
                   <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 mb-2">
-                    <div className="flex items-center gap-1">
-                      <MapPin size={11} />
-                      {trip.shipments.estimated_distance_km} km
-                    </div>
-                    <div>{trip.shipments.weight_kg} kg</div>
+                    <div>{trip.shipments.total_weight} kg</div>
+                    {trip.shipments.estimated_cost > 0 && (
+                      <div className="flex items-center gap-1">
+                        <MapPin size={11} />
+                        {formatCurrency(trip.shipments.estimated_cost)}
+                      </div>
+                    )}
                   </div>
                 )}
 

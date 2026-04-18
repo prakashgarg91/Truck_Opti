@@ -18,6 +18,7 @@ import { useLanguageStore } from '../stores/languageStore'
 import { AdvancedBinPacker, PACKING_COLORS, createTruckRecommendation, recommendTrucks, type PackedBox, type SaleOrderItem, type TruckRecommendation, type TruckType } from '../lib/packing'
 import { logger } from '../utils/logger'
 import { formatPercent, formatCurrency } from '../utils/formatters'
+import { generateShipmentId } from '../utils/shipmentId'
 
 // ============= LANGUAGE =============
 type Language = 'en' | 'hi'
@@ -661,8 +662,8 @@ export default function PackingPage() {
 
       // Create shipment with complete data
       await shipmentsSupabaseApi.create({
-        shipment_id: `SHP-${Date.now()}`,
-        customer_id: bookForm.customerId || '',
+        shipment_id: generateShipmentId(),
+        customer_id: bookForm.customerId || null,
         created_by: user.id,  // Required for RLS policy
         truck_id: selectedRecommendation.truck.id,
         origin: bookForm.origin,

@@ -27,6 +27,36 @@ const getAuthErrorMessage = (
   return fallback
 }
 
+const getPasswordAuthErrorMessage = (
+  error: { code?: string; message?: string } | null | undefined,
+  fallback: string
+): string => {
+  const code = error?.code
+  const message = error?.message?.toLowerCase() || ''
+
+  if (code === 'invalid_credentials' || message.includes('invalid login credentials')) {
+    return 'Incorrect email or password. Please try again.'
+  }
+
+  if (message.includes('email not confirmed')) {
+    return 'Please confirm your email before signing in with your password.'
+  }
+
+  if (message.includes('user already registered')) {
+    return 'An account with this email already exists. Please sign in instead.'
+  }
+
+  if (message.includes('password') && message.includes('weak')) {
+    return 'Use at least 8 characters with letters and numbers.'
+  }
+
+  if (message.includes('same password')) {
+    return 'Choose a new password that is different from your current password.'
+  }
+
+  return fallback
+}
+
 const getSafeAuthFailureMessage = (error: unknown, fallback: string): string => {
   if (error instanceof UserFacingError) {
     return error.message
@@ -105,9 +135,9 @@ export interface Customer {
 export interface Shipment {
   id: string
   shipment_id: string
-  customer_id: string
+  customer_id: string | null
   created_by?: string
-  truck_id: string
+  truck_id: string | null
   invoice_number?: string | null
   lr_number?: string | null
   origin: string
@@ -556,6 +586,91 @@ export const authSupabaseApi = {
         getSafeAuthFailureMessage(
           error,
           'Unable to start email signup right now. Please try again later or use Google sign-up.'
+        )
+      )
+    }
+  },
+
+  async signInWithEmailPassword(email: string, password: string) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) {
+        throw new UserFacingError(
+          getPasswordAuthErrorMessage(error, 'Unable to sign in with password right now. Please try again later.')
+        )
+      }
+      return data
+    } catch (error) {
+      throw new UserFacingError(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to sign in with password right now. Please try again later.'
+        )
+      )
+    }
+  },
+
+  async signUpWithEmailPassword(email: string, password: string, name?: string) {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: name ? { full_name: name, name } : undefined,
+        },
+      })
+      if (error) {
+        throw new UserFacingError(
+          getPasswordAuthErrorMessage(error, 'Unable to create a password account right now. Please try again later.')
+        )
+      }
+      return data
+    } catch (error) {
+      throw new UserFacingError(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to create a password account right now. Please try again later.'
+        )
+      )
+    }
+  },
+
+  async resetPasswordForEmail(email: string): Promise<void> {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
+      if (error) {
+        throw new UserFacingError(
+          getPasswordAuthErrorMessage(error, 'Unable to send a password reset link right now. Please try again later.')
+        )
+      }
+    } catch (error) {
+      throw new UserFacingError(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to send a password reset link right now. Please try again later.'
+        )
+      )
+    }
+  },
+
+  async updatePassword(password: string): Promise<void> {
+    try {
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) {
+        throw new UserFacingError(
+          getPasswordAuthErrorMessage(error, 'Unable to update your password right now. Please try again later.')
+        )
+      }
+    } catch (error) {
+      throw new UserFacingError(
+        getSafeAuthFailureMessage(
+          error,
+          'Unable to update your password right now. Please try again later.'
         )
       )
     }

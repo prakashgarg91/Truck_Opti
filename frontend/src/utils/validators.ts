@@ -23,6 +23,12 @@ export const emailSchema = z.string()
   .min(5, 'Email is too short')
   .max(100, 'Email is too long')
 
+export const passwordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(72, 'Password must be 72 characters or less')
+  .regex(/[A-Za-z]/, 'Password must include at least one letter')
+  .regex(/[0-9]/, 'Password must include at least one number')
+
 // GSTIN: 15-char GST number (Standard Indian GST format)
 // Format: 2 digits (state) + 5 letters (PAN entity) + 4 digits + 1 letter + 1 char (Z) + 1 check digit
 export const gstinSchema = z.string().regex(
@@ -237,6 +243,8 @@ export function getFieldErrors<T extends z.ZodObject<any>>(
 export default {
   phoneSchema,
   phoneInputSchema,
+  emailSchema,
+  passwordSchema,
   gstinSchema,
   pincodeSchema,
   dimensionSchema,
