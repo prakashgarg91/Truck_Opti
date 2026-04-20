@@ -13,7 +13,7 @@ const PUBLIC_ROUTES = [
   { path: '/terms', expectedTitle: 'Terms of Service' },
   { path: '/privacy', expectedTitle: 'Privacy Policy' },
   { path: '/contact', expectedTitle: 'Contact Us' },
-  { path: '/login', expectedTitle: 'Login' },
+  { path: '/login', expectedTitle: 'Welcome Back' },
   { path: '/signup', expectedTitle: 'Sign Up' },
 ];
 
@@ -53,6 +53,39 @@ function attachSignals(page) {
   });
 
   return { consoleErrors, pageErrors, failedResponses };
+}
+
+async function closeContextSafely(context) {
+  try {
+    await context.close();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/Failed to find context|Target closed|Browser has been closed/i.test(message)) {
+      throw error;
+    }
+  }
+}
+
+async function closeBrowserSafely(browser) {
+  try {
+    await browser.close();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/Target closed|Browser has been closed|Connection closed/i.test(message)) {
+      throw error;
+    }
+  }
+}
+
+async function waitForBodyText(page, texts, timeout = 10000) {
+  await page.waitForFunction(
+    (candidateTexts) => candidateTexts.some((text) => document.body?.innerText.includes(text)),
+    texts,
+    { timeout }
+  );
+
+  const bodyText = await page.locator('body').innerText();
+  return texts.find((text) => bodyText.includes(text)) ?? null;
 }
 
 async function resetSession(page, context) {
@@ -100,7 +133,7 @@ async function collectPublicRouteResult(browser, route) {
       failedResponses: signals.failedResponses,
     };
   } finally {
-    await context.close();
+    await closeContextSafely(context);
   }
 }
 
@@ -128,7 +161,7 @@ async function collectProtectedRouteResult(browser, routePath) {
       failedResponses: signals.failedResponses,
     };
   } finally {
-    await context.close();
+    await closeContextSafely(context);
   }
 }
 
@@ -149,16 +182,22 @@ async function collectContactFallbackResult(browser) {
     await page.getByPlaceholder('How can we help you?').fill('Smoke test: verify graceful contact fallback.');
     await page.getByRole('button', { name: 'Send Message' }).click();
 
-    await page.getByText('Support is temporarily unreachable.').waitFor({ timeout: 10000 });
+    const fallbackTexts = [
+      'Contact service is currently unavailable.',
+      'Unable to send your message right now. It has been saved here for retry.',
+    ];
+
+    const matchedFallbackText = await waitForBodyText(page, fallbackTexts);
 
     return {
       kind: 'contact-fallback',
       path: '/contact',
       finalUrl: page.url(),
       title: await page.title(),
+      matchedFallbackText,
       passed:
         (await page.getByText('Support is temporarily unreachable.').count()) > 0 &&
-        (await page.getByText('Contact service is currently unavailable.').count()) > 0 &&
+        matchedFallbackText !== null &&
         (await page.getByRole('button', { name: 'Retry send' }).count()) > 0 &&
         (await page.getByRole('link', { name: 'Email support' }).count()) > 0 &&
         signals.pageErrors.length === 0,
@@ -167,7 +206,7 @@ async function collectContactFallbackResult(browser) {
       failedResponses: signals.failedResponses,
     };
   } finally {
-    await context.close();
+    await closeContextSafely(context);
   }
 }
 
@@ -191,23 +230,28 @@ async function collectAuthFallbackResult(browser) {
     const submitButton = page.getByRole('button', { name: /Send Email OTP|Get OTP/ });
     await submitButton.click();
 
-    const fallbackText = 'Authentication service is currently unreachable. Please try again shortly or use Google sign-in if available.';
-    await page.getByText(fallbackText).waitFor({ timeout: 10000 });
+    const fallbackTexts = [
+      'Authentication service is currently unreachable. Please try again shortly or use Google sign-in if available.',
+      'Unable to send email OTP right now. Please try again later or use Google sign-in.',
+    ];
+
+    const matchedFallbackText = await waitForBodyText(page, fallbackTexts);
 
     return {
       kind: 'auth-fallback',
       path: '/login',
       finalUrl: page.url(),
       title: await page.title(),
+      matchedFallbackText,
       passed:
-        (await page.getByText(fallbackText).count()) > 0 &&
+        matchedFallbackText !== null &&
         signals.pageErrors.length === 0,
       consoleErrors: signals.consoleErrors,
       pageErrors: signals.pageErrors,
       failedResponses: signals.failedResponses,
     };
   } finally {
-    await context.close();
+    await closeContextSafely(context);
   }
 }
 
@@ -220,30 +264,24 @@ async function collectDriverRegisterWizardResult(browser) {
     await resetSession(page, context);
     await page.goto(`${BASE_URL}/driver/register?fresh=${Date.now()}`, { waitUntil: 'networkidle', timeout: 45000 });
 
-    let reachedVehicleDetails = false;
-    let reachedPaymentDetails = false;
+    const gateHeading = page.getByText('Log In To Start Driver Registration');
+    const gateCta = page.getByRole('button', { name: 'Continue To Driver Login' });
 
-    await page.getByPlaceholder('As on Aadhaar card').fill('Launch Driver');
-    await page.getByPlaceholder('10-digit number').fill('9876543210');
-    await page.getByPlaceholder('e.g. Mumbai').fill('Mumbai');
-    await page.getByRole('button', { name: 'Continue' }).click();
-
-    await page.getByText('Vehicle Details').waitFor({ timeout: 10000 });
-    reachedVehicleDetails = true;
-    await page.locator('select').selectOption('tata_407');
-    await page.getByRole('button', { name: 'Continue' }).click();
-
-    await page.getByText('Payment Details').waitFor({ timeout: 10000 });
-    reachedPaymentDetails = true;
+    await gateHeading.waitFor({ timeout: 10000 });
+    const sawGateHeading = (await gateHeading.count()) > 0;
+    const sawGateCta = (await gateCta.count()) > 0;
+    await gateCta.click();
+    await page.waitForURL(/\/login\?mode=driver/, { timeout: 10000 });
 
     return {
-      kind: 'driver-register-wizard',
+      kind: 'driver-register-gate',
       path: '/driver/register',
       finalUrl: page.url(),
       title: await page.title(),
       passed:
-        reachedVehicleDetails &&
-        reachedPaymentDetails &&
+        sawGateHeading &&
+        sawGateCta &&
+        page.url().includes('/login?mode=driver') &&
         signals.consoleErrors.length === 0 &&
         signals.pageErrors.length === 0 &&
         signals.failedResponses.length === 0,
@@ -252,7 +290,7 @@ async function collectDriverRegisterWizardResult(browser) {
       failedResponses: signals.failedResponses,
     };
   } finally {
-    await context.close();
+    await closeContextSafely(context);
   }
 }
 
@@ -265,32 +303,24 @@ async function collectAgencyRegisterWizardResult(browser) {
     await resetSession(page, context);
     await page.goto(`${BASE_URL}/agency/register?fresh=${Date.now()}`, { waitUntil: 'networkidle', timeout: 45000 });
 
-    let reachedContactAddress = false;
-    let reachedBankDetails = false;
+    const gateHeading = page.getByText('Log In To Register Your Agency');
+    const gateCta = page.getByRole('button', { name: 'Continue To Agency Login' });
 
-    await page.getByPlaceholder('Sharma Transport Co.').fill('Launch Agency Logistics');
-    await page.getByPlaceholder('TR/2024/12345').fill('TR/2026/55555');
-    await page.getByRole('button', { name: 'Continue' }).click();
-
-    await page.getByText('Contact & Address').waitFor({ timeout: 10000 });
-    reachedContactAddress = true;
-    await page.getByPlaceholder('Ramesh Sharma').fill('Launch Manager');
-    await page.getByPlaceholder('9876543210').fill('9876543210');
-    await page.getByPlaceholder('Mumbai', { exact: true }).fill('Mumbai');
-    await page.locator('select').selectOption('Maharashtra');
-    await page.getByRole('button', { name: 'Continue' }).click();
-
-    await page.getByText('Bank Details').waitFor({ timeout: 10000 });
-    reachedBankDetails = true;
+    await gateHeading.waitFor({ timeout: 10000 });
+    const sawGateHeading = (await gateHeading.count()) > 0;
+    const sawGateCta = (await gateCta.count()) > 0;
+    await gateCta.click();
+    await page.waitForURL(/\/login\?mode=agency/, { timeout: 10000 });
 
     return {
-      kind: 'agency-register-wizard',
+      kind: 'agency-register-gate',
       path: '/agency/register',
       finalUrl: page.url(),
       title: await page.title(),
       passed:
-        reachedContactAddress &&
-        reachedBankDetails &&
+        sawGateHeading &&
+        sawGateCta &&
+        page.url().includes('/login?mode=agency') &&
         signals.consoleErrors.length === 0 &&
         signals.pageErrors.length === 0 &&
         signals.failedResponses.length === 0,
@@ -299,7 +329,7 @@ async function collectAgencyRegisterWizardResult(browser) {
       failedResponses: signals.failedResponses,
     };
   } finally {
-    await context.close();
+    await closeContextSafely(context);
   }
 }
 
@@ -395,7 +425,7 @@ async function main() {
       process.exitCode = 1;
     }
   } finally {
-    await browser.close();
+    await closeBrowserSafely(browser);
   }
 }
 

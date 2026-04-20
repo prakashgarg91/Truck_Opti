@@ -120,8 +120,8 @@
 
 | ID | Task | Priority | Type | Status |
 |----|------|----------|------|--------|
-| T-142 | Add password auth as a secondary login path for demo, reviewer, partner, and office accounts | P0 | 🏗️ Architecture | 🟡 IN PROGRESS — password login/signup/reset ships behind `VITE_AUTH_PASSWORD_ENABLED`, the April 18 Supabase migrations are live, and driver/agency entry-surface browser proof is complete; seeded-account auth proof is still blocked because the live project has no demo/reviewer identities and no linked driver/agency `user_id` rows |
-| T-143 | Provision role-scoped demo IDs and reviewer identities for each major interface | P1 | 🧪 Product | 🟡 PLANNED — target two seeded demo IDs per interface family plus dedicated reviewer accounts; scenario mapping now includes retail, enterprise, micro-fleet, super-admin, ops, and partner personas; credentials must stay outside git |
+| T-142 | Add password auth as a secondary login path for demo, reviewer, partner, and office accounts | P0 | 🏗️ Architecture | 🟡 IN PROGRESS — password login/signup/reset now ships behind `VITE_AUTH_PASSWORD_ENABLED`, the April 18 Supabase migrations are live through `20260418005000`, and live production proof is complete for seeded driver/agency/customer login-ID flows on `www.truckopti.in`; remaining scope is safe admin plus reviewer/partner/office persona coverage and real email OTP / Google verification |
+| T-143 | Provision role-scoped demo IDs and reviewer identities for each major interface | P1 | 🧪 Product | 🟡 IN PROGRESS — first live demo identities now exist for `demo.driver`, `demo.agency`, and `demo.customer` with linked `user_id` ownership and working password/login-ID proof; remaining scope is second demo accounts per interface family plus reviewer/admin/partner/office personas, with credentials kept outside git |
 | T-144 | Introduce office-permission bundles and partner-console access model | P1 | 🏗️ Platform | 🟡 PLANNED — refined bundle targets now include `security_admin`, `support_lead`, and `demo_operator`; partner API onboarding and office-team rights stay defined in `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md` |
 | T-145 | Define onboarding-track and tenant-boundary contract for customer, driver, agency, partner, and office users | P1 | 🏗️ Architecture | 🟡 PLANNED — formalize `organization_id`, `branch_id`, `booking_type`, `delegated_by`, `source_system`, and onboarding-track ownership before portal expansion |
 | T-146 | Define internal API and typed event taxonomy for partner, agency, customer, and office flows | P1 | 🏗️ Platform | 🟡 PLANNED — establish the canonical service and event contract before building the partner console or deeper office workflow automation |
@@ -139,7 +139,7 @@
 | T-111 | Google OAuth production credentials | P0 | External | Supabase dashboard + Google Console |
 | T-113 | SMS/WhatsApp OTP via Twilio | P2 | External | Optional after launch unless SMS/WhatsApp auth must be re-enabled; use Supabase Phone with Twilio Verify or Twilio Programmable Messaging, then set `VITE_AUTH_PHONE_OTP_ENABLED=true` |
 | T-115 | Verify production DB backup / PITR | P1 | External | Supabase dashboard → Backups |
-| T-114 | Authenticated smoke test (all pages) | P1 | Manual | Browser test with real account |
+| T-114 | Authenticated smoke test (all pages) | P1 | Manual | Driver/agency/customer password proof is done on production; remaining manual proof is safe admin plus real email OTP / Google-account sign-in |
 | T-131 | Reconcile GitHub Dependabot alert count with local audits | P1 | Security | RESOLVED 2026-04-13: authenticated `gh api` query with `state=open` returned no open alerts; the larger alert inventory was historical fixed-state data |
 | T-107 | Google Maps API key (optional) | P2 | External | Leaflet fallback works; nice-to-have |
 

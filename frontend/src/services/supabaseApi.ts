@@ -102,6 +102,9 @@ const getSafeAuthFailureMessage = (error: unknown, fallback: string): string => 
     lowered.includes('failed to fetch') ||
     lowered.includes('networkerror') ||
     lowered.includes('network request failed') ||
+    lowered.includes('internetdisconnected') ||
+    lowered.includes('internet disconnected') ||
+    lowered.includes('err_internet_disconnected') ||
     lowered.includes('err_name_not_resolved') ||
     lowered.includes('load failed')
   ) {

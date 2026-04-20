@@ -248,26 +248,34 @@ CREATE POLICY "Driver locations: shipment stakeholders read" ON public.driver_lo
     )
   );
 
-DROP POLICY IF EXISTS "admin_manages_payouts" ON public.driver_payouts;
-CREATE POLICY "admin_manages_payouts" ON public.driver_payouts
-  FOR ALL TO authenticated
-  USING (public.is_admin_user())
-  WITH CHECK (public.is_admin_user());
+DO $$
+BEGIN
+  IF to_regclass('public.driver_payouts') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "admin_manages_payouts" ON public.driver_payouts';
+    EXECUTE 'CREATE POLICY "admin_manages_payouts" ON public.driver_payouts
+      FOR ALL TO authenticated
+      USING (public.is_admin_user())
+      WITH CHECK (public.is_admin_user())';
+  END IF;
 
-DROP POLICY IF EXISTS "admin reads inquiries" ON public.contact_inquiries;
-CREATE POLICY "admin reads inquiries"
-  ON public.contact_inquiries
-  FOR SELECT
-  TO authenticated
-  USING (public.is_admin_user());
+  IF to_regclass('public.contact_inquiries') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "admin reads inquiries" ON public.contact_inquiries';
+    EXECUTE 'CREATE POLICY "admin reads inquiries"
+      ON public.contact_inquiries
+      FOR SELECT
+      TO authenticated
+      USING (public.is_admin_user())';
 
-DROP POLICY IF EXISTS "admin updates inquiries" ON public.contact_inquiries;
-CREATE POLICY "admin updates inquiries"
-  ON public.contact_inquiries
-  FOR UPDATE
-  TO authenticated
-  USING (public.is_admin_user())
-  WITH CHECK (public.is_admin_user());
+    EXECUTE 'DROP POLICY IF EXISTS "admin updates inquiries" ON public.contact_inquiries';
+    EXECUTE 'CREATE POLICY "admin updates inquiries"
+      ON public.contact_inquiries
+      FOR UPDATE
+      TO authenticated
+      USING (public.is_admin_user())
+      WITH CHECK (public.is_admin_user())';
+  END IF;
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION public.ensure_shipment_document_numbers(p_shipment_id UUID)
 RETURNS TABLE (invoice_number TEXT, lr_number TEXT) AS $$
