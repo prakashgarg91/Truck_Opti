@@ -490,7 +490,7 @@ export default function DriverDashboardPage() {
         </div>
       )}
 
-      <div className="p-4 space-y-4 max-w-md mx-auto">
+      <div className="p-4 lg:p-8 space-y-4 max-w-2xl lg:max-w-5xl mx-auto">
         {/* Status Banner for non-approved drivers */}
         {driver.status !== 'approved' && (
           <div className={`rounded-2xl p-4 ${statusInfo.color}`}>
@@ -541,7 +541,7 @@ export default function DriverDashboardPage() {
         )}
 
         {/* Today's Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-center">
             <Wallet size={20} className="text-green-500 mx-auto mb-1" />
             <p className="text-lg font-bold text-slate-800 dark:text-slate-100">

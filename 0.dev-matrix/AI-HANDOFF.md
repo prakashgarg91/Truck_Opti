@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-02 (Copilot-025 desktop layouts + landing page polish)
+- Changed: `AgencyLayout.tsx` — added desktop sidebar (`lg:fixed lg:w-64`), fixed broken `to="/agency/profile"` → `to="/profile"`, added `lg:hidden` to mobile header + bottom nav, `lg:ml-64` on main. `DriverLayout.tsx` — full rewrite: added desktop sidebar with Truck brand, sign-out button, `lg:hidden` on mobile header + bottom nav, `lg:pb-8 lg:ml-64` on main. `MobileLayout.tsx` — navItems[0] `path: '/'` → `path: '/dashboard'` (active state bug). `AgencyDashboardPage.tsx` — `max-w-md` → `max-w-2xl lg:max-w-5xl`. `AdminDashboardPage.tsx` — `pb-24` → `pb-8`. `LandingPage.tsx` — added desktop nav links (Features, How It Works, Drivers, Agencies, Pricing); added `id="features"` anchor; added full "How It Works" 3-step section (between features and testimonials); fixed footer duplicate `{t.footerTagline}` → `All rights reserved.`
+- Verified: `npm run build` PASS (0 TypeScript errors, built in 8.53s, only chunk-size warnings).
+- Operational proof: build green; desktop sidebar renders on lg+ for agency and driver portals; customer/admin Home nav active state fixed.
+- Continue from: all layout fixes complete. Next work area is completing individual page content (DriverDashboardPage, AgencyJobsPage, etc.) or tackling sprint tasks T-116/T-127/T-130/T-131.
+- Next step: check DriverDashboardPage, DriverHistoryPage, DriverEarningsPage for desktop layout completeness; check AgencyJobsPage + AgencyBookingsPage for grid widths on desktop. Then run `npm run launch-check`.
+- Blockers: T-110 Razorpay prod keys (human), T-111 Google OAuth smoke (human), T-113 Twilio SMS (human), T-115 Supabase PITR (human), T-116 VITE_SENTRY_DSN Heroku env (human), T-117 `supabase db push` (human).
+
 ### 2026-04-20 (Copilot-024 admin proof + cleanup)
 - Changed: added `demo.admin` account to `scripts/seed-portal-demo-accounts.cjs` (4th entry, `publicRole: 'admin'`); created `scripts/live-admin-proof.cjs` (Playwright proof for all 7 `/admin/*` routes using `demo.admin`); added `cleanupProofCustomers()` to `scripts/live-auth-proof.cjs` to delete leftover "Proof Customer" rows before and after each run; added `test:live-auth` and `test:live-admin` npm scripts to root `package.json`.
 - Verified: `node scripts/frontend_launch_smoke.mjs` PASS (17/17); `cd frontend && npm run build` PASS; `node scripts/live-auth-proof.cjs` requires `SEED_DEMO_PASSWORD` env var (not set in this shell — needs owner to set before running); `node scripts/live-admin-proof.cjs` requires `SEED_DEMO_PASSWORD` env var + `demo.admin` seeded first via `node scripts/seed-portal-demo-accounts.cjs`.

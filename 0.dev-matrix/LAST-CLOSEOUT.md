@@ -1,9 +1,9 @@
 # Last Closeout
 
-- Time: 2026-04-20 20:05:23
+- Time: 2026-04-20 20:11:07
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/TASK.md |  M frontend/src/services/supabaseApi.ts |  M scripts/frontend_launch_smoke.mjs |  M supabase/migrations/20260418003000_harden_role_claims_and_add_login_ids.sql | ?? 0.dev-matrix/test-reports/live-auth-proof.json | ?? supabase/migrations/20260418005000_restore_driver_payouts_contract.sql
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-20_200523.log
+- Git status:  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/TASK.md |  M 0.dev-matrix/test-reports/glue-check-report.json | ?? 0.dev-matrix/test-reports/live-auth-proof.json
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-20_201107.log
 
 ## AI Handoff
 - Latest handoff date: 2026-04-20
@@ -20,16 +20,16 @@
 - Next earning step: finish live payment credentials, verify authenticated flows, and onboard the first paying logistics customers.
 
 ## Launch Verification
-- State: failed
-- Summary: launch-check failed; see log
-- Log: 0.dev-matrix/test-reports/launch-check-20260418_170000.log
+- State: passed
+- Summary: launch-check passed
+- Log: 0.dev-matrix/test-reports/launch-check-20260420_200917.log
 
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
-- [FAIL] background launch-check - latest background launch-check failed - launch-check failed; see log
+- [PASS] background launch-check - launch-check passed
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
 - [PASS] status update discipline - runtime status files have real content changes
-- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: frontend/src/services/supabaseApi.ts, scripts/frontend_launch_smoke.mjs, supabase/migrations/20260418003000_harden_role_claims_and_add_login_ids.sql, supabase/migrations/20260418005000_restore_driver_payouts_contract.sql
+- [PASS] working tree cleanliness - only runtime handoff/evidence files are dirty before report write
 - [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
@@ -37,5 +37,5 @@
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 8
-- Fail: 2
+- Pass: 10
+- Fail: 0

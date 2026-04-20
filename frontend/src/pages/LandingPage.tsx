@@ -192,6 +192,41 @@ export default function LandingPage() {
               </p>
             </div>
           </Link>
+
+          {/* Desktop Nav Links */}
+          <nav className="hidden md:flex items-center gap-1">
+            <a
+              href="#features"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
+            >
+              {language === 'en' ? 'Features' : 'विशेषताएं'}
+            </a>
+            <a
+              href="#how-it-works"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
+            >
+              {language === 'en' ? 'How It Works' : 'कैसे काम करता है'}
+            </a>
+            <Link
+              to="/driver/register"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
+            >
+              {language === 'en' ? 'Drivers' : 'ड्राइवर'}
+            </Link>
+            <Link
+              to="/agency/register"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
+            >
+              {language === 'en' ? 'Agencies' : 'एजेंसी'}
+            </Link>
+            <Link
+              to="/pricing"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
+            >
+              {language === 'en' ? 'Pricing' : 'मूल्य'}
+            </Link>
+          </nav>
+
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={toggleLanguage}
@@ -318,7 +353,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="px-4 py-16 lg:py-20">
+      <section id="features" className="px-4 py-16 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary-600 dark:text-primary-300">
@@ -385,6 +420,78 @@ export default function LandingPage() {
               <div key={stat.label} className="rounded-[24px] bg-white/5 p-6 ring-1 ring-white/10 backdrop-blur-sm">
                 <div className="text-4xl font-black tracking-tight text-white">{stat.value}</div>
                 <p className="mt-3 text-sm font-medium text-slate-300">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section id="how-it-works" className="bg-slate-50 dark:bg-slate-900/60 px-4 py-16 lg:py-20">
+        <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-2xl text-center mb-12">
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary-600 dark:text-primary-300">
+              {language === 'en' ? 'How It Works' : 'कैसे काम करता है'}
+            </p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              {language === 'en' ? 'Get started in 3 simple steps' : '3 आसान चरणों में शुरू करें'}
+            </h2>
+            <p className="mt-4 text-base text-slate-600 dark:text-slate-400">
+              {language === 'en'
+                ? 'No complex setup. Book your first truck in minutes.'
+                : 'कोई जटिल सेटअप नहीं। मिनटों में अपना पहला ट्रक बुक करें।'}
+            </p>
+          </div>
+          <div className="grid gap-8 md:grid-cols-3">
+            {[
+              {
+                step: '01',
+                icon: CheckCircle2,
+                color: 'text-primary-600 dark:text-primary-400',
+                bg: 'bg-primary-50 dark:bg-primary-950/40',
+                title: language === 'en' ? 'Create your account' : 'अपना खाता बनाएं',
+                desc: language === 'en'
+                  ? 'Sign up as a business, agency, or driver. Takes under 2 minutes.'
+                  : 'बिज़नेस, एजेंसी या ड्राइवर के रूप में साइन अप करें। 2 मिनट से कम।'
+              },
+              {
+                step: '02',
+                icon: Package,
+                color: 'text-emerald-600 dark:text-emerald-400',
+                bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+                title: language === 'en' ? 'Plan your shipment' : 'अपना शिपमेंट प्लान करें',
+                desc: language === 'en'
+                  ? 'Add cargo details and get AI-optimized 3D packing and route in seconds.'
+                  : 'कार्गो डिटेल्स जोड़ें और सेकंड में AI-ऑप्टिमाइज़्ड 3D पैकिंग और रूट पाएं।'
+              },
+              {
+                step: '03',
+                icon: Truck,
+                color: 'text-orange-600 dark:text-orange-400',
+                bg: 'bg-orange-50 dark:bg-orange-950/40',
+                title: language === 'en' ? 'Dispatch & track live' : 'डिस्पैच करें और लाइव ट्रैक करें',
+                desc: language === 'en'
+                  ? 'Assign a driver and follow the shipment in real time from pickup to delivery.'
+                  : 'ड्राइवर असाइन करें और पिकअप से डिलीवरी तक शिपमेंट को रीयल टाइम में फॉलो करें।'
+              }
+            ].map(({ step, icon: Icon, color, bg, title, desc }, i) => (
+              <div
+                key={i}
+                className="relative flex flex-col gap-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-7 shadow-sm"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl ${bg} flex items-center justify-center`}>
+                    <Icon size={24} className={color} />
+                  </div>
+                  <span className="text-4xl font-black text-slate-100 dark:text-slate-700 select-none">{step}</span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h3>
+                <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">{desc}</p>
+                {i < 2 && (
+                  <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 z-10">
+                    <ArrowRight size={24} className="text-slate-300 dark:text-slate-600" />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -486,7 +593,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-8 border-t border-slate-800 pt-6 text-sm text-slate-500">
-            © 2026 TruckOpti. {t.footerTagline}
+            © 2026 TruckOpti. All rights reserved.
           </div>
         </div>
       </footer>

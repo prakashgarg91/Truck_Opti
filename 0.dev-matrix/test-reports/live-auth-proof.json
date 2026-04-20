@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-04-18T12:55:47.161Z",
+  "baseUrl": "https://www.truckopti.in",
+  "checks": [
+    {
+      "key": "driver",
+      "protectedPath": "/driver/dashboard",
+      "consoleErrors": [],
+      "screenshots": [
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\driver-driver-dashboard.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\driver-driver-earnings.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\driver-driver-history.png"
+      ]
+    },
+    {
+      "key": "agency",
+      "protectedPath": "/agency/dashboard",
+      "consoleErrors": [],
+      "screenshots": [
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-dashboard.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-fleet.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-jobs.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-drivers.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-billing.png"
+      ]
+    },
+    {
+      "key": "customer",
+      "protectedPath": "/management/customers",
+      "consoleErrors": [],
+      "screenshots": [
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-management-customers.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-created-record.png"
+      ],
+      "createdCustomer": "Proof Customer 1776516966302"
+    }
+  ],
+  "postRunCleanup": [
+    {
+      "entity": "customer",
+      "name": "Proof Customer 1776516966302",
+      "verifiedRemoved": true
+    }
+  ]
+}

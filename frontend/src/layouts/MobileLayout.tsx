@@ -34,7 +34,7 @@ import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 
 const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Home', labelHi: 'होम' },
+  { path: '/dashboard', icon: LayoutDashboard, label: 'Home', labelHi: 'होम' },
   { path: '/sale-orders', icon: FileText, label: 'Orders', labelHi: 'ऑर्डर्स' },
   { path: '/packing', icon: Package, label: 'Pack', labelHi: 'पैकिंग' },
   { path: '/routes', icon: Route, label: 'Routes', labelHi: 'रूट' },

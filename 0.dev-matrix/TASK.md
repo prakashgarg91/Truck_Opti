@@ -2,6 +2,7 @@
 
 > **Task Queue + Claims - Multi-Agent Coordination**
 > Claim before working. Update when done.
+> **2026-04-20 close-day**: admin proof infrastructure complete; smoke 17/17 PASS; launch-check 17/17 PASS. Next: run seed + auth proof scripts with SEED_DEMO_PASSWORD set.
 
 ---
 

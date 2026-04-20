@@ -82,7 +82,7 @@ export default function ManagementPage() {
   ]
 
   return (
-    <div className="p-4 space-y-6 pb-8">
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 pb-8 lg:pb-12">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -101,7 +101,7 @@ export default function ManagementPage() {
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 lg:grid-cols-3">
         {managementCards.map((card, index) => (
           <div
             key={card.title}

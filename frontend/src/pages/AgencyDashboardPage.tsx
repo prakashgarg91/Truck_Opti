@@ -117,15 +117,15 @@ export default function AgencyDashboardPage() {
   }
 
   const statusConfig = {
-    pending:   { label: 'Verification Pending',  color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' },
-    approved:  { label: 'Verified ✓',             color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    rejected:  { label: 'Application Rejected',  color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
-    suspended: { label: 'Account Suspended',     color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400' },
+    pending: { label: 'Verification Pending', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' },
+    approved: { label: 'Verified ✓', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' },
+    rejected: { label: 'Application Rejected', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
+    suspended: { label: 'Account Suspended', color: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400' },
   }
   const statusInfo = statusConfig[agency.status]
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
+    <div className="p-4 space-y-4 max-w-2xl mx-auto lg:max-w-5xl lg:p-8">
       {/* Status Banner */}
       {agency.status !== 'approved' && (
         <div className={`rounded-2xl p-4 ${statusInfo.color}`}>
@@ -137,8 +137,8 @@ export default function AgencyDashboardPage() {
                 {agency.status === 'pending'
                   ? 'Your application is under review. We\'ll notify you within 24–48 hours.'
                   : agency.status === 'rejected'
-                  ? 'Contact support to reapply or resolve issues.'
-                  : 'Contact support for more information.'}
+                    ? 'Contact support to reapply or resolve issues.'
+                    : 'Contact support for more information.'}
               </p>
             </div>
           </div>
@@ -166,7 +166,7 @@ export default function AgencyDashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Briefcase size={16} className="text-blue-500" />
@@ -220,7 +220,7 @@ export default function AgencyDashboardPage() {
       {/* Quick Actions */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <button
             onClick={() => navigate('/agency/jobs')}
             className="flex items-center gap-2 py-3 px-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-xl text-sm font-medium"
