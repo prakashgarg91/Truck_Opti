@@ -9,6 +9,8 @@
     "test:live-buttons": "node scripts/public_frontend_smoke.mjs",
     "test:public-smoke": "node scripts/public_frontend_smoke.mjs",
     "test:frontend-smoke": "node scripts/frontend_launch_smoke.mjs",
+    "test:live-auth": "node scripts/live-auth-proof.cjs",
+    "test:live-admin": "node scripts/live-admin-proof.cjs",
     "test:prod-config": "node scripts/production_config_audit.mjs",
     "graph:update": "powershell -ExecutionPolicy Bypass -File scripts/graphify-refresh.ps1",
     "deep-scan": "node 0.dev-matrix/deep-error-scanner.mjs",
