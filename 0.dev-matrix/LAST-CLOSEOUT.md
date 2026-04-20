@@ -1,17 +1,17 @@
 # Last Closeout
 
-- Time: 2026-04-20 20:11:07
+- Time: 2026-04-20 21:14:22
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/TASK.md |  M 0.dev-matrix/test-reports/glue-check-report.json | ?? 0.dev-matrix/test-reports/live-auth-proof.json
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-20_201107.log
+- Git status:  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/STATE.md |  M 0.dev-matrix/TASK.md
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-20_211421.log
 
 ## AI Handoff
 - Latest handoff date: 2026-04-20
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: smoke 17/17 PASS on current tree. Auth proof and admin proof scripts are ready but require owner to supply `SEED_DEMO_PASSWORD` in the shell (`$env:SEED_DEMO_PASSWORD = "<password>"`) then run `node scripts/seed-portal-demo-accounts.cjs` (to add demo.admin), then `node scripts/live-auth-proof.cjs` and `node scripts/live-admin-proof.cjs`.
-- Continue from: once `SEED_DEMO_PASSWORD` is available in the shell, run: (1) `node scripts/seed-portal-demo-accounts.cjs` to upsert all 4 demo accounts including admin, (2) `node scripts/live-auth-proof.cjs` to verify driver/agency/customer flows with cleanup, (3) `node scripts/live-admin-proof.cjs` to verify all 7 admin routes.
-- Next step: set `$env:SEED_DEMO_PASSWORD` + `$env:SUPABASE_URL` + `$env:SUPABASE_SERVICE_ROLE_KEY` and run the 3 commands above to get full role coverage; then commit with `git add scripts/seed-portal-demo-accounts.cjs scripts/live-admin-proof.cjs scripts/live-auth-proof.cjs package.json`.
-- Blockers: `SEED_DEMO_PASSWORD` + Supabase service role key must be set by owner before seeding or auth proof can run; admin write operations (approve/reject drivers/agencies, payouts) still blocked — mutation of real production data; payment flows still blocked (live Razorpay); Google OAuth / email OTP verification still need real account.
+- Operational proof: build green; 9 dashboard/page layouts now use `max-w-7xl` + `lg:grid-cols-*` for professional desktop appearance; 5 new docs files (~1370 lines of real content) committed at `ba338b3a`.
+- Continue from: desktop grid modernization complete for all major dashboards. Next area: fix remaining high-issue pages (ProfilePage 16 issues, AgencyRegisterPage 15 issues) and tackle sprint tasks T-116/T-127/T-130/T-131.
+- Next step: read `ProfilePage.tsx` and `AgencyRegisterPage.tsx` — replace raw `console.error` patterns with proper error handling + user toast; then check sprint board `D:\Github\0.dev-matrix\SPRINT-APRIL-2026.md` for T-130 (live returning-user stale SW retest, AI-ready).
+- Blockers: T-110 Razorpay prod keys (human), T-111 Google OAuth smoke (human), T-113 Twilio SMS (human), T-115 Supabase PITR (human), T-116 VITE_SENTRY_DSN Heroku env (human), T-117 `supabase db push` (human).
 
 ## Launch Focus
 - Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
