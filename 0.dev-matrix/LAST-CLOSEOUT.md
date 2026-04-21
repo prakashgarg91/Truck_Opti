@@ -1,16 +1,16 @@
 # Last Closeout
 
-- Time: 2026-04-20 21:14:22
+- Time: 2026-04-21 08:27:03
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/STATE.md |  M 0.dev-matrix/TASK.md
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-20_211421.log
+- Git status:  M 0.dev-matrix/LAST-CLOSEOUT.md
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-21_082702.log
 
 ## AI Handoff
-- Latest handoff date: 2026-04-20
+- Latest handoff date: 2026-04-21
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: build green; 9 dashboard/page layouts now use `max-w-7xl` + `lg:grid-cols-*` for professional desktop appearance; 5 new docs files (~1370 lines of real content) committed at `ba338b3a`.
-- Continue from: desktop grid modernization complete for all major dashboards. Next area: fix remaining high-issue pages (ProfilePage 16 issues, AgencyRegisterPage 15 issues) and tackle sprint tasks T-116/T-127/T-130/T-131.
-- Next step: read `ProfilePage.tsx` and `AgencyRegisterPage.tsx` — replace raw `console.error` patterns with proper error handling + user toast; then check sprint board `D:\Github\0.dev-matrix\SPRINT-APRIL-2026.md` for T-130 (live returning-user stale SW retest, AI-ready).
+- Operational proof: root directory reduced from ~20 loose files to 22 essential config/infra files only. 0.dev-matrix root reduced from 50+ files to governance-only files. Build confirmed green after all moves.
+- Continue from: codetree is clean. Next work area: desktop layout upgrades for remaining pages (PackingPage, SaleOrdersPage, RoutesPage, DriverHistoryPage, DriverEarningsPage, AgencyBillingPage, AgencyDriversPage) and sprint tasks T-127/T-130/T-131.
+- Next step: read `PackingPage.tsx` — add `max-w-7xl mx-auto lg:p-8` + `lg:grid-cols-2` for controls vs canvas; repeat for `SaleOrdersPage.tsx`, `RoutesPage.tsx`. Then tackle T-130 (live returning-user stale SW retest, AI-ready).
 - Blockers: T-110 Razorpay prod keys (human), T-111 Google OAuth smoke (human), T-113 Twilio SMS (human), T-115 Supabase PITR (human), T-116 VITE_SENTRY_DSN Heroku env (human), T-117 `supabase db push` (human).
 
 ## Launch Focus
@@ -28,7 +28,7 @@
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
 - [PASS] background launch-check - launch-check passed
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [PASS] status update discipline - runtime status files have real content changes
+- [FAIL] status update discipline - repo changed without state/task/discussion update
 - [PASS] working tree cleanliness - only runtime handoff/evidence files are dirty before report write
 - [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
@@ -37,5 +37,5 @@
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 10
-- Fail: 0
+- Pass: 9
+- Fail: 1
