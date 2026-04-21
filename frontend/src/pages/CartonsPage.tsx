@@ -180,7 +180,7 @@ export default function CartonsPage() {
   const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
 
   return (
-    <div className="p-4 space-y-6 pb-8">
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 pb-8 lg:pb-12">
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate('/management')}

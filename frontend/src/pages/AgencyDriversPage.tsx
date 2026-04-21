@@ -183,7 +183,7 @@ export default function AgencyDriversPage() {
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
+    <div className="p-4 lg:p-8 space-y-4 max-w-7xl mx-auto">
       {/* Assign Truck Modal */}
       {assignModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

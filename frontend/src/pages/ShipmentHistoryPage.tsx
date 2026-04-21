@@ -90,7 +90,7 @@ export default function ShipmentHistoryPage() {
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
+    <div className="p-4 lg:p-8 space-y-4 max-w-7xl mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Shipment History</h1>

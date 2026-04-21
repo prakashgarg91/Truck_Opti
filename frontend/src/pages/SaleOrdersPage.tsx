@@ -363,7 +363,7 @@ Carton C,30,20,15,2,20,Bangalore`
   const invalidItems = parsedItems.filter(i => !i.isValid)
 
   return (
-    <div className="p-4 space-y-6 pb-24">
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 pb-24 lg:pb-12">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t[lang].title}</h1>

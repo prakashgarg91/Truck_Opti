@@ -274,7 +274,7 @@ export default function RoutesPage() {
     : routes.filter(r => r.status === filter)
 
   return (
-    <div className="p-4 space-y-6 pb-8">
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 pb-8 lg:pb-12">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

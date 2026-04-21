@@ -73,13 +73,12 @@ const TestPaymentPage: React.FC = () => {
           toast.success('Redirecting to PhonePe...');
           window.location.href = result.data.instrumentResponse.redirectInfo.url;
         } else {
-          console.error('[TestPaymentPage]', result)
+          logger.error('[TestPaymentPage] PhonePe payment failed', result)
           toast.error(language === 'en' ? 'Payment failed. Please try again.' : 'भुगतान विफल। कृपया पुनः प्रयास करें।')
-          logger.error('Payment error:', result);
         }
       }
     } catch (error) {
-      console.error('[TestPaymentPage]', error)
+      logger.error('[TestPaymentPage] Payment exception', error)
       toast.error(language === 'en' ? 'Payment failed. Please try again.' : 'भुगतान विफल। कृपया पुनः प्रयास करें।')
     } finally {
       setProcessing(false);

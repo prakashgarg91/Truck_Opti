@@ -151,7 +151,7 @@ export default function AgencyRatesPage() {
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
+    <div className="p-4 lg:p-8 space-y-4 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

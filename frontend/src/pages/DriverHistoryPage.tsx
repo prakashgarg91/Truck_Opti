@@ -109,7 +109,7 @@ export default function DriverHistoryPage() {
         </div>
       </div>
 
-      <div className="p-4 space-y-3 max-w-md mx-auto">
+      <div className="p-4 lg:p-8 space-y-3 max-w-2xl lg:max-w-4xl mx-auto">
         {loading ? (
           <div className="flex justify-center py-12">
             <RefreshCw size={24} className="animate-spin text-blue-600" />
