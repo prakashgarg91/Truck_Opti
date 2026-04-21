@@ -64,6 +64,14 @@ rzp-key.csv
 *.db-wal
 *.db-shm
 
+# Data directories (runtime SQLite/telegram data)
+data/
+app/*.db
+
+# Legacy test artifacts (moved to scripts/legacy-tests/)
+# (tracked in git; do not re-add at root)
+
 # Archive directories (historical files)
 scripts/archive/
 docs/archive/
+0.dev-matrix/archive/
