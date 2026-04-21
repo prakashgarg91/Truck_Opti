@@ -2,6 +2,7 @@
 
 > **Task Queue + Claims - Multi-Agent Coordination**
 > Claim before working. Update when done.
+> **2026-04-21 close-day (Copilot-027)**: professional codetree cleanup complete. Root reduced to 22 essential files. 21 BATCH prompt history files archived. Legacy test scripts and stale report MDs moved to proper dirs. `dist/`, `app/logs/`, `.specify/` removed from git tracking. `.gitignore` hardened. Build green (7.71s, 0 errors). Next: desktop layout upgrades for PackingPage, SaleOrdersPage, RoutesPage, DriverHistoryPage, DriverEarningsPage, AgencyBillingPage; sprint tasks T-127/T-130/T-131.
 > **2026-04-20 close-day (Copilot-026)**: desktop modernization complete across 9 pages; API/module docs created (5 files, ~1370 lines); Dashboard.tsx JSX nesting fixed; build 0 errors. Next: ProfilePage + AgencyRegisterPage error-handling cleanup; T-130 retest.
 
 ---
