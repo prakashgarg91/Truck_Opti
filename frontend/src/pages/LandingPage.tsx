@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import { useLanguageStore } from '../stores/languageStore'
 import {
   Package, Route, MapPin, Building2,
@@ -36,122 +36,72 @@ const FEATURES = [
   }
 ]
 
-const TESTIMONIALS = [
-  {
-    name: 'Rajesh Kumar',
-    role: 'Fleet Owner, Delhi',
-    textEn: 'TruckOpti helped us optimize our routes and save 30% on fuel costs.',
-    textHi: 'TruckOpti ने हमारे रूट को ऑप्टिमाइज़ करने और ईंधन लागत में 30% बचत करने में मदद की।'
-  },
-  {
-    name: 'Priya Sharma',
-    role: 'Logistics Manager, Mumbai',
-    textEn: 'The 3D packing feature is a game-changer for our warehouse operations.',
-    textHi: '3D पैकिंग फीचर हमारे गोदाम संचालन के लिए गेम-चेंजर है।'
-  },
-  {
-    name: 'Amit Patel',
-    role: 'Transport Agency Owner',
-    textEn: 'Easy driver dispatch and live tracking give our customers peace of mind.',
-    textHi: 'आसान ड्राइवर डिस्पैच और लाइव ट्रैकिंग हमारे ग्राहकों को मानसिक शांति देते हैं।'
-  }
-]
 
 export default function LandingPage() {
-  const { language, toggleLanguage } = useLanguageStore()
+  const { language } = useLanguageStore()
   const languageFont = language === 'hi' ? 'font-hindi' : ''
 
   const t = {
-    heroBadge: language === 'en'
-      ? 'Built for high-volume Indian logistics teams'
-      : 'उच्च-वॉल्यूम भारतीय लॉजिस्टिक्स टीमों के लिए बनाया गया',
-    heroTitle: language === 'en'
-      ? "India's Smartest Truck Booking Platform"
-      : 'भारत का स्मार्टेस्ट ट्रक बुकिंग प्लेटफॉर्म',
-    heroSubtitle: language === 'en'
-      ? 'AI-powered 3D packing, route optimization, live GPS tracking, and agency dispatch for India logistics.'
-      : 'भारत लॉजिस्टिक्स के लिए AI-संचालित 3D पैकिंग, रूट ऑप्टिमाइज़ेशन, लाइव GPS ट्रैकिंग और एजेंसी डिस्पैच।',
-    heroPanelEyebrow: language === 'en' ? 'Operator Snapshot' : 'ऑपरेटर स्नैपशॉट',
-    heroPanelTitle: language === 'en'
-      ? 'Plan loads, dispatch trucks, and track movement without hopping between tools.'
-      : 'अलग-अलग टूल बदले बिना लोड प्लान करें, ट्रक डिस्पैच करें और मूवमेंट ट्रैक करें।',
-    heroPanelSubtitle: language === 'en'
-      ? 'TruckOpti keeps packing intelligence, route decisions, and live field visibility in one workflow.'
-      : 'TruckOpti पैकिंग इंटेलिजेंस, रूट निर्णय और लाइव फील्ड विजिबिलिटी को एक ही वर्कफ़्लो में रखता है।',
-    ctaStart: language === 'en' ? 'Start Free' : 'मुफ्त शुरू करें',
-    ctaPricing: language === 'en' ? 'View Pricing' : 'मूल्य देखें',
-    features: language === 'en' ? 'Features' : 'विशेषताएं',
-    featuresEyebrow: language === 'en' ? 'Platform' : 'प्लेटफॉर्म',
-    featuresIntro: language === 'en'
-      ? 'From pre-dispatch planning to live execution, every step is designed to reduce dead space, idle time, and manual follow-up.'
-      : 'प्री-डिस्पैच प्लानिंग से लेकर लाइव एग्जीक्यूशन तक, हर स्टेप को खाली जगह, निष्क्रिय समय और मैन्युअल फॉलो-अप कम करने के लिए डिज़ाइन किया गया है।',
-    testimonials: language === 'en' ? 'What Our Users Say' : 'हमारे उपयोगकर्ता क्या कहते हैं',
-    testimonialsIntro: language === 'en'
-      ? 'Teams use TruckOpti to cut wasted kilometres, speed up loading, and give customers cleaner visibility.'
-      : 'टीमें TruckOpti का उपयोग बेकार किलोमीटर घटाने, लोडिंग तेज़ करने और ग्राहकों को साफ़ विजिबिलिटी देने के लिए करती हैं।',
-    ctaTitle: language === 'en'
-      ? 'Ready to Transform Your Logistics?'
-      : 'अपने लॉजिस्टिक्स को बदलने के लिए तैयार हैं?',
-    ctaSubtitle: language === 'en'
-      ? 'Join thousands of businesses already using TruckOpti.'
-      : 'हजारों व्यवसायों से जुड़ें जो पहले से ही TruckOpti का उपयोग कर रहे हैं।',
-    ctaEyebrow: language === 'en' ? 'Launch Faster' : 'तेज़ लॉन्च',
-    contact: language === 'en' ? 'Contact Us' : 'संपर्क करें',
-    whyChoose: language === 'en' ? 'Why Choose TruckOpti' : 'TruckOpti क्यों चुनें',
-    whyChooseSubtitle: language === 'en'
-      ? 'The platform is tuned for the daily realities of Indian fleet, dispatch, and warehouse operations.'
-      : 'यह प्लेटफॉर्म भारतीय फ्लीट, डिस्पैच और वेयरहाउस ऑपरेशंस की रोज़मर्रा की वास्तविकताओं के लिए ट्यून किया गया है।',
-    footerTagline: language === 'en'
-      ? 'Planning, dispatch, and live shipment visibility for modern logistics operations.'
-      : 'आधुनिक लॉजिस्टिक्स ऑपरेशंस के लिए प्लानिंग, डिस्पैच और लाइव शिपमेंट विजिबिलिटी।'
+    heroBadge: 'Built for high-volume Indian logistics teams',
+    heroTitle: "India's Smartest Truck Booking Platform",
+    heroSubtitle: 'AI-powered 3D packing, route optimization, live GPS tracking, and agency dispatch for India logistics.',
+    heroPanelEyebrow: 'Operator Snapshot',
+    heroPanelTitle: 'Plan loads, dispatch trucks, and track movement without hopping between tools.',
+    heroPanelSubtitle: 'TruckOpti keeps packing intelligence, route decisions, and live field visibility in one workflow.',
+    ctaStart: 'Start Free',
+    ctaPricing: 'View Pricing',
+    features: 'Features',
+    featuresEyebrow: 'Platform',
+    featuresIntro: 'From pre-dispatch planning to live execution, every step is designed to reduce dead space, idle time, and manual follow-up.',
+    ctaTitle: 'Ready to Transform Your Logistics?',
+    ctaSubtitle: 'Join thousands of businesses already using TruckOpti.',
+    ctaEyebrow: 'Launch Faster',
+    contact: 'Contact Us',
+    whyChoose: 'Why Choose TruckOpti',
+    whyChooseSubtitle: 'The platform is tuned for the daily realities of Indian fleet, dispatch, and warehouse operations.',
+    footerTagline: 'Planning, dispatch, and live shipment visibility for modern logistics operations.'
   }
 
   const heroStats = [
     {
       value: '30%',
-      label: language === 'en' ? 'Fuel spend down' : 'ईंधन खर्च कम',
+      label: 'Fuel spend down',
     },
     {
       value: '50%',
-      label: language === 'en' ? 'Faster bay planning' : 'तेज़ बे प्लानिंग',
+      label: 'Faster bay planning',
     },
     {
       value: '24/7',
-      label: language === 'en' ? 'Ops visibility' : 'ऑप्स विजिबिलिटी',
+      label: 'Ops visibility',
     },
   ]
 
   const heroChecklist = [
-    language === 'en' ? '3D load plans before dispatch' : 'डिस्पैच से पहले 3D लोड प्लान',
-    language === 'en' ? 'Rate-aware routes with toll logic' : 'टोल लॉजिक के साथ रेट-अवेयर रूट्स',
-    language === 'en' ? 'Live trip and driver visibility' : 'लाइव ट्रिप और ड्राइवर विजिबिलिटी',
+    '3D load plans before dispatch',
+    'Rate-aware routes with toll logic',
+    'Live trip and driver visibility',
   ]
 
   const trustCards = [
     {
       icon: Shield,
-      title: language === 'en' ? 'Secure workflow' : 'सुरक्षित वर्कफ़्लो',
-      description: language === 'en'
-        ? 'Control shipments, plans, and customer updates from one surface.'
-        : 'शिपमेंट, प्लान और ग्राहक अपडेट एक ही सतह से कंट्रोल करें।',
+      title: 'Secure workflow',
+      description: 'Control shipments, plans, and customer updates from one surface.',
       accent: 'text-emerald-600 dark:text-emerald-400',
       bg: 'bg-emerald-50 dark:bg-emerald-950/30',
     },
     {
       icon: Clock,
-      title: language === 'en' ? 'Always-on operations' : 'हमेशा-ऑन ऑपरेशंस',
-      description: language === 'en'
-        ? 'Support loading, dispatch, and tracking throughout the working day.'
-        : 'पूरे कार्यदिवस में लोडिंग, डिस्पैच और ट्रैकिंग को सपोर्ट करें।',
+      title: 'Always-on operations',
+      description: 'Support loading, dispatch, and tracking throughout the working day.',
       accent: 'text-primary-600 dark:text-primary-300',
       bg: 'bg-primary-50 dark:bg-primary-950/30',
     },
     {
       icon: Truck,
-      title: language === 'en' ? 'Built for scale' : 'स्केल के लिए तैयार',
-      description: language === 'en'
-        ? 'Move from a single team to multi-branch agency dispatch without rebuilding the flow.'
-        : 'एक टीम से मल्टी-ब्रांच एजेंसी डिस्पैच तक बिना फ्लो दोबारा बनाए बढ़ें।',
+      title: 'Built for scale',
+      description: 'Move from a single team to multi-branch agency dispatch without rebuilding the flow.',
       accent: 'text-saffron dark:text-orange-300',
       bg: 'bg-orange-50 dark:bg-orange-950/30',
     },
@@ -160,15 +110,15 @@ export default function LandingPage() {
   const outcomeStats = [
     {
       value: '30%',
-      label: language === 'en' ? 'Fuel Cost Savings' : 'ईंधन लागत बचत',
+      label: 'Fuel Cost Savings',
     },
     {
       value: '50%',
-      label: language === 'en' ? 'Faster Packing' : 'तेज़ पैकिंग',
+      label: 'Faster Packing',
     },
     {
       value: '100%',
-      label: language === 'en' ? 'Real-time Tracking' : 'रीयल-टाइम ट्रैकिंग',
+      label: 'Real-time Tracking',
     },
   ]
 
@@ -199,52 +149,46 @@ export default function LandingPage() {
               href="#features"
               className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
             >
-              {language === 'en' ? 'Features' : 'विशेषताएं'}
+              {'Features'}
             </a>
             <a
               href="#how-it-works"
               className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
             >
-              {language === 'en' ? 'How It Works' : 'कैसे काम करता है'}
+              {'How It Works'}
             </a>
             <Link
               to="/driver/register"
               className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
             >
-              {language === 'en' ? 'Drivers' : 'ड्राइवर'}
+              {'Drivers'}
             </Link>
             <Link
               to="/agency/register"
               className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
             >
-              {language === 'en' ? 'Agencies' : 'एजेंसी'}
+              {'Agencies'}
             </Link>
             <Link
               to="/pricing"
               className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-primary-400 dark:hover:bg-slate-800 transition-colors"
             >
-              {language === 'en' ? 'Pricing' : 'मूल्य'}
+              {'Pricing'}
             </Link>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={toggleLanguage}
-              className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:border-primary-300 hover:text-primary-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-primary-500 dark:hover:text-primary-300"
-            >
-              {language === 'en' ? 'हिंदी' : 'English'}
-            </button>
             <Link
               to="/login"
               className="rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-primary-600 dark:text-slate-300 dark:hover:text-primary-300"
             >
-              {language === 'en' ? 'Login' : 'लॉगिन'}
+              {'Login'}
             </Link>
             <Link
               to="/signup"
               className="rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary-600/20 transition-colors hover:bg-primary-700"
             >
-              {language === 'en' ? 'Sign Up' : 'साइन अप'}
+              {'Sign Up'}
             </Link>
           </div>
         </div>
@@ -385,16 +329,10 @@ export default function LandingPage() {
                   </span>
                 </div>
                 <h3 className="mt-6 text-xl font-bold text-slate-900 dark:text-white">
-                  {language === 'en' ? feature.titleEn : feature.titleHi}
+                  {feature.titleEn}
                 </h3>
-                <p className="mt-1 text-sm font-medium text-primary-600 dark:text-primary-300">
-                  {language === 'en' ? feature.titleHi : feature.titleEn}
-                </p>
                 <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {language === 'en' ? feature.descEn : feature.descHi}
-                </p>
-                <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                  {language === 'en' ? feature.descHi : feature.descEn}
+                  {feature.descEn}
                 </p>
               </div>
             ))}
@@ -431,15 +369,13 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-2xl text-center mb-12">
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary-600 dark:text-primary-300">
-              {language === 'en' ? 'How It Works' : 'कैसे काम करता है'}
+              {'How It Works'}
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-              {language === 'en' ? 'Get started in 3 simple steps' : '3 आसान चरणों में शुरू करें'}
+              {'Get started in 3 simple steps'}
             </h2>
             <p className="mt-4 text-base text-slate-600 dark:text-slate-400">
-              {language === 'en'
-                ? 'No complex setup. Book your first truck in minutes.'
-                : 'कोई जटिल सेटअप नहीं। मिनटों में अपना पहला ट्रक बुक करें।'}
+              No complex setup. Book your first truck in minutes.
             </p>
           </div>
           <div className="grid gap-8 md:grid-cols-3">
@@ -449,30 +385,24 @@ export default function LandingPage() {
                 icon: CheckCircle2,
                 color: 'text-primary-600 dark:text-primary-400',
                 bg: 'bg-primary-50 dark:bg-primary-950/40',
-                title: language === 'en' ? 'Create your account' : 'अपना खाता बनाएं',
-                desc: language === 'en'
-                  ? 'Sign up as a business, agency, or driver. Takes under 2 minutes.'
-                  : 'बिज़नेस, एजेंसी या ड्राइवर के रूप में साइन अप करें। 2 मिनट से कम।'
+                title: 'Create your account',
+                desc: 'Sign up as a business, agency, or driver. Takes under 2 minutes.'
               },
               {
                 step: '02',
                 icon: Package,
                 color: 'text-emerald-600 dark:text-emerald-400',
                 bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-                title: language === 'en' ? 'Plan your shipment' : 'अपना शिपमेंट प्लान करें',
-                desc: language === 'en'
-                  ? 'Add cargo details and get AI-optimized 3D packing and route in seconds.'
-                  : 'कार्गो डिटेल्स जोड़ें और सेकंड में AI-ऑप्टिमाइज़्ड 3D पैकिंग और रूट पाएं।'
+                title: 'Plan your shipment',
+                desc: 'Add cargo details and get AI-optimized 3D packing and route in seconds.'
               },
               {
                 step: '03',
                 icon: Truck,
                 color: 'text-orange-600 dark:text-orange-400',
                 bg: 'bg-orange-50 dark:bg-orange-950/40',
-                title: language === 'en' ? 'Dispatch & track live' : 'डिस्पैच करें और लाइव ट्रैक करें',
-                desc: language === 'en'
-                  ? 'Assign a driver and follow the shipment in real time from pickup to delivery.'
-                  : 'ड्राइवर असाइन करें और पिकअप से डिलीवरी तक शिपमेंट को रीयल टाइम में फॉलो करें।'
+                title: 'Dispatch & track live',
+                desc: 'Assign a driver and follow the shipment in real time from pickup to delivery.'
               }
             ].map(({ step, icon: Icon, color, bg, title, desc }, i) => (
               <div
@@ -492,44 +422,6 @@ export default function LandingPage() {
                     <ArrowRight size={24} className="text-slate-300 dark:text-slate-600" />
                   </div>
                 )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="px-4 py-16 lg:py-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary-600 dark:text-primary-300">
-              Customer Voice
-            </p>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-              {t.testimonials}
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-slate-500 dark:text-slate-400 sm:text-base">
-              {t.testimonialsIntro}
-            </p>
-          </div>
-
-          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-            {TESTIMONIALS.map((testimonial, idx) => (
-              <div
-                key={idx}
-                className="rounded-[28px] border border-slate-200/70 bg-white/90 p-6 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/80"
-              >
-                <span className="text-4xl font-black leading-none text-primary-200 dark:text-primary-700">“</span>
-                <p className="mt-4 text-base leading-7 text-slate-700 dark:text-slate-200">
-                  {language === 'en' ? testimonial.textEn : testimonial.textHi}
-                </p>
-                <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  {language === 'en' ? testimonial.textHi : testimonial.textEn}
-                </p>
-                <div className="mt-6 border-t border-slate-100 pt-4 dark:border-slate-700">
-                  <p className="font-semibold text-slate-800 dark:text-white">{testimonial.name}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{testimonial.role}</p>
-                </div>
               </div>
             ))}
           </div>
