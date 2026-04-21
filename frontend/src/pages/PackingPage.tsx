@@ -709,8 +709,7 @@ export default function PackingPage() {
       })
       navigate('/tracking')
     } catch (error: unknown) {
-      logger.error('Failed to book truck:', error)
-      logger.error('[PackingPage]', error)
+      logger.error('[PackingPage] Failed to book truck:', error)
       setBookError(language === 'en' ? 'Failed to book truck.' : 'ट्रक बुक करने में विफल।')
     } finally {
       setBookingInProgress(false)

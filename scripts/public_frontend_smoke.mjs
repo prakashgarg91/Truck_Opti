@@ -11,7 +11,7 @@ const ROUTES = [
   { path: '/terms', expectedTitle: 'Terms of Service' },
   { path: '/privacy', expectedTitle: 'Privacy Policy' },
   { path: '/contact', expectedTitle: 'Contact Us' },
-  { path: '/login', expectedTitle: 'Login' },
+  { path: '/login', expectedTitle: 'Welcome Back' },
   { path: '/signup', expectedTitle: 'Sign Up' },
 ];
 
