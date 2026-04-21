@@ -16,6 +16,32 @@
 ### Sign In Format
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-21] COPILOT-027-CLOSEOUT:
+  Professional codetree cleanup + close-day.
+
+  COMPLETED THIS SESSION:
+  - Deleted local rzp-key.csv (test Razorpay secret, not git-tracked)
+  - Removed from git: dist/ EXEs+DBs+logs, app/logs/, .specify/ (all .gitignored)
+  - Archived 21 stale BATCH*.md → 0.dev-matrix/archive/batch-prompts/ (git mv)
+  - Moved 4 legacy Python test scripts + 2 CSVs → scripts/legacy-tests/ (git mv)
+  - Moved 4 test-report MDs → 0.dev-matrix/test-reports/ (git mv)
+  - Moved deploy + user requirements docs → docs/ (git mv)
+  - Hardened .gitignore (data/, app/*.db, 0.dev-matrix/archive/)
+  - Dashboard.tsx whitespace normalisation (0 logic change)
+  - Root reduced from ~40 loose files to 22 essential config/infra files only
+
+  VERIFIED:
+  - npm run build: ✓ built in 7.71s, 0 TypeScript errors
+  - git status: clean on all meaningful files
+  - close-day: 9/10 PASS (status-discipline gate fires on commit sequence; governance docs updated)
+
+  HANDOFF:
+  - Next session: desktop layout upgrades (PackingPage, SaleOrdersPage, RoutesPage, DriverHistoryPage, etc.)
+  - Sprint: T-127/T-130/T-131
+  - Human blockers: T-110 Razorpay, T-111 Google OAuth, T-113 Twilio, T-115 PITR
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-15] MANAGER-CLOSEOUT-2:
   Close-day rerun requested after the committed tree was already restored to green.
 
