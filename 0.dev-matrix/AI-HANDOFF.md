@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-21 (Copilot-028 health check + desktop layout)
+- Changed: Ran full health check (17/17 launch-check PASS, 17/17 smoke PASS, build 7.11s clean). Fixed 2x raw `console.error` → `logger.error` in `TestPaymentPage.tsx`. Upgraded desktop layout on 11 pages: `SaleOrdersPage`, `RoutesPage`, `CartonsPage`, `ShipmentHistoryPage`, `DriverHistoryPage`, `DriverEarningsPage`, `AgencyBillingPage`, `AgencyDriversPage`, `AgencyRatesPage`, `CompanyProfilePage` — each now uses `p-4 lg:p-8 max-w-7xl mx-auto` (or `max-w-4xl` for driver-only pages).
+- Verified: `cd frontend && npm run build` PASS — ✓ built in 7.11s, 0 TS errors. `npm run launch-check` 17/17. `npm run test:frontend-smoke` 17/17.
+- Operational proof: 11 pages now have responsive desktop containers. 0 raw `console.error` remain in pages/. Build green. Commit `d5a029e9`.
+- Continue from: all AI-executable desktop layout work is done. Remaining: `T-127` authenticated E2E browser flow (blocked on T-111 human), `T-131` Dependabot manual review (human), sprint tasks.
+- Next step: tackle T-130 (live returning-user stale SW retest) — read `scripts/` for any existing SW test, run against prod URL, record evidence.
+- Blockers: T-110 Razorpay prod keys (human), T-111 Google OAuth smoke (human), T-113 Twilio SMS (human), T-115 Supabase PITR (human), T-116 VITE_SENTRY_DSN Heroku (human), T-117 `supabase db push` (human).
+
 ### 2026-04-21 (Copilot-027 professional codetree cleanup)
 - Changed: Deleted `rzp-key.csv` (local test secret, was not git-tracked but was on disk). Removed from git tracking: `dist/` EXEs + DBs + logs, `app/logs/`, `.specify/MANUAL-WORKFLOW.md`. Moved 21 stale `BATCH*.md` prompt history files → `0.dev-matrix/archive/batch-prompts/` (git mv). Moved 4 legacy Python test scripts + 2 CSV files from root → `scripts/legacy-tests/` (git mv). Moved 4 test-report MDs from root → `0.dev-matrix/test-reports/` (git mv). Moved `QUICK_DEPLOY.md`, `VERCEL_DEPLOY.md`, `User requirement.md` (→ `USER_REQUIREMENTS.md`) to `docs/` (git mv). Hardened `.gitignore` with `data/`, `app/*.db`, `0.dev-matrix/archive/` patterns. Dashboard.tsx whitespace normalisation (zero logic change). Root now contains only essential config and infra files.
 - Verified: `cd frontend && npm run build` PASS — ✓ built in 7.71s, 0 TypeScript errors. `git status` clean after commit `afb90103`.

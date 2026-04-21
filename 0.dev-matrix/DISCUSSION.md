@@ -16,6 +16,13 @@
 ### Sign In Format
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-04-21] COPILOT-028-CLOSEOUT:
+  Health check + code quality + desktop layout upgrades.
+  17/17 launch-check PASS, 17/17 smoke PASS.
+  Fixed TestPaymentPage console.error (2 occurrences → logger.error).
+  Desktop layout upgraded on 11 pages with max-w-7xl + lg:p-8.
+  Build green: 7.11s, 0 TS errors. Commit d5a029e9.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-21] COPILOT-027-CLOSEOUT:
   Professional codetree cleanup + close-day.
 
