@@ -27,7 +27,7 @@ Update protocol:
 
 ## Handoff Log
 
-### 2026-04-22 (Copilot-029 deep bug audit + 29-fix commit)
+### 2026-04-21 (Copilot-029 deep bug audit + 29-fix commit)
 - Changed: Deep bug audit across 11 files (2 subagents, 36 bugs catalogued). Fixed 29 reproducible issues: AgencyJobsPage 30s→30min expiry + processingJobId guard; ProtectedRoute null-user role bypass; App.tsx RoleHome isLoading flash + /checkout ProtectedRoute; CheckoutPage billingCycle validation + planId redirect + language dep removed from loadData; DriverTripPage IDOR ownership filter on job_offers + setSubmitting finally + OTP type=number→type=text; DriverDashboardPage setWithdrawing finally + wallet balance subtracts payouts + today trips delivered_at only; NewShipmentPage origin/destination/goods trim + eway-bill created_by filter + try/finally; ProfilePage async logout + phone trim/validation + company field trim + logger.error in catch; TrackingPage JobOffer interface missing photo fields + language removed from useEffect deps; authStore excludes isAuthenticated from localStorage persist; useSubscription fail-closed on checkLimit error. Earlier in session: CVE-2026-28684 python-dotenv patch + smoke test title fix + PackingPage duplicate logger.
 - Verified: `npx tsc --noEmit` → 0 errors. `npm run build` → ✓ built 7.09s. `npm run launch-check` → 17/17 PASS. `npm run close-day` → 10/10 PASS. Commit `07e58d80`.
 - Operational proof: 17/17 launch-check + 10/10 close-day after 29-bug commit. 0 TS errors. Build green 7.09s.
