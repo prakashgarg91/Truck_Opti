@@ -35,6 +35,8 @@ interface JobOffer {
   delivery_otp: string | null
   status: string
   drivers?: { full_name: string }
+  photo_loading_url?: string | null
+  photo_delivery_url?: string | null
 }
 
 const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
@@ -179,7 +181,7 @@ export default function TrackingPage() {
     return () => {
       isActive = false
     }
-  }, [language, showDetailModal, selectedShipment])
+  }, [showDetailModal, selectedShipment])
 
   const handleContactDriver = (phone?: string) => {
     if (phone) {

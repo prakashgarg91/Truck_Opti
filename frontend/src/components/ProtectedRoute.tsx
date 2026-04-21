@@ -41,8 +41,8 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to={getDefaultHomePathForRole(user.role)} replace />
+  if (allowedRoles && (!user || !allowedRoles.includes(user.role))) {
+    return <Navigate to={getDefaultHomePathForRole(user?.role)} replace />
   }
 
   // Render protected content

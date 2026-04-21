@@ -64,7 +64,7 @@ export default function NewShipmentPage() {
       return
     }
 
-    if (!formData.origin_city || !formData.destination_city || !formData.pickup_date || formData.weight_kg <= 0) {
+    if (!formData.origin_city.trim() || !formData.destination_city.trim() || !formData.pickup_date || formData.weight_kg <= 0) {
       toast.error(language === 'en' ? 'Please fill all required fields' : 'कृपया सभी आवश्यक फ़ील्ड भरें')
       return
     }
@@ -81,14 +81,14 @@ export default function NewShipmentPage() {
           shipment_id: shipmentId,
           customer_id: null,
           created_by: user.id,
-          origin: formData.origin_city,
-          destination: formData.destination_city,
+          origin: formData.origin_city.trim(),
+          destination: formData.destination_city.trim(),
           status: 'pending',
           total_weight: formData.weight_kg,
           estimated_cost: formData.estimated_value,
           vehicle_type: formData.vehicle_type,
           pickup_date: formData.pickup_date,
-          goods_description: formData.goods_description,
+          goods_description: formData.goods_description.trim(),
           estimated_value: formData.estimated_value,
         })
         .select()
@@ -143,7 +143,7 @@ export default function NewShipmentPage() {
   // Handle e-way bill submission
   const handleEWayBillSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newShipmentId) return
+    if (!newShipmentId || !user) return
 
     if (consignorGSTIN && !isValidGSTIN(consignorGSTIN)) {
       toast.error(language === 'en' ? 'Invalid Consignor GSTIN format' : 'अमान्य GSTIN प्रारूप')
@@ -156,28 +156,31 @@ export default function NewShipmentPage() {
 
     setIsSubmittingEWayBill(true)
 
-    const { error } = await supabase
-      .from('shipments')
-      .update({
-        eway_bill_data: {
-          consignor_gstin: consignorGSTIN || null,
-          consignee_gstin: consigneeGSTIN || null,
-          invoice_value: invoiceValue || null,
-          hsn_code: hsnCode || null,
-        },
-      })
-      .eq('id', newShipmentId)
+    try {
+      const { error } = await supabase
+        .from('shipments')
+        .update({
+          eway_bill_data: {
+            consignor_gstin: consignorGSTIN || null,
+            consignee_gstin: consigneeGSTIN || null,
+            invoice_value: invoiceValue || null,
+            hsn_code: hsnCode || null,
+          },
+        })
+        .eq('id', newShipmentId)
+        .eq('created_by', user.id) // defence-in-depth: only update own shipments
 
-    if (error) {
-      logger.error('[NewShipment] eway:', error)
-      toast.error(language === 'en' ? 'Failed to save e-way bill' : 'ई-वे बिल सेव नहीं हुआ')
+      if (error) {
+        logger.error('[NewShipment] eway:', error)
+        toast.error(language === 'en' ? 'Failed to save e-way bill' : 'ई-वे बिल सेव नहीं हुआ')
+        return
+      }
+
+      toast.success(language === 'en' ? 'E-way bill saved — NIC API integration coming soon' : 'ई-वे बिल सेव किया — NIC API जल्द आएगा')
+      setTimeout(() => navigate('/tracking'), 1500)
+    } finally {
       setIsSubmittingEWayBill(false)
-      return
     }
-
-    toast.success(language === 'en' ? 'E-way bill saved — NIC API integration coming soon' : 'ई-वे बिल सेव किया — NIC API जल्द आएगा')
-    setIsSubmittingEWayBill(false)
-    setTimeout(() => navigate('/tracking'), 1500)
   }
 
   // Subscription expired check - block expired users

@@ -290,7 +290,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         session: state.session,
-        isAuthenticated: state.isAuthenticated,
+        // isAuthenticated intentionally excluded: hydrated as false on cold boot, set only after initialize() validates session
         pendingPhone: state.pendingPhone
       })
     }

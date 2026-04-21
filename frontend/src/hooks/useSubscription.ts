@@ -4,6 +4,7 @@
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 import {
   subscriptionsApi,
   usageApi,
@@ -189,8 +190,9 @@ export function useSubscription(): SubscriptionStatus {
       if (!allowed) showUpgradePrompt(feature)
       return allowed
     } catch {
-      // Fail open — prefer availability over hard blocking
-      return true
+      // Fail closed — unexpected errors should not bypass subscription limits
+      logger.warn('[useSubscription] checkLimit failed — denying access to', feature)
+      return false
     }
   }
 

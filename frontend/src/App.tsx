@@ -71,7 +71,8 @@ const LandingPage = React.lazy(() => import('./pages/LandingPage'))
 
 // Role-based home: shows the landing page to guests and sends authenticated users to their portal.
 function RoleHome() {
-  const { user } = useAuthStore()
+  const { user, isLoading } = useAuthStore()
+  if (isLoading) return <PageSkeleton />
   if (!user) return <LandingPage />
   return <Navigate to={getDefaultHomePathForRole(user.role)} replace />
 }
@@ -92,7 +93,7 @@ function AppContent() {
           <Route path="/" element={<RoleHome />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
           <Route path="/payment/callback" element={<PaymentCallbackPage />} />
           <Route path="/payment/success" element={<PaymentCallbackPage />} />
           <Route path="/terms" element={<TermsPage />} />

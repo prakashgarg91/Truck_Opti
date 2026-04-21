@@ -254,25 +254,31 @@ export default function ProfilePage() {
   const handleSaveProfile = async () => {
     setIsSaving(true)
     try {
+      const trimmedName = editName.trim()
+      const trimmedPhone = editPhone.trim()
+      if (trimmedPhone && !/^\d{10}$/.test(trimmedPhone)) {
+        toast.error(language === 'en' ? 'Phone must be 10 digits' : 'फ़ोन 10 अंकों का होना चाहिए')
+        return
+      }
       const { error } = await supabase.auth.updateUser({
         data: {
-          full_name: editName,
-          name: editName,
-          phone: editPhone ? `+91${editPhone}` : undefined
+          full_name: trimmedName,
+          name: trimmedName,
+          phone: trimmedPhone ? `+91${trimmedPhone}` : undefined
         }
       })
       if (error) throw error
 
       // Update local store
       updateUser({
-        name: editName || null,
-        phone: editPhone ? `+91${editPhone}` : null
+        name: trimmedName || null,
+        phone: trimmedPhone ? `+91${trimmedPhone}` : null
       })
 
       setIsEditing(false)
       toast.success(language === 'en' ? 'Profile updated!' : 'प्रोफ़ाइल अपडेट!')
     } catch (err: unknown) {
-      void err
+      logger.error('[ProfilePage] handleSaveProfile:', err)
       toast.error(language === 'en' ? 'Failed to update profile' : 'प्रोफाइल अपडेट करने में विफल')
     } finally {
       setIsSaving(false)
@@ -301,10 +307,10 @@ export default function ProfilePage() {
         data: {
           company: {
             ...existingCompany,          // Preserve address_line1/city/state/pincode etc.
-            name: editCompanyName,
-            gstin: editGstin.toUpperCase(),
+            name: editCompanyName.trim(),
+            gstin: editGstin.toUpperCase().trim(),
             pan: normalizedPan,
-            address: editCompanyAddress  // legacy flat-string field
+            address: editCompanyAddress.trim()  // legacy flat-string field
           }
         }
       })
@@ -313,15 +319,19 @@ export default function ProfilePage() {
       setIsEditingCompany(false)
       toast.success(language === 'en' ? 'Company info updated!' : 'कंपनी जानकारी अपडेट!')
     } catch (err: unknown) {
-      void err
+      logger.error('[ProfilePage] handleSaveCompany:', err)
       toast.error(language === 'en' ? 'Failed to update company' : 'कंपनी जानकारी अपडेट करने में विफल')
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (err) {
+      logger.error('[ProfilePage] logout error:', err)
+    }
     window.location.href = '/login'
   }
 

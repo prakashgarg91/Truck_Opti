@@ -169,11 +169,11 @@ export default function DriverDashboardPage() {
 
     setTripHistory(rawData)
 
-    // Count today's accepted trips
+    // Count today's delivered trips (delivered_at only — not offered/responded dates)
     const today = new Date().toISOString().split('T')[0]
     const delivered = rawData.filter((j: TripHistory) => j.status === 'delivered')
     const todayDelivered = delivered.filter(
-      (j: TripHistory) => (j.delivered_at || j.responded_at || j.offered_at).startsWith(today)
+      (j: TripHistory) => j.delivered_at?.startsWith(today)
     )
     setTodayTrips(todayDelivered.length)
     setTodayEarnings(todayDelivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0))
@@ -181,7 +181,6 @@ export default function DriverDashboardPage() {
     // Calculate wallet earnings from delivered trips
     const total = delivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0)
     setTotalEarned(total)
-    setWalletBalance(total) // Available = total (no withdrawals yet)
     setCompletedTrips(delivered.slice(0, 5))
 
     // Fetch payout history
@@ -192,6 +191,10 @@ export default function DriverDashboardPage() {
       .order('requested_at', { ascending: false })
       .limit(5)
     setPayoutHistory(payouts || [])
+
+    // Wallet balance = total earned minus already-requested payouts
+    const alreadyPaidOut = (payouts || []).reduce((s: number, p: { amount: number }) => s + p.amount, 0)
+    setWalletBalance(total - alreadyPaidOut)
   }, [])
 
   const handleWithdrawal = async () => {
@@ -206,28 +209,31 @@ export default function DriverDashboardPage() {
       return
     }
     setWithdrawing(true)
-    const { error } = await supabase.from('driver_payouts').insert({
-      driver_id: driver.id,
-      amount: amount,
-      status: 'pending'
-    })
-    if (error) {
-      logger.error('[Withdrawal]', error)
-      toast.error(language === 'en' ? 'Failed to submit withdrawal request' : 'निकासी अनुरोध सबमिट करने में विफल')
-    } else {
-      toast.success(language === 'en' ? 'Withdrawal request submitted' : 'निकासी अनुरोध सबमिट किया गया')
-      setShowWithdrawalModal(false)
-      setWithdrawalAmount('')
-      // Refresh payout history
-      const { data: payouts } = await supabase
-        .from('driver_payouts')
-        .select('id, amount, status, requested_at')
-        .eq('driver_id', driver.id)
-        .order('requested_at', { ascending: false })
-        .limit(5)
-      setPayoutHistory(payouts || [])
+    try {
+      const { error } = await supabase.from('driver_payouts').insert({
+        driver_id: driver.id,
+        amount: amount,
+        status: 'pending'
+      })
+      if (error) {
+        logger.error('[Withdrawal]', error)
+        toast.error(language === 'en' ? 'Failed to submit withdrawal request' : 'निकासी अनुरोध सबमिट करने में विफल')
+      } else {
+        toast.success(language === 'en' ? 'Withdrawal request submitted' : 'निकासी अनुरोध सबमिट किया गया')
+        setShowWithdrawalModal(false)
+        setWithdrawalAmount('')
+        // Refresh payout history
+        const { data: payouts } = await supabase
+          .from('driver_payouts')
+          .select('id, amount, status, requested_at')
+          .eq('driver_id', driver.id)
+          .order('requested_at', { ascending: false })
+          .limit(5)
+        setPayoutHistory(payouts || [])
+      }
+    } finally {
+      setWithdrawing(false)
     }
-    setWithdrawing(false)
   }
 
   useEffect(() => {

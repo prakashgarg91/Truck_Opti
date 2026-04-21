@@ -25,7 +25,7 @@ const CheckoutPage: React.FC = () => {
   const { subscription: currentSubscription, plan: currentPlan } = useSubscription();
 
   const planId = searchParams.get('plan');
-  const billingCycle = (searchParams.get('billing') || 'monthly') as 'monthly' | 'yearly';
+  const billingCycle: 'monthly' | 'yearly' = searchParams.get('billing') === 'yearly' ? 'yearly' : 'monthly';
 
   const { user } = useAuthStore();
 
@@ -58,6 +58,10 @@ const CheckoutPage: React.FC = () => {
       setEmail(user.email || '');
 
       // Get plan details
+      if (!planId) {
+        navigate('/pricing');
+        return;
+      }
       if (planId) {
         const { data: planData, error } = await supabase
           .from('subscription_plans')
@@ -98,7 +102,7 @@ const CheckoutPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, language, navigate, planId, currentSubscription, currentPlan]);
+  }, [user, navigate, planId, currentSubscription, currentPlan]); // language removed: only used in toast text, not query logic
 
   useEffect(() => {
     loadData();

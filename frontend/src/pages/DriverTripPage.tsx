@@ -106,6 +106,7 @@ export default function DriverTripPage() {
       .eq('user_id', user.id)
       .maybeSingle()
     setDriver(driverData)
+    if (!driverData) return // no driver profile yet
 
     const { data: jobData, error } = await supabase
       .from('job_offers')
@@ -116,6 +117,7 @@ export default function DriverTripPage() {
         shipments(shipment_id, origin, destination, total_weight, estimated_cost, customer_id)
       `)
       .eq('id', jobId)
+      .eq('driver_id', driverData.id) // ownership check: prevent IDOR
       .maybeSingle()
 
     if (error) {
@@ -172,12 +174,18 @@ export default function DriverTripPage() {
   const persistJobProgress = async (newStatus?: string | null, extra: Record<string, unknown> = {}) => {
     if (!job?.id) return false
     setSubmitting(true)
-    const { data, error } = await supabase.rpc('persist_driver_job_offer_progress', {
-      p_job_offer_id: job.id,
-      p_status: newStatus ?? null,
-      p_extra: extra,
-    })
-    setSubmitting(false)
+    let data: unknown, error: unknown
+    try {
+      const result = await supabase.rpc('persist_driver_job_offer_progress', {
+        p_job_offer_id: job.id,
+        p_status: newStatus ?? null,
+        p_extra: extra,
+      })
+      data = result.data
+      error = result.error
+    } finally {
+      setSubmitting(false)
+    }
     if (error) {
       logger.error('[DriverTripPage]', error)
       toast.error(language === 'en' ? 'Failed to update trip status.' : 'यात्रा स्थिति अपडेट करने में विफल।')
@@ -493,14 +501,16 @@ export default function DriverTripPage() {
                 4-Digit OTP from Sender
               </label>
               <input
-                type="number"
+                type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 maxLength={4}
                 placeholder="0000"
                 value={otpInput}
                 onChange={e => {
                   setOtpError('')
-                  if (e.target.value.length <= 4) setOtpInput(e.target.value)
+                  const digits = e.target.value.replace(/\D/g, '')
+                  if (digits.length <= 4) setOtpInput(digits)
                 }}
                 className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${otpError
                   ? 'border-red-400 focus:border-red-500'
@@ -626,14 +636,16 @@ export default function DriverTripPage() {
                 4-Digit OTP from Recipient
               </label>
               <input
-                type="number"
+                type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 maxLength={4}
                 placeholder="0000"
                 value={otpInput}
                 onChange={e => {
                   setOtpError('')
-                  if (e.target.value.length <= 4) setOtpInput(e.target.value)
+                  const digits = e.target.value.replace(/\D/g, '')
+                  if (digits.length <= 4) setOtpInput(digits)
                 }}
                 className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${otpError
                   ? 'border-red-400 focus:border-red-500'

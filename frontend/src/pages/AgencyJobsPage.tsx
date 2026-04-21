@@ -59,6 +59,7 @@ export default function AgencyJobsPage() {
   const [jobs, setJobs] = useState<AgencyJob[]>([])
   const [filter, setFilter] = useState<JobFilter>('all')
   const [loading, setLoading] = useState(true)
+  const [processingJobId, setProcessingJobId] = useState<string | null>(null)
 
   // Assign Driver Modal State
   const [showAssignModal, setShowAssignModal] = useState(false)
@@ -191,7 +192,7 @@ export default function AgencyJobsPage() {
     try {
       const pickupOTP = Math.floor(1000 + Math.random() * 9000).toString()
       const deliveryOTP = Math.floor(1000 + Math.random() * 9000).toString()
-      const expiresAt = new Date(Date.now() + 30 * 1000).toISOString()
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
 
       // 1. Update agency_jobs with selected driver
       const { error: updateError } = await supabase
@@ -260,33 +261,48 @@ export default function AgencyJobsPage() {
   }
 
   const handleAccept = async (job: AgencyJob) => {
-    const { error } = await supabase
-      .from('agency_jobs')
-      .update({ status: 'accepted', assigned_at: new Date().toISOString() })
-      .eq('id', job.id)
-    if (error) { toast.error('Failed to accept job'); return }
-    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'accepted' } : j))
-    toast.success('Job accepted!')
+    setProcessingJobId(job.id)
+    try {
+      const { error } = await supabase
+        .from('agency_jobs')
+        .update({ status: 'accepted', assigned_at: new Date().toISOString() })
+        .eq('id', job.id)
+      if (error) { toast.error('Failed to accept job'); return }
+      setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'accepted' } : j))
+      toast.success('Job accepted!')
+    } finally {
+      setProcessingJobId(null)
+    }
   }
 
   const handleDecline = async (job: AgencyJob) => {
-    const { error } = await supabase
-      .from('agency_jobs')
-      .update({ status: 'cancelled' })
-      .eq('id', job.id)
-    if (error) { toast.error('Failed to decline job'); return }
-    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'cancelled' } : j))
-    toast.success('Job declined')
+    setProcessingJobId(job.id)
+    try {
+      const { error } = await supabase
+        .from('agency_jobs')
+        .update({ status: 'cancelled' })
+        .eq('id', job.id)
+      if (error) { toast.error('Failed to decline job'); return }
+      setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'cancelled' } : j))
+      toast.success('Job declined')
+    } finally {
+      setProcessingJobId(null)
+    }
   }
 
   const confirmDelivery = async (job: AgencyJob) => {
-    const { error } = await supabase
-      .from('agency_jobs')
-      .update({ status: 'delivered', updated_at: new Date().toISOString() })
-      .eq('id', job.id)
-    if (error) { toast.error('Failed to confirm delivery'); return }
-    setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'delivered' } : j))
-    toast.success('Job marked as delivered')
+    setProcessingJobId(job.id)
+    try {
+      const { error } = await supabase
+        .from('agency_jobs')
+        .update({ status: 'delivered', updated_at: new Date().toISOString() })
+        .eq('id', job.id)
+      if (error) { toast.error('Failed to confirm delivery'); return }
+      setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'delivered' } : j))
+      toast.success('Job marked as delivered')
+    } finally {
+      setProcessingJobId(null)
+    }
   }
 
   // Track Live functions
@@ -463,14 +479,16 @@ export default function AgencyJobsPage() {
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => handleAccept(job)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-600 text-white rounded-xl text-xs font-semibold"
+                  disabled={processingJobId === job.id}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50"
                 >
                   <CheckCircle2 size={14} />
                   Accept
                 </button>
                 <button
                   onClick={() => handleDecline(job)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold"
+                  disabled={processingJobId === job.id}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold disabled:opacity-50"
                 >
                   <XCircle size={14} />
                   Decline
@@ -511,7 +529,8 @@ export default function AgencyJobsPage() {
                 </button>
                 <button
                   onClick={() => confirmDelivery(job)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold"
+                  disabled={processingJobId === job.id}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50"
                 >
                   <CheckCircle2 size={14} />
                   Confirm Delivery
