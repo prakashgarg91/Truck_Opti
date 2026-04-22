@@ -2,7 +2,7 @@
 import {
   Package, Truck, Play, Settings, Layers, CheckCircle2,
   Plus, Trash2, Wand2, AlertTriangle, ChevronDown,
-  Zap, Brain, Target, Calculator, ShoppingCart, ArrowRight, Globe,
+  Zap, Brain, Target, Calculator, ShoppingCart, ArrowRight,
   Save, Edit2, Check, X, Loader2
 } from 'lucide-react'
 // Lazy load 3D viewer to reduce initial bundle size
@@ -254,7 +254,7 @@ export default function PackingPage() {
   const { isExpired, checkLimit, showUpgradePrompt } = useSubscription()
   const isAdmin = user?.role === 'admin'
 
-  const [lang, setLang] = useState<Language>('en')
+  const lang: Language = 'en'
   const [mode, setMode] = useState<'manual' | 'smart'>('smart')
   const [selectedTruck, setSelectedTruck] = useState<string | null>(null)
   const [algorithm, setAlgorithm] = useState('extreme_points')
@@ -299,10 +299,9 @@ export default function PackingPage() {
     }
   }, [terminate])
 
-  // Set document title based on language
   useEffect(() => {
-    document.title = lang === 'en' ? '3D Packing - TruckOpti' : '3D पैकिंग - TruckOpti'
-  }, [lang])
+    document.title = '3D Packing - TruckOpti'
+  }, [])
 
   // Pre-populate items if navigated from SaleOrdersPage — validate each item before accepting
   useEffect(() => {
@@ -755,14 +754,6 @@ export default function PackingPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-              >
-                <Globe className="w-4 h-4" />
-                {lang === 'en' ? 'हिंदी' : 'English'}
-              </button>
-
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <button
                   onClick={() => setMode('smart')}
@@ -1216,7 +1207,7 @@ export default function PackingPage() {
           <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6 animate-scale-in">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                {lang === 'hi' ? 'ट्रक बुक करें' : 'Book Truck'}
+                Book Truck
               </h3>
               <button
                 onClick={() => setShowBookModal(false)}
@@ -1235,14 +1226,14 @@ export default function PackingPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {lang === 'hi' ? 'ग्राहक चुनें' : 'Select Customer'}
+                  Select Customer
                 </label>
                 <select
                   value={bookForm.customerId}
                   onChange={e => setBookForm(prev => ({ ...prev, customerId: e.target.value }))}
                   className="input w-full"
                 >
-                  <option value="">{lang === 'hi' ? 'ग्राहक चुनें' : 'Select Customer'}</option>
+                  <option value="">Select Customer</option>
                   {customers.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -1251,26 +1242,26 @@ export default function PackingPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {lang === 'hi' ? 'प्रस्थान स्थान' : 'Origin'}
+                  Origin
                 </label>
                 <input
                   type="text"
                   value={bookForm.origin}
                   onChange={e => setBookForm(prev => ({ ...prev, origin: e.target.value }))}
-                  placeholder={lang === 'hi' ? 'जैसे: मुंबई, महाराष्ट्र' : 'e.g., Mumbai, Maharashtra'}
+                  placeholder="e.g., Mumbai, Maharashtra"
                   className="input w-full"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {lang === 'hi' ? 'गंतव्य स्थान' : 'Destination'}
+                  Destination
                 </label>
                 <input
                   type="text"
                   value={bookForm.destination}
                   onChange={e => setBookForm(prev => ({ ...prev, destination: e.target.value }))}
-                  placeholder={lang === 'hi' ? 'जैसे: दिल्ली, एनसीआर' : 'e.g., Delhi, NCR'}
+                  placeholder="e.g., Delhi, NCR"
                   className="input w-full"
                 />
               </div>
@@ -1281,7 +1272,7 @@ export default function PackingPage() {
                 onClick={() => setShowBookModal(false)}
                 className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50"
               >
-                {lang === 'hi' ? 'रद्द करें' : 'Cancel'}
+                Cancel
               </button>
               <button
                 onClick={handleBookTruckSubmit}
@@ -1291,12 +1282,12 @@ export default function PackingPage() {
                 {bookingInProgress ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    {lang === 'hi' ? 'बुकिंग...' : 'Booking...'}
+                    Booking...
                   </>
                 ) : (
                   <>
                     <Truck className="w-4 h-4" />
-                    {lang === 'hi' ? 'बुक करें' : 'Book Truck'}
+                    Book Truck
                   </>
                 )}
               </button>

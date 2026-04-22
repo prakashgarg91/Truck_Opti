@@ -4,7 +4,6 @@ import EmptyState from '../components/EmptyState'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { trucksSupabaseApi } from '../services/supabaseApi'
-import { useLanguageStore } from '../stores/languageStore'
 import { truckTypeSchema, validateWithZod } from '../utils/validators'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -30,7 +29,6 @@ interface TruckType {
 const DEFAULT_INDIAN_TRUCKS = [
   {
     name: 'Tata Ace 7.5ft',
-    name_hi: 'टाटा एस 7.5 फुट',
     length: 228, // 7.5 ft in cm
     width: 152,  // 5 ft in cm
     height: 152, // 5 ft in cm
@@ -41,7 +39,6 @@ const DEFAULT_INDIAN_TRUCKS = [
   },
   {
     name: 'Tata 407 9ft',
-    name_hi: 'टाटा 407 9 फुट',
     length: 274, // 9 ft in cm
     width: 183,  // 6 ft in cm
     height: 183, // 6 ft in cm
@@ -52,7 +49,6 @@ const DEFAULT_INDIAN_TRUCKS = [
   },
   {
     name: 'Eicher 14ft',
-    name_hi: 'आयशर 14 फुट',
     length: 427, // 14 ft in cm
     width: 198,  // 6.5 ft in cm
     height: 198, // 6.5 ft in cm
@@ -63,7 +59,6 @@ const DEFAULT_INDIAN_TRUCKS = [
   },
   {
     name: 'Eicher 17ft',
-    name_hi: 'आयशर 17 फुट',
     length: 518, // 17 ft in cm
     width: 213,  // 7 ft in cm
     height: 213, // 7 ft in cm
@@ -74,7 +69,6 @@ const DEFAULT_INDIAN_TRUCKS = [
   },
   {
     name: 'Eicher 19ft',
-    name_hi: 'आयशर 19 फुट',
     length: 579, // 19 ft in cm
     width: 213,  // 7 ft in cm
     height: 213, // 7 ft in cm
@@ -85,7 +79,6 @@ const DEFAULT_INDIAN_TRUCKS = [
   },
   {
     name: 'BharatBenz 32ft',
-    name_hi: 'भारतबेंज 32 फुट',
     length: 975, // 32 ft in cm
     width: 244,  // 8 ft in cm
     height: 244, // 8 ft in cm
@@ -96,7 +89,6 @@ const DEFAULT_INDIAN_TRUCKS = [
   },
   {
     name: 'Tata LPT 3718 36ft',
-    name_hi: 'टाटा एलपीटी 3718 36 फुट',
     length: 1097, // 36 ft in cm
     width: 259,   // 8.5 ft in cm
     height: 259,  // 8.5 ft in cm
@@ -109,7 +101,6 @@ const DEFAULT_INDIAN_TRUCKS = [
 
 export default function TrucksPage() {
   const navigate = useNavigate()
-  const { language } = useLanguageStore()
   const { user } = useAuthStore()
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -127,7 +118,7 @@ export default function TrucksPage() {
 
   useEffect(() => {
     document.title = 'Truck Types - TruckOpti'
-  }, [language])
+  }, [])
 
   // React Query: Fetch trucks data
   const {
@@ -316,8 +307,7 @@ export default function TrucksPage() {
   }
 
   const filteredTrucks = trucks.filter((t: TruckType) =>
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    (t.name_hi && t.name_hi.toLowerCase().includes(search.toLowerCase()))
+    t.name.toLowerCase().includes(search.toLowerCase())
   )
 
   const formatDimension = (cm: number) => {
@@ -349,7 +339,7 @@ export default function TrucksPage() {
             {'No Trucks Found'}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            
+            Seed common Indian truck types to get started.
           </p>
           <button
             onClick={() => seedMutation.mutate()}
@@ -417,9 +407,7 @@ export default function TrucksPage() {
         <EmptyState
           icon={Truck}
           title={'No trucks found'}
-          description={
-            ''
-          }
+          description={'Try a different search or add a new truck type.'}
           actionLabel={'Add Truck'}
           onAction={() => handleOpenModal()}
         />
@@ -437,7 +425,6 @@ export default function TrucksPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 dark:text-white">{truck.name}</h3>
-                    {truck.name_hi && <p className="text-xs text-slate-500">{truck.name_hi}</p>}
                     {truck.category && (
                       <span className="inline-block mt-1 text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full">
                         {truck.category}
@@ -508,17 +495,6 @@ export default function TrucksPage() {
                   placeholder="e.g. Tata 407, Eicher 10.50"
                 />
                 {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Truck Name (Hindi)</label>
-                <input
-                  type="text"
-                  value={formData.name_hi}
-                  onChange={(e) => setFormData({ ...formData, name_hi: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                  placeholder="e.g. टाटा 407"
-                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">

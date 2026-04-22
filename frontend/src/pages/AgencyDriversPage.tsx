@@ -254,7 +254,7 @@ export default function AgencyDriversPage() {
                   type="text"
                   value={payNote}
                   onChange={e => setPayNote(e.target.value)}
-                  placeholder={'Monthly salary / मासिक वेतन'}
+                  placeholder={'Monthly salary'}
                   className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                 />
               </div>

@@ -112,7 +112,7 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
     id: job.id || '',
     type: 'packing',
     message: `Packing job completed - ${job.volume_utilization}% volume utilized`,
-    time: getRelativeTime(new Date(job.created_at || Date.now()), 'en'),
+    time: getRelativeTime(new Date(job.created_at || Date.now())),
     status: job.status === 'completed' ? 'success' : 'info'
   }))
 
@@ -137,24 +137,17 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
   }
 }
 
-const getRelativeTime = (date: Date, lang: string): string => {
+const getRelativeTime = (date: Date): string => {
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMins / 60)
   const diffDays = Math.floor(diffHours / 24)
 
-  if (lang === 'en') {
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins} min ago`
-    if (diffHours < 24) return `${diffHours} hour ago`
-    return `${diffDays} day ago`
-  } else {
-    if (diffMins < 1) return 'अभी'
-    if (diffMins < 60) return `${diffMins} मिनट पहले`
-    if (diffHours < 24) return `${diffHours} घंटे पहले`
-    return `${diffDays} दिन पहले`
-  }
+  if (diffMins < 1) return 'Just now'
+  if (diffMins < 60) return `${diffMins} min ago`
+  if (diffHours < 24) return `${diffHours} hour ago`
+  return `${diffDays} day ago`
 }
 
 export default function Dashboard() {

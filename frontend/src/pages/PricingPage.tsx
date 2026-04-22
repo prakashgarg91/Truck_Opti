@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Zap, Crown, Building2, Rocket, Star, Globe, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Check, Zap, Crown, Building2, Rocket, Star, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { PRICING_TIERS, type PricingTier } from '../config/pricing'
 import { supabase } from '../lib/supabase'
@@ -36,7 +36,6 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
 }
 
 // ── i18n ────────────────────────────────────────────────────────────────────
-type Language = 'en' | 'hi'
 const LABELS = {
   en: {
     eyebrow: 'Plans & Billing',
@@ -117,7 +116,6 @@ const fmtLimit = (v: number | string, unlimited: string) => {
 interface CardProps {
   tier: PricingTier
   isYearly: boolean
-  lang: Language
   L: typeof LABELS['en']
   isCurrent: boolean
   isUpgrade: boolean
@@ -125,7 +123,7 @@ interface CardProps {
   className?: string
   onCta: () => void
 }
-function PricingCard({ tier, isYearly, lang, L, isCurrent, isUpgrade, isDowngrade, className = '', onCta }: CardProps) {
+function PricingCard({ tier, isYearly, L, isCurrent, isUpgrade, isDowngrade, className = '', onCta }: CardProps) {
   const cfg = TIER_CFG[tier.id] || TIER_CFG.starter
   const Icon = cfg.icon
   const isPopular = tier.id === 'growth'
@@ -180,7 +178,7 @@ function PricingCard({ tier, isYearly, lang, L, isCurrent, isUpgrade, isDowngrad
           </div>
           <div className="min-w-0">
             <div className="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-tight break-words">
-              {lang === 'en' ? tier.name : tier.nameHi}
+              {tier.name}
             </div>
             {tier.targetAudience && (
               <div className="text-[11px] text-slate-400 mt-0.5 leading-tight line-clamp-2 sm:line-clamp-1">{tier.targetAudience}</div>
@@ -250,13 +248,11 @@ export default function PricingPage() {
   const { subscription, plan: currentPlan, refetch } = useSubscription()
   const isAdmin = user?.role === 'admin'
 
-  const [lang, setLang] = useState<Language>('en')
   const [isYearly, setIsYearly] = useState(false)
   const [activeIdx, setActiveIdx] = useState(1)
   const [updating, setUpdating] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const L = LABELS[lang]
-  const languageFont = lang === 'hi' ? 'font-hindi' : ''
+  const L = LABELS.en
 
   useEffect(() => { document.title = 'Pricing — TruckOpti' }, [])
 
@@ -273,11 +269,11 @@ export default function PricingPage() {
 
       if (error) {
         logger.error('[PricingPage] Plan update error:', error)
-        toast.error(lang === 'en' ? 'Failed to update plan' : 'प्लान अपडेट करने में विफल')
+        toast.error('Failed to update plan')
         return
       }
 
-      toast.success(lang === 'en' ? 'Plan updated successfully!' : 'प्लान सफलतापूर्वक अपडेट हुआ!')
+      toast.success('Plan updated successfully!')
       refetch()
     } finally {
       setUpdating(null)
@@ -335,7 +331,7 @@ export default function PricingPage() {
   const planHighlights = [L.highlightFree, L.highlightBilling, L.highlightScale]
 
   return (
-    <div className={`relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#eef4ff_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_transparent_28%),linear-gradient(180deg,#020617_0%,#0f172a_45%,#111827_100%)] ${languageFont}`}>
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#eef4ff_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_transparent_28%),linear-gradient(180deg,#020617_0%,#0f172a_45%,#111827_100%)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary-100/60 via-primary-50/20 to-transparent dark:from-primary-950/50 dark:via-primary-950/10 dark:to-transparent" />
       <div className="pointer-events-none absolute -left-20 top-28 h-56 w-56 rounded-full bg-primary-300/15 blur-3xl dark:bg-primary-500/15" />
       <div className="pointer-events-none absolute right-0 top-36 h-72 w-72 rounded-full bg-orange-300/15 blur-3xl dark:bg-orange-500/10" />
@@ -365,10 +361,6 @@ export default function PricingPage() {
                 <span className="hidden sm:inline text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-bold">{L.saveTag}</span>
               </button>
             </div>
-            <button
-              onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}
-              className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            ><Globe className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
@@ -469,7 +461,7 @@ export default function PricingPage() {
                 const { isUpgrade, isDowngrade } = getTierRelation(idx)
                 return (
                   <PricingCard
-                    key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
+                    key={tier.id} tier={tier} isYearly={isYearly} L={L}
                     isCurrent={currentPlan?.id === tier.id}
                     isUpgrade={isUpgrade}
                     isDowngrade={isDowngrade}
@@ -504,7 +496,7 @@ export default function PricingPage() {
                 const { isUpgrade, isDowngrade } = getTierRelation(idx)
                 return (
                   <PricingCard
-                    key={tier.id} tier={tier} isYearly={isYearly} lang={lang} L={L}
+                    key={tier.id} tier={tier} isYearly={isYearly} L={L}
                     isCurrent={currentPlan?.id === tier.id}
                     isUpgrade={isUpgrade}
                     isDowngrade={isDowngrade}
@@ -543,7 +535,7 @@ export default function PricingPage() {
                         <th key={tier.id} className="py-4 px-3 text-center">
                           <div className={`inline-flex flex-col items-center gap-1 px-2 py-2 rounded-xl ${cfg.bg}`}>
                             <Icon className={`w-4 h-4 ${cfg.txt}`} />
-                            <span className={`text-[11px] font-bold ${cfg.txt} whitespace-nowrap`}>{lang === 'en' ? tier.name : tier.nameHi}</span>
+                            <span className={`text-[11px] font-bold ${cfg.txt} whitespace-nowrap`}>{tier.name}</span>
                           </div>
                         </th>
                       )

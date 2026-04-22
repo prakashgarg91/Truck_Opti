@@ -3,6 +3,7 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.0 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
+> 2026-04-22 (Copilot-031): performance + language cleanup is locally green. PWA precache dropped to `1479.01 KiB`, the remaining visible English/Hindi toggles were removed from public and core app surfaces, `cd frontend && npx tsc --noEmit` passes with 0 output, and `cd frontend && npm run build` passes in 6.88s. Remaining follow-up is dormant translation-data cleanup plus the build warning `Unknown input options: manualChunks`.
 > 2026-04-21 (Copilot-029): deep bug audit + 29-fix commit. Fixed: AgencyJobsPage 30s→30min expiry + processingJobId guard; ProtectedRoute null-user role bypass; App.tsx RoleHome isLoading flash + /checkout ProtectedRoute wrap; CheckoutPage billingCycle URL validation + planId redirect + language dep removed; DriverTripPage IDOR ownership filter + setSubmitting finally + OTP type=number→type=text; DriverDashboardPage setWithdrawing finally + wallet balance subtracts payouts + today trips delivered_at only; NewShipmentPage trim + eway-bill created_by + try/finally; ProfilePage async logout + phone trim/validate + company trim + logger.error; TrackingPage JobOffer photo fields + language dep removed; authStore excludes isAuthenticated from localStorage persist; useSubscription fail-closed on checkLimit. Build: ✓ 7.09s, 0 TS errors. Commit: `07e58d80`.
 > 2026-04-21 (Copilot-028): health check pass + code quality + desktop layout. 17/17 launch-check PASS, 17/17 smoke PASS. Fixed 2x raw `console.error` → `logger.error` in TestPaymentPage. Upgraded desktop layout on 11 pages: SaleOrdersPage, RoutesPage, CartonsPage, ShipmentHistoryPage, DriverHistoryPage, DriverEarningsPage, AgencyBillingPage, AgencyDriversPage, AgencyRatesPage, CompanyProfilePage. Build: ✓ 7.11s, 0 TS errors. Commit: `d5a029e9`.
 > 2026-04-21 (Copilot-027): professional codetree cleanup. Deleted local `rzp-key.csv` (test secret, was on disk only). Removed from git: `dist/` EXEs+DBs+logs, `app/logs/`, `.specify/` (all .gitignored). Archived 21 stale `BATCH*.md` → `0.dev-matrix/archive/batch-prompts/`. Moved 4 legacy Python test scripts + 2 CSV files → `scripts/legacy-tests/`. Moved 4 test-report MDs → `0.dev-matrix/test-reports/`. Moved deploy + requirements docs to `docs/`. Hardened `.gitignore` with `data/`, `app/*.db`, `0.dev-matrix/archive/`. Dashboard.tsx whitespace normalisation only (0 logic change). Root now has 22 essential config/infra files only (was ~40). Build: ✓ 7.71s, 0 TS errors. Commits: `afb90103`, `642136a2`.
@@ -72,6 +73,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `GPT-024` | MANAGER+IMPL | GPT-5.4 | PWA perf + language cleanup + close-day | Cut PWA precache to 1479.01 KiB, removed remaining live language toggles, and prepared end-of-day closeout evidence | 2026-04-22 | ✅ DONE |
 | `GPT-023` | MANAGER+IMPL | GPT-5.4 | Live rollout + authenticated browser proof | Deployed Heroku v71, pushed Supabase through the driver_payouts repair migration, seeded live demo identities, and captured zero-console-error protected-flow proof | 2026-04-18 | ✅ DONE |
 | `GPT-021` | MANAGER+IMPL | GPT-5.4 | Native opencode cleanup + multi-lane orchestration | Removed the `oh-my-opencode` dependency, restored native GLM 5.1 opencode, updated dev-matrix truth, and launched parallel opencode review lanes | 2026-04-17 | ✅ DONE |
 | `GPT-022` | MANAGER+IMPL | GPT-5.4 | Auth hardening + PAN rollout completion | Added email-or-login-ID password auth, mandatory PAN wiring, graph refreshes, and validated the pending Supabase rollout via dry-run | 2026-04-18 | ✅ DONE |
@@ -129,6 +131,24 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-22] GPT-024 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ PWA PRECACHE CUT TO 1.48 MIB, LAST LIVE LANGUAGE TOGGLES REMOVED
+
+                             WORK COMPLETED:
+                             - excluded `three-vendor`, `excel-vendor`, `pdf-vendor`, and `map-vendor` from the Workbox precache in `frontend/vite.config.ts` and added runtime CacheFirst handling for those large chunks
+                             - removed the remaining visible English/Hindi toggle controls from `MobileLayout.tsx`, `PricingPage.tsx`, `PackingPage.tsx`, and `ProfilePage.tsx`
+                             - cleaned visible Hindi copy still leaking through `Dashboard.tsx`, `CheckoutPage.tsx`, `TrucksPage.tsx`, and `AgencyDriversPage.tsx`, and flattened the last impossible language branches created by forcing English-only runtime paths
+                             - cleaned the temporary helper scripts used for one-off Hindi stripping/import cleanup out of the repo tree before close-day
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npx tsc --noEmit`: PASS (0 output)
+                             - `cd frontend && npm run build`: PASS (`built in 6.88s`)
+                             - build output: `PWA v1.2.0` / `precache 71 entries (1479.01 KiB)`
+                             - local route audit: `/pricing`, `/contact`, `/login`, `/signup` all returned 200; unauthenticated admin/customer route sweeps redirected to `/login` without runtime errors
+
+                             PRODUCT JUDGMENT:
+                             - the performance fix is real, not cosmetic: the install-time precache dropped from roughly 4.1 MiB to 1.48 MiB while the large vendor chunks stay runtime-cacheable on first use
+                             - user-visible language switching is now removed from the audited app surfaces; the remaining Devanagari text is dormant translation data in a small set of files and can be cleaned separately without reopening the runtime behavior fix
+------------------------------------------------------------------------------------------
 [2026-04-18] GPT-023 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ LIVE LOGIN-ID ROLLOUT PROVED ON PRODUCTION, DRIVER_PAYOUTS DRIFT REPAIRED
 
                              WORK COMPLETED:

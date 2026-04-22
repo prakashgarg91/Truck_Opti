@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore, LANGUAGE_NAMES, type Language } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
 import { logger } from '../utils/logger'
 
@@ -163,15 +162,13 @@ const translations = {
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuthStore()
-  const { language, setLanguage } = useLanguageStore()
 
-  // Set document title based on language
   useEffect(() => {
     document.title = 'Profile - TruckOpti'
-  }, [language])
+  }, [])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- translations object structure is dynamic at runtime
-  const t = (translations[language as keyof typeof translations] || translations.en) as any
+  const t = translations.en as any
 
   // Initialize notification preferences from user metadata
   const [isLocationSharing, setIsLocationSharing] = useState(() => {
@@ -758,27 +755,6 @@ export default function ProfilePage() {
             </label>
           </div>
         ))}
-      </div>
-
-      {/* Language Selector */}
-      <div className="card p-4">
-        <h2 className="font-semibold text-slate-900 dark:text-white mb-3">
-          {t.selectLanguage}
-        </h2>
-        <div className="grid grid-cols-2 gap-2">
-          {(Object.keys(LANGUAGE_NAMES) as Language[]).map((lang) => (
-            <button
-              key={lang}
-              onClick={() => setLanguage(lang)}
-              className={`p-3 rounded-xl text-sm font-medium transition-all ${language === lang
-                ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 border-2 border-primary-500'
-                : 'bg-slate-50 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-2 border-transparent hover:bg-slate-100'
-                }`}
-            >
-              {LANGUAGE_NAMES[lang]}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* App Info */}
