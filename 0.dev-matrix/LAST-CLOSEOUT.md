@@ -1,15 +1,15 @@
 # Last Closeout
 
-- Time: 2026-04-22 08:48:14
+- Time: 2026-04-22 08:57:04
 - Launch verification mode: background launch-check started from resume-work
 - Git status: clean
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-22_084814.log
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-22_085704.log
 
 ## AI Handoff
 - Latest handoff date: 2026-04-22
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: frontend compiles clean, the precache footprint is down from roughly 4.1 MiB to 1479.01 KiB, and the last live language-toggle controls on the audited surfaces are removed.
-- Continue from: run close-day on the clean session commit, then decide whether to remove dormant translation tables/data from `InvoicePage.tsx`, `PackingPage.tsx`, `SaleOrdersPage.tsx`, `ProfilePage.tsx`, `LandingPage.tsx`, and `PricingPage.tsx` or leave them intentionally dead.
+- Operational proof: frontend compiles clean, the precache footprint is down from roughly 4.1 MiB to 1479.01 KiB, the last live language-toggle controls on the audited surfaces are removed, and close-day now passes 10/10 on the session commit.
+- Continue from: decide whether to remove dormant translation tables/data from `InvoicePage.tsx`, `PackingPage.tsx`, `SaleOrdersPage.tsx`, `ProfilePage.tsx`, `LandingPage.tsx`, and `PricingPage.tsx` or leave them intentionally dead.
 - Next step: investigate the remaining build warning `Unknown input options: manualChunks` in the Vite/PWA pipeline and, if needed, do a focused follow-up browser pass on authenticated routes with safe credentials.
 - Blockers: T-110 live Razorpay keys (human), T-111 real Google OAuth sign-in proof (human), T-113 Twilio if phone OTP is re-enabled (human), T-115 PITR (human), and safe authenticated admin credentials for deeper post-login browser proof.
 
