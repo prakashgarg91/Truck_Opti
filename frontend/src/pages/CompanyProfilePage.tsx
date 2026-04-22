@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import {
   Building2, Save, Phone, MapPin, FileText,
   CheckCircle2, AlertCircle
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
-import { useLanguageStore } from '../stores/languageStore'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
 
@@ -42,7 +41,6 @@ export default function CompanyProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const { language } = useLanguageStore()
   const { user } = useAuthStore()
 
   useEffect(() => {
@@ -101,7 +99,7 @@ export default function CompanyProfilePage() {
       setTimeout(() => setSaved(false), 3000)
     } catch (err: unknown) {
       logger.error('[CompanyProfilePage]', err)
-      toast.error(language === 'en' ? 'Profile update failed.' : 'प्रोफ़ाइल अपडेट करने में विफल।')
+      toast.error('Profile update failed.')
     } finally {
       setSaving(false)
     }

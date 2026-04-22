@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Loader2, CreditCard, Smartphone, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -34,7 +34,6 @@ const CheckoutPage: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [subscriptionChange, setSubscriptionChange] = useState<'upgrade' | 'downgrade' | null>(null);
 
   const razorpayConfig = getRazorpayConfig();
@@ -51,7 +50,7 @@ const CheckoutPage: React.FC = () => {
     try {
       // Get user
       if (!user) {
-        toast.error(language === 'en' ? 'Please login to continue' : 'कृपया जारी रखने के लिए लॉगिन करें');
+        toast.error('Please login to continue');
         navigate('/login');
         return;
       }
@@ -70,7 +69,7 @@ const CheckoutPage: React.FC = () => {
           .single();
 
         if (error || !planData) {
-          toast.error(language === 'en' ? 'Plan not found' : 'प्लान नहीं मिला');
+          toast.error('Plan not found');
           navigate('/pricing');
           return;
         }
@@ -98,7 +97,7 @@ const CheckoutPage: React.FC = () => {
       }
     } catch (error) {
       logger.error('Error loading checkout data:', error);
-      toast.error(language === 'en' ? 'Failed to load checkout' : 'चेकआउट लोड करने में विफल');
+      toast.error('Failed to load checkout');
     } finally {
       setLoading(false);
     }
@@ -112,7 +111,7 @@ const CheckoutPage: React.FC = () => {
     if (!plan || !user) return;
 
     if (!phone || phone.length < 10) {
-      toast.error(language === 'en' ? 'Please enter a valid phone number' : 'कृपया सही फ़ोन नंबर दर्ज करें');
+      toast.error('Please enter a valid phone number');
       return;
     }
 
@@ -152,16 +151,16 @@ const CheckoutPage: React.FC = () => {
         }
         if (!isSafeUrl) {
           logger.error('PhonePe redirect URL failed domain validation:', redirectUrl);
-          toast.error(language === 'en' ? 'Payment redirect validation failed. Please try again.' : 'भुगतान पुनर्निर्देशन मान्यता विफल हुई। कृपया पुनः प्रयास करें।');
+          toast.error('Payment redirect validation failed. Please try again.');
           setProcessing(false);
           return;
         }
-        toast.success(language === 'en' ? 'Redirecting to PhonePe...' : 'PhonePe पर रीडायरेक्ट किया जा रहा है...');
+        toast.success('Redirecting to PhonePe...');
         window.location.href = redirectUrl;
         return;
       }
 
-      toast.error(language === 'en' ? 'PhonePe unavailable. Switching to Razorpay...' : 'PhonePe उपलब्ध नहीं है। Razorpay पर स्विच हो रहा है...');
+      toast.error('PhonePe unavailable. Switching to Razorpay...');
 
       const result: RazorpayPaymentResult = await initiateRazorpayPayment({
         amount: totalAmount, // Already in paise from database
@@ -175,10 +174,10 @@ const CheckoutPage: React.FC = () => {
       });
 
       if (result.success) {
-        toast.success(language === 'en' ? 'Payment successful!' : 'भुगतान सफल!');
+        toast.success('Payment successful!');
         navigate('/payment/success?payment_id=' + result.paymentId);
       } else {
-        toast.error(result.error || (language === 'en' ? 'Payment failed on both gateways' : 'दोनों पेमेंट गेटवे पर भुगतान विफल हुआ'));
+        toast.error(result.error || ('Payment failed on both gateways'));
       }
     } catch (error) {
       logger.error('Payment error:', error);
@@ -222,24 +221,12 @@ const CheckoutPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Language Toggle */}
-        <div className="flex justify-end mb-6">
-          <button
-            onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
-            className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            {language === 'en' ? 'हिंदी' : 'English'}
-          </button>
-        </div>
-
         {/* Test Mode Banner */}
         {(phonePeConfig.isTestMode || razorpayConfig.isTestMode) && (
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
             <span>
-              {language === 'en'
-                ? 'Test Mode: PhonePe primary, Razorpay fallback. No real payment will be processed in sandbox.'
-                : 'टेस्ट मोड: कोई वास्तविक भुगतान नहीं होगा'}
+              
             </span>
           </div>
         )}
@@ -248,7 +235,7 @@ const CheckoutPage: React.FC = () => {
           {/* Order Summary */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-              {language === 'en' ? 'Order Summary' : 'ऑर्डर सारांश'}
+              {'Order Summary'}
             </h2>
 
             {/* Upgrade/Downgrade Notice */}
@@ -256,15 +243,11 @@ const CheckoutPage: React.FC = () => {
               <div className={`mb-4 p-3 rounded-lg ${subscriptionChange === 'upgrade' ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'}`}>
                 {subscriptionChange === 'upgrade' ? (
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    {language === 'en'
-                      ? 'You are upgrading your plan. The new features will be available immediately after payment.'
-                      : 'आप अपना प्लान अपग्रेड कर रहे हैं। नई सुविधाएं भुगतान के तुरंत बाद उपलब्ध होंगी।'}
+                    
                   </p>
                 ) : (
                   <p className="text-sm text-amber-700 dark:text-amber-300">
-                    {language === 'en'
-                      ? 'You are downgrading your plan. The change will take effect at the end of your current billing period.'
-                      : 'आप अपना प्लान डाउनग्रेड कर रहे हैं। यह परिवर्तन आपकी वर्तमान बिलिंग अवधि के अंत में प्रभावी होगा।'}
+                    
                   </p>
                 )}
               </div>
@@ -274,12 +257,12 @@ const CheckoutPage: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {language === 'en' ? plan.name : plan.name_hi} Plan
+                    {plan.name} Plan
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {billingCycle === 'yearly'
-                      ? (language === 'en' ? 'Annual subscription' : 'वार्षिक सदस्यता')
-                      : (language === 'en' ? 'Monthly subscription' : 'मासिक सदस्यता')}
+                      ? ('Annual subscription')
+                      : ('Monthly subscription')}
                   </p>
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
@@ -291,7 +274,7 @@ const CheckoutPage: React.FC = () => {
             {/* Features */}
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                {language === 'en' ? 'Included Features' : 'शामिल सुविधाएं'}
+                {'Included Features'}
               </h4>
               <ul className="space-y-2">
                 {plan.features.slice(0, 5).map((feature, index) => (
@@ -307,19 +290,19 @@ const CheckoutPage: React.FC = () => {
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">
-                  {language === 'en' ? 'Subtotal' : 'उप-योग'}
+                  {'Subtotal'}
                 </span>
                 <span className="text-gray-900 dark:text-white">{formatPrice(amount)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">
-                  {language === 'en' ? 'GST (18%)' : 'जीएसटी (18%)'}
+                  {'GST (18%)'}
                 </span>
                 <span className="text-gray-900 dark:text-white">{formatPrice(taxAmount)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
                 <span className="text-gray-900 dark:text-white">
-                  {language === 'en' ? 'Total' : 'कुल'}
+                  {'Total'}
                 </span>
                 <span className="text-blue-600">{formatPrice(totalAmount)}</span>
               </div>
@@ -329,14 +312,14 @@ const CheckoutPage: React.FC = () => {
           {/* Payment Form */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-              {language === 'en' ? 'Payment Details' : 'भुगतान विवरण'}
+              {'Payment Details'}
             </h2>
 
             <div className="space-y-4">
               {/* Phone Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {language === 'en' ? 'Mobile Number' : 'मोबाइल नंबर'} *
+                  {'Mobile Number'} *
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">+91</span>
@@ -349,14 +332,14 @@ const CheckoutPage: React.FC = () => {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {language === 'en' ? 'UPI payment link will be sent to this number' : 'यूपीआई पेमेंट लिंक इस नंबर पर भेजा जाएगा'}
+                  {'UPI payment link will be sent to this number'}
                 </p>
               </div>
 
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {language === 'en' ? 'Email Address' : 'ईमेल पता'}
+                  {'Email Address'}
                 </label>
                 <input
                   type="email"
@@ -369,7 +352,7 @@ const CheckoutPage: React.FC = () => {
               {/* Payment Methods */}
               <div className="pt-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  {language === 'en' ? 'Pay with' : 'भुगतान करें'}
+                  {'Pay with'}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2 p-3 border-2 border-blue-500 rounded-lg bg-blue-50 dark:bg-blue-900/20">
@@ -405,21 +388,19 @@ const CheckoutPage: React.FC = () => {
                 {processing ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    {language === 'en' ? 'Processing...' : 'प्रोसेसिंग...'}
+                    {'Processing...'}
                   </>
                 ) : (
                   <>
                     <Smartphone className="w-5 h-5" />
-                    {language === 'en' ? `Pay ${formatPrice(totalAmount)}` : `${formatPrice(totalAmount)} भुगतान करें`}
+                    {`Pay ${formatPrice(totalAmount)}`}
                   </>
                 )}
               </button>
 
               {/* Security Note */}
               <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-                🔒 {language === 'en'
-                  ? 'Secured by PhonePe (fallback Razorpay). Your payment information is encrypted.'
-                  : 'फोनपे द्वारा सुरक्षित। आपकी भुगतान जानकारी एन्क्रिप्टेड है।'}
+                🔒 
               </p>
             </div>
           </div>

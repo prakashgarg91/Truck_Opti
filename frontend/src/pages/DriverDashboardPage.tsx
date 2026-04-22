@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import {
   Power, Truck, Star, TrendingUp, Clock,
   CheckCircle2, XCircle, AlertTriangle,
@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
@@ -76,7 +75,6 @@ function normalizeShipmentSummary(shipment: Record<string, unknown> | null | und
 
 export default function DriverDashboardPage() {
   const { user } = useAuthStore()
-  const { language } = useLanguageStore()
   const navigate = useNavigate()
   const [driver, setDriver] = useState<DriverRecord | null>(null)
   const [loading, setLoading] = useState(true)
@@ -201,11 +199,11 @@ export default function DriverDashboardPage() {
     if (!driver?.id) return
     const amount = parseFloat(withdrawalAmount)
     if (isNaN(amount) || amount <= 0) {
-      toast.error(language === 'en' ? 'Please enter a valid amount' : 'कृपया एक मान्य राशि दर्ज करें')
+      toast.error('Please enter a valid amount')
       return
     }
     if (amount > walletBalance) {
-      toast.error(language === 'en' ? 'Amount exceeds available balance' : 'राशि उपलब्ध शेष से अधिक है')
+      toast.error('Amount exceeds available balance')
       return
     }
     setWithdrawing(true)
@@ -217,9 +215,9 @@ export default function DriverDashboardPage() {
       })
       if (error) {
         logger.error('[Withdrawal]', error)
-        toast.error(language === 'en' ? 'Failed to submit withdrawal request' : 'निकासी अनुरोध सबमिट करने में विफल')
+        toast.error('Failed to submit withdrawal request')
       } else {
-        toast.success(language === 'en' ? 'Withdrawal request submitted' : 'निकासी अनुरोध सबमिट किया गया')
+        toast.success('Withdrawal request submitted')
         setShowWithdrawalModal(false)
         setWithdrawalAmount('')
         // Refresh payout history
@@ -381,7 +379,7 @@ export default function DriverDashboardPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                {language === 'en' ? 'Request Withdrawal' : 'निकासी का अनुरोध करें'}
+                {'Request Withdrawal'}
               </h3>
               <button onClick={() => setShowWithdrawalModal(false)} className="p-1">
                 <X size={20} className="text-slate-400" />
@@ -390,7 +388,7 @@ export default function DriverDashboardPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'en' ? 'Amount (₹)' : 'राशि (₹)'}
+                  {'Amount (₹)'}
                 </label>
                 <div className="relative">
                   <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -404,7 +402,7 @@ export default function DriverDashboardPage() {
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  {language === 'en' ? 'Available:' : 'उपलब्ध:'} {formatCurrency(walletBalance)}
+                  {'Available:'} {formatCurrency(walletBalance)}
                 </p>
               </div>
               <button
@@ -413,8 +411,8 @@ export default function DriverDashboardPage() {
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white font-semibold rounded-xl transition-colors"
               >
                 {withdrawing
-                  ? (language === 'en' ? 'Submitting...' : 'सबमिट हो रहा है...')
-                  : (language === 'en' ? 'Submit Request' : 'अनुरोध सबमिट करें')}
+                  ? ('Submitting...')
+                  : ('Submit Request')}
               </button>
             </div>
           </div>
@@ -636,7 +634,7 @@ export default function DriverDashboardPage() {
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
               <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <DollarSign size={16} className="text-amber-500" />
-                {language === 'en' ? 'Payout Requests' : 'भुगतान अनुरोध'}
+                {'Payout Requests'}
               </h3>
             </div>
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
@@ -657,10 +655,10 @@ export default function DriverDashboardPage() {
                       payout.status === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                         'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                     }`}>
-                    {payout.status === 'pending' ? (language === 'en' ? 'Pending' : 'लंबित') :
-                      payout.status === 'approved' ? (language === 'en' ? 'Approved' : 'स्वीकृत') :
-                        payout.status === 'paid' ? (language === 'en' ? 'Paid' : 'भुगतान किया') :
-                          (language === 'en' ? 'Rejected' : 'अस्वीकृत')}
+                    {payout.status === 'pending' ? ('Pending') :
+                      payout.status === 'approved' ? ('Approved') :
+                        payout.status === 'paid' ? ('Paid') :
+                          ('Rejected')}
                   </span>
                 </div>
               ))}

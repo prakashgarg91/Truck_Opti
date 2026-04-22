@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, CreditCard, User, Calendar, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
@@ -27,16 +26,8 @@ const PLAN_LABELS: Record<string, string> = {
   enterprise: 'Enterprise'
 }
 
-const PLAN_LABELS_HI: Record<string, string> = {
-  free: 'फ्री',
-  pro: 'प्रो',
-  business: 'बिज़नेस',
-  enterprise: 'एंटरप्राइज़'
-}
-
 export default function AdminSubscriptionsPage() {
   const { user } = useAuthStore()
-  const { language } = useLanguageStore()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
@@ -59,7 +50,7 @@ export default function AdminSubscriptionsPage() {
 
     if (error) {
       logger.error('[AdminSubscriptions] fetch:', error)
-      toast.error(language === 'en' ? 'Failed to load subscriptions' : 'सदस्यता लोड करने में विफल')
+      toast.error('Failed to load subscriptions')
       setLoading(false)
       return
     }
@@ -76,7 +67,7 @@ export default function AdminSubscriptionsPage() {
 
     setSubscriptions(subs)
     setLoading(false)
-  }, [language])
+  }, [])
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -92,10 +83,10 @@ export default function AdminSubscriptionsPage() {
       cancelled: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
     }
     const labels: Record<string, string> = {
-      active: language === 'en' ? 'Active' : 'सक्रिय',
-      trial: language === 'en' ? 'Trial' : 'ट्रायल',
-      expired: language === 'en' ? 'Expired' : 'समाप्त',
-      cancelled: language === 'en' ? 'Cancelled' : 'रद्द'
+      active: 'Active',
+      trial: 'Trial',
+      expired: 'Expired',
+      cancelled: 'Cancelled'
     }
     const icons: Record<string, typeof CheckCircle2> = {
       active: CheckCircle2,
@@ -128,7 +119,7 @@ export default function AdminSubscriptionsPage() {
         <div className="flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-purple-600" />
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-            {language === 'en' ? 'Subscriptions' : 'सदस्यता'}
+            {'Subscriptions'}
           </h1>
         </div>
         <button
@@ -142,19 +133,19 @@ export default function AdminSubscriptionsPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-3">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-medium text-slate-500">{language === 'en' ? 'Total' : 'कुल'}</p>
+          <p className="text-xs font-medium text-slate-500">{'Total'}</p>
           <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{subscriptions.length}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-medium text-slate-500">{language === 'en' ? 'Active' : 'सक्रिय'}</p>
+          <p className="text-xs font-medium text-slate-500">{'Active'}</p>
           <p className="text-2xl font-bold text-green-600">{subscriptions.filter(s => s.status === 'active').length}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-medium text-slate-500">{language === 'en' ? 'Trial' : 'ट्रायल'}</p>
+          <p className="text-xs font-medium text-slate-500">{'Trial'}</p>
           <p className="text-2xl font-bold text-amber-600">{subscriptions.filter(s => s.status === 'trial').length}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-medium text-slate-500">{language === 'en' ? 'Expired' : 'समाप्त'}</p>
+          <p className="text-xs font-medium text-slate-500">{'Expired'}</p>
           <p className="text-2xl font-bold text-red-600">{subscriptions.filter(s => s.status === 'expired' || s.status === 'cancelled').length}</p>
         </div>
       </div>
@@ -164,7 +155,7 @@ export default function AdminSubscriptionsPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center">
           <CreditCard size={48} className="text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500 dark:text-slate-400 font-medium">
-            {language === 'en' ? 'No subscriptions yet' : 'अभी तक कोई सदस्यता नहीं'}
+            {'No subscriptions yet'}
           </p>
         </div>
       ) : (
@@ -176,28 +167,28 @@ export default function AdminSubscriptionsPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
                     <span className="flex items-center gap-1">
                       <User size={12} />
-                      {language === 'en' ? 'User' : 'उपयोगकर्ता'}
+                      {'User'}
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
                     <span className="flex items-center gap-1">
                       <CreditCard size={12} />
-                      {language === 'en' ? 'Plan' : 'प्लान'}
+                      {'Plan'}
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
-                    {language === 'en' ? 'Status' : 'स्थिति'}
+                    {'Status'}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
                     <span className="flex items-center gap-1">
                       <Clock size={12} />
-                      {language === 'en' ? 'Trial End' : 'ट्रायल समाप्त'}
+                      {'Trial End'}
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
                     <span className="flex items-center gap-1">
                       <Calendar size={12} />
-                      {language === 'en' ? 'Created' : 'बनाया गया'}
+                      {'Created'}
                     </span>
                   </th>
                 </tr>
@@ -215,7 +206,7 @@ export default function AdminSubscriptionsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm text-slate-700 dark:text-slate-300">
-                        {language === 'en' ? PLAN_LABELS[sub.plan_id] || sub.plan_id : PLAN_LABELS_HI[sub.plan_id] || sub.plan_id}
+                        {PLAN_LABELS[sub.plan_id] || sub.plan_id}
                       </span>
                     </td>
                     <td className="px-4 py-3">

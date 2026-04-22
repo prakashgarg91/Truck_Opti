@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { ArrowRight, Building2, Eye, EyeOff, KeyRound, LogIn, MessageCircle, Phone, Send, Shield, Sparkles, Truck, UserCog, type LucideIcon } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
-import { useLanguageStore } from '../../stores/languageStore'
 import { emailOrLoginIdSchema, emailSchema, passwordSchema, phoneInputSchema } from '../../utils/validators'
 import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
 import { logger } from '../../utils/logger'
@@ -123,7 +122,6 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { setPendingPhone } = useAuthStore()
-  const { language } = useLanguageStore()
   const returnTo = buildAuthReturnTo(location.state as AuthRouteState)
   const requestedMode = new URLSearchParams(location.search).get('mode')
   const surfaceMode = resolveSurfaceMode(requestedMode, returnTo)
@@ -204,17 +202,13 @@ export default function LoginPage() {
     mutationFn: async () => {
       if (channel === 'email') {
         if (!isEmailOtpEnabled) {
-          throw new UserFacingError(language === 'en'
-            ? 'Email OTP is disabled. Please use SMS/WhatsApp or Google sign-in.'
-            : 'ईमेल OTP अक्षम है। कृपया SMS/WhatsApp या Google साइन-इन का उपयोग करें।')
+          throw new UserFacingError('')
         }
         await authSupabaseApi.signInWithEmail(contact)
         return { success: true, channel: 'email' }
       } else {
         if (!isPhoneOtpEnabled) {
-          throw new UserFacingError(language === 'en'
-            ? 'Phone OTP is disabled in this environment. Please use Email OTP or Google sign-in.'
-            : 'फ़ोन OTP इस वातावरण में अक्षम है। कृपया ईमेल OTP या Google साइन-इन का उपयोग करें।')
+          throw new UserFacingError('')
         }
 
         // Format phone with country code for Supabase
@@ -227,8 +221,8 @@ export default function LoginPage() {
       setPendingPhone(contact)
       const channelLabel = data.channel === 'email' ? 'Email' : data.channel === 'whatsapp' ? 'WhatsApp' : 'SMS'
       const successMsg = data.channel === 'email'
-        ? (language === 'en' ? 'OTP sent to email' : 'ईमेल पर OTP भेजा गया')
-        : (language === 'en' ? `OTP sent via ${channelLabel}` : `${channelLabel} के माध्यम से OTP भेजा गया`)
+        ? ('OTP sent to email')
+        : (`OTP sent via ${channelLabel}`)
       toast.success(successMsg, {
         icon: data.channel === 'email' ? '📧' : '📱',
         duration: 3000
@@ -237,9 +231,7 @@ export default function LoginPage() {
     },
     onError: (error: unknown) => {
       logger.error('[LoginPage] OTP error:', error)
-      const errorMsg = language === 'en'
-        ? toUserFacingErrorMessage(error, 'Failed to send OTP. Please try again.')
-        : 'OTP भेजने में विफल। कृपया पुनः प्रयास करें।'
+      const errorMsg = toUserFacingErrorMessage(error, 'Failed to send OTP. Please try again.')
       toast.error(errorMsg)
     }
   })

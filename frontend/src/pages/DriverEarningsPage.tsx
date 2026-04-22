@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { Wallet, TrendingUp, Calendar, CheckCircle2, RefreshCw, DollarSign, X, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
@@ -54,7 +54,7 @@ export default function DriverEarningsPage() {
 
     if (payErr) {
       logger.error('[DriverEarnings] balance:', payErr)
-      toast.error(language === 'en' ? 'Failed to load balance' : 'बैलेंस लोड नहीं हुआ')
+      toast.error('Failed to load balance')
       return
     }
 
@@ -107,12 +107,12 @@ export default function DriverEarningsPage() {
   const handleWithdrawRequest = async () => {
     const amount = parseFloat(withdrawAmount)
     if (isNaN(amount) || amount <= 0) {
-      toast.error(language === 'en' ? 'Please enter a valid amount' : 'कृपया एक मान्य राशि दर्ज करें')
+      toast.error('Please enter a valid amount')
       return
     }
     const available = payoutEarned
     if (amount > available) {
-      toast.error(language === 'en' ? 'Amount exceeds available balance' : 'राशि उपलब्ध शेष से अधिक है')
+      toast.error('Amount exceeds available balance')
       return
     }
     setWithdrawLoading(true)
@@ -124,15 +124,15 @@ export default function DriverEarningsPage() {
         requested_at: new Date().toISOString()
       })
       if (error) {
-        toast.error(language === 'en' ? 'Failed to submit request' : 'अनुरोध जमा करने में विफल')
+        toast.error('Failed to submit request')
       } else {
-        toast.success(language === 'en' ? 'Withdrawal request submitted!' : 'निकासी अनुरोध जमा!')
+        toast.success('Withdrawal request submitted!')
         setShowWithdrawModal(false)
         setWithdrawAmount('')
         fetchDriverId() // Refresh driver data
       }
     } catch (_err) {
-      toast.error(language === 'en' ? 'Something went wrong' : 'कुछ गलत हुआ')
+      toast.error('Something went wrong')
     } finally {
       setWithdrawLoading(false)
     }
@@ -188,11 +188,11 @@ export default function DriverEarningsPage() {
             <div className="col-span-2 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-5 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-100 text-sm font-medium">{language === 'en' ? 'Wallet Balance' : 'वॉलेट बैलेंस'}</p>
+                  <p className="text-green-100 text-sm font-medium">{'Wallet Balance'}</p>
                   <p className="text-3xl font-bold text-white mt-1">₹{payoutEarned.toLocaleString('en-IN')}</p>
                   {payoutPending > 0 && (
                     <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-400/20 rounded-lg">
-                      <span className="text-amber-100 text-xs font-medium">{language === 'en' ? 'Pending' : 'लंबित'}: ₹{payoutPending.toLocaleString('en-IN')}</span>
+                      <span className="text-amber-100 text-xs font-medium">{'Pending'}: ₹{payoutPending.toLocaleString('en-IN')}</span>
                     </div>
                   )}
                 </div>
@@ -201,7 +201,7 @@ export default function DriverEarningsPage() {
                   disabled={payoutEarned <= 0}
                   className="px-5 py-2.5 bg-white text-green-600 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-50 transition-colors"
                 >
-                  {language === 'en' ? 'Withdraw' : 'निकालें'}
+                  {'Withdraw'}
                 </button>
               </div>
             </div>
@@ -211,7 +211,7 @@ export default function DriverEarningsPage() {
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
                 <Wallet size={20} className="text-green-500 mb-2" />
                 <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(totalEarnings)}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{language === 'en' ? 'Earnings' : 'कमाई'}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{'Earnings'}</p>
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
                 <CheckCircle2 size={20} className="text-blue-500 mb-2" />
@@ -253,7 +253,7 @@ export default function DriverEarningsPage() {
             ) : (
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
                 <Wallet size={36} className="text-slate-200 dark:text-slate-700 mx-auto mb-2" />
-                <p className="text-slate-500 dark:text-slate-400 text-sm">{language === 'en' ? 'No trips in this period' : 'इस अवधि में कोई यात्रा नहीं'}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">{'No trips in this period'}</p>
               </div>
             )}
           </>
@@ -266,7 +266,7 @@ export default function DriverEarningsPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                {language === 'en' ? 'Request Withdrawal' : 'निकासी अनुरोध करें'}
+                {'Request Withdrawal'}
               </h3>
               <button onClick={() => setShowWithdrawModal(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                 <X size={20} className="text-slate-500" />
@@ -275,7 +275,7 @@ export default function DriverEarningsPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  {language === 'en' ? 'Amount (₹)' : 'राशि (₹)'}
+                  {'Amount (₹)'}
                 </label>
                 <div className="relative">
                   <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -288,15 +288,13 @@ export default function DriverEarningsPage() {
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  {language === 'en' ? 'Available:' : 'उपलब्ध:'} ₹{payoutEarned.toLocaleString('en-IN')}
+                  {'Available:'} ₹{payoutEarned.toLocaleString('en-IN')}
                 </p>
               </div>
               <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 flex items-start gap-2">
                 <AlertCircle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-amber-700 dark:text-amber-400">
-                  {language === 'en'
-                    ? 'Withdrawal requests are processed within 24-48 hours. Funds will be transferred to your registered bank account.'
-                    : 'निकासी अनुरोध 24-48 घंटों में संcessed किए जाते हैं।'}
+                  
                 </p>
               </div>
               <button
@@ -304,7 +302,7 @@ export default function DriverEarningsPage() {
                 disabled={withdrawLoading || !withdrawAmount}
                 className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-bold rounded-xl transition-colors"
               >
-                {withdrawLoading ? (language === 'en' ? 'Submitting...' : 'जमा हो रहा...') : (language === 'en' ? 'Submit Request' : 'अनुरोध जमा करें')}
+                {withdrawLoading ? ('Submitting...') : ('Submit Request')}
               </button>
             </div>
           </div>

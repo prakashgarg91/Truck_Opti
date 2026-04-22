@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Building2, User, CreditCard, CheckCircle2,
@@ -7,7 +7,6 @@ import {
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
 import { storeAuthReturnTo } from '../utils/authReturnTo'
 
@@ -59,7 +58,6 @@ const INITIAL: FormData = {
 export default function AgencyRegisterPage() {
   const navigate = useNavigate()
   const { user, updateUser } = useAuthStore()
-  const { language } = useLanguageStore()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
   const [submitting, setSubmitting] = useState(false)
@@ -102,7 +100,7 @@ export default function AgencyRegisterPage() {
 
   const handleSubmit = async () => {
     if (!user?.id) {
-      toast.error(language === 'en' ? 'Please log in before submitting your agency registration.' : 'कृपया एजेंसी पंजीकरण जमा करने से पहले लॉग इन करें।')
+      toast.error('Please log in before submitting your agency registration.')
       storeAuthReturnTo('/agency/register')
       navigate('/login?mode=agency')
       return
@@ -134,7 +132,7 @@ export default function AgencyRegisterPage() {
       setStep(4)
     } catch (err: unknown) {
       logger.error('[AgencyRegisterPage]', err)
-      toast.error(language === 'en' ? 'Registration failed. Please try again.' : 'पंजीकरण विफल। कृपया पुनः प्रयास करें।')
+      toast.error('Registration failed. Please try again.')
     } finally {
       setSubmitting(false)
     }

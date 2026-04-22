@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
+﻿import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import OfflineBanner from '../components/OfflineBanner'
 import InstallPrompt from '../components/InstallPrompt'
 import {
@@ -26,7 +26,6 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { useLanguageStore } from '../stores/languageStore'
 import { useAuthStore } from '../stores/authStore'
 import { notificationsSupabaseApi } from '../services/supabaseApi'
 import { useSubscription } from '../hooks/useSubscription'
@@ -61,7 +60,6 @@ export default function MobileLayout() {
   const [loadingNotifications, setLoadingNotifications] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const { language, toggleLanguage } = useLanguageStore()
   const { logout, user } = useAuthStore()
   const { isActive, isTrial, isExpired, trialDaysRemaining, plan, isLoading: subLoading } = useSubscription()
 
@@ -160,7 +158,7 @@ export default function MobileLayout() {
       await notificationsSupabaseApi.markAllAsRead()
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
       setNotificationCount(0)
-      toast.success(language === 'en' ? 'All notifications marked as read' : 'सभी सूचनाएं पढ़ी गई')
+      toast.success('All notifications marked as read')
     } catch (error) {
       logger.error('Failed to mark all as read:', error)
     }
@@ -171,7 +169,7 @@ export default function MobileLayout() {
       await notificationsSupabaseApi.clearAll()
       setNotifications([])
       setNotificationCount(0)
-      toast.success(language === 'en' ? 'All notifications cleared' : 'सभी सूचनाएं हटा दी गईं')
+      toast.success('All notifications cleared')
     } catch (error) {
       logger.error('Failed to clear notifications:', error)
     }
@@ -278,10 +276,10 @@ export default function MobileLayout() {
               </div>
               <div>
                 <h2 className="font-bold text-slate-900 dark:text-white">
-                  {language === 'en' ? 'Notifications' : 'सूचनाएं'}
+                  {'Notifications'}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  {notificationCount} {language === 'en' ? 'unread' : 'अपठित'}
+                  {notificationCount} {'unread'}
                 </p>
               </div>
             </div>
@@ -302,7 +300,7 @@ export default function MobileLayout() {
               className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 disabled:text-slate-400 disabled:cursor-not-allowed"
             >
               <Check className="w-4 h-4" />
-              {language === 'en' ? 'Mark all read' : 'सभी पढ़ें'}
+              {'Mark all read'}
             </button>
             <button
               onClick={handleClearAll}
@@ -310,7 +308,7 @@ export default function MobileLayout() {
               className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 disabled:text-slate-400 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-4 h-4" />
-              {language === 'en' ? 'Clear all' : 'सभी हटाएं'}
+              {'Clear all'}
             </button>
           </div>
 
@@ -326,7 +324,7 @@ export default function MobileLayout() {
                   <Bell className="w-8 h-8 text-slate-400" />
                 </div>
                 <p className="text-slate-500 dark:text-slate-400">
-                  {language === 'en' ? 'No notifications yet' : 'कोई सूचना नहीं'}
+                  {'No notifications yet'}
                 </p>
               </div>
             ) : (
@@ -481,7 +479,7 @@ export default function MobileLayout() {
           {/* Desktop Notification Bell */}
           <div className="hidden lg:flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700">
             <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-              {language === 'en' ? 'Notifications' : 'सूचनाएं'}
+              {'Notifications'}
             </span>
             <button
               onClick={handleOpenNotifications}
@@ -517,7 +515,7 @@ export default function MobileLayout() {
                   "w-5 h-5 transition-transform duration-200",
                   "group-hover:scale-110"
                 )} />
-                <span className="font-medium">{language === 'en' ? item.label : item.labelHi}</span>
+                <span className="font-medium">{item.label}</span>
               </NavLink>
             ))}
 
@@ -529,7 +527,7 @@ export default function MobileLayout() {
               className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
             >
               <Wrench className="w-5 h-5" />
-              <span className="font-medium">{language === 'en' ? 'Management' : 'प्रबंधन'}</span>
+              <span className="font-medium">{'Management'}</span>
             </button>
 
             {user?.role === 'admin' && (
@@ -542,7 +540,7 @@ export default function MobileLayout() {
                   className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
                 >
                   <ShieldCheck className="w-5 h-5" />
-                  <span className="font-medium">{language === 'en' ? 'Driver Approvals' : 'ड्राइवर अनुमोदन'}</span>
+                  <span className="font-medium">{'Driver Approvals'}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -552,14 +550,14 @@ export default function MobileLayout() {
                   className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                 >
                   <Building2 className="w-5 h-5" />
-                  <span className="font-medium">{language === 'en' ? 'Agency Approvals' : 'एजेंसी अनुमोदन'}</span>
+                  <span className="font-medium">{'Agency Approvals'}</span>
                 </button>
               </>
             )}
 
             <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-3">
-                {language === 'en' ? 'Settings' : 'सेटिंग्स'}
+                {'Settings'}
               </p>
               <button
                 onClick={() => {
@@ -569,7 +567,7 @@ export default function MobileLayout() {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
               >
                 <CreditCard className="w-5 h-5" />
-                <span className="font-medium">{language === 'en' ? 'Subscription' : 'सदस्यता'}</span>
+                <span className="font-medium">{'Subscription'}</span>
               </button>
               <button
                 onClick={() => {
@@ -579,7 +577,7 @@ export default function MobileLayout() {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
               >
                 <Building2 className="w-5 h-5" />
-                <span className="font-medium">{language === 'en' ? 'Company Profile' : 'कंपनी प्रोफाइल'}</span>
+                <span className="font-medium">{'Company Profile'}</span>
               </button>
               <button
                 onClick={() => {
@@ -589,21 +587,21 @@ export default function MobileLayout() {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
               >
                 <Settings className="w-5 h-5" />
-                <span className="font-medium">{language === 'en' ? 'Settings' : 'सेटिंग्स'}</span>
+                <span className="font-medium">{'Settings'}</span>
               </button>
               <button
                 onClick={() => {
-                  toast.success(language === 'en' ? 'Support: support@truckopti.in' : 'सहायता: support@truckopti.in')
+                  toast.success('Support: prakashgarg91@gmail.com | +91 99993 52050')
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
               >
                 <HelpCircle className="w-5 h-5" />
-                <span className="font-medium">{language === 'en' ? 'Help & Support' : 'सहायता'}</span>
+                <span className="font-medium">{'Help & Support'}</span>
               </button>
             </div>
           </nav>
 
-          {/* Theme Toggle & Language */}
+            {/* Theme Toggle */}
           <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
             {/* Theme Toggle */}
             <div className="flex items-center justify-between px-2">
@@ -624,32 +622,6 @@ export default function MobileLayout() {
                 </span>
               </button>
             </div>
-
-            {/* Language Toggle */}
-            <div className="bg-slate-100 dark:bg-slate-700 rounded-xl p-1.5 flex gap-1.5">
-              <button
-                onClick={() => language !== 'en' && toggleLanguage()}
-                className={clsx(
-                  "flex-1 py-2.5 text-sm font-medium rounded-lg transition-all",
-                  language === 'en'
-                    ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm"
-                    : "text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50"
-                )}
-              >
-                English
-              </button>
-              <button
-                onClick={() => language !== 'hi' && toggleLanguage()}
-                className={clsx(
-                  "flex-1 py-2.5 text-sm font-medium rounded-lg transition-all",
-                  language === 'hi'
-                    ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm"
-                    : "text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50"
-                )}
-              >
-                हिंदी
-              </button>
-            </div>
           </div>
 
           {/* Logout */}
@@ -657,13 +629,13 @@ export default function MobileLayout() {
             <button
               onClick={() => {
                 logout()
-                toast.success(language === 'en' ? 'Logged out successfully' : 'सफलतापूर्वक लॉगआउट')
+                toast.success('Logged out successfully')
                 navigate('/login')
               }}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium"
             >
               <LogOut className="w-5 h-5" />
-              <span>{language === 'en' ? 'Sign Out' : 'लॉगआउट'}</span>
+              <span>{'Sign Out'}</span>
             </button>
           </div>
         </div>
@@ -704,7 +676,7 @@ export default function MobileLayout() {
                   "text-[10px] font-medium transition-all duration-300",
                   isActive && "font-semibold"
                 )}>
-                  {language === 'en' ? item.label : item.labelHi}
+                  {item.label}
                 </span>
               </NavLink>
             )

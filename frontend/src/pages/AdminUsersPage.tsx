@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { Users, Search, RefreshCw, Shield, Trash2, Mail, Phone, Calendar, X, CheckCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
@@ -30,7 +30,7 @@ export default function AdminUsersPage() {
   // Redirect non-admins
   useEffect(() => {
     if (currentUser && currentUser.role !== 'admin') {
-      toast.error(language === 'en' ? 'Admin access required' : 'एडमिन एक्सेस आवश्यक')
+      toast.error('Admin access required')
       navigate('/dashboard', { replace: true })
     }
   }, [currentUser, navigate, language])
@@ -44,12 +44,12 @@ export default function AdminUsersPage() {
         .order('created_at', { ascending: false })
 
       if (error) {
-        toast.error(language === 'en' ? 'Failed to load users' : 'उपयोगकर्ता लोड करने में विफल')
+        toast.error('Failed to load users')
       } else {
         setUsers((data as UserRecord[]) || [])
       }
     } catch (_err) {
-      toast.error(language === 'en' ? 'Failed to load users' : 'उपयोगकर्ता लोड करने में विफल')
+      toast.error('Failed to load users')
     } finally {
       setLoading(false)
     }
@@ -66,15 +66,15 @@ export default function AdminUsersPage() {
     try {
       const { error } = await supabase.from('users').delete().eq('id', selectedUser.id)
       if (error) {
-        toast.error(language === 'en' ? 'Failed to delete user' : 'उपयोगकर्ता हटाने में विफल')
+        toast.error('Failed to delete user')
       } else {
-        toast.success(language === 'en' ? 'User deleted successfully' : 'उपयोगकर्ता सफलतापूर्वक हटाया गया')
+        toast.success('User deleted successfully')
         setShowDeleteModal(false)
         setSelectedUser(null)
         fetchUsers()
       }
     } catch (_err) {
-      toast.error(language === 'en' ? 'Failed to delete user' : 'उपयोगकर्ता हटाने में विफल')
+      toast.error('Failed to delete user')
     }
   }
 
@@ -111,10 +111,10 @@ export default function AdminUsersPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-800 dark:text-white">
-              {language === 'en' ? 'User Management' : 'उपयोगकर्ता प्रबंधन'}
+              {'User Management'}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {users.length} {language === 'en' ? 'total users' : 'कुल उपयोगकर्ता'}
+              {users.length} {'total users'}
             </p>
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function AdminUsersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder={language === 'en' ? 'Search users...' : 'उपयोगकर्ता खोजें...'}
+            placeholder={'Search users...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
@@ -149,7 +149,7 @@ export default function AdminUsersPage() {
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
             >
-              {role === 'all' ? (language === 'en' ? 'All' : 'सभी') : roleLabels[role]}
+              {role === 'all' ? ('All') : roleLabels[role]}
             </button>
           ))}
         </div>
@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
         <div className="text-center py-12">
           <Users size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <p className="text-slate-500 dark:text-slate-400">
-            {language === 'en' ? 'No users found' : 'कोई उपयोगकर्ता नहीं मिला'}
+            {'No users found'}
           </p>
         </div>
       ) : (
@@ -208,7 +208,7 @@ export default function AdminUsersPage() {
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center gap-4 text-xs text-slate-400">
                 <span className="flex items-center gap-1">
                   <Calendar size={12} />
-                  {language === 'en' ? 'Joined' : 'शामिल हुए'}: {new Date(user.created_at).toLocaleDateString('en-IN')}
+                  {'Joined'}: {new Date(user.created_at).toLocaleDateString('en-IN')}
                 </span>
                 <span className="flex items-center gap-1">
                   <Mail size={12} />
@@ -226,29 +226,27 @@ export default function AdminUsersPage() {
           <div className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                {language === 'en' ? 'Delete User' : 'उपयोगकर्ता हटाएं'}
+                {'Delete User'}
               </h3>
               <button onClick={() => setShowDeleteModal(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                 <X size={20} className="text-slate-500" />
               </button>
             </div>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              {language === 'en'
-                ? `Are you sure you want to delete user "${selectedUser.email}"? This action cannot be undone.`
-                : `क्या आप वाकई उपयोगकर्ता "${selectedUser.email}" को हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।`}
+              {`Are you sure you want to delete user "${selectedUser.email}"? This action cannot be undone.`}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
               >
-                {language === 'en' ? 'Cancel' : 'रद्द करें'}
+                {'Cancel'}
               </button>
               <button
                 onClick={handleDeleteUser}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700"
               >
-                {language === 'en' ? 'Delete' : 'हटाएं'}
+                {'Delete'}
               </button>
             </div>
           </div>

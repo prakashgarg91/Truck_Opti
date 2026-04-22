@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FileSpreadsheet, AlertCircle, CheckCircle2,
@@ -9,7 +9,6 @@ import EmptyState from '../components/EmptyState'
 import Papa from 'papaparse'
 import toast from 'react-hot-toast'
 import { saleOrdersSupabaseApi, type SaleOrder } from '../services/supabaseApi'
-import { useLanguageStore } from '../stores/languageStore'
 import { saleOrderItemSchema, validateWithZod, type SaleOrderItemInput } from '../utils/validators'
 import { logger } from '../utils/logger'
 import { useSubscription } from '../hooks/useSubscription'
@@ -101,8 +100,7 @@ interface ParsedItem {
 
 export default function SaleOrdersPage() {
   const navigate = useNavigate()
-  const { language } = useLanguageStore()
-  const lang = (language === 'hi' ? 'hi' : 'en') as 'en' | 'hi'
+  const lang = 'en' as const
   const { checkLimit, showUpgradePrompt } = useSubscription()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -119,8 +117,8 @@ export default function SaleOrdersPage() {
   }, [])
 
   useEffect(() => {
-    document.title = language === 'en' ? 'Sale Orders - TruckOpti' : 'सेल ऑर्डर्स - TruckOpti'
-  }, [language])
+    document.title = 'Sale Orders - TruckOpti'
+  }, [])
 
   const fetchOrders = async () => {
     try {

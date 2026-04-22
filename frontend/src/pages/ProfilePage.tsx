@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Phone, Mail, MapPin, Shield, Bell,
@@ -167,7 +167,7 @@ export default function ProfilePage() {
 
   // Set document title based on language
   useEffect(() => {
-    document.title = language === 'en' ? 'Profile - TruckOpti' : 'प्रोफाइल - TruckOpti'
+    document.title = 'Profile - TruckOpti'
   }, [language])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- translations object structure is dynamic at runtime
@@ -244,7 +244,7 @@ export default function ProfilePage() {
       toast.success('Profile photo updated!')
     } catch (err: unknown) {
       logger.error('[ProfilePage]', err)
-      toast.error(language === 'en' ? 'Upload failed. Please try again.' : 'अपलोड विफल। कृपया पुनः प्रयास करें।')
+      toast.error('Upload failed. Please try again.')
     } finally {
       setIsUploadingAvatar(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -257,7 +257,7 @@ export default function ProfilePage() {
       const trimmedName = editName.trim()
       const trimmedPhone = editPhone.trim()
       if (trimmedPhone && !/^\d{10}$/.test(trimmedPhone)) {
-        toast.error(language === 'en' ? 'Phone must be 10 digits' : 'फ़ोन 10 अंकों का होना चाहिए')
+        toast.error('Phone must be 10 digits')
         return
       }
       const { error } = await supabase.auth.updateUser({
@@ -276,10 +276,10 @@ export default function ProfilePage() {
       })
 
       setIsEditing(false)
-      toast.success(language === 'en' ? 'Profile updated!' : 'प्रोफ़ाइल अपडेट!')
+      toast.success('Profile updated!')
     } catch (err: unknown) {
       logger.error('[ProfilePage] handleSaveProfile:', err)
-      toast.error(language === 'en' ? 'Failed to update profile' : 'प्रोफाइल अपडेट करने में विफल')
+      toast.error('Failed to update profile')
     } finally {
       setIsSaving(false)
     }
@@ -289,13 +289,13 @@ export default function ProfilePage() {
     setIsSaving(true)
     try {
       if (!editPan.trim()) {
-        toast.error(language === 'en' ? 'PAN is required' : 'पैन आवश्यक है')
+        toast.error('PAN is required')
         return
       }
 
       const normalizedPan = editPan.toUpperCase().trim()
       if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(normalizedPan)) {
-        toast.error(language === 'en' ? 'Invalid PAN format' : 'अमान्य पैन प्रारूप')
+        toast.error('Invalid PAN format')
         return
       }
 
@@ -317,10 +317,10 @@ export default function ProfilePage() {
       if (error) throw error
 
       setIsEditingCompany(false)
-      toast.success(language === 'en' ? 'Company info updated!' : 'कंपनी जानकारी अपडेट!')
+      toast.success('Company info updated!')
     } catch (err: unknown) {
       logger.error('[ProfilePage] handleSaveCompany:', err)
-      toast.error(language === 'en' ? 'Failed to update company' : 'कंपनी जानकारी अपडेट करने में विफल')
+      toast.error('Failed to update company')
     } finally {
       setIsSaving(false)
     }
@@ -376,7 +376,7 @@ export default function ProfilePage() {
         </p>
         {user?.login_id && (
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {language === 'en' ? 'Login ID:' : 'लॉगिन आईडी:'} <span className="font-semibold text-slate-700 dark:text-slate-200">{user.login_id}</span>
+            {'Login ID:'} <span className="font-semibold text-slate-700 dark:text-slate-200">{user.login_id}</span>
           </p>
         )}
         <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600">
@@ -393,7 +393,7 @@ export default function ProfilePage() {
           className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
         >
           <Edit3 className="w-4 h-4" />
-          {isEditing ? (language === 'en' ? 'Cancel' : 'रद्द करें') : (language === 'en' ? 'Edit Profile' : 'प्रोफ़ाइल संपादित करें')}
+          {isEditing ? ('Cancel') : ('Edit Profile')}
         </button>
       </div>
 
@@ -401,23 +401,23 @@ export default function ProfilePage() {
       {isEditing && (
         <div className="card p-4 space-y-4 border-2 border-primary-200 dark:border-primary-800">
           <h2 className="font-semibold text-slate-900 dark:text-white">
-            {language === 'en' ? 'Edit Profile' : 'प्रोफ़ाइल संपादित करें'}
+            {'Edit Profile'}
           </h2>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              {language === 'en' ? 'Full Name' : 'पूरा नाम'}
+              {'Full Name'}
             </label>
             <input
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               className="input w-full"
-              placeholder={language === 'en' ? 'Enter your name' : 'अपना नाम दर्ज करें'}
+              placeholder={'Enter your name'}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              {language === 'en' ? 'Phone Number' : 'फोन नंबर'}
+              {'Phone Number'}
             </label>
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-500 font-medium">+91</span>
@@ -442,7 +442,7 @@ export default function ProfilePage() {
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              <span>{language === 'en' ? 'Save' : 'सहेजें'}</span>
+              <span>{'Save'}</span>
             </button>
             <button
               onClick={() => setIsEditing(false)}
@@ -466,13 +466,13 @@ export default function ProfilePage() {
           <div className="flex-1">
             <p className="text-sm text-slate-500">{t.phone}</p>
             <p className="font-medium text-slate-900 dark:text-white">
-              {user?.phone || (language === 'en' ? 'Not added yet' : 'अभी तक नहीं जोड़ा')}
+              {user?.phone || ('Not added yet')}
             </p>
           </div>
           {user?.phone_verified ? (
             <span className="badge badge-success">{t.verified}</span>
           ) : (
-            <span className="text-xs text-slate-400">{language === 'en' ? 'Add phone' : 'फोन जोड़ें'}</span>
+            <span className="text-xs text-slate-400">{'Add phone'}</span>
           )}
         </div>
         <div className="p-4 flex items-center gap-3">
@@ -482,7 +482,7 @@ export default function ProfilePage() {
           <div className="flex-1">
             <p className="text-sm text-slate-500">{t.email}</p>
             <p className="font-medium text-slate-900 dark:text-white">
-              {user?.email || (language === 'en' ? 'Not added yet' : 'अभी तक नहीं जोड़ा')}
+              {user?.email || ('Not added yet')}
             </p>
           </div>
           {user?.email ? (
@@ -497,7 +497,7 @@ export default function ProfilePage() {
               <Shield className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-slate-500">{language === 'en' ? 'Login ID' : 'लॉगिन आईडी'}</p>
+              <p className="text-sm text-slate-500">{'Login ID'}</p>
               <p className="font-medium text-slate-900 dark:text-white">{user.login_id}</p>
             </div>
           </div>
@@ -509,7 +509,7 @@ export default function ProfilePage() {
           <div className="flex-1">
             <p className="text-sm text-slate-500">{t.location}</p>
             <p className="font-medium text-slate-900 dark:text-white">
-              {language === 'en' ? 'Tap to set location' : 'स्थान सेट करें'}
+              {'Tap to set location'}
             </p>
           </div>
           <ChevronRight className="w-5 h-5 text-slate-400" />
@@ -528,7 +528,7 @@ export default function ProfilePage() {
               className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              {language === 'en' ? 'Full Profile' : 'पूर्ण प्रोफ़ाइल'}
+              {'Full Profile'}
             </button>
             <button
               onClick={() => {
@@ -545,7 +545,7 @@ export default function ProfilePage() {
               className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
             >
               <Edit3 className="w-4 h-4" />
-              {isEditingCompany ? (language === 'en' ? 'Cancel' : 'रद्द करें') : (language === 'en' ? 'Edit' : 'संपादित करें')}
+              {isEditingCompany ? ('Cancel') : ('Edit')}
             </button>
           </div>
         </div>
@@ -580,7 +580,7 @@ export default function ProfilePage() {
                 <Shield className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-slate-500">{language === 'en' ? 'PAN Number' : 'पैन नंबर'}</p>
+                <p className="text-sm text-slate-500">{'PAN Number'}</p>
                 <p className="font-medium text-slate-900 dark:text-white">
                   {companyInfo.pan || t.notAdded}
                 </p>
@@ -615,7 +615,7 @@ export default function ProfilePage() {
                 value={editCompanyName}
                 onChange={(e) => setEditCompanyName(e.target.value)}
                 className="input w-full"
-                placeholder={language === 'en' ? 'Enter company name' : 'कंपनी का नाम दर्ज करें'}
+                placeholder={'Enter company name'}
               />
             </div>
             <div>
@@ -633,14 +633,14 @@ export default function ProfilePage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {language === 'en' ? 'PAN Number' : 'पैन नंबर'}
+                {'PAN Number'}
               </label>
               <input
                 type="text"
                 value={editPan}
                 onChange={(e) => setEditPan(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10))}
                 className="input w-full font-mono"
-                placeholder={language === 'en' ? 'ABCDE1234F' : 'ABCDE1234F'}
+                placeholder={'ABCDE1234F'}
               />
               <p className="text-xs text-slate-500 mt-1">10 characters (e.g., ABCDE1234F)</p>
             </div>
@@ -667,7 +667,7 @@ export default function ProfilePage() {
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                <span>{language === 'en' ? 'Save' : 'सहेजें'}</span>
+                <span>{'Save'}</span>
               </button>
               <button
                 onClick={() => setIsEditingCompany(false)}
@@ -743,9 +743,9 @@ export default function ProfilePage() {
         {Object.entries(notifications).map(([key, value]) => (
           <div key={key} className="p-4 flex items-center justify-between">
             <span className="text-slate-700 dark:text-slate-300 capitalize">
-              {key === 'sms' ? (language === 'en' ? 'SMS Alerts' : 'एसएमएस अलर्ट') :
-                key === 'push' ? (language === 'en' ? 'Push Notifications' : 'पुश नोटिफिकेशन') :
-                  (language === 'en' ? 'Email Updates' : 'ईमेल अपडेट')}
+              {key === 'sms' ? ('SMS Alerts') :
+                key === 'push' ? ('Push Notifications') :
+                  ('Email Updates')}
             </span>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -784,7 +784,7 @@ export default function ProfilePage() {
       {/* App Info */}
       <div className="card p-4 space-y-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">{language === 'en' ? 'App Version' : 'ऐप संस्करण'}</span>
+          <span className="text-slate-500">{'App Version'}</span>
           <span className="text-slate-700 dark:text-slate-300">2.0.0-beta</span>
         </div>
       </div>

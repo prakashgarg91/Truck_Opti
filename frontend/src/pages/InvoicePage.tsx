@@ -16,7 +16,6 @@ import {
   type InvoiceData
 } from '../utils/invoiceGenerator'
 import { shareInvoice } from '../utils/whatsappShare'
-import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
 
 // City to state mapping for GST detection
@@ -121,8 +120,7 @@ export default function InvoicePage() {
   const { shipmentId } = useParams<{ shipmentId: string }>()
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { language } = useLanguageStore()
-  const lang = (language === 'hi' ? 'hi' : 'en') as 'en' | 'hi'
+  const lang = 'en' as const
   const invoiceRef = useRef<HTMLDivElement>(null)
 
   const [shipment, setShipment] = useState<Shipment | null>(null)

@@ -5,7 +5,6 @@ import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
-import { useLanguageStore } from '../../stores/languageStore'
 import { emailSchema, passwordSchema } from '../../utils/validators'
 import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
 
@@ -23,7 +22,6 @@ type SignupMode = 'otp' | 'password'
 export default function SignupPage() {
   const navigate = useNavigate()
   const { setPendingPhone } = useAuthStore()
-  const { language } = useLanguageStore()
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -96,11 +94,7 @@ export default function SignupPage() {
       navigate('/otp', { state: { channel: 'email', contact: email, isSignup: true } })
     },
     onError: (error: unknown) => {
-      toast.error(
-        language === 'en'
-          ? toUserFacingErrorMessage(error, 'Failed to create account')
-          : 'खाता बनाने में विफल'
-      )
+      toast.error(toUserFacingErrorMessage(error, 'Failed to create account'))
     }
   })
 

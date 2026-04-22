@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
   RefreshCw, Building2, Calendar, Wallet, MessageSquare, Download, Shield, CreditCard
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { formatCurrency } from '../utils/formatters'
@@ -30,7 +29,6 @@ interface RecentJob {
 
 export default function AdminDashboardPage() {
   const { user } = useAuthStore()
-  const { language } = useLanguageStore()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -186,12 +184,12 @@ export default function AdminDashboardPage() {
         .order('created_at', { ascending: false })
 
       if (error) {
-        toast.error(language === 'en' ? 'Failed to export data' : 'डेटा निर्यात करने में विफल')
+        toast.error('Failed to export data')
         return
       }
 
       if (!shipmentsData || shipmentsData.length === 0) {
-        toast.error(language === 'en' ? 'No shipments found for this month' : 'इस महीने कोई शिपमेंट नहीं मिली')
+        toast.error('No shipments found for this month')
         return
       }
 
@@ -227,10 +225,10 @@ export default function AdminDashboardPage() {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      toast.success(language === 'en' ? 'CSV exported successfully!' : 'CSV सफलतापूर्वक निर्यात हुई!')
+      toast.success('CSV exported successfully!')
     } catch (err) {
       logger.error('Export error:', err)
-      toast.error(language === 'en' ? 'Failed to export CSV' : 'CSV निर्यात करने में विफल')
+      toast.error('Failed to export CSV')
     } finally {
       setExporting(false)
     }
@@ -325,7 +323,7 @@ export default function AdminDashboardPage() {
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
         <h3 className="font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-slate-400" />
-          {language === 'en' ? 'Revenue Trend (6 Months)' : 'राजस्व रुझान (6 महीने)'}
+          {'Revenue Trend (6 Months)'}
         </h3>
         {revenueTrend.length > 0 && revenueTrend.some(r => r.revenue > 0) ? (
           <div className="flex items-end justify-between gap-2 h-40">
@@ -351,7 +349,7 @@ export default function AdminDashboardPage() {
           </div>
         ) : (
           <div className="h-32 flex items-center justify-center text-slate-400 text-sm">
-            {language === 'en' ? 'No revenue data yet' : 'अभी तक कोई राजस्व डेटा नहीं'}
+            {'No revenue data yet'}
           </div>
         )}
       </div>
@@ -369,7 +367,7 @@ export default function AdminDashboardPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg text-xs font-semibold transition-colors"
           >
             <Download size={14} />
-            {exporting ? (language === 'en' ? 'Exporting...' : 'निर्यात हो रहा...') : (language === 'en' ? 'Export CSV' : 'CSV निर्यात')}
+            {exporting ? ('Exporting...') : ('Export CSV')}
           </button>
         </div>
 
@@ -423,42 +421,42 @@ export default function AdminDashboardPage() {
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <Shield className="w-5 h-5 text-indigo-500" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'User Management' : 'उपयोगकर्ता'}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{'User Management'}</span>
         </button>
         <button
           onClick={() => navigate('/admin/drivers')}
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <Users className="w-5 h-5 text-blue-500" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Manage Drivers' : 'चालक प्रबंधन'}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{'Manage Drivers'}</span>
         </button>
         <button
           onClick={() => navigate('/admin/agencies')}
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <Building2 className="w-5 h-5 text-indigo-500" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Manage Agencies' : 'एजेंसी प्रबंधन'}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{'Manage Agencies'}</span>
         </button>
         <button
           onClick={() => navigate('/admin/payouts')}
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <Wallet className="w-5 h-5 text-green-500" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Driver Payouts' : 'चालक भुगतान'}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{'Driver Payouts'}</span>
         </button>
         <button
           onClick={() => navigate('/admin/contact')}
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <MessageSquare className="w-5 h-5 text-orange-500" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Contact Inquiries' : 'संपर्क पूछताछ'}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{'Contact Inquiries'}</span>
         </button>
         <button
           onClick={() => navigate('/admin/subscriptions')}
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >
           <CreditCard className="w-5 h-5 text-purple-500" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">{language === 'en' ? 'Subscriptions' : 'सदस्यता'}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{'Subscriptions'}</span>
         </button>
       </div>
     </div>

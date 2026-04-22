@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Navigation, MapPin, CheckCircle2, Truck, PhoneCall,
   KeyRound, Camera, AlertTriangle, RefreshCw, ArrowLeft,
@@ -9,7 +9,6 @@ import { useAuthStore } from '../stores/authStore'
 import { useParams, useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
-import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
 
 interface ShipmentInfo {
@@ -82,7 +81,6 @@ export default function DriverTripPage() {
   const { jobId } = useParams<{ jobId: string }>()
   const { user } = useAuthStore()
   const navigate = useNavigate()
-  const { language } = useLanguageStore()
 
   const [job, setJob] = useState<TripJob | null>(null)
   const [driver, setDriver] = useState<DriverRecord | null>(null)
@@ -188,7 +186,7 @@ export default function DriverTripPage() {
     }
     if (error) {
       logger.error('[DriverTripPage]', error)
-      toast.error(language === 'en' ? 'Failed to update trip status.' : 'यात्रा स्थिति अपडेट करने में विफल।')
+      toast.error('Failed to update trip status.')
       return false
     }
 

@@ -43,7 +43,14 @@ export default defineConfig({
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+        // Exclude large vendor chunks from precache — they're loaded on-demand and cached at runtime
+        globIgnores: [
+          '**/three-vendor-*.js',
+          '**/excel-vendor-*.js',
+          '**/pdf-vendor-*.js',
+          '**/map-vendor-*.js',
+        ],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB cap
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [
           /^\/api(?:\/|$)/,
@@ -51,6 +58,19 @@ export default defineConfig({
           /\/[^/?]+\.(?:js|css|map|json|ico|png|svg|woff2?)$/i,
         ],
         runtimeCaching: [
+          // Large vendor chunks excluded from precache — cache on first use
+          {
+            urlPattern: /\/assets\/(three-vendor|excel-vendor|pdf-vendor|map-vendor)-[^/]+\.js$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'large-vendor-chunks',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 90 // 90 days — content-hashed, safe to keep long
+              },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
           {
             urlPattern: /^https:\/\/api\./i,
             handler: 'NetworkFirst',

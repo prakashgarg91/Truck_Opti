@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Truck, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, Database } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import { useNavigate } from 'react-router-dom'
@@ -126,7 +126,7 @@ export default function TrucksPage() {
   })
 
   useEffect(() => {
-    document.title = language === 'en' ? 'Truck Types - TruckOpti' : 'ट्रक प्रकार - TruckOpti'
+    document.title = 'Truck Types - TruckOpti'
   }, [language])
 
   // React Query: Fetch trucks data
@@ -150,7 +150,7 @@ export default function TrucksPage() {
     },
     onError: (error: Error) => {
       logger.error('Failed to create truck:', error)
-      toast.error(language === 'en' ? 'Failed to create truck' : 'ट्रक बनाने में विफल')
+      toast.error('Failed to create truck')
     },
   })
 
@@ -166,7 +166,7 @@ export default function TrucksPage() {
     },
     onError: (error: Error) => {
       logger.error('Failed to update truck:', error)
-      toast.error(language === 'en' ? 'Failed to update truck' : 'ट्रक अपडेट करने में विफल')
+      toast.error('Failed to update truck')
     },
   })
 
@@ -179,7 +179,7 @@ export default function TrucksPage() {
     },
     onError: (error: Error) => {
       logger.error('Failed to delete truck:', error)
-      toast.error(language === 'en' ? 'Failed to delete truck' : 'ट्रक हटाने में विफल')
+      toast.error('Failed to delete truck')
     },
   })
 
@@ -218,9 +218,9 @@ export default function TrucksPage() {
     onError: (error: Error) => {
       logger.error('Failed to seed trucks:', error)
       if (error.message === 'All default trucks already exist!') {
-        toast(language === 'en' ? 'Default trucks already added.' : 'डिफॉल्ट ट्रक पहले से जोड़ गए हैं')
+        toast('Default trucks already added.')
       } else {
-        toast.error(language === 'en' ? 'Failed to add default trucks' : 'डिफॉल्ट ट्रक जोड़ने में विफल')
+        toast.error('Failed to add default trucks')
       }
     },
   })
@@ -337,7 +337,7 @@ export default function TrucksPage() {
           <ChevronLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          {language === 'en' ? 'Truck Types' : 'ट्रक प्रकार'}
+          {'Truck Types'}
         </h1>
       </div>
 
@@ -346,12 +346,10 @@ export default function TrucksPage() {
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 text-center">
           <Database className="w-12 h-12 text-blue-500 mx-auto mb-3" />
           <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-            {language === 'en' ? 'No Trucks Found' : 'कोई ट्रक नहीं मिला'}
+            {'No Trucks Found'}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            {language === 'en'
-              ? 'Seed the database with 7 standard Indian truck types'
-              : '7 मानक भारतीय ट्रक प्रकारों के साथ डेटाबेस सीड करें'}
+            
           </p>
           <button
             onClick={() => seedMutation.mutate()}
@@ -361,12 +359,12 @@ export default function TrucksPage() {
             {seedMutation.isPending ? (
               <>
                 <div className="spinner w-4 h-4" />
-                {language === 'en' ? 'Seeding...' : 'सीडिंग...'}
+                {'Seeding...'}
               </>
             ) : (
               <>
                 <Database className="w-4 h-4" />
-                {language === 'en' ? 'Seed Default Trucks' : 'डिफॉल्ट ट्रक सीड करें'}
+                {'Seed Default Trucks'}
               </>
             )}
           </button>
@@ -378,7 +376,7 @@ export default function TrucksPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder={language === 'en' ? 'Search trucks...' : 'ट्रक खोजें...'}
+            placeholder={'Search trucks...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
@@ -389,7 +387,7 @@ export default function TrucksPage() {
             onClick={() => seedMutation.mutate()}
             disabled={seedMutation.isPending}
             className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2.5 rounded-xl transition-all"
-            title={language === 'en' ? 'Seed default trucks' : 'डिफॉल्ट ट्रक सीड करें'}
+            title={'Seed default trucks'}
           >
             {seedMutation.isPending ? <div className="spinner w-5 h-5" /> : <Database className="w-5 h-5" />}
           </button>
@@ -410,21 +408,19 @@ export default function TrucksPage() {
       ) : loadError ? (
         <EmptyState
           icon={Truck}
-          title={language === 'en' ? 'Failed to load trucks' : 'ट्रक लोड करने में विफल'}
-          description={language === 'en' ? 'Please check your connection and try again' : 'कृपया अपना कनेक्शन जांचें और पुनः प्रयास करें'}
-          actionLabel={language === 'en' ? 'Add Truck' : 'ट्रक जोड़ें'}
+          title={'Failed to load trucks'}
+          description={'Please check your connection and try again'}
+          actionLabel={'Add Truck'}
           onAction={() => handleOpenModal()}
         />
       ) : filteredTrucks.length === 0 ? (
         <EmptyState
           icon={Truck}
-          title={language === 'en' ? 'No trucks found' : 'कोई ट्रक नहीं मिला'}
+          title={'No trucks found'}
           description={
-            language === 'en'
-              ? 'Add your first truck to get started with fleet management'
-              : 'बेड़ा प्रबंधन शुरू करने के लिए अपना पहला ट्रक जोड़ें'
+            ''
           }
-          actionLabel={language === 'en' ? 'Add Truck' : 'ट्रक जोड़ें'}
+          actionLabel={'Add Truck'}
           onAction={() => handleOpenModal()}
         />
       ) : (

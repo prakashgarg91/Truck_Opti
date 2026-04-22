@@ -1,8 +1,7 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Truck, MapPin, Calendar, Scale, FileText, DollarSign, ArrowLeft, Loader2, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
 import { useSubscription } from '../hooks/useSubscription'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
@@ -31,7 +30,6 @@ interface FormData {
 export default function NewShipmentPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { language } = useLanguageStore()
   const { isExpired } = useSubscription()
   const isAdmin = user?.role === 'admin'
 
@@ -60,12 +58,12 @@ export default function NewShipmentPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) {
-      toast.error(language === 'en' ? 'Please login first' : 'कृपया पहले लॉगिन करें')
+      toast.error('Please login first')
       return
     }
 
     if (!formData.origin_city.trim() || !formData.destination_city.trim() || !formData.pickup_date || formData.weight_kg <= 0) {
-      toast.error(language === 'en' ? 'Please fill all required fields' : 'कृपया सभी आवश्यक फ़ील्ड भरें')
+      toast.error('Please fill all required fields')
       return
     }
 
@@ -96,7 +94,7 @@ export default function NewShipmentPage() {
 
       if (shipmentError) {
         logger.error('Shipment insert error:', shipmentError)
-        toast.error(language === 'en' ? 'Failed to create booking' : 'बुकिंग बनाने में विफल')
+        toast.error('Failed to create booking')
         setIsSubmitting(false)
         return
       }
@@ -110,13 +108,9 @@ export default function NewShipmentPage() {
       if (dispatchError) {
         logger.error('Dispatch error:', dispatchError)
         // Shipment created, but dispatch failed - show warning but continue
-        toast(language === 'en'
-          ? 'Booking created! Drivers will be notified shortly.'
-          : 'बुकिंग बनाई गई! ड्राइवरों को जल्द सूचित किया जाएगा।', { icon: '✅' })
+        toast('', { icon: '✅' })
       } else {
-        toast(language === 'en'
-          ? `Booking created! Notified ${dispatchResult} drivers.`
-          : `बुकिंग बनाई गई! ${dispatchResult} ड्राइवरों को सूचित किया गया।`, { icon: '✅' })
+        toast(`Booking created! Notified ${dispatchResult} drivers.`, { icon: '✅' })
       }
 
       // Store shipment ID for e-way bill
@@ -127,7 +121,7 @@ export default function NewShipmentPage() {
 
     } catch (error) {
       logger.error('Unexpected error:', error)
-      toast.error(language === 'en' ? 'Something went wrong' : 'कुछ गलत हो गया')
+      toast.error('Something went wrong')
     } finally {
       setIsSubmitting(false)
     }
@@ -146,11 +140,11 @@ export default function NewShipmentPage() {
     if (!newShipmentId || !user) return
 
     if (consignorGSTIN && !isValidGSTIN(consignorGSTIN)) {
-      toast.error(language === 'en' ? 'Invalid Consignor GSTIN format' : 'अमान्य GSTIN प्रारूप')
+      toast.error('Invalid Consignor GSTIN format')
       return
     }
     if (consigneeGSTIN && !isValidGSTIN(consigneeGSTIN)) {
-      toast.error(language === 'en' ? 'Invalid Consignee GSTIN format' : 'अमान्य GSTIN प्रारूप')
+      toast.error('Invalid Consignee GSTIN format')
       return
     }
 
@@ -172,11 +166,11 @@ export default function NewShipmentPage() {
 
       if (error) {
         logger.error('[NewShipment] eway:', error)
-        toast.error(language === 'en' ? 'Failed to save e-way bill' : 'ई-वे बिल सेव नहीं हुआ')
+        toast.error('Failed to save e-way bill')
         return
       }
 
-      toast.success(language === 'en' ? 'E-way bill saved — NIC API integration coming soon' : 'ई-वे बिल सेव किया — NIC API जल्द आएगा')
+      toast.success('E-way bill saved — NIC API integration coming soon')
       setTimeout(() => navigate('/tracking'), 1500)
     } finally {
       setIsSubmittingEWayBill(false)
@@ -188,18 +182,16 @@ export default function NewShipmentPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <h2 className="text-2xl font-bold text-red-600 mb-2">
-          {language === 'en' ? 'Subscription Expired' : 'सदस्यता समाप्त'}
+          {'Subscription Expired'}
         </h2>
         <p className="text-gray-600 mb-6">
-          {language === 'en'
-            ? 'Your trial has ended. Upgrade to continue booking trucks.'
-            : 'आपका परीक्षण समाप्त हो गया है। ट्रक बुकिंग जारी रखने के लिए अपग्रेड करें।'}
+          
         </p>
         <button
           onClick={() => navigate('/pricing')}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
         >
-          {language === 'en' ? 'View Plans' : 'प्लान देखें'}
+          {'View Plans'}
         </button>
       </div>
     )
@@ -211,12 +203,10 @@ export default function NewShipmentPage() {
         <div className="card p-8 text-center max-w-md">
           <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-            {language === 'en' ? 'Booking Confirmed!' : 'बुकिंग पुष्टि!'}
+            {'Booking Confirmed!'}
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mb-4">
-            {language === 'en'
-              ? 'Your shipment has been booked. Drivers are being notified.'
-              : 'आपकी शिपमेंट बुक हो गई है। ड्राइवरों को सूचित किया जा रहा है।'}
+            
           </p>
 
           {/* E-Way Bill Optional Section */}
@@ -227,14 +217,14 @@ export default function NewShipmentPage() {
               className="flex items-center justify-center w-full text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
             >
               {showEWayBill ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
-              {language === 'en' ? 'E-Way Bill (Optional)' : 'ई-वे बिल (वैकल्पिक)'}
+              {'E-Way Bill (Optional)'}
             </button>
 
             {showEWayBill && (
               <form onSubmit={handleEWayBillSubmit} className="mt-4 space-y-3 text-left">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {language === 'en' ? 'Consignor GSTIN' : 'ग्राहक GSTIN'}
+                    {'Consignor GSTIN'}
                   </label>
                   <input
                     type="text"
@@ -246,7 +236,7 @@ export default function NewShipmentPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {language === 'en' ? 'Consignee GSTIN' : 'प्राप्तकर्ता GSTIN'}
+                    {'Consignee GSTIN'}
                   </label>
                   <input
                     type="text"
@@ -258,7 +248,7 @@ export default function NewShipmentPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {language === 'en' ? 'Invoice Value (₹)' : 'चालान मूल्य (₹)'}
+                    {'Invoice Value (₹)'}
                   </label>
                   <input
                     type="number"
@@ -271,7 +261,7 @@ export default function NewShipmentPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    {language === 'en' ? 'HSN Code' : 'HSN कोड'}
+                    {'HSN Code'}
                   </label>
                   <input
                     type="text"
@@ -288,8 +278,8 @@ export default function NewShipmentPage() {
                   className="w-full btn btn-primary py-2 text-sm disabled:opacity-50"
                 >
                   {isSubmittingEWayBill
-                    ? (language === 'en' ? 'Saving...' : 'सेव हो रहा है...')
-                    : (language === 'en' ? 'Save E-Way Bill' : 'ई-वे बिल सेव करें')}
+                    ? ('Saving...')
+                    : ('Save E-Way Bill')}
                 </button>
               </form>
             )}
@@ -299,7 +289,7 @@ export default function NewShipmentPage() {
                 onClick={() => navigate('/tracking')}
                 className="mt-4 text-sm text-slate-500 hover:text-slate-600"
               >
-                {language === 'en' ? 'Skip to tracking' : 'ट्रैकिंग पर जाएं'}
+                {'Skip to tracking'}
               </button>
             )}
           </div>
@@ -322,10 +312,10 @@ export default function NewShipmentPage() {
             </button>
             <div>
               <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                {language === 'en' ? 'Book a Truck' : 'ट्रक बुक करें'}
+                {'Book a Truck'}
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {language === 'en' ? 'New Shipment' : 'नई शिपमेंट'}
+                {'New Shipment'}
               </p>
             </div>
           </div>
@@ -338,13 +328,13 @@ export default function NewShipmentPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <MapPin className="w-4 h-4 inline mr-1" />
-              {language === 'en' ? 'Pickup City *' : 'पिकअप शहर *'}
+              {'Pickup City *'}
             </label>
             <input
               type="text"
               value={formData.origin_city}
               onChange={(e) => updateField('origin_city', e.target.value)}
-              placeholder={language === 'en' ? 'e.g., Mumbai' : 'उदा., मुंबई'}
+              placeholder={'e.g., Mumbai'}
               className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               required
             />
@@ -354,13 +344,13 @@ export default function NewShipmentPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <MapPin className="w-4 h-4 inline mr-1" />
-              {language === 'en' ? 'Delivery City *' : 'डिलीवरी शहर *'}
+              {'Delivery City *'}
             </label>
             <input
               type="text"
               value={formData.destination_city}
               onChange={(e) => updateField('destination_city', e.target.value)}
-              placeholder={language === 'en' ? 'e.g., Delhi' : 'उदा., दिल्ली'}
+              placeholder={'e.g., Delhi'}
               className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               required
             />
@@ -370,7 +360,7 @@ export default function NewShipmentPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <Truck className="w-4 h-4 inline mr-1" />
-              {language === 'en' ? 'Truck Type *' : 'ट्रक प्रकार *'}
+              {'Truck Type *'}
             </label>
             <select
               value={formData.vehicle_type}
@@ -389,13 +379,13 @@ export default function NewShipmentPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <Scale className="w-4 h-4 inline mr-1" />
-              {language === 'en' ? 'Weight (kg) *' : 'वजन (किग्रा) *'}
+              {'Weight (kg) *'}
             </label>
             <input
               type="number"
               value={formData.weight_kg || ''}
               onChange={(e) => updateField('weight_kg', parseInt(e.target.value) || 0)}
-              placeholder={language === 'en' ? 'e.g., 2000' : 'उदा., 2000'}
+              placeholder={'e.g., 2000'}
               min="1"
               className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               required
@@ -406,7 +396,7 @@ export default function NewShipmentPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <Calendar className="w-4 h-4 inline mr-1" />
-              {language === 'en' ? 'Pickup Date *' : 'पिकअप तिथि *'}
+              {'Pickup Date *'}
             </label>
             <input
               type="date"
@@ -422,12 +412,12 @@ export default function NewShipmentPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <FileText className="w-4 h-4 inline mr-1" />
-              {language === 'en' ? 'Goods Description' : 'सामान का विवरण'}
+              {'Goods Description'}
             </label>
             <textarea
               value={formData.goods_description}
               onChange={(e) => updateField('goods_description', e.target.value)}
-              placeholder={language === 'en' ? 'e.g., Electronics, Furniture, etc.' : 'उदा., इलेक्ट्रॉनिक्स, फर्नीचर, आदि'}
+              placeholder={'e.g., Electronics, Furniture, etc.'}
               rows={3}
               className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
             />
@@ -437,20 +427,18 @@ export default function NewShipmentPage() {
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <DollarSign className="w-4 h-4 inline mr-1" />
-              {language === 'en' ? 'Estimated Value (₹)' : 'अनुमानित मूल्य (₹)'}
+              {'Estimated Value (₹)'}
             </label>
             <input
               type="number"
               value={formData.estimated_value || ''}
               onChange={(e) => updateField('estimated_value', parseInt(e.target.value) || 0)}
-              placeholder={language === 'en' ? 'e.g., 50000 (for e-way bill)' : 'उदा., 50000'}
+              placeholder={'e.g., 50000 (for e-way bill)'}
               min="0"
               className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <p className="text-xs text-slate-500 mt-1">
-              {language === 'en'
-                ? 'Required for e-way bill if value > ₹50,000'
-                : '₹50,000 से अधिक मूल्य के लिए ई-वे बिल आवश्यक'}
+              
             </p>
           </div>
 
@@ -463,12 +451,12 @@ export default function NewShipmentPage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                {language === 'en' ? 'Creating Booking...' : 'बुकिंग बनाई जा रही है...'}
+                {'Creating Booking...'}
               </>
             ) : (
               <>
                 <Truck className="w-5 h-5 mr-2" />
-                {language === 'en' ? 'Book Now' : 'अभी बुक करें'}
+                {'Book Now'}
               </>
             )}
           </button>

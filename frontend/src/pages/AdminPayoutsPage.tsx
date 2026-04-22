@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import {
   DollarSign, CheckCircle2, XCircle, Clock, Search,
   RefreshCw, AlertTriangle
@@ -55,13 +55,13 @@ export default function AdminPayoutsPage() {
 
       if (error) {
         logger.error('[AdminPayouts] Fetch error:', error)
-        toast.error(language === 'en' ? 'Failed to load payouts' : 'भुगतान लोड करने में विफल')
+        toast.error('Failed to load payouts')
         return
       }
       setPayouts(data || [])
     } catch (err) {
       logger.error('[AdminPayouts] Exception:', err)
-      toast.error(language === 'en' ? 'Something went wrong' : 'कुछ गलत हुआ')
+      toast.error('Something went wrong')
     } finally {
       setLoading(false)
     }
@@ -81,10 +81,10 @@ export default function AdminPayoutsPage() {
 
       if (error) {
         logger.error('[AdminPayouts] Approve error:', error)
-        toast.error(language === 'en' ? 'Failed to approve payout' : 'भुगतान स्वीकृत करने में विफल')
+        toast.error('Failed to approve payout')
         return
       }
-      toast.success(language === 'en' ? 'Payout approved' : 'भुगतान स्वीकृत')
+      toast.success('Payout approved')
       fetchPayouts()
     } finally {
       setProcessingId(null)
@@ -106,10 +106,10 @@ export default function AdminPayoutsPage() {
 
       if (error) {
         logger.error('[AdminPayouts] Reject error:', error)
-        toast.error(language === 'en' ? 'Failed to reject payout' : 'भुगतान अस्वीकार करने में विफल')
+        toast.error('Failed to reject payout')
         return
       }
-      toast.success(language === 'en' ? 'Payout rejected' : 'भुगतान अस्वीकृत')
+      toast.success('Payout rejected')
       setRejectModal(null)
       setRejectReason('')
       fetchPayouts()
@@ -131,10 +131,10 @@ export default function AdminPayoutsPage() {
 
       if (error) {
         logger.error('[AdminPayouts] Mark paid error:', error)
-        toast.error(language === 'en' ? 'Failed to mark as paid' : 'भुगतान चिह्नित करने में विफल')
+        toast.error('Failed to mark as paid')
         return
       }
-      toast.success(language === 'en' ? 'Marked as paid' : 'भुगतान के रूप में चिह्नित')
+      toast.success('Marked as paid')
       fetchPayouts()
     } finally {
       setProcessingId(null)
@@ -163,10 +163,10 @@ export default function AdminPayoutsPage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {language === 'en' ? 'Driver Payouts' : 'ड्राइवर भुगतान'}
+            {'Driver Payouts'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {language === 'en' ? 'Manage driver withdrawal requests' : 'ड्राइवर निकासी अनुरोधों का प्रबंधन करें'}
+            {'Manage driver withdrawal requests'}
           </p>
         </div>
 
@@ -178,7 +178,7 @@ export default function AdminPayoutsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder={language === 'en' ? 'Search by name or phone...' : 'नाम या फोन से खोजें...'}
+                placeholder={'Search by name or phone...'}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -192,7 +192,7 @@ export default function AdminPayoutsPage() {
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              {language === 'en' ? 'Refresh' : 'रिफ्रेश'}
+              {'Refresh'}
             </button>
           </div>
 
@@ -207,13 +207,7 @@ export default function AdminPayoutsPage() {
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
               >
-                {language === 'en'
-                  ? status.charAt(0).toUpperCase() + status.slice(1)
-                  : status === 'all' ? 'सभी' :
-                    status === 'pending' ? 'लंबित' :
-                      status === 'approved' ? 'स्वीकृत' :
-                        status === 'paid' ? 'भुगतान किया' : 'अस्वीकृत'
-                } ({statusCounts[status]})
+                {status.charAt(0).toUpperCase() + status.slice(1)} ({statusCounts[status]})
               </button>
             ))}
           </div>
@@ -224,12 +218,12 @@ export default function AdminPayoutsPage() {
           {loading && payouts.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" />
-              {language === 'en' ? 'Loading payouts...' : 'भुगतान लोड हो रहे हैं...'}
+              {'Loading payouts...'}
             </div>
           ) : filteredPayouts.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              {language === 'en' ? 'No payouts found' : 'कोई भुगतान नहीं मिला'}
+              {'No payouts found'}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -237,22 +231,22 @@ export default function AdminPayoutsPage() {
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'en' ? 'Driver' : 'ड्राइवर'}
+                      {'Driver'}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'en' ? 'Amount' : 'राशि'}
+                      {'Amount'}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'en' ? 'Status' : 'स्थिति'}
+                      {'Status'}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'en' ? 'Requested' : 'अनुरोधित'}
+                      {'Requested'}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'en' ? 'Processed' : 'संसाधित'}
+                      {'Processed'}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'en' ? 'Actions' : 'कार्रवाई'}
+                      {'Actions'}
                     </th>
                   </tr>
                 </thead>
@@ -278,12 +272,7 @@ export default function AdminPayoutsPage() {
                           {payout.status === 'approved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
                           {payout.status === 'paid' && <DollarSign className="w-3 h-3 mr-1" />}
                           {payout.status === 'rejected' && <XCircle className="w-3 h-3 mr-1" />}
-                          {language === 'en'
-                            ? payout.status.charAt(0).toUpperCase() + payout.status.slice(1)
-                            : payout.status === 'pending' ? 'लंबित' :
-                              payout.status === 'approved' ? 'स्वीकृत' :
-                                payout.status === 'paid' ? 'भुगतान किया' : 'अस्वीकृत'
-                          }
+                          {payout.status.charAt(0).toUpperCase() + payout.status.slice(1)}
                         </span>
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
@@ -300,14 +289,14 @@ export default function AdminPayoutsPage() {
                               disabled={processingId === payout.id}
                               className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                             >
-                              {language === 'en' ? 'Approve' : 'स्वीकृत करें'}
+                              {'Approve'}
                             </button>
                             <button
                               onClick={() => setRejectModal({ payoutId: payout.id, driverName: payout.drivers?.full_name || 'Driver' })}
                               disabled={processingId === payout.id}
                               className="px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-50 transition-colors"
                             >
-                              {language === 'en' ? 'Reject' : 'अस्वीकार करें'}
+                              {'Reject'}
                             </button>
                           </div>
                         )}
@@ -317,18 +306,18 @@ export default function AdminPayoutsPage() {
                             disabled={processingId === payout.id}
                             className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                           >
-                            {language === 'en' ? 'Mark Paid' : 'भुगतान चिह्नित करें'}
+                            {'Mark Paid'}
                           </button>
                         )}
                         {payout.status === 'paid' && (
                           <span className="text-sm text-gray-400 dark:text-gray-500">
-                            {language === 'en' ? 'Completed' : 'पूर्ण'}
+                            {'Completed'}
                           </span>
                         )}
                         {payout.status === 'rejected' && payout.note && (
                           <span className="text-sm text-gray-500 dark:text-gray-400" title={payout.note}>
                             <AlertTriangle className="w-4 h-4 inline mr-1" />
-                            {language === 'en' ? 'Reason provided' : 'कारण दिया गया'}
+                            {'Reason provided'}
                           </span>
                         )}
                       </td>
@@ -346,24 +335,21 @@ export default function AdminPayoutsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              {language === 'en' ? 'Reject Payout Request' : 'भुगतान अनुरोध अस्वीकार करें'}
+              {'Reject Payout Request'}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {language === 'en'
-                ? `Are you sure you want to reject the payout request from ${rejectModal.driverName}?`
-                : `क्या आप वाकई ${rejectModal.driverName} के भुगतान अनुरोध को अस्वीकार करना चाहते हैं?`
-              }
+              {`Are you sure you want to reject the payout request from ${rejectModal.driverName}?`}
             </p>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {language === 'en' ? 'Reason for rejection (required)' : 'अस्वीकृति का कारण (आवश्यक)'}
+                {'Reason for rejection (required)'}
               </label>
               <textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder={language === 'en' ? 'Enter reason...' : 'कारण लिखें...'}
+                placeholder={'Enter reason...'}
               />
             </div>
             <div className="flex justify-end gap-3">
@@ -371,14 +357,14 @@ export default function AdminPayoutsPage() {
                 onClick={() => { setRejectModal(null); setRejectReason('') }}
                 className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
-                {language === 'en' ? 'Cancel' : 'रद्द करें'}
+                {'Cancel'}
               </button>
               <button
                 onClick={handleReject}
                 disabled={!rejectReason.trim() || processingId === rejectModal.payoutId}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                {language === 'en' ? 'Reject' : 'अस्वीकार करें'}
+                {'Reject'}
               </button>
             </div>
           </div>

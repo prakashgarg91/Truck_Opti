@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
 import { useAuthStore } from '../stores/authStore'
 import { MapPin, Navigation, Clock, IndianRupee, Plus, X, Search, ChevronRight, Map as MapIcon, TrendingUp, Zap, Eye } from 'lucide-react'
@@ -138,7 +138,7 @@ export default function RoutesPage() {
   })
 
   useEffect(() => {
-    document.title = language === 'en' ? 'Routes - TruckOpti' : 'रूट - TruckOpti'
+    document.title = 'Routes - TruckOpti'
   }, [language])
 
   useEffect(() => {

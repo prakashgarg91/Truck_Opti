@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Users, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, MapPin, Phone, Mail } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -45,7 +45,7 @@ export default function CustomersPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    document.title = language === 'en' ? 'Customers - TruckOpti' : 'ग्राहक - TruckOpti'
+    document.title = 'Customers - TruckOpti'
   }, [language])
 
   // React Query: Fetch customers data
@@ -63,12 +63,12 @@ export default function CustomersPage() {
     mutationFn: customersSupabaseApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] })
-      toast.success(language === 'en' ? 'Customer added successfully' : 'ग्राहक सफलतापूर्वक जोड़ा गया')
+      toast.success('Customer added successfully')
       setIsModalOpen(false)
       resetForm()
     },
     onError: () => {
-      toast.error(language === 'en' ? 'Failed to create customer' : 'ग्राहक बनाने में त्रुटि')
+      toast.error('Failed to create customer')
     },
   })
 
@@ -78,12 +78,12 @@ export default function CustomersPage() {
       customersSupabaseApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] })
-      toast.success(language === 'en' ? 'Customer updated successfully' : 'ग्राहक सफलतापूर्वक अपडेट किया गया')
+      toast.success('Customer updated successfully')
       setIsModalOpen(false)
       resetForm()
     },
     onError: () => {
-      toast.error(language === 'en' ? 'Failed to update customer' : 'ग्राहक अपडेट करने में त्रुटि')
+      toast.error('Failed to update customer')
     },
   })
 
@@ -92,10 +92,10 @@ export default function CustomersPage() {
     mutationFn: customersSupabaseApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] })
-      toast.success(language === 'en' ? 'Customer deleted successfully' : 'ग्राहक सफलतापूर्वक हटा दिया गया')
+      toast.success('Customer deleted successfully')
     },
     onError: () => {
-      toast.error(language === 'en' ? 'Failed to delete customer' : 'ग्राहक हटाने में त्रुटि')
+      toast.error('Failed to delete customer')
     },
   })
 
@@ -189,7 +189,7 @@ export default function CustomersPage() {
   }
 
   const handleDelete = (id: string) => {
-    if (window.confirm(language === 'en' ? 'Are you sure you want to delete this customer?' : 'क्या आप वाकई इस ग्राहक को हटाना चाहते हैं?')) {
+    if (window.confirm('Are you sure you want to delete this customer?')) {
       deleteMutation.mutate(id)
     }
   }
@@ -211,7 +211,7 @@ export default function CustomersPage() {
           <ChevronLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          {language === 'en' ? 'Customers' : 'ग्राहक'}
+          {'Customers'}
         </h1>
       </div>
 
@@ -220,7 +220,7 @@ export default function CustomersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder={language === 'en' ? 'Search customers...' : 'ग्राहक खोजें...'}
+            placeholder={'Search customers...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
@@ -242,21 +242,21 @@ export default function CustomersPage() {
       ) : loadError ? (
         <EmptyState
           icon={Users}
-          title={language === 'en' ? 'Failed to load customers' : 'ग्राहक लोड करने में विफल'}
-          description={language === 'en' ? 'Please check your connection and try again' : 'कृपया अपना कनेक्शन जांचें और पुनः प्रयास करें'}
-          actionLabel={language === 'en' ? 'Add Customer' : 'ग्राहक जोड़ें'}
+          title={'Failed to load customers'}
+          description={'Please check your connection and try again'}
+          actionLabel={'Add Customer'}
           onAction={() => handleOpenModal()}
         />
       ) : filteredCustomers.length === 0 ? (
         <EmptyState
           icon={Users}
-          title={language === 'en' ? 'No customers found' : 'कोई ग्राहक नहीं मिला'}
+          title={'No customers found'}
           description={
             search
-              ? (language === 'en' ? 'Try adjusting your search' : 'अपनी खोज समायोजित करने का प्रयास करें')
-              : (language === 'en' ? 'Add your first customer to get started' : 'शुरू करने के लिए अपना पहला ग्राहक जोड़ें')
+              ? ('Try adjusting your search')
+              : ('Add your first customer to get started')
           }
-          actionLabel={!search ? (language === 'en' ? 'Add Customer' : 'ग्राहक जोड़ें') : undefined}
+          actionLabel={!search ? ('Add Customer') : undefined}
           onAction={!search ? () => handleOpenModal() : undefined}
         />
       ) : (
@@ -329,8 +329,8 @@ export default function CustomersPage() {
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                 {editingCustomer
-                  ? (language === 'en' ? 'Edit Customer' : 'ग्राहक संपादित करें')
-                  : (language === 'en' ? 'Add New Customer' : 'नया ग्राहक जोड़ें')
+                  ? ('Edit Customer')
+                  : ('Add New Customer')
                 }
               </h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
@@ -341,14 +341,14 @@ export default function CustomersPage() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'en' ? 'Full Name' : 'पूरा नाम'}
+                  {'Full Name'}
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
-                  placeholder={language === 'en' ? 'e.g. Reliance Retail' : 'जैसे, रिलायंस रिटेल'}
+                  placeholder={'e.g. Reliance Retail'}
                 />
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
@@ -356,7 +356,7 @@ export default function CustomersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'Phone' : 'फोन'}
+                    {'Phone'}
                   </label>
                   <input
                     type="tel"
@@ -369,7 +369,7 @@ export default function CustomersPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'Email' : 'ईमेल'}
+                    {'Email'}
                   </label>
                   <input
                     type="email"
@@ -385,27 +385,27 @@ export default function CustomersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'City' : 'शहर'}
+                    {'City'}
                   </label>
                   <input
                     type="text"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.city ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
-                    placeholder={language === 'en' ? 'e.g. Mumbai' : 'जैसे, मुंबई'}
+                    placeholder={'e.g. Mumbai'}
                   />
                   {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'State' : 'राज्य'}
+                    {'State'}
                   </label>
                   <input
                     type="text"
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                     className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none ${errors.state ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
-                    placeholder={language === 'en' ? 'e.g. Maharashtra' : 'जैसे, महाराष्ट्र'}
+                    placeholder={'e.g. Maharashtra'}
                   />
                   {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
                 </div>
@@ -414,7 +414,7 @@ export default function CustomersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'Pincode' : 'पिनकोड'}
+                    {'Pincode'}
                   </label>
                   <input
                     type="text"
@@ -427,7 +427,7 @@ export default function CustomersPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'PAN Number' : 'पैन नंबर'}
+                    {'PAN Number'}
                   </label>
                   <input
                     type="text"
@@ -443,7 +443,7 @@ export default function CustomersPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'en' ? 'GSTIN (Optional)' : 'GSTIN (वैकल्पिक)'}
+                  {'GSTIN (Optional)'}
                 </label>
                 <input
                   type="text"
@@ -457,14 +457,14 @@ export default function CustomersPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'en' ? 'Full Address' : 'पूरा पता'}
+                  {'Full Address'}
                 </label>
                 <textarea
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   rows={3}
                   className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 focus:ring-primary-500 outline-none resize-none ${errors.address ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
-                  placeholder={language === 'en' ? 'Street address, Landmark' : 'सड़क पता, लैंडमार्क'}
+                  placeholder={'Street address, Landmark'}
                 />
                 {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
               </div>
@@ -475,7 +475,7 @@ export default function CustomersPage() {
                 onClick={() => setIsModalOpen(false)}
                 className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
               >
-                {language === 'en' ? 'Cancel' : 'रद्द करें'}
+                {'Cancel'}
               </button>
               <button
                 onClick={handleSave}
@@ -487,7 +487,7 @@ export default function CustomersPage() {
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                {language === 'en' ? 'Save Customer' : 'ग्राहक सहेजें'}
+                {'Save Customer'}
               </button>
             </div>
           </div>

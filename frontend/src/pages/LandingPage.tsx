@@ -1,5 +1,4 @@
 ﻿import { Link } from 'react-router-dom'
-import { useLanguageStore } from '../stores/languageStore'
 import {
   Package, Route, MapPin, Building2,
   ArrowRight, Truck, Shield, Clock, CheckCircle2
@@ -38,8 +37,6 @@ const FEATURES = [
 
 
 export default function LandingPage() {
-  const { language } = useLanguageStore()
-  const languageFont = language === 'hi' ? 'font-hindi' : ''
 
   const t = {
     heroBadge: 'Built for high-volume Indian logistics teams',
@@ -123,7 +120,7 @@ export default function LandingPage() {
   ]
 
   return (
-    <div className={`relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#ffffff_46%,#eef4ff_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.22),_transparent_28%),linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)] ${languageFont}`}>
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#ffffff_46%,#eef4ff_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.22),_transparent_28%),linear-gradient(180deg,#020617_0%,#0f172a_48%,#111827_100%)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary-100/70 via-primary-50/30 to-transparent dark:from-primary-950/60 dark:via-primary-950/10 dark:to-transparent" />
       <div className="pointer-events-none absolute -left-20 top-24 h-56 w-56 rounded-full bg-orange-300/20 blur-3xl dark:bg-orange-500/15" />
       <div className="pointer-events-none absolute right-0 top-40 h-72 w-72 rounded-full bg-primary-400/15 blur-3xl dark:bg-primary-500/20" />

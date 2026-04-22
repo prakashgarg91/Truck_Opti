@@ -1,9 +1,8 @@
-import { useState, useEffect, memo } from 'react'
+﻿import { useState, useEffect, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, FileText, Calculator, AlertCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
 import { supabase } from '../lib/supabase'
 import { packingJobsSupabaseApi, analyticsSupabaseApi, saleOrdersSupabaseApi, type PackingJob, type SaleOrder } from '../services/supabaseApi'
 import { calculateShipmentCost, formatCost } from '../utils/costEngine'
@@ -76,7 +75,7 @@ const TRUCK_TYPES = [
   'BharatBenz 32ft'
 ]
 
-const fetchDashboardData = async (language: string): Promise<DashboardData> => {
+const fetchDashboardData = async (): Promise<DashboardData> => {
   // Fetch counts from Supabase
   const [trucksRes, shipmentsRes, routesRes, pendingJobsRes] = await Promise.all([
     supabase.from('trucks').select('id', { count: 'exact' }),
@@ -112,19 +111,17 @@ const fetchDashboardData = async (language: string): Promise<DashboardData> => {
   const activities = recentJobs.map((job: PackingJob) => ({
     id: job.id || '',
     type: 'packing',
-    message: language === 'en'
-      ? `Packing job completed - ${job.volume_utilization}% volume utilized`
-      : `पैकिंग जॉब पूर्ण - ${job.volume_utilization}% वॉल्यूम उपयोग`,
-    time: getRelativeTime(new Date(job.created_at || Date.now()), language),
+    message: `Packing job completed - ${job.volume_utilization}% volume utilized`,
+    time: getRelativeTime(new Date(job.created_at || Date.now()), 'en'),
     status: job.status === 'completed' ? 'success' : 'info'
   }))
 
   // Add default activities if no packing jobs
   if (activities.length === 0) {
     activities.push(
-      { id: '1', type: 'packing', message: language === 'en' ? 'System ready for packing' : 'पैकिंग के लिए सिस्टम तैयार', time: language === 'en' ? 'Just now' : 'अभी', status: 'success' },
-      { id: '2', type: 'info', message: language === 'en' ? `${trucksRes.count || 0} trucks loaded in database` : `${trucksRes.count || 0} ट्रक डेटाबेस में लोड`, time: language === 'en' ? '1 min ago' : '1 मिनट पहले', status: 'info' },
-      { id: '3', type: 'route', message: language === 'en' ? 'Route optimization ready' : 'रूट अनुकूलन तैयार', time: language === 'en' ? '5 min ago' : '5 मिनट पहले', status: 'info' }
+      { id: '1', type: 'packing', message: 'System ready for packing', time: 'Just now', status: 'success' },
+      { id: '2', type: 'info', message: `${trucksRes.count || 0} trucks loaded in database`, time: '1 min ago', status: 'info' },
+      { id: '3', type: 'route', message: 'Route optimization ready', time: '5 min ago', status: 'info' }
     )
   }
 
@@ -163,7 +160,6 @@ const getRelativeTime = (date: Date, lang: string): string => {
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { language } = useLanguageStore()
   const [greeting, setGreeting] = useState('')
   const [costEstimate, setCostEstimate] = useState({
     distance: 500,
@@ -173,12 +169,12 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    document.title = language === 'en' ? 'Dashboard - TruckOpti' : 'डैशबोर्ड - TruckOpti'
+    document.title = 'Dashboard - TruckOpti'
     const hour = new Date().getHours()
-    if (hour < 12) setGreeting(language === 'en' ? 'Good Morning' : 'सुप्रभात')
-    else if (hour < 17) setGreeting(language === 'en' ? 'Good Afternoon' : 'नमस्कार')
-    else setGreeting(language === 'en' ? 'Good Evening' : 'शुभ संध्या')
-  }, [language])
+    if (hour < 12) setGreeting('Good Morning')
+    else if (hour < 17) setGreeting('Good Afternoon')
+    else setGreeting('Good Evening')
+  }, [])
 
   // React Query: Fetch dashboard data
   const {
@@ -186,8 +182,8 @@ export default function Dashboard() {
     isLoading: loading,
     isError: loadError
   } = useQuery({
-    queryKey: ['dashboard-stats', language],
-    queryFn: () => fetchDashboardData(language),
+    queryKey: ['dashboard-stats'],
+    queryFn: () => fetchDashboardData(),
   })
 
   const stats = dashboardData?.stats || {
@@ -203,28 +199,28 @@ export default function Dashboard() {
 
   const statsConfig = [
     {
-      label: language === 'en' ? 'Active Shipments' : 'सक्रिय शिपमेंट',
+      label: 'Active Shipments',
       value: stats.activeShipments.toString(),
       icon: Package,
       color: 'from-blue-500 to-blue-600',
       change: '+0'
     },
     {
-      label: language === 'en' ? 'Trucks Available' : 'उपलब्ध ट्रक',
+      label: 'Trucks Available',
       value: stats.trucksCount.toString(),
       icon: Truck,
       color: 'from-green-500 to-green-600',
       change: `+${stats.trucksCount}`
     },
     {
-      label: language === 'en' ? 'Routes Today' : 'आज के रूट',
+      label: 'Routes Today',
       value: stats.routesToday.toString(),
       icon: Route,
       color: 'from-orange-500 to-orange-600',
       change: '+0'
     },
     {
-      label: language === 'en' ? 'Deliveries Done' : 'डिलीवरी पूर्ण',
+      label: 'Deliveries Done',
       value: stats.deliveriesDone.toString(),
       icon: MapPin,
       color: 'from-purple-500 to-purple-600',
@@ -233,10 +229,10 @@ export default function Dashboard() {
   ]
 
   const quickActions = [
-    { icon: Package, label: language === 'en' ? '3D Pack' : 'पैकिंग', path: '/packing', color: 'bg-blue-500', description: language === 'en' ? 'Optimize loading' : 'लोडिंग अनुकूलित करें' },
-    { icon: Route, label: language === 'en' ? 'Routes' : 'रूट', path: '/routes', color: 'bg-green-500', description: language === 'en' ? 'Plan delivery' : 'डिलीवरी प्लान' },
-    { icon: MapPin, label: language === 'en' ? 'Track' : 'ट्रैक', path: '/tracking', color: 'bg-orange-500', description: language === 'en' ? 'Live GPS' : 'लाइव जीपीएस' },
-    { icon: Truck, label: language === 'en' ? 'Book Truck' : 'ट्रक बुक', path: '/booking/new', color: 'bg-indigo-500', description: language === 'en' ? 'New booking' : 'नई बुकिंग' },
+    { icon: Package, label: '3D Pack', path: '/packing', color: 'bg-blue-500', description: 'Optimize loading' },
+    { icon: Route, label: 'Routes', path: '/routes', color: 'bg-green-500', description: 'Plan delivery' },
+    { icon: MapPin, label: 'Track', path: '/tracking', color: 'bg-orange-500', description: 'Live GPS' },
+    { icon: Truck, label: 'Book Truck', path: '/booking/new', color: 'bg-indigo-500', description: 'New booking' },
   ]
 
   const updateCostEstimate = () => {
@@ -282,10 +278,10 @@ export default function Dashboard() {
       <div className="p-4 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-          {language === 'en' ? 'Failed to load dashboard' : 'डैशबोर्ड लोड नहीं हो सका'}
+          {'Failed to load dashboard'}
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          {language === 'en' ? 'Please check your connection and try again' : 'अपना कनेक्शन जांचें और फिर प्रयास करें'}
+          {'Please check your connection and try again'}
         </p>
       </div>
     )
@@ -379,7 +375,7 @@ export default function Dashboard() {
       <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            {language === 'en' ? 'Quick Actions' : 'त्वरित कार्रवाई'}
+            {'Quick Actions'}
           </h3>
           <Zap className="w-5 h-5 text-saffron" />
         </div>
@@ -413,13 +409,13 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-4">
             <Calculator className="w-5 h-5 text-primary-600" />
             <h3 className="font-semibold text-slate-900 dark:text-white">
-              {language === 'en' ? 'Quick Cost Estimate' : 'त्वरित लागत अनुमान'}
+              {'Quick Cost Estimate'}
             </h3>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div>
-              <label className="text-xs text-slate-500 block mb-1">{language === 'en' ? 'Distance (km)' : 'दूरी (किमी)'}</label>
+              <label className="text-xs text-slate-500 block mb-1">{'Distance (km)'}</label>
               <input
                 type="number"
                 value={costEstimate.distance}
@@ -432,7 +428,7 @@ export default function Dashboard() {
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500 block mb-1">{language === 'en' ? 'Truck Type' : 'ट्रक प्रकार'}</label>
+              <label className="text-xs text-slate-500 block mb-1">{'Truck Type'}</label>
               <select
                 value={costEstimate.truckType}
                 onChange={(e) => {
@@ -445,7 +441,7 @@ export default function Dashboard() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-500 block mb-1">{language === 'en' ? 'Weight (kg)' : 'वजन (किलो)'}</label>
+              <label className="text-xs text-slate-500 block mb-1">{'Weight (kg)'}</label>
               <input
                 type="number"
                 value={costEstimate.weight}
@@ -461,24 +457,24 @@ export default function Dashboard() {
 
           <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-slate-600 dark:text-slate-400">{language === 'en' ? 'Total Estimate' : 'कुल अनुमान'}</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{'Total Estimate'}</span>
               <span className="text-2xl font-bold text-primary-600">{formatCost(costEstimate.result.totalCost)}</span>
             </div>
             <div className="grid grid-cols-4 gap-2 text-xs">
               <div className="text-center">
-                <p className="text-slate-500">{language === 'en' ? 'Fuel' : 'ईंधन'}</p>
+                <p className="text-slate-500">{'Fuel'}</p>
                 <p className="font-medium">{formatCost(costEstimate.result.fuelCost)}</p>
               </div>
               <div className="text-center">
-                <p className="text-slate-500">{language === 'en' ? 'Toll' : 'टोल'}</p>
+                <p className="text-slate-500">{'Toll'}</p>
                 <p className="font-medium">{formatCost(costEstimate.result.tollCost)}</p>
               </div>
               <div className="text-center">
-                <p className="text-slate-500">{language === 'en' ? 'Driver' : 'ड्राइवर'}</p>
+                <p className="text-slate-500">{'Driver'}</p>
                 <p className="font-medium">{formatCost(costEstimate.result.driverCost)}</p>
               </div>
               <div className="text-center">
-                <p className="text-slate-500">{language === 'en' ? 'Loading' : 'लोडिंग'}</p>
+                <p className="text-slate-500">{'Loading'}</p>
                 <p className="font-medium">{formatCost(costEstimate.result.loadingCost)}</p>
               </div>
             </div>
@@ -493,13 +489,13 @@ export default function Dashboard() {
         <div className="animate-slide-up" style={{ animationDelay: '275ms' }}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-              {language === 'en' ? 'Recent Sale Orders' : 'हाल के सेल ऑर्डर्स'}
+              {'Recent Sale Orders'}
             </h3>
             <button
               onClick={() => navigate('/sale-orders')}
               className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
             >
-              {language === 'en' ? 'View all' : 'सभी देखें'}
+              {'View all'}
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -508,13 +504,13 @@ export default function Dashboard() {
             <div className="card p-6 text-center">
               <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
               <p className="text-sm text-slate-500">
-                {language === 'en' ? 'No sale orders yet' : 'अभी तक कोई सेल ऑर्डर नहीं'}
+                {'No sale orders yet'}
               </p>
               <button
                 onClick={() => navigate('/sale-orders')}
                 className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
-                {language === 'en' ? 'Import orders →' : 'ऑर्डर्स आयात करें →'}
+                {'Import orders →'}
               </button>
             </div>
           ) : (
@@ -550,10 +546,10 @@ export default function Dashboard() {
         <div className="animate-slide-up" style={{ animationDelay: '300ms' }}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-              {language === 'en' ? 'Recent Activity' : 'हाल की गतिविधि'}
+              {'Recent Activity'}
             </h3>
             <button onClick={() => navigate('/packing')} className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-              {language === 'en' ? 'View all' : 'सभी देखें'}
+              {'View all'}
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -595,9 +591,9 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-white">
-              {language === 'en' ? 'Weekly Performance' : 'साप्ताहिक प्रदर्शन'}
+              {'Weekly Performance'}
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">{language === 'en' ? 'Packing jobs per day' : 'प्रति दिन पैकिंग कार्य'}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{'Packing jobs per day'}</p>
           </div>
           <span className="badge badge-success flex items-center gap-1.5 px-3 py-1.5">
             <TrendingUp className="w-3.5 h-3.5" />
@@ -640,11 +636,9 @@ export default function Dashboard() {
             <span className="text-xl">💡</span>
           </div>
           <div>
-            <h4 className="font-semibold text-slate-900 dark:text-white text-sm">{language === 'en' ? 'Pro Tip' : 'सुझाव'}</h4>
+            <h4 className="font-semibold text-slate-900 dark:text-white text-sm">{'Pro Tip'}</h4>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-              {language === 'en'
-                ? 'Use 3D bin packing to maximize truck utilization by up to 40% and reduce shipping costs.'
-                : '3D बिन पैकिंग का उपयोग करके ट्रक उपयोग को 40% तक बढ़ाएं और शिपिंग लागत कम करें।'}
+              
             </p>
           </div>
         </div>

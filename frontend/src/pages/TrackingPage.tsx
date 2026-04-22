@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, Trash2, Loader2 } from 'lucide-react'
@@ -96,7 +96,7 @@ export default function TrackingPage() {
   })
 
   useEffect(() => {
-    document.title = language === 'en' ? 'Live Tracking - TruckOpti' : 'लाइव ट्रैकिंग - TruckOpti'
+    document.title = 'Live Tracking - TruckOpti'
   }, [language])
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function TrackingPage() {
           logger.error('Error loading job offer details:', error)
           setJobOffer(null)
           setJobPhotos(null)
-          toast.error(language === 'en' ? 'Failed to load shipment details' : 'शिपमेंट विवरण लोड करने में विफल')
+          toast.error('Failed to load shipment details')
           return
         }
 
@@ -168,7 +168,7 @@ export default function TrackingPage() {
         logger.error('Unexpected error loading job offer details:', error)
         setJobOffer(null)
         setJobPhotos(null)
-        toast.error(language === 'en' ? 'Failed to load shipment details' : 'शिपमेंट विवरण लोड करने में विफल')
+        toast.error('Failed to load shipment details')
       } finally {
         if (isActive) {
           setLoadingOTP(false)
@@ -215,7 +215,7 @@ export default function TrackingPage() {
       toast.success('Shipment cancelled')
     } catch (err: unknown) {
       void err
-      toast.error(language === 'en' ? 'Failed to cancel shipment' : 'शिपमेंट रद्द करने में विफल')
+      toast.error('Failed to cancel shipment')
     } finally {
       setUpdatingStatus(null)
     }
@@ -245,7 +245,7 @@ export default function TrackingPage() {
       }
     } catch (err: unknown) {
       void err
-      toast.error(language === 'en' ? 'Failed to update status' : 'स्टेटस अपडेट करने में विफल')
+      toast.error('Failed to update status')
     } finally {
       setUpdatingStatus(null)
     }
@@ -397,13 +397,11 @@ export default function TrackingPage() {
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
                     <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                      {language === 'en' ? 'Searching for drivers...' : 'ड्राइवर खोज रहे हैं...'}
+                      {'Searching for drivers...'}
                     </span>
                   </div>
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    {language === 'en'
-                      ? 'We are looking for available drivers for your shipment.'
-                      : 'आपकी शिपमेंट के लिए उपलब्ध ड्राइवर खोज रहे हैं।'}
+                    
                   </p>
                 </div>
               )}
@@ -419,7 +417,7 @@ export default function TrackingPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 dark:text-white">{s.shipment_id}</h3>
-                    <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name || (s.status === 'pending' ? (language === 'en' ? 'Searching...' : 'खोज रहे हैं...') : (language === 'en' ? 'No driver' : 'कोई ड्राइवर नहीं'))}</p>
+                    <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name || (s.status === 'pending' ? ('Searching...') : ('No driver'))}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -462,7 +460,7 @@ export default function TrackingPage() {
                       className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      {updatingStatus === s.id ? (language === 'en' ? 'Updating...' : 'अपडेट हो रहा है...') : (language === 'en' ? 'Mark Delivered' : 'डिलीवर हो गया')}
+                      {updatingStatus === s.id ? ('Updating...') : ('Mark Delivered')}
                     </button>
                   )}
                   <div className="flex gap-2">
@@ -473,7 +471,7 @@ export default function TrackingPage() {
                       }}
                       className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
                     >
-                      {language === 'en' ? 'View Details' : 'विवरण देखें'}
+                      {'View Details'}
                     </button>
                     <button
                       onClick={(e) => {
@@ -484,7 +482,7 @@ export default function TrackingPage() {
                       className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Phone className="w-3 h-3" />
-                      {language === 'en' ? 'Contact' : 'संपर्क'}
+                      {'Contact'}
                     </button>
                   </div>
                   <div className="flex gap-2">
@@ -496,7 +494,7 @@ export default function TrackingPage() {
                       className="flex-1 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
                     >
                       <MessageCircle className="w-3 h-3" />
-                      {language === 'en' ? 'Share' : 'शेयर'}
+                      {'Share'}
                     </button>
                     <button
                       onClick={(e) => {
@@ -506,7 +504,7 @@ export default function TrackingPage() {
                       className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
                     >
                       <FileText className="w-3 h-3" />
-                      {language === 'en' ? 'Invoice' : 'चालान'}
+                      {'Invoice'}
                     </button>
                   </div>
                   {(s.status === 'pending' || s.status === 'in_transit') && (
@@ -516,7 +514,7 @@ export default function TrackingPage() {
                       className="w-full py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-200 dark:border-red-800/50 disabled:opacity-50"
                     >
                       <Trash2 className="w-3 h-3" />
-                      {language === 'en' ? 'Cancel Shipment' : 'शिपमेंट रद्द करें'}
+                      {'Cancel Shipment'}
                     </button>
                   )}
                 </div>
@@ -533,7 +531,7 @@ export default function TrackingPage() {
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedShipment.shipment_id}</h2>
-                <p className="text-xs text-slate-500">{language === 'en' ? 'Shipment Details' : 'शिपमेंट विवरण'}</p>
+                <p className="text-xs text-slate-500">{'Shipment Details'}</p>
               </div>
               <button
                 onClick={() => setShowDetailModal(false)}
@@ -548,12 +546,12 @@ export default function TrackingPage() {
               {selectedShipment.status !== 'delivered' && selectedShipment.status !== 'cancelled' && (
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 p-4 rounded-2xl">
                   <p className="text-xs font-medium text-green-700 dark:text-green-300 mb-2">
-                    {language === 'en' ? '📋 Pickup OTP' : '📋 पिकअप OTP'}
+                    {'📋 Pickup OTP'}
                   </p>
                   {loadingOTP ? (
                     <div className="flex items-center gap-2 text-green-600">
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span className="text-sm">{language === 'en' ? 'Loading...' : 'लोड हो रहा है...'}</span>
+                      <span className="text-sm">{'Loading...'}</span>
                     </div>
                   ) : jobOffer?.pickup_otp ? (
                     <>
@@ -561,16 +559,12 @@ export default function TrackingPage() {
                         {jobOffer.pickup_otp}
                       </p>
                       <p className="text-xs text-green-600 dark:text-green-400 text-center mt-2">
-                        {language === 'en'
-                          ? 'Share this with the driver when they arrive'
-                          : 'जब ड्राइवर आए तो इसे उनके साथ शेयर करें'}
+                        
                       </p>
                     </>
                   ) : (
                     <p className="text-sm text-green-600 dark:text-green-400 text-center">
-                      {language === 'en'
-                        ? 'OTP will be generated when a driver accepts'
-                        : 'जब ड्राइवर स्वीकार करेगा तब OTP बनाया जाएगा'}
+                      
                     </p>
                   )}
                 </div>
@@ -580,14 +574,14 @@ export default function TrackingPage() {
               <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl">
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'From' : 'से'}</p>
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">{'From'}</p>
                     <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.origin}</p>
                   </div>
                   <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full">
                     <ChevronRight className="w-4 h-4 text-primary-600" />
                   </div>
                   <div className="flex-1 text-right">
-                    <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'To' : 'तक'}</p>
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">{'To'}</p>
                     <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.destination}</p>
                   </div>
                 </div>
@@ -601,8 +595,8 @@ export default function TrackingPage() {
                 <div className="flex-1">
                   <p className="font-medium text-slate-900 dark:text-white">
                     {selectedShipment.status === 'pending'
-                      ? (language === 'en' ? 'Searching for driver...' : 'ड्राइवर खोज रहे हैं...')
-                      : (jobOffer?.drivers?.full_name || selectedShipment.driver_name || (language === 'en' ? 'Unknown Driver' : 'अज्ञात ड्राइवर'))}
+                      ? ('Searching for driver...')
+                      : (jobOffer?.drivers?.full_name || selectedShipment.driver_name || ('Unknown Driver'))}
                   </p>
                   <p className="text-sm text-slate-500">{selectedShipment.vehicle_number || '—'}</p>
                 </div>
@@ -620,12 +614,12 @@ export default function TrackingPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
                   <Package className="w-5 h-5 text-slate-400 mb-2" />
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'Weight' : 'वजन'}</p>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">{'Weight'}</p>
                   <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_weight ? `${selectedShipment.total_weight} kg` : 'N/A'}</p>
                 </div>
                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
                   <Clock className="w-5 h-5 text-slate-400 mb-2" />
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'Volume' : 'वॉल्यूम'}</p>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">{'Volume'}</p>
                   <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_volume ? `${selectedShipment.total_volume} m³` : 'N/A'}</p>
                 </div>
               </div>
@@ -633,7 +627,7 @@ export default function TrackingPage() {
               {/* Current Location */}
               {selectedShipment.latitude && selectedShipment.longitude && selectedShipment.status === 'in_transit' && (
                 <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl">
-                  <p className="text-[10px] uppercase text-slate-400 font-bold mb-2">{language === 'en' ? 'Current Location' : 'वर्तमान स्थान'}</p>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold mb-2">{'Current Location'}</p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     Lat: {selectedShipment.latitude.toFixed(6)}, Lng: {selectedShipment.longitude.toFixed(6)}
                   </p>
@@ -643,7 +637,7 @@ export default function TrackingPage() {
               {/* Trip Photos */}
               {jobPhotos && (jobPhotos.loading_url || jobPhotos.delivery_url) && (
                 <div className="space-y-3">
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">{language === 'en' ? 'Trip Photos' : 'यात्रा फोटो'}</p>
+                  <p className="text-[10px] uppercase text-slate-400 font-bold">{'Trip Photos'}</p>
                   <div className="grid grid-cols-2 gap-3">
                     {jobPhotos.loading_url && (
                       <div
@@ -652,7 +646,7 @@ export default function TrackingPage() {
                       >
                         <img src={jobPhotos.loading_url} alt="Loading" className="w-full h-full object-cover" />
                         <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
-                          <p className="text-xs text-white">{language === 'en' ? 'Loading' : 'लोडिंग'}</p>
+                          <p className="text-xs text-white">{'Loading'}</p>
                         </div>
                       </div>
                     )}
@@ -663,7 +657,7 @@ export default function TrackingPage() {
                       >
                         <img src={jobPhotos.delivery_url} alt="Delivery" className="w-full h-full object-cover" />
                         <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
-                          <p className="text-xs text-white">{language === 'en' ? 'Delivery' : 'डिलीवरी'}</p>
+                          <p className="text-xs text-white">{'Delivery'}</p>
                         </div>
                       </div>
                     )}
@@ -679,7 +673,7 @@ export default function TrackingPage() {
                 className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 mb-3"
               >
                 <Truck className="w-4 h-4" />
-                {language === 'en' ? 'Book Another Truck' : 'एक और ट्रक बुक करें'}
+                {'Book Another Truck'}
               </button>
             )}
 
@@ -688,7 +682,7 @@ export default function TrackingPage() {
                 onClick={() => setShowDetailModal(false)}
                 className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
               >
-                {language === 'en' ? 'Close' : 'बंद करें'}
+                {'Close'}
               </button>
               <button
                 onClick={() => {
@@ -697,7 +691,7 @@ export default function TrackingPage() {
                 }}
                 className="flex-[2] px-4 py-3 bg-primary-600 text-white rounded-2xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 transition-all"
               >
-                {language === 'en' ? 'Track on Map' : 'मैप पर ट्रैक करें'}
+                {'Track on Map'}
               </button>
             </div>
           </div>

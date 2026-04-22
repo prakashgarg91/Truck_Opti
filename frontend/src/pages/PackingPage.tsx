@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, memo, lazy, Suspense } from 'react'
+﻿import { useState, useMemo, useCallback, useEffect, memo, lazy, Suspense } from 'react'
 import {
   Package, Truck, Play, Settings, Layers, CheckCircle2,
   Plus, Trash2, Wand2, AlertTriangle, ChevronDown,
@@ -14,7 +14,6 @@ import { itemSchema, getFieldErrors, type ItemInput } from '../utils/validators'
 import { usePackingWorker } from '../hooks/usePackingWorker'
 import { useSubscription } from '../hooks/useSubscription'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
 import { AdvancedBinPacker, PACKING_COLORS, createTruckRecommendation, recommendTrucks, type PackedBox, type SaleOrderItem, type TruckRecommendation, type TruckType } from '../lib/packing'
 import { logger } from '../utils/logger'
 import { formatPercent, formatCurrency } from '../utils/formatters'
@@ -252,7 +251,6 @@ export default function PackingPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuthStore()
-  const { language } = useLanguageStore()
   const { isExpired, checkLimit, showUpgradePrompt } = useSubscription()
   const isAdmin = user?.role === 'admin'
 
@@ -710,7 +708,7 @@ export default function PackingPage() {
       navigate('/tracking')
     } catch (error: unknown) {
       logger.error('[PackingPage] Failed to book truck:', error)
-      setBookError(language === 'en' ? 'Failed to book truck.' : 'ट्रक बुक करने में विफल।')
+      setBookError('Failed to book truck.')
     } finally {
       setBookingInProgress(false)
     }
@@ -725,18 +723,16 @@ export default function PackingPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <h2 className="text-2xl font-bold text-red-600 mb-2">
-          {language === 'en' ? 'Subscription Expired' : 'सदस्यता समाप्त'}
+          {'Subscription Expired'}
         </h2>
         <p className="text-gray-600 mb-6">
-          {language === 'en'
-            ? 'Your trial has ended. Upgrade to continue using 3D packing.'
-            : 'आपका परीक्षण समाप्त हो गया है। 3D पैकिंग जारी रखने के लिए अपग्रेड करें।'}
+          
         </p>
         <button
           onClick={() => navigate('/pricing')}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold"
         >
-          {language === 'en' ? 'View Plans' : 'प्लान देखें'}
+          {'View Plans'}
         </button>
       </div>
     )

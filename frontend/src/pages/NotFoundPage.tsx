@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Home, ArrowLeft } from 'lucide-react'
 import { useLanguageStore } from '../stores/languageStore'
@@ -8,7 +8,7 @@ export default function NotFoundPage() {
   const { language } = useLanguageStore()
 
   useEffect(() => {
-    document.title = language === 'en' ? '404 - Page Not Found' : '404 - पेज नहीं मिला'
+    document.title = '404 - Page Not Found'
   }, [language])
 
   return (
@@ -28,14 +28,12 @@ export default function NotFoundPage() {
 
         {/* Title */}
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">
-          {language === 'en' ? 'Page not found' : 'पेज नहीं मिला'}
+          {'Page not found'}
         </h1>
 
         {/* Subtitle */}
         <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
-          {language === 'en'
-            ? "The page you're looking for doesn't exist or has been moved."
-            : 'आप जो पेज खोज रहे हैं वह मौजूद नहीं है या हटा दिया गया है।'}
+          The page you're looking for doesn't exist or has been moved.
         </p>
 
         {/* Actions */}
@@ -43,18 +41,18 @@ export default function NotFoundPage() {
           <button
             onClick={() => navigate('/')}
             className="btn btn-primary inline-flex items-center gap-2 px-6 py-3"
-            aria-label={language === 'en' ? 'Go home' : 'होम पर जाएं'}
+            aria-label={'Go home'}
           >
             <Home className="w-5 h-5" />
-            {language === 'en' ? 'Go Home' : 'होम पर जाएं'}
+            {'Go Home'}
           </button>
           <button
             onClick={() => navigate(-1)}
             className="btn bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 inline-flex items-center gap-2 px-6 py-3"
-            aria-label={language === 'en' ? 'Go back' : 'वापस जाएं'}
+            aria-label={'Go back'}
           >
             <ArrowLeft className="w-5 h-5" />
-            {language === 'en' ? 'Go Back' : 'वापस जाएं'}
+            {'Go Back'}
           </button>
         </div>
       </div>

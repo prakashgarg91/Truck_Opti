@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MessageSquare, ChevronLeft, RefreshCw, CheckCircle2, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -28,13 +28,13 @@ export default function AdminContactPage() {
 
   useEffect(() => {
     if (user && user.role !== 'admin') {
-      toast.error(language === 'en' ? 'Admin access required' : 'एडमिन एक्सेस आवश्यक है')
+      toast.error('Admin access required')
       navigate('/dashboard', { replace: true })
     }
   }, [user, navigate, language])
 
   useEffect(() => {
-    document.title = language === 'en' ? 'Contact Inquiries - Admin' : 'संपर्क पूछताछ - एडमिन'
+    document.title = 'Contact Inquiries - Admin'
   }, [language])
 
   const fetchInquiries = useCallback(async () => {
@@ -44,7 +44,7 @@ export default function AdminContactPage() {
       .select('*')
       .order('created_at', { ascending: false })
     if (error) {
-      toast.error(language === 'en' ? 'Something went wrong' : 'कुछ गलत हुआ')
+      toast.error('Something went wrong')
     } else {
       setInquiries(data || [])
     }
@@ -62,10 +62,10 @@ export default function AdminContactPage() {
       .update({ status: 'resolved' })
       .eq('id', id)
     if (error) {
-      toast.error(language === 'en' ? 'Something went wrong' : 'कुछ गलत हुआ')
+      toast.error('Something went wrong')
     } else {
       setInquiries(prev => prev.map(i => i.id === id ? { ...i, status: 'resolved' } : i))
-      toast.success(language === 'en' ? 'Marked as resolved' : 'हल के रूप में चिह्नित')
+      toast.success('Marked as resolved')
     }
     setUpdatingId(null)
   }
@@ -85,9 +85,9 @@ export default function AdminContactPage() {
         <div className="flex-1">
           <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <MessageSquare className="w-6 h-6 text-orange-500" />
-            {language === 'en' ? 'Contact Inquiries' : 'संपर्क पूछताछ'}
+            {'Contact Inquiries'}
           </h1>
-          <p className="text-sm text-slate-500">{filtered.length} {language === 'en' ? 'inquiries' : 'पूछताछ'}</p>
+          <p className="text-sm text-slate-500">{filtered.length} {'inquiries'}</p>
         </div>
         <button
           onClick={fetchInquiries}
@@ -109,10 +109,10 @@ export default function AdminContactPage() {
               }`}
           >
             {tab === 'all'
-              ? (language === 'en' ? 'All' : 'सभी')
+              ? ('All')
               : tab === 'open'
-                ? (language === 'en' ? 'Open' : 'खुला')
-                : (language === 'en' ? 'Resolved' : 'हल')}
+                ? ('Open')
+                : ('Resolved')}
           </button>
         ))}
       </div>
@@ -124,7 +124,7 @@ export default function AdminContactPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-          {language === 'en' ? 'No inquiries found' : 'कोई पूछताछ नहीं मिली'}
+          {'No inquiries found'}
         </div>
       ) : (
         <div className="space-y-3">
@@ -147,8 +147,8 @@ export default function AdminContactPage() {
                     : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                   }`}>
                   {inquiry.status === 'open'
-                    ? <><Clock className="w-3 h-3" />{language === 'en' ? 'Open' : 'खुला'}</>
-                    : <><CheckCircle2 className="w-3 h-3" />{language === 'en' ? 'Resolved' : 'हल'}</>}
+                    ? <><Clock className="w-3 h-3" />{'Open'}</>
+                    : <><CheckCircle2 className="w-3 h-3" />{'Resolved'}</>}
                 </span>
               </div>
 
@@ -175,8 +175,8 @@ export default function AdminContactPage() {
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     {updatingId === inquiry.id
-                      ? (language === 'en' ? 'Updating...' : 'अपडेट हो रहा है...')
-                      : (language === 'en' ? 'Mark Resolved' : 'हल करें')}
+                      ? ('Updating...')
+                      : ('Mark Resolved')}
                   </button>
                 )}
               </div>

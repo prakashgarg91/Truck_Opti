@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Package, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, AlertTriangle, Layers } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -38,7 +38,7 @@ export default function CartonsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    document.title = language === 'en' ? 'Carton Types - TruckOpti' : 'कार्टन प्रकार - TruckOpti'
+    document.title = 'Carton Types - TruckOpti'
   }, [language])
 
   // React Query: Fetch cartons data
@@ -56,13 +56,13 @@ export default function CartonsPage() {
     mutationFn: cartonsSupabaseApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartons'] })
-      toast.success(language === 'en' ? 'Carton type added' : 'कार्टन प्रकार जोड़ा गया')
+      toast.success('Carton type added')
       setIsModalOpen(false)
       resetForm()
     },
     onError: (error: Error) => {
       void error
-      toast.error(language === 'en' ? 'Failed to create carton' : 'कार्टन बनाने में विफल')
+      toast.error('Failed to create carton')
     },
   })
 
@@ -72,13 +72,13 @@ export default function CartonsPage() {
       cartonsSupabaseApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartons'] })
-      toast.success(language === 'en' ? 'Carton type updated' : 'कार्टन प्रकार अपडेट किया गया')
+      toast.success('Carton type updated')
       setIsModalOpen(false)
       resetForm()
     },
     onError: (error: Error) => {
       void error
-      toast.error(language === 'en' ? 'Failed to update carton' : 'कार्टन अपडेट करने में विफल')
+      toast.error('Failed to update carton')
     },
   })
 
@@ -87,11 +87,11 @@ export default function CartonsPage() {
     mutationFn: cartonsSupabaseApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartons'] })
-      toast.success(language === 'en' ? 'Carton type deleted' : 'कार्टन प्रकार हटा दिया गया')
+      toast.success('Carton type deleted')
     },
     onError: (error: Error) => {
       void error
-      toast.error(language === 'en' ? 'Failed to delete carton' : 'कार्टन हटाने में विफल')
+      toast.error('Failed to delete carton')
     },
   })
 
@@ -168,7 +168,7 @@ export default function CartonsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (window.confirm(language === 'en' ? 'Are you sure you want to delete this carton type?' : 'क्या आप वाकई इस कार्टन प्रकार को हटाना चाहते हैं?')) {
+    if (window.confirm('Are you sure you want to delete this carton type?')) {
       deleteMutation.mutate(id)
     }
   }
@@ -189,7 +189,7 @@ export default function CartonsPage() {
           <ChevronLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          {language === 'en' ? 'Carton Types' : 'कार्टन प्रकार'}
+          {'Carton Types'}
         </h1>
       </div>
 
@@ -198,7 +198,7 @@ export default function CartonsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder={language === 'en' ? 'Search cartons...' : 'कार्टन खोजें...'}
+            placeholder={'Search cartons...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
@@ -220,21 +220,21 @@ export default function CartonsPage() {
       ) : loadError ? (
         <EmptyState
           icon={Package}
-          title={language === 'en' ? 'Failed to load cartons' : 'कार्टन लोड करने में विफल'}
-          description={language === 'en' ? 'Please check your connection and try again' : 'कृपया अपना कनेक्शन जांचें और पुनः प्रयास करें'}
-          actionLabel={language === 'en' ? 'Add Carton Type' : 'कार्टन प्रकार जोड़ें'}
+          title={'Failed to load cartons'}
+          description={'Please check your connection and try again'}
+          actionLabel={'Add Carton Type'}
           onAction={() => handleOpenModal()}
         />
       ) : filteredCartons.length === 0 ? (
         <EmptyState
           icon={Package}
-          title={language === 'en' ? 'No carton types found' : 'कोई कार्टन प्रकार नहीं मिला'}
+          title={'No carton types found'}
           description={
             search
-              ? (language === 'en' ? 'Try adjusting your search' : 'अपनी खोज समायोजित करने का प्रयास करें')
-              : (language === 'en' ? 'Add your first carton type to get started' : 'शुरू करने के लिए अपना पहला कार्टन प्रकार जोड़ें')
+              ? ('Try adjusting your search')
+              : ('Add your first carton type to get started')
           }
-          actionLabel={!search ? (language === 'en' ? 'Add Carton Type' : 'कार्टन प्रकार जोड़ें') : undefined}
+          actionLabel={!search ? ('Add Carton Type') : undefined}
           onAction={!search ? () => handleOpenModal() : undefined}
         />
       ) : (
@@ -308,8 +308,8 @@ export default function CartonsPage() {
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                 {editingCarton
-                  ? (language === 'en' ? 'Edit Carton Type' : 'कार्टन प्रकार संपादित करें')
-                  : (language === 'en' ? 'Add Carton Type' : 'कार्टन प्रकार जोड़ें')
+                  ? ('Edit Carton Type')
+                  : ('Add Carton Type')
                 }
               </h2>
               <button
@@ -323,14 +323,14 @@ export default function CartonsPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'en' ? 'Name' : 'नाम'}
+                  {'Name'}
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className={`w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl border ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} focus:ring-2 focus:ring-primary-500 outline-none`}
-                  placeholder={language === 'en' ? 'e.g., Standard Box' : 'जैसे, स्टैंडर्ड बॉक्स'}
+                  placeholder={'e.g., Standard Box'}
                 />
                 {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
               </div>
@@ -338,7 +338,7 @@ export default function CartonsPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'Length (cm)' : 'लंबाई (सेमी)'}
+                    {'Length (cm)'}
                   </label>
                   <input
                     type="number"
@@ -350,7 +350,7 @@ export default function CartonsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'Width (cm)' : 'चौड़ाई (सेमी)'}
+                    {'Width (cm)'}
                   </label>
                   <input
                     type="number"
@@ -362,7 +362,7 @@ export default function CartonsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'en' ? 'Height (cm)' : 'ऊंचाई (सेमी)'}
+                    {'Height (cm)'}
                   </label>
                   <input
                     type="number"
@@ -376,7 +376,7 @@ export default function CartonsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'en' ? 'Weight (kg)' : 'वजन (किलो)'}
+                  {'Weight (kg)'}
                 </label>
                 <input
                   type="number"
@@ -396,7 +396,7 @@ export default function CartonsPage() {
                     className="w-4 h-4 text-primary-600 rounded"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">
-                    {language === 'en' ? 'Fragile' : 'नाजुक'}
+                    {'Fragile'}
                   </span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -407,7 +407,7 @@ export default function CartonsPage() {
                     className="w-4 h-4 text-primary-600 rounded"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">
-                    {language === 'en' ? 'Stackable' : 'स्टैकेबल'}
+                    {'Stackable'}
                   </span>
                 </label>
               </div>
@@ -418,7 +418,7 @@ export default function CartonsPage() {
                   onClick={() => setIsModalOpen(false)}
                   className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
                 >
-                  {language === 'en' ? 'Cancel' : 'रद्द करें'}
+                  {'Cancel'}
                 </button>
                 <button
                   type="submit"
@@ -430,7 +430,7 @@ export default function CartonsPage() {
                   ) : (
                     <Save className="w-4 h-4" />
                   )}
-                  {language === 'en' ? 'Save' : 'सहेजें'}
+                  {'Save'}
                 </button>
               </div>
             </form>
