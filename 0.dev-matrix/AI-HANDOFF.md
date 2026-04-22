@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-22 (Copilot-025 launch audit + frontend copy repair)
+- Changed: audited the remaining launch slice in manager mode with native `opencode` plus parallel repo subagents; restored 13 blank user-facing helper/status messages across `CheckoutPage.tsx`, `Dashboard.tsx`, `DriverEarningsPage.tsx`, `ManagementPage.tsx`, `NewShipmentPage.tsx`, `PackingPage.tsx`, and `TrackingPage.tsx`; carried the inspected frontend dirty tree into one clean frontend commit `f788d262` so launch-check could rerun without a git-dirty false failure.
+- Verified: `cd frontend && npm run build` PASS (`built in 7.58s`) with PWA precache `71 entries (1480.30 KiB)`; `npm run test:frontend-smoke` PASS (`17/17`); `npm run test:public-smoke` PASS (`7/7`); `npm run test:prod-config` -> `5/6` with only `razorpay_launch_readiness` failing; `npm run launch-check` PASS (`17/17`).
+- Operational proof: repo-side launch gates are green again on the current tree, public/auth-shell smoke is fully green, Sentry DSN is now healthy in prod-config, and the only remaining machine-verifiable config blocker in today's audit is live Razorpay readiness.
+- Continue from: if safe credentials are available, rerun `npm run test:live-auth` and `npm run test:live-admin`; otherwise decide whether to delete dormant translation tables in the English-only pages and whether to leave the PWA `Unknown input options: manualChunks` warning documented as plugin-scoped noise.
+- Next step: get owner-side live Razorpay keys into Heroku, then rerun `npm run test:prod-config`; if `SEED_DEMO_PASSWORD` becomes available in-shell, rerun authenticated proof and capture fresh evidence.
+- Blockers: T-110 live Razorpay keys (human), T-111 real Google OAuth sign-in proof (human), T-115 PITR/backup enablement (human), and `SEED_DEMO_PASSWORD` missing in this shell for fresh authenticated admin/customer/driver/agency reruns.
+
 ### 2026-04-22 (Copilot-031 perf + language cleanup)
 - Changed: Reduced PWA install weight in `frontend/vite.config.ts` by excluding `three-vendor`, `excel-vendor`, `pdf-vendor`, and `map-vendor` from precache and caching them at runtime; removed the remaining visible English/Hindi toggles and visible Hindi copy from `MobileLayout.tsx`, `PricingPage.tsx`, `PackingPage.tsx`, `ProfilePage.tsx`, `TrucksPage.tsx`, `AgencyDriversPage.tsx`, `CheckoutPage.tsx`, and `Dashboard.tsx`; cleaned related unused language-store usage; removed the temporary cleanup helper scripts from the repo tree.
 - Verified: `cd frontend && npx tsc --noEmit` PASS (0 output). `cd frontend && npm run build` PASS (`built in 6.88s`). PWA build reports `precache 71 entries (1479.01 KiB)`. Local public route checks for `/pricing`, `/contact`, `/login`, and `/signup` returned 200; protected route sweeps redirected unauthenticated users back to `/login` without client-side runtime errors. `npm run close-day` PASS (`10 pass, 0 fail`).

@@ -3,6 +3,7 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.0 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
+> 2026-04-22 (Copilot-025): launch audit + frontend copy repair completed on a clean tree. Restored 13 blank user-facing helper/status messages across 7 pages, `cd frontend && npm run build` PASS in 7.58s, `npm run test:frontend-smoke` PASS (17/17), `npm run test:public-smoke` PASS (7/7), `npm run test:prod-config` stays 5/6 with only Razorpay failing, and `npm run launch-check` is back to PASS (17/17). Remaining blockers are owner-side live Razorpay plus real-account auth/PITR, with authenticated reruns still blocked in this shell by missing `SEED_DEMO_PASSWORD`.
 > 2026-04-22 (Copilot-031): performance + language cleanup is locally green. PWA precache dropped to `1479.01 KiB`, the remaining visible English/Hindi toggles were removed from public and core app surfaces, `cd frontend && npx tsc --noEmit` passes with 0 output, and `cd frontend && npm run build` passes in 6.88s. Remaining follow-up is dormant translation-data cleanup plus the build warning `Unknown input options: manualChunks`.
 > 2026-04-21 (Copilot-029): deep bug audit + 29-fix commit. Fixed: AgencyJobsPage 30s→30min expiry + processingJobId guard; ProtectedRoute null-user role bypass; App.tsx RoleHome isLoading flash + /checkout ProtectedRoute wrap; CheckoutPage billingCycle URL validation + planId redirect + language dep removed; DriverTripPage IDOR ownership filter + setSubmitting finally + OTP type=number→type=text; DriverDashboardPage setWithdrawing finally + wallet balance subtracts payouts + today trips delivered_at only; NewShipmentPage trim + eway-bill created_by + try/finally; ProfilePage async logout + phone trim/validate + company trim + logger.error; TrackingPage JobOffer photo fields + language dep removed; authStore excludes isAuthenticated from localStorage persist; useSubscription fail-closed on checkLimit. Build: ✓ 7.09s, 0 TS errors. Commit: `07e58d80`.
 > 2026-04-21 (Copilot-028): health check pass + code quality + desktop layout. 17/17 launch-check PASS, 17/17 smoke PASS. Fixed 2x raw `console.error` → `logger.error` in TestPaymentPage. Upgraded desktop layout on 11 pages: SaleOrdersPage, RoutesPage, CartonsPage, ShipmentHistoryPage, DriverHistoryPage, DriverEarningsPage, AgencyBillingPage, AgencyDriversPage, AgencyRatesPage, CompanyProfilePage. Build: ✓ 7.11s, 0 TS errors. Commit: `d5a029e9`.
@@ -56,9 +57,9 @@
 
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
-| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit now passes 5/6 on 2026-04-17: app URL, Supabase auth DNS, email OTP flag, Sentry DSN, and PhonePe disable state are healthy, but Razorpay is still on a test key | MANAGER + OWNER |
+| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit now passes 5/6 on 2026-04-22: app URL, Supabase auth DNS, email OTP flag, Sentry DSN, and PhonePe disable state are healthy, but Razorpay is still on a test key | MANAGER + OWNER |
 | ~~`DEPENDABOT-REMOTE-MISMATCH-20260413`~~ | ✅ RESOLVED | Authenticated GitHub API queries on 2026-04-13 show `state=open` returns no open Dependabot alerts for this repo. The earlier 17-alert inventory was historical fixed-state data, not a live mismatch. Docker Scout base-image CVEs remain separate container-hygiene evidence rather than an active GitHub default-branch alert. | GPT-010 |
-| `AUTH-E2E-UNVERIFIED-20260405` | 🟡 WATCH | Live login-ID/password proof is now complete for driver, agency, and customer protected pages on `www.truckopti.in`, but real email OTP / Google OAuth / admin authenticated flows still need live verification with safe real accounts | MANAGER + OWNER |
+| `AUTH-E2E-UNVERIFIED-20260405` | 🟡 WATCH | Live login-ID/password proof is complete for driver, agency, and customer protected pages on `www.truckopti.in`, but real email OTP / Google OAuth / admin authenticated flows still need fresh safe-account verification; this shell currently lacks `SEED_DEMO_PASSWORD` for reruns | MANAGER + OWNER |
 | `PWA-SW-STALE-CHUNK-20260403` | 🟡 WATCH | Full browser audit reproduced stale lazy-chunk/module failures for returning clients until service worker + caches were cleared | MANAGER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
 | ~~SUPABASE-AUTH-DNS-20260401~~ | ✅ RESOLVED | Production Supabase project was resumed on 2026-04-05; DNS now resolves and auth health is reachable again (401 without API key is acceptable reachability evidence) | OWNER + GPT-004 |
@@ -73,6 +74,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `GPT-025` | MANAGER+IMPL | GPT-5.4 | Launch audit + flow verification + UI repair | Audited the remaining launch slice, restored blank frontend guidance copy, and revalidated build/smoke/prod-config/launch-check on a clean tree | 2026-04-22 | ✅ DONE |
 | `GPT-024` | MANAGER+IMPL | GPT-5.4 | PWA perf + language cleanup + close-day | Cut PWA precache to 1479.01 KiB, removed remaining live language toggles, and prepared end-of-day closeout evidence | 2026-04-22 | ✅ DONE |
 | `GPT-023` | MANAGER+IMPL | GPT-5.4 | Live rollout + authenticated browser proof | Deployed Heroku v71, pushed Supabase through the driver_payouts repair migration, seeded live demo identities, and captured zero-console-error protected-flow proof | 2026-04-18 | ✅ DONE |
 | `GPT-021` | MANAGER+IMPL | GPT-5.4 | Native opencode cleanup + multi-lane orchestration | Removed the `oh-my-opencode` dependency, restored native GLM 5.1 opencode, updated dev-matrix truth, and launched parallel opencode review lanes | 2026-04-17 | ✅ DONE |
@@ -131,6 +133,25 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-22] GPT-025 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ LAUNCH-CHECK GREEN AGAIN, PROD-CONFIG DOWN TO RAZORPAY ONLY
+
+                             WORK COMPLETED:
+                             - resumed the repo through `resume-work.ps1`, audited the remaining launch slice with native `opencode` plus parallel repo subagents, and separated AI-executable work from owner-blocked launch items
+                             - found and repaired 13 blank user-facing helper/status text blocks left behind by earlier language cleanup across `CheckoutPage.tsx`, `Dashboard.tsx`, `DriverEarningsPage.tsx`, `ManagementPage.tsx`, `NewShipmentPage.tsx`, `PackingPage.tsx`, and `TrackingPage.tsx`
+                             - carried the inspected frontend dirty tree into commit `f788d262` so launch-check could rerun on a clean tree instead of failing only on git dirtiness
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npm run build`: PASS (`built in 7.58s`)
+                             - `npm run test:frontend-smoke`: PASS (`17/17`)
+                             - `npm run test:public-smoke`: PASS (`7/7`)
+                             - `npm run test:prod-config`: `5/6` with only `[FAIL] razorpay_launch_readiness: test Razorpay key is still configured`
+                             - `npm run launch-check`: PASS (`17/17`)
+                             - environment check: `SEED_DEMO_PASSWORD=MISSING`, so fresh `test:live-auth` / `test:live-admin` reruns were not executable in this shell
+
+                             PRODUCT JUDGMENT:
+                             - repo-side launch readiness is green again; the remaining technical blocker visible in today's machine-verifiable config audit is live Razorpay readiness, not build/test drift
+                             - authenticated flow reruns are constrained by credentials rather than missing scripts or broken automation; existing live-auth proof from 2026-04-18 still stands until fresh credentials are supplied
+------------------------------------------------------------------------------------------
 [2026-04-22] GPT-024 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ PWA PRECACHE CUT TO 1.48 MIB, LAST LIVE LANGUAGE TOGGLES REMOVED
 
                              WORK COMPLETED:
