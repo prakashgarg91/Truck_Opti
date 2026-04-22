@@ -13,7 +13,6 @@ export interface SaleOrderItem {
 export interface TruckType {
   id: string
   name: string
-  nameHi?: string
   dimensions: { length: number; width: number; height: number }
   capacity: number
   costPerKm: number

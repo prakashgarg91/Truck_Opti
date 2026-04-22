@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-22 (Copilot-033 packing/profile translation cleanup complete)
+- Changed: finished the remaining AI-executable dormant translation cleanup in `PackingPage.tsx`, `ProfilePage.tsx`, `frontend/src/config/pricing.ts`, `frontend/src/lib/packing.ts`, and `PricingPage.tsx`; removed dead `nameHi` fields from shared pricing/packing types and defaults; flattened `ProfilePage` and `PackingPage` to their single live English label sets so the forced-English runtime no longer carries dormant translation branches in those surfaces.
+- Verified: `cd frontend && npm run build` PASS (`built in 6.93s`). `npm run test:frontend-smoke` PASS (`17/17`). PWA build still reports `precache 71 entries (1473.30 KiB)`. The residual `Unknown input options: manualChunks` warning still reproduces after successful build.
+- Operational proof: the requested Packing/Profile/shared-type cleanup is complete on the current tree, the touched frontend pages still compile and pass smoke, and the remaining technical follow-up is now the non-blocking PWA `manualChunks` warning rather than dormant translation data in these surfaces.
+- Continue from: investigate the `manualChunks` warning if you want another AI-executable technical cleanup slice; otherwise move back to owner-blocked launch work (Razorpay keys, Google OAuth proof, PITR, authenticated reruns).
+- Next step: either isolate the plugin path producing `Unknown input options: manualChunks` or rerun live auth/admin proof once safe credentials and `SEED_DEMO_PASSWORD` are available.
+- Blockers: T-110 live Razorpay keys (human), T-111 real Google OAuth sign-in proof (human), T-115 PITR/backup enablement (human), and `SEED_DEMO_PASSWORD` missing in this shell for fresh authenticated admin/customer/driver/agency reruns.
+
 ### 2026-04-22 (Copilot-032 dormant translation cleanup)
 - Changed: pruned dead English-only translation branches from `SaleOrdersPage.tsx`, `InvoicePage.tsx`, `LandingPage.tsx`, and `PricingPage.tsx`; flattened those pages to single English label/feature maps so the unreachable Hindi branches are no longer shipped in those surfaces.
 - Verified: `cd frontend && npm run build` PASS (`built in 6.66s`). PWA build still reports `precache 71 entries (1476.23 KiB)`. The residual `Unknown input options: manualChunks` warning still reproduces after a successful build.

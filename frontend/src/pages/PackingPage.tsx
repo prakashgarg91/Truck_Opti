@@ -19,100 +19,51 @@ import { logger } from '../utils/logger'
 import { formatPercent, formatCurrency } from '../utils/formatters'
 import { generateShipmentId } from '../utils/shipmentId'
 
-// ============= LANGUAGE =============
-type Language = 'en' | 'hi'
-const t = {
-  en: {
-    title: '3D Bin Packing',
-    subtitle: 'Smart Truck Recommendation System',
-    smartMode: 'Smart',
-    manualMode: 'Manual',
-    saleOrderItems: 'Sale Order Items',
-    addItem: 'Add Item',
-    algorithm: 'Algorithm',
-    selectTruck: 'Select Truck',
-    findBestTruck: 'Find Best Truck',
-    optimizePacking: 'Optimize Packing',
-    recommendedTrucks: 'Recommended Trucks',
-    packingDetails: 'Packing Details',
-    itemsPacked: 'Items Packed',
-    volumeUsed: 'Volume Used',
-    weightUsed: 'Weight Used',
-    estCost: 'Est. Cost',
-    itemsWontFit: "Items That Won't Fit",
-    additionalTruck: 'Consider using an additional truck or larger vehicle',
-    book: 'Book',
-    saveJob: 'Save Job',
-    noItems: 'No items added',
-    addFirstItem: 'Add your first item above',
-    selectTruckPrompt: 'Select a truck to see 3D preview',
-    smartPrompt: 'Click "Find Best Truck" to see 3D visualization',
-    itemName: 'Item',
-    length: 'L (cm)',
-    width: 'W (cm)',
-    height: 'H (cm)',
-    weight: 'Wt (kg)',
-    qty: 'Qty',
-    fragile: 'Fragile',
-    stackable: 'Stackable',
-    itemsFit: 'Items Fit',
-    volume: 'Volume',
-    best: 'Best',
-    wontFit: "items won't fit",
-    validation: {
-      nameRequired: 'Name is required',
-      lengthPositive: 'Length must be greater than 0',
-      widthPositive: 'Width must be greater than 0',
-      heightPositive: 'Height must be greater than 0',
-      weightPositive: 'Weight must be greater than 0',
-      quantityMin: 'Quantity must be at least 1'
-    }
-  },
-  hi: {
-    title: '3डी बिन पैकिंग',
-    subtitle: 'स्मार्ट ट्रक अनुशंसा प्रणाली',
-    smartMode: 'स्मार्ट',
-    manualMode: 'मैन्युअल',
-    saleOrderItems: 'सेल ऑर्डर आइटम',
-    addItem: 'आइटम जोड़ें',
-    algorithm: 'एल्गोरिदम',
-    selectTruck: 'ट्रक चुनें',
-    findBestTruck: 'सबसे अच्छा ट्रक खोजें',
-    optimizePacking: 'पैकिंग ऑप्टिमाइज़ करें',
-    recommendedTrucks: 'अनुशंसित ट्रक',
-    packingDetails: 'पैकिंग विवरण',
-    itemsPacked: 'पैक किए गए',
-    volumeUsed: 'वॉल्यूम',
-    weightUsed: 'वजन',
-    estCost: 'अनुमानित लागत',
-    itemsWontFit: 'जो आइटम नहीं बैठेंगे',
-    additionalTruck: 'अतिरिक्त ट्रक या बड़ा वाहन उपयोग करें',
-    book: 'बुक करें',
-    saveJob: 'जॉब सेव करें',
-    noItems: 'कोई आइटम नहीं',
-    addFirstItem: 'ऊपर पहला आइटम जोड़ें',
-    selectTruckPrompt: 'ट्रक चुनें और देखें',
-    smartPrompt: 'बटन दबाएं',
-    itemName: 'आइटम',
-    length: 'लं (सेमी)',
-    width: 'चौ (सेमी)',
-    height: 'ऊँ (सेमी)',
-    weight: 'वज़न (किग्रा)',
-    qty: 'मात्रा',
-    fragile: 'नाज़ुक',
-    stackable: 'स्टैक',
-    itemsFit: 'फिट',
-    volume: 'वॉल्यूम',
-    best: 'बेस्ट',
-    wontFit: 'फिट नहीं होंगे',
-    validation: {
-      nameRequired: 'नाम आवश्यक है',
-      lengthPositive: 'लंबाई 0 से अधिक होनी चाहिए',
-      widthPositive: 'चौड़ाई 0 से अधिक होनी चाहिए',
-      heightPositive: 'ऊंचाई 0 से अधिक होनी चाहिए',
-      weightPositive: 'वजन 0 से अधिक होना चाहिए',
-      quantityMin: 'मात्रा कम से कम 1 होनी चाहिए'
-    }
+// ============= LABELS =============
+const text = {
+  title: '3D Bin Packing',
+  subtitle: 'Smart Truck Recommendation System',
+  smartMode: 'Smart',
+  manualMode: 'Manual',
+  saleOrderItems: 'Sale Order Items',
+  addItem: 'Add Item',
+  algorithm: 'Algorithm',
+  selectTruck: 'Select Truck',
+  findBestTruck: 'Find Best Truck',
+  optimizePacking: 'Optimize Packing',
+  recommendedTrucks: 'Recommended Trucks',
+  packingDetails: 'Packing Details',
+  itemsPacked: 'Items Packed',
+  volumeUsed: 'Volume Used',
+  weightUsed: 'Weight Used',
+  estCost: 'Est. Cost',
+  itemsWontFit: "Items That Won't Fit",
+  additionalTruck: 'Consider using an additional truck or larger vehicle',
+  book: 'Book',
+  saveJob: 'Save Job',
+  noItems: 'No items added',
+  addFirstItem: 'Add your first item above',
+  selectTruckPrompt: 'Select a truck to see 3D preview',
+  smartPrompt: 'Click "Find Best Truck" to see 3D visualization',
+  itemName: 'Item',
+  length: 'L (cm)',
+  width: 'W (cm)',
+  height: 'H (cm)',
+  weight: 'Wt (kg)',
+  qty: 'Qty',
+  fragile: 'Fragile',
+  stackable: 'Stackable',
+  itemsFit: 'Items Fit',
+  volume: 'Volume',
+  best: 'Best',
+  wontFit: "items won't fit",
+  validation: {
+    nameRequired: 'Name is required',
+    lengthPositive: 'Length must be greater than 0',
+    widthPositive: 'Width must be greater than 0',
+    heightPositive: 'Height must be greater than 0',
+    weightPositive: 'Weight must be greater than 0',
+    quantityMin: 'Quantity must be at least 1'
   }
 }
 
@@ -129,18 +80,16 @@ interface Customer {
 
 // ============= CONSTANTS =============
 const ALGORITHMS = [
-  { id: 'skyline', name: 'Skyline BL', nameHi: 'स्काईलाइन', icon: Layers, description: 'Fast, good for uniform boxes', speed: 'Fast', quality: 'Good' },
-  { id: 'extreme_points', name: 'Extreme Points', nameHi: 'एक्सट्रीम पॉइंट्स', icon: Target, description: 'Balanced performance', speed: 'Medium', quality: 'Better' },
-  { id: 'genetic', name: 'Genetic Algorithm', nameHi: 'जेनेटिक', icon: Brain, description: 'Best optimization', speed: 'Slow', quality: 'Best' },
+  { id: 'skyline', name: 'Skyline BL', icon: Layers, description: 'Fast, good for uniform boxes', speed: 'Fast', quality: 'Good' },
+  { id: 'extreme_points', name: 'Extreme Points', icon: Target, description: 'Balanced performance', speed: 'Medium', quality: 'Better' },
+  { id: 'genetic', name: 'Genetic Algorithm', icon: Brain, description: 'Best optimization', speed: 'Slow', quality: 'Best' },
 ]
 
 // Memoized Packing Stats Component to prevent unnecessary re-renders
 const PackingStats = memo(({
-  selectedRecommendation,
-  lang
+  selectedRecommendation
 }: {
   selectedRecommendation: TruckRecommendation
-  lang: Language
 }) => {
   const stats = useMemo(() => ({
     itemsPacked: `${selectedRecommendation.itemsFit}/${selectedRecommendation.totalItems}`,
@@ -153,19 +102,19 @@ const PackingStats = memo(({
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-        <p className="text-xs text-slate-500">{t[lang].itemsPacked}</p>
+        <p className="text-xs text-slate-500">{text.itemsPacked}</p>
         <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.itemsPacked}</p>
       </div>
       <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-        <p className="text-xs text-slate-500">{t[lang].volumeUsed}</p>
+        <p className="text-xs text-slate-500">{text.volumeUsed}</p>
         <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.volumeUsed}</p>
       </div>
       <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-        <p className="text-xs text-slate-500">{t[lang].weightUsed}</p>
+        <p className="text-xs text-slate-500">{text.weightUsed}</p>
         <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.weightUsed}</p>
       </div>
       <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-        <p className="text-xs text-slate-500">{t[lang].estCost}</p>
+        <p className="text-xs text-slate-500">{text.estCost}</p>
         <p className="text-xl font-bold text-slate-900 dark:text-white">{stats.estCost}</p>
       </div>
     </div>
@@ -179,14 +128,12 @@ const RecommendationCard = memo(({
   rec,
   index,
   isSelected,
-  onSelect,
-  lang
+  onSelect
 }: {
   rec: TruckRecommendation
   index: number
   isSelected: boolean
   onSelect: () => void
-  lang: Language
 }) => {
   return (
     <button
@@ -198,23 +145,23 @@ const RecommendationCard = memo(({
     >
       {index === 0 && (
         <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
-          {t[lang].best}
+          {text.best}
         </div>
       )}
       <div className="flex items-center gap-2 mb-2">
         <Truck className={`w-5 h-5 ${index === 0 ? 'text-amber-500' : 'text-slate-400'}`} />
-        <span className="font-semibold text-slate-900 dark:text-white">{lang === 'en' ? rec.truck.name : rec.truck.nameHi}</span>
+        <span className="font-semibold text-slate-900 dark:text-white">{rec.truck.name}</span>
       </div>
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-slate-500">{t[lang].itemsFit}</span>
+          <span className="text-slate-500">{text.itemsFit}</span>
           <span className={`font-medium ${rec.itemsFit === rec.totalItems ? 'text-green-600' : 'text-amber-600'
             }`}>
             {rec.itemsFit}/{rec.totalItems}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-slate-500">{t[lang].volume}</span>
+          <span className="text-slate-500">{text.volume}</span>
           <div className="flex items-center gap-2">
             <div className="w-16 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
@@ -228,7 +175,7 @@ const RecommendationCard = memo(({
           </div>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-slate-500">{t[lang].estCost}</span>
+          <span className="text-slate-500">{text.estCost}</span>
           <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(rec.estimatedCost)}</span>
         </div>
       </div>
@@ -236,7 +183,7 @@ const RecommendationCard = memo(({
         <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
           <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" />
-            {rec.unfitItems.length} {t[lang].wontFit}
+            {rec.unfitItems.length} {text.wontFit}
           </p>
         </div>
       )}
@@ -254,7 +201,6 @@ export default function PackingPage() {
   const { isExpired, checkLimit, showUpgradePrompt } = useSubscription()
   const isAdmin = user?.role === 'admin'
 
-  const lang: Language = 'en'
   const [mode, setMode] = useState<'manual' | 'smart'>('smart')
   const [selectedTruck, setSelectedTruck] = useState<string | null>(null)
   const [algorithm, setAlgorithm] = useState('extreme_points')
@@ -336,7 +282,6 @@ export default function PackingPage() {
         .map((t: any) => ({
           id: t.id,
           name: t.name,
-          nameHi: t.name_hi || t.name,
           dimensions: { length: t.length / 100, width: t.width / 100, height: t.height / 100 },
           capacity: t.capacity,
           costPerKm: t.cost_per_km,
@@ -603,7 +548,7 @@ export default function PackingPage() {
       toast.success('Packing job saved successfully!')
     } catch (error: unknown) {
       logger.error('Failed to save packing job:', error)
-      toast.error(lang === 'en' ? 'Failed to save packing job' : 'पैकिंग जॉब सेव करने में विफल')
+      toast.error('Failed to save packing job')
     } finally {
       setIsSaving(false)
     }
@@ -746,10 +691,10 @@ export default function PackingPage() {
             <div>
               <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Package className="w-6 h-6 text-primary-500" />
-                {t[lang].title}
+                {text.title}
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                {t[lang].subtitle}
+                {text.subtitle}
               </p>
             </div>
 
@@ -763,7 +708,7 @@ export default function PackingPage() {
                     }`}
                 >
                   <Wand2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t[lang].smartMode}</span>
+                  <span className="hidden sm:inline">{text.smartMode}</span>
                 </button>
                 <button
                   onClick={() => setMode('manual')}
@@ -773,7 +718,7 @@ export default function PackingPage() {
                     }`}
                 >
                   <Settings className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t[lang].manualMode}</span>
+                  <span className="hidden sm:inline">{text.manualMode}</span>
                 </button>
               </div>
             </div>
@@ -795,7 +740,7 @@ export default function PackingPage() {
               >
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                   <ShoppingCart className="w-4 h-4 text-primary-500" />
-                  {t[lang].saleOrderItems}
+                  {text.saleOrderItems}
                   <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-xs px-2 py-0.5 rounded-full">
                     {totalStats.totalItems}
                   </span>
@@ -807,15 +752,15 @@ export default function PackingPage() {
                 {/* Stats Summary */}
                 <div className="px-4 pb-3 grid grid-cols-3 gap-2 text-center">
                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2">
-                    <p className="text-xs text-slate-500">{t[lang].itemName}</p>
+                    <p className="text-xs text-slate-500">{text.itemName}</p>
                     <p className="font-bold text-slate-900 dark:text-white">{totalStats.totalItems}</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2">
-                    <p className="text-xs text-slate-500">{t[lang].weight}</p>
+                    <p className="text-xs text-slate-500">{text.weight}</p>
                     <p className="font-bold text-slate-900 dark:text-white">{totalStats.totalWeight}kg</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2">
-                    <p className="text-xs text-slate-500">{t[lang].volume}</p>
+                    <p className="text-xs text-slate-500">{text.volume}</p>
                     <p className="font-bold text-slate-900 dark:text-white">{totalStats.totalVolume}m³</p>
                   </div>
                 </div>
@@ -864,7 +809,7 @@ export default function PackingPage() {
                       <div className="col-span-2">
                         <input
                           type="text"
-                          placeholder={t[lang].itemName}
+                          placeholder={text.itemName}
                           value={newItem.name}
                           onChange={e => setNewItem(prev => ({ ...prev, name: e.target.value }))}
                           className={`input text-sm w-full ${validationErrors.name ? 'border-red-500' : ''}`}
@@ -876,7 +821,7 @@ export default function PackingPage() {
                       <div>
                         <input
                           type="number"
-                          placeholder={t[lang].length}
+                          placeholder={text.length}
                           value={newItem.length || ''}
                           onChange={e => setNewItem(prev => ({ ...prev, length: +e.target.value }))}
                           className={`input text-sm w-full ${validationErrors.length ? 'border-red-500' : ''}`}
@@ -888,7 +833,7 @@ export default function PackingPage() {
                       <div>
                         <input
                           type="number"
-                          placeholder={t[lang].width}
+                          placeholder={text.width}
                           value={newItem.width || ''}
                           onChange={e => setNewItem(prev => ({ ...prev, width: +e.target.value }))}
                           className={`input text-sm w-full ${validationErrors.width ? 'border-red-500' : ''}`}
@@ -900,7 +845,7 @@ export default function PackingPage() {
                       <div>
                         <input
                           type="number"
-                          placeholder={t[lang].height}
+                          placeholder={text.height}
                           value={newItem.height || ''}
                           onChange={e => setNewItem(prev => ({ ...prev, height: +e.target.value }))}
                           className={`input text-sm w-full ${validationErrors.height ? 'border-red-500' : ''}`}
@@ -912,7 +857,7 @@ export default function PackingPage() {
                       <div>
                         <input
                           type="number"
-                          placeholder={t[lang].weight}
+                          placeholder={text.weight}
                           value={newItem.weight || ''}
                           onChange={e => setNewItem(prev => ({ ...prev, weight: +e.target.value }))}
                           className={`input text-sm w-full ${validationErrors.weight ? 'border-red-500' : ''}`}
@@ -924,7 +869,7 @@ export default function PackingPage() {
                       <div>
                         <input
                           type="number"
-                          placeholder={t[lang].qty}
+                          placeholder={text.qty}
                           value={newItem.quantity || ''}
                           onChange={e => setNewItem(prev => ({ ...prev, quantity: +e.target.value }))}
                           className={`input text-sm w-full ${validationErrors.quantity ? 'border-red-500' : ''}`}
@@ -941,7 +886,7 @@ export default function PackingPage() {
                           onChange={e => setNewItem(prev => ({ ...prev, stackable: e.target.checked }))}
                           className="rounded text-primary-600"
                         />
-                        {t[lang].stackable}
+                        {text.stackable}
                       </label>
                       <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                         <input
@@ -950,7 +895,7 @@ export default function PackingPage() {
                           onChange={e => setNewItem(prev => ({ ...prev, fragile: e.target.checked }))}
                           className="rounded text-primary-600"
                         />
-                        {t[lang].fragile}
+                        {text.fragile}
                       </label>
                     </div>
                     <div className="flex gap-2">
@@ -964,14 +909,14 @@ export default function PackingPage() {
                         className="btn btn-secondary flex-1 py-2"
                       >
                         <X className="w-4 h-4" />
-                        {lang === 'en' ? 'Cancel' : 'रद्द करें'}
+                        Cancel
                       </button>
                       <button
                         onClick={editingItem ? handleUpdateItem : handleAddItem}
                         className="btn btn-primary flex-1 py-2"
                       >
                         <Check className="w-4 h-4" />
-                        {editingItem ? (lang === 'en' ? 'Update' : 'अपडेट') : t[lang].addItem}
+                        {editingItem ? 'Update' : text.addItem}
                       </button>
                     </div>
                   </div>
@@ -982,7 +927,7 @@ export default function PackingPage() {
                       className="btn btn-outline w-full py-2"
                     >
                       <Plus className="w-4 h-4" />
-                      {t[lang].addItem}
+                      {text.addItem}
                     </button>
                   </div>
                 )}
@@ -993,7 +938,7 @@ export default function PackingPage() {
             <div className="card p-4">
               <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                 <Brain className="w-4 h-4 text-primary-500" />
-                {t[lang].algorithm}
+                {text.algorithm}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-2">
                 {ALGORITHMS.map(algo => (
@@ -1007,7 +952,7 @@ export default function PackingPage() {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <algo.icon className={`w-4 h-4 ${algorithm === algo.id ? 'text-primary-500' : 'text-slate-400'}`} />
-                      <span className="text-sm font-medium text-slate-900 dark:text-white">{lang === 'en' ? algo.name : algo.nameHi}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{algo.name}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <span className={`px-1.5 py-0.5 rounded ${algo.speed === 'Fast' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
@@ -1028,7 +973,7 @@ export default function PackingPage() {
               <div className="card p-4 animate-fade-in">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                   <Truck className="w-4 h-4 text-primary-500" />
-                  {t[lang].selectTruck}
+                  {text.selectTruck}
                 </h3>
                 {loadingTrucks ? (
                   <div className="flex items-center justify-center py-4">
@@ -1047,7 +992,7 @@ export default function PackingPage() {
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-slate-900 dark:text-white">{lang === 'en' ? truck.name : truck.nameHi}</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{truck.name}</p>
                             <p className="text-xs text-slate-500">
                               {truck.dimensions.length}×{truck.dimensions.width}×{truck.dimensions.height}m • {truck.capacity}kg
                             </p>
@@ -1077,12 +1022,12 @@ export default function PackingPage() {
               ) : mode === 'smart' ? (
                 <>
                   <Wand2 className="w-5 h-5" />
-                  {t[lang].findBestTruck}
+                  {text.findBestTruck}
                 </>
               ) : (
                 <>
                   <Play className="w-5 h-5" />
-                  {t[lang].optimizePacking}
+                  {text.optimizePacking}
                 </>
               )}
             </button>
@@ -1096,7 +1041,7 @@ export default function PackingPage() {
               <div className="card p-4 animate-fade-in">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-500" />
-                  {t[lang].recommendedTrucks}
+                  {text.recommendedTrucks}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {recommendations.map((rec, idx) => (
@@ -1109,7 +1054,6 @@ export default function PackingPage() {
                         setSelectedRecommendation(rec)
                         setSelectedTruck(rec.truck.id)
                       }}
-                      lang={lang}
                     />
                   ))}
                 </div>
@@ -1124,7 +1068,7 @@ export default function PackingPage() {
                     <div className="text-center">
                       <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-2" />
                       <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {lang === 'en' ? 'Loading 3D view...' : '3D व्यू लोड हो रहा है...'}
+                        Loading 3D view...
                       </p>
                     </div>
                   </div>
@@ -1141,7 +1085,7 @@ export default function PackingPage() {
                       <Layers className="w-8 h-8 text-slate-400" />
                     </div>
                     <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      {mode === 'smart' ? t[lang].smartPrompt : t[lang].selectTruckPrompt}
+                      {mode === 'smart' ? text.smartPrompt : text.selectTruckPrompt}
                     </h3>
                   </div>
                 </div>
@@ -1154,7 +1098,7 @@ export default function PackingPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <Calculator className="w-4 h-4 text-primary-500" />
-                    {t[lang].packingDetails}
+                    {text.packingDetails}
                   </h3>
                   <div className="flex gap-2">
                     <button
@@ -1167,32 +1111,32 @@ export default function PackingPage() {
                       ) : (
                         <Save className="w-4 h-4" />
                       )}
-                      {t[lang].saveJob}
+                      {text.saveJob}
                     </button>
                     <button
                       onClick={handleBookTruckClick}
                       className="btn btn-primary py-2 px-4"
                     >
                       <ArrowRight className="w-4 h-4" />
-                      {t[lang].book} {lang === 'en' ? selectedRecommendation.truck.name : selectedRecommendation.truck.nameHi}
+                      {text.book} {selectedRecommendation.truck.name}
                     </button>
                   </div>
                 </div>
 
                 {/* Memoized packing stats for better performance */}
-                <PackingStats selectedRecommendation={selectedRecommendation} lang={lang} />
+                <PackingStats selectedRecommendation={selectedRecommendation} />
 
                 {selectedRecommendation.unfitItems.length > 0 && (
                   <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
                     <p className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4" />
-                      {t[lang].itemsWontFit}
+                      {text.itemsWontFit}
                     </p>
                     <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
                       {selectedRecommendation.unfitItems.slice(0, 5).join(', ')}
                       {selectedRecommendation.unfitItems.length > 5 && ` +${selectedRecommendation.unfitItems.length - 5} more`}
                     </p>
-                    <p className="text-xs text-amber-500 mt-2">{t[lang].additionalTruck}</p>
+                    <p className="text-xs text-amber-500 mt-2">{text.additionalTruck}</p>
                   </div>
                 )}
               </div>

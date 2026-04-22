@@ -3,6 +3,7 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.0 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
+> 2026-04-22 (Copilot-033): the remaining forced-English translation cleanup is complete for `PackingPage`, `ProfilePage`, and the shared pricing/packing types. Dead `nameHi` fields were removed from `frontend/src/config/pricing.ts` and `frontend/src/lib/packing.ts`, the packing/profile pages were flattened to their single live English label sets, `cd frontend && npm run build` passes in 6.93s, and `npm run test:frontend-smoke` stays 17/17 PASS. The only remaining technical cleanup noted in this lane is the still-non-blocking `Unknown input options: manualChunks` warning.
 > 2026-04-22 (Copilot-032): dormant translation cleanup continued after the launch audit. Dead Hindi branches were removed from the forced-English `SaleOrdersPage`, `InvoicePage`, `LandingPage`, and `PricingPage` surfaces, and `cd frontend && npm run build` still passes in 6.66s with PWA precache `71 entries (1476.23 KiB)`. The residual `Unknown input options: manualChunks` warning still reproduces after successful build and remains non-blocking until proven otherwise.
 > 2026-04-22 (Copilot-025): launch audit + frontend copy repair completed on a clean tree. Restored 13 blank user-facing helper/status messages across 7 pages, `cd frontend && npm run build` PASS in 7.58s, `npm run test:frontend-smoke` PASS (17/17), `npm run test:public-smoke` PASS (7/7), `npm run test:prod-config` stays 5/6 with only Razorpay failing, and `npm run launch-check` is back to PASS (17/17). Remaining blockers are owner-side live Razorpay plus real-account auth/PITR, with authenticated reruns still blocked in this shell by missing `SEED_DEMO_PASSWORD`.
 > 2026-04-22 (Copilot-031): performance + language cleanup is locally green. PWA precache dropped to `1479.01 KiB`, the remaining visible English/Hindi toggles were removed from public and core app surfaces, `cd frontend && npx tsc --noEmit` passes with 0 output, and `cd frontend && npm run build` passes in 6.88s. Remaining follow-up is dormant translation-data cleanup plus the build warning `Unknown input options: manualChunks`.
@@ -75,6 +76,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `GPT-027` | MANAGER+IMPL | GPT-5.4 | Packing/profile translation cleanup + smoke verification | Removed the remaining forced-English dormant translation branches from packing/profile/shared types and revalidated build + frontend smoke | 2026-04-22 | ✅ DONE |
 | `GPT-026` | MANAGER+IMPL | GPT-5.4 | Dormant translation cleanup + build verification | Pruned dead English-only translation branches from four frontend pages and rechecked the frontend build / residual PWA warning | 2026-04-22 | ✅ DONE |
 | `GPT-025` | MANAGER+IMPL | GPT-5.4 | Launch audit + flow verification + UI repair | Audited the remaining launch slice, restored blank frontend guidance copy, and revalidated build/smoke/prod-config/launch-check on a clean tree | 2026-04-22 | ✅ DONE |
 | `GPT-024` | MANAGER+IMPL | GPT-5.4 | PWA perf + language cleanup + close-day | Cut PWA precache to 1479.01 KiB, removed remaining live language toggles, and prepared end-of-day closeout evidence | 2026-04-22 | ✅ DONE |
@@ -135,6 +137,23 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-22] GPT-027 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ PACKING / PROFILE / SHARED-TYPE TRANSLATION CLEANUP COMPLETE
+
+                             WORK COMPLETED:
+                             - removed the remaining dead `nameHi` fields from `frontend/src/config/pricing.ts` and `frontend/src/lib/packing.ts`, plus the now-unused `name_hi` mapping in `PricingPage.tsx`
+                             - flattened `ProfilePage.tsx` and `PackingPage.tsx` to their single live English label sets so the forced-English runtime no longer carries dormant translation branches or no-op language wrappers in those surfaces
+                             - kept the change narrowly scoped to translation cleanup only; packing logic, subscription logic, and auth/profile behavior were not widened
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npm run build`: PASS (`built in 6.93s`)
+                             - `npm run test:frontend-smoke`: PASS (`17/17`)
+                             - build output: `PWA v1.2.0` / `precache 71 entries (1473.30 KiB)`
+                             - residual warning still present after success: `Unknown input options: manualChunks`
+
+                             PRODUCT JUDGMENT:
+                             - the requested AI-executable translation cleanup is now complete for the forced-English packing/profile/shared-type slice; no dormant translation branches remain in the touched files
+                             - the next technical cleanup target is the PWA `manualChunks` warning; launch readiness remains owner-blocked by live Razorpay and real-account auth proof, not by this frontend cleanup lane
+------------------------------------------------------------------------------------------
 [2026-04-22] GPT-026 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ DEAD ENGLISH-ONLY TRANSLATION BRANCHES PRUNED FROM 4 MORE PAGES
 
                              WORK COMPLETED:

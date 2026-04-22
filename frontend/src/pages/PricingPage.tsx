@@ -17,7 +17,7 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
     .order('price_monthly', { ascending: true })
   if (error || !data || data.length === 0) return PRICING_TIERS
   return data.map((plan) => ({
-    id: plan.id, name: plan.name, nameHi: plan.name_hi || plan.name,
+    id: plan.id, name: plan.name,
     monthlyPrice: plan.price_monthly, yearlyPrice: plan.price_yearly,
     features: plan.features || [],
     limits: {

@@ -4,7 +4,6 @@
 export interface PricingTier {
   id: string
   name: string
-  nameHi: string
   monthlyPrice: number // INR
   yearlyPrice: number // INR (with discount)
   features: string[]
@@ -125,7 +124,6 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: 'starter',
     name: 'Starter',
-    nameHi: 'स्टार्टर',
     monthlyPrice: 500, // Launch pricing
     yearlyPrice: 5000, // Launch pricing
     features: [
@@ -153,7 +151,6 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: 'growth',
     name: 'Growth',
-    nameHi: 'ग्रोथ',
     monthlyPrice: 1999, // Cost ₹4,225 × 1.6 = ₹6,760, but priced competitively
     yearlyPrice: 19999, // ~17% discount
     features: [
@@ -184,7 +181,6 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: 'professional',
     name: 'Professional',
-    nameHi: 'प्रोफेशनल',
     monthlyPrice: 4999, // Cost ₹5,784 × 1.6 = ₹9,254
     yearlyPrice: 49999, // ~17% discount
     features: [
@@ -216,7 +212,6 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    nameHi: 'एंटरप्राइज़',
     monthlyPrice: 14999, // Cost ₹71,222 × 1.6 = ₹113,955, but volume pricing
     yearlyPrice: 149999, // ~17% discount
     features: [
@@ -253,49 +248,42 @@ export const PRICING_TIERS: PricingTier[] = [
 export const ADD_ONS = {
   extraSmsOtp: {
     name: 'Extra SMS OTP Pack',
-    nameHi: 'अतिरिक्त एसएमएस पैक',
     price: 99, // ₹99 for 500 SMS (cost ₹125, but bulk discount)
     quantity: 500,
     unit: 'SMS',
   },
   extraStorage: {
     name: 'Extra Storage',
-    nameHi: 'अतिरिक्त स्टोरेज',
     price: 49, // ₹49 per GB/month
     quantity: 1,
     unit: 'GB/month',
   },
   extraUsers: {
     name: 'Additional User',
-    nameHi: 'अतिरिक्त यूज़र',
     price: 199, // ₹199 per user/month
     quantity: 1,
     unit: 'user/month',
   },
   extraApiCalls: {
     name: 'API Call Pack',
-    nameHi: 'एपीआई कॉल पैक',
     price: 499, // ₹499 for 10,000 API calls
     quantity: 10000,
     unit: 'API calls',
   },
   whatsappNotifications: {
     name: 'WhatsApp Notifications',
-    nameHi: 'व्हाट्सएप नोटिफिकेशन',
     price: 299, // ₹299 for 1000 messages
     quantity: 1000,
     unit: 'messages',
   },
   advancedAnalytics: {
     name: 'Advanced Analytics',
-    nameHi: 'एडवांस्ड एनालिटिक्स',
     price: 999, // ₹999/month add-on
     quantity: 1,
     unit: 'month',
   },
   dedicatedSupport: {
     name: 'Dedicated Support Hours',
-    nameHi: 'डेडीकेटेड सपोर्ट',
     price: 1999, // ₹1999 for 5 hours
     quantity: 5,
     unit: 'hours',
@@ -390,7 +378,6 @@ export const TRIAL_CONFIG = {
   },
   freemium: {
     name: 'Free Forever',
-    nameHi: 'हमेशा मुफ्त',
     limits: {
       users: 1,
       trucksManaged: 2,
