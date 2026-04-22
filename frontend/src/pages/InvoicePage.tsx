@@ -34,93 +34,50 @@ const getState = (location: string): string => {
   return stateMap[city] || city;
 };
 
-// Translations
-const t = {
-  en: {
-    title: 'GST Invoice',
-    back: 'Back',
-    download: 'Download PDF',
-    share: 'Share via WhatsApp',
-    print: 'Print',
-    taxInvoice: 'TAX INVOICE',
-    original: 'Original for Recipient',
-    company: 'Company',
-    shipper: 'Shipper (From)',
-    consignee: 'Consignee (To)',
-    shipmentDetails: 'Shipment Details',
-    itemDescription: 'Description',
-    quantity: 'Qty',
-    weight: 'Weight',
-    dimensions: 'Dimensions',
-    charges: 'Charges',
-    freight: 'Freight',
-    loading: 'Loading',
-    unloading: 'Unloading',
-    taxableAmount: 'Taxable Amount',
-    cgst: 'CGST (9%)',
-    sgst: 'SGST (9%)',
-    igst: 'IGST (18%)',
-    totalGst: 'Total GST',
-    grandTotal: 'Grand Total',
-    amountInWords: 'Amount in Words',
-    declaration: 'Declaration',
-    declarationText: 'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.',
-    authorizedSignatory: 'Authorized Signatory',
-    forCompany: 'For',
-    lrNumber: 'LR Number',
-    ewayBill: 'E-Way Bill',
-    sacCode: 'SAC Code',
-    gstin: 'GSTIN',
-    invoiceDate: 'Invoice Date',
-    dueDate: 'Due Date',
-    notAvailable: 'N/A'
-  },
-  hi: {
-    title: 'GST इनवॉइस',
-    back: 'वापस',
-    download: 'PDF डाउनलोड',
-    share: 'WhatsApp से साझा करें',
-    print: 'प्रिंट',
-    taxInvoice: 'कर चालान',
-    original: 'प्राप्तकर्ता के लिए मूल',
-    company: 'कंपनी',
-    shipper: 'प्रेषक (से)',
-    consignee: 'प्राप्तकर्ता (को)',
-    shipmentDetails: 'शिपमेंट विवरण',
-    itemDescription: 'विवरण',
-    quantity: 'मात्रा',
-    weight: 'वजन',
-    dimensions: 'आयाम',
-    charges: 'शुल्क',
-    freight: 'माल ढुलाई',
-    loading: 'लोडिंग',
-    unloading: 'अनलोडिंग',
-    taxableAmount: 'कर योग्य राशि',
-    cgst: 'CGST (9%)',
-    sgst: 'SGST (9%)',
-    igst: 'IGST (18%)',
-    totalGst: 'कुल GST',
-    grandTotal: 'कुल योग',
-    amountInWords: 'शब्दों में राशि',
-    declaration: 'घोषणा',
-    declarationText: 'हम घोषणा करते हैं कि यह चालान वर्णित वस्तुओं का वास्तविक मूल्य दर्शाता है और सभी विवरण सत्य और सही हैं।',
-    authorizedSignatory: 'अधिकृत हस्ताक्षरकर्ता',
-    forCompany: 'के लिए',
-    lrNumber: 'LR नंबर',
-    ewayBill: 'E-Way बिल',
-    sacCode: 'SAC कोड',
-    gstin: 'GSTIN',
-    invoiceDate: 'चालान तिथि',
-    dueDate: 'देय तिथि',
-    notAvailable: 'उपलब्ध नहीं'
-  }
+const text = {
+  title: 'GST Invoice',
+  back: 'Back',
+  download: 'Download PDF',
+  share: 'Share via WhatsApp',
+  print: 'Print',
+  taxInvoice: 'TAX INVOICE',
+  original: 'Original for Recipient',
+  company: 'Company',
+  shipper: 'Shipper (From)',
+  consignee: 'Consignee (To)',
+  shipmentDetails: 'Shipment Details',
+  itemDescription: 'Description',
+  quantity: 'Qty',
+  weight: 'Weight',
+  dimensions: 'Dimensions',
+  charges: 'Charges',
+  freight: 'Freight',
+  loading: 'Loading',
+  unloading: 'Unloading',
+  taxableAmount: 'Taxable Amount',
+  cgst: 'CGST (9%)',
+  sgst: 'SGST (9%)',
+  igst: 'IGST (18%)',
+  totalGst: 'Total GST',
+  grandTotal: 'Grand Total',
+  amountInWords: 'Amount in Words',
+  declaration: 'Declaration',
+  declarationText: 'We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.',
+  authorizedSignatory: 'Authorized Signatory',
+  forCompany: 'For',
+  lrNumber: 'LR Number',
+  ewayBill: 'E-Way Bill',
+  sacCode: 'SAC Code',
+  gstin: 'GSTIN',
+  invoiceDate: 'Invoice Date',
+  dueDate: 'Due Date',
+  notAvailable: 'N/A'
 }
 
 export default function InvoicePage() {
   const { shipmentId } = useParams<{ shipmentId: string }>()
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const lang = 'en' as const
   const invoiceRef = useRef<HTMLDivElement>(null)
 
   const [shipment, setShipment] = useState<Shipment | null>(null)
@@ -248,12 +205,12 @@ export default function InvoicePage() {
   if (!shipment || !invoiceData) {
     return (
       <div className="p-8 text-center">
-        <p className="text-slate-500">{t[lang].notAvailable}</p>
+        <p className="text-slate-500">{text.notAvailable}</p>
         <button
           onClick={() => navigate('/tracking')}
           className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg"
         >
-          {t[lang].back}
+          {text.back}
         </button>
       </div>
     )
@@ -269,29 +226,29 @@ export default function InvoicePage() {
             className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900"
           >
             <ArrowLeft className="w-5 h-5" />
-            {t[lang].back}
+            {text.back}
           </button>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white">{t[lang].title}</h1>
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">{text.title}</h1>
           <div className="flex gap-2">
             <button
               onClick={handleShareWhatsApp}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
             >
               <MessageCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">{t[lang].share}</span>
+              <span className="hidden sm:inline">{text.share}</span>
             </button>
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
             >
-              <span className="hidden sm:inline">{t[lang].print}</span>
+              <span className="hidden sm:inline">{text.print}</span>
             </button>
             <button
               onClick={handleDownloadPDF}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
             >
               <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">{t[lang].download}</span>
+              <span className="hidden sm:inline">{text.download}</span>
             </button>
           </div>
         </div>
@@ -319,8 +276,8 @@ export default function InvoicePage() {
           <div className="border-b-2 border-slate-200 pb-6 mb-6">
             <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">{t[lang].taxInvoice}</h2>
-                <p className="text-sm text-slate-500 mt-1">{t[lang].original}</p>
+                <h2 className="text-2xl font-bold text-slate-900">{text.taxInvoice}</h2>
+                <p className="text-sm text-slate-500 mt-1">{text.original}</p>
               </div>
               <div className="text-right">
                 <div className="w-24 h-24 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -335,14 +292,14 @@ export default function InvoicePage() {
             <div>
               <h3 className="font-bold text-slate-900 mb-2">{invoiceData.companyName}</h3>
               <p className="text-sm text-slate-600">{invoiceData.companyAddress}</p>
-              <p className="text-sm text-slate-600 mt-1">{t[lang].gstin}: {invoiceData.companyGstin}</p>
+              <p className="text-sm text-slate-600 mt-1">{text.gstin}: {invoiceData.companyGstin}</p>
             </div>
             <div className="text-right">
               <div className="space-y-1">
-                <p className="text-sm"><span className="text-slate-500">{t[lang].taxInvoice} #:</span> <span className="font-semibold">{invoiceData.invoiceNumber}</span></p>
-                <p className="text-sm"><span className="text-slate-500">{t[lang].lrNumber}:</span> <span className="font-semibold">{invoiceData.lrNumber}</span></p>
-                <p className="text-sm"><span className="text-slate-500">{t[lang].sacCode}:</span> <span className="font-semibold">{SAC_CODE}</span></p>
-                <p className="text-sm"><span className="text-slate-500">{t[lang].invoiceDate}:</span> <span className="font-semibold">{new Date(invoiceData.date).toLocaleDateString()}</span></p>
+                <p className="text-sm"><span className="text-slate-500">{text.taxInvoice} #:</span> <span className="font-semibold">{invoiceData.invoiceNumber}</span></p>
+                <p className="text-sm"><span className="text-slate-500">{text.lrNumber}:</span> <span className="font-semibold">{invoiceData.lrNumber}</span></p>
+                <p className="text-sm"><span className="text-slate-500">{text.sacCode}:</span> <span className="font-semibold">{SAC_CODE}</span></p>
+                <p className="text-sm"><span className="text-slate-500">{text.invoiceDate}:</span> <span className="font-semibold">{new Date(invoiceData.date).toLocaleDateString()}</span></p>
               </div>
             </div>
           </div>
@@ -350,26 +307,26 @@ export default function InvoicePage() {
           {/* Shipper & Consignee */}
           <div className="grid grid-cols-2 gap-8 mb-6 bg-slate-50 p-4 rounded-lg">
             <div>
-              <h4 className="font-semibold text-slate-900 mb-2">{t[lang].shipper}</h4>
+              <h4 className="font-semibold text-slate-900 mb-2">{text.shipper}</h4>
               <p className="font-medium">{invoiceData.shipperName}</p>
               <p className="text-sm text-slate-600">{invoiceData.shipperAddress}</p>
               {invoiceData.shipperGstin && (
-                <p className="text-sm text-slate-600">{t[lang].gstin}: {invoiceData.shipperGstin}</p>
+                <p className="text-sm text-slate-600">{text.gstin}: {invoiceData.shipperGstin}</p>
               )}
             </div>
             <div>
-              <h4 className="font-semibold text-slate-900 mb-2">{t[lang].consignee}</h4>
+              <h4 className="font-semibold text-slate-900 mb-2">{text.consignee}</h4>
               <p className="font-medium">{invoiceData.consigneeName}</p>
               <p className="text-sm text-slate-600">{invoiceData.consigneeAddress}</p>
               {invoiceData.consigneeGstin && (
-                <p className="text-sm text-slate-600">{t[lang].gstin}: {invoiceData.consigneeGstin}</p>
+                <p className="text-sm text-slate-600">{text.gstin}: {invoiceData.consigneeGstin}</p>
               )}
             </div>
           </div>
 
           {/* Shipment Details */}
           <div className="mb-6">
-            <h4 className="font-semibold text-slate-900 mb-3">{t[lang].shipmentDetails}</h4>
+            <h4 className="font-semibold text-slate-900 mb-3">{text.shipmentDetails}</h4>
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary-500" />
@@ -392,10 +349,10 @@ export default function InvoicePage() {
           <table className="w-full mb-6">
             <thead className="bg-slate-100">
               <tr>
-                <th className="text-left p-3 text-sm font-semibold">{t[lang].itemDescription}</th>
-                <th className="text-center p-3 text-sm font-semibold">{t[lang].quantity}</th>
-                <th className="text-center p-3 text-sm font-semibold">{t[lang].weight}</th>
-                <th className="text-right p-3 text-sm font-semibold">{t[lang].charges}</th>
+                <th className="text-left p-3 text-sm font-semibold">{text.itemDescription}</th>
+                <th className="text-center p-3 text-sm font-semibold">{text.quantity}</th>
+                <th className="text-center p-3 text-sm font-semibold">{text.weight}</th>
+                <th className="text-right p-3 text-sm font-semibold">{text.charges}</th>
               </tr>
             </thead>
             <tbody>
@@ -411,11 +368,11 @@ export default function InvoicePage() {
                 </tr>
               ))}
               <tr className="border-b">
-                <td className="p-3" colSpan={3}>{t[lang].loading}</td>
+                <td className="p-3" colSpan={3}>{text.loading}</td>
                 <td className="p-3 text-right">{formatCurrency(invoiceData.loadingCharges)}</td>
               </tr>
               <tr className="border-b">
-                <td className="p-3" colSpan={3}>{t[lang].unloading}</td>
+                <td className="p-3" colSpan={3}>{text.unloading}</td>
                 <td className="p-3 text-right">{formatCurrency(invoiceData.unloadingCharges)}</td>
               </tr>
             </tbody>
@@ -425,35 +382,35 @@ export default function InvoicePage() {
           <div className="border-t-2 border-slate-200 pt-4">
             <div className="w-full max-w-md ml-auto space-y-2">
               <div className="flex justify-between">
-                <span className="text-slate-600">{t[lang].taxableAmount}</span>
+                <span className="text-slate-600">{text.taxableAmount}</span>
                 <span className="font-medium">{formatCurrency(invoiceData.taxableAmount)}</span>
               </div>
 
               {invoiceData.isInterState ? (
                 <div className="flex justify-between">
-                  <span className="text-slate-600">{t[lang].igst}</span>
+                  <span className="text-slate-600">{text.igst}</span>
                   <span className="font-medium">{formatCurrency(invoiceData.igstAmount)}</span>
                 </div>
               ) : (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">{t[lang].cgst}</span>
+                    <span className="text-slate-600">{text.cgst}</span>
                     <span className="font-medium">{formatCurrency(invoiceData.cgstAmount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">{t[lang].sgst}</span>
+                    <span className="text-slate-600">{text.sgst}</span>
                     <span className="font-medium">{formatCurrency(invoiceData.sgstAmount)}</span>
                   </div>
                 </>
               )}
 
               <div className="flex justify-between pt-2 border-t">
-                <span className="text-slate-600">{t[lang].totalGst}</span>
+                <span className="text-slate-600">{text.totalGst}</span>
                 <span className="font-medium">{formatCurrency(invoiceData.totalGst)}</span>
               </div>
 
               <div className="flex justify-between pt-2 border-t-2 border-slate-300">
-                <span className="text-lg font-bold text-slate-900">{t[lang].grandTotal}</span>
+                <span className="text-lg font-bold text-slate-900">{text.grandTotal}</span>
                 <span className="text-lg font-bold text-slate-900">{formatCurrency(invoiceData.grandTotal)}</span>
               </div>
             </div>
@@ -461,20 +418,20 @@ export default function InvoicePage() {
 
           {/* Amount in Words */}
           <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-            <p className="text-sm text-slate-500">{t[lang].amountInWords}</p>
+            <p className="text-sm text-slate-500">{text.amountInWords}</p>
             <p className="font-medium text-slate-900">{invoiceData.amountInWords}</p>
           </div>
 
           {/* Declaration & Signature */}
           <div className="mt-8 grid grid-cols-2 gap-8">
             <div>
-              <h4 className="font-semibold text-slate-900 mb-2">{t[lang].declaration}</h4>
-              <p className="text-xs text-slate-600">{t[lang].declarationText}</p>
+              <h4 className="font-semibold text-slate-900 mb-2">{text.declaration}</h4>
+              <p className="text-xs text-slate-600">{text.declarationText}</p>
             </div>
             <div className="text-right">
-              <p className="font-semibold text-slate-900">{t[lang].forCompany} {invoiceData.companyName}</p>
+              <p className="font-semibold text-slate-900">{text.forCompany} {invoiceData.companyName}</p>
               <div className="mt-8 pt-4 border-t border-slate-300 inline-block">
-                <p className="text-sm text-slate-600">{t[lang].authorizedSignatory}</p>
+                <p className="text-sm text-slate-600">{text.authorizedSignatory}</p>
               </div>
             </div>
           </div>

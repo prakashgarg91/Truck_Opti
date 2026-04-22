@@ -37,62 +37,32 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
 
 // ── i18n ────────────────────────────────────────────────────────────────────
 const LABELS = {
-  en: {
-    eyebrow: 'Plans & Billing',
-    title: 'Choose Your Plan', subtitle: 'Smart logistics optimization for every business size',
-    planNote: 'Start free, switch billing cadence when you need to, and move enterprise fleets to tailored onboarding only when scale demands it.',
-    summaryEyebrow: 'What changes by plan',
-    summaryTitle: 'Capacity grows with your users, trucks, and shipment volume.',
-    summarySubtitle: 'Every tier keeps the same core workflow: packing, dispatch, tracking, and billing. Upgrade only when usage expands.',
-    highlightFree: 'No card required for the free tier',
-    highlightBilling: 'Monthly and yearly billing available',
-    highlightScale: 'Enterprise rollout support for larger fleets',
-    monthly: 'Monthly', yearly: 'Yearly', saveTag: 'Save 17%',
-    perMonth: '/mo', perYear: '/yr',
-    getStarted: 'Get Started', contactSales: 'Contact Sales', startFree: 'Start Free →',
-    mostPopular: 'Most Popular', currentPlan: 'Your Plan',
-    upgrade: 'Upgrade', downgrade: 'Downgrade',
-    users: 'Users', trucks: 'Trucks', shipments: 'Shipments/mo',
-    packing: 'Packing Opts', routes: 'Route Opts',
-    storage: 'Storage', apiCalls: 'API Calls/mo', sms: 'SMS OTP/mo',
-    support: 'Support', unlimited: 'Unlimited',
-    compareTitle: 'Full Feature Comparison',
-    compareNote: 'Compare the limits before you lock a billing cycle.',
-    freeForever: 'Start for Free', freeDesc: 'No credit card required. Full access to free tier.',
-    enterprise: 'Need a custom plan?',
-    enterpriseDesc: 'Large fleet or multiple locations? Get a tailored quote from our team.',
-    talkToUs: 'Talk to Our Team',
-    adminBadge: '⚡ Admin — All features unlocked',
-    back: 'Back',
-  },
-  hi: {
-    eyebrow: 'प्लान और बिलिंग',
-    title: 'अपना प्लान चुनें', subtitle: 'हर व्यवसाय के लिए स्मार्ट लॉजिस्टिक्स',
-    planNote: 'मुफ्त शुरू करें, ज़रूरत पड़ने पर बिलिंग बदलें, और बड़े फ्लीट के लिए तभी टेलर्ड ऑनबोर्डिंग लें जब स्केल इसकी मांग करे।',
-    summaryEyebrow: 'प्लान के साथ क्या बदलता है',
-    summaryTitle: 'यूज़र्स, ट्रक और शिपमेंट वॉल्यूम के साथ आपकी क्षमता बढ़ती है।',
-    summarySubtitle: 'हर टियर में वही मुख्य वर्कफ़्लो रहता है: पैकिंग, डिस्पैच, ट्रैकिंग और बिलिंग। अपग्रेड तभी करें जब उपयोग बढ़े।',
-    highlightFree: 'फ्री टियर के लिए कार्ड की ज़रूरत नहीं',
-    highlightBilling: 'मासिक और वार्षिक बिलिंग उपलब्ध',
-    highlightScale: 'बड़े फ्लीट के लिए एंटरप्राइज़ रोलआउट सपोर्ट',
-    monthly: 'मासिक', yearly: 'वार्षिक', saveTag: '17% बचाएं',
-    perMonth: '/माह', perYear: '/वर्ष',
-    getStarted: 'शुरू करें', contactSales: 'संपर्क करें', startFree: 'मुफ्त शुरू करें →',
-    mostPopular: 'सबसे लोकप्रिय', currentPlan: 'आपका प्लान',
-    upgrade: 'अपग्रेड', downgrade: 'डाउनग्रेड',
-    users: 'यूज़र्स', trucks: 'ट्रक', shipments: 'शिपमेंट/माह',
-    packing: 'पैकिंग ऑप्ट', routes: 'रूट ऑप्ट',
-    storage: 'स्टोरेज', apiCalls: 'API कॉल/माह', sms: 'SMS OTP/माह',
-    support: 'सपोर्ट', unlimited: 'अनलिमिटेड',
-    compareTitle: 'सभी सुविधाएं',
-    compareNote: 'बिलिंग साइकिल तय करने से पहले लिमिट्स की तुलना करें।',
-    freeForever: 'मुफ्त शुरू करें', freeDesc: 'कोई क्रेडिट कार्ड नहीं।',
-    enterprise: 'कस्टम समाधान चाहिए?',
-    enterpriseDesc: 'बड़े फ्लीट के लिए टेलर्ड प्लान।',
-    talkToUs: 'हमसे बात करें',
-    adminBadge: '⚡ एडमिन — सभी सुविधाएं अनलॉक',
-    back: 'वापस',
-  },
+  eyebrow: 'Plans & Billing',
+  title: 'Choose Your Plan', subtitle: 'Smart logistics optimization for every business size',
+  planNote: 'Start free, switch billing cadence when you need to, and move enterprise fleets to tailored onboarding only when scale demands it.',
+  summaryEyebrow: 'What changes by plan',
+  summaryTitle: 'Capacity grows with your users, trucks, and shipment volume.',
+  summarySubtitle: 'Every tier keeps the same core workflow: packing, dispatch, tracking, and billing. Upgrade only when usage expands.',
+  highlightFree: 'No card required for the free tier',
+  highlightBilling: 'Monthly and yearly billing available',
+  highlightScale: 'Enterprise rollout support for larger fleets',
+  monthly: 'Monthly', yearly: 'Yearly', saveTag: 'Save 17%',
+  perMonth: '/mo', perYear: '/yr',
+  getStarted: 'Get Started', contactSales: 'Contact Sales', startFree: 'Start Free →',
+  mostPopular: 'Most Popular', currentPlan: 'Your Plan',
+  upgrade: 'Upgrade', downgrade: 'Downgrade',
+  users: 'Users', trucks: 'Trucks', shipments: 'Shipments/mo',
+  packing: 'Packing Opts', routes: 'Route Opts',
+  storage: 'Storage', apiCalls: 'API Calls/mo', sms: 'SMS OTP/mo',
+  support: 'Support', unlimited: 'Unlimited',
+  compareTitle: 'Full Feature Comparison',
+  compareNote: 'Compare the limits before you lock a billing cycle.',
+  freeForever: 'Start for Free', freeDesc: 'No credit card required. Full access to free tier.',
+  enterprise: 'Need a custom plan?',
+  enterpriseDesc: 'Large fleet or multiple locations? Get a tailored quote from our team.',
+  talkToUs: 'Talk to Our Team',
+  adminBadge: '⚡ Admin — All features unlocked',
+  back: 'Back',
 }
 
 const TIER_CFG: Record<string, { icon: React.ComponentType<{ className?: string }>, grad: string, bg: string, txt: string }> = {
@@ -116,7 +86,7 @@ const fmtLimit = (v: number | string, unlimited: string) => {
 interface CardProps {
   tier: PricingTier
   isYearly: boolean
-  L: typeof LABELS['en']
+  L: typeof LABELS
   isCurrent: boolean
   isUpgrade: boolean
   isDowngrade: boolean
@@ -252,7 +222,7 @@ export default function PricingPage() {
   const [activeIdx, setActiveIdx] = useState(1)
   const [updating, setUpdating] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const L = LABELS.en
+  const L = LABELS
 
   useEffect(() => { document.title = 'Pricing — TruckOpti' }, [])
 

@@ -13,76 +13,39 @@ import { saleOrderItemSchema, validateWithZod, type SaleOrderItemInput } from '.
 import { logger } from '../utils/logger'
 import { useSubscription } from '../hooks/useSubscription'
 
-// Translations
-const t = {
-  en: {
-    title: 'Sale Orders',
-    subtitle: 'Import orders from CSV/Excel and optimize packing',
-    uploadCsv: 'Upload CSV/Excel',
-    dragDrop: 'Drag and drop or click to browse',
-    supportedFormats: 'Supports .csv, .xlsx, .xls',
-    preview: 'Preview',
-    import: 'Import & Optimize',
-    cancel: 'Cancel',
-    rowErrors: 'Row Errors',
-    productName: 'Product Name',
-    dimensions: 'Dimensions (L×W×H cm)',
-    weight: 'Weight (kg)',
-    quantity: 'Qty',
-    deliveryCity: 'Delivery City',
-    validRows: 'Valid Rows',
-    invalidRows: 'Invalid Rows',
-    pastOrders: 'Past Orders',
-    status: 'Status',
-    pending: 'Pending',
-    processing: 'Processing',
-    completed: 'Completed',
-    totalItems: 'Total Items',
-    actions: 'Actions',
-    view: 'View',
-    delete: 'Delete',
-    noOrders: 'No orders yet. Import your first sale order!',
-    importing: 'Importing...',
-    importSuccess: 'Order imported successfully!',
-    importError: 'Failed to import order',
-    confirmDelete: 'Delete this order?',
-    deleteSuccess: 'Order deleted',
-    downloadTemplate: 'Download Template'
-  },
-  hi: {
-    title: 'सेल ऑर्डर्स',
-    subtitle: 'CSV/Excel से ऑर्डर्स आयात करें और पैकिंग ऑप्टिमाइज़ करें',
-    uploadCsv: 'CSV/Excel अपलोड',
-    dragDrop: 'खींचें और छोड़ें या ब्राउज़ करें',
-    supportedFormats: '.csv, .xlsx, .xls समर्थित',
-    preview: 'पूर्वावलोकन',
-    import: 'आयात और ऑप्टिमाइज़',
-    cancel: 'रद्द',
-    rowErrors: 'पंक्ति त्रुटियां',
-    productName: 'उत्पाद नाम',
-    dimensions: 'आयाम (L×W×H cm)',
-    weight: 'वजन (kg)',
-    quantity: 'मात्रा',
-    deliveryCity: 'डिलीवरी शहर',
-    validRows: 'वैध पंक्तियां',
-    invalidRows: 'अमान्य पंक्तियां',
-    pastOrders: 'पिछले ऑर्डर्स',
-    status: 'स्थिति',
-    pending: 'लंबित',
-    processing: 'प्रसंस्करण',
-    completed: 'पूर्ण',
-    totalItems: 'कुल आइटम',
-    actions: 'कार्रवाई',
-    view: 'देखें',
-    delete: 'हटाएं',
-    noOrders: 'अभी तक कोई ऑर्डर नहीं। अपना पहला सेल ऑर्डर आयात करें!',
-    importing: 'आयात हो रहा है...',
-    importSuccess: 'ऑर्डर सफलतापूर्वक आयातित!',
-    importError: 'ऑर्डर आयात करने में विफल',
-    confirmDelete: 'यह ऑर्डर हटाएं?',
-    deleteSuccess: 'ऑर्डर हटा दिया गया',
-    downloadTemplate: 'टेम्पलेट डाउनलोड'
-  }
+const text = {
+  title: 'Sale Orders',
+  subtitle: 'Import orders from CSV/Excel and optimize packing',
+  uploadCsv: 'Upload CSV/Excel',
+  dragDrop: 'Drag and drop or click to browse',
+  supportedFormats: 'Supports .csv, .xlsx, .xls',
+  preview: 'Preview',
+  import: 'Import & Optimize',
+  cancel: 'Cancel',
+  rowErrors: 'Row Errors',
+  productName: 'Product Name',
+  dimensions: 'Dimensions (L×W×H cm)',
+  weight: 'Weight (kg)',
+  quantity: 'Qty',
+  deliveryCity: 'Delivery City',
+  validRows: 'Valid Rows',
+  invalidRows: 'Invalid Rows',
+  pastOrders: 'Past Orders',
+  status: 'Status',
+  pending: 'Pending',
+  processing: 'Processing',
+  completed: 'Completed',
+  totalItems: 'Total Items',
+  actions: 'Actions',
+  view: 'View',
+  delete: 'Delete',
+  noOrders: 'No orders yet. Import your first sale order!',
+  importing: 'Importing...',
+  importSuccess: 'Order imported successfully!',
+  importError: 'Failed to import order',
+  confirmDelete: 'Delete this order?',
+  deleteSuccess: 'Order deleted',
+  downloadTemplate: 'Download Template'
 }
 
 interface ParsedItem {
@@ -100,7 +63,6 @@ interface ParsedItem {
 
 export default function SaleOrdersPage() {
   const navigate = useNavigate()
-  const lang = 'en' as const
   const { checkLimit, showUpgradePrompt } = useSubscription()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -275,7 +237,7 @@ export default function SaleOrdersPage() {
         }))
       )
 
-      toast.success(t[lang].importSuccess)
+      toast.success(text.importSuccess)
       setShowPreview(false)
       setParsedItems([])
 
@@ -295,7 +257,7 @@ export default function SaleOrdersPage() {
       navigate('/packing', { state: { saleOrderItems: packingItems, saleOrderId: order.id } })
     } catch (error) {
       logger.error('Import error:', error)
-      toast.error(t[lang].importError)
+      toast.error(text.importError)
     } finally {
       setImporting(false)
     }
@@ -331,11 +293,11 @@ export default function SaleOrdersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t[lang].confirmDelete)) return
+    if (!confirm(text.confirmDelete)) return
 
     try {
       await saleOrdersSupabaseApi.delete(id)
-      toast.success(t[lang].deleteSuccess)
+      toast.success(text.deleteSuccess)
       fetchOrders()
     } catch (_error) {
       toast.error('Failed to delete')
@@ -364,8 +326,8 @@ Carton C,30,20,15,2,20,Bangalore`
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 pb-24 lg:pb-12">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t[lang].title}</h1>
-        <p className="text-slate-500 dark:text-slate-400">{t[lang].subtitle}</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{text.title}</h1>
+        <p className="text-slate-500 dark:text-slate-400">{text.subtitle}</p>
       </div>
 
       {/* Upload Section */}
@@ -385,10 +347,10 @@ Carton C,30,20,15,2,20,Bangalore`
             <FileSpreadsheet className="w-12 h-12 text-slate-400 mx-auto mb-4" />
             <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
               {uploading ? <Loader2 className="w-5 h-5 animate-spin inline mr-2" /> : null}
-              {t[lang].uploadCsv}
+              {text.uploadCsv}
             </h3>
-            <p className="text-sm text-slate-500">{t[lang].dragDrop}</p>
-            <p className="text-xs text-slate-400 mt-2">{t[lang].supportedFormats}</p>
+            <p className="text-sm text-slate-500">{text.dragDrop}</p>
+            <p className="text-xs text-slate-400 mt-2">{text.supportedFormats}</p>
           </div>
 
           <button
@@ -396,7 +358,7 @@ Carton C,30,20,15,2,20,Bangalore`
             className="mt-4 flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700"
           >
             <Download className="w-4 h-4" />
-            {t[lang].downloadTemplate}
+            {text.downloadTemplate}
           </button>
         </div>
       )}
@@ -406,16 +368,16 @@ Carton C,30,20,15,2,20,Bangalore`
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-slate-900 dark:text-white">{t[lang].preview}</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white">{text.preview}</h3>
               <div className="flex gap-4 text-sm mt-1">
                 <span className="text-green-600">
                   <CheckCircle2 className="w-4 h-4 inline mr-1" />
-                  {validItems.length} {t[lang].validRows}
+                  {validItems.length} {text.validRows}
                 </span>
                 {invalidItems.length > 0 && (
                   <span className="text-red-600">
                     <AlertCircle className="w-4 h-4 inline mr-1" />
-                    {invalidItems.length} {t[lang].invalidRows}
+                    {invalidItems.length} {text.invalidRows}
                   </span>
                 )}
               </div>
@@ -425,7 +387,7 @@ Carton C,30,20,15,2,20,Bangalore`
                 onClick={() => { setShowPreview(false); setParsedItems([]) }}
                 className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300"
               >
-                {t[lang].cancel}
+                {text.cancel}
               </button>
               <button
                 onClick={handleImport}
@@ -433,7 +395,7 @@ Carton C,30,20,15,2,20,Bangalore`
                 className="px-4 py-2 bg-primary-600 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
               >
                 {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                {t[lang].import}
+                {text.import}
               </button>
             </div>
           </div>
@@ -443,12 +405,12 @@ Carton C,30,20,15,2,20,Bangalore`
             <table className="w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-700 sticky top-0">
                 <tr>
-                  <th className="px-4 py-2 text-left">{t[lang].productName}</th>
-                  <th className="px-4 py-2 text-left">{t[lang].dimensions}</th>
-                  <th className="px-4 py-2 text-left">{t[lang].weight}</th>
-                  <th className="px-4 py-2 text-left">{t[lang].quantity}</th>
-                  <th className="px-4 py-2 text-left">{t[lang].deliveryCity}</th>
-                  <th className="px-4 py-2 text-left">{t[lang].rowErrors}</th>
+                  <th className="px-4 py-2 text-left">{text.productName}</th>
+                  <th className="px-4 py-2 text-left">{text.dimensions}</th>
+                  <th className="px-4 py-2 text-left">{text.weight}</th>
+                  <th className="px-4 py-2 text-left">{text.quantity}</th>
+                  <th className="px-4 py-2 text-left">{text.deliveryCity}</th>
+                  <th className="px-4 py-2 text-left">{text.rowErrors}</th>
                 </tr>
               </thead>
               <tbody>
@@ -473,7 +435,7 @@ Carton C,30,20,15,2,20,Bangalore`
       {/* Past Orders */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t[lang].pastOrders}</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{text.pastOrders}</h2>
           <button
             onClick={fetchOrders}
             className="p-2 text-slate-400 hover:text-slate-600"
@@ -489,13 +451,9 @@ Carton C,30,20,15,2,20,Bangalore`
         ) : orders.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title={lang === 'en' ? 'No orders found' : 'कोई ऑर्डर नहीं मिला'}
-            description={
-              lang === 'en'
-                ? 'Import your first sale order from CSV or Excel file'
-                : 'CSV या Excel फाइल से अपना पहला सेल ऑर्डर आयात करें'
-            }
-            actionLabel={lang === 'en' ? 'Upload File' : 'फाइल अपलोड करें'}
+            title="No orders found"
+            description="Import your first sale order from CSV or Excel file"
+            actionLabel="Upload File"
             onAction={() => fileInputRef.current?.click()}
           />
         ) : (
@@ -514,11 +472,11 @@ Carton C,30,20,15,2,20,Bangalore`
                         order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
                           'bg-amber-100 text-amber-700'
                         }`}>
-                        {t[lang][order.status as keyof typeof t.en] || order.status}
+                        {text[order.status as keyof typeof text] || order.status}
                       </span>
                     </div>
                     <p className="text-sm text-slate-500 mt-1">
-                      {order.total_items} {t[lang].totalItems} • {order.delivery_city}
+                      {order.total_items} {text.totalItems} • {order.delivery_city}
                     </p>
                     <p className="text-xs text-slate-400">
                       {new Date(order.created_at || '').toLocaleDateString()}

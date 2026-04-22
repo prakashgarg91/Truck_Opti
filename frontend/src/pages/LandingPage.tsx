@@ -7,31 +7,23 @@ import {
 const FEATURES = [
   {
     icon: Package,
-    titleEn: '3D Bin Packing',
-    titleHi: '3D बिन पैकिंग',
-    descEn: 'AI-powered cargo optimization',
-    descHi: 'AI-संचालित कार्गो ऑप्टिमाइज़ेशन'
+    title: '3D Bin Packing',
+    desc: 'AI-powered cargo optimization'
   },
   {
     icon: Route,
-    titleEn: 'Route Optimization',
-    titleHi: 'रूट ऑप्टिमाइज़ेशन',
-    descEn: 'Smart routing with toll costs',
-    descHi: 'टोल लागत के साथ स्मार्ट रूटिंग'
+    title: 'Route Optimization',
+    desc: 'Smart routing with toll costs'
   },
   {
     icon: MapPin,
-    titleEn: 'Live GPS Tracking',
-    titleHi: 'लाइव GPS ट्रैकिंग',
-    descEn: 'Real-time shipment monitoring',
-    descHi: 'रीयल-टाइम शिपमेंट मॉनिटरिंग'
+    title: 'Live GPS Tracking',
+    desc: 'Real-time shipment monitoring'
   },
   {
     icon: Building2,
-    titleEn: 'Agency Dispatch',
-    titleHi: 'एजेंसी डिस्पैच',
-    descEn: 'Connect with transport agencies',
-    descHi: 'परिवहन एजेंसियों से जुड़ें'
+    title: 'Agency Dispatch',
+    desc: 'Connect with transport agencies'
   }
 ]
 
@@ -326,10 +318,10 @@ export default function LandingPage() {
                   </span>
                 </div>
                 <h3 className="mt-6 text-xl font-bold text-slate-900 dark:text-white">
-                  {feature.titleEn}
+                  {feature.title}
                 </h3>
                 <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {feature.descEn}
+                  {feature.desc}
                 </p>
               </div>
             ))}
