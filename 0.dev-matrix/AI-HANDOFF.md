@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-22 (Copilot-032 dormant translation cleanup)
+- Changed: pruned dead English-only translation branches from `SaleOrdersPage.tsx`, `InvoicePage.tsx`, `LandingPage.tsx`, and `PricingPage.tsx`; flattened those pages to single English label/feature maps so the unreachable Hindi branches are no longer shipped in those surfaces.
+- Verified: `cd frontend && npm run build` PASS (`built in 6.66s`). PWA build still reports `precache 71 entries (1476.23 KiB)`. The residual `Unknown input options: manualChunks` warning still reproduces after a successful build.
+- Operational proof: the dormant translation cleanup is live on pushed commit `2adea094`, frontend production build is still green, and the remaining `manualChunks` warning continues to look non-blocking because the app build and PWA output both complete successfully.
+- Continue from: remaining dormant translation data is now narrowed to shared pricing config/types plus the still-forced-English maps in `PackingPage.tsx`, `ProfilePage.tsx`, and related shared types.
+- Next step: either continue pruning the remaining dead translation data in the English-only runtime or stop and wait on owner-side Razorpay/auth blockers.
+- Blockers: T-110 live Razorpay keys (human), T-111 real Google OAuth sign-in proof (human), T-115 PITR/backup enablement (human), and `SEED_DEMO_PASSWORD` missing in this shell for fresh authenticated admin/customer/driver/agency reruns.
+
 ### 2026-04-22 (Copilot-025 launch audit + frontend copy repair)
 - Changed: audited the remaining launch slice in manager mode with native `opencode` plus parallel repo subagents; restored 13 blank user-facing helper/status messages across `CheckoutPage.tsx`, `Dashboard.tsx`, `DriverEarningsPage.tsx`, `ManagementPage.tsx`, `NewShipmentPage.tsx`, `PackingPage.tsx`, and `TrackingPage.tsx`; carried the inspected frontend dirty tree into one clean frontend commit `f788d262` so launch-check could rerun without a git-dirty false failure.
 - Verified: `cd frontend && npm run build` PASS (`built in 7.58s`) with PWA precache `71 entries (1480.30 KiB)`; `npm run test:frontend-smoke` PASS (`17/17`); `npm run test:public-smoke` PASS (`7/7`); `npm run test:prod-config` -> `5/6` with only `razorpay_launch_readiness` failing; `npm run launch-check` PASS (`17/17`).

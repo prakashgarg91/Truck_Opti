@@ -3,6 +3,7 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.0 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
+> 2026-04-22 (Copilot-032): dormant translation cleanup continued after the launch audit. Dead Hindi branches were removed from the forced-English `SaleOrdersPage`, `InvoicePage`, `LandingPage`, and `PricingPage` surfaces, and `cd frontend && npm run build` still passes in 6.66s with PWA precache `71 entries (1476.23 KiB)`. The residual `Unknown input options: manualChunks` warning still reproduces after successful build and remains non-blocking until proven otherwise.
 > 2026-04-22 (Copilot-025): launch audit + frontend copy repair completed on a clean tree. Restored 13 blank user-facing helper/status messages across 7 pages, `cd frontend && npm run build` PASS in 7.58s, `npm run test:frontend-smoke` PASS (17/17), `npm run test:public-smoke` PASS (7/7), `npm run test:prod-config` stays 5/6 with only Razorpay failing, and `npm run launch-check` is back to PASS (17/17). Remaining blockers are owner-side live Razorpay plus real-account auth/PITR, with authenticated reruns still blocked in this shell by missing `SEED_DEMO_PASSWORD`.
 > 2026-04-22 (Copilot-031): performance + language cleanup is locally green. PWA precache dropped to `1479.01 KiB`, the remaining visible English/Hindi toggles were removed from public and core app surfaces, `cd frontend && npx tsc --noEmit` passes with 0 output, and `cd frontend && npm run build` passes in 6.88s. Remaining follow-up is dormant translation-data cleanup plus the build warning `Unknown input options: manualChunks`.
 > 2026-04-21 (Copilot-029): deep bug audit + 29-fix commit. Fixed: AgencyJobsPage 30s→30min expiry + processingJobId guard; ProtectedRoute null-user role bypass; App.tsx RoleHome isLoading flash + /checkout ProtectedRoute wrap; CheckoutPage billingCycle URL validation + planId redirect + language dep removed; DriverTripPage IDOR ownership filter + setSubmitting finally + OTP type=number→type=text; DriverDashboardPage setWithdrawing finally + wallet balance subtracts payouts + today trips delivered_at only; NewShipmentPage trim + eway-bill created_by + try/finally; ProfilePage async logout + phone trim/validate + company trim + logger.error; TrackingPage JobOffer photo fields + language dep removed; authStore excludes isAuthenticated from localStorage persist; useSubscription fail-closed on checkLimit. Build: ✓ 7.09s, 0 TS errors. Commit: `07e58d80`.
@@ -74,6 +75,7 @@
 
 | Agent ID | Type | Model | Specialty | Working On | Since | Status |
 |----------|------|-------|-----------|------------|-------|---------|
+| `GPT-026` | MANAGER+IMPL | GPT-5.4 | Dormant translation cleanup + build verification | Pruned dead English-only translation branches from four frontend pages and rechecked the frontend build / residual PWA warning | 2026-04-22 | ✅ DONE |
 | `GPT-025` | MANAGER+IMPL | GPT-5.4 | Launch audit + flow verification + UI repair | Audited the remaining launch slice, restored blank frontend guidance copy, and revalidated build/smoke/prod-config/launch-check on a clean tree | 2026-04-22 | ✅ DONE |
 | `GPT-024` | MANAGER+IMPL | GPT-5.4 | PWA perf + language cleanup + close-day | Cut PWA precache to 1479.01 KiB, removed remaining live language toggles, and prepared end-of-day closeout evidence | 2026-04-22 | ✅ DONE |
 | `GPT-023` | MANAGER+IMPL | GPT-5.4 | Live rollout + authenticated browser proof | Deployed Heroku v71, pushed Supabase through the driver_payouts repair migration, seeded live demo identities, and captured zero-console-error protected-flow proof | 2026-04-18 | ✅ DONE |
@@ -133,6 +135,21 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-04-22] GPT-026 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ DEAD ENGLISH-ONLY TRANSLATION BRANCHES PRUNED FROM 4 MORE PAGES
+
+                             WORK COMPLETED:
+                             - removed unreachable Hindi translation maps from `SaleOrdersPage.tsx`, `InvoicePage.tsx`, `LandingPage.tsx`, and `PricingPage.tsx`, replacing them with single English label/feature objects where runtime was already fixed to English
+                             - kept the cleanup local to forced-English surfaces so runtime behavior did not widen back into auth, payment, or shared state logic
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npm run build`: PASS (`built in 6.66s`)
+                             - build output: `PWA v1.2.0` / `precache 71 entries (1476.23 KiB)`
+                             - residual warning still present after success: `Unknown input options: manualChunks`
+
+                             PRODUCT JUDGMENT:
+                             - this slice removed more dead translation payload without regressing the build; the remaining cleanup is now narrower and lives mostly in shared config/types plus `PackingPage` / `ProfilePage`
+                             - the `manualChunks` warning still looks like plugin-side noise from the PWA step rather than failed app chunking because Rollup output and service-worker generation both complete successfully
+------------------------------------------------------------------------------------------
 [2026-04-22] GPT-025 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ LAUNCH-CHECK GREEN AGAIN, PROD-CONFIG DOWN TO RAZORPAY ONLY
 
                              WORK COMPLETED:
