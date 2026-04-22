@@ -401,7 +401,7 @@ export default function TrackingPage() {
                     </span>
                   </div>
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    
+                    {'Nearby drivers and agencies have been notified. Matching usually completes within a few minutes.'}
                   </p>
                 </div>
               )}
@@ -559,12 +559,12 @@ export default function TrackingPage() {
                         {jobOffer.pickup_otp}
                       </p>
                       <p className="text-xs text-green-600 dark:text-green-400 text-center mt-2">
-                        
+                        {'Share this OTP with the driver only when pickup has started at the origin.'}
                       </p>
                     </>
                   ) : (
                     <p className="text-sm text-green-600 dark:text-green-400 text-center">
-                      
+                      {'Pickup OTP will appear once a driver is assigned and accepts the shipment.'}
                     </p>
                   )}
                 </div>

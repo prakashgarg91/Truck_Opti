@@ -143,8 +143,8 @@ const TestPaymentPage: React.FC = () => {
           <button
             onClick={() => setPaymentMethod('razorpay')}
             className={`p-4 rounded-xl border-2 transition-all ${paymentMethod === 'razorpay'
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
+              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+              : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
               }`}
           >
             <CreditCard className={`w-6 h-6 mx-auto mb-2 ${paymentMethod === 'razorpay' ? 'text-blue-600' : 'text-gray-400'}`} />
@@ -156,8 +156,8 @@ const TestPaymentPage: React.FC = () => {
           <button
             onClick={() => setPaymentMethod('phonepe')}
             className={`p-4 rounded-xl border-2 transition-all ${paymentMethod === 'phonepe'
-                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
-                : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
+              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
+              : 'border-gray-200 dark:border-gray-600 hover:border-purple-300'
               }`}
           >
             <Smartphone className={`w-6 h-6 mx-auto mb-2 ${paymentMethod === 'phonepe' ? 'text-purple-600' : 'text-gray-400'}`} />
@@ -194,8 +194,8 @@ const TestPaymentPage: React.FC = () => {
                   key={amt}
                   onClick={() => setAmount(amt)}
                   className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all ${amount === amt
-                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-600'
-                      : 'border-gray-200 dark:border-gray-600 hover:border-orange-300'
+                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-600'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-orange-300'
                     }`}
                 >
                   <IndianRupee className="w-4 h-4 inline" />
@@ -276,10 +276,10 @@ const TestPaymentPage: React.FC = () => {
             onClick={handleTestPayment}
             disabled={processing || phone.length < 10}
             className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 ${processing || phone.length < 10
-                ? 'bg-gray-400 cursor-not-allowed'
-                : paymentMethod === 'razorpay'
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 shadow-lg hover:shadow-xl'
-                  : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl'
+              ? 'bg-gray-400 cursor-not-allowed'
+              : paymentMethod === 'razorpay'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 shadow-lg hover:shadow-xl'
+                : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl'
               }`}
           >
             {processing ? (

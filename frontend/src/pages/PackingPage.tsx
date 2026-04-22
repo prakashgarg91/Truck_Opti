@@ -725,7 +725,7 @@ export default function PackingPage() {
           {'Subscription Expired'}
         </h2>
         <p className="text-gray-600 mb-6">
-          
+          {'Upgrade your plan to continue running truck recommendations and packing optimizations.'}
         </p>
         <button
           onClick={() => navigate('/pricing')}

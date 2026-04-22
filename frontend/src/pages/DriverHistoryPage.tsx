@@ -99,8 +99,8 @@ export default function DriverHistoryPage() {
               key={f}
               onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${filter === f
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                 }`}
             >
               {f === 'all' ? 'All' : f}

@@ -145,8 +145,8 @@ export default function AdminUsersPage() {
               key={role}
               onClick={() => setRoleFilter(role)}
               className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${roleFilter === role
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
             >
               {role === 'all' ? ('All') : roleLabels[role]}

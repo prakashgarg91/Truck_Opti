@@ -226,7 +226,7 @@ const CheckoutPage: React.FC = () => {
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
             <span>
-              
+              {'Test mode is active. Use sandbox credentials only; no live payment will be captured.'}
             </span>
           </div>
         )}
@@ -243,11 +243,11 @@ const CheckoutPage: React.FC = () => {
               <div className={`mb-4 p-3 rounded-lg ${subscriptionChange === 'upgrade' ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'}`}>
                 {subscriptionChange === 'upgrade' ? (
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    
+                    {`You are upgrading from ${currentPlan?.name || 'your current plan'} to ${plan.name}. The new limits apply after payment is confirmed.`}
                   </p>
                 ) : (
                   <p className="text-sm text-amber-700 dark:text-amber-300">
-                    
+                    {`You are switching from ${currentPlan?.name || 'your current plan'} to ${plan.name}. Review the lower limits before you continue.`}
                   </p>
                 )}
               </div>
@@ -400,7 +400,7 @@ const CheckoutPage: React.FC = () => {
 
               {/* Security Note */}
               <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-                🔒 
+                🔒
               </p>
             </div>
           </div>

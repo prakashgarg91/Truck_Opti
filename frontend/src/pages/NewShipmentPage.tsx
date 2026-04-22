@@ -185,7 +185,7 @@ export default function NewShipmentPage() {
           {'Subscription Expired'}
         </h2>
         <p className="text-gray-600 mb-6">
-          
+          {'Upgrade your plan to create new bookings and keep shipment dispatch active.'}
         </p>
         <button
           onClick={() => navigate('/pricing')}
@@ -206,7 +206,7 @@ export default function NewShipmentPage() {
             {'Booking Confirmed!'}
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mb-4">
-            
+            {'Your shipment request has been created and matching will begin shortly.'}
           </p>
 
           {/* E-Way Bill Optional Section */}
@@ -438,7 +438,7 @@ export default function NewShipmentPage() {
               className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <p className="text-xs text-slate-500 mt-1">
-              
+              {'Add the declared goods value only when you need an e-way bill or compliance record.'}
             </p>
           </div>
 

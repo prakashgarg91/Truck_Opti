@@ -135,7 +135,7 @@ export default function ManagementPage() {
           <div>
             <h4 className="font-bold">{'System Health'}</h4>
             <p className="text-sm text-slate-400">
-              
+              {'Core catalogs, customer records, and planning tools are available for day-to-day operations.'}
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2 text-emerald-400 text-sm font-medium">

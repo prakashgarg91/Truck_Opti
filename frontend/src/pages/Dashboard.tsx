@@ -631,7 +631,7 @@ export default function Dashboard() {
           <div>
             <h4 className="font-semibold text-slate-900 dark:text-white text-sm">{'Pro Tip'}</h4>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-              
+              {'Keep trucks, cartons, and customer records current so packing, routing, and booking suggestions stay accurate.'}
             </p>
           </div>
         </div>

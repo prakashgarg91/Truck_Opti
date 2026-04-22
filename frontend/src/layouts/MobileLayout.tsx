@@ -601,7 +601,7 @@ export default function MobileLayout() {
             </div>
           </nav>
 
-            {/* Theme Toggle */}
+          {/* Theme Toggle */}
           <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
             {/* Theme Toggle */}
             <div className="flex items-center justify-between px-2">
