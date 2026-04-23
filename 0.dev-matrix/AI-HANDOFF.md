@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-23 (Copilot-036 full flow revalidation + close-day prep)
+- Changed: no product code changed; reran the full executable flow suite on the current pushed tree before close-day, including packing regression, public route smoke, frontend launch smoke, the legacy live-button smoke alias, production config audit, and both authenticated proof scripts.
+- Verified: `npm run test:packing` PASS (`11/11`). `npm run test:public-smoke` PASS (`7/7`). `npm run test:live-buttons` PASS (`7/7`). `npm run test:frontend-smoke` PASS (`17/17`). `npm run test:prod-config` PASS (`5/6`) with only `razorpay_launch_readiness` failing. `npm run test:live-auth` FAIL (`Missing SEED_DEMO_PASSWORD`). `npm run test:live-admin` FAIL (`Missing SEED_DEMO_PASSWORD`).
+- Operational proof: all non-owner-blocked public, frontend, and packing flows are green on the current clean tree, while the remaining fully authenticated/admin flow reruns are still blocked by missing shell credentials and live production payment config rather than repo code regressions.
+- Continue from: close-day can proceed on the current tree; after that, only owner-side credentialed proof remains.
+- Next step: supply `SEED_DEMO_PASSWORD`, rerun `npm run test:live-auth` plus `npm run test:live-admin`, set live Razorpay credentials, and capture real Google OAuth verification if a fully credentialed launch proof bundle is needed.
+- Blockers: T-110 live Razorpay keys (human), T-111 real Google OAuth sign-in proof (human), T-115 PITR/backup enablement (human), and `SEED_DEMO_PASSWORD` missing in this shell for authenticated driver/agency/customer/admin reruns.
+
 ### 2026-04-23 (Copilot-035 delivery-readiness cleanup + clean-tree verification)
 - Changed: committed the validated repo-side readiness cleanup in `b2e64333` (`chore: finalize delivery-readiness cleanup`), including the Workbox warning fix in `frontend/vite.config.ts`, the hardened contact smoke selector in `scripts/frontend_launch_smoke.mjs`, the launch-safe auth description in `apps/web/app/api/v1/__init__.py`, corrected launch/governance docs, and tighter runtime ignore rules for local app DB sidecars/logs.
 - Verified: `npm run launch-check` PASS (`17/17`). `npm run test:frontend-smoke` PASS (`17/17`). `npm run test:prod-config` PASS (`5/6`) with only `razorpay_launch_readiness` failing because a test key is still configured.
