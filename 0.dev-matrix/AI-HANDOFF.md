@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-23 (Copilot-035 delivery-readiness cleanup + clean-tree verification)
+- Changed: committed the validated repo-side readiness cleanup in `b2e64333` (`chore: finalize delivery-readiness cleanup`), including the Workbox warning fix in `frontend/vite.config.ts`, the hardened contact smoke selector in `scripts/frontend_launch_smoke.mjs`, the launch-safe auth description in `apps/web/app/api/v1/__init__.py`, corrected launch/governance docs, and tighter runtime ignore rules for local app DB sidecars/logs.
+- Verified: `npm run launch-check` PASS (`17/17`). `npm run test:frontend-smoke` PASS (`17/17`). `npm run test:prod-config` PASS (`5/6`) with only `razorpay_launch_readiness` failing because a test key is still configured.
+- Operational proof: the current committed tree is clean, the full repo launch-check is green again, frontend user-flow smoke still passes end to end, and the only remaining machine-verifiable production blocker is live Razorpay readiness rather than repo code or build drift.
+- Continue from: repo-side delivery work is complete on the current commit; remaining launch work is owner-side production credentialing and authenticated real-account proof.
+- Next step: set live Razorpay credentials, supply `SEED_DEMO_PASSWORD`, rerun `npm run test:live-auth` plus `npm run test:live-admin`, and capture real Google OAuth verification plus PITR confirmation.
+- Blockers: T-110 live Razorpay keys (human), T-111 real Google OAuth sign-in proof (human), T-115 PITR/backup enablement (human), and `SEED_DEMO_PASSWORD` missing in this shell for fresh authenticated admin/customer/driver/agency reruns.
+
 ### 2026-04-23 (Copilot-034 workbox warning fix + local preview smoke)
 - Changed: removed the remaining non-blocking PWA build warning by setting `workbox.inlineWorkboxRuntime: true` in `frontend/vite.config.ts`, which avoids the Workbox/Rollup 4 `Unknown input options: manualChunks` path during `generateSW`; also hardened `scripts/frontend_launch_smoke.mjs` to target the contact phone input by type instead of brittle placeholder copy so local preview smoke no longer drifts when example text changes.
 - Verified: `cd frontend && npm run build` PASS (`built in 7.04s`) with no `Unknown input options: manualChunks` warning. `PUBLIC_APP_URL=http://127.0.0.1:4173 npm run test:public-smoke` PASS (`7/7`) against local preview. `PUBLIC_APP_URL=http://127.0.0.1:4173 npm run test:frontend-smoke` PASS (`17/17`) against local preview. `npm run test:live-auth` still exits immediately with `Missing SEED_DEMO_PASSWORD`.

@@ -10,18 +10,18 @@
 
 | Section | Tests | Passed | Failed | Skipped |
 |---------|-------|--------|--------|---------|
-| A. Repo Launch-Check | 17 | 16 | 1 | 0 |
+| A. Repo Launch-Check | 17 | 17 | 0 | 0 |
 | B. Frontend Launch Smoke | 17 | 17 | 0 | 0 |
 | C. Production Config Audit | 6 | 5 | 1 | 0 |
 | D. Authenticated Browser Smoke | 0 | 0 | 0 | 0 |
-| **TOTAL** | **40** | **38** | **2** | **0** |
+| **TOTAL** | **40** | **39** | **1** | **0** |
 
 ## Current Manager Snapshot — 2026-04-23
 
-- `npm run launch-check` currently passes all executable/runtime gates and fails only the git working-tree cleanliness gate (`16/17` pass).
+- `npm run launch-check` now passes `17/17` on the committed clean tree.
 - `npm run test:frontend-smoke` passes `17/17` and now confirms Supabase auth-service reachability via `401` without an API key.
 - `npm run test:prod-config` passes `5/6`; the only remaining failure is Razorpay still on `rzp_test_*`.
-- `.github/hooks/delivery-intelligence.json` is now ignored and no longer pollutes git status; current cleanliness failures are from tracked repo edits only.
+- `.github/hooks/delivery-intelligence.json` is ignored and no longer pollutes git status, and the repo cleanliness gate is green again.
 - Historical March sections below are preserved for audit trail, but the April 23 manager snapshot above is the current source of launch truth.
 
 ---

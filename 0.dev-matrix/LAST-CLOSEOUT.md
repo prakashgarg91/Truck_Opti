@@ -1,16 +1,16 @@
 # Last Closeout
 
-- Time: 2026-04-23 08:34:46
+- Time: 2026-04-23 20:44:47
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/STATE.md |  M 0.dev-matrix/TASK.md |  M frontend/vite.config.ts |  M scripts/frontend_launch_smoke.mjs | ?? .github/hooks/delivery-intelligence.json
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-23_083446.log
+- Git status:  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/LAUNCH_TEST_TRACKER.md |  M 0.dev-matrix/STATE.md |  M 0.dev-matrix/TASK.md
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-23_204447.log
 
 ## AI Handoff
 - Latest handoff date: 2026-04-23
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: the current local production build no longer emits the Workbox/Rollup warning, PWA output still generates (`precache 71 entries (1473.30 KiB)`), and the repo's public plus deeper smoke suites both pass against the freshly built local preview of the current tree.
-- Continue from: owner-blocked authenticated proof and production credential work now dominate the remaining launch slice; if you need another repo-side pass, rerun `launch-check` on a clean tree before pushing.
-- Next step: set `SEED_DEMO_PASSWORD` in-shell and rerun `npm run test:live-auth` plus `npm run test:live-admin`; owner still needs live Razorpay credentials, real Google OAuth proof, and PITR enablement.
+- Operational proof: the current committed tree is clean, the full repo launch-check is green again, frontend user-flow smoke still passes end to end, and the only remaining machine-verifiable production blocker is live Razorpay readiness rather than repo code or build drift.
+- Continue from: repo-side delivery work is complete on the current commit; remaining launch work is owner-side production credentialing and authenticated real-account proof.
+- Next step: set live Razorpay credentials, supply `SEED_DEMO_PASSWORD`, rerun `npm run test:live-auth` plus `npm run test:live-admin`, and capture real Google OAuth verification plus PITR confirmation.
 - Blockers: T-110 live Razorpay keys (human), T-111 real Google OAuth sign-in proof (human), T-115 PITR/backup enablement (human), and `SEED_DEMO_PASSWORD` missing in this shell for fresh authenticated admin/customer/driver/agency reruns.
 
 ## Launch Focus
@@ -20,20 +20,20 @@
 - Next earning step: finish live payment credentials, verify authenticated flows, and onboard the first paying logistics customers.
 
 ## Launch Verification
-- State: failed
-- Summary: launch-check failed; see log
-- Log: 0.dev-matrix/test-reports/launch-check-20260423_082007.log
+- State: passed
+- Summary: launch-check passed
+- Log: 0.dev-matrix/test-reports/launch-check-20260423_204305.log
 
 ## Regression Warning
 
-- REGRESSION: pass count dropped from 10 to 8; fail count rose from 0 to 2
+- REGRESSION: pass count dropped from 10 to 9; fail count rose from 0 to 1
 
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
-- [FAIL] background launch-check - latest background launch-check failed - launch-check failed; see log
+- [PASS] background launch-check - launch-check passed
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
 - [PASS] status update discipline - runtime status files have real content changes
-- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: frontend/vite.config.ts, scripts/frontend_launch_smoke.mjs, .github/hooks/delivery-intelligence.json
+- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: 0.dev-matrix/LAUNCH_TEST_TRACKER.md
 - [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
@@ -41,5 +41,5 @@
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 8
-- Fail: 2
+- Pass: 9
+- Fail: 1
