@@ -139,11 +139,11 @@ Verifies the currently deployed Heroku production config for launch readiness:
 
 Writes evidence to `logs/production_config_audit.json`.
 
-**Latest evidence:** 2026-04-10 manager verification passed 4/6 checks and failed only 2/6:
+**Latest evidence:** 2026-04-23 manager verification passed 5/6 checks and failed only 1/6:
 - Supabase auth backend DNS resolves for `jbxncejtcbpcronndqlx.supabase.co`
 - PhonePe is acceptable for launch because `VITE_PHONEPE_API_URL` is now missing/disabled
+- `VITE_SENTRY_DSN` is set and the production config audit now passes the Sentry gate
 - Razorpay still uses `rzp_test_*`
-- `VITE_SENTRY_DSN` is still missing
 
 ### Step 3: Supabase Data Integrity (run after key user flows)
 

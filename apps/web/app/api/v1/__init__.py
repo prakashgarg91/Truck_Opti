@@ -52,7 +52,7 @@ def api_root():
         },
         'features': {
             '3d_bin_packing': 'Multi-algorithm truck loading optimization',
-            'otp_auth': 'Phone-based login with SMS/WhatsApp OTP',
+            'otp_auth': 'Email OTP by default; phone OTP is optional when explicitly enabled',
             'google_oauth': 'Login with Google account',
             'location_sharing': 'Real-time driver tracking',
             'route_optimization': 'Indian road network optimization'

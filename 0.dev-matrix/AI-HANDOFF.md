@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-04-23 (Copilot-034 workbox warning fix + local preview smoke)
+- Changed: removed the remaining non-blocking PWA build warning by setting `workbox.inlineWorkboxRuntime: true` in `frontend/vite.config.ts`, which avoids the Workbox/Rollup 4 `Unknown input options: manualChunks` path during `generateSW`; also hardened `scripts/frontend_launch_smoke.mjs` to target the contact phone input by type instead of brittle placeholder copy so local preview smoke no longer drifts when example text changes.
+- Verified: `cd frontend && npm run build` PASS (`built in 7.04s`) with no `Unknown input options: manualChunks` warning. `PUBLIC_APP_URL=http://127.0.0.1:4173 npm run test:public-smoke` PASS (`7/7`) against local preview. `PUBLIC_APP_URL=http://127.0.0.1:4173 npm run test:frontend-smoke` PASS (`17/17`) against local preview. `npm run test:live-auth` still exits immediately with `Missing SEED_DEMO_PASSWORD`.
+- Operational proof: the current local production build no longer emits the Workbox/Rollup warning, PWA output still generates (`precache 71 entries (1473.30 KiB)`), and the repo's public plus deeper smoke suites both pass against the freshly built local preview of the current tree.
+- Continue from: owner-blocked authenticated proof and production credential work now dominate the remaining launch slice; if you need another repo-side pass, rerun `launch-check` on a clean tree before pushing.
+- Next step: set `SEED_DEMO_PASSWORD` in-shell and rerun `npm run test:live-auth` plus `npm run test:live-admin`; owner still needs live Razorpay credentials, real Google OAuth proof, and PITR enablement.
+- Blockers: T-110 live Razorpay keys (human), T-111 real Google OAuth sign-in proof (human), T-115 PITR/backup enablement (human), and `SEED_DEMO_PASSWORD` missing in this shell for fresh authenticated admin/customer/driver/agency reruns.
+
 ### 2026-04-22 (Copilot-033 packing/profile translation cleanup complete)
 - Changed: finished the remaining AI-executable dormant translation cleanup in `PackingPage.tsx`, `ProfilePage.tsx`, `frontend/src/config/pricing.ts`, `frontend/src/lib/packing.ts`, and `PricingPage.tsx`; removed dead `nameHi` fields from shared pricing/packing types and defaults; flattened `ProfilePage` and `PackingPage` to their single live English label sets so the forced-English runtime no longer carries dormant translation branches in those surfaces.
 - Verified: `cd frontend && npm run build` PASS (`built in 6.93s`). `npm run test:frontend-smoke` PASS (`17/17`). PWA build still reports `precache 71 entries (1473.30 KiB)`. The residual `Unknown input options: manualChunks` warning still reproduces after successful build.
@@ -91,7 +99,7 @@ Update protocol:
 - Next step: read `ProfilePage.tsx` and `AgencyRegisterPage.tsx` — replace raw `console.error` patterns with proper error handling + user toast; then check sprint board `D:\Github\0.dev-matrix\SPRINT-APRIL-2026.md` for T-130 (live returning-user stale SW retest, AI-ready).
 - Blockers: T-110 Razorpay prod keys (human), T-111 Google OAuth smoke (human), T-113 Twilio SMS (human), T-115 Supabase PITR (human), T-116 VITE_SENTRY_DSN Heroku env (human), T-117 `supabase db push` (human).
 
-### 2026-05-02 (Copilot-025 desktop layouts + landing page polish)
+### 2026-04-20 (Copilot-025 desktop layouts + landing page polish)
 - Changed: `AgencyLayout.tsx` — added desktop sidebar (`lg:fixed lg:w-64`), fixed broken `to="/agency/profile"` → `to="/profile"`, added `lg:hidden` to mobile header + bottom nav, `lg:ml-64` on main. `DriverLayout.tsx` — full rewrite: added desktop sidebar with Truck brand, sign-out button, `lg:hidden` on mobile header + bottom nav, `lg:pb-8 lg:ml-64` on main. `MobileLayout.tsx` — navItems[0] `path: '/'` → `path: '/dashboard'` (active state bug). `AgencyDashboardPage.tsx` — `max-w-md` → `max-w-2xl lg:max-w-5xl`. `AdminDashboardPage.tsx` — `pb-24` → `pb-8`. `LandingPage.tsx` — added desktop nav links (Features, How It Works, Drivers, Agencies, Pricing); added `id="features"` anchor; added full "How It Works" 3-step section (between features and testimonials); fixed footer duplicate `{t.footerTagline}` → `All rights reserved.`
 - Verified: `npm run build` PASS (0 TypeScript errors, built in 8.53s, only chunk-size warnings).
 - Operational proof: build green; desktop sidebar renders on lg+ for agency and driver portals; customer/admin Home nav active state fixed.

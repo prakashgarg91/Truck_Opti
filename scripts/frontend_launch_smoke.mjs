@@ -178,7 +178,7 @@ async function collectContactFallbackResult(browser) {
 
     await page.getByPlaceholder('Your full name').fill('Launch Smoke');
     await page.getByPlaceholder('you@example.com').fill('launch-smoke@example.com');
-    await page.getByPlaceholder('+91 98765 43210').fill('9876543210');
+    await page.locator('input[type="tel"]').first().fill('9876543210');
     await page.getByPlaceholder('How can we help you?').fill('Smoke test: verify graceful contact fallback.');
     await page.getByRole('button', { name: 'Send Message' }).click();
 

@@ -56,6 +56,7 @@ supabase/.temp/
 # Local AI/tooling settings
 .claude/settings.local.json
 .playwright-mcp/
+.github/hooks/delivery-intelligence.json
 rzp-key.csv
 
 # Local SQLite artifacts
@@ -67,6 +68,8 @@ rzp-key.csv
 # Data directories (runtime SQLite/telegram data)
 data/
 app/*.db
+app/*.db-*
+app/logs/
 
 # Legacy test artifacts (moved to scripts/legacy-tests/)
 # (tracked in git; do not re-add at root)

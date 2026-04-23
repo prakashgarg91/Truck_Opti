@@ -580,7 +580,7 @@ export class AdvancedBinPacker {
     private items: SaleOrderItem[],
     private algorithm: string,
     private options: PackerOptions = {},
-  ) {}
+  ) { }
 
   pack(): PackingResult {
     return packItemsForTruck(this.truck, this.items, this.algorithm, this.options)

@@ -39,6 +39,7 @@ export default defineConfig({
         ]
       },
       workbox: {
+        inlineWorkboxRuntime: true,
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,

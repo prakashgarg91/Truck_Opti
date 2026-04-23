@@ -159,8 +159,8 @@ Run Validation Command
 > **External blockers (human action required before AI can close these):**
 > - T-110: Razorpay prod keys → set in Heroku env vars
 > - T-111: Google OAuth → complete browser sign-in with real account
-> - T-117: `supabase db push` → apply 6 pending migrations
-> - T-116: `VITE_SENTRY_DSN` → set in Heroku env vars
+> - T-113: Twilio / Supabase Phone → only needed if phone OTP will be enabled for launch
+> - T-115: Supabase PITR / backup confirmation → verify production backup posture
 
 ### On-Failure Agent Prompt Template
 

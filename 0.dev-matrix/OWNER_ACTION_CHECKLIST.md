@@ -30,27 +30,13 @@
 
 ---
 
-### Action 1: Push Pending Supabase Migrations
+### Action 1: Supabase Migrations
 
-**Why:** 6 migration files exist in `supabase/migrations/` but have NOT been applied to the production database. Without these, many features silently fail (driver payouts, contact form, trip photos, e-way bill, RLS fixes).
+**Status:** ✅ Resolved on 2026-04-16 and extended on 2026-04-18.
 
-**Steps:**
-```bash
-cd D:\Github\Truck_Opti
-supabase db push
-```
+**Reality:** The linked production database was already pushed through the required migration set, and later auth/PAN migrations were also applied. This is no longer an owner action item.
 
-**Migrations to be applied:**
-| File | What it adds |
-|------|-------------|
-| `20260307000000_fix_rls_ownership.sql` | RLS ownership on customers/shipments/routes/packing_results |
-| `20260308000000_driver_payouts.sql` | driver_payouts table + RLS policies |
-| `20260309000000_contact_inquiries.sql` | contact_inquiries table + RLS policies |
-| `20260311000000_add_photo_columns_to_agency_jobs.sql` | photo_loading_url + photo_delivery_url columns |
-| `20260311000001_driver_payouts_agency_columns.sql` | agency_id + type columns on driver_payouts |
-| `20260311000002_eway_bill_column.sql` | eway_bill_data JSONB column on shipments |
-
-**Verification:** After push, check Supabase dashboard → Table Editor. Confirm `driver_payouts` and `contact_inquiries` tables exist. Confirm `agency_jobs` has `photo_loading_url` column.
+**Verification:** `npx supabase db push --dry-run --yes` reports `Remote database is up to date`, and the synced rollout is recorded in `STATE.md`, `TASK.md`, and `AI-HANDOFF.md`.
 
 ---
 
@@ -126,20 +112,13 @@ supabase secrets set RAZORPAY_KEY_SECRET=live_secret_XXXXXX
 
 ---
 
-### Action 5: Configure Sentry DSN
+### Action 5: Sentry DSN
 
-**Why:** Sentry code is installed (`@sentry/react ^10.43.0`) and wired in `main.tsx`, but no DSN is configured — so no errors are reported.
+**Status:** ✅ Resolved on 2026-04-16.
 
-**Steps:**
-1. Create a Sentry project at sentry.io (free tier available)
-2. Get the DSN from Project Settings → Client Keys
-3. Run:
-```bash
-heroku config:set VITE_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx --app truck-opti-app
-```
-4. Rebuild frontend (Heroku will pick up on next deploy)
+**Reality:** Sentry project `light9/truck-opti` was created and Heroku `VITE_SENTRY_DSN` is already configured. This is no longer a missing launch action.
 
-**Verification:** Trigger a JS error on the live site, check Sentry dashboard for the error event.
+**Verification:** `npm run test:prod-config` now passes the `sentry_dsn` check, and the launch checklist/TASK entry mark T-116 as done.
 
 ---
 
