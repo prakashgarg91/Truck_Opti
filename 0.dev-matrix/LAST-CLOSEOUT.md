@@ -1,9 +1,9 @@
 # Last Closeout
 
-- Time: 2026-04-23 20:44:47
+- Time: 2026-04-23 20:45:17
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/LAUNCH_TEST_TRACKER.md |  M 0.dev-matrix/STATE.md |  M 0.dev-matrix/TASK.md
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-23_204447.log
+- Git status: clean
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-23_204517.log
 
 ## AI Handoff
 - Latest handoff date: 2026-04-23
@@ -24,16 +24,12 @@
 - Summary: launch-check passed
 - Log: 0.dev-matrix/test-reports/launch-check-20260423_204305.log
 
-## Regression Warning
-
-- REGRESSION: pass count dropped from 10 to 9; fail count rose from 0 to 1
-
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
 - [PASS] background launch-check - launch-check passed
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [PASS] status update discipline - runtime status files have real content changes
-- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: 0.dev-matrix/LAUNCH_TEST_TRACKER.md
+- [PASS] status update discipline - repo clean
+- [PASS] working tree cleanliness - repo clean before closeout report
 - [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
@@ -41,5 +37,5 @@
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 9
-- Fail: 1
+- Pass: 10
+- Fail: 0
