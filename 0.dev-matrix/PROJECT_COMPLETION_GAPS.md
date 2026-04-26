@@ -3,6 +3,7 @@
 > Canonical snapshot for the open question: "what gaps remain, and what tasks make TruckOpti complete?"
 > Updated: 2026-04-26 by Copilot.
 > Source files checked: `AI-HANDOFF.md`, `STATE.md`, `TASK.md`, `LAUNCH_CHECKLIST.md`, `OWNER_ACTION_CHECKLIST.md`, `SECURITY.md`, `GRAPHIFY_GAPS.md`, `QDRANT_GAP_REPORT.md`, and current npm validation output.
+> Verification commands referenced below are declared in the root `package.json`.
 
 ## Current completion definition
 
