@@ -2,8 +2,12 @@
 
 > Canonical snapshot for the open question: "what gaps remain, and what tasks make TruckOpti complete?"
 > Updated: 2026-04-26 by Copilot.
-> Source files checked: `AI-HANDOFF.md`, `STATE.md`, `TASK.md`, `LAUNCH_CHECKLIST.md`, `OWNER_ACTION_CHECKLIST.md`, `SECURITY.md`, `GRAPHIFY_GAPS.md`, `QDRANT_GAP_REPORT.md`, and current npm validation output.
+> Source files checked: `AI-HANDOFF.md`, `STATE.md`, `TASK.md`, `LAUNCH_CHECKLIST.md`,
+> `OWNER_ACTION_CHECKLIST.md`, `SECURITY.md`, `GRAPHIFY_GAPS.md`, `QDRANT_GAP_REPORT.md`,
+> and current npm validation output.
 > Verification commands referenced below are declared in the root `package.json`.
+> Examples: `npm run test:prod-config`, `npm run test:live-auth`, `npm run test:live-admin`,
+> and `npm run launch-check`.
 
 ## Current completion definition
 
@@ -17,35 +21,54 @@ TruckOpti is complete for launch when:
 
 ## Remaining launch blockers
 
-| ID | Gap | Owner | Status | Completion task | Verification |
-|----|-----|-------|--------|-----------------|--------------|
-| T-110 | Razorpay production keys are still not verified live. | Human | 🔴 Blocking | Set Heroku `VITE_RAZORPAY_KEY_ID=rzp_live_*` and matching Supabase Edge Function secret. | `npm run test:prod-config` should pass the Razorpay readiness check, then complete a logged-in `/pricing` subscription flow. |
-| T-111 | Google OAuth redirects, but successful real-account sign-in still needs proof. | Human | 🔴 Blocking | Confirm Google Cloud OAuth client + Supabase Google provider settings, then sign in with a real Google account. | Browser proof: `/login` → Google → `/auth/callback` → correct dashboard. |
-| T-114 | Full authenticated post-login smoke is not freshly rerunnable in this shell. | Human + AI after credentials | 🟡 Blocked by credentials | Provide `SEED_DEMO_PASSWORD`, then rerun live auth/admin proof and perform real-account manual checks. | `npm run test:live-auth` and `npm run test:live-admin`; manual customer/agency/driver/admin smoke. |
-| T-115 | Production backup/PITR has no verified owner confirmation. | Human | 🔴 Blocking for safe launch | Enable Supabase PITR on Pro plan, or document the accepted backup alternative. | Supabase dashboard backup history shows recent backup/PITR coverage. |
-| T-113 | SMS/WhatsApp OTP is intentionally deferred. | Human if required | 🟡 Optional | If phone auth must ship, configure Supabase Phone with Twilio and set `VITE_AUTH_PHONE_OTP_ENABLED=true`. | Manual `/login` phone OTP receipt and sign-in. |
-| T-107 | Google Maps API key is optional because Leaflet fallback works. | Human if desired | 🟢 Nice-to-have | Add a production Google Maps API key if Google Maps UX is required. | Map pages load Google Maps without falling back to Leaflet. |
+- **T-110 — Razorpay production keys** (Human, 🔴 blocking)
+  - Gap: production keys are still not verified live.
+  - Task: set Heroku `VITE_RAZORPAY_KEY_ID=rzp_live_*` and matching Supabase Edge Function secret.
+  - Verify: `npm run test:prod-config` passes Razorpay readiness, then complete a logged-in `/pricing` subscription.
+- **T-111 — Google OAuth production sign-in** (Human, 🔴 blocking)
+  - Gap: redirect works, but successful real-account sign-in still needs proof.
+  - Task: confirm Google Cloud OAuth client and Supabase Google provider settings, then sign in with a real account.
+  - Verify: browser proof from `/login` → Google → `/auth/callback` → correct dashboard.
+- **T-114 — authenticated post-login smoke** (Human + AI after credentials, 🟡 blocked)
+  - Gap: full proof is not freshly rerunnable in this shell.
+  - Task: provide `SEED_DEMO_PASSWORD`, rerun live auth/admin proof, and perform real-account manual checks.
+  - Verify: `npm run test:live-auth`, `npm run test:live-admin`, and manual customer/agency/driver/admin smoke.
+- **T-115 — production backup/PITR** (Human, 🔴 blocking for safe launch)
+  - Gap: production backup/PITR has no verified owner confirmation.
+  - Task: enable Supabase PITR on Pro plan, or document the accepted backup alternative.
+  - Verify: Supabase dashboard backup history shows recent backup/PITR coverage.
+- **T-113 — SMS/WhatsApp OTP** (Human if required, 🟡 optional)
+  - Gap: phone OTP is intentionally deferred.
+  - Task: if phone auth must ship, configure Supabase Phone with Twilio and set `VITE_AUTH_PHONE_OTP_ENABLED=true`.
+  - Verify: manual `/login` phone OTP receipt and sign-in.
+- **T-107 — Google Maps API key** (Human if desired, 🟢 nice-to-have)
+  - Gap: Leaflet fallback works, so this is optional.
+  - Task: add a production Google Maps API key if Google Maps UX is required.
+  - Verify: map pages load Google Maps without falling back to Leaflet.
 
 ## AI-executable follow-up backlog
 
 These are not launch blockers unless the product owner expands scope before launch.
 
-| ID | Gap | Status | Next task |
-|----|-----|--------|-----------|
-| T-142 | Password auth is available behind a flag, but admin/reviewer/partner/office coverage is not complete. | 🟡 In progress | Add safe admin proof and complete reviewer/partner/office persona coverage with credentials kept outside git. |
-| T-143 | Demo identities exist for driver, agency, and customer, but not every interface/persona. | 🟡 In progress | Provision second demo accounts per interface plus reviewer/admin/partner/office identities. |
-| T-144 | Office-permission bundles and partner-console access model are planned only. | 🟡 Planned | Implement bundles from `PLATFORM-ROLE-INTERFACE-PLAN.md` when Phase 2 starts. |
-| T-145 | Tenant-boundary/onboarding-track contract is not formalized for all future roles. | 🟡 Planned | Define `organization_id`, `branch_id`, `booking_type`, `delegated_by`, `source_system`, and ownership rules before portal expansion. |
-| T-146 | Internal API/event taxonomy for partner, agency, customer, and office flows is not final. | 🟡 Planned | Create typed service/event contracts before partner console or office workflow automation. |
+- **T-142:** finish admin/reviewer/partner/office coverage for password auth.
+- **T-143:** provision second demo accounts per interface plus reviewer/admin/partner/office identities.
+- **T-144:** implement office-permission bundles and partner-console access from `PLATFORM-ROLE-INTERFACE-PLAN.md`.
+- **T-145:** formalize tenant-boundary and onboarding-track ownership before portal expansion.
+- **T-146:** create typed service/event contracts before partner console or office workflow automation.
 
 ## Current codebase health gaps found in this audit
 
-| Gap | Status | Action taken |
-|-----|--------|--------------|
-| Root `npm run launch-check` uses `powershell`, which is unavailable in this Linux runner. | Environment gap | Recorded as validation limitation for this session; existing `pwsh` startup partially ran but background launch-check start hit a PowerShell edition-specific `Start-Process -WindowStyle` warning. |
-| Fresh clone had no installed frontend dependencies. | Environment setup | Ran `npm ci` at root and in `frontend/`. |
-| Frontend dependency audit reported `postcss <8.5.10` moderate advisory. | Fixed in this PR | Ran `npm audit fix` in `frontend/`; `postcss` now resolves to `8.5.10` and `npm audit` reports 0 vulnerabilities. |
-| Browser smoke could not reach `https://www.truckopti.in` from this runner. | Environment/network gap | Recorded as validation limitation; use local preview or a runner with production DNS access for browser proof. |
+- **Environment gap:** root `npm run launch-check` uses `powershell`, which is unavailable in this Linux runner.
+  - Recorded as a validation limitation for this session.
+  - Existing `pwsh` startup partially ran, but background launch-check start hit a PowerShell edition-specific `Start-Process -WindowStyle` warning.
+- **Environment setup:** the fresh clone had no installed frontend dependencies.
+  - Ran `npm ci` at root and in `frontend/`.
+- **Fixed in this PR:** frontend dependency audit reported a `postcss <8.5.10` moderate advisory.
+  - Ran `npm audit fix` in `frontend/`.
+  - `postcss` now resolves to `8.5.10`, and `npm audit` reports 0 vulnerabilities.
+- **Environment/network gap:** browser smoke could not reach `https://www.truckopti.in` from this runner.
+  - Recorded as a validation limitation.
+  - Use local preview or a runner with production DNS access for browser proof.
 
 ## Final owner smoke checklist
 
