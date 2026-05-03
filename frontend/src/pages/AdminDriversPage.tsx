@@ -4,11 +4,13 @@ import {
   Phone, Truck, Calendar, AlertTriangle, RefreshCw, ShieldCheck, Download
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { driverSupabaseApi } from '../services/supabaseApi'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import { toUserFacingErrorMessage } from '../utils/userFacingError'
 
 interface Driver {
   id: string
@@ -72,15 +74,6 @@ export default function AdminDriversPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  // Redirect non-admins
-  useEffect(() => {
-    const role = user?.role
-    if (user && role !== 'admin') {
-      toast.error('Admin access required')
-      navigate('/dashboard', { replace: true })
-    }
-  }, [user, navigate, language])
-
   const fetchDrivers = useCallback(async () => {
     setLoading(true)
     try {
@@ -104,19 +97,11 @@ export default function AdminDriversPage() {
   const handleApprove = async (driverId: string, driverName: string) => {
     setActionLoading(driverId)
     try {
-      const { error } = await supabase
-        .from('drivers')
-        .update({
-          status: 'approved',
-          approved_by: user?.id,
-          approved_at: new Date().toISOString(),
-        })
-        .eq('id', driverId)
-      if (error) throw error
+      await driverSupabaseApi.approve(driverId, user?.id ?? null)
       toast.success(`${driverName} approved!`)
       setDrivers(prev => prev.filter(d => d.id !== driverId))
-    } catch (_err: unknown) {
-      toast.error('Approval failed')
+    } catch (error: unknown) {
+      toast.error(toUserFacingErrorMessage(error, 'Approval failed'))
     } finally {
       setActionLoading(null)
     }
@@ -124,20 +109,21 @@ export default function AdminDriversPage() {
 
   const handleRejectConfirm = async () => {
     if (!rejectModal) return
-    if (!rejectReason.trim()) { toast.error('Enter a reason for rejection'); return }
-    setActionLoading(rejectModal.driverId)
+    const trimmedReason = rejectReason.trim()
+
+    if (!trimmedReason) { toast.error('Enter a reason for rejection'); return }
+
+    const rejectedDriverId = rejectModal.driverId
+
+    setActionLoading(rejectedDriverId)
     try {
-      const { error } = await supabase
-        .from('drivers')
-        .update({ status: 'rejected', rejection_reason: rejectReason.trim() })
-        .eq('id', rejectModal.driverId)
-      if (error) throw error
+      await driverSupabaseApi.reject(rejectedDriverId, trimmedReason)
       toast.success(`${rejectModal.name} rejected`)
-      setDrivers(prev => prev.filter(d => d.id !== rejectModal!.driverId))
+      setDrivers(prev => prev.filter(d => d.id !== rejectedDriverId))
       setRejectModal(null)
       setRejectReason('')
-    } catch (_err: unknown) {
-      toast.error('Rejection failed')
+    } catch (error: unknown) {
+      toast.error(toUserFacingErrorMessage(error, 'Rejection failed'))
     } finally {
       setActionLoading(null)
     }
@@ -146,12 +132,11 @@ export default function AdminDriversPage() {
   const handleSuspend = async (driverId: string, driverName: string) => {
     setActionLoading(driverId)
     try {
-      const { error } = await supabase.from('drivers').update({ status: 'suspended' }).eq('id', driverId)
-      if (error) throw error
+      await driverSupabaseApi.suspend(driverId)
       toast.success(`${driverName} suspended`)
       setDrivers(prev => prev.filter(d => d.id !== driverId))
-    } catch {
-      toast.error('Failed to suspend')
+    } catch (error: unknown) {
+      toast.error(toUserFacingErrorMessage(error, 'Failed to suspend'))
     } finally {
       setActionLoading(null)
     }
@@ -197,7 +182,7 @@ export default function AdminDriversPage() {
   const tabs: Tab[] = ['pending', 'approved', 'rejected', 'suspended']
 
   return (
-    <div className="max-w-4xl mx-auto p-4 pb-24 space-y-5">
+    <div className="max-w-4xl md:max-w-6xl mx-auto p-4 md:p-8 pb-8 md:pb-10 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
 import {
   Users, Truck, Star, RefreshCw, AlertTriangle,
-  Phone, MapPin, Share2, CheckCircle2, XCircle, Wallet
+  Phone, MapPin, CheckCircle2, XCircle, Wallet
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
@@ -139,7 +139,7 @@ export default function AgencyDriversPage() {
       agency_id: agencyId,
       amount: amount,
       type: 'agency_pay',
-      status: 'paid',
+      status: 'pending',
       note: payNote || null
     })
     if (error) {
@@ -148,28 +148,11 @@ export default function AgencyDriversPage() {
       setSaving(false)
       return
     }
-    toast.success('Payment recorded')
+    toast.success('Payment request submitted for admin review')
     setPayModal(null)
     setPayAmount('')
     setPayNote('')
     setSaving(false)
-  }
-
-  const copyInviteLink = async () => {
-    const link = `${window.location.origin}/driver/register?ref=${agencyId}`
-
-    if (!navigator.clipboard?.writeText) {
-      toast.error('Clipboard access is unavailable')
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(link)
-      toast.success('Invite link copied!')
-    } catch (error) {
-      logger.error('Failed to copy invite link:', error)
-      toast.error('Failed to copy invite link')
-    }
   }
 
   if (loading) {
@@ -181,7 +164,7 @@ export default function AgencyDriversPage() {
   }
 
   return (
-    <div className="p-4 lg:p-8 space-y-4 max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 space-y-4 max-w-7xl mx-auto">
       {/* Assign Truck Modal */}
       {assignModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -286,32 +269,6 @@ export default function AgencyDriversPage() {
             {drivers.length} assigned, {trucks.filter(t => !drivers.find(d => d.truck_id === t.id)).length} trucks available
           </p>
         </div>
-        <button
-          onClick={copyInviteLink}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold"
-        >
-          <Share2 size={14} />
-          Invite Driver
-        </button>
-      </div>
-
-      {/* Invite Banner */}
-      <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-4 border border-indigo-200 dark:border-indigo-800/40">
-        <div className="flex items-start gap-3">
-          <Users size={18} className="text-indigo-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-indigo-800 dark:text-indigo-300">Invite Drivers</p>
-            <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
-              Share your agency invite link with drivers. When they register using your link, they'll appear here.
-            </p>
-            <button
-              onClick={copyInviteLink}
-              className="mt-2 text-xs font-semibold text-indigo-700 dark:text-indigo-400 underline"
-            >
-              Copy invite link →
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Assigned Drivers */}
@@ -319,7 +276,7 @@ export default function AgencyDriversPage() {
         <div className="text-center py-12">
           <Users size={48} className="text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">No drivers assigned yet</p>
-          <p className="text-slate-400 text-xs mt-1">Invite drivers using the button above</p>
+          <p className="text-slate-400 text-xs mt-1">Assigned drivers will appear here once onboarding and truck linking are complete.</p>
         </div>
       ) : (
         drivers.map(driver => (

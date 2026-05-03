@@ -24,9 +24,9 @@ export default function InstallPrompt() {
       return
     }
 
-    // Check if mobile device (by screen size or user agent)
+    // Treat tablet-and-up widths as desktop so app-shell breakpoints stay consistent.
     const checkMobile = () => {
-      const isMobileScreen = window.innerWidth < 1024
+      const isMobileScreen = window.innerWidth < 768
       const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       )
@@ -83,7 +83,7 @@ export default function InstallPrompt() {
   return (
     <div
       className={clsx(
-        'fixed top-16 left-4 right-4 z-30 transition-all duration-500 ease-out lg:hidden',
+        'fixed top-16 left-4 right-4 z-30 transition-all duration-500 ease-out md:hidden',
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
       )}
     >

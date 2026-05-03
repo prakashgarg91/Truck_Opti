@@ -4,7 +4,7 @@ import { MessageSquare, ChevronLeft, RefreshCw, CheckCircle2, Clock } from 'luci
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useLanguageStore } from '../stores/languageStore'
-import { useAuthStore } from '../stores/authStore'
+import { logger } from '../utils/logger'
 
 interface Inquiry {
   id: string
@@ -20,18 +20,10 @@ interface Inquiry {
 export default function AdminContactPage() {
   const navigate = useNavigate()
   const { language } = useLanguageStore()
-  const { user } = useAuthStore()
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved'>('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (user && user.role !== 'admin') {
-      toast.error('Admin access required')
-      navigate('/dashboard', { replace: true })
-    }
-  }, [user, navigate, language])
 
   useEffect(() => {
     document.title = 'Contact Inquiries - Admin'
@@ -39,16 +31,23 @@ export default function AdminContactPage() {
 
   const fetchInquiries = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('contact_inquiries')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (error) {
-      toast.error('Something went wrong')
-    } else {
+    try {
+      const { data, error } = await supabase
+        .from('contact_inquiries')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        throw error
+      }
+
       setInquiries(data || [])
+    } catch (error) {
+      logger.error('[AdminContactPage] fetchInquiries', error)
+      toast.error('Failed to load contact inquiries.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [language])
 
   useEffect(() => {
@@ -57,17 +56,24 @@ export default function AdminContactPage() {
 
   const handleResolve = async (id: string) => {
     setUpdatingId(id)
-    const { error } = await supabase
-      .from('contact_inquiries')
-      .update({ status: 'resolved' })
-      .eq('id', id)
-    if (error) {
-      toast.error('Something went wrong')
-    } else {
+    try {
+      const { error } = await supabase
+        .from('contact_inquiries')
+        .update({ status: 'resolved' })
+        .eq('id', id)
+
+      if (error) {
+        throw error
+      }
+
       setInquiries(prev => prev.map(i => i.id === id ? { ...i, status: 'resolved' } : i))
       toast.success('Marked as resolved')
+    } catch (error) {
+      logger.error('[AdminContactPage] handleResolve', error)
+      toast.error('Failed to update inquiry.')
+    } finally {
+      setUpdatingId(null)
     }
-    setUpdatingId(null)
   }
 
   const filtered = inquiries.filter(i => statusFilter === 'all' || i.status === statusFilter)
@@ -104,8 +110,8 @@ export default function AdminContactPage() {
             key={tab}
             onClick={() => setStatusFilter(tab)}
             className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors ${statusFilter === tab
-                ? 'bg-primary-600 text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+              ? 'bg-primary-600 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
               }`}
           >
             {tab === 'all'
@@ -143,8 +149,8 @@ export default function AdminContactPage() {
                   )}
                 </div>
                 <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 whitespace-nowrap ${inquiry.status === 'open'
-                    ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                    : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                   }`}>
                   {inquiry.status === 'open'
                     ? <><Clock className="w-3 h-3" />{'Open'}</>

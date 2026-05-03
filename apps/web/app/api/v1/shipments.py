@@ -4,6 +4,7 @@ RESTful API for shipment management
 """
 
 from flask import Blueprint, request, jsonify
+from app.middleware.authentication import require_auth
 from app.models import db, Shipment
 from app.core.logging import get_logger
 from datetime import datetime
@@ -11,6 +12,20 @@ from datetime import datetime
 logger = get_logger(__name__)
 
 shipments_bp = Blueprint('shipments', __name__, url_prefix='/shipments')
+
+
+def parse_optional_datetime(value):
+    if not value:
+        return None
+
+    if isinstance(value, datetime):
+        return value
+
+    if isinstance(value, str):
+        normalized = value.replace('Z', '+00:00')
+        return datetime.fromisoformat(normalized)
+
+    raise ValueError('Invalid datetime format')
 
 
 @shipments_bp.route('', methods=['GET'])
@@ -79,19 +94,33 @@ def get_shipment(shipment_id: int):
 
 
 @shipments_bp.route('', methods=['POST'])
+@require_auth
 def create_shipment():
     """Create a new shipment"""
     try:
         data = request.get_json()
 
+        if not data or 'customer_id' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required field: customer_id'
+            }), 400
+
         # Create shipment
         shipment = Shipment(
             shipment_number=data.get('shipment_number', f'SHP-{datetime.utcnow().timestamp()}'),
-            origin=data.get('origin', ''),
-            destination=data.get('destination', ''),
+            customer_id=int(data['customer_id']),
+            truck_id=data.get('truck_id'),
+            route_id=data.get('route_id'),
+            origin_address=data.get('origin_address', data.get('origin', '')),
+            destination_address=data.get('destination_address', data.get('destination', '')),
             status=data.get('status', 'pending'),
-            estimated_distance=data.get('estimated_distance', 0.0),
-            notes=data.get('notes', '')
+            priority=int(data.get('priority', 1)),
+            estimated_delivery=parse_optional_datetime(data.get('estimated_delivery', data.get('delivery_date'))),
+            total_value=float(data.get('total_value', 0.0)),
+            total_weight=float(data.get('total_weight', 0.0)),
+            total_volume=float(data.get('total_volume', 0.0)),
+            special_instructions=data.get('special_instructions', data.get('notes', '')),
         )
 
         db.session.add(shipment)
@@ -116,6 +145,7 @@ def create_shipment():
 
 
 @shipments_bp.route('/<int:shipment_id>', methods=['PUT'])
+@require_auth
 def update_shipment(shipment_id: int):
     """Update an existing shipment"""
     try:
@@ -125,16 +155,36 @@ def update_shipment(shipment_id: int):
         # Update fields
         if 'shipment_number' in data:
             shipment.shipment_number = data['shipment_number']
+        if 'customer_id' in data:
+            shipment.customer_id = int(data['customer_id'])
+        if 'truck_id' in data:
+            shipment.truck_id = data['truck_id']
+        if 'route_id' in data:
+            shipment.route_id = data['route_id']
         if 'origin' in data:
-            shipment.origin = data['origin']
+            shipment.origin_address = data['origin']
+        if 'origin_address' in data:
+            shipment.origin_address = data['origin_address']
         if 'destination' in data:
-            shipment.destination = data['destination']
+            shipment.destination_address = data['destination']
+        if 'destination_address' in data:
+            shipment.destination_address = data['destination_address']
         if 'status' in data:
             shipment.status = data['status']
-        if 'estimated_distance' in data:
-            shipment.estimated_distance = data['estimated_distance']
+        if 'priority' in data:
+            shipment.priority = int(data['priority'])
+        if 'estimated_delivery' in data or 'delivery_date' in data:
+            shipment.estimated_delivery = parse_optional_datetime(data.get('estimated_delivery', data.get('delivery_date')))
+        if 'total_value' in data:
+            shipment.total_value = float(data['total_value'])
+        if 'total_weight' in data:
+            shipment.total_weight = float(data['total_weight'])
+        if 'total_volume' in data:
+            shipment.total_volume = float(data['total_volume'])
         if 'notes' in data:
-            shipment.notes = data['notes']
+            shipment.special_instructions = data['notes']
+        if 'special_instructions' in data:
+            shipment.special_instructions = data['special_instructions']
 
         db.session.commit()
 
@@ -157,6 +207,7 @@ def update_shipment(shipment_id: int):
 
 
 @shipments_bp.route('/<int:shipment_id>', methods=['DELETE'])
+@require_auth
 def delete_shipment(shipment_id: int):
     """Delete a shipment"""
     try:

@@ -162,6 +162,7 @@ function AppContent() {
             <Route path="/driver/trip/:jobId" element={<DriverTripPage />} />
             <Route path="/driver/earnings" element={<DriverEarningsPage />} />
             <Route path="/driver/history" element={<DriverHistoryPage />} />
+            <Route path="/driver/profile" element={<ProfilePage />} />
           </Route>
 
           {/* Agency Portal — separate layout with agency bottom nav */}

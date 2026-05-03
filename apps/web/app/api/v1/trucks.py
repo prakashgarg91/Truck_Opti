@@ -4,6 +4,7 @@ RESTful API for truck type management
 """
 
 from flask import Blueprint, request, jsonify
+from app.middleware.authentication import require_auth
 from app.models import db, TruckType
 from app.core.logging import get_logger
 
@@ -84,6 +85,7 @@ def get_truck(truck_id: int):
 
 
 @trucks_bp.route('', methods=['POST'])
+@require_auth
 def create_truck():
     """Create a new truck type"""
     try:
@@ -167,6 +169,7 @@ def create_truck():
 
 
 @trucks_bp.route('/<int:truck_id>', methods=['PUT'])
+@require_auth
 def update_truck(truck_id: int):
     """Update an existing truck type"""
     try:
@@ -226,6 +229,7 @@ def update_truck(truck_id: int):
 
 
 @trucks_bp.route('/<int:truck_id>', methods=['DELETE'])
+@require_auth
 def delete_truck(truck_id: int):
     """Delete a truck type"""
     try:

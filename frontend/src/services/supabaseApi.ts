@@ -169,6 +169,37 @@ export interface Customer {
   created_by?: string
 }
 
+export interface DriverProfile {
+  id: string
+  user_id: string | null
+  full_name: string
+  phone: string
+  aadhaar_last4: string | null
+  pan_number: string | null
+  date_of_birth: string | null
+  vehicle_type: string
+  rc_number: string | null
+  license_number: string | null
+  vehicle_capacity: number | null
+  dl_url: string | null
+  rc_url: string | null
+  insurance_url: string | null
+  selfie_url: string | null
+  bank_account: string | null
+  ifsc_code: string | null
+  upi_id: string | null
+  status: 'pending' | 'approved' | 'rejected' | 'suspended'
+  rejection_reason: string | null
+  approved_by: string | null
+  approved_at: string | null
+  home_city: string | null
+  rating: number | null
+  total_trips: number | null
+  is_online: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface Shipment {
   id: string
   shipment_id: string
@@ -191,6 +222,12 @@ export interface Shipment {
   sale_order_id?: string | null
   created_at?: string
   updated_at?: string
+}
+
+export interface PaymentHistoryStatusSnapshot {
+  status: string
+  subscription_id: string | null
+  invoice_id: string | null
 }
 
 export interface Route {
@@ -385,6 +422,105 @@ export const customersSupabaseApi = {
     if (error) throw error
     return (data as Customer[]) || []
   }
+}
+
+// ============= DRIVERS API =============
+export const driverSupabaseApi = {
+  async getById(id: string): Promise<DriverProfile | null> {
+    const { data, error } = await supabase
+      .from('drivers')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (error) {
+      throw new UserFacingError('Unable to load driver details right now. Please try again.')
+    }
+
+    return data as DriverProfile | null
+  },
+
+  async approve(id: string, approvedBy: string | null): Promise<DriverProfile> {
+    const { data, error } = await supabase
+      .from('drivers')
+      .update({
+        status: 'approved',
+        approved_by: approvedBy,
+        approved_at: new Date().toISOString(),
+        rejection_reason: null,
+      })
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) {
+      throw new UserFacingError('Failed to approve driver. Please try again.')
+    }
+
+    return data as DriverProfile
+  },
+
+  async reject(id: string, rejectionReason: string): Promise<DriverProfile> {
+    const { data, error } = await supabase
+      .from('drivers')
+      .update({
+        status: 'rejected',
+        rejection_reason: rejectionReason,
+      })
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) {
+      throw new UserFacingError('Failed to reject driver. Please try again.')
+    }
+
+    return data as DriverProfile
+  },
+
+  async suspend(id: string): Promise<DriverProfile> {
+    const { data, error } = await supabase
+      .from('drivers')
+      .update({ status: 'suspended' })
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) {
+      throw new UserFacingError('Failed to suspend driver. Please try again.')
+    }
+
+    return data as DriverProfile
+  },
+}
+
+// ============= PAYMENTS API =============
+export const paymentSupabaseApi = {
+  async getRazorpayStatusSnapshot(
+    userId: string,
+    identifiers: { orderId?: string | null; paymentId?: string | null }
+  ): Promise<PaymentHistoryStatusSnapshot | null> {
+    if (!identifiers.orderId && !identifiers.paymentId) {
+      return null
+    }
+
+    let query = supabase
+      .from('payment_history')
+      .select('status, subscription_id, invoice_id')
+      .eq('user_id', userId)
+
+    query = identifiers.orderId
+      ? query.eq('razorpay_order_id', identifiers.orderId)
+      : query.eq('razorpay_payment_id', identifiers.paymentId as string)
+
+    const { data, error } = await query.maybeSingle()
+
+    if (error) {
+      throw new UserFacingError('Unable to verify payment status right now. Please check again shortly.')
+    }
+
+    return data as PaymentHistoryStatusSnapshot | null
+  },
 }
 
 // ============= SHIPMENTS API =============

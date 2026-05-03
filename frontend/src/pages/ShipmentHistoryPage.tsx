@@ -23,6 +23,8 @@ interface Shipment {
 
 type FilterStatus = 'all' | 'delivered' | 'cancelled' | 'pending' | 'in_transit'
 
+const PAGE_SIZE = 10
+
 export default function ShipmentHistoryPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
@@ -30,6 +32,7 @@ export default function ShipmentHistoryPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterStatus>('all')
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
 
   const fetchShipments = useCallback(async () => {
     if (!user?.id) return
@@ -68,6 +71,20 @@ export default function ShipmentHistoryPage() {
     return true
   })
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter, search])
+
+  const totalPages = Math.max(1, Math.ceil(filteredShipments.length / PAGE_SIZE))
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
+
+  const paginatedShipments = filteredShipments.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'delivered':
@@ -90,7 +107,7 @@ export default function ShipmentHistoryPage() {
   }
 
   return (
-    <div className="p-4 lg:p-8 space-y-4 max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 space-y-4 max-w-7xl mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Shipment History</h1>
@@ -110,7 +127,7 @@ export default function ShipmentHistoryPage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {(['all', 'delivered', 'in_transit', 'cancelled'] as FilterStatus[]).map((f) => (
+        {(['all', 'pending', 'in_transit', 'delivered', 'cancelled'] as FilterStatus[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -135,7 +152,7 @@ export default function ShipmentHistoryPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredShipments.map((shipment) => {
+          {paginatedShipments.map((shipment) => {
             const statusConfig = getStatusConfig(shipment.status)
             const StatusIcon = statusConfig.icon
 
@@ -201,6 +218,33 @@ export default function ShipmentHistoryPage() {
               </div>
             )
           })}
+
+          {filteredShipments.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm dark:bg-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, filteredShipments.length)} of {filteredShipments.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
+                >
+                  Previous
+                </button>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

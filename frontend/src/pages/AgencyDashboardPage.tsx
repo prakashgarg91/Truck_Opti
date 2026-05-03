@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 interface AgencyRecord {
   id: string
@@ -40,42 +41,73 @@ export default function AgencyDashboardPage() {
 
   const fetchAgency = useCallback(async () => {
     if (!user?.id) return
-    const { data, error } = await supabase
-      .from('transport_agencies')
-      .select('id, company_name, status, rating, total_jobs, fleet_size, city, gstin')
-      .eq('user_id', user.id)
-      .maybeSingle()
-    if (error) toast.error('Failed to load agency profile')
-    setAgency(data)
-    setLoading(false)
+
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('transport_agencies')
+        .select('id, company_name, status, rating, total_jobs, fleet_size, city, gstin')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (error) {
+        throw error
+      }
+
+      setAgency(data)
+    } catch (error) {
+      logger.error('[AgencyDashboardPage] fetchAgency', error)
+      toast.error('Failed to load agency profile')
+      setAgency(null)
+    } finally {
+      setLoading(false)
+    }
   }, [user?.id])
 
   const fetchSummary = useCallback(async (agencyId: string) => {
-    const today = new Date().toISOString().split('T')[0]
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-    const [activeRes, todayRes, pendingRes, revenueRes] = await Promise.all([
-      supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
-        .eq('agency_id', agencyId).in('status', ['accepted', 'in_transit']),
-      supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
-        .eq('agency_id', agencyId).gte('created_at', today),
-      supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
-        .eq('agency_id', agencyId).eq('status', 'pending'),
-      supabase.from('agency_jobs').select('fare')
-        .eq('agency_id', agencyId).eq('status', 'delivered').gte('updated_at', thirtyDaysAgo),
-    ])
+      const [activeRes, todayRes, pendingRes, revenueRes] = await Promise.all([
+        supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
+          .eq('agency_id', agencyId).in('status', ['accepted', 'in_transit']),
+        supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
+          .eq('agency_id', agencyId).gte('created_at', today),
+        supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
+          .eq('agency_id', agencyId).eq('status', 'pending'),
+        supabase.from('agency_jobs').select('fare')
+          .eq('agency_id', agencyId).eq('status', 'delivered').gte('updated_at', thirtyDaysAgo),
+      ])
 
-    const thirtyDayJobs = revenueRes.data?.length ?? 0
-    const thirtyDayRevenue = (revenueRes.data ?? []).reduce(
-      (acc: number, j: { fare: number | null }) => acc + (j.fare ?? 0), 0
-    )
-    setSummary({
-      active: activeRes.count ?? 0,
-      today: todayRes.count ?? 0,
-      pending: pendingRes.count ?? 0,
-      thirtyDayRevenue,
-      thirtyDayJobs,
-    })
+      const queryError = activeRes.error || todayRes.error || pendingRes.error || revenueRes.error
+      if (queryError) {
+        throw queryError
+      }
+
+      const thirtyDayJobs = revenueRes.data?.length ?? 0
+      const thirtyDayRevenue = (revenueRes.data ?? []).reduce(
+        (acc: number, j: { fare: number | null }) => acc + (j.fare ?? 0), 0
+      )
+
+      setSummary({
+        active: activeRes.count ?? 0,
+        today: todayRes.count ?? 0,
+        pending: pendingRes.count ?? 0,
+        thirtyDayRevenue,
+        thirtyDayJobs,
+      })
+    } catch (error) {
+      logger.error('[AgencyDashboardPage] fetchSummary', error)
+      toast.error('Failed to load dashboard summary')
+      setSummary({
+        active: 0,
+        today: 0,
+        pending: 0,
+        thirtyDayRevenue: 0,
+        thirtyDayJobs: 0,
+      })
+    }
   }, [])
 
   useEffect(() => {
@@ -125,7 +157,7 @@ export default function AgencyDashboardPage() {
   const statusInfo = statusConfig[agency.status]
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto lg:max-w-5xl lg:p-8">
+    <div className="p-4 space-y-4 max-w-2xl mx-auto md:max-w-5xl md:p-8">
       {/* Status Banner */}
       {agency.status !== 'approved' && (
         <div className={`rounded-2xl p-4 ${statusInfo.color}`}>
@@ -166,7 +198,7 @@ export default function AgencyDashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Briefcase size={16} className="text-blue-500" />
@@ -220,7 +252,7 @@ export default function AgencyDashboardPage() {
       {/* Quick Actions */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <button
             onClick={() => navigate('/agency/jobs')}
             className="flex items-center gap-2 py-3 px-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-xl text-sm font-medium"

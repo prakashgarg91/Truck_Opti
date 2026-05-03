@@ -70,6 +70,7 @@ data/
 app/*.db
 app/*.db-*
 app/logs/
+apps/web/app/logs/
 
 # Legacy test artifacts (moved to scripts/legacy-tests/)
 # (tracked in git; do not re-add at root)

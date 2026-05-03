@@ -683,13 +683,13 @@ export default function PackingPage() {
   }
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-8">
+    <div className="min-h-screen pb-24 md:pb-8">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 px-4 py-3 lg:px-6 lg:py-4">
+      <div className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 px-4 py-3 md:px-6 md:py-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Package className="w-6 h-6 text-primary-500" />
                 {text.title}
               </h1>
@@ -726,11 +726,11 @@ export default function PackingPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4 lg:py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
 
           {/* Left Panel - Items & Controls */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-4">
+          <div className="md:col-span-5 xl:col-span-4 space-y-4">
 
             {/* Sale Order Items */}
             <div className="card overflow-hidden">
@@ -745,10 +745,10 @@ export default function PackingPage() {
                     {totalStats.totalItems}
                   </span>
                 </h3>
-                <ChevronDown className={`w-5 h-5 text-slate-400 lg:hidden transition-transform ${expandedSection === 'items' ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-5 h-5 text-slate-400 md:hidden transition-transform ${expandedSection === 'items' ? 'rotate-180' : ''}`} />
               </button>
 
-              <div className={`${expandedSection === 'items' ? 'block' : 'hidden lg:block'}`}>
+              <div className={`${expandedSection === 'items' ? 'block' : 'hidden md:block'}`}>
                 {/* Stats Summary */}
                 <div className="px-4 pb-3 grid grid-cols-3 gap-2 text-center">
                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2">
@@ -940,7 +940,7 @@ export default function PackingPage() {
                 <Brain className="w-4 h-4 text-primary-500" />
                 {text.algorithm}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3 gap-2">
                 {ALGORITHMS.map(algo => (
                   <button
                     key={algo.id}
@@ -1034,7 +1034,7 @@ export default function PackingPage() {
           </div>
 
           {/* Right Panel - Visualization & Results */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+          <div className="md:col-span-7 xl:col-span-8 space-y-4">
 
             {/* Smart Recommendations */}
             {mode === 'smart' && recommendations.length > 0 && (

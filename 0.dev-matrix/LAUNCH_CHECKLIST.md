@@ -7,8 +7,8 @@
 
 - Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
 - Current launch slice: clear the production configuration blockers so the already-built product can be sold and used live.
-- Current blocker: live Razorpay credentials, PITR owner decision, and authenticated real-account verification still block a clean public launch.
-- Next earning step: finish live payment credentials, verify authenticated flows, and onboard the first paying logistics customers.
+- Current blocker: live Razorpay credentials remain the only hard production launch blocker. Real Google-authenticated proof is complete, and native Supabase backups/PITR are deferred temporarily in favor of the existing Telegram private-channel external logical backup posture.
+- Next earning step: finish live payment credentials, optionally deepen the full driver-trip proof lane, and onboard the first paying logistics customers.
 
 ---
 
@@ -23,16 +23,16 @@
 | 1.5 | 5 realtime tables | ✅ | — |
 | 1.6 | Seed data (8 trucks, 4 plans) | ✅ | — |
 
-## Phase 2: Authentication 🟡 IMPLEMENTED, LIVE ACCOUNT VERIFICATION STILL NEEDED
+## Phase 2: Authentication 🟡 LAUNCH-READY, PHONE OTP STILL DEFERRED
 
 | # | Item | Status | Commit |
 |---|------|--------|--------|
 | 2.1 | OTP login (Email live; phone deferred) | 🟡 | Public auth now defaults to Email OTP + Google; SMS/WhatsApp stay feature-flagged off and may be re-enabled later only through Supabase Phone + Twilio |
-| 2.2 | Google OAuth | 🟡 | Live redirect to Google Accounts via the Supabase callback is verified on 2026-04-09; successful real-account sign-in is still pending |
+| 2.2 | Google OAuth | ✅ | Real Google-authenticated production admin sign-in was observed on `/admin` on 2026-05-01 after the chairman completed the flow in-browser |
 | 2.3 | Auth callback page | ✅ | `53827487` |
 | 2.4 | Zustand auth store | ✅ | `53827487` |
 | 2.5 | Protected routes | ✅ | `53827487` |
-| 2.6 | User profile sync to DB | 🟡 | Implemented, but still needs live verification through a real authenticated flow |
+| 2.6 | User profile sync to DB | ✅ | Implemented and exercised through the authenticated production proof lanes on 2026-05-01 |
 
 ## Phase 3: Frontend Data Wiring ✅ COMPLETE
 
@@ -62,7 +62,7 @@
 | # | Item | Status | Depends on |
 |---|------|--------|----------|
 | 5.1 | Supabase integration test script | ✅ 42/42 PASS | BATCH7 T-105 |
-| 5.2 | Browser smoke test (14 pages) | 🟡 Expanded to a full 47-route browser audit plus `npm run test:frontend-smoke` = 17/17 PASS for the public/auth shell on 2026-04-10; local desktop browser proof for `/` and `/pricing` was revalidated with screenshots and 0 console errors on 2026-04-16 | Requires real authenticated accounts for full completion |
+| 5.2 | Browser smoke test (14 pages) | 🟡 Expanded to a full 47-route browser audit plus `npm run test:frontend-smoke` = 17/17 PASS for the public/auth shell on 2026-04-10; local desktop browser proof for `/` and `/pricing` was revalidated with screenshots and 0 console errors on 2026-04-16; authenticated production proof for driver/agency/customer/admin was refreshed on 2026-05-01 | Remaining gap is repeatable full driver-trip/business-action proof, not basic auth reachability |
 | 5.3 | TypeScript 0 errors | ✅ | `npx tsc --noEmit` → 0 errors |
 | 5.4 | Vite build succeeds | ✅ | Built in 6.57s |
 | 5.5 | RLS policy verification | ✅ | Validated in test script |
@@ -73,7 +73,7 @@
 | # | Item | Status | Priority |
 |---|------|--------|----------|
 | 6.1 | Razorpay production keys | ❌ | P0 — Heroku still serves `rzp_test_*`, so real payments are still blocked |
-| 6.2 | Google OAuth production credentials | 🟡 | P0 — live redirect is verified on 2026-04-09; final successful sign-in still needs manual verification |
+| 6.2 | Google OAuth production credentials | ✅ | P0 — real Google-authenticated production admin sign-in was observed on 2026-05-01 |
 | 6.2b | Live Supabase auth/backend reachability | ✅ | P0 — restored on 2026-04-05 after the project was resumed |
 | 6.3 | Google Maps API key | ❌ | P1 — Leaflet fallback works |
 | 6.4 | Custom domain + SSL | ✅ | P0 — `truckopti.in` + `www.truckopti.in` live |
@@ -81,7 +81,7 @@
 | 6.6 | Error tracking (Sentry or similar) | ✅ | Heroku `VITE_SENTRY_DSN` now points at `light9/truck-opti` as of 2026-04-16 |
 | 6.7 | Terms of Service / Privacy Policy pages | ✅ | BATCH6 T9 — `/terms` and `/privacy` pages live |
 | 6.8 | Admin panel for subscriber management | ✅ | AdminSubscriptionsPage |
-| 6.9 | Database backups (PITR) | ❌ | P1 — requires owner action |
+| 6.9 | Database backups (PITR) | 🟡 | P1 — native Supabase scheduled backups/PITR are deferred while the project stays on the Free plan; launch uses the current Telegram private-channel external logical backup posture until the paid upgrade is justified |
 | 6.10 | Remove socket.io-client dead dep | ✅ | GLM-001 |
 | 6.11 | Photo columns migration (photo_loading_url, photo_delivery_url) | ✅ | BATCH20 T1-T8 |
 | 6.12 | Subscription enforcement on booking page | ✅ | BATCH20 T1-T8 |
@@ -99,12 +99,12 @@
 | Phase | Total | Done | Remaining |
 |-------|-------|------|-----------|
 | 1. Infrastructure | 6 | 6 | 0 |
-| 2. Authentication | 6 | 3 | 3 |
+| 2. Authentication | 6 | 5 | 1 |
 | 3. Frontend Wiring | 6 | 6 | 0 |
 | 4. Subscriptions | 7 | 7 | 0 |
 | 5. Testing | 6 | 5 | 1 |
-| 6. Production | 19 | 14 | 5 |
-| **TOTAL** | **50** | **41** | **9** |
+| 6. Production | 19 | 16 | 3 |
+| **TOTAL** | **50** | **45** | **5** |
 
 ---
 

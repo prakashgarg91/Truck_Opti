@@ -1,41 +1,41 @@
 # Last Closeout
 
-- Time: 2026-04-23 20:53:57
+- Time: 2026-05-03 14:39:24
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/STATE.md |  M 0.dev-matrix/TASK.md
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-04-23_205357.log
+- Git status:  M .github/instructions/repo-guide.instructions.md |  M .gitignore |  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/LAUNCH_CHECKLIST.md |  M 0.dev-matrix/PATTERNS.md |  M 0.dev-matrix/QDRANT_GAP_REPORT.md |  M 0.dev-matrix/REQUIREMENTS.md |  M 0.dev-matrix/SECURITY.md |  M 0.dev-matrix/STATE.md
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-03_143924.log
 
 ## AI Handoff
-- Latest handoff date: 2026-04-23
+- Latest handoff date: 2026-05-03
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: all non-owner-blocked public, frontend, and packing flows are green on the current clean tree, while the remaining fully authenticated/admin flow reruns are still blocked by missing shell credentials and live production payment config rather than repo code regressions.
-- Continue from: close-day can proceed on the current tree; after that, only owner-side credentialed proof remains.
-- Next step: supply `SEED_DEMO_PASSWORD`, rerun `npm run test:live-auth` plus `npm run test:live-admin`, set live Razorpay credentials, and capture real Google OAuth verification if a fully credentialed launch proof bundle is needed.
-- Blockers: T-110 live Razorpay keys (human), T-111 real Google OAuth sign-in proof (human), T-115 PITR/backup enablement (human), and `SEED_DEMO_PASSWORD` missing in this shell for authenticated driver/agency/customer/admin reruns.
+- Operational proof: three payment/subscription page-level `supabase.from(...)` reads are now removed, the glue report no longer carries the two auth-guard false positives, and the persisted report is now aligned with the live scanner at `23` warnings.
+- Continue from: start the next report-reduction slice at `frontend/src/pages/AgencyJobsPage.tsx`, which is still the largest remaining direct-Supabase page hotspot.
+- Next step: extract `AgencyJobsPage` behind a service boundary, then rerun `npm run glue:check` and the narrowest behavior check available for that slice.
+- Blockers: `SEED_DEMO_PASSWORD` is still missing in this shell for authenticated live-proof reruns; owner-side live Razorpay credentials remain the hard launch blocker.
 
 ## Launch Focus
 - Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
 - Current launch slice: clear the production configuration blockers so the already-built product can be sold and used live.
-- Current blocker: live Razorpay credentials, PITR owner decision, and authenticated real-account verification still block a clean public launch.
-- Next earning step: finish live payment credentials, verify authenticated flows, and onboard the first paying logistics customers.
+- Current blocker: live Razorpay credentials remain the only hard production launch blocker. Real Google-authenticated proof is complete, and native Supabase backups/PITR are deferred temporarily in favor of the existing Telegram private-channel external logical backup posture.
+- Next earning step: finish live payment credentials, optionally deepen the full driver-trip proof lane, and onboard the first paying logistics customers.
 
 ## Launch Verification
-- State: passed
-- Summary: launch-check passed
-- Log: 0.dev-matrix/test-reports/launch-check-20260423_204305.log
+- State: failed
+- Summary: launch-check failed; see log
+- Log: 0.dev-matrix/test-reports/launch-check-20260501_095323.log
 
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
-- [PASS] background launch-check - launch-check passed
+- [FAIL] background launch-check - latest background launch-check failed - launch-check failed; see log
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
 - [PASS] status update discipline - runtime status files have real content changes
-- [PASS] working tree cleanliness - only runtime handoff/evidence files are dirty before report write
-- [PASS] documentation placement - no newly created docs pending placement review
+- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: .github/instructions/repo-guide.instructions.md, .gitignore, 0.dev-matrix/LAUNCH_CHECKLIST.md, 0.dev-matrix/PATTERNS.md, 0.dev-matrix/QDRANT_GAP_REPORT.md
+- [PASS] documentation placement - new docs are in approved zones
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
 - [PASS] handoff continuity - latest entry is dated today and contains changed/verified/operational-proof/continue/next/blockers fields
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 10
-- Fail: 0
+- Pass: 8
+- Fail: 2

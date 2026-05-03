@@ -15,9 +15,48 @@ const PUBLIC_ROUTES = [
   { path: '/contact', expectedTitle: 'Contact Us' },
   { path: '/login', expectedTitle: 'Welcome Back' },
   { path: '/signup', expectedTitle: 'Sign Up' },
+  { path: '/forgot-password', expectedTitle: 'Forgot Password' },
+  { path: '/reset-password', expectedTitle: 'Set New Password' },
+  { path: '/payment/callback', expectedTitle: 'Payment Status', forbiddenBodyTexts: ['Invalid payment callback', 'Payment Failed'] },
+  { path: '/payment/success', expectedTitle: 'Payment Status', forbiddenBodyTexts: ['Invalid payment callback', 'Payment Failed'] },
+  { path: '/subscription', expectedTitle: 'Pricing', expectedFinalUrlIncludes: '/pricing' },
 ];
 
-const PROTECTED_ROUTES = ['/packing', '/routes', '/tracking', '/management', '/history'];
+const PROTECTED_ROUTES = [
+  '/dashboard',
+  '/packing',
+  '/routes',
+  '/tracking',
+  '/booking/new',
+  '/profile',
+  '/management',
+  '/management/trucks',
+  '/management/cartons',
+  '/management/customers',
+  '/sale-orders',
+  '/invoice/test-shipment',
+  '/settings/company',
+  '/history',
+  '/checkout',
+  '/driver/dashboard',
+  '/driver/trip/test-job',
+  '/driver/earnings',
+  '/driver/history',
+  '/agency/dashboard',
+  '/agency/fleet',
+  '/agency/jobs',
+  '/agency/billing',
+  '/agency/drivers',
+  '/agency/rates',
+  '/admin',
+  '/admin/drivers',
+  '/admin/drivers/test-driver',
+  '/admin/agencies',
+  '/admin/payouts',
+  '/admin/contact',
+  '/admin/users',
+  '/admin/subscriptions',
+];
 
 function getSupabaseHostname() {
   try {
@@ -115,15 +154,20 @@ async function collectPublicRouteResult(browser, route) {
 
     const title = await page.title();
     const appErrorCount = await page.getByText('Application Error').count();
+    const bodyText = await page.locator('body').innerText().catch(() => '');
+    const containsForbiddenText = (route.forbiddenBodyTexts || []).some((text) => bodyText.includes(text));
 
     return {
       kind: 'public-route',
       ...route,
       finalUrl: page.url(),
       title,
+      containsForbiddenText,
       passed:
         title.includes(route.expectedTitle) &&
+        (!route.expectedFinalUrlIncludes || page.url().includes(route.expectedFinalUrlIncludes)) &&
         appErrorCount === 0 &&
+        !containsForbiddenText &&
         signals.consoleErrors.length === 0 &&
         signals.pageErrors.length === 0 &&
         signals.failedResponses.length === 0,
@@ -188,6 +232,8 @@ async function collectContactFallbackResult(browser) {
     ];
 
     const matchedFallbackText = await waitForBodyText(page, fallbackTexts);
+    const hasCopySupportEmail = (await page.getByRole('button', { name: 'Copy support email' }).count()) > 0;
+    const showsSupportEmail = (await page.getByText('Support email:').count()) > 0;
 
     return {
       kind: 'contact-fallback',
@@ -195,11 +241,14 @@ async function collectContactFallbackResult(browser) {
       finalUrl: page.url(),
       title: await page.title(),
       matchedFallbackText,
+      hasCopySupportEmail,
+      showsSupportEmail,
       passed:
         (await page.getByText('Support is temporarily unreachable.').count()) > 0 &&
         matchedFallbackText !== null &&
         (await page.getByRole('button', { name: 'Retry send' }).count()) > 0 &&
-        (await page.getByRole('link', { name: 'Email support' }).count()) > 0 &&
+        hasCopySupportEmail &&
+        showsSupportEmail &&
         signals.pageErrors.length === 0,
       consoleErrors: signals.consoleErrors,
       pageErrors: signals.pageErrors,

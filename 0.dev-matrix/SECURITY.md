@@ -48,6 +48,14 @@ These have been found but are NOT yet fixed in migration files. Any agent workin
 
 **All known vulnerabilities as of BATCH15: RESOLVED ✅ — `npm audit` shows 0 vulnerabilities.**
 
+### Desktop Auth Follow-Up (2026-04-26)
+
+| ID | Surface | Finding | Status |
+|----|---------|---------|--------|
+| `BUG-DESKTOP-AUTH-001` | `apps/desktop/TruckOptimum/app.py` | Desktop auth now transports sessions via the `truckoptimum_session` HttpOnly `SameSite=Strict` cookie, stores session tokens hashed at rest, and keeps the server loopback-only by default unless `TRUCKOPTIMUM_ALLOW_NON_LOOPBACK=1` is explicitly set. | ✅ Fixed (2026-04-26) |
+| `BUG-DESKTOP-AUTH-002` | `apps/desktop/TruckOptimum/app.py` | Account lock checks previously compared aware and naive datetimes, which could turn a locked-account login into a generic 500 instead of the intended 423 response. | ✅ Fixed (2026-04-26) |
+| `BUG-DESKTOP-AUTH-003` | `apps/desktop/TruckOptimum/app.py` | Non-auth desktop API routes now pass through a centralized session gate, with a small public allowlist for `/`, `/api/health`, `/api/auth/*`, and `/api/templates/*`; route-level regression coverage now asserts private APIs return 401 without a valid session. | ✅ Fixed (2026-04-26) |
+
 ### BATCH22 Security Investigation (2026-03-31)
 
 GitHub Dependabot reported 1 moderate vulnerability on the default branch despite clean local `npm audit` (0 vulnerabilities across root, frontend, apps/web).
@@ -268,6 +276,20 @@ export async function POST(request: Request) {
 }
 ```
 
+### 3.4 Desktop Flask Auth Transport
+
+#### ✅ REQUIRED
+
+- Keep the desktop Flask server bound to loopback only by default. Require an explicit `TRUCKOPTIMUM_ALLOW_NON_LOOPBACK=1` override before allowing any non-loopback bind.
+- Transport desktop auth state in the `truckoptimum_session` HttpOnly `SameSite=Strict` cookie. Do not return raw session IDs in JSON login responses.
+- Hash desktop session tokens before storing them in `user_sessions.session_id` so a DB copy is not directly reusable as a live bearer token.
+- Keep debug mode off by default. Only enable the desktop debug server with `TRUCKOPTIMUM_DEBUG_SERVER=1` in a controlled environment.
+
+#### ❌ FORBIDDEN
+
+- Returning raw desktop session IDs in auth response bodies as the primary transport mechanism.
+- Treating the desktop Flask API as safe to expose on LAN or public interfaces without explicit route-level auth enforcement on non-auth endpoints.
+
 **Key rule**: Parse the body from raw text AFTER validation, never before. Same pattern applies for PhonePe's `x-verify` header.
 
 ---
@@ -345,6 +367,45 @@ VITE_RAZORPAY_SECRET=rzp_live_xxx   # ← exposes live secret to every browser
 | Supabase anon key | `VITE_SUPABASE_ANON_KEY` | Public — safe only because RLS is enforced |
 
 **Never commit** `.env`, `.env.local`, `.env.production` files containing live secrets. Use `.gitignore` (already present).
+
+---
+
+### 3.5A Billing Writes Must Stay Server-Owned
+
+#### ❌ FORBIDDEN
+
+```typescript
+await supabase.from('subscriptions').insert(payload)
+await supabase.from('subscriptions').update({ plan_id: newPlanId }).eq('id', subscriptionId)
+await supabase.from('invoices').insert(invoice)
+await supabase.from('payment_history').insert(paymentRow)
+```
+
+Browser clients must not activate subscriptions, start trials, change plans, create invoices, or write payment rows directly.
+
+#### ✅ REQUIRED
+
+```typescript
+// Order creation edge function
+const { data: plan } = await supabase
+  .from('subscription_plans')
+  .select('price_monthly, price_yearly')
+  .eq('id', planId)
+  .single()
+
+const subtotal = billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly
+const gst = Math.round(subtotal * 0.18)
+const expectedTotal = subtotal + gst
+
+if (clientAmount !== expectedTotal) {
+  throw new Error('Payment amount does not match selected plan')
+}
+```
+
+Rules:
+- Resolve `plan_id` and `billing_cycle` from the persisted `payment_history.metadata` row during verification; do not fall back to browser-supplied plan data.
+- Keep `subscriptions`, `invoices`, `usage_tracking`, and `payment_history` writes behind service-role edge functions only.
+- Migration `20260501101500_lock_client_subscription_mutations.sql` is the baseline guardrail for this rule.
 
 ---
 

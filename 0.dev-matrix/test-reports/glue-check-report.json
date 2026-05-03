@@ -1,35 +1,11 @@
 {
-  "generatedAt": "2026-04-20T14:35:47.919Z",
+  "generatedAt": "2026-05-03T08:51:38.489Z",
   "summary": {
     "hardGaps": 0,
-    "warnings": 33,
+    "warnings": 23,
     "sealed": true
   },
   "details": [
-    {
-      "type": "STUB_SERVICE",
-      "file": "frontend/src/services/subscriptionApi.ts",
-      "line": 152,
-      "detail": "if (!user) throw new Error('Not authenticated');"
-    },
-    {
-      "type": "STUB_SERVICE",
-      "file": "frontend/src/services/subscriptionApi.ts",
-      "line": 184,
-      "detail": "if (!user) throw new Error('Not authenticated');"
-    },
-    {
-      "type": "STUB_SERVICE",
-      "file": "frontend/src/services/supabaseApi.ts",
-      "line": 866,
-      "detail": "if (!user) throw new Error('Not authenticated')"
-    },
-    {
-      "type": "STUB_SERVICE",
-      "file": "frontend/src/services/supabaseApi.ts",
-      "line": 1130,
-      "detail": "if (!user) throw new Error('Not authenticated')"
-    },
     {
       "type": "DIRECT_SUPABASE_IN_PAGE",
       "file": "frontend/src/pages/AdminAgenciesPage.tsx",
@@ -53,16 +29,6 @@
     {
       "type": "DIRECT_SUPABASE_IN_PAGE",
       "file": "frontend/src/pages/AdminPayoutsPage.tsx",
-      "detail": "Page calls supabase.from() directly — should use services/*.ts"
-    },
-    {
-      "type": "DIRECT_SUPABASE_IN_PAGE",
-      "file": "frontend/src/pages/AdminSubscriptionsPage.tsx",
-      "detail": "Page calls supabase.from() directly — should use services/*.ts"
-    },
-    {
-      "type": "DIRECT_SUPABASE_IN_PAGE",
-      "file": "frontend/src/pages/AdminUsersPage.tsx",
       "detail": "Page calls supabase.from() directly — should use services/*.ts"
     },
     {
@@ -102,22 +68,12 @@
     },
     {
       "type": "DIRECT_SUPABASE_IN_PAGE",
-      "file": "frontend/src/pages/CheckoutPage.tsx",
-      "detail": "Page calls supabase.from() directly — should use services/*.ts"
-    },
-    {
-      "type": "DIRECT_SUPABASE_IN_PAGE",
       "file": "frontend/src/pages/Dashboard.tsx",
       "detail": "Page calls supabase.from() directly — should use services/*.ts"
     },
     {
       "type": "DIRECT_SUPABASE_IN_PAGE",
       "file": "frontend/src/pages/DriverDashboardPage.tsx",
-      "detail": "Page calls supabase.from() directly — should use services/*.ts"
-    },
-    {
-      "type": "DIRECT_SUPABASE_IN_PAGE",
-      "file": "frontend/src/pages/DriverDetailPage.tsx",
       "detail": "Page calls supabase.from() directly — should use services/*.ts"
     },
     {
@@ -148,16 +104,6 @@
     {
       "type": "DIRECT_SUPABASE_IN_PAGE",
       "file": "frontend/src/pages/NewShipmentPage.tsx",
-      "detail": "Page calls supabase.from() directly — should use services/*.ts"
-    },
-    {
-      "type": "DIRECT_SUPABASE_IN_PAGE",
-      "file": "frontend/src/pages/PaymentCallbackPage.tsx",
-      "detail": "Page calls supabase.from() directly — should use services/*.ts"
-    },
-    {
-      "type": "DIRECT_SUPABASE_IN_PAGE",
-      "file": "frontend/src/pages/PricingPage.tsx",
       "detail": "Page calls supabase.from() directly — should use services/*.ts"
     },
     {

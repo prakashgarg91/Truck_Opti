@@ -12,17 +12,15 @@ export default function OTPPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { pendingPhone } = useAuthStore()
-  // Supabase now sends 8-digit OTPs for email, 6 for SMS
-  const channel_pre = (location.state as { channel?: string })?.channel || 'sms'
-  const OTP_LENGTH = channel_pre === 'email' ? 8 : 6
+  const channel = (location.state as { channel?: string })?.channel || 'sms'
+  // TruckOpti auth OTPs are configured to six digits for both email and phone flows.
+  const OTP_LENGTH = 6
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''))
   const [timer, setTimer] = useState(30)
   const [isError, setIsError] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  // Get channel from navigation state
-  const channel = channel_pre
   const contact = (location.state as { contact?: string })?.contact || pendingPhone
   const isSignup = (location.state as { isSignup?: boolean } | null)?.isSignup === true
   const returnTo = (location.state as { returnTo?: string } | null)?.returnTo || null

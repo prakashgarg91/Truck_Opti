@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-05-01T09:27:16.312Z",
+  "baseUrl": "https://www.truckopti.in",
+  "loginId": "demo.admin",
+  "checks": [
+    {
+      "path": "/admin",
+      "label": "Admin Dashboard",
+      "status": "pass",
+      "screenshot": "D:\\Github\\Truck_Opti\\screenshots\\live-admin-proof\\admin-admin.png"
+    },
+    {
+      "path": "/admin/drivers",
+      "label": "Admin Drivers",
+      "status": "pass",
+      "screenshot": "D:\\Github\\Truck_Opti\\screenshots\\live-admin-proof\\admin-admin-drivers.png"
+    },
+    {
+      "path": "/admin/agencies",
+      "label": "Admin Agencies",
+      "status": "pass",
+      "screenshot": "D:\\Github\\Truck_Opti\\screenshots\\live-admin-proof\\admin-admin-agencies.png"
+    },
+    {
+      "path": "/admin/payouts",
+      "label": "Admin Payouts",
+      "status": "pass",
+      "screenshot": "D:\\Github\\Truck_Opti\\screenshots\\live-admin-proof\\admin-admin-payouts.png"
+    },
+    {
+      "path": "/admin/contact",
+      "label": "Admin Contact",
+      "status": "pass",
+      "screenshot": "D:\\Github\\Truck_Opti\\screenshots\\live-admin-proof\\admin-admin-contact.png"
+    },
+    {
+      "path": "/admin/users",
+      "label": "Admin Users",
+      "status": "pass",
+      "screenshot": "D:\\Github\\Truck_Opti\\screenshots\\live-admin-proof\\admin-admin-users.png"
+    },
+    {
+      "path": "/admin/subscriptions",
+      "label": "Admin Subscriptions",
+      "status": "pass",
+      "screenshot": "D:\\Github\\Truck_Opti\\screenshots\\live-admin-proof\\admin-admin-subscriptions.png"
+    },
+    {
+      "path": "/admin/drivers/b3c1a4d3-2480-4019-8728-b71ed0748ad0",
+      "label": "Admin Driver Detail",
+      "status": "pass",
+      "screenshot": "D:\\Github\\Truck_Opti\\screenshots\\live-admin-proof\\admin-driver-detail.png"
+    }
+  ],
+  "consoleErrors": []
+}

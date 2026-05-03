@@ -1,13 +1,12 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Building2, CheckCircle2, XCircle, Clock, Search,
   Phone, MapPin, Briefcase, AlertTriangle, RefreshCw,
-  ShieldCheck, Users
+  ShieldCheck, Users, ChevronLeft
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
 
 interface Agency {
@@ -53,7 +52,6 @@ function formatDate(iso: string) {
 export default function AdminAgenciesPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { language } = useLanguageStore()
   const [tab, setTab] = useState<Tab>('pending')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,13 +60,6 @@ export default function AdminAgenciesPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [counts, setCounts] = useState<Record<Tab, number>>({ pending: 0, approved: 0, rejected: 0, suspended: 0 })
-
-  useEffect(() => {
-    if (user && user.role !== 'admin') {
-      toast.error('Admin access required')
-      navigate('/', { replace: true })
-    }
-  }, [user, navigate, language])
 
   const fetchAgencies = useCallback(async () => {
     setLoading(true)
@@ -201,6 +192,13 @@ export default function AdminAgenciesPage() {
       {/* Header */}
       <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 z-20">
         <div className="px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={() => navigate('/admin')}
+            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700"
+            aria-label="Back to admin dashboard"
+          >
+            <ChevronLeft size={16} className="text-slate-500 dark:text-slate-400" />
+          </button>
           <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
             <Building2 size={18} className="text-indigo-600 dark:text-indigo-400" />
           </div>

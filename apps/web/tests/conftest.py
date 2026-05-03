@@ -132,11 +132,13 @@ def sample_customer(app):
             address="123 Test St",
             city="Test City",
             state="TS",
-            zip_code="12345"
+            pincode="12345"
         )
         db.session.add(customer)
         db.session.commit()
         yield customer
+        for shipment in list(customer.shipments):
+            db.session.delete(shipment)
         db.session.delete(customer)
         db.session.commit()
 

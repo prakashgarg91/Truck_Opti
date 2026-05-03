@@ -15,7 +15,7 @@ import { useAuthStore } from '../stores/authStore'
 const { user, agencyId, driverId, isLoading } = useAuthStore()
 
 // Role-based rendering:
-const role = user?.user_metadata?.role  // 'customer' | 'driver' | 'agency' | 'admin'
+const role = user?.role  // resolved by authStore via resolveAppRole() + public.users.role
 ```
 
 **Never** use local useState for auth. **Never** call supabase.auth.getUser() in a component — authStore already handles the session listener.
@@ -145,6 +145,10 @@ function safePhonePeRedirect(url: string) {
 }
 ```
 
+Rules:
+- Client code may validate external PhonePe redirect URLs before navigating the browser.
+- The PhonePe callback return URL is server-owned. Edge functions must build `/payment/callback` from allowlisted TruckOpti app origins and must ignore arbitrary client callback URLs.
+
 ## SHIPMENT DOCUMENT IDENTITY PATTERN
 
 ```typescript
@@ -191,19 +195,44 @@ Rules:
 - Retries must reuse `client_submission_id` so reconnects cannot create duplicate inquiries.
 - Treat duplicate-key submission errors as idempotent success.
 
+## PROOF SCRIPT ENV PATTERN
+
+```javascript
+// scripts/live-auth-proof.cjs / scripts/live-admin-proof.cjs
+const { readEnvValue } = require('./_proofEnv.cjs')
+
+const baseUrl = readEnvValue('PROOF_BASE_URL') || 'https://www.truckopti.in'
+const password = readEnvValue('SEED_DEMO_PASSWORD')
+```
+
+Rules:
+- Authenticated proof scripts load secrets from `.env.proof.local` first, then `.env.local`, `.env`, and frontend env files.
+- Shell environment still wins; local files are only the repeatable fallback.
+- Keep proof-only secrets out of git and out of page code.
+
 ## PAYMENT HISTORY OWNERSHIP PATTERN
 
 ```typescript
 // Client starts checkout.
+await supabase.functions.invoke('create-razorpay-order', { body })
 await supabase.functions.invoke('phonepe-checkout', { body })
 
 // Edge functions own payment_history persistence and status transitions.
+
+const status = await paymentSupabaseApi.getRazorpayStatusSnapshot(userId, { orderId, paymentId })
+const plan = await subscriptionPlansApi.getById(planId)
+const plans = await subscriptionPlansApi.getAll()
 ```
 
 Rules:
-- Page/service code may initiate checkout, but `payment_history` rows are server-owned for PhonePe.
+- Page/service code may initiate checkout, but `payment_history` rows are server-owned for Razorpay and PhonePe.
+- Payment callback pages must read Razorpay status through `paymentSupabaseApi.getRazorpayStatusSnapshot(...)`, not with direct `supabase.from('payment_history')` queries.
+- Pricing and checkout pages must read plans through `subscriptionPlansApi.getAll()` / `subscriptionPlansApi.getById()`, not with direct `supabase.from('subscription_plans')` queries.
 - Use the table's real status contract: `pending | success | failed | refunded`.
 - Keep subscription activation functions aligned to `subscription_plans.price_monthly`, `price_yearly`, and `billing_cycle = monthly | yearly`.
+- Do not insert or update `subscriptions`, `invoices`, `usage_tracking`, or `payment_history` directly from browser code.
+- Order-creation edge functions must fetch the selected plan and reject any client amount that does not equal the server-calculated plan total including GST.
+- Verification edge functions must resolve plan metadata from the stored `payment_history.metadata` row, never from request-body fallbacks.
 
 ---
 

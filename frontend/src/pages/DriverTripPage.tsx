@@ -290,13 +290,16 @@ export default function DriverTripPage() {
         .from('trip-photos')
         .upload(path, file, { upsert: true, contentType: file.type })
       if (uploadError) {
-        // Storage bucket may not exist — store data URL as fallback
+        logger.error('[DriverTripPage] trip photo upload failed', uploadError)
         return null
       }
       const { data: urlData } = supabase.storage.from('trip-photos').getPublicUrl(path)
       const publicUrl = urlData?.publicUrl || null
       if (publicUrl) {
-        await persistJobProgress(null, { [field]: publicUrl })
+        const saved = await persistJobProgress(null, { [field]: publicUrl })
+        if (!saved) {
+          return null
+        }
       }
       return publicUrl
     } finally {
@@ -310,7 +313,11 @@ export default function DriverTripPage() {
     const reader = new FileReader()
     reader.onload = ev => setPhotoPreview(ev.target?.result as string)
     reader.readAsDataURL(file)
-    await uploadPhoto(file, field)
+    const uploadedPhotoUrl = await uploadPhoto(file, field)
+    if (!uploadedPhotoUrl) {
+      toast.error('Photo upload failed. Please retry before continuing.')
+      return
+    }
     toast.success('Photo captured!')
   }
 
@@ -409,7 +416,7 @@ export default function DriverTripPage() {
         </div>
       </div>
 
-      <div className="p-4 space-y-4 max-w-md mx-auto">
+      <div className="p-4 md:p-8 space-y-4 max-w-md md:max-w-5xl mx-auto">
         {/* Shipment Info Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
@@ -573,9 +580,14 @@ export default function DriverTripPage() {
                 <Camera size={16} />
                 {uploading ? 'Uploading...' : (photoPreview || job.photo_loading_url) ? 'Retake Photo' : 'Take Photo'}
               </button>
+              {!job.photo_loading_url && (
+                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  Upload a loading photo before you can start the journey.
+                </p>
+              )}
             </div>
             <button
-              disabled={submitting}
+              disabled={submitting || !job.photo_loading_url}
               onClick={() => { setPhotoPreview(null); handleStartJourney() }}
               className="w-full flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
             >
@@ -708,9 +720,14 @@ export default function DriverTripPage() {
                 <Camera size={16} />
                 {uploading ? 'Uploading...' : (photoPreview || job.photo_delivery_url) ? 'Retake Photo' : 'Take Photo'}
               </button>
+              {!job.photo_delivery_url && (
+                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  Upload proof of delivery before you can complete the trip.
+                </p>
+              )}
             </div>
             <button
-              disabled={submitting}
+              disabled={submitting || !job.photo_delivery_url}
               onClick={() => { setPhotoPreview(null); handleCompleteDelivery() }}
               className="w-full flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
             >

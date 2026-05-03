@@ -75,7 +75,11 @@ function checkStubServices() {
     const src = readFile(path.join(servicesDir, file));
     const lines = src.split('\n');
     lines.forEach((line, i) => {
-      if (/['"]Not implemented['"]/i.test(line) || /['"]TODO['"]/i.test(line) || /throw new Error\(['"]not/i.test(line)) {
+      if (
+        /['"]Not implemented['"]/i.test(line) ||
+        /['"]TODO['"]/i.test(line) ||
+        /throw new Error\(['"](?:not implemented|todo|stub|unimplemented)/i.test(line)
+      ) {
         stubs.push({ type: 'STUB_SERVICE', file: `frontend/src/services/${file}`, line: i + 1, detail: line.trim().slice(0, 80) });
       }
     });

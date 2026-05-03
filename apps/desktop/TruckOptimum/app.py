@@ -4,7 +4,7 @@ Startup Target: <2 seconds
 Enhanced with comprehensive error logging and debugging
 """
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash, make_response, has_request_context
 from typing import List, Dict, Optional, Tuple  # BUG FIX #10: Added Tuple import for Python <3.9 compatibility
 import sqlite3
 import os
@@ -12,9 +12,11 @@ import sys
 import time
 import atexit
 import hashlib
+import hmac
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import ipaddress
 import re
 
 # Import enhanced error logging system
@@ -48,6 +50,10 @@ except Exception as e:
 
 # Global timing for performance monitoring
 APP_START_TIME = time.time()
+PASSWORD_HASH_SCHEME = 'pbkdf2_sha256'
+PASSWORD_HASH_ITERATIONS = 600000
+AUTH_SESSION_COOKIE_NAME = 'truckoptimum_session'
+AUTH_SESSION_LIFETIME_HOURS = 24
 
 
 class TruckOptimum:
@@ -91,6 +97,8 @@ class TruckOptimum:
 
         self.app.secret_key = secret_key
         self.db_path = self.get_db_path()
+        self.app.before_request(self.enforce_loopback_only)
+        self.app.before_request(self.enforce_authenticated_routes)
 
         # Setup Flask error handling
         if ERROR_LOGGING_ENABLED:
@@ -135,6 +143,12 @@ class TruckOptimum:
                     actual_behavior="Failed during initialization"
                 )
             raise
+        self.app.config.update(
+            SESSION_COOKIE_NAME=AUTH_SESSION_COOKIE_NAME,
+            SESSION_COOKIE_HTTPONLY=True,
+            SESSION_COOKIE_SAMESITE='Strict',
+            SESSION_COOKIE_SECURE=self.session_cookie_secure(),
+        )
 
     def get_db_path(self):
         """Get database path for both dev and executable"""
@@ -397,26 +411,174 @@ class TruckOptimum:
 
     def create_default_admin(self, conn):
         """Create default admin user"""
-        admin_password = self.hash_password('admin123')
+        bootstrap_password = os.environ.get('TRUCKOPTIMUM_BOOTSTRAP_ADMIN_PASSWORD') or secrets.token_urlsafe(18)
+        admin_password = self.hash_password(bootstrap_password)
         conn.execute('''
             INSERT INTO users (username, email, password_hash, first_name, last_name, role, is_active)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', ('admin', 'admin@truckoptimum.com', admin_password, 'Admin', 'User', 'admin', 1))
         conn.commit()
-        print("Default admin user created: admin / admin123")
+        if os.environ.get('TRUCKOPTIMUM_BOOTSTRAP_ADMIN_PASSWORD'):
+            print("Bootstrap admin user created from TRUCKOPTIMUM_BOOTSTRAP_ADMIN_PASSWORD: admin")
+        else:
+            print(f"Bootstrap admin user created: admin / {bootstrap_password}")
+            print("Store this generated password securely. Set TRUCKOPTIMUM_BOOTSTRAP_ADMIN_PASSWORD to override it on first-run setups.")
 
     # Authentication Methods
     def hash_password(self, password: str) -> str:
-        """Hash password using SHA-256 with salt"""
+        """Hash password using PBKDF2-HMAC-SHA256."""
         salt = secrets.token_hex(16)
-        password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
-        return f"{salt}:{password_hash}"
+        password_hash = hashlib.pbkdf2_hmac(
+            'sha256',
+            password.encode(),
+            bytes.fromhex(salt),
+            PASSWORD_HASH_ITERATIONS,
+        ).hex()
+        return f"{PASSWORD_HASH_SCHEME}${PASSWORD_HASH_ITERATIONS}${salt}${password_hash}"
+
+    def password_needs_rehash(self, stored_password: str) -> bool:
+        """Return True when a legacy password hash should be upgraded."""
+        return not stored_password.startswith(f'{PASSWORD_HASH_SCHEME}$')
+
+    def session_cookie_secure(self) -> bool:
+        return os.environ.get('TRUCKOPTIMUM_SECURE_COOKIE') == '1'
+
+    def allow_non_loopback(self) -> bool:
+        return os.environ.get('TRUCKOPTIMUM_ALLOW_NON_LOOPBACK') == '1'
+
+    def is_loopback_address(self, remote_addr: Optional[str]) -> bool:
+        if not remote_addr:
+            return False
+        if remote_addr == 'localhost':
+            return True
+
+        try:
+            return ipaddress.ip_address(remote_addr).is_loopback
+        except ValueError:
+            return False
+
+    def enforce_loopback_only(self):
+        if self.allow_non_loopback():
+            return None
+
+        if not has_request_context() or self.is_loopback_address(request.remote_addr):
+            return None
+
+        return jsonify({
+            'success': False,
+            'error': 'TruckOptimum desktop server only accepts loopback requests by default'
+        }), 403
+
+    def is_public_route(self) -> bool:
+        if not has_request_context():
+            return True
+
+        if request.method == 'OPTIONS':
+            return True
+
+        if request.endpoint is None or request.endpoint == 'static':
+            return True
+
+        if request.path in {'/', '/favicon.ico', '/api/health'}:
+            return True
+
+        if request.path.startswith('/api/auth/'):
+            return True
+
+        if request.path.startswith('/api/templates/'):
+            return True
+
+        return False
+
+    def enforce_authenticated_routes(self):
+        if self.is_public_route():
+            return None
+
+        session_id = self.get_request_session_id()
+        session_user = self.validate_session(session_id)
+
+        if session_user is not None:
+            return None
+
+        return jsonify({
+            'success': False,
+            'error': 'Authentication is required to access this desktop route'
+        }), 401
+
+    def hash_session_id(self, session_id: str) -> str:
+        return hashlib.sha256(session_id.encode()).hexdigest()
+
+    def get_request_session_id(self, request_data: Optional[Dict] = None) -> str:
+        if has_request_context():
+            cookie_session_id = request.cookies.get(AUTH_SESSION_COOKIE_NAME, '').strip()
+            if cookie_session_id:
+                return cookie_session_id
+
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                return auth_header[7:].strip()
+
+        if request_data:
+            return (request_data.get('session_id') or '').strip()
+
+        return ''
+
+    def attach_session_cookie(self, response, session_id: str):
+        response.set_cookie(
+            AUTH_SESSION_COOKIE_NAME,
+            session_id,
+            max_age=AUTH_SESSION_LIFETIME_HOURS * 60 * 60,
+            httponly=True,
+            samesite='Strict',
+            secure=self.session_cookie_secure(),
+            path='/',
+        )
+        return response
+
+    def clear_session_cookie(self, response):
+        response.delete_cookie(
+            AUTH_SESSION_COOKIE_NAME,
+            path='/',
+            httponly=True,
+            samesite='Strict',
+            secure=self.session_cookie_secure(),
+        )
+        return response
+
+    def is_account_locked(self, locked_until: Optional[str]) -> bool:
+        if not locked_until:
+            return False
+
+        normalized_locked_until = locked_until.replace('Z', '+00:00')
+        locked_until_dt = datetime.fromisoformat(normalized_locked_until)
+        if locked_until_dt.tzinfo is None:
+            locked_until_dt = locked_until_dt.replace(tzinfo=timezone.utc)
+
+        return locked_until_dt > datetime.now(timezone.utc)
+
+    def session_matches_request(self, stored_user_agent: Optional[str]) -> bool:
+        if not stored_user_agent or not has_request_context():
+            return True
+
+        current_user_agent = request.headers.get('User-Agent')
+        return current_user_agent == stored_user_agent
 
     def verify_password(self, stored_password: str, provided_password: str) -> bool:
-        """Verify password against stored hash"""
+        """Verify password against stored hash, supporting legacy SHA-256 entries."""
         try:
-            salt, password_hash = stored_password.split(':')
-            return hashlib.sha256((provided_password + salt).encode()).hexdigest() == password_hash
+            if stored_password.startswith(f'{PASSWORD_HASH_SCHEME}$'):
+                _, iterations, salt, password_hash = stored_password.split('$', 3)
+                derived_hash = hashlib.pbkdf2_hmac(
+                    'sha256',
+                    provided_password.encode(),
+                    bytes.fromhex(salt),
+                    int(iterations),
+                ).hex()
+                return hmac.compare_digest(derived_hash, password_hash)
+
+            salt, password_hash = stored_password.split(':', 1)
+            legacy_hash = hashlib.sha256((provided_password + salt).encode()).hexdigest()
+            return hmac.compare_digest(legacy_hash, password_hash)
         except ValueError:
             return False
 
@@ -437,14 +599,15 @@ class TruckOptimum:
 
     def create_user_session(self, user_id: int) -> str:
         """Create a new user session"""
-        session_id = str(uuid.uuid4())
-        expires_at = datetime.now() + timedelta(hours=24)  # Session expires in 24 hours
+        session_id = secrets.token_urlsafe(32)
+        stored_session_id = self.hash_session_id(session_id)
+        expires_at = datetime.now() + timedelta(hours=AUTH_SESSION_LIFETIME_HOURS)  # Session expires in 24 hours
         
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
                 INSERT INTO user_sessions (session_id, user_id, expires_at, ip_address, user_agent)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (session_id, user_id, expires_at, 
+            ''', (stored_session_id, user_id, expires_at, 
                   request.remote_addr if request else None,
                   request.headers.get('User-Agent') if request else None))
             conn.commit()
@@ -453,16 +616,29 @@ class TruckOptimum:
 
     def validate_session(self, session_id: str) -> Optional[Dict]:
         """Validate user session and return user data"""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute('''
-                SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.role, s.expires_at
+        if not session_id:
+            return None
+
+        def query_session(conn: sqlite3.Connection, session_lookup_value: str):
+            return conn.execute('''
+                SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.role, s.expires_at, s.user_agent
                 FROM user_sessions s
                 JOIN users u ON s.user_id = u.id
                 WHERE s.session_id = ? AND s.is_active = 1 AND s.expires_at > datetime('now')
-            ''', (session_id,))
-            
-            result = cursor.fetchone()
+            ''', (session_lookup_value,)).fetchone()
+
+        hashed_session_id = self.hash_session_id(session_id)
+
+        with sqlite3.connect(self.db_path) as conn:
+            result = query_session(conn, hashed_session_id)
+            if not result:
+                # Legacy plaintext sessions created before the cookie/hash hardening.
+                result = query_session(conn, session_id)
+
             if result:
+                if not self.session_matches_request(result[7]):
+                    return None
+
                 return {
                     'id': result[0],
                     'username': result[1], 
@@ -476,12 +652,14 @@ class TruckOptimum:
 
     def logout_user(self, session_id: str):
         """Invalidate user session"""
+        hashed_session_id = self.hash_session_id(session_id)
+
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
                 UPDATE user_sessions 
                 SET is_active = 0 
-                WHERE session_id = ?
-            ''', (session_id,))
+                WHERE session_id IN (?, ?)
+            ''', (hashed_session_id, session_id))
             conn.commit()
 
     def log_user_activity(self, user_id: Optional[int], action: str, resource: str = None, details: str = None):
@@ -1623,7 +1801,7 @@ Carton Details:
                     user_id, db_username, email, password_hash, first_name, last_name, role, is_active, failed_attempts, locked_until = user
                     
                     # Check if account is locked
-                    if locked_until and datetime.fromisoformat(locked_until.replace('Z', '+00:00')) > datetime.now():
+                    if self.is_account_locked(locked_until):
                         return jsonify({'success': False, 'error': 'Account is temporarily locked. Please try again later.'}), 423
                     
                     # Verify password
@@ -1649,6 +1827,10 @@ Carton Details:
                         conn.commit()
                         self.log_user_activity(user_id, 'LOGIN_FAILED', 'auth', f'Failed login attempt #{new_attempts}')
                         return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
+
+                    if self.password_needs_rehash(password_hash):
+                        upgraded_hash = self.hash_password(password)
+                        conn.execute('UPDATE users SET password_hash = ? WHERE id = ?', (upgraded_hash, user_id))
                     
                     # Successful login - reset failed attempts and create session
                     conn.execute('''
@@ -1663,11 +1845,10 @@ Carton Details:
                     
                     # Log successful login
                     self.log_user_activity(user_id, 'LOGIN_SUCCESS', 'auth', f'Successful login')
-                    
-                    return jsonify({
+
+                    response = make_response(jsonify({
                         'success': True,
                         'message': 'Login successful',
-                        'session_id': session_id,
                         'user': {
                             'id': user_id,
                             'username': db_username,
@@ -1676,7 +1857,9 @@ Carton Details:
                             'last_name': last_name,
                             'role': role
                         }
-                    }), 200
+                    }), 200)
+                    self.attach_session_cookie(response, session_id)
+                    return response
                     
             except Exception as e:
                 if ERROR_LOGGING_ENABLED:
@@ -1689,8 +1872,8 @@ Carton Details:
         def api_auth_logout():
             """User logout endpoint"""
             try:
-                data = request.get_json()
-                session_id = data.get('session_id', '')
+                data = request.get_json(silent=True) or {}
+                session_id = self.get_request_session_id(data)
                 
                 if not session_id:
                     return jsonify({'success': False, 'error': 'Session ID is required'}), 400
@@ -1705,11 +1888,13 @@ Carton Details:
                 
                 # Log logout activity
                 self.log_user_activity(user_data['id'], 'LOGOUT', 'auth', 'User logged out')
-                
-                return jsonify({
+
+                response = make_response(jsonify({
                     'success': True,
                     'message': 'Logout successful'
-                }), 200
+                }), 200)
+                self.clear_session_cookie(response)
+                return response
                 
             except Exception as e:
                 if ERROR_LOGGING_ENABLED:
@@ -1722,8 +1907,8 @@ Carton Details:
         def api_auth_validate():
             """Validate user session endpoint"""
             try:
-                data = request.get_json()
-                session_id = data.get('session_id', '')
+                data = request.get_json(silent=True) or {}
+                session_id = self.get_request_session_id(data)
                 
                 if not session_id:
                     return jsonify({'success': False, 'error': 'Session ID is required'}), 400
@@ -2855,6 +3040,13 @@ Carton Details:
                 }
                 
                 start_time = time.time()
+                request_session_id = self.get_request_session_id()
+                request_user_agent = request.headers.get('User-Agent')
+                test_request_headers = {}
+                if request_session_id:
+                    test_request_headers['Authorization'] = f'Bearer {request_session_id}'
+                if request_user_agent:
+                    test_request_headers['User-Agent'] = request_user_agent
                 
                 # Test 1: Database connectivity
                 try:
@@ -2880,7 +3072,11 @@ Carton Details:
                 for endpoint in endpoints_to_test:
                     try:
                         with self.app.test_client() as client:
-                            response = client.get(endpoint)
+                            response = client.get(
+                                endpoint,
+                                headers=test_request_headers,
+                                environ_base={'REMOTE_ADDR': '127.0.0.1'},
+                            )
                             if response.status_code == 200:
                                 test_results['test_details'].append({
                                     'name': f'API Endpoint {endpoint}',
@@ -3027,6 +3223,9 @@ Extra Large Box,5'''
 
     def run(self, host='127.0.0.1', port=5000, debug=False):
         """Run the application"""
+        if not self.allow_non_loopback() and not self.is_loopback_address(host):
+            raise ValueError('Non-loopback host binding is disabled. Set TRUCKOPTIMUM_ALLOW_NON_LOOPBACK=1 to override.')
+
         self.app.run(host=host, port=port, debug=debug, use_reloader=False)
 
 
@@ -3057,4 +3256,8 @@ if __name__ == '__main__':
     startup_time = time.time() - APP_START_TIME
     print(f"TruckOptimum ready in {startup_time:.2f}s - http://127.0.0.1:{port}")
 
-    app.run(port=port, debug=True)
+    debug_server_enabled = os.environ.get('TRUCKOPTIMUM_DEBUG_SERVER') == '1'
+    if debug_server_enabled:
+        print('WARNING: Debug server enabled via TRUCKOPTIMUM_DEBUG_SERVER=1')
+
+    app.run(port=port, debug=debug_server_enabled)

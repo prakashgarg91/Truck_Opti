@@ -7,7 +7,7 @@ description: Repository-specific architecture, Supabase rules, closing hooks, an
 ## What is this project?
 
 TruckOpti is an India logistics SaaS platform (truck booking, agency dispatch, driver app, admin).
-Production: **https://www.truckopti.in** | Heroku app: **truck-opti-app** | Current: **v50**
+Production: **https://www.truckopti.in** | Heroku app: **truck-opti-app** | Current: see `0.dev-matrix/STATE.md`
 
 Stack: React 18 + TypeScript + Vite + Tailwind + Supabase + Zustand + React Router v6
 
@@ -96,7 +96,7 @@ At the end of every session (or when the user says "close the day" / "update dev
 ## Security rules (summary — see SECURITY.md for full list)
 
 - Every new Supabase table must have RLS enabled + explicit policies
-- Never use `USING (true)` on user-owned tables (existing bugs: BUG-RLS-001 to -006)
+- Never reintroduce `USING (true)` on user-owned tables; BUG-RLS-001 to BUG-RLS-006 were historical defects fixed in BATCH13
 - Never expose `error.message` to users
 - URL redirects: validate domain against allowlist (BUG-REDIRECT-001 pattern)
 - Webhook endpoints: verify HMAC-SHA256 signature (BATCH12-T1)

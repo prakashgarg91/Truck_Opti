@@ -18,6 +18,7 @@ export default function ResetPasswordPage() {
     const [isPreparing, setIsPreparing] = useState(true)
     const [isReady, setIsReady] = useState(false)
     const [pageError, setPageError] = useState<string | null>(null)
+    const [completionError, setCompletionError] = useState<string | null>(null)
 
     useEffect(() => {
         document.title = 'Set New Password - TruckOpti'
@@ -63,12 +64,17 @@ export default function ResetPasswordPage() {
             await authSupabaseApi.updatePassword(password)
         },
         onSuccess: async () => {
-            toast.success('Password updated. Sign in with your new password.')
             try {
                 await authSupabaseApi.signOut()
             } catch {
-                // Ignore sign-out failures after a successful password reset.
+                const message = 'Password updated, but we could not finish signing you out. Close this tab and sign in again with your new password.'
+                setCompletionError(message)
+                toast.error(message)
+                return
             }
+
+            setCompletionError(null)
+            toast.success('Password updated. Sign in with your new password.')
             navigate('/login', { replace: true })
         },
         onError: (error: unknown) => {
@@ -91,6 +97,7 @@ export default function ResetPasswordPage() {
         }
 
         setPasswordError('')
+        setCompletionError(null)
         updatePasswordMutation.mutate()
     }
 
@@ -153,6 +160,12 @@ export default function ResetPasswordPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+                {completionError && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-200">
+                        {completionError}
+                    </div>
+                )}
+
                 <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                         New Password

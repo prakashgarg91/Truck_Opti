@@ -1,10 +1,12 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   DollarSign, CheckCircle2, XCircle, Clock, Search,
-  RefreshCw, AlertTriangle
+  RefreshCw, AlertTriangle, ChevronLeft
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useLanguageStore } from '../stores/languageStore'
+import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 
@@ -36,7 +38,9 @@ function formatDate(iso: string) {
 }
 
 export default function AdminPayoutsPage() {
+  const navigate = useNavigate()
   const { language } = useLanguageStore()
+  const { user, isLoading: authLoading } = useAuthStore()
   const [payouts, setPayouts] = useState<DriverPayout[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -46,6 +50,13 @@ export default function AdminPayoutsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null)
 
   const fetchPayouts = useCallback(async () => {
+    if (authLoading) return
+
+    if (user?.role !== 'admin') {
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -65,11 +76,35 @@ export default function AdminPayoutsPage() {
     } finally {
       setLoading(false)
     }
-  }, [language])
+  }, [authLoading, language, user?.role])
 
   useEffect(() => {
-    fetchPayouts()
-  }, [fetchPayouts])
+    if (!authLoading) {
+      fetchPayouts()
+    }
+  }, [authLoading, fetchPayouts])
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
+  if (user?.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+        <div className="max-w-md rounded-2xl bg-white p-6 text-center shadow-sm dark:bg-gray-800">
+          <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-amber-500" />
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Admin access required</h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            This payouts console is only available to admin users.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const handleApprove = async (payoutId: string) => {
     setProcessingId(payoutId)
@@ -162,12 +197,23 @@ export default function AdminPayoutsPage() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {'Driver Payouts'}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {'Manage driver withdrawal requests'}
-          </p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/admin')}
+              className="p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Back to admin dashboard"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {'Driver Payouts'}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                {'Manage driver withdrawal requests'}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Filters */}

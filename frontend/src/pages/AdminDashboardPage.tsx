@@ -27,6 +27,24 @@ interface RecentJob {
   created_at: string
 }
 
+interface AgencyJobRow {
+  id: string
+  agency_id: string | null
+  shipment_id: string | null
+  fare: number | null
+  created_at: string
+  updated_at?: string | null
+  shipments?: {
+    origin?: string | null
+    destination?: string | null
+    shipment_id?: string | null
+  } | Array<{
+    origin?: string | null
+    destination?: string | null
+    shipment_id?: string | null
+  }> | null
+}
+
 export default function AdminDashboardPage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
@@ -42,88 +60,85 @@ export default function AdminDashboardPage() {
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([])
   const [revenueTrend, setRevenueTrend] = useState<{ month: string; revenue: number }[]>([])
 
-  // Redirect non-admins
-  useEffect(() => {
-    const role = user?.role
-    if (user && role !== 'admin') {
-      toast.error('Admin access required')
-      navigate('/dashboard', { replace: true })
-    }
-  }, [user, navigate])
-
   const fetchAnalytics = useCallback(async () => {
     setLoading(true)
     try {
-      // Get revenue from delivered jobs
-      const { data: jobsData } = await supabase
-        .from('agency_jobs')
-        .select('fare, created_at, transport_agencies(company_name)')
-        .eq('status', 'delivered')
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      const totalRevenue = (jobsData ?? [])
-        .reduce((sum, job) => sum + (job.fare ?? 0), 0)
-
-      // Get counts
-      const [agenciesRes, driversRes, shipmentsRes] = await Promise.all([
+      const [recentJobsRes, revenueRes, agenciesRes, driversRes, shipmentsRes] = await Promise.all([
+        supabase
+          .from('agency_jobs')
+          .select('id, agency_id, shipment_id, fare, created_at, updated_at, shipments(origin, destination, shipment_id)')
+          .eq('status', 'delivered')
+          .order('updated_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('agency_jobs')
+          .select('fare')
+          .eq('status', 'delivered'),
         supabase.from('transport_agencies').select('id', { count: 'exact', head: true }),
         supabase.from('drivers').select('id', { count: 'exact', head: true }),
         supabase.from('shipments').select('id', { count: 'exact', head: true }),
       ])
+
+      const analyticsError = recentJobsRes.error || revenueRes.error || agenciesRes.error || driversRes.error || shipmentsRes.error
+
+      if (analyticsError) {
+        throw analyticsError
+      }
+
+      const jobsData = recentJobsRes.data ?? []
+
+      const agencyIds = Array.from(new Set(jobsData
+        .map((job: AgencyJobRow) => job.agency_id)
+        .filter((agencyId): agencyId is string => Boolean(agencyId))))
+
+      const { data: agenciesData } = agencyIds.length > 0
+        ? await supabase
+          .from('transport_agencies')
+          .select('id, company_name')
+          .in('id', agencyIds)
+        : { data: [] }
+
+      const agencyNameById = new Map((agenciesData ?? []).map((agency) => [agency.id, agency.company_name ?? 'Unknown']))
+
+      const totalRevenue = (revenueRes.data ?? [])
+        .reduce((sum, job) => sum + (job.fare ?? 0), 0)
 
       const agencies = agenciesRes.count ?? 0
       const drivers = driversRes.count ?? 0
       const shipments = shipmentsRes.count ?? 0
 
       // Map recent jobs
-      const jobs: RecentJob[] = (jobsData ?? []).map((j: Record<string, unknown>) => {
-        const agency = (Array.isArray(j.transport_agencies) ? j.transport_agencies[0] : j.transport_agencies) as { company_name?: string } | null
+      const jobs: RecentJob[] = (jobsData ?? []).map((job: AgencyJobRow) => {
+        const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
         return {
-          id: j.id as string,
-          agency_name: agency?.company_name ?? 'Unknown',
-          origin: '',
-          destination: '',
-          fare: Number(j.fare ?? 0),
-          created_at: j.created_at as string,
+          id: job.id,
+          agency_name: job.agency_id ? (agencyNameById.get(job.agency_id) ?? 'Unknown') : 'Unknown',
+          origin: shipment?.origin ?? '',
+          destination: shipment?.destination ?? '',
+          fare: Number(job.fare ?? 0),
+          created_at: job.updated_at ?? job.created_at,
         }
       })
-
-      // Get shipment details for the jobs
-      if (jobs.length > 0) {
-        const jobIds = jobs.map(j => j.id)
-        const { data: shipmentsData } = await supabase
-          .from('shipments')
-          .select('id, origin, destination')
-          .in('id', jobIds)
-
-        if (shipmentsData) {
-          const shipmentMap = new Map(shipmentsData.map(s => [s.id, s]))
-          jobs.forEach(job => {
-            const shipment = shipmentMap.get(job.id)
-            if (shipment) {
-              job.origin = shipment.origin ?? ''
-              job.destination = shipment.destination ?? ''
-            }
-          })
-        }
-      }
 
       setRecentJobs(jobs)
 
       // Fetch last 6 months revenue trend
       const sixMonthsAgo = new Date()
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-      const { data: trendData } = await supabase
+      const { data: trendData, error: trendError } = await supabase
         .from('agency_jobs')
-        .select('fare, created_at')
+        .select('fare, updated_at')
         .eq('status', 'delivered')
-        .gte('created_at', sixMonthsAgo.toISOString())
+        .gte('updated_at', sixMonthsAgo.toISOString())
+
+      if (trendError) {
+        throw trendError
+      }
 
       // Group by month
       const monthlyRevenue: Record<string, number> = {}
         ; (trendData || []).forEach(job => {
-          const monthKey = new Date(job.created_at).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })
+          const monthKey = new Date(job.updated_at).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })
           monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + (job.fare || 0)
         })
 
@@ -165,46 +180,58 @@ export default function AdminDashboardPage() {
       // Get current month's date range
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString()
 
-      // Fetch all shipments for current month with agency info
-      const { data: shipmentsData, error } = await supabase
-        .from('shipments')
+      // Fetch delivered agency jobs for current month with shipment info
+      const { data: jobsData, error } = await supabase
+        .from('agency_jobs')
         .select(`
           id,
-          origin,
-          destination,
-          status,
-          estimated_cost,
-          created_at,
-          transport_agencies(company_name)
+          agency_id,
+          fare,
+          updated_at,
+          shipments(origin, destination, shipment_id)
         `)
-        .gte('created_at', startOfMonth)
-        .lte('created_at', endOfMonth)
-        .order('created_at', { ascending: false })
+        .eq('status', 'delivered')
+        .gte('updated_at', startOfMonth)
+        .lt('updated_at', endOfMonth)
+        .order('updated_at', { ascending: false })
 
       if (error) {
         toast.error('Failed to export data')
         return
       }
 
-      if (!shipmentsData || shipmentsData.length === 0) {
-        toast.error('No shipments found for this month')
+      if (!jobsData || jobsData.length === 0) {
+        toast.error('No delivered jobs found for this month')
         return
       }
 
+      const agencyIds = Array.from(new Set((jobsData as AgencyJobRow[])
+        .map((job) => job.agency_id)
+        .filter((agencyId): agencyId is string => Boolean(agencyId))))
+
+      const { data: agenciesData } = agencyIds.length > 0
+        ? await supabase
+          .from('transport_agencies')
+          .select('id, company_name')
+          .in('id', agencyIds)
+        : { data: [] }
+
+      const agencyNameById = new Map((agenciesData ?? []).map((agency) => [agency.id, agency.company_name ?? 'Unknown']))
+
       // Generate CSV content
       const headers = ['Shipment ID', 'Origin', 'Destination', 'Status', 'Fare (₹)', 'Date', 'Agency']
-      const rows = shipmentsData.map((s: Record<string, unknown>) => {
-        const agency = (Array.isArray(s.transport_agencies) ? s.transport_agencies[0] : s.transport_agencies) as { company_name?: string } | null
+      const rows = (jobsData as AgencyJobRow[]).map((job) => {
+        const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
         return [
-          (s.id as string)?.slice(-8) || '',
-          (s.origin as string) || '',
-          (s.destination as string) || '',
-          (s.status as string) || '',
-          (s.estimated_cost as number) || 0,
-          new Date(s.created_at as string).toLocaleDateString('en-IN'),
-          agency?.company_name || 'Direct'
+          shipment?.shipment_id?.slice(-8) || job.id.slice(-8),
+          shipment?.origin || '',
+          shipment?.destination || '',
+          'delivered',
+          job.fare || 0,
+          new Date(job.updated_at || job.created_at).toLocaleDateString('en-IN'),
+          job.agency_id ? (agencyNameById.get(job.agency_id) ?? 'Unknown') : 'Direct'
         ]
       })
 
@@ -243,7 +270,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="max-w-4xl lg:max-w-7xl mx-auto p-4 lg:p-8 pb-8 lg:pb-12 space-y-5">
+    <div className="max-w-4xl md:max-w-7xl mx-auto p-4 md:p-8 pb-8 md:pb-12 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -262,7 +289,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="w-4 h-4 text-green-500" />
@@ -415,7 +442,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <button
           onClick={() => navigate('/admin/users')}
           className="flex items-center justify-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"

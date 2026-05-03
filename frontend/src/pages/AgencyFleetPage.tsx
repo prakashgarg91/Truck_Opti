@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Truck, Plus, AlertTriangle, RefreshCw,
   FileCheck, Clock, XCircle, ChevronRight
@@ -44,6 +45,7 @@ function expiryStatus(dateStr: string | null): 'ok' | 'soon' | 'expired' {
 
 export default function AgencyFleetPage() {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
   const [agency, setAgency] = useState<AgencyRecord | null>(null)
   const [trucks, setTrucks] = useState<FleetTruck[]>([])
   const [loading, setLoading] = useState(true)
@@ -107,10 +109,28 @@ export default function AgencyFleetPage() {
     if (error || !newTruck) {
       toast.error('Failed to add truck')
     } else {
-      // Also keep fleet_size count in sync
-      const newSize = (agency.fleet_size || 0) + 1
-      await supabase.from('transport_agencies').update({ fleet_size: newSize }).eq('id', agency.id)
-      setAgency(a => a ? { ...a, fleet_size: newSize } : a)
+      const { count: fleetCount, error: countError } = await supabase
+        .from('agency_trucks')
+        .select('id', { count: 'exact', head: true })
+        .eq('agency_id', agency.id)
+
+      if (countError) {
+        logger.error('[AgencyFleetPage] fleet count refresh failed:', countError)
+      }
+
+      const nextFleetSize = fleetCount ?? (agency.fleet_size || 0) + 1
+
+      const { error: fleetSizeError } = await supabase
+        .from('transport_agencies')
+        .update({ fleet_size: nextFleetSize })
+        .eq('id', agency.id)
+        .or(`fleet_size.is.null,fleet_size.lt.${nextFleetSize}`)
+
+      if (fleetSizeError) {
+        logger.error('[AgencyFleetPage] fleet size sync failed:', fleetSizeError)
+      }
+
+      setAgency(a => a ? { ...a, fleet_size: Math.max(a.fleet_size || 0, nextFleetSize) } : a)
       setTrucks(prev => [...prev, newTruck as FleetTruck])
       setShowAdd(false)
       setAddForm({ vehicle_type: 'eicher_14ft', rc_number: '', insurance_expiry: '', fitness_expiry: '', permit_expiry: '' })
@@ -128,7 +148,7 @@ export default function AgencyFleetPage() {
   }
 
   return (
-    <div className="p-4 lg:p-8 space-y-4 max-w-2xl lg:max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 space-y-4 max-w-2xl md:max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -278,9 +298,12 @@ export default function AgencyFleetPage() {
               </div>
             )}
 
-            <button className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-medium">
+            <button
+              onClick={() => navigate('/agency/drivers')}
+              className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-medium"
+            >
               <ChevronRight size={14} />
-              Assign Driver
+              {truck.driver_id ? 'Manage Driver Assignment' : 'Assign Driver'}
             </button>
           </div>
         )

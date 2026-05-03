@@ -3,18 +3,46 @@ Authentication Middleware
 JWT-based authentication for production-ready security
 """
 
-from functools import wraps
+from functools import wraps, lru_cache
 from flask import request, jsonify, g
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 import os
+import secrets
 from typing import Optional, Dict, Any
 
 
-# Configuration
-SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
+INSECURE_SECRET_SENTINELS = {
+    '',
+    'your-secret-key-change-in-production',
+    'dev-jwt-secret-change-in-production',
+    'testing-jwt-secret',
+    'your-jwt-secret-key',
+}
+
+
+def _is_production_env() -> bool:
+    return (os.getenv('FLASK_ENV') or os.getenv('TRUCKOPTI_ENV') or '').lower() in {'production', 'prod'}
+
+
+def _is_insecure_secret(value: str) -> bool:
+    normalized = value.strip()
+    return not normalized or normalized in INSECURE_SECRET_SENTINELS or 'change-in-production' in normalized.lower()
+
+
+@lru_cache(maxsize=1)
+def get_jwt_secret() -> str:
+    configured_secret = (os.getenv('JWT_SECRET_KEY') or '').strip()
+
+    if configured_secret and not _is_insecure_secret(configured_secret):
+        return configured_secret
+
+    if _is_production_env():
+        raise RuntimeError('JWT_SECRET_KEY must be set to a strong value in production')
+
+    return secrets.token_urlsafe(48)
 
 
 class AuthenticationError(Exception):
@@ -38,11 +66,11 @@ def generate_token(user_id: int, email: str, role: str = 'user') -> str:
         'user_id': user_id,
         'email': email,
         'role': role,
-        'exp': datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS),
-        'iat': datetime.utcnow()
+        'exp': datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS),
+        'iat': datetime.now(timezone.utc)
     }
 
-    token = jwt.encode(payload, SECRET_KEY, algorithm=JWT_ALGORITHM)
+    token = jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
     return token
 
 
@@ -57,17 +85,19 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
         Decoded payload or None if invalid
     """
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
         raise AuthenticationError('Token has expired')
     except jwt.InvalidTokenError:
         raise AuthenticationError('Invalid token')
+    except RuntimeError as exc:
+        raise AuthenticationError(str(exc)) from exc
 
 
 def get_token_from_request() -> Optional[str]:
     """
-    Extract JWT token from request headers
+    Extract JWT token from the Authorization header only.
 
     Returns:
         Token string or None
@@ -76,11 +106,6 @@ def get_token_from_request() -> Optional[str]:
     auth_header = request.headers.get('Authorization')
     if auth_header and auth_header.startswith('Bearer '):
         return auth_header[7:]  # Remove 'Bearer ' prefix
-
-    # Check query parameter (less secure, for development only)
-    token = request.args.get('token')
-    if token:
-        return token
 
     return None
 
@@ -205,7 +230,7 @@ class APIKeyAuth:
         self.api_keys[api_key] = {
             'client_name': client_name,
             'permissions': permissions or ['read'],
-            'created_at': datetime.utcnow().isoformat(),
+            'created_at': datetime.now(timezone.utc).isoformat(),
             'active': True
         }
 
@@ -251,15 +276,18 @@ def require_api_key(f):
         # Check X-API-Key header
         api_key = request.headers.get('X-API-Key')
 
-        if not api_key:
-            # Check query parameter
-            api_key = request.args.get('api_key')
+        if not api_key and request.args.get('api_key'):
+            return jsonify({
+                'success': False,
+                'error': 'API key required',
+                'message': 'Provide API key in the X-API-Key header only'
+            }), 401
 
         if not api_key:
             return jsonify({
                 'success': False,
                 'error': 'API key required',
-                'message': 'Provide API key in X-API-Key header or api_key parameter'
+                'message': 'Provide API key in the X-API-Key header'
             }), 401
 
         client_info = api_key_manager.verify_api_key(api_key)
@@ -280,5 +308,5 @@ def require_api_key(f):
 __all__ = [
     'generate_token', 'verify_token', 'require_auth', 'require_role',
     'optional_auth', 'require_api_key', 'api_key_manager',
-    'AuthenticationError'
+    'AuthenticationError', 'get_jwt_secret'
 ]

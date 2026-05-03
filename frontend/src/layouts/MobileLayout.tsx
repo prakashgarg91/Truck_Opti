@@ -22,7 +22,10 @@ import {
   Wrench,
   Building2,
   ShieldCheck,
-  History
+  History,
+  Users,
+  DollarSign,
+  MessageSquare
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
@@ -39,6 +42,16 @@ const navItems = [
   { path: '/routes', icon: Route, label: 'Routes', labelHi: 'रूट' },
   { path: '/tracking', icon: MapPin, label: 'Track', labelHi: 'ट्रैक' },
   { path: '/history', icon: History, label: 'History', labelHi: 'इतिहास' },
+]
+
+const adminNavItems = [
+  { path: '/admin', icon: LayoutDashboard, label: 'Admin Dashboard', end: true },
+  { path: '/admin/drivers', icon: ShieldCheck, label: 'Driver Approvals' },
+  { path: '/admin/agencies', icon: Building2, label: 'Agency Approvals' },
+  { path: '/admin/users', icon: Users, label: 'Users' },
+  { path: '/admin/payouts', icon: DollarSign, label: 'Payouts' },
+  { path: '/admin/subscriptions', icon: CreditCard, label: 'Subscriptions' },
+  { path: '/admin/contact', icon: MessageSquare, label: 'Contact' },
 ]
 
 interface Notification {
@@ -63,7 +76,7 @@ export default function MobileLayout() {
   const { logout, user } = useAuthStore()
   const { isActive, isTrial, isExpired, trialDaysRemaining, plan, isLoading: subLoading } = useSubscription()
 
-  const currentPage = navItems.find(item => item.path === location.pathname)
+  const currentPage = [...navItems, ...adminNavItems].find(item => item.path === location.pathname)
 
   // Fetch notifications on mount and periodically
   useEffect(() => {
@@ -208,7 +221,7 @@ export default function MobileLayout() {
       <InstallPrompt />
 
       {/* Mobile Header - Hidden on desktop */}
-      <header className="glass border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-40 safe-area-inset-top lg:hidden">
+      <header className="glass border-b border-slate-200/50 dark:border-slate-700/50 sticky top-0 z-40 safe-area-inset-top md:hidden">
         <div className="flex items-center justify-between px-4 h-14">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -245,7 +258,7 @@ export default function MobileLayout() {
       {/* Sidebar Overlay */}
       <div
         className={clsx(
-          "fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden transition-opacity duration-300",
+          "fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden transition-opacity duration-300",
           sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={() => setSidebarOpen(false)}
@@ -380,8 +393,8 @@ export default function MobileLayout() {
       {/* Sidebar */}
       <aside className={clsx(
         "fixed top-0 left-0 bottom-0 w-80 bg-white dark:bg-slate-800 z-50 transform transition-transform duration-300 ease-out shadow-2xl",
-        "lg:fixed lg:translate-x-0 lg:w-64 lg:shadow-lg lg:border-r lg:border-slate-200 dark:lg:border-slate-700",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        "md:fixed md:translate-x-0 md:w-64 md:shadow-lg md:border-r md:border-slate-200 dark:md:border-slate-700",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
@@ -400,7 +413,7 @@ export default function MobileLayout() {
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl lg:hidden transition-colors"
+              className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl md:hidden transition-colors"
               aria-label="Close menu"
             >
               <X className="w-5 h-5" />
@@ -477,7 +490,7 @@ export default function MobileLayout() {
           )}
 
           {/* Desktop Notification Bell */}
-          <div className="hidden lg:flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700">
+          <div className="hidden md:flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700">
             <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
               {'Notifications'}
             </span>
@@ -532,26 +545,26 @@ export default function MobileLayout() {
 
             {user?.role === 'admin' && (
               <>
-                <button
-                  onClick={() => {
-                    navigate('/admin/drivers')
-                    setSidebarOpen(false)
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-                >
-                  <ShieldCheck className="w-5 h-5" />
-                  <span className="font-medium">{'Driver Approvals'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/admin/agencies')
-                    setSidebarOpen(false)
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-                >
-                  <Building2 className="w-5 h-5" />
-                  <span className="font-medium">{'Agency Approvals'}</span>
-                </button>
+                <p className="text-xs font-semibold text-purple-500 uppercase tracking-wider px-4 pt-4 mb-2">
+                  {'Admin'}
+                </p>
+                {adminNavItems.map(({ path, icon: Icon, label, end }) => (
+                  <NavLink
+                    key={path}
+                    to={path}
+                    end={end}
+                    onClick={() => setSidebarOpen(false)}
+                    className={({ isActive }) => clsx(
+                      'flex items-center gap-3 px-4 py-3.5 rounded-xl transition-colors',
+                      isActive
+                        ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                        : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{label}</span>
+                  </NavLink>
+                ))}
               </>
             )}
 
@@ -642,12 +655,12 @@ export default function MobileLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 lg:pb-6 lg:ml-64 overflow-x-hidden min-h-screen">
+      <main className="flex-1 pb-24 md:pb-6 md:ml-64 overflow-x-hidden min-h-screen">
         <Outlet />
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 glass border-t border-slate-200/50 dark:border-slate-700/50 px-2 py-2 lg:hidden safe-area-inset-bottom z-40">
+      <nav className="fixed bottom-0 left-0 right-0 glass border-t border-slate-200/50 dark:border-slate-700/50 px-2 py-2 md:hidden safe-area-inset-bottom z-40">
         <div className="flex items-center justify-around max-w-md mx-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path

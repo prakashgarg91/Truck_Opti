@@ -111,9 +111,9 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">9. Contact Us</h2>
           <p className="text-slate-600 dark:text-slate-400">
             For questions about these Terms, please contact us at{' '}
-            <a href="mailto:legal@truckopti.in" className="text-primary-600 hover:underline">
+            <button type="button" onClick={() => navigate('/contact')} className="text-primary-600 hover:underline">
               legal@truckopti.in
-            </a>
+            </button>
           </p>
         </section>
       </div>

@@ -467,6 +467,8 @@ export default function LandingPage() {
 
             <div className="flex flex-wrap gap-6 text-sm font-medium">
               <Link to="/pricing" className="transition-colors hover:text-white">{t.ctaPricing}</Link>
+              <Link to="/driver/register" className="transition-colors hover:text-white">Drivers</Link>
+              <Link to="/agency/register" className="transition-colors hover:text-white">Agencies</Link>
               <Link to="/contact" className="transition-colors hover:text-white">{t.contact}</Link>
               <Link to="/terms" className="transition-colors hover:text-white">Terms</Link>
               <Link to="/privacy" className="transition-colors hover:text-white">Privacy</Link>

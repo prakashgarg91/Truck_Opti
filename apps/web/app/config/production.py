@@ -4,7 +4,25 @@ Secure configuration for production deployment
 """
 
 import os
+import secrets
 from datetime import timedelta
+
+
+def _current_env_name() -> str:
+    return (os.getenv('FLASK_ENV') or os.getenv('TRUCKOPTI_ENV') or 'development').lower()
+
+
+def _resolve_runtime_secret(env_var: str, fallback_env_var: str | None = None) -> str:
+    configured_secret = (os.getenv(env_var) or '').strip()
+    if configured_secret:
+        return configured_secret
+
+    if fallback_env_var:
+        fallback_secret = (os.getenv(fallback_env_var) or '').strip()
+        if fallback_secret:
+            return fallback_secret
+
+    return secrets.token_urlsafe(48)
 
 
 class ProductionConfig:
@@ -22,10 +40,7 @@ class ProductionConfig:
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
 
     # Database
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        'DATABASE_URL',
-        'postgresql://user:password@localhost/truckopti'
-    )
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 10,
@@ -134,14 +149,14 @@ class DevelopmentConfig:
 
     DEBUG = True
     TESTING = False
-    SECRET_KEY = 'dev-secret-key-change-in-production'
+    SECRET_KEY = _resolve_runtime_secret('SECRET_KEY')
 
     # Database (SQLite for development)
     SQLALCHEMY_DATABASE_URI = 'sqlite:///truckopti_dev.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT
-    JWT_SECRET_KEY = 'dev-jwt-secret-change-in-production'
+    JWT_SECRET_KEY = _resolve_runtime_secret('JWT_SECRET_KEY', fallback_env_var='SECRET_KEY')
     JWT_ALGORITHM = 'HS256'
     JWT_EXPIRATION_HOURS = 24
 
@@ -166,14 +181,14 @@ class TestingConfig:
 
     TESTING = True
     DEBUG = True
-    SECRET_KEY = 'testing-secret-key'
+    SECRET_KEY = _resolve_runtime_secret('TEST_SECRET_KEY', fallback_env_var='SECRET_KEY')
 
     # Database (in-memory for tests)
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT
-    JWT_SECRET_KEY = 'testing-jwt-secret'
+    JWT_SECRET_KEY = _resolve_runtime_secret('TEST_JWT_SECRET_KEY', fallback_env_var='JWT_SECRET_KEY')
     JWT_ALGORITHM = 'HS256'
     JWT_EXPIRATION_HOURS = 1
 
@@ -189,7 +204,7 @@ config_by_name = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'testing': TestingConfig,
-    'default': DevelopmentConfig
+    'default': ProductionConfig if _current_env_name() in {'production', 'prod'} else DevelopmentConfig
 }
 
 

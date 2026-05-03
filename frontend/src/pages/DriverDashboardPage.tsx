@@ -73,6 +73,22 @@ function normalizeShipmentSummary(shipment: Record<string, unknown> | null | und
   }
 }
 
+function getCountdownFromExpiry(expiresAt: string | null | undefined) {
+  if (!expiresAt) return 0
+
+  const remainingMs = new Date(expiresAt).getTime() - Date.now()
+  return Math.max(0, Math.ceil(remainingMs / 1000))
+}
+
+function calculateWalletBalance(total: number, payouts: { amount: number; status: string }[]) {
+  const reservedStatuses = new Set(['pending', 'approved', 'paid'])
+  const alreadyReserved = payouts.reduce((sum, payout) => {
+    return reservedStatuses.has(payout.status) ? sum + payout.amount : sum
+  }, 0)
+
+  return total - alreadyReserved
+}
+
 export default function DriverDashboardPage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
@@ -114,6 +130,44 @@ export default function DriverDashboardPage() {
       status: data.status,
       shipments: normalizeShipmentSummary(shipment as Record<string, unknown> | null | undefined),
     }
+  }, [])
+
+  const loadPendingOffer = useCallback(async (driverId: string): Promise<JobOffer | null> => {
+    const { data, error } = await supabase
+      .from('job_offers')
+      .select('id, shipment_id, offered_at, expires_at, status, shipments(origin, destination, total_weight, estimated_cost)')
+      .eq('driver_id', driverId)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
+      .order('expires_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (error || !data) {
+      return null
+    }
+
+    const shipment = Array.isArray(data.shipments) ? data.shipments[0] : data.shipments
+
+    return {
+      id: data.id,
+      shipment_id: data.shipment_id,
+      offered_at: data.offered_at,
+      expires_at: data.expires_at,
+      status: data.status,
+      shipments: normalizeShipmentSummary(shipment as Record<string, unknown> | null | undefined),
+    }
+  }, [])
+
+  const showIncomingOffer = useCallback((jobOffer: JobOffer | null) => {
+    if (!jobOffer) {
+      setIncomingJob(null)
+      setCountdown(0)
+      return
+    }
+
+    setIncomingJob(jobOffer)
+    setCountdown(getCountdownFromExpiry(jobOffer.expires_at))
   }, [])
 
   const fetchDriver = useCallback(async () => {
@@ -191,8 +245,7 @@ export default function DriverDashboardPage() {
     setPayoutHistory(payouts || [])
 
     // Wallet balance = total earned minus already-requested payouts
-    const alreadyPaidOut = (payouts || []).reduce((s: number, p: { amount: number }) => s + p.amount, 0)
-    setWalletBalance(total - alreadyPaidOut)
+    setWalletBalance(calculateWalletBalance(total, payouts || []))
   }, [])
 
   const handleWithdrawal = async () => {
@@ -220,14 +273,7 @@ export default function DriverDashboardPage() {
         toast.success('Withdrawal request submitted')
         setShowWithdrawalModal(false)
         setWithdrawalAmount('')
-        // Refresh payout history
-        const { data: payouts } = await supabase
-          .from('driver_payouts')
-          .select('id, amount, status, requested_at')
-          .eq('driver_id', driver.id)
-          .order('requested_at', { ascending: false })
-          .limit(5)
-        setPayoutHistory(payouts || [])
+        await fetchHistory(driver.id)
       }
     } finally {
       setWithdrawing(false)
@@ -253,18 +299,28 @@ export default function DriverDashboardPage() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'job_offers',
           filter: `driver_id=eq.${driver.id}`,
         },
         (payload) => {
-          const job = payload.new as { id?: string; status?: string }
-          if (job.status === 'pending' && job.id) {
+          const job = payload.new as { id?: string; status?: string; expires_at?: string } | null
+          if (job?.status === 'pending' && job.id) {
             void fetchIncomingJob(job.id).then((fullJob) => {
-              setIncomingJob(fullJob ?? { id: job.id as string, shipment_id: '', offered_at: '', expires_at: '', status: 'pending' })
-              setCountdown(30)
+              showIncomingOffer(fullJob ?? {
+                id: job.id as string,
+                shipment_id: '',
+                offered_at: '',
+                expires_at: job.expires_at || '',
+                status: 'pending'
+              })
             })
+            return
+          }
+
+          if (incomingJob && payload.old && 'id' in payload.old && payload.old.id === incomingJob.id) {
+            showIncomingOffer(null)
           }
         }
       )
@@ -273,18 +329,51 @@ export default function DriverDashboardPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [driver?.id, driver?.status, fetchIncomingJob])
+  }, [driver?.id, driver?.status, fetchIncomingJob, incomingJob, showIncomingOffer])
+
+  useEffect(() => {
+    if (!driver?.id || driver.status !== 'approved') return
+
+    const hydratePendingOffer = () => {
+      void loadPendingOffer(driver.id).then((jobOffer) => {
+        if (jobOffer) {
+          showIncomingOffer(jobOffer)
+        }
+      })
+    }
+
+    hydratePendingOffer()
+    window.addEventListener('focus', hydratePendingOffer)
+
+    return () => {
+      window.removeEventListener('focus', hydratePendingOffer)
+    }
+  }, [driver?.id, driver?.status, loadPendingOffer, showIncomingOffer])
 
   // Countdown timer for incoming job
   useEffect(() => {
-    if (!incomingJob) return
-    if (countdown <= 0) {
-      setIncomingJob(null)
-      return
+    if (!incomingJob?.expires_at) return
+
+    const tick = () => {
+      const remaining = getCountdownFromExpiry(incomingJob.expires_at)
+      setCountdown(remaining)
+
+      if (remaining <= 0) {
+        showIncomingOffer(null)
+        if (driver?.id) {
+          void loadPendingOffer(driver.id).then((jobOffer) => {
+            if (jobOffer) {
+              showIncomingOffer(jobOffer)
+            }
+          })
+        }
+      }
     }
-    const timer = setTimeout(() => setCountdown(c => c - 1), 1000)
-    return () => clearTimeout(timer)
-  }, [incomingJob, countdown])
+
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [driver?.id, incomingJob?.expires_at, loadPendingOffer, showIncomingOffer])
 
   const toggleOnline = async () => {
     if (!driver?.id) return
@@ -494,7 +583,7 @@ export default function DriverDashboardPage() {
         </div>
       )}
 
-      <div className="p-4 lg:p-8 space-y-4 max-w-2xl lg:max-w-5xl mx-auto">
+      <div className="p-4 md:p-8 space-y-4 max-w-2xl md:max-w-5xl mx-auto">
         {/* Status Banner for non-approved drivers */}
         {driver.status !== 'approved' && (
           <div className={`rounded-2xl p-4 ${statusInfo.color}`}>
@@ -545,7 +634,7 @@ export default function DriverDashboardPage() {
         )}
 
         {/* Today's Stats */}
-        <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-center">
             <Wallet size={20} className="text-green-500 mx-auto mb-1" />
             <p className="text-lg font-bold text-slate-800 dark:text-slate-100">

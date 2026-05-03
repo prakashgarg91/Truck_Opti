@@ -4,41 +4,11 @@ import {
   XCircle, AlertTriangle, Phone, MapPin, Calendar,
   FileText, RefreshCw, ShieldCheck
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
 import { useNavigate, useParams } from 'react-router-dom'
+import { driverSupabaseApi, type DriverProfile } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
+import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import toast from 'react-hot-toast'
-
-interface DriverDetail {
-  id: string
-  user_id: string | null
-  full_name: string
-  phone: string
-  aadhaar_last4: string | null
-  pan_number: string | null
-  date_of_birth: string | null
-  vehicle_type: string
-  rc_number: string | null
-  license_number: string | null
-  vehicle_capacity: number | null
-  dl_url: string | null
-  rc_url: string | null
-  insurance_url: string | null
-  selfie_url: string | null
-  bank_account: string | null
-  ifsc_code: string | null
-  upi_id: string | null
-  status: 'pending' | 'approved' | 'rejected' | 'suspended'
-  rejection_reason: string | null
-  approved_by: string | null
-  approved_at: string | null
-  home_city: string | null
-  rating: number | null
-  total_trips: number | null
-  is_online: boolean
-  created_at: string
-  updated_at: string
-}
 
 const VEHICLE_LABELS: Record<string, string> = {
   tata_407: 'Tata 407 (1T)',
@@ -74,8 +44,8 @@ function DocBadge({ label, url }: { label: string; url: string | null }) {
       target={url ? '_blank' : undefined}
       rel="noopener noreferrer"
       className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${url
-          ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/40'
-          : 'bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
+        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/40'
+        : 'bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
         }`}
     >
       {url ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
@@ -89,34 +59,33 @@ export default function DriverDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const [driver, setDriver] = useState<DriverDetail | null>(null)
+  const [driver, setDriver] = useState<DriverProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectForm, setShowRejectForm] = useState(false)
 
   useEffect(() => {
-    if (user && user.role !== 'admin') {
-      toast.error('Admin access required')
-      navigate('/', { replace: true })
-    }
-  }, [user, navigate])
-
-  useEffect(() => {
     if (!id) return
+    const driverId = id
+
     async function fetch() {
-      const { data, error } = await supabase
-        .from('drivers')
-        .select('*')
-        .eq('id', id)
-        .single()
-      if (error) {
-        toast.error('Driver not found')
+      try {
+        const data = await driverSupabaseApi.getById(driverId)
+
+        if (!data) {
+          toast.error('Driver not found')
+          navigate('/admin/drivers', { replace: true })
+          return
+        }
+
+        setDriver(data)
+      } catch (error) {
+        toast.error(toUserFacingErrorMessage(error, 'Failed to load driver details. Please try again.'))
         navigate('/admin/drivers', { replace: true })
-      } else {
-        setDriver(data as DriverDetail)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     fetch()
   }, [id, navigate])
@@ -124,53 +93,53 @@ export default function DriverDetailPage() {
   const handleApprove = async () => {
     if (!driver) return
     setActionLoading(true)
-    const { error } = await supabase
-      .from('drivers')
-      .update({ status: 'approved', approved_by: user?.id, approved_at: new Date().toISOString() })
-      .eq('id', driver.id)
-    if (error) {
-      toast.error('Failed to approve driver')
-    } else {
+    try {
+      const updatedDriver = await driverSupabaseApi.approve(driver.id, user?.id ?? null)
       toast.success('Driver approved!')
-      setDriver(d => d ? { ...d, status: 'approved' } : d)
+      setDriver(updatedDriver)
+    } catch (error) {
+      toast.error(toUserFacingErrorMessage(error, 'Failed to approve driver. Please try again.'))
+    } finally {
+      setActionLoading(false)
     }
-    setActionLoading(false)
   }
 
   const handleReject = async () => {
-    if (!driver || !rejectReason.trim()) {
+    const trimmedReason = rejectReason.trim()
+
+    if (!driver || !trimmedReason) {
       toast.error('Please enter a rejection reason')
       return
     }
+
     setActionLoading(true)
-    const { error } = await supabase
-      .from('drivers')
-      .update({ status: 'rejected', rejection_reason: rejectReason.trim() })
-      .eq('id', driver.id)
-    if (error) {
-      toast.error('Failed to reject driver')
-    } else {
+
+    try {
+      const updatedDriver = await driverSupabaseApi.reject(driver.id, trimmedReason)
       toast.success('Driver rejected')
-      setDriver(d => d ? { ...d, status: 'rejected', rejection_reason: rejectReason.trim() } : d)
+      setDriver(updatedDriver)
+      setRejectReason('')
       setShowRejectForm(false)
+    } catch (error) {
+      toast.error(toUserFacingErrorMessage(error, 'Failed to reject driver. Please try again.'))
+    } finally {
+      setActionLoading(false)
     }
-    setActionLoading(false)
   }
 
   const handleSuspend = async () => {
     if (!driver) return
     setActionLoading(true)
-    const { error } = await supabase
-      .from('drivers')
-      .update({ status: 'suspended' })
-      .eq('id', driver.id)
-    if (error) {
-      toast.error('Failed to suspend driver')
-    } else {
+
+    try {
+      const updatedDriver = await driverSupabaseApi.suspend(driver.id)
       toast.success('Driver suspended')
-      setDriver(d => d ? { ...d, status: 'suspended' } : d)
+      setDriver(updatedDriver)
+    } catch (error) {
+      toast.error(toUserFacingErrorMessage(error, 'Failed to suspend driver. Please try again.'))
+    } finally {
+      setActionLoading(false)
     }
-    setActionLoading(false)
   }
 
   if (loading) {
@@ -199,7 +168,7 @@ export default function DriverDetailPage() {
         </span>
       </div>
 
-      <div className="p-4 space-y-4 max-w-md mx-auto">
+      <div className="p-4 md:p-8 space-y-4 max-w-md md:max-w-5xl mx-auto">
         {/* Hero Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-4 mb-4">

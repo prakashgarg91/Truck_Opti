@@ -77,7 +77,8 @@ def create_app(config_context: Optional[str] = None,
                 import tempfile
                 with open(os.path.join(tempfile.gettempdir(), 'truckopti_db_error.log'), 'w') as f:
                     f.write(f"Database Initialization Error: {str(e)}\n")
-                    f.write(f"App Config: {app.config}\n")
+                    f.write(f"Testing: {app.config.get('TESTING', False)}\n")
+                    f.write(f"Debug: {app.config.get('DEBUG', False)}\n")
             except Exception as log_error:
                 print(f"Could not write error log: {log_error}")
 
@@ -287,6 +288,7 @@ def setup_error_monitoring(app: Flask) -> None:
         # Setup intelligent error monitoring (only in development)
         from app.core.intelligent_error_monitor import setup_flask_error_capture, error_monitor
         setup_flask_error_capture(app)
+        from app.middleware.authentication import require_auth, require_role
 
         # Setup advanced logging system
         from app.core.advanced_logging import advanced_logger, log_info, log_error
@@ -300,6 +302,8 @@ def setup_error_monitoring(app: Flask) -> None:
 
         # Add comprehensive error monitoring endpoints
         @app.route('/api/error-analytics')
+        @require_auth
+        @require_role('admin')
         def get_error_analytics():
             from flask import jsonify
             try:
@@ -311,6 +315,8 @@ def setup_error_monitoring(app: Flask) -> None:
                     {'error': 'Failed to get analytics', 'message': str(e)}), 500
 
         @app.route('/api/improvement-suggestions')
+        @require_auth
+        @require_role('admin')
         def get_improvement_suggestions():
             from flask import jsonify
             try:
@@ -322,6 +328,8 @@ def setup_error_monitoring(app: Flask) -> None:
                     {'error': 'Failed to get suggestions', 'message': str(e)}), 500
 
         @app.route('/api/error-report')
+        @require_auth
+        @require_role('admin')
         def get_error_report():
             from flask import jsonify
             try:
@@ -334,6 +342,8 @@ def setup_error_monitoring(app: Flask) -> None:
 
         # Advanced logging endpoints
         @app.route('/api/advanced-logging/health')
+        @require_auth
+        @require_role('admin')
         def get_logging_health():
             from flask import jsonify
             try:
@@ -345,6 +355,8 @@ def setup_error_monitoring(app: Flask) -> None:
                     {'error': 'Failed to get logging health', 'message': str(e)}), 500
 
         @app.route('/api/advanced-logging/ai-suggestions')
+        @require_auth
+        @require_role('admin')
         def get_ai_suggestions():
             from flask import jsonify
             try:
@@ -356,6 +368,8 @@ def setup_error_monitoring(app: Flask) -> None:
                     {'error': 'Failed to get AI suggestions', 'message': str(e)}), 500
 
         @app.route('/api/advanced-logging/improvement-report')
+        @require_auth
+        @require_role('admin')
         def get_improvement_report():
             from flask import jsonify
             try:
@@ -368,6 +382,8 @@ def setup_error_monitoring(app: Flask) -> None:
 
         # Performance logging endpoint
         @app.route('/api/performance-logging', methods=['POST'])
+        @require_auth
+        @require_role('admin')
         def log_performance_data():
             from flask import request, jsonify
             from app.core.advanced_logging import log_performance

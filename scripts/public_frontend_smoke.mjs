@@ -13,6 +13,11 @@ const ROUTES = [
   { path: '/contact', expectedTitle: 'Contact Us' },
   { path: '/login', expectedTitle: 'Welcome Back' },
   { path: '/signup', expectedTitle: 'Sign Up' },
+  { path: '/forgot-password', expectedTitle: 'Forgot Password' },
+  { path: '/reset-password', expectedTitle: 'Set New Password' },
+  { path: '/payment/callback', expectedTitle: 'Payment Status', forbiddenBodyTexts: ['Invalid payment callback', 'Payment Failed'] },
+  { path: '/payment/success', expectedTitle: 'Payment Status', forbiddenBodyTexts: ['Invalid payment callback', 'Payment Failed'] },
+  { path: '/subscription', expectedTitle: 'Pricing', expectedFinalUrlIncludes: '/pricing' },
 ];
 
 async function collectRouteResult(browser, route) {
@@ -60,10 +65,14 @@ async function collectRouteResult(browser, route) {
     const title = await page.title();
     const appErrorCount = await page.getByText('Application Error').count();
     const heading = await page.locator('h1, h2').first().textContent().catch(() => null);
+    const bodyText = await page.locator('body').innerText().catch(() => '');
+    const containsForbiddenText = (route.forbiddenBodyTexts || []).some((text) => bodyText.includes(text));
 
     const passed =
       title.includes(route.expectedTitle) &&
+      (!route.expectedFinalUrlIncludes || page.url().includes(route.expectedFinalUrlIncludes)) &&
       appErrorCount === 0 &&
+      !containsForbiddenText &&
       consoleErrors.length === 0 &&
       pageErrors.length === 0 &&
       failedResponses.length === 0;
@@ -73,6 +82,7 @@ async function collectRouteResult(browser, route) {
       finalUrl: page.url(),
       title,
       heading,
+      containsForbiddenText,
       passed,
       appErrorCount,
       consoleErrors,
@@ -117,7 +127,7 @@ async function main() {
     if (failed.length > 0) {
       for (const route of failed) {
         console.error(
-          `[FAIL] ${route.path} -> title="${route.title}", appErrors=${route.appErrorCount}, console=${route.consoleErrors.length}, pageErrors=${route.pageErrors.length}, httpFailures=${route.failedResponses.length}`
+          `[FAIL] ${route.path} -> title="${route.title}", appErrors=${route.appErrorCount}, forbiddenText=${route.containsForbiddenText}, console=${route.consoleErrors.length}, pageErrors=${route.pageErrors.length}, httpFailures=${route.failedResponses.length}`
         );
       }
       process.exitCode = 1;

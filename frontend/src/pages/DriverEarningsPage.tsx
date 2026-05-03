@@ -24,11 +24,22 @@ interface JobRecord {
   }
 }
 
+function calculateAvailableBalance(totalEarned: number, payouts: { amount: number; status: string }[]) {
+  const reservedStatuses = new Set(['pending', 'approved', 'paid'])
+  const reservedAmount = payouts.reduce((sum, payout) => {
+    return reservedStatuses.has(payout.status) ? sum + (payout.amount ?? 0) : sum
+  }, 0)
+
+  return Math.max(0, totalEarned - reservedAmount)
+}
+
 export default function DriverEarningsPage() {
   const { user } = useAuthStore()
   const { language } = useLanguageStore()
   const [driverId, setDriverId] = useState<string | null>(null)
-  const [payoutEarned, setPayoutEarned] = useState<number>(0)
+  const [availableBalance, setAvailableBalance] = useState<number>(0)
+  const [payoutPaid, setPayoutPaid] = useState<number>(0)
+  const [payoutApproved, setPayoutApproved] = useState<number>(0)
   const [payoutPending, setPayoutPending] = useState<number>(0)
   const [jobs, setJobs] = useState<JobRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -46,22 +57,39 @@ export default function DriverEarningsPage() {
   }, [user?.id])
 
   const loadData = useCallback(async (drId: string) => {
-    // Fetch payouts from driver_payouts table
-    const { data: payouts, error: payErr } = await supabase
-      .from('driver_payouts')
-      .select('amount, status')
-      .eq('driver_id', drId)
+    const [
+      { data: payouts, error: payErr },
+      { data: deliveredJobs, error: jobsErr },
+    ] = await Promise.all([
+      supabase
+        .from('driver_payouts')
+        .select('amount, status')
+        .eq('driver_id', drId),
+      supabase
+        .from('job_offers')
+        .select('shipments(estimated_cost)')
+        .eq('driver_id', drId)
+        .eq('status', 'delivered'),
+    ])
 
-    if (payErr) {
+    if (payErr || jobsErr) {
+      logger.error('[DriverEarnings] balance:', payErr || jobsErr)
       logger.error('[DriverEarnings] balance:', payErr)
       toast.error('Failed to load balance')
       return
     }
 
-    const earned = payouts?.filter(p => p.status === 'paid').reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0
+    const paid = payouts?.filter(p => p.status === 'paid').reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0
+    const approved = payouts?.filter(p => p.status === 'approved').reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0
     const pending = payouts?.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0
+    const totalDelivered = (deliveredJobs ?? []).reduce((sum, job) => {
+      const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
+      return sum + Number((shipment as Record<string, unknown> | null | undefined)?.estimated_cost ?? 0)
+    }, 0)
 
-    setPayoutEarned(earned)
+    setAvailableBalance(calculateAvailableBalance(totalDelivered, payouts ?? []))
+    setPayoutPaid(paid)
+    setPayoutApproved(approved)
     setPayoutPending(pending)
   }, [language])
 
@@ -105,12 +133,17 @@ export default function DriverEarningsPage() {
   useEffect(() => { if (driverId) loadData(driverId) }, [driverId, loadData])
 
   const handleWithdrawRequest = async () => {
+    if (!driverId) {
+      toast.error('Driver account not found')
+      return
+    }
+
     const amount = parseFloat(withdrawAmount)
     if (isNaN(amount) || amount <= 0) {
       toast.error('Please enter a valid amount')
       return
     }
-    const available = payoutEarned
+    const available = availableBalance
     if (amount > available) {
       toast.error('Amount exceeds available balance')
       return
@@ -129,7 +162,10 @@ export default function DriverEarningsPage() {
         toast.success('Withdrawal request submitted!')
         setShowWithdrawModal(false)
         setWithdrawAmount('')
-        fetchDriverId() // Refresh driver data
+        await Promise.all([
+          loadData(driverId),
+          fetchJobs(driverId),
+        ])
       }
     } catch (_err) {
       toast.error('Something went wrong')
@@ -162,7 +198,7 @@ export default function DriverEarningsPage() {
         </div>
       </div>
 
-      <div className="p-4 lg:p-8 space-y-4 max-w-2xl lg:max-w-4xl mx-auto">
+      <div className="p-4 md:p-8 space-y-4 max-w-2xl md:max-w-4xl mx-auto">
         {/* Period selector */}
         <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1">
           {(['week', 'month', 'total'] as const).map(p => (
@@ -189,16 +225,21 @@ export default function DriverEarningsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-100 text-sm font-medium">{'Wallet Balance'}</p>
-                  <p className="text-3xl font-bold text-white mt-1">₹{payoutEarned.toLocaleString('en-IN')}</p>
+                  <p className="text-3xl font-bold text-white mt-1">₹{availableBalance.toLocaleString('en-IN')}</p>
                   {payoutPending > 0 && (
                     <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-400/20 rounded-lg">
                       <span className="text-amber-100 text-xs font-medium">{'Pending'}: ₹{payoutPending.toLocaleString('en-IN')}</span>
                     </div>
                   )}
+                  {payoutApproved > 0 && (
+                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-400/20 rounded-lg md:ml-2">
+                      <span className="text-blue-100 text-xs font-medium">{'Approved'}: ₹{payoutApproved.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => setShowWithdrawModal(true)}
-                  disabled={payoutEarned <= 0}
+                  disabled={availableBalance <= 0}
                   className="px-5 py-2.5 bg-white text-green-600 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-50 transition-colors"
                 >
                   {'Withdraw'}
@@ -220,15 +261,13 @@ export default function DriverEarningsPage() {
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
                 <TrendingUp size={20} className="text-purple-500 mb-2" />
-                <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(payoutPending)}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Pending</p>
+                <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(payoutPending + payoutApproved)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">In Process</p>
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
                 <Calendar size={20} className="text-amber-500 mb-2" />
-                <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                  {jobs.length > 0 ? formatCurrency(Math.round(totalEarnings / jobs.length)) : '₹0'}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Avg/Trip</p>
+                <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(payoutPaid)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Withdrawn</p>
               </div>
             </div>
 
@@ -288,7 +327,7 @@ export default function DriverEarningsPage() {
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  {'Available:'} ₹{payoutEarned.toLocaleString('en-IN')}
+                  {'Available:'} ₹{availableBalance.toLocaleString('en-IN')}
                 </p>
               </div>
               <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 flex items-start gap-2">

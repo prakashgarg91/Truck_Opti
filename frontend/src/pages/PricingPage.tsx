@@ -3,36 +3,58 @@ import { useNavigate } from 'react-router-dom'
 import { Check, Zap, Crown, Building2, Rocket, Star, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { PRICING_TIERS, type PricingTier } from '../config/pricing'
-import { supabase } from '../lib/supabase'
+import { subscriptionPlansApi } from '../services/subscriptionApi'
 import { useAuthStore } from '../stores/authStore'
 import { useSubscription } from '../hooks/useSubscription'
-import toast from 'react-hot-toast'
-import { logger } from '../utils/logger'
+
+const normalizePlanFeatures = (features: unknown): string[] => {
+  if (Array.isArray(features)) {
+    return features.filter((feature): feature is string => typeof feature === 'string')
+  }
+
+  if (typeof features === 'string') {
+    try {
+      const parsed = JSON.parse(features)
+      return Array.isArray(parsed)
+        ? parsed.filter((feature): feature is string => typeof feature === 'string')
+        : []
+    } catch {
+      return []
+    }
+  }
+
+  return []
+}
 
 // ── Data fetcher ────────────────────────────────────────────────────────────
 const fetchPricingPlans = async (): Promise<PricingTier[]> => {
-  const { data, error } = await supabase
-    .from('subscription_plans')
-    .select('*')
-    .order('price_monthly', { ascending: true })
-  if (error || !data || data.length === 0) return PRICING_TIERS
-  return data.map((plan) => ({
-    id: plan.id, name: plan.name,
-    monthlyPrice: plan.price_monthly, yearlyPrice: plan.price_yearly,
-    features: plan.features || [],
-    limits: {
-      users: plan.limits_users || 1,
-      trucksManaged: plan.limits_trucks || 1,
-      shipmentsPerMonth: plan.limits_shipments || 0,
-      packingOptimizations: plan.limits_packing || 0,
-      routeOptimizations: plan.limits_routes || 0,
-      storageGB: plan.limits_storage || 1,
-      apiCallsPerMonth: plan.limits_api_calls || 0,
-      smsOtpPerMonth: plan.limits_sms || 0,
-      supportLevel: plan.limits_support || 'community',
-    },
-    targetAudience: plan.target_audience || '',
-  }))
+  try {
+    const data = await subscriptionPlansApi.getAll()
+
+    if (!data || data.length === 0) {
+      return PRICING_TIERS
+    }
+
+    return data.map((plan) => ({
+      id: plan.id, name: plan.name,
+      monthlyPrice: plan.price_monthly / 100, yearlyPrice: plan.price_yearly / 100,
+      features: normalizePlanFeatures(plan.features),
+      limits: {
+        users: plan.users_limit || 1,
+        trucksManaged: plan.trucks_limit || 1,
+        shipmentsPerMonth: plan.shipments_monthly || 0,
+        packingOptimizations: plan.shipments_monthly || 0,
+        routeOptimizations: plan.maps_requests_monthly || 0,
+        storageGB: plan.storage_gb || 1,
+        apiCallsPerMonth: plan.api_calls_monthly || 0,
+        smsOtpPerMonth: plan.sms_included || 0,
+        supportLevel: (plan.support_level as PricingTier['limits']['supportLevel']) || 'community',
+      },
+      targetAudience: plan.name,
+    }))
+  } catch {
+    return PRICING_TIERS
+  }
 }
 
 // ── i18n ────────────────────────────────────────────────────────────────────
@@ -40,6 +62,9 @@ const LABELS = {
   eyebrow: 'Plans & Billing',
   title: 'Choose Your Plan', subtitle: 'Smart logistics optimization for every business size',
   planNote: 'Start free, switch billing cadence when you need to, and move enterprise fleets to tailored onboarding only when scale demands it.',
+  businessModelEyebrow: 'Business Model',
+  businessModelTitle: 'TruckOpti is subscription software for logistics operations.',
+  businessModelBody: 'Transporters, fleet owners, dispatch teams, and agencies subscribe to TruckOpti on monthly or yearly plans to use 3D load planning, route optimization, live tracking, customer management, dispatch workflows, and billing tools. Enterprise rollouts are handled through the on-site contact flow.',
   summaryEyebrow: 'What changes by plan',
   summaryTitle: 'Capacity grows with your users, trucks, and shipment volume.',
   summarySubtitle: 'Every tier keeps the same core workflow: packing, dispatch, tracking, and billing. Upgrade only when usage expands.',
@@ -215,39 +240,23 @@ function PricingCard({ tier, isYearly, L, isCurrent, isUpgrade, isDowngrade, cla
 export default function PricingPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { subscription, plan: currentPlan, refetch } = useSubscription()
+  const { subscription, plan: currentPlan } = useSubscription()
   const isAdmin = user?.role === 'admin'
 
   const [isYearly, setIsYearly] = useState(false)
   const [activeIdx, setActiveIdx] = useState(1)
-  const [updating, setUpdating] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const L = LABELS
 
   useEffect(() => { document.title = 'Pricing — TruckOpti' }, [])
 
-  // Handle plan upgrade/downgrade
-  const handlePlanChange = async (tierId: string) => {
-    if (!subscription?.id || updating) return
+  const navigateToCheckout = (tierId: string) => {
+    const params = new URLSearchParams({
+      plan: tierId,
+      billing: isYearly ? 'yearly' : 'monthly',
+    })
 
-    setUpdating(tierId)
-    try {
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({ plan_id: tierId })
-        .eq('id', subscription.id)
-
-      if (error) {
-        logger.error('[PricingPage] Plan update error:', error)
-        toast.error('Failed to update plan')
-        return
-      }
-
-      toast.success('Plan updated successfully!')
-      refetch()
-    } finally {
-      setUpdating(null)
-    }
+    navigate(`/checkout?${params.toString()}`)
   }
 
   const { data: tiers = PRICING_TIERS, isLoading } = useQuery<PricingTier[]>({
@@ -411,6 +420,12 @@ export default function PricingPage() {
           </div>
         </div>
 
+        <div className="mb-10 rounded-[28px] border border-slate-200 bg-white/90 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/85 sm:p-7">
+          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-primary-600 dark:text-primary-300">{L.businessModelEyebrow}</p>
+          <h2 className="mt-3 text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{L.businessModelTitle}</h2>
+          <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600 dark:text-slate-300">{L.businessModelBody}</p>
+        </div>
+
         {/* Cards */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -439,10 +454,8 @@ export default function PricingPage() {
                     onCta={() => {
                       if (tier.id === 'enterprise') {
                         navigate('/contact')
-                      } else if (subscription && (isUpgrade || isDowngrade)) {
-                        handlePlanChange(tier.id)
                       } else {
-                        navigate('/signup')
+                        navigateToCheckout(tier.id)
                       }
                     }}
                   />
@@ -473,10 +486,8 @@ export default function PricingPage() {
                     onCta={() => {
                       if (tier.id === 'enterprise') {
                         navigate('/contact')
-                      } else if (subscription && (isUpgrade || isDowngrade)) {
-                        handlePlanChange(tier.id)
                       } else {
-                        navigate('/signup')
+                        navigateToCheckout(tier.id)
                       }
                     }}
                   />
@@ -543,7 +554,7 @@ export default function PricingPage() {
                       return (
                         <td key={tier.id} className="py-5 px-3 text-center">
                           <button
-                            onClick={() => tier.id === 'enterprise' ? navigate('/contact') : navigate('/signup')}
+                            onClick={() => tier.id === 'enterprise' ? navigate('/contact') : navigateToCheckout(tier.id)}
                             className={`px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${cfg.grad} hover:opacity-90 transition-opacity active:scale-95`}
                           >{tier.id === 'enterprise' ? L.contactSales : L.getStarted}</button>
                         </td>
@@ -564,7 +575,7 @@ export default function PricingPage() {
           <h3 className="mt-5 text-xl font-bold text-white sm:text-2xl">{L.enterprise}</h3>
           <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-300 sm:text-base">{L.enterpriseDesc}</p>
           <button
-            onClick={() => (window.location.href = 'mailto:sales@truckopti.in')}
+            onClick={() => navigate('/contact')}
             className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-100"
           >
             {L.talkToUs} <ChevronRight className="w-4 h-4" />

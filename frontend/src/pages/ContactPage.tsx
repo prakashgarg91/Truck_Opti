@@ -34,23 +34,6 @@ const getContactFailureMessage = (error: unknown) => {
   return 'Unable to send your message right now. It has been saved here for retry.'
 }
 
-const buildSupportMailto = (payload: ContactInquiryPayload) => {
-  const body = [
-    `Name: ${payload.name}`,
-    `Email: ${payload.email}`,
-    `Phone: ${payload.phone || 'Not provided'}`,
-    '',
-    payload.message,
-  ].join('\n')
-
-  const params = new URLSearchParams({
-    subject: `[TruckOpti] ${payload.subject}`,
-    body,
-  })
-
-  return `mailto:${SUPPORT_EMAIL}?${params.toString()}`
-}
-
 export default function ContactPage() {
   const navigate = useNavigate()
   const [submitting, setSubmitting] = useState(false)
@@ -110,6 +93,15 @@ export default function ContactPage() {
     const queued = queuePendingContactInquiry(payload, existingClientSubmissionId || pendingSubmission?.clientSubmissionId)
     setPendingSubmission(queued)
     setSubmitError(message)
+  }
+
+  const handleCopySupportEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(SUPPORT_EMAIL)
+      toast.success('Support email copied')
+    } catch {
+      toast.error('Unable to copy the support email right now')
+    }
   }
 
   const sendInquiry = async (
@@ -182,8 +174,6 @@ export default function ContactPage() {
     await sendInquiry(payload, { showSuccessToast: true, showFailureToast: true })
   }
 
-  const activeInquiry = pendingSubmission ?? form
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4">
       <div className="max-w-lg mx-auto">
@@ -237,14 +227,16 @@ export default function ContactPage() {
                 <Send className="h-4 w-4" />
                 {'Retry send'}
               </button>
-              <a
-                href={buildSupportMailto(activeInquiry)}
+              <button
+                type="button"
+                onClick={() => void handleCopySupportEmail()}
                 className="flex items-center justify-center gap-2 rounded-xl border border-amber-300 bg-white px-4 py-3 font-semibold text-amber-800 transition-colors hover:bg-amber-100"
               >
                 <Mail className="h-4 w-4" />
-                {'Email support'}
-              </a>
+                {'Copy support email'}
+              </button>
             </div>
+            <p className="mt-3 text-sm text-amber-800">Support email: <span className="font-semibold">{SUPPORT_EMAIL}</span></p>
           </div>
         )}
 

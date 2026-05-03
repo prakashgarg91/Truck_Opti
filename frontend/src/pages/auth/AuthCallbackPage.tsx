@@ -4,19 +4,17 @@ import { Loader2, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import { logger } from '../../utils/logger'
-import { useLanguageStore } from '../../stores/languageStore'
 import { consumeAuthReturnTo, storeAuthReturnTo } from '../../utils/authReturnTo'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
-  const { language } = useLanguageStore()
   const [, setIsProcessing] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     document.title = 'Authenticating... - TruckOpti'
     const timeoutId = window.setTimeout(() => {
-      window.location.replace('/login')
+      navigate('/login', { replace: true })
     }, 8000)
 
     const handleAuthCallback = async () => {
@@ -63,9 +61,9 @@ export default function AuthCallbackPage() {
 
         if (error) {
           logger.error('Auth callback error:', error)
+          window.clearTimeout(timeoutId)
           setError('Authentication failed. Please try again.')
           toast.error('Authentication failed. Please try again.')
-          navigate('/login', { replace: true })
           return
         }
 
@@ -81,19 +79,19 @@ export default function AuthCallbackPage() {
           })
 
           window.clearTimeout(timeoutId)
-          window.location.replace(consumeAuthReturnTo() || '/')
+          navigate(consumeAuthReturnTo() || '/', { replace: true })
         } else {
           // No session found - might be a direct visit to this page
           logger.warn('No session found in callback')
           window.clearTimeout(timeoutId)
-          window.location.replace('/login')
+          setError('Authentication did not complete. Please try signing in again.')
+          toast.error('Authentication did not complete. Please try signing in again.')
         }
       } catch (err: unknown) {
         logger.error('Unexpected error during auth callback:', err)
-        setError('An unexpected error occurred.')
+        setError('An unexpected error occurred during sign-in. Please try again.')
         toast.error('Authentication failed. Please try again.')
         window.clearTimeout(timeoutId)
-        window.location.replace('/login')
       } finally {
         setIsProcessing(false)
       }
@@ -101,7 +99,7 @@ export default function AuthCallbackPage() {
 
     handleAuthCallback()
     return () => window.clearTimeout(timeoutId)
-  }, [navigate, language])
+  }, [navigate])
 
   if (error) {
     return (

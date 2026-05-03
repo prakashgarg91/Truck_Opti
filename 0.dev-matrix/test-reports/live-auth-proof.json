@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-18T12:55:47.161Z",
+  "generatedAt": "2026-05-01T09:59:42.689Z",
   "baseUrl": "https://www.truckopti.in",
   "checks": [
     {
@@ -9,8 +9,12 @@
       "screenshots": [
         "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\driver-driver-dashboard.png",
         "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\driver-driver-earnings.png",
-        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\driver-driver-history.png"
-      ]
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\driver-driver-history.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\driver-driver-profile.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\driver-driver-trip.png"
+      ],
+      "driverTripPath": "/driver/trip/6b318aa4-9acd-47b4-a0cd-74ae3373c53c",
+      "seededTripFixture": true
     },
     {
       "key": "agency",
@@ -21,25 +25,39 @@
         "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-fleet.png",
         "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-jobs.png",
         "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-drivers.png",
-        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-billing.png"
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-billing.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\agency-agency-rates.png"
       ]
     },
     {
       "key": "customer",
       "protectedPath": "/management/customers",
-      "consoleErrors": [],
+      "consoleErrors": [
+        {
+          "text": "Google Maps JavaScript API error: RefererNotAllowedMapError\nhttps://developers.google.com/maps/documentation/javascript/error-messages#referer-not-allowed-map-error\nYour site URL to be authorized: https://www.truckopti.in",
+          "location": {
+            "url": "https://www.truckopti.in/assets/three-vendor-CmTUhyH8.js",
+            "lineNumber": 3851,
+            "columnNumber": 34256
+          }
+        }
+      ],
       "screenshots": [
         "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-management-customers.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-dashboard.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-management.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-packing.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-routes.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-tracking.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-management-trucks.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-management-cartons.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-sale-orders.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-settings-company.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-booking-new.png",
+        "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-history.png",
         "D:\\Github\\Truck_Opti\\screenshots\\live-auth-proof\\customer-created-record.png"
       ],
-      "createdCustomer": "Proof Customer 1776516966302"
-    }
-  ],
-  "postRunCleanup": [
-    {
-      "entity": "customer",
-      "name": "Proof Customer 1776516966302",
-      "verifiedRemoved": true
+      "createdCustomer": "Proof Customer 1777629657901"
     }
   ]
 }

@@ -32,7 +32,7 @@
 │  │  ┌─────────────────────────────┐   │                           │
 │  │  │         STORES              │   │                           │
 │  │  │  authStore (session, role)  │   │                           │
-│  │  │  languageStore (en/hi)      │   │                           │
+│  │  │  languageStore (legacy i18n)│   │                           │
 │  │  └─────────────────────────────┘   │                           │
 │  │                                     │                           │
 │  │  ┌─────────────────────────────┐   │                           │
@@ -51,21 +51,26 @@
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │  │
 │  │  │  PostgreSQL  │  │  Supabase    │  │  Edge Functions  │  │  │
 │  │  │  (RLS)       │  │  Auth        │  │  (Deno/TypeScript│  │  │
-│  │  │              │  │              │  │  • verify-payment│  │  │
-│  │  │  17 tables   │  │  OTP email   │  │  • send-sms      │  │  │
-│  │  │  RLS on all  │  │  Google OAuth│  │  • driver-payout │  │  │
-│  │  │              │  │  Phone OTP * │  │                  │  │  │
+│  │  │              │  │              │  │  • create-razorpay-order│ │
+│  │  │  logistics + │  │  Email OTP   │  │  • verify-razorpay-payment│ │
+│  │  │  billing     │  │  Google OAuth│  │  • verify-payment│  │  │
+│  │  │  tables      │  │  Phone OTP * │  │  • phonepe-checkout│ │  │
+│  │  │  RLS on all  │  │              │  │  • phonepe-status│  │  │
+│  │  │              │  │              │  │  • razorpay-webhook│ │  │
+│  │  │              │  │              │  │  • admin-portal-users│ │ │
+│  │  │              │  │              │  │  • admin-portal-subscriptions│ │
 │  │  └──────────────┘  └──────────────┘  └──────────────────┘  │  │
 │  │                                                              │  │
 │  │  ┌──────────────┐  ┌──────────────┐                        │  │
 │  │  │   Realtime   │  │   Storage    │                        │  │
 │  │  │  Channels    │  │  Buckets     │                        │  │
 │  │  │ driver_locs  │  │ proof-photos │                        │  │
-│  │  │ agency_jobs  │  │ profiles     │                        │  │
+│  │  │ agency_jobs  │  │ driver-docs  │                        │  │
 │  │  └──────────────┘  └──────────────┘                        │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                     │
-│  * Phone OTP requires Twilio — currently [HUMAN-BLOCKED T-113]     │
+│  * Phone OTP requires Twilio and is deferred by default unless      │
+│    `VITE_AUTH_PHONE_OTP_ENABLED=true` is intentionally enabled      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -231,16 +236,13 @@ CREATE POLICY "agency_select" ON public.agency_jobs
   );
 ```
 
-### Known RLS Gaps (Must Fix)
+### Historical RLS Bugs (Resolved)
 
-| ID | Table | Issue | Risk |
-|----|-------|-------|------|
-| BUG-RLS-001 | `customers` | `USING (true)` on all policies | Any user can read all customers |
-| BUG-RLS-002 | `shipments` | `USING (true)` on all policies | Cross-tenant shipment exposure |
-| BUG-RLS-003 | `routes` | `USING (true)` on all policies | Cross-tenant route exposure |
-| BUG-RLS-004 | `packing_results` | `USING (true)` | All packing results public |
-| BUG-RLS-005 | `trucks` | `USING (true)` on UPDATE/DELETE | Trucks deletable by anyone |
-| BUG-RLS-006 | `cartons` | `USING (true)` on UPDATE/DELETE | Cartons deletable by anyone |
+The original `BUG-RLS-001` through `BUG-RLS-006` findings were fixed in
+`supabase/migrations/20260307000000_fix_rls_ownership.sql`. The current rule is
+simple: do not reintroduce `USING (true)` on user-owned tables. See
+`0.dev-matrix/SECURITY.md` for the tracked security history and the active policy
+expectations.
 
 ---
 
@@ -273,7 +275,11 @@ CREATE POLICY "agency_select" ON public.agency_jobs
 }
 ```
 
-The language store drives bilingual UI across all pages. Error toasts always provide both English and Hindi messages:
+The store still exists for legacy bilingual support, but launch-safe public auth and
+the cleaned customer/admin surfaces are now English-first. Do not assume every page
+still exposes a visible Hindi toggle.
+
+Legacy bilingual error toasts looked like:
 ```typescript
 toast.error(language === 'en' ? 'Failed to load jobs' : 'काम लोड नहीं हो सका')
 ```
@@ -288,40 +294,34 @@ React Query / SWR are not used. Data fetching follows the direct `useEffect + us
 
 ```
 User selects plan on /pricing
-          │
-          ▼
+    │
+    ▼
     /checkout
-    User picks: Razorpay | PhonePe
-          │
-  ┌───────┴────────────────────────────────────────────┐
-  │ Razorpay                    PhonePe                 │
-  │                                                     │
-  │ 1. razorpayPayment.ts       1. phonepePayment.ts    │
-  │    → POST /api/razorpay        → POST /api/phonepe  │
-  │    (server creates order)      (server creates      │
-  │                                 checksum + payload) │
-  │ 2. Razorpay JS SDK popup    2. Redirect to PhonePe  │
-  │    (loads from CDN)            payment page         │
-  │                                                     │
-  │ 3. On success:              3. PhonePe redirects to │
-  │    paymentId + signature       /payment/callback    │
-  │    sent to client              with status params   │
-  │                                                     │
-  │ 4. POST to Supabase         4. PaymentCallbackPage  │
-  │    Edge Function to verify      calls Edge Function │
-  │    signature server-side        to verify server-   │
-  │                                 side                │
-  │ 5. Edge Function creates    5. Same as Razorpay →   │
-  │    subscription row              subscription row   │
-  └───────────────────────────────────────────────────-─┘
-          │
-          ▼
-  /payment/success
-  PaymentCallbackPage confirms
-  subscription active
+    │
+    ▼
+  Razorpay is the active launch payment path
+    │
+    ▼
+  create-razorpay-order Edge Function
+  validates the plan + GST server-side and
+  writes the pending `payment_history` row
+    │
+    ▼
+  Razorpay JS SDK popup returns payment ID + signature
+    │
+    ▼
+  verify-razorpay-payment Edge Function verifies
+  the signature server-side and activates the subscription
+    │
+    ▼
+  PaymentCallbackPage confirms active subscription
 ```
 
 **Security invariant**: Payment signature/checksum verification ALWAYS happens in Supabase Edge Functions — never in the browser React code.
+
+**Launch note**: PhonePe support remains in the repository for deferred rollout,
+but its sandbox path is disabled for launch and should not be documented as the
+primary live payment gateway.
 
 ---
 

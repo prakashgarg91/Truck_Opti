@@ -9,7 +9,7 @@ const driverNavItems = [
   { path: '/driver/dashboard', icon: LayoutDashboard, label: 'Home', labelHi: 'होम' },
   { path: '/driver/history', icon: Clock, label: 'Trips', labelHi: 'यात्राएं' },
   { path: '/driver/earnings', icon: Wallet, label: 'Earnings', labelHi: 'कमाई' },
-  { path: '/profile', icon: User, label: 'Profile', labelHi: 'प्रोफाइल' },
+  { path: '/driver/profile', icon: User, label: 'Profile', labelHi: 'प्रोफाइल' },
 ]
 
 export default function DriverLayout() {
@@ -23,11 +23,11 @@ export default function DriverLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col md:flex-row">
       <OfflineBanner />
 
       {/* ── Desktop Sidebar (lg+) ────────────────────────────── */}
-      <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 z-30">
+      <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-64 md:flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 z-30">
         {/* Brand */}
         <div className="p-5 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
@@ -77,7 +77,7 @@ export default function DriverLayout() {
       </aside>
 
       {/* ── Mobile Top Header (hidden on lg+) ───────────────── */}
-      <header className="lg:hidden sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
+      <header className="md:hidden sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
             {(user?.name || user?.email || 'D')[0].toUpperCase()}
@@ -95,12 +95,12 @@ export default function DriverLayout() {
       </header>
 
       {/* ── Main Content ─────────────────────────────────────── */}
-      <main className="flex-1 pb-20 lg:pb-8 lg:ml-64 overflow-y-auto">
+      <main className="flex-1 pb-20 md:pb-8 md:ml-64 overflow-y-auto">
         <Outlet />
       </main>
 
       {/* ── Mobile Bottom Nav (hidden on lg+) ────────────────── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-40 safe-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-40 safe-bottom">
         <div className="flex items-center justify-around h-16 max-w-md mx-auto">
           {driverNavItems.map(({ path, icon: Icon, label }) => (
             <NavLink

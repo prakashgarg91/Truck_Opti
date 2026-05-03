@@ -1,5 +1,6 @@
 import os
 import sys
+import secrets
 import tempfile
 from pathlib import Path
 
@@ -16,11 +17,43 @@ def _detect_project_root() -> Path:
 PROJECT_ROOT = _detect_project_root()
 WEB_ROOT = PROJECT_ROOT / "apps" / "web"
 DEFAULT_APP_DATA = WEB_ROOT / "app_data"
+INSECURE_SECRET_SENTINELS = {
+    '',
+    'default_dev_secret_key',
+    'dev-secret-key-change-in-production',
+    'testing-secret-key',
+    'your-super-secret-key-change-in-production',
+}
+_EPHEMERAL_SECRETS: dict[str, str] = {}
+
+
+def _is_production_env() -> bool:
+    return (os.environ.get('FLASK_ENV') or os.environ.get('TRUCKOPTI_ENV') or '').lower() in {'production', 'prod'}
+
+
+def _is_insecure_secret(value: str) -> bool:
+    normalized = value.strip()
+    return not normalized or normalized in INSECURE_SECRET_SENTINELS or 'change-in-production' in normalized.lower()
+
+
+def _resolve_secret(env_var: str) -> str:
+    configured_secret = (os.environ.get(env_var) or '').strip()
+
+    if configured_secret and not _is_insecure_secret(configured_secret):
+        return configured_secret
+
+    if _is_production_env():
+        raise RuntimeError(f'{env_var} must be set to a strong value in production')
+
+    if env_var not in _EPHEMERAL_SECRETS:
+        _EPHEMERAL_SECRETS[env_var] = secrets.token_urlsafe(48)
+
+    return _EPHEMERAL_SECRETS[env_var]
 
 
 class Config:
     """Configuration base class for TruckOpti application"""
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'default_dev_secret_key')
+    SECRET_KEY = _resolve_secret('SECRET_KEY')
     DEBUG = False
     TESTING = False
     LOG_LEVEL = 'INFO'

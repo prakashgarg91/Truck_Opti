@@ -383,7 +383,7 @@ export default function AgencyJobsPage() {
   const trackingRoutes: MapRoute[] = []
 
   return (
-    <div className="p-4 lg:p-8 space-y-4 max-w-2xl lg:max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 space-y-4 max-w-2xl md:max-w-5xl mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Jobs</h1>

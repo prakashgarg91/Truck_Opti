@@ -1,79 +1,103 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
-import { RefreshCw, CreditCard, User, Calendar, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { RefreshCw, CreditCard, User, Calendar, CheckCircle2, XCircle, Clock, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
-import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 
 interface Subscription {
   id: string
   user_id: string
-  plan_id: string
   status: 'active' | 'trial' | 'expired' | 'cancelled'
-  trial_ends_at: string | null
+  billing_cycle: 'monthly' | 'yearly'
+  current_period_start: string
+  current_period_end: string
+  trial_end: string | null
+  cancel_at_period_end: boolean
   created_at: string
-  users: {
+  user: {
     name: string
     email: string
   } | null
+  plan: {
+    id: string
+    name: string
+    tier: string
+  } | null
 }
 
-const PLAN_LABELS: Record<string, string> = {
-  free: 'Free',
-  pro: 'Pro',
-  business: 'Business',
-  enterprise: 'Enterprise'
+interface AdminSubscriptionsResponse {
+  subscriptions: Subscription[]
+}
+
+async function getFunctionErrorMessage(error: unknown, fallbackMessage: string) {
+  if (error && typeof error === 'object') {
+    const response = 'context' in error ? error.context : null
+
+    if (response instanceof Response) {
+      try {
+        const payload = (await response.clone().json()) as { error?: string }
+
+        if (typeof payload.error === 'string' && payload.error.trim()) {
+          return payload.error
+        }
+      } catch {
+        // Fall back to the generic error message below.
+      }
+    }
+
+    if ('message' in error && typeof error.message === 'string' && error.message.trim()) {
+      return error.message
+    }
+  }
+
+  return fallbackMessage
+}
+
+function getPlanLabel(subscription: Subscription) {
+  if (subscription.plan?.name) {
+    return subscription.plan.name
+  }
+
+  return 'Unknown plan'
 }
 
 export default function AdminSubscriptionsPage() {
-  const { user } = useAuthStore()
   const navigate = useNavigate()
+  const { user: currentUser } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
 
-  // Redirect non-admins
-  useEffect(() => {
-    const role = user?.role
-    if (user && role !== 'admin') {
-      toast.error('Admin access required')
-      navigate('/dashboard', { replace: true })
-    }
-  }, [user, navigate])
-
   const fetchSubscriptions = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('id, user_id, plan_id, status, trial_ends_at, created_at, users!inner(name, email)')
-      .order('created_at', { ascending: false })
+    try {
+      const { data, error } = await supabase.functions.invoke<AdminSubscriptionsResponse>('admin-portal-subscriptions', {
+        body: { action: 'list' },
+      })
 
-    if (error) {
+      if (error) {
+        logger.error('[AdminSubscriptions] fetch:', error)
+        toast.error(await getFunctionErrorMessage(error, 'Failed to load subscriptions'))
+        setSubscriptions([])
+        return
+      }
+
+      setSubscriptions(data?.subscriptions ?? [])
+    } catch (error) {
       logger.error('[AdminSubscriptions] fetch:', error)
-      toast.error('Failed to load subscriptions')
+      toast.error(await getFunctionErrorMessage(error, 'Failed to load subscriptions'))
+      setSubscriptions([])
+    } finally {
       setLoading(false)
-      return
     }
-
-    const subs: Subscription[] = (data ?? []).map((s: Record<string, unknown>) => ({
-      id: s.id as string,
-      user_id: s.user_id as string,
-      plan_id: s.plan_id as string,
-      status: s.status as 'active' | 'trial' | 'expired' | 'cancelled',
-      trial_ends_at: s.trial_ends_at as string | null,
-      created_at: s.created_at as string,
-      users: (Array.isArray(s.users) ? s.users[0] : s.users) as { name: string; email: string } | null
-    }))
-
-    setSubscriptions(subs)
-    setLoading(false)
   }, [])
 
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (currentUser?.role === 'admin') {
       fetchSubscriptions()
     }
-  }, [user?.role, fetchSubscriptions])
+  }, [currentUser?.role, fetchSubscriptions])
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -113,10 +137,17 @@ export default function AdminSubscriptionsPage() {
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-4xl mx-auto pb-24">
+    <div className="p-4 md:p-8 space-y-4 max-w-4xl md:max-w-6xl mx-auto pb-8 md:pb-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/admin')}
+            className="p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+            aria-label="Back to admin dashboard"
+          >
+            <ChevronLeft className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+          </button>
           <CreditCard className="w-5 h-5 text-purple-600" />
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
             {'Subscriptions'}
@@ -131,7 +162,7 @@ export default function AdminSubscriptionsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <p className="text-xs font-medium text-slate-500">{'Total'}</p>
           <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{subscriptions.length}</p>
@@ -199,22 +230,29 @@ export default function AdminSubscriptionsPage() {
                     <td className="px-4 py-3">
                       <div>
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                          {sub.users?.name || '—'}
+                          {sub.user?.name || sub.user?.email || '—'}
                         </p>
-                        <p className="text-xs text-slate-400">{sub.users?.email || '—'}</p>
+                        <p className="text-xs text-slate-400">{sub.user?.email || '—'}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-sm text-slate-700 dark:text-slate-300">
-                        {PLAN_LABELS[sub.plan_id] || sub.plan_id}
-                      </span>
+                      <div>
+                        <span className="text-sm text-slate-700 dark:text-slate-300">
+                          {getPlanLabel(sub)}
+                        </span>
+                        {sub.plan?.tier ? (
+                          <p className="text-xs uppercase tracking-wide text-slate-400">
+                            {sub.plan.tier}
+                          </p>
+                        ) : null}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       {getStatusBadge(sub.status)}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-500">
-                      {sub.trial_ends_at
-                        ? new Date(sub.trial_ends_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                      {sub.trial_end
+                        ? new Date(sub.trial_end).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
                         : '—'}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-500">

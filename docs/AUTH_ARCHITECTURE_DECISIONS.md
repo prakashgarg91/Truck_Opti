@@ -12,7 +12,11 @@ TruckOpti has **two separate authentication systems** that are **not connected t
 1. **Production frontend** (`frontend/`): Uses **Supabase Auth** exclusively — OTP delivery, Google OAuth, session management, JWT handling are all handled by Supabase.
 2. **Legacy Flask backend** (`apps/web/`): Has a custom OTP service (`otp_service.py`) that delivers OTPs via Telegram bot or Gmail SMTP. This is **not wired into the React frontend** and runs on a completely separate stack (Flask + SQLite + custom JWT).
 
-**Key decision for launch:** Configure Twilio in Supabase Auth (5-minute task) OR accept Email OTP + Google OAuth as the launch auth methods and defer phone OTP. If phone OTP is enabled later, keep it inside Supabase Phone Auth with Twilio/Twilio Verify instead of introducing Firebase Auth as a second production auth system.
+**Current launch decision:** Email OTP + Google OAuth are the shipped default auth
+methods. Phone OTP stays deferred behind `VITE_AUTH_PHONE_OTP_ENABLED=true` until
+the owner intentionally configures Twilio in Supabase Auth. If phone OTP is enabled
+later, keep it inside Supabase Phone Auth with Twilio/Twilio Verify instead of
+introducing Firebase Auth as a second production auth system.
 
 ---
 
@@ -159,7 +163,7 @@ Option C is a separate project for after launch, not a launch blocker.
 
 ```
 LoginPage.tsx
-  → SMS/WhatsApp OTP: supabase.auth.signInWithOtp({ phone, channel })
+  → SMS/WhatsApp OTP: supabase.auth.signInWithOtp({ phone, channel })   [optional, feature-flagged]
   → Email OTP:        supabase.auth.signInWithOtp({ email })
   → Password:         supabase.auth.signInWithPassword({ email, password })
   → Google OAuth:     supabase.auth.signInWithOAuth({ provider: 'google' })

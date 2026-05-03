@@ -13,11 +13,12 @@ BASE_URL = "http://127.0.0.1:5001"
 def test_auth_endpoints():
     """Test all authentication endpoints"""
     print("=== TruckOptimum Authentication Test Suite ===\n")
+    client = requests.Session()
     
     # Test 1: Health Check
     print("1. Testing Health Check...")
     try:
-        response = requests.get(f"{BASE_URL}/api/health")
+        response = client.get(f"{BASE_URL}/api/health")
         if response.status_code == 200:
             print("   ✅ Health check passed")
         else:
@@ -38,7 +39,7 @@ def test_auth_endpoints():
     }
     
     try:
-        response = requests.post(f"{BASE_URL}/api/auth/register", json=register_data)
+        response = client.post(f"{BASE_URL}/api/auth/register", json=register_data)
         if response.status_code == 201:
             result = response.json()
             print("   ✅ User registration successful")
@@ -55,33 +56,28 @@ def test_auth_endpoints():
         "password": "admin123"
     }
     
-    session_id = None
     try:
-        response = requests.post(f"{BASE_URL}/api/auth/login", json=login_data)
+        response = client.post(f"{BASE_URL}/api/auth/login", json=login_data)
         if response.status_code == 200:
             result = response.json()
-            session_id = result.get('session_id')
             user_info = result.get('user', {})
+            has_session_cookie = 'truckoptimum_session' in client.cookies
             print("   ✅ Login successful")
-            print(f"   Session ID: {session_id[:20]}...")
+            print(f"   Session Cookie Present: {has_session_cookie}")
             print(f"   User: {user_info.get('username')} ({user_info.get('role')})")
         else:
             print(f"   ❌ Login failed: {response.status_code} - {response.json()}")
     except Exception as e:
         print(f"   ❌ Login error: {e}")
     
-    if not session_id:
+    if 'truckoptimum_session' not in client.cookies:
         print("\n❌ Cannot continue tests without valid session")
         return
     
     # Test 4: Session Validation
     print("\n4. Testing Session Validation...")
-    validate_data = {
-        "session_id": session_id
-    }
-    
     try:
-        response = requests.post(f"{BASE_URL}/api/auth/validate", json=validate_data)
+        response = client.post(f"{BASE_URL}/api/auth/validate")
         if response.status_code == 200:
             result = response.json()
             user_info = result.get('user', {})
@@ -94,12 +90,8 @@ def test_auth_endpoints():
     
     # Test 5: User Logout
     print("\n5. Testing User Logout...")
-    logout_data = {
-        "session_id": session_id
-    }
-    
     try:
-        response = requests.post(f"{BASE_URL}/api/auth/logout", json=logout_data)
+        response = client.post(f"{BASE_URL}/api/auth/logout")
         if response.status_code == 200:
             print("   ✅ Logout successful")
         else:
@@ -110,7 +102,7 @@ def test_auth_endpoints():
     # Test 6: Validate Expired Session
     print("\n6. Testing Expired Session Validation...")
     try:
-        response = requests.post(f"{BASE_URL}/api/auth/validate", json=validate_data)
+        response = client.post(f"{BASE_URL}/api/auth/validate")
         if response.status_code == 401:
             print("   ✅ Expired session correctly rejected")
         else:

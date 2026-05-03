@@ -90,9 +90,9 @@ export default function PrivacyPage() {
           </ul>
           <p className="text-slate-600 dark:text-slate-400 mt-3">
             To exercise these rights, contact us at{' '}
-            <a href="mailto:privacy@truckopti.in" className="text-primary-600 hover:underline">
+            <button type="button" onClick={() => navigate('/contact')} className="text-primary-600 hover:underline">
               privacy@truckopti.in
-            </a>
+            </button>
           </p>
         </section>
 
@@ -126,9 +126,9 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">9. Contact Us</h2>
           <p className="text-slate-600 dark:text-slate-400">
             For privacy concerns or to exercise your rights, contact our Data Protection Officer at{' '}
-            <a href="mailto:privacy@truckopti.in" className="text-primary-600 hover:underline">
+            <button type="button" onClick={() => navigate('/contact')} className="text-primary-600 hover:underline">
               privacy@truckopti.in
-            </a>
+            </button>
           </p>
         </section>
       </div>

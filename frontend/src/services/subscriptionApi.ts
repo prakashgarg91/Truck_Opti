@@ -73,7 +73,7 @@ export const subscriptionPlansApi = {
       .select('*')
       .eq('is_active', true)
       .order('price_monthly', { ascending: true });
-    
+
     if (error) throw error;
     return (data || []).map(plan => ({
       ...plan,
@@ -88,7 +88,7 @@ export const subscriptionPlansApi = {
       .select('*')
       .eq('tier', tier)
       .single();
-    
+
     if (error) return null;
     return {
       ...data,
@@ -103,7 +103,7 @@ export const subscriptionPlansApi = {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) return null;
     return {
       ...data,
@@ -127,7 +127,7 @@ export const subscriptionsApi = {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    
+
     if (error) return null;
     return data;
   },
@@ -144,102 +144,26 @@ export const subscriptionsApi = {
   },
 
   // Create new subscription (called after payment)
-  async create(planId: string, billingCycle: 'monthly' | 'yearly', razorpayData?: {
+  async create(_planId: string, _billingCycle: 'monthly' | 'yearly', _razorpayData?: {
     subscription_id: string;
     customer_id: string;
   }): Promise<Subscription> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-
-    const now = new Date();
-    const periodEnd = new Date(now);
-    if (billingCycle === 'monthly') {
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-    } else {
-      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    }
-
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .insert({
-        user_id: user.id,
-        plan_id: planId,
-        status: 'active',
-        billing_cycle: billingCycle,
-        current_period_start: now.toISOString(),
-        current_period_end: periodEnd.toISOString(),
-        razorpay_subscription_id: razorpayData?.subscription_id,
-        razorpay_customer_id: razorpayData?.customer_id
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    throw new Error('Direct client subscription creation is disabled. Use the secure checkout flow.');
   },
 
   // Start trial
-  async startTrial(planId: string): Promise<Subscription> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-
-    const now = new Date();
-    const trialEnd = new Date(now);
-    trialEnd.setDate(trialEnd.getDate() + 14); // 14-day trial
-
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .insert({
-        user_id: user.id,
-        plan_id: planId,
-        status: 'trial',
-        billing_cycle: 'monthly',
-        current_period_start: now.toISOString(),
-        current_period_end: trialEnd.toISOString(),
-        trial_end: trialEnd.toISOString()
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+  async startTrial(_planId: string): Promise<Subscription> {
+    throw new Error('Direct client trial activation is disabled. Use a server-managed trial flow.');
   },
 
   // Cancel subscription
-  async cancel(immediate: boolean = false): Promise<void> {
-    const subscription = await this.getCurrent();
-    if (!subscription) throw new Error('No active subscription');
-
-    if (immediate) {
-      await supabase
-        .from('subscriptions')
-        .update({ 
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString()
-        })
-        .eq('id', subscription.id);
-    } else {
-      await supabase
-        .from('subscriptions')
-        .update({ cancel_at_period_end: true })
-        .eq('id', subscription.id);
-    }
+  async cancel(_immediate: boolean = false): Promise<void> {
+    throw new Error('Direct client subscription cancellation is disabled. Use a server-managed billing workflow.');
   },
 
   // Upgrade/Downgrade plan
-  async changePlan(newPlanId: string): Promise<Subscription> {
-    const subscription = await this.getCurrent();
-    if (!subscription) throw new Error('No active subscription');
-
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .update({ plan_id: newPlanId })
-      .eq('id', subscription.id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+  async changePlan(_newPlanId: string): Promise<Subscription> {
+    throw new Error('Direct client plan changes are disabled. Use the secure checkout flow.');
   }
 };
 

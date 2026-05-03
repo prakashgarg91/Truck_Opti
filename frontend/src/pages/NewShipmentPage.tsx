@@ -302,7 +302,7 @@ export default function NewShipmentPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-10">
-        <div className="max-w-md mx-auto px-4 py-4">
+        <div className="max-w-md md:max-w-4xl mx-auto px-4 md:px-6 py-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
@@ -322,7 +322,7 @@ export default function NewShipmentPage() {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 py-6">
+      <div className="max-w-md md:max-w-4xl mx-auto px-4 md:px-6 py-6">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Origin City */}
           <div>

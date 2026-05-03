@@ -39,6 +39,19 @@ interface JobOffer {
   photo_delivery_url?: string | null
 }
 
+interface ActiveJobOfferDriver {
+  shipment_id: string
+  driver_id: string | null
+}
+
+interface DriverLocationRow {
+  driver_id: string
+  lat: number | null
+  lng: number | null
+  updated_at: string
+  speed_kmh: number | null
+}
+
 const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
   const data = await shipmentsSupabaseApi.getAll()
 
@@ -66,7 +79,79 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
     return []
   }
 
-  return mappedData
+  const inTransitShipmentIds = mappedData
+    .filter((shipment) => shipment.status === 'in_transit')
+    .map((shipment) => shipment.id)
+
+  if (inTransitShipmentIds.length === 0) {
+    return mappedData
+  }
+
+  const { data: activeOffers, error: activeOffersError } = await supabase
+    .from('job_offers')
+    .select('shipment_id, driver_id')
+    .in('shipment_id', inTransitShipmentIds)
+    .not('driver_id', 'is', null)
+    .in('status', ['accepted', 'pickup_arrived', 'in_transit', 'delivery_arrived'])
+
+  if (activeOffersError) {
+    logger.error('[TrackingPage] load active job offers', activeOffersError)
+    return mappedData
+  }
+
+  const offerByShipment = new Map<string, ActiveJobOfferDriver>()
+
+  for (const offer of (activeOffers ?? []) as ActiveJobOfferDriver[]) {
+    if (!offer.shipment_id || !offer.driver_id || offerByShipment.has(offer.shipment_id)) {
+      continue
+    }
+
+    offerByShipment.set(offer.shipment_id, offer)
+  }
+
+  const driverIds = Array.from(new Set(Array.from(offerByShipment.values()).map((offer) => offer.driver_id).filter(Boolean))) as string[]
+
+  if (driverIds.length === 0) {
+    return mappedData
+  }
+
+  const { data: driverLocations, error: driverLocationsError } = await supabase
+    .from('driver_locations')
+    .select('driver_id, lat, lng, updated_at, speed_kmh')
+    .in('driver_id', driverIds)
+    .order('updated_at', { ascending: false })
+
+  if (driverLocationsError) {
+    logger.error('[TrackingPage] load driver locations', driverLocationsError)
+    return mappedData
+  }
+
+  const latestLocationByDriver = new Map<string, DriverLocationRow>()
+
+  for (const location of (driverLocations ?? []) as DriverLocationRow[]) {
+    if (!location.driver_id || latestLocationByDriver.has(location.driver_id)) {
+      continue
+    }
+
+    latestLocationByDriver.set(location.driver_id, location)
+  }
+
+  return mappedData.map((shipment) => {
+    const offer = offerByShipment.get(shipment.id)
+    const location = offer?.driver_id ? latestLocationByDriver.get(offer.driver_id) : null
+
+    if (!location) {
+      return shipment
+    }
+
+    return {
+      ...shipment,
+      latitude: location.lat ?? shipment.latitude,
+      longitude: location.lng ?? shipment.longitude,
+      speed: location.speed_kmh ?? shipment.speed,
+      updated_at: location.updated_at || shipment.updated_at,
+    }
+  })
 }
 
 export default function TrackingPage() {
@@ -119,12 +204,45 @@ export default function TrackingPage() {
           queryClient.invalidateQueries({ queryKey: ['shipments'] })
         }
       )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'job_offers' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['shipments'] })
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'driver_locations' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['shipments'] })
+        }
+      )
       .subscribe()
 
     return () => {
-      subscription.unsubscribe()
+      supabase.removeChannel(subscription)
     }
   }, [queryClient])
+
+  useEffect(() => {
+    if (!selectedShipment) return
+
+    const updatedShipment = shipments.find((shipment) => shipment.id === selectedShipment.id)
+
+    if (!updatedShipment) return
+
+    if (
+      updatedShipment.latitude !== selectedShipment.latitude ||
+      updatedShipment.longitude !== selectedShipment.longitude ||
+      updatedShipment.status !== selectedShipment.status ||
+      updatedShipment.updated_at !== selectedShipment.updated_at ||
+      updatedShipment.driver_name !== selectedShipment.driver_name ||
+      updatedShipment.driver_phone !== selectedShipment.driver_phone ||
+      updatedShipment.vehicle_number !== selectedShipment.vehicle_number ||
+      updatedShipment.speed !== selectedShipment.speed
+    ) {
+      setSelectedShipment(updatedShipment)
+    }
+  }, [selectedShipment, shipments])
 
   // Fetch job offer OTP and photos when modal opens
   useEffect(() => {
@@ -262,7 +380,7 @@ export default function TrackingPage() {
   const activeShipmentCount = shipments.filter(s => s.status === 'pending' || s.status === 'in_transit').length
 
   const mapMarkers = shipments
-    .filter(s => s.latitude && s.longitude && s.status === 'in_transit')
+    .filter(s => s.latitude != null && s.longitude != null && s.status === 'in_transit')
     .map(s => ({
       id: s.id,
       position: [s.latitude!, s.longitude!] as [number, number],
@@ -288,436 +406,462 @@ export default function TrackingPage() {
     : [20.5937, 78.9629] as [number, number]
 
   return (
-    <div className="p-4 space-y-6 pb-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Live Tracking
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Real-time GPS fleet monitoring
-          </p>
-        </div>
-        <button
-          onClick={() => refetch()}
-          disabled={loading}
-          className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all"
-        >
-          <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
-
-      {/* Status Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {(['all', 'pending', 'in_transit', 'delivered', 'cancelled'] as const).map((s) => {
-          const count = s === 'all' ? shipments.length : shipments.filter(sh => sh.status === s).length
-          const labels: Record<string, string> = { all: 'All', pending: 'Pending', in_transit: 'In Transit', delivered: 'Delivered', cancelled: 'Cancelled' }
-          const colors: Record<string, string> = { all: 'bg-primary-600', pending: 'bg-amber-500', in_transit: 'bg-emerald-500', delivered: 'bg-blue-500', cancelled: 'bg-red-500' }
-          return (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${statusFilter === s
-                ? `${colors[s]} text-white shadow-md`
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                }`}
-            >
-              {labels[s]}
-              {count > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${statusFilter === s ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
-                }`}>{count}</span>}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Search & Stats */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search shipment, driver or vehicle..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-          />
-        </div>
-        <div className="flex gap-2">
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 px-4 py-2 rounded-2xl flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{activeShipmentCount} Active</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Real Map View - only for in_transit shipments */}
-      <MapViewWrapper
-        markers={mapMarkers}
-        center={mapCenter}
-        zoom={mapMarkers.length > 0 ? 6 : 5}
-        height="350px"
-        showFullscreen={true}
-        onMarkerClick={(marker) => {
-          const shipment = shipments.find(s => s.id === marker.id)
-          if (shipment) {
-            setSelectedId(shipment.id)
-          }
-        }}
-      />
-
-      {/* Shipment List */}
-      <div className="space-y-4">
-        <h3 className="font-semibold text-slate-900 dark:text-white">Shipments ({filteredShipments.length})</h3>
-        {loadError ? (
-          <EmptyState
-            icon={MapPinOff}
-            title="Failed to load shipments"
-            description="Please check your connection and try again"
-          />
-        ) : filteredShipments.length === 0 ? (
-          <EmptyState
-            icon={MapPinOff}
-            title="No active shipments"
-            description={search ? 'Try adjusting your search filters' : 'Create a shipment from the Packing or Routes page to start tracking'}
-          />
-        ) : (
-          filteredShipments.map((s) => (
-            <div
-              key={s.id}
-              onClick={() => setSelectedId(s.id)}
-              className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all cursor-pointer ${selectedId === s.id
-                ? 'border-primary-500 ring-1 ring-primary-500 shadow-md'
-                : 'border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-300'
-                }`}
-            >
-              {/* Pending Status Card - Special UI */}
-              {s.status === 'pending' && (
-                <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
-                    <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                      {'Searching for drivers...'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    {'Nearby drivers and agencies have been notified. Matching usually completes within a few minutes.'}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl ${s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
-                    s.status === 'pending' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
-                      s.status === 'cancelled' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
-                        'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
-                    }`}>
-                    <Truck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 dark:text-white">{s.shipment_id}</h3>
-                    <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name || (s.status === 'pending' ? ('Searching...') : ('No driver'))}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
-                    s.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
-                      s.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' :
-                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
-                    }`}>{s.status.replace('_', ' ')}</span>
-                  {s.status === 'in_transit' && (
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      {s.latitude ? (s.speed ? `${s.speed}` : '—') : '0'} km/h
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-3">
-                <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary-500" />
-                  <div className="overflow-hidden">
-                    <p className="text-[10px] uppercase text-slate-400 font-bold">Origin</p>
-                    <p className="text-xs font-medium truncate">{s.origin || 'Unknown'}</p>
-                  </div>
-                </div>
-                <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
-                  <Navigation className="w-4 h-4 text-emerald-500" />
-                  <div className="overflow-hidden">
-                    <p className="text-[10px] uppercase text-slate-400 font-bold">Destination</p>
-                    <p className="text-xs font-medium truncate">{s.destination || 'Unknown'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {selectedId === s.id && (
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2 animate-fade-in">
-                  {s.status === 'in_transit' && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(s, 'delivered') }}
-                      disabled={updatingStatus === s.id}
-                      className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      {updatingStatus === s.id ? ('Updating...') : ('Mark Delivered')}
-                    </button>
-                  )}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleViewDetails(s)
-                      }}
-                      className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
-                    >
-                      {'View Details'}
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleContactDriver(s.driver_phone || undefined)
-                      }}
-                      disabled={!s.driver_phone || s.status === 'pending'}
-                      className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Phone className="w-3 h-3" />
-                      {'Contact'}
-                    </button>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleShareWhatsApp(s)
-                      }}
-                      className="flex-1 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle className="w-3 h-3" />
-                      {'Share'}
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleGenerateInvoice(s.id)
-                      }}
-                      className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
-                    >
-                      <FileText className="w-3 h-3" />
-                      {'Invoice'}
-                    </button>
-                  </div>
-                  {(s.status === 'pending' || s.status === 'in_transit') && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleCancelShipment(s) }}
-                      disabled={updatingStatus === s.id}
-                      className="w-full py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-200 dark:border-red-800/50 disabled:opacity-50"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      {'Cancel Shipment'}
-                    </button>
-                  )}
-                </div>
-              )}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 pb-8 pt-4 md:px-8 md:pb-10 md:pt-8">
+        {/* Header */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/90 md:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-600/80">Command View</p>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
+                Live Tracking
+              </h1>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 md:text-base">
+                Monitor real-time fleet movement, shipment state changes, and customer delivery progress from a single control surface.
+              </p>
             </div>
-          ))
-        )}
-      </div>
-
-      {/* Shipment Detail Modal */}
-      {showDetailModal && selectedShipment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedShipment.shipment_id}</h2>
-                <p className="text-xs text-slate-500">{'Shipment Details'}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 px-4 py-2 rounded-2xl flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{activeShipmentCount} Active</span>
               </div>
               <button
-                onClick={() => setShowDetailModal(false)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"
+                onClick={() => refetch()}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all"
               >
-                <X className="w-5 h-5" />
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
               </button>
             </div>
+          </div>
+        </div>
 
-            <div className="p-6 space-y-4">
-              {/* Pickup OTP - Show for pending/accepted/in_transit */}
-              {selectedShipment.status !== 'delivered' && selectedShipment.status !== 'cancelled' && (
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 p-4 rounded-2xl">
-                  <p className="text-xs font-medium text-green-700 dark:text-green-300 mb-2">
-                    {'📋 Pickup OTP'}
+        {/* Status Filter Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {(['all', 'pending', 'in_transit', 'delivered', 'cancelled'] as const).map((s) => {
+            const count = s === 'all' ? shipments.length : shipments.filter(sh => sh.status === s).length
+            const labels: Record<string, string> = { all: 'All', pending: 'Pending', in_transit: 'In Transit', delivered: 'Delivered', cancelled: 'Cancelled' }
+            const colors: Record<string, string> = { all: 'bg-primary-600', pending: 'bg-amber-500', in_transit: 'bg-emerald-500', delivered: 'bg-blue-500', cancelled: 'bg-red-500' }
+            return (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${statusFilter === s
+                  ? `${colors[s]} text-white shadow-md`
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                  }`}
+              >
+                {labels[s]}
+                {count > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${statusFilter === s ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                  }`}>{count}</span>}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Search & Layout */}
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)] xl:items-start">
+          <div className="space-y-6 xl:sticky xl:top-24 xl:self-start">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search shipment, driver or vehicle..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+              />
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90 md:p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Fleet Map</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {mapMarkers.length > 0 ? 'Live GPS positions for active in-transit loads.' : 'No in-transit shipments are broadcasting location yet.'}
                   </p>
-                  {loadingOTP ? (
-                    <div className="flex items-center gap-2 text-green-600">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span className="text-sm">{'Loading...'}</span>
-                    </div>
-                  ) : jobOffer?.pickup_otp ? (
-                    <>
-                      <p className="text-3xl font-bold text-green-700 dark:text-green-300 tracking-widest text-center">
-                        {jobOffer.pickup_otp}
-                      </p>
-                      <p className="text-xs text-green-600 dark:text-green-400 text-center mt-2">
-                        {'Share this OTP with the driver only when pickup has started at the origin.'}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-sm text-green-600 dark:text-green-400 text-center">
-                      {'Pickup OTP will appear once a driver is assigned and accepts the shipment.'}
-                    </p>
-                  )}
                 </div>
-              )}
-
-              {/* Route Info */}
-              <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <p className="text-[10px] uppercase text-slate-400 font-bold">{'From'}</p>
-                    <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.origin}</p>
-                  </div>
-                  <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full">
-                    <ChevronRight className="w-4 h-4 text-primary-600" />
-                  </div>
-                  <div className="flex-1 text-right">
-                    <p className="text-[10px] uppercase text-slate-400 font-bold">{'To'}</p>
-                    <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.destination}</p>
-                  </div>
+                <div className="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                  {mapMarkers.length} visible
                 </div>
               </div>
+              <MapViewWrapper
+                markers={mapMarkers}
+                center={mapCenter}
+                zoom={mapMarkers.length > 0 ? 6 : 5}
+                height="420px"
+                showFullscreen={true}
+                onMarkerClick={(marker) => {
+                  const shipment = shipments.find(s => s.id === marker.id)
+                  if (shipment) {
+                    setSelectedId(shipment.id)
+                  }
+                }}
+              />
+            </div>
+          </div>
 
-              {/* Driver Info */}
-              <div className="flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-700 rounded-2xl">
-                <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-slate-500" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-slate-900 dark:text-white">
-                    {selectedShipment.status === 'pending'
-                      ? ('Searching for driver...')
-                      : (jobOffer?.drivers?.full_name || selectedShipment.driver_name || ('Unknown Driver'))}
-                  </p>
-                  <p className="text-sm text-slate-500">{selectedShipment.vehicle_number || '—'}</p>
-                </div>
-                {selectedShipment.driver_phone && selectedShipment.status !== 'pending' && (
-                  <button
-                    onClick={() => handleContactDriver(selectedShipment.driver_phone || undefined)}
-                    className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-700"
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90 md:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Shipments ({filteredShipments.length})</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Open a row to contact the driver, share tracking, or update shipment status.</p>
+              </div>
+            </div>
+            <div className="space-y-4 xl:max-h-[760px] xl:overflow-y-auto xl:pr-1">
+              {loadError ? (
+                <EmptyState
+                  icon={MapPinOff}
+                  title="Failed to load shipments"
+                  description="Please check your connection and try again"
+                />
+              ) : filteredShipments.length === 0 ? (
+                <EmptyState
+                  icon={MapPinOff}
+                  title="No active shipments"
+                  description={search ? 'Try adjusting your search filters' : 'Create a shipment from the Packing or Routes page to start tracking'}
+                />
+              ) : (
+                filteredShipments.map((s) => (
+                  <div
+                    key={s.id}
+                    onClick={() => setSelectedId(s.id)}
+                    className={`bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all cursor-pointer ${selectedId === s.id
+                      ? 'border-primary-500 ring-1 ring-primary-500 shadow-md'
+                      : 'border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-300'
+                      }`}
                   >
-                    <Phone className="w-5 h-5" />
-                  </button>
+                    {/* Pending Status Card - Special UI */}
+                    {s.status === 'pending' && (
+                      <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-xl">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
+                          <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                            {'Searching for drivers...'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                          {'Nearby drivers and agencies have been notified. Matching usually completes within a few minutes.'}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl ${s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
+                          s.status === 'pending' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' :
+                            s.status === 'cancelled' ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
+                              'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
+                          }`}>
+                          <Truck className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-900 dark:text-white">{s.shipment_id}</h3>
+                          <p className="text-xs text-slate-500">{s.vehicle_number} • {s.driver_name || (s.status === 'pending' ? ('Searching...') : ('No driver'))}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${s.status === 'in_transit' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
+                          s.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                            s.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' :
+                              'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
+                          }`}>{s.status.replace('_', ' ')}</span>
+                        {s.status === 'in_transit' && (
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {s.latitude ? (s.speed ? `${s.speed}` : '—') : '0'} km/h
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-3">
+                      <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-primary-500" />
+                        <div className="overflow-hidden">
+                          <p className="text-[10px] uppercase text-slate-400 font-bold">Origin</p>
+                          <p className="text-xs font-medium truncate">{s.origin || 'Unknown'}</p>
+                        </div>
+                      </div>
+                      <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl flex items-center gap-2">
+                        <Navigation className="w-4 h-4 text-emerald-500" />
+                        <div className="overflow-hidden">
+                          <p className="text-[10px] uppercase text-slate-400 font-bold">Destination</p>
+                          <p className="text-xs font-medium truncate">{s.destination || 'Unknown'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedId === s.id && (
+                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2 animate-fade-in">
+                        {s.status === 'in_transit' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleUpdateStatus(s, 'delivered') }}
+                            disabled={updatingStatus === s.id}
+                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            {updatingStatus === s.id ? ('Updating...') : ('Mark Delivered')}
+                          </button>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleViewDetails(s)
+                            }}
+                            className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
+                          >
+                            {'View Details'}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleContactDriver(s.driver_phone || undefined)
+                            }}
+                            disabled={!s.driver_phone || s.status === 'pending'}
+                            className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Phone className="w-3 h-3" />
+                            {'Contact'}
+                          </button>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleShareWhatsApp(s)
+                            }}
+                            className="flex-1 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                            {'Share'}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleGenerateInvoice(s.id)
+                            }}
+                            className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
+                          >
+                            <FileText className="w-3 h-3" />
+                            {'Invoice'}
+                          </button>
+                        </div>
+                        {(s.status === 'pending' || s.status === 'in_transit') && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleCancelShipment(s) }}
+                            disabled={updatingStatus === s.id}
+                            className="w-full py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-200 dark:border-red-800/50 disabled:opacity-50"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            {'Cancel Shipment'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Shipment Detail Modal */}
+        {showDetailModal && selectedShipment && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedShipment.shipment_id}</h2>
+                  <p className="text-xs text-slate-500">{'Shipment Details'}</p>
+                </div>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* Pickup OTP - Show for pending/accepted/in_transit */}
+                {selectedShipment.status !== 'delivered' && selectedShipment.status !== 'cancelled' && (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 p-4 rounded-2xl">
+                    <p className="text-xs font-medium text-green-700 dark:text-green-300 mb-2">
+                      {'📋 Pickup OTP'}
+                    </p>
+                    {loadingOTP ? (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="text-sm">{'Loading...'}</span>
+                      </div>
+                    ) : jobOffer?.pickup_otp ? (
+                      <>
+                        <p className="text-3xl font-bold text-green-700 dark:text-green-300 tracking-widest text-center">
+                          {jobOffer.pickup_otp}
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-400 text-center mt-2">
+                          {'Share this OTP with the driver only when pickup has started at the origin.'}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-green-600 dark:text-green-400 text-center">
+                        {'Pickup OTP will appear once a driver is assigned and accepts the shipment.'}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Route Info */}
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <p className="text-[10px] uppercase text-slate-400 font-bold">{'From'}</p>
+                      <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.origin}</p>
+                    </div>
+                    <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full">
+                      <ChevronRight className="w-4 h-4 text-primary-600" />
+                    </div>
+                    <div className="flex-1 text-right">
+                      <p className="text-[10px] uppercase text-slate-400 font-bold">{'To'}</p>
+                      <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.destination}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Driver Info */}
+                <div className="flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                  <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-slate-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900 dark:text-white">
+                      {selectedShipment.status === 'pending'
+                        ? ('Searching for driver...')
+                        : (jobOffer?.drivers?.full_name || selectedShipment.driver_name || ('Unknown Driver'))}
+                    </p>
+                    <p className="text-sm text-slate-500">{selectedShipment.vehicle_number || '—'}</p>
+                  </div>
+                  {selectedShipment.driver_phone && selectedShipment.status !== 'pending' && (
+                    <button
+                      onClick={() => handleContactDriver(selectedShipment.driver_phone || undefined)}
+                      className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-700"
+                    >
+                      <Phone className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Cargo Details */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
+                    <Package className="w-5 h-5 text-slate-400 mb-2" />
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">{'Weight'}</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_weight ? `${selectedShipment.total_weight} kg` : 'N/A'}</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
+                    <Clock className="w-5 h-5 text-slate-400 mb-2" />
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">{'Volume'}</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_volume ? `${selectedShipment.total_volume} m³` : 'N/A'}</p>
+                  </div>
+                </div>
+
+                {/* Current Location */}
+                {selectedShipment.latitude != null && selectedShipment.longitude != null && selectedShipment.status === 'in_transit' && (
+                  <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                    <p className="text-[10px] uppercase text-slate-400 font-bold mb-2">{'Current Location'}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Lat: {selectedShipment.latitude.toFixed(6)}, Lng: {selectedShipment.longitude.toFixed(6)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Trip Photos */}
+                {jobPhotos && (jobPhotos.loading_url || jobPhotos.delivery_url) && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] uppercase text-slate-400 font-bold">{'Trip Photos'}</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {jobPhotos.loading_url && (
+                        <div
+                          onClick={() => setLightboxPhoto(jobPhotos.loading_url!)}
+                          className="relative aspect-video bg-slate-100 dark:bg-slate-700 rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        >
+                          <img src={jobPhotos.loading_url} alt="Loading" className="w-full h-full object-cover" />
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
+                            <p className="text-xs text-white">{'Loading'}</p>
+                          </div>
+                        </div>
+                      )}
+                      {jobPhotos.delivery_url && (
+                        <div
+                          onClick={() => setLightboxPhoto(jobPhotos.delivery_url!)}
+                          className="relative aspect-video bg-slate-100 dark:bg-slate-700 rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        >
+                          <img src={jobPhotos.delivery_url} alt="Delivery" className="w-full h-full object-cover" />
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
+                            <p className="text-xs text-white">{'Delivery'}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {/* Cargo Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
-                  <Package className="w-5 h-5 text-slate-400 mb-2" />
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">{'Weight'}</p>
-                  <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_weight ? `${selectedShipment.total_weight} kg` : 'N/A'}</p>
-                </div>
-                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
-                  <Clock className="w-5 h-5 text-slate-400 mb-2" />
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">{'Volume'}</p>
-                  <p className="font-semibold text-slate-900 dark:text-white">{selectedShipment.total_volume ? `${selectedShipment.total_volume} m³` : 'N/A'}</p>
-                </div>
+              {/* Book Another Truck CTA for delivered shipments */}
+              {selectedShipment.status === 'delivered' && (
+                <button
+                  onClick={() => { setShowDetailModal(false); navigate('/booking/new') }}
+                  className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 mb-3"
+                >
+                  <Truck className="w-4 h-4" />
+                  {'Book Another Truck'}
+                </button>
+              )}
+
+              <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                >
+                  {'Close'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false)
+                    navigate(`/tracking`)
+                  }}
+                  className="flex-[2] px-4 py-3 bg-primary-600 text-white rounded-2xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 transition-all"
+                >
+                  {'Track on Map'}
+                </button>
               </div>
-
-              {/* Current Location */}
-              {selectedShipment.latitude && selectedShipment.longitude && selectedShipment.status === 'in_transit' && (
-                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl">
-                  <p className="text-[10px] uppercase text-slate-400 font-bold mb-2">{'Current Location'}</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Lat: {selectedShipment.latitude.toFixed(6)}, Lng: {selectedShipment.longitude.toFixed(6)}
-                  </p>
-                </div>
-              )}
-
-              {/* Trip Photos */}
-              {jobPhotos && (jobPhotos.loading_url || jobPhotos.delivery_url) && (
-                <div className="space-y-3">
-                  <p className="text-[10px] uppercase text-slate-400 font-bold">{'Trip Photos'}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {jobPhotos.loading_url && (
-                      <div
-                        onClick={() => setLightboxPhoto(jobPhotos.loading_url!)}
-                        className="relative aspect-video bg-slate-100 dark:bg-slate-700 rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                      >
-                        <img src={jobPhotos.loading_url} alt="Loading" className="w-full h-full object-cover" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
-                          <p className="text-xs text-white">{'Loading'}</p>
-                        </div>
-                      </div>
-                    )}
-                    {jobPhotos.delivery_url && (
-                      <div
-                        onClick={() => setLightboxPhoto(jobPhotos.delivery_url!)}
-                        className="relative aspect-video bg-slate-100 dark:bg-slate-700 rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                      >
-                        <img src={jobPhotos.delivery_url} alt="Delivery" className="w-full h-full object-cover" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1">
-                          <p className="text-xs text-white">{'Delivery'}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Book Another Truck CTA for delivered shipments */}
-            {selectedShipment.status === 'delivered' && (
-              <button
-                onClick={() => { setShowDetailModal(false); navigate('/booking/new') }}
-                className="w-full py-3 bg-indigo-600 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 mb-3"
-              >
-                <Truck className="w-4 h-4" />
-                {'Book Another Truck'}
-              </button>
-            )}
-
-            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
-              <button
-                onClick={() => setShowDetailModal(false)}
-                className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-              >
-                {'Close'}
-              </button>
-              <button
-                onClick={() => {
-                  setShowDetailModal(false)
-                  navigate(`/tracking`)
-                }}
-                className="flex-[2] px-4 py-3 bg-primary-600 text-white rounded-2xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 transition-all"
-              >
-                {'Track on Map'}
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Trip Photos Lightbox */}
-      {lightboxPhoto && (
-        <div
-          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setLightboxPhoto(null)}
-        >
-          <button
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+        {/* Trip Photos Lightbox */}
+        {lightboxPhoto && (
+          <div
+            className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
             onClick={() => setLightboxPhoto(null)}
           >
-            <X className="w-6 h-6 text-white" />
-          </button>
-          <img
-            src={lightboxPhoto}
-            alt="Trip photo"
-            className="max-w-full max-h-full object-contain rounded-lg"
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
-      )}
+            <button
+              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+              onClick={() => setLightboxPhoto(null)}
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <img
+              src={lightboxPhoto}
+              alt="Trip photo"
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

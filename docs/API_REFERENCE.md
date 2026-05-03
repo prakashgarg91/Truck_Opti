@@ -535,13 +535,16 @@ Creates a new password-based account.
 Verifies a 6-digit OTP received by email.
 
 ### `authSupabaseApi.verifyPhoneOtp(phone, token)`
-Verifies a 6-digit SMS OTP. Requires Twilio configuration in Supabase.
+Verifies a 6-digit SMS OTP only when phone OTP is intentionally re-enabled.
+Launch default remains Email OTP + Google OAuth; Twilio-backed phone OTP stays
+deferred behind `VITE_AUTH_PHONE_OTP_ENABLED=true`.
 
 ### `authSupabaseApi.signInWithGoogle()`
 Redirects to Google OAuth. Callback handled at `/auth/callback`.
 
 ### `authSupabaseApi.signInWithPhone(phone, channel?)`
-Sends SMS/WhatsApp OTP. Throws `UserFacingError` if Twilio is not configured.
+Optional feature. Sends SMS/WhatsApp OTP only when phone OTP is enabled and
+Twilio is configured; otherwise the shipped launch path is Email OTP + Google OAuth.
 
 ### `authSupabaseApi.resetPasswordForEmail(identifier)`
 Sends password reset email. Silent no-op if email not found (security best practice).

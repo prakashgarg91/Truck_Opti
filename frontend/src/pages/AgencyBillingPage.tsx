@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { formatCurrency } from '../utils/formatters'
 import { logger } from '../utils/logger'
+import toast from 'react-hot-toast'
 
 interface BillingSummary {
   thisMonth: number
@@ -29,6 +30,16 @@ export default function AgencyBillingPage() {
   const [summary, setSummary] = useState<BillingSummary>({ thisMonth: 0, pending: 0, totalPaid: 0, gstDue: 0 })
   const [loading, setLoading] = useState(true)
   const [deliveredJobs, setDeliveredJobs] = useState<DeliveredJob[]>([])
+
+  const monthlyReports = Array.from({ length: 3 }, (_, index) => {
+    const monthDate = new Date()
+    monthDate.setMonth(monthDate.getMonth() - (index + 1))
+
+    return {
+      key: `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`,
+      label: `GSTR-1 (${monthDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })})`,
+    }
+  })
 
   const fetchBilling = useCallback(async () => {
     if (!user?.id) return
@@ -82,6 +93,48 @@ export default function AgencyBillingPage() {
 
   useEffect(() => { fetchBilling() }, [fetchBilling])
 
+  const exportMonthlyCsv = (reportMonth: string) => {
+    const reportJobs = deliveredJobs.filter((job) => job.updated_at.slice(0, 7) === reportMonth)
+
+    if (reportJobs.length === 0) {
+      toast.error('No delivered jobs found for this report month')
+      return
+    }
+
+    const headers = ['Shipment ID', 'Origin', 'Destination', 'Delivered Date', 'Taxable Value (INR)', 'GST 5% (INR)', 'Invoice Total (INR)']
+    const rows = reportJobs.map((job) => {
+      const gstAmount = Number((job.fare * GST_RATE).toFixed(2))
+      const totalAmount = Number((job.fare + gstAmount).toFixed(2))
+
+      return [
+        job.shipment_id || job.id.slice(-8),
+        job.origin,
+        job.destination,
+        new Date(job.updated_at).toLocaleDateString('en-IN'),
+        job.fare,
+        gstAmount,
+        totalAmount,
+      ]
+    })
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `truckopti-gstr1-${reportMonth}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast.success('CSV exported successfully!')
+  }
+
   const generateInvoice = async (job: DeliveredJob) => {
     // Dynamic import to reduce initial bundle size
     const { default: jsPDF } = await import('jspdf')
@@ -117,7 +170,7 @@ export default function AgencyBillingPage() {
   }
 
   return (
-    <div className="p-4 lg:p-8 space-y-4 max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 space-y-4 max-w-7xl mx-auto">
       <div>
         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Billing & Invoices</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">Revenue overview and invoice management</p>
@@ -127,7 +180,7 @@ export default function AgencyBillingPage() {
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: 'This Month', value: formatCurrency(summary.thisMonth), icon: TrendingUp, color: 'text-green-500' },
-          { label: 'Pending', value: formatCurrency(summary.pending), icon: Clock, color: 'text-amber-500' },
+          { label: 'In Progress Value', value: formatCurrency(summary.pending), icon: Clock, color: 'text-amber-500' },
           { label: 'Total Paid', value: formatCurrency(summary.totalPaid), icon: FileText, color: 'text-blue-500' },
           { label: 'GST Due (5%)', value: formatCurrency(summary.gstDue), icon: FileText, color: 'text-red-500' },
         ].map(card => (
@@ -143,15 +196,15 @@ export default function AgencyBillingPage() {
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
         <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">GST Reports</h3>
         <div className="space-y-2">
-          {['GSTR-1 (March 2026)', 'GSTR-1 (February 2026)', 'GSTR-1 (January 2026)'].map(report => (
-            <div key={report} className="flex items-center justify-between py-2">
+          {monthlyReports.map((report) => (
+            <div key={report.key} className="flex items-center justify-between py-2">
               <div className="flex items-center gap-2">
                 <FileText size={16} className="text-slate-400" />
-                <span className="text-sm text-slate-700 dark:text-slate-300">{report}</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">{report.label}</span>
               </div>
               <button
                 className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium"
-                onClick={() => { }}
+                onClick={() => exportMonthlyCsv(report.key)}
               >
                 <Download size={12} />
                 CSV
@@ -183,7 +236,7 @@ export default function AgencyBillingPage() {
                   <p className="text-xs text-slate-400">
                     {new Date(job.updated_at).toLocaleDateString('en-IN', {
                       day: '2-digit', month: 'short', year: 'numeric'
-                    })} • #{job.shipment_id.slice(-8)}
+                    })} • #{(job.shipment_id || job.id).slice(-8)}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

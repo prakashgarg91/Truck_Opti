@@ -1,0 +1,115 @@
+name: Frontend CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/frontend-ci.yml'
+      - 'frontend/**'
+      - 'scripts/**'
+      - 'apps/web/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - 'pytest.ini'
+  pull_request:
+    paths:
+      - '.github/workflows/frontend-ci.yml'
+      - 'frontend/**'
+      - 'scripts/**'
+      - 'apps/web/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - 'pytest.ini'
+
+env:
+  PUBLIC_APP_URL: http://127.0.0.1:4173
+  SUPABASE_PUBLIC_URL: https://jbxncejtcbpcronndqlx.supabase.co
+  VITE_SUPABASE_URL: https://jbxncejtcbpcronndqlx.supabase.co
+  VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpieG5jZWp0Y2JwY3Jvbm5kcWx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4MDk2MjIsImV4cCI6MjA4MzM4NTYyMn0.8GHh-LAeBx9RyQVjcJFbBiZrumfiqtUhe-NUedY3vqo'
+
+jobs:
+  frontend-build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        run: npm --prefix frontend run build
+
+      - name: Start preview server
+        run: |
+          nohup npm --prefix frontend run preview -- --host 127.0.0.1 --port 4173 >/tmp/truckopti-preview.log 2>&1 &
+          for i in {1..30}; do
+            if curl --fail --silent "$PUBLIC_APP_URL" >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/truckopti-preview.log
+          exit 1
+
+      - name: Public smoke
+        run: npm run test:public-smoke
+
+      - name: Frontend smoke
+        run: npm run test:frontend-smoke
+
+      - name: Upload frontend smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-smoke-artifacts
+          path: |
+            logs/public_frontend_smoke_report.json
+            logs/frontend_launch_smoke_report.json
+            /tmp/truckopti-preview.log
+          if-no-files-found: warn
+
+  apps-web-auth-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: apps/web/requirements.txt
+
+      - name: Install apps/web Python dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r apps/web/requirements.txt
+
+      - name: Run bounded apps/web auth unit test
+        working-directory: apps/web
+        run: python -m pytest tests/unit/test_authentication_middleware.py -q -o addopts=

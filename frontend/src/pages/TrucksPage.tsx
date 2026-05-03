@@ -318,7 +318,7 @@ export default function TrucksPage() {
   const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending || seedMutation.isPending
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 pb-8 lg:pb-12">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 pb-8 md:pb-12">
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate('/management')}
@@ -412,7 +412,7 @@ export default function TrucksPage() {
           onAction={() => handleOpenModal()}
         />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {filteredTrucks.map((truck: TruckType) => (
             <div
               key={truck.id}

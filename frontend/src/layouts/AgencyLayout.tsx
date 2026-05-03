@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Truck, Briefcase,
-  LogOut, Building2, ChevronRight, Users, Tag, Bell, User
+  LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { supabase } from '../lib/supabase'
@@ -13,6 +13,7 @@ const NAV = [
   { to: '/agency/fleet', icon: Truck, label: 'Fleet' },
   { to: '/agency/drivers', icon: Users, label: 'Drivers' },
   { to: '/agency/jobs', icon: Briefcase, label: 'Jobs' },
+  { to: '/agency/billing', icon: DollarSign, label: 'Billing' },
   { to: '/agency/rates', icon: Tag, label: 'Rates' },
 ]
 
@@ -67,10 +68,10 @@ export default function AgencyLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col md:flex-row">
 
       {/* ── Desktop Sidebar (lg+) ────────────────────────────── */}
-      <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 z-30">
+      <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-64 md:flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 z-30">
         {/* Brand */}
         <div className="p-5 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
@@ -126,7 +127,7 @@ export default function AgencyLayout() {
         {/* Profile + Logout */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-1">
           <NavLink
-            to="/profile"
+            to="/agency/profile"
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive
                 ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white'
@@ -148,7 +149,7 @@ export default function AgencyLayout() {
       </aside>
 
       {/* ── Mobile Top Header (hidden on lg+) ───────────────── */}
-      <header className="lg:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+      <header className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
             <Building2 size={18} className="text-white" />
@@ -176,7 +177,7 @@ export default function AgencyLayout() {
             )}
           </button>
           <NavLink
-            to="/profile"
+            to="/agency/profile"
             className="text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1"
           >
             Profile <ChevronRight size={12} />
@@ -192,12 +193,12 @@ export default function AgencyLayout() {
       </header>
 
       {/* ── Main content ─────────────────────────────────────── */}
-      <main className="flex-1 pb-24 lg:pb-8 lg:ml-64">
+      <main className="flex-1 pb-24 md:pb-8 md:ml-64">
         <Outlet />
       </main>
 
       {/* ── Mobile Bottom Navigation (hidden on lg+) ─────────── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-50 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-50 safe-area-bottom">
         <div className="flex items-center justify-around px-2 py-1">
           {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink

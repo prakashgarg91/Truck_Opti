@@ -2,7 +2,7 @@
 
 > **What the User Wants**
 > Source of truth for the TruckOpti SaaS platform.
-> Last Updated: 2026-03-05 by SONNET-002
+> Last Updated: 2026-05-01 by GPT-5.4
 
 ---
 
@@ -22,7 +22,7 @@ Phased roadmap: see `ROADMAP.md`
 
 ---
 
-## ✅ Completed Features (v35 Live — 2026-03-04)
+## ✅ Completed Features (v71+ Launch Track — 2026-05-01)
 
 ### 1. Customer Portal
 - Dashboard: Active Shipments, Trucks Available, Routes Today, Deliveries Done
@@ -47,18 +47,20 @@ Phased roadmap: see `ROADMAP.md`
 ### 4. Authentication
 - Email OTP (Supabase magic link)
 - Google OAuth
-- Admin role via JWT `user_metadata.role`
+- Role resolution via `public.users.role` + agency/driver linkage in `authStore`
+- Phone OTP is feature-flagged off by default unless `VITE_AUTH_PHONE_OTP_ENABLED=true`
 - Trial/subscription enforcement via `useSubscription` hook
 
 ### 5. Subscription & Billing
 - Pricing page: Free / Pro / Business / Enterprise tiers (DB-backed)
-- Razorpay checkout (test key installed; prod key pending)
+- Razorpay checkout with server-owned `payment_history` + subscription activation
+- PhonePe code path retained for deferred rollout, but sandbox is disabled for launch
 - Trial days tracking + expiry banners
 - Usage limits per plan
 
 ### 6. Infrastructure
 - Heroku (Node 20.x, 337 MB slug with .slugignore)
-- Supabase PostgreSQL (RLS enabled, 17 tables)
+- Supabase PostgreSQL 17.x (RLS enabled across logistics + billing tables)
 - Cloudflare DNS → truckopti.in + www
 - VitePWA with `skipWaiting` + `clientsClaim` (fixed v35 — no stale JS)
 - Invoice company-incomplete banner (fixed v35)
@@ -87,15 +89,15 @@ Phased roadmap: see `ROADMAP.md`
 | BUG-020 GST rate 18%→5% fix | v50 |
 | BUG-REDIRECT-001 PhonePe URL domain validation | v50 |
 
-## ⏳ Pending (BATCH12)
+## ✅ Resolved Since BATCH12
 
-| Feature | Priority | Notes |
-|---------|----------|-------|
-| Razorpay webhook Edge Function (HMAC verify) | P1 | Needs live Razorpay keys from owner |
-| Admin dashboard real analytics | P2 | Query agency_jobs + transport_agencies |
-| Driver document upload (licence + RC photo) | P2 | driver-docs storage bucket |
-| Customer shipment history page | P2 | /shipment-history route |
-| Agency notification bell (Realtime) | P2 | Already exists in MobileLayout; agency needs it too |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Razorpay webhook Edge Function (HMAC verify) | ✅ Done | Live webhook verifier shipped; prod key remains owner-blocked |
+| Admin dashboard real analytics | ✅ Done | Agency revenue + delivered-job metrics now query live data |
+| Driver document upload (licence + RC photo) | ✅ Done | `driver-docs` bucket is in active use |
+| Customer shipment history page | ✅ Done | `/shipment-history` route shipped |
+| Agency notification bell (Realtime) | ✅ Done | Agency portal includes the notification surface |
 
 ## 🛑 Founder Decisions Needed Before Phase 4
 
@@ -133,14 +135,14 @@ See `ROADMAP.md` for full phased plan.
 
 ## 📈 Database (Supabase)
 
-### Existing Tables (17)
+### Core Tables (see `DEPENDENCIES.md` for the live inventory)
 ```
 profiles, subscription_plans, subscriptions, trucks, cartons, customers
 routes, route_segments, shipments, packing_results, sale_orders, sale_order_items
 notifications, invoices, payments, audit_logs, company_profiles
 ```
 
-### Planned (Phase 1 — v36)
+### Shipped Since Phase 1
 ```sql
 drivers (id, user_id, name, phone, vehicle_type, rc_number, license_number,
          aadhaar_last4, bank_account, ifsc, status, approved_by, created_at)
@@ -158,8 +160,8 @@ job_offers (id, shipment_id, driver_id, offered_at, expires_at, status)
 | Frontend | React 18 + TypeScript + Vite |
 | UI | Tailwind CSS + Lucide icons |
 | State | Zustand |
-| DB | Supabase (PostgreSQL 15, RLS) |
-| Auth | Supabase Auth (email OTP + Google OAuth) |
+| DB | Supabase (PostgreSQL 17, RLS) |
+| Auth | Supabase Auth (Email OTP + Google OAuth by default; phone OTP deferred) |
 | Maps | Leaflet/OSM (default) + Google Maps (if key set) |
 | PDF | jsPDF + html2canvas |
 | 3D Packing | Custom web worker (bin-packing algorithm) |

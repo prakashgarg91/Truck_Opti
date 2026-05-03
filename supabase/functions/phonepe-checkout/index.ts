@@ -14,6 +14,106 @@ const PHONEPE_MERCHANT_ID = Deno.env.get('PHONEPE_MERCHANT_ID') || ''
 const PHONEPE_SALT_KEY = Deno.env.get('PHONEPE_SALT_KEY') || ''
 const PHONEPE_SALT_INDEX = Deno.env.get('PHONEPE_SALT_INDEX') || '1'
 const PHONEPE_API_URL = Deno.env.get('PHONEPE_API_URL') || 'https://api-preprod.phonepe.com/apis/pg-sandbox'
+const DEFAULT_CALLBACK_ORIGIN = 'https://www.truckopti.in'
+const DEFAULT_ALLOWED_CALLBACK_ORIGINS = [
+  DEFAULT_CALLBACK_ORIGIN,
+  'https://truckopti.in',
+  'https://truck-opti-app.herokuapp.com',
+  'http://127.0.0.1:4173',
+  'http://localhost:4173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5173',
+]
+const SAFE_CLIENT_ERROR_MESSAGES = new Set([
+  'Authentication is required to create a PhonePe checkout',
+  'Unable to resolve authenticated user',
+  'Amount must be at least ₹1 (100 paise)',
+  'merchantTransactionId is required',
+  'Authenticated user does not match requested payment user',
+  'planId is required to create a PhonePe checkout',
+  'billingCycle must be monthly or yearly',
+  'Payment amount does not match selected plan',
+])
+
+function normalizeOrigin(value: string | null | undefined) {
+  if (!value) {
+    return null
+  }
+
+  try {
+    const parsed = new URL(value)
+    return `${parsed.protocol}//${parsed.host}`
+  } catch {
+    return null
+  }
+}
+
+function getAllowedCallbackOrigins() {
+  const configuredOrigins = (Deno.env.get('PHONEPE_ALLOWED_CALLBACK_ORIGINS') || '')
+    .split(',')
+    .map((origin) => normalizeOrigin(origin.trim()))
+    .filter((origin): origin is string => Boolean(origin))
+
+  const configuredPrimaryOrigin = normalizeOrigin(Deno.env.get('PHONEPE_CALLBACK_ORIGIN'))
+
+  return new Set([
+    ...DEFAULT_ALLOWED_CALLBACK_ORIGINS,
+    ...configuredOrigins,
+    ...(configuredPrimaryOrigin ? [configuredPrimaryOrigin] : []),
+  ])
+}
+
+function getTrustedCallbackOrigin(req: Request) {
+  const allowedOrigins = getAllowedCallbackOrigins()
+  const referer = req.headers.get('referer')
+  const refererOrigin = referer ? normalizeOrigin(referer) : null
+  const candidates = [
+    Deno.env.get('PHONEPE_CALLBACK_ORIGIN'),
+    req.headers.get('origin'),
+    refererOrigin,
+  ]
+
+  for (const candidate of candidates) {
+    const normalized = normalizeOrigin(candidate)
+    if (normalized && allowedOrigins.has(normalized)) {
+      return normalized
+    }
+  }
+
+  return DEFAULT_CALLBACK_ORIGIN
+}
+
+function buildRedirectTarget(req: Request, merchantTransactionId: string) {
+  const redirectUrl = new URL('/payment/callback', getTrustedCallbackOrigin(req))
+  redirectUrl.searchParams.set('txnId', merchantTransactionId)
+  return redirectUrl.toString()
+}
+
+function getSafeClientErrorMessage(error: unknown) {
+  if (error instanceof Error && SAFE_CLIENT_ERROR_MESSAGES.has(error.message)) {
+    return error.message
+  }
+
+  return 'Unable to initiate PhonePe payment right now.'
+}
+
+function normalizeBillingCycle(value: unknown): 'monthly' | 'yearly' | null {
+  if (value === 'monthly' || value === 'yearly') {
+    return value
+  }
+
+  return null
+}
+
+function calculateExpectedAmounts(baseAmount: number) {
+  const taxAmount = Math.round(baseAmount * 0.18)
+
+  return {
+    subtotalAmount: baseAmount,
+    taxAmount,
+    totalAmount: baseAmount + taxAmount,
+  }
+}
 
 function generateChecksum(payload: string): string {
   const hash = crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload + PHONEPE_SALT_KEY))
@@ -29,6 +129,35 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const authorization = req.headers.get('Authorization')
+
+    if (!authorization) {
+      throw new Error('Authentication is required to create a PhonePe checkout')
+    }
+
+    const accessToken = authorization.replace('Bearer ', '').trim()
+
+    if (!accessToken) {
+      throw new Error('Authentication is required to create a PhonePe checkout')
+    }
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authorization,
+        },
+      },
+    })
+
+    const { data: { user }, error: userError } = await authClient.auth.getUser(accessToken)
+
+    if (userError || !user) {
+      throw userError || new Error('Unable to resolve authenticated user')
+    }
+
     const {
       amount,
       merchantTransactionId,
@@ -37,7 +166,6 @@ serve(async (req) => {
       billingCycle,
       customerPhone,
       customerEmail,
-      callbackUrl,
     } = await req.json()
 
     if (!amount || amount < 100) {
@@ -48,14 +176,50 @@ serve(async (req) => {
       throw new Error('merchantTransactionId is required')
     }
 
+    if (userId && userId !== user.id) {
+      throw new Error('Authenticated user does not match requested payment user')
+    }
+
+    if (!planId || typeof planId !== 'string') {
+      throw new Error('planId is required to create a PhonePe checkout')
+    }
+
+    const resolvedBillingCycle = normalizeBillingCycle(billingCycle)
+
+    if (!resolvedBillingCycle) {
+      throw new Error('billingCycle must be monthly or yearly')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    const { data: planData, error: planError } = await supabase
+      .from('subscription_plans')
+      .select('id, price_monthly, price_yearly')
+      .eq('id', planId)
+      .single()
+
+    if (planError || !planData) {
+      throw planError || new Error('Subscription plan not found')
+    }
+
+    const planAmount = resolvedBillingCycle === 'yearly'
+      ? planData.price_yearly
+      : planData.price_monthly
+    const { totalAmount } = calculateExpectedAmounts(planAmount)
+
+    if (amount !== totalAmount) {
+      throw new Error('Payment amount does not match selected plan')
+    }
+
+    const redirectTarget = buildRedirectTarget(req, merchantTransactionId)
+
     const payload = {
       merchantId: PHONEPE_MERCHANT_ID,
       merchantTransactionId: merchantTransactionId,
-      merchantUserId: userId || `MUID_${Date.now()}`,
+      merchantUserId: user.id,
       amount: amount,
-      redirectUrl: callbackUrl || `/?payment=success&transactionId=${merchantTransactionId}`,
-      redirectMode: 'POST',
-      callbackUrl: `${Deno.env.get('SUPABASE_URL')}/functions/v1/phonepe-status`,
+      redirectUrl: redirectTarget,
+      redirectMode: 'GET',
+      callbackUrl: redirectTarget,
       paymentInstrument: {
         type: 'PAY_PAGE'
       }
@@ -83,12 +247,8 @@ serve(async (req) => {
     const result = await response.json()
 
     // Store pending payment in Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
     const { error: paymentHistoryError } = await supabase.from('payment_history').insert({
-      user_id: userId,
+      user_id: user.id,
       amount,
       currency: 'INR',
       payment_method: 'upi',
@@ -96,9 +256,9 @@ serve(async (req) => {
       razorpay_order_id: merchantTransactionId,
       metadata: {
         merchantTransactionId,
-        userId,
+        userId: user.id,
         plan_id: planId,
-        billing_cycle: billingCycle,
+        billing_cycle: resolvedBillingCycle,
         customer_phone: customerPhone,
         customer_email: customerEmail,
         phonepe_response: result
@@ -117,7 +277,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: getSafeClientErrorMessage(error) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400
     })

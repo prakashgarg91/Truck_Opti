@@ -14,12 +14,13 @@
 const fs = require('fs')
 const path = require('path')
 const { chromium } = require('playwright')
+const { readEnvValue } = require('./_proofEnv.cjs')
 
-const baseUrl = process.env.PROOF_BASE_URL || 'https://www.truckopti.in'
-const password = process.env.SEED_DEMO_PASSWORD
+const baseUrl = readEnvValue('PROOF_BASE_URL') || 'https://www.truckopti.in'
+const password = readEnvValue('SEED_DEMO_PASSWORD')
 
 if (!password) {
-    console.error('Missing SEED_DEMO_PASSWORD')
+    console.error('Missing SEED_DEMO_PASSWORD (set it in .env.proof.local, .env.local, .env, or the shell environment)')
     process.exit(1)
 }
 
@@ -47,6 +48,25 @@ async function waitForPath(page, pathname, timeout = 30000) {
     }
 }
 
+async function waitForAuthenticatedContent(page, requiredText = []) {
+    try {
+        await page.waitForFunction(
+            (required) => {
+                const body = document.body?.innerText || ''
+                if (body.includes('Completing Sign In')) {
+                    return false
+                }
+
+                return required.every((text) => body.includes(text))
+            },
+            requiredText,
+            { timeout: 15000 }
+        )
+    } catch {
+        // Fall back to the body assertion below so failures still report the real missing text.
+    }
+}
+
 function ensureText(body, required, forbidden) {
     for (const text of required || []) {
         if (!body.includes(text)) {
@@ -57,6 +77,46 @@ function ensureText(body, required, forbidden) {
         if (body.includes(text)) {
             throw new Error(`Expected page body to exclude "${text}"`)
         }
+    }
+}
+
+async function proveAdminDriverDetail(page) {
+    await page.goto('/admin/drivers', { waitUntil: 'domcontentloaded' })
+    await waitForPath(page, '/admin/drivers')
+
+    const tabs = ['Pending', 'Approved', 'Rejected', 'Suspended']
+    let foundDetailsButton = false
+
+    for (const tabName of tabs) {
+        await page.getByRole('button', { name: tabName, exact: true }).click()
+        await page.waitForTimeout(800)
+        try {
+            await page.waitForLoadState('networkidle', { timeout: 5000 })
+        } catch {
+            // networkidle can time out on live views; the button visibility check below is the real gate.
+        }
+
+        const detailsButton = page.getByRole('button', { name: 'Details' }).first()
+        if (await detailsButton.count()) {
+            await detailsButton.click()
+            foundDetailsButton = true
+            break
+        }
+    }
+
+    if (!foundDetailsButton) {
+        throw new Error('No driver detail rows were available in any admin driver tab')
+    }
+
+    await page.waitForURL((url) => /^\/admin\/drivers\/[^/]+$/.test(url.pathname), { timeout: 15000 })
+    await waitForAuthenticatedContent(page, ['Driver Details'])
+
+    const body = await page.locator('body').innerText()
+    ensureText(body, ['Driver Details'], ['Application Error', 'Driver not found'])
+
+    return {
+        path: new URL(page.url()).pathname,
+        screenshot: await saveScreenshot(page, 'admin-driver-detail'),
     }
 }
 
@@ -139,11 +199,12 @@ async function main() {
         await page.goto('/admin', { waitUntil: 'domcontentloaded' })
         await page.waitForURL((url) => url.pathname === '/login', { timeout: 15000 })
 
-        await page.getByRole('button', { name: 'Password' }).click()
+        await page.getByRole('button', { name: 'Password', exact: true }).click()
         await page.locator('input[placeholder="your@email.com or demo.driver"]').fill('demo.admin')
         await page.locator('input[placeholder="Enter your password"]').fill(password)
         await page.getByRole('button', { name: 'Sign In with Password' }).click()
         await waitForPath(page, '/admin')
+        await waitForAuthenticatedContent(page, ADMIN_ROUTES[0].required)
         console.log('✓ Logged in and reached /admin')
 
         // ── Visit each admin route ─────────────────────────────────────────
@@ -153,6 +214,8 @@ async function main() {
                     await page.goto(route.path, { waitUntil: 'domcontentloaded' })
                     await waitForPath(page, route.path)
                 }
+
+                await waitForAuthenticatedContent(page, route.required)
 
                 const body = await page.locator('body').innerText()
                 ensureText(body, route.required, route.forbidden)
@@ -178,6 +241,29 @@ async function main() {
                 console.error(`  ✗ ${route.label} (${route.path}): ${err.message}`)
                 failed++
             }
+        }
+
+        try {
+            const driverDetail = await proveAdminDriverDetail(page)
+            report.checks.push({
+                path: driverDetail.path,
+                label: 'Admin Driver Detail',
+                status: 'pass',
+                screenshot: driverDetail.screenshot,
+            })
+            console.log(`  ✓ Admin Driver Detail (${driverDetail.path})`)
+            passed++
+        } catch (err) {
+            const screenshot = await saveScreenshot(page, 'admin-driver-detail-FAIL').catch(() => null)
+            report.checks.push({
+                path: '/admin/drivers/:id',
+                label: 'Admin Driver Detail',
+                status: 'fail',
+                error: err.message,
+                screenshot,
+            })
+            console.error(`  ✗ Admin Driver Detail (/admin/drivers/:id): ${err.message}`)
+            failed++
         }
 
         report.consoleErrors = consoleErrors

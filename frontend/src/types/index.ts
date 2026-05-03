@@ -8,7 +8,7 @@ export interface User {
   google_id?: string
   location_sharing_enabled: boolean
   company?: string
-  role: 'admin' | 'dispatcher' | 'driver' | 'user'
+  role: 'admin' | 'agency' | 'driver' | 'user'
   created_at: string
   last_login?: string
 }
@@ -193,7 +193,7 @@ export interface PaginatedResponse<T> {
 }
 
 // Algorithm Types
-export type PackingAlgorithm = 
+export type PackingAlgorithm =
   | 'skyline'
   | 'genetic'
   | 'extreme_points'

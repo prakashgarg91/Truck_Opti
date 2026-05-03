@@ -4,6 +4,7 @@ RESTful API for carton type management
 """
 
 from flask import Blueprint, request, jsonify
+from app.middleware.authentication import require_auth
 from app.models import db, CartonType
 from app.core.logging import get_logger
 
@@ -84,6 +85,7 @@ def get_carton(carton_id: int):
 
 
 @cartons_bp.route('', methods=['POST'])
+@require_auth
 def create_carton():
     """Create a new carton type"""
     try:
@@ -139,6 +141,7 @@ def create_carton():
 
 
 @cartons_bp.route('/<int:carton_id>', methods=['PUT'])
+@require_auth
 def update_carton(carton_id: int):
     """Update an existing carton type"""
     try:
@@ -192,6 +195,7 @@ def update_carton(carton_id: int):
 
 
 @cartons_bp.route('/<int:carton_id>', methods=['DELETE'])
+@require_auth
 def delete_carton(carton_id: int):
     """Delete a carton type"""
     try:
@@ -219,6 +223,7 @@ def delete_carton(carton_id: int):
 
 
 @cartons_bp.route('/bulk', methods=['POST'])
+@require_auth
 def bulk_create_cartons():
     """Bulk create cartons from list"""
     try:

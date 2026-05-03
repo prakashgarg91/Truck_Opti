@@ -18,7 +18,6 @@ const PHONEPE_CONFIG = {
   // UAT: https://api-preprod.phonepe.com/apis/pg-sandbox
   // Production: https://api.phonepe.com/apis/hermes
   apiUrl: import.meta.env.VITE_PHONEPE_API_URL,
-  redirectUrl: import.meta.env.VITE_APP_URL || window.location.origin,
 };
 
 const ALLOWED_PHONEPE_DOMAINS = ['api.phonepe.com', 'mercury.phonepe.com', 'api-preprod.phonepe.com'];
@@ -132,7 +131,6 @@ export async function initiatePhonePePayment(request: PhonePePaymentRequest): Pr
         billingCycle: request.billingCycle,
         customerPhone: request.customerPhone,
         customerEmail: request.customerEmail,
-        callbackUrl: `${PHONEPE_CONFIG.redirectUrl}/payment/callback?txnId=${merchantTransactionId}`,
       },
     });
 
@@ -184,16 +182,17 @@ export async function checkPaymentStatus(merchantTransactionId: string): Promise
 
     if (error) throw error;
 
-    let status: 'PENDING' | 'SUCCESS' | 'FAILED' = 'PENDING';
-    if (data?.code === 'PAYMENT_SUCCESS') {
-      status = 'SUCCESS';
-    } else if (data?.code === 'PAYMENT_ERROR' || data?.code === 'PAYMENT_DECLINED') {
-      status = 'FAILED';
-    }
+    const normalizedStatus = data?.status === 'SUCCESS' || data?.status === 'FAILED' || data?.status === 'PENDING'
+      ? data.status
+      : data?.code === 'PAYMENT_SUCCESS'
+        ? 'SUCCESS'
+        : data?.code === 'PAYMENT_ERROR' || data?.code === 'PAYMENT_DECLINED' || data?.code === 'PAYMENT_FAILED'
+          ? 'FAILED'
+          : 'PENDING';
 
     return {
-      success: data?.success ?? false,
-      status,
+      success: data?.success ?? normalizedStatus === 'SUCCESS',
+      status: normalizedStatus,
       message: data?.message || '',
       data: data?.data,
     };
@@ -209,27 +208,13 @@ export async function checkPaymentStatus(merchantTransactionId: string): Promise
 // Verify and activate subscription after successful payment
 export async function verifyAndActivateSubscription(
   merchantTransactionId: string,
-  userId: string,
-  planId: string,
-  billingCycle: 'monthly' | 'yearly'
+  userId: string
 ): Promise<{ success: boolean; message: string }> {
-  const statusResult = await checkPaymentStatus(merchantTransactionId);
-
-  if (statusResult.status !== 'SUCCESS') {
-    return {
-      success: false,
-      message: statusResult.message || 'Payment not successful',
-    };
-  }
-
   try {
     // Call Supabase edge function to create subscription
     const { error } = await supabase.functions.invoke('verify-payment', {
       body: {
-        razorpay_payment_id: statusResult.data?.transactionId || merchantTransactionId,
         razorpay_order_id: merchantTransactionId,
-        plan_id: planId,
-        billing_cycle: billingCycle,
         user_id: userId,
         payment_provider: 'phonepe',
       },

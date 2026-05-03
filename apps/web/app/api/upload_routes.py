@@ -13,6 +13,8 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 import logging
 
+from app.middleware.authentication import require_auth
+
 logger = logging.getLogger(__name__)
 
 upload_bp = Blueprint('upload', __name__, url_prefix='/api/upload')
@@ -127,6 +129,7 @@ def validate_bin_data(bin_item: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @upload_bp.route('/items', methods=['POST'])
+@require_auth
 def upload_items():
     """
     Upload items/cartons data
@@ -244,6 +247,7 @@ def upload_items():
 
 
 @upload_bp.route('/bins', methods=['POST'])
+@require_auth
 def upload_bins():
     """
     Upload bins/trucks data

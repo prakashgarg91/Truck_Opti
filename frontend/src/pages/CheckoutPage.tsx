@@ -1,9 +1,9 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Loader2, CreditCard, Smartphone, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { initiateRazorpayPayment, getRazorpayConfig, RazorpayPaymentResult } from '../services/razorpayPayment';
 import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
+import { subscriptionPlansApi } from '../services/subscriptionApi';
 import toast from 'react-hot-toast';
 import { logger } from '../utils/logger';
 import { useSubscription } from '../hooks/useSubscription';
@@ -62,23 +62,14 @@ const CheckoutPage: React.FC = () => {
         return;
       }
       if (planId) {
-        const { data: planData, error } = await supabase
-          .from('subscription_plans')
-          .select('*')
-          .eq('id', planId)
-          .single();
+        const planData = await subscriptionPlansApi.getById(planId);
 
-        if (error || !planData) {
+        if (!planData) {
           toast.error('Plan not found');
           navigate('/pricing');
           return;
         }
-        setPlan({
-          ...planData,
-          features: typeof planData.features === 'string'
-            ? JSON.parse(planData.features)
-            : planData.features,
-        });
+        setPlan(planData);
 
         // Check for existing subscription and determine upgrade/downgrade
         if (currentSubscription && currentPlan) {
@@ -175,7 +166,10 @@ const CheckoutPage: React.FC = () => {
 
       if (result.success) {
         toast.success('Payment successful!');
-        navigate('/payment/success?payment_id=' + result.paymentId);
+        navigate('/payment/success?payment_id=' + result.paymentId + '&status=success');
+      } else if (result.status === 'pending' && result.paymentId) {
+        toast('Payment received. Subscription verification is still pending.', { icon: '⏳' });
+        navigate('/payment/callback?payment_id=' + result.paymentId + '&order_id=' + result.orderId + '&status=pending');
       } else {
         toast.error(result.error || ('Payment failed on both gateways'));
       }

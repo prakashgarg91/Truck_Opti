@@ -2,9 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2, Home, RefreshCw } from 'lucide-react';
 import { checkPaymentStatus, verifyAndActivateSubscription } from '../services/phonepePayment';
-import { supabase } from '../lib/supabase';
+import { paymentSupabaseApi } from '../services/supabaseApi';
 import { logger } from '../utils/logger';
 import { useAuthStore } from '../stores/authStore';
+import { getDefaultHomePathForRole } from '../components/ProtectedRoute';
 
 const PaymentCallbackPage: React.FC = () => {
   const navigate = useNavigate();
@@ -13,45 +14,43 @@ const PaymentCallbackPage: React.FC = () => {
 
   const txnId = searchParams.get('txnId');
   const paymentId = searchParams.get('payment_id');
+  const orderId = searchParams.get('order_id');
   const callbackStatus = searchParams.get('status');
 
   const [status, setStatus] = useState<'checking' | 'success' | 'failed' | 'pending'>('checking');
   const [message, setMessage] = useState('Verifying payment...');
+  const successDestination = getDefaultHomePathForRole(user?.role);
 
-  const verifyPayment = useCallback(async () => {
+  const showAwaitingPaymentState = useCallback(() => {
+    setStatus('pending');
+    setMessage('Waiting for a payment update. Complete checkout to see your latest payment status here.');
+  }, []);
+
+  const verifyPhonePePayment = useCallback(async () => {
+    if (!txnId) {
+      showAwaitingPaymentState();
+      return;
+    }
+
     try {
       // Check payment status
-      const result = await checkPaymentStatus(txnId!);
+      const result = await checkPaymentStatus(txnId);
 
       if (result.status === 'SUCCESS') {
-        // Get payment details from our database
-        const { data: paymentData } = await supabase
-          .from('payment_history')
-          .select('*')
-          .eq('razorpay_order_id', txnId)
-          .single();
+        if (!user) {
+          setStatus('pending');
+          setMessage('Payment received. Please sign in again to finish subscription activation.');
+          return;
+        }
 
-        if (paymentData?.metadata) {
-          if (user) {
-            // Activate subscription
-            const activationResult = await verifyAndActivateSubscription(
-              txnId!,
-              user.id,
-              paymentData.metadata.plan_id,
-              paymentData.metadata.billing_cycle
-            );
+        const activationResult = await verifyAndActivateSubscription(txnId!, user.id);
 
-            if (activationResult.success) {
-              setStatus('success');
-              setMessage('Payment successful! Your subscription is now active.');
-            } else {
-              setStatus('success');
-              setMessage('Payment successful! Subscription will be activated shortly.');
-            }
-          }
-        } else {
+        if (activationResult.success) {
           setStatus('success');
-          setMessage('Payment successful!');
+          setMessage('Payment successful! Your subscription is now active.');
+        } else {
+          setStatus('pending');
+          setMessage(activationResult.message || 'Payment successful. Subscription activation is still pending.');
         }
       } else if (result.status === 'FAILED') {
         setStatus('failed');
@@ -65,7 +64,52 @@ const PaymentCallbackPage: React.FC = () => {
       setStatus('failed');
       setMessage('Unable to verify payment. Please contact support.');
     }
-  }, [txnId, user]);
+  }, [showAwaitingPaymentState, txnId, user]);
+
+  const verifyRazorpayPayment = useCallback(async () => {
+    if (!paymentId) {
+      showAwaitingPaymentState();
+      return;
+    }
+
+    if (callbackStatus === 'failed') {
+      setStatus('failed');
+      setMessage('Payment failed. Please try again.');
+      return;
+    }
+
+    if (!user) {
+      setStatus('pending');
+      setMessage('Payment received. Please sign in again to finish subscription activation.');
+      return;
+    }
+
+    try {
+      const paymentData = await paymentSupabaseApi.getRazorpayStatusSnapshot(user.id, {
+        orderId,
+        paymentId,
+      });
+
+      if (paymentData?.status === 'success' && (paymentData.subscription_id || paymentData.invoice_id)) {
+        setStatus('success');
+        setMessage('Payment successful! Your subscription is now active.');
+        return;
+      }
+
+      if (paymentData?.status === 'failed') {
+        setStatus('failed');
+        setMessage('Payment failed. Please try again.');
+        return;
+      }
+
+      setStatus('pending');
+      setMessage('Payment received. We are still verifying your subscription activation.');
+    } catch (error) {
+      logger.error('Razorpay payment verification error:', error);
+      setStatus('pending');
+      setMessage('Payment received. We are still verifying your subscription activation.');
+    }
+  }, [callbackStatus, orderId, paymentId, showAwaitingPaymentState, user]);
 
   useEffect(() => {
     document.title = 'Payment Status - TruckOpti'
@@ -73,27 +117,30 @@ const PaymentCallbackPage: React.FC = () => {
 
   useEffect(() => {
     if (paymentId) {
-      // Razorpay flow — payment already verified in razorpayPayment.ts
-      if (callbackStatus === 'success' || !callbackStatus) {
-        setStatus('success');
-        setMessage('Payment successful! Your subscription is now active.');
-      } else {
-        setStatus('failed');
-        setMessage('Payment failed. Please try again.');
-      }
+      void verifyRazorpayPayment();
     } else if (txnId) {
       // PhonePe flow — verify via Edge Function
-      verifyPayment();
+      void verifyPhonePePayment();
     } else {
-      setStatus('failed');
-      setMessage('Invalid payment callback');
+      showAwaitingPaymentState();
     }
-  }, [txnId, paymentId, callbackStatus, verifyPayment]);
+  }, [txnId, paymentId, showAwaitingPaymentState, verifyPhonePePayment, verifyRazorpayPayment]);
 
   const handleRetry = () => {
     setStatus('checking');
     setMessage('Verifying payment...');
-    verifyPayment();
+
+    if (paymentId) {
+      void verifyRazorpayPayment();
+      return;
+    }
+
+    if (txnId) {
+      void verifyPhonePePayment();
+      return;
+    }
+
+    showAwaitingPaymentState();
   };
 
   return (
@@ -137,10 +184,10 @@ const PaymentCallbackPage: React.FC = () => {
         </p>
 
         {/* Transaction ID */}
-        {(txnId || paymentId) && (
+        {(txnId || paymentId || orderId) && (
           <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-6">
             <p className="text-xs text-gray-500 dark:text-gray-400">Transaction ID</p>
-            <p className="text-sm font-mono text-gray-900 dark:text-white">{txnId || paymentId}</p>
+            <p className="text-sm font-mono text-gray-900 dark:text-white">{txnId || paymentId || orderId}</p>
           </div>
         )}
 
@@ -148,11 +195,11 @@ const PaymentCallbackPage: React.FC = () => {
         <div className="space-y-3">
           {status === 'success' && (
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate(successDestination)}
               className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 flex items-center justify-center gap-2"
             >
               <Home className="w-5 h-5" />
-              Go to Dashboard
+              Go to Home
             </button>
           )}
 
@@ -169,6 +216,12 @@ const PaymentCallbackPage: React.FC = () => {
                 className="w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Go Home
+              </button>
+              <button
+                onClick={() => navigate('/contact')}
+                className="w-full py-3 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              >
+                Contact Support
               </button>
             </>
           )}
@@ -187,9 +240,13 @@ const PaymentCallbackPage: React.FC = () => {
         {/* Support */}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-6">
           Need help? Contact support at{' '}
-          <a href="mailto:support@truckopti.in" className="text-blue-600 hover:underline">
+          <button
+            type="button"
+            onClick={() => navigate('/contact')}
+            className="text-blue-600 hover:underline"
+          >
             support@truckopti.in
-          </a>
+          </button>
         </p>
       </div>
     </div>
