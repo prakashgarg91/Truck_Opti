@@ -1,9 +1,9 @@
 # Last Closeout
 
-- Time: 2026-05-03 14:39:24
+- Time: 2026-05-03 14:40:24
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M .github/instructions/repo-guide.instructions.md |  M .gitignore |  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/LAUNCH_CHECKLIST.md |  M 0.dev-matrix/PATTERNS.md |  M 0.dev-matrix/QDRANT_GAP_REPORT.md |  M 0.dev-matrix/REQUIREMENTS.md |  M 0.dev-matrix/SECURITY.md |  M 0.dev-matrix/STATE.md
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-03_143924.log
+- Git status: clean
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-03_144024.log
 
 ## AI Handoff
 - Latest handoff date: 2026-05-03
@@ -28,14 +28,14 @@
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
 - [FAIL] background launch-check - latest background launch-check failed - launch-check failed; see log
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [PASS] status update discipline - runtime status files have real content changes
-- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: .github/instructions/repo-guide.instructions.md, .gitignore, 0.dev-matrix/LAUNCH_CHECKLIST.md, 0.dev-matrix/PATTERNS.md, 0.dev-matrix/QDRANT_GAP_REPORT.md
-- [PASS] documentation placement - new docs are in approved zones
+- [PASS] status update discipline - repo clean
+- [PASS] working tree cleanliness - repo clean before closeout report
+- [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
 - [PASS] handoff continuity - latest entry is dated today and contains changed/verified/operational-proof/continue/next/blockers fields
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 8
-- Fail: 2
+- Pass: 9
+- Fail: 1
