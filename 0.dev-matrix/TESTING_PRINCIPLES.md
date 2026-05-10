@@ -1,137 +1,162 @@
-# 🧪 TESTING PRINCIPLES
-
+# 🧪 TESTING PRINCIPLES — Universal Standard
 > **Mandatory testing rules for all AI agents and developers.**
 > **Read this BEFORE marking any feature or task as complete.**
-> 
-> Last Updated: 2026-04-05 | Authors: SONNET-001 (Claude Sonnet 4.6), GPT-003 (GPT-5.4)
-> Trigger: Full button/function audit found 8 critical bugs that were believed to be "working"
+>
+> Source: Consolidated from Truck_Opti full button audit (found 8 critical "done" bugs),
+> trading-rex-ai risk-first trading rules, code-review-graph blast radius analysis.
 
 ---
 
 ## ⚠️ THE CORE PRINCIPLE
 
-> **Never assume a button or feature works without verified end-to-end proof.**
-> **Do not mark a task complete unless you have confirmed the button works, the API call succeeds, and the user sees the correct outcome.**
+> **Never assume a feature works without verified end-to-end proof.**
+> **Do not mark a task complete unless you have confirmed the action succeeds and the user sees the correct outcome.**
 
-This principle was added after a full audit of all 20 frontend pages revealed that:
-- 6 CTA buttons on PricingPage had **no `onClick` handlers at all** (code was written, shipped, and believed to be "done")
-- Email OTP was **disabled via env var** yet the feature was listed as "complete"
-- Phone OTP **silently failed** with `phone_provider_disabled` and showed nothing to the user
-- Terms/Privacy links pointed to `href="#"` (JavaScript void link) with no page behind them
+This principle was added after a full UI audit revealed:
+- 6 CTA buttons had **no `onClick` handlers** — code written, shipped, believed "done"
+- An authentication flow was **disabled via env var** yet marked "complete"
+- An operation **silently failed** with no user feedback whatsoever
+- Links pointed to `href="#"` with no real page behind them
+
+The pattern is universal: **AI code that compiles is NOT done.**
 
 ---
 
 ## ✅ MANDATORY PRE-COMPLETE CHECKLIST
 
-Before moving any task to COMPLETED status, confirm ALL of the following:
+Before moving any task to COMPLETED status, confirm ALL applicable items:
 
-### For UI Buttons
-- [ ] Button has an `onClick` handler (not missing, not commented out)
-- [ ] Clicking the button performs the expected action (navigate, open modal, submit, etc.)
-- [ ] Button is not permanently `disabled` due to a missing env var or feature flag
-- [ ] Button shows a loading state when an async operation is in progress
-- [ ] Button shows an error state/message if the operation fails
-- [ ] Button is accessible (has a descriptive label or aria-label)
+### For UI Components
+- [ ] Interactive elements have their handler wired (onClick, onSubmit, etc.)
+- [ ] Clicking performs the expected action (navigate, open modal, submit, etc.)
+- [ ] Not permanently disabled by a missing env var or feature flag
+- [ ] Shows loading state during async operations
+- [ ] Shows error state if operation fails
+- [ ] Accessible (descriptive label or aria-label)
 
 ### For Forms / API Calls
-- [ ] Form submission calls the correct API endpoint
-- [ ] API endpoint exists and returns expected data in the current environment
-- [ ] Error from the API is caught and displayed to the user (not silently swallowed)
-- [ ] Success state is shown to the user (toast, redirect, modal close, etc.)
-- [ ] Validation prevents invalid data from being submitted
+- [ ] Form submission calls the correct endpoint
+- [ ] Endpoint exists and returns expected data in current environment
+- [ ] API error is caught and shown to user (not silently swallowed)
+- [ ] Success state is clearly communicated (toast, redirect, etc.)
+- [ ] Validation prevents invalid data submission
 
 ### For Auth / Feature Flags
-- [ ] Required env vars are set in BOTH `.env` (dev) AND `.env.production` (prod)
-- [ ] Feature is NOT gated behind a flag that is currently set to `false`
-- [ ] Third-party services referenced (Twilio, Razorpay, Google Maps) are actually configured
-- [ ] If a service is NOT configured, the user sees a helpful error — not a silent failure
+- [ ] Required env vars are set in ALL environments (dev AND production)
+- [ ] Feature is NOT gated behind a flag currently set to `false`
+- [ ] Third-party services (Twilio, Razorpay, OAuth, etc.) are actually configured
+- [ ] If a service is NOT configured, user sees a helpful error — not silent failure
 
 ### For New Pages / Routes
-- [ ] Route is registered in `App.tsx`
+- [ ] Route is registered in the app router
 - [ ] Page loads without console errors
-- [ ] Page is reachable from relevant navigation links
-- [ ] Page has a `document.title` set
+- [ ] Page is reachable from relevant navigation
+- [ ] Page has correct title/metadata set
+
+### For Backend / API Endpoints
+- [ ] Endpoint responds with correct status code
+- [ ] Input validation rejects malformed requests with descriptive errors
+- [ ] Error response does NOT leak stack trace or DB internals
+- [ ] Authentication/authorization is enforced (not just on the happy path)
+
+### For Database Changes / Migrations
+- [ ] Migration runs cleanly on a fresh DB
+- [ ] Rollback (if any) is tested
+- [ ] RLS policies scope correctly (never `USING (true)`)
+- [ ] No existing data is silently corrupted
+
+### For Trading / Financial Logic
+- [ ] Risk validation runs BEFORE any order is placed
+- [ ] Backtest on historical data passes minimum thresholds (Sharpe > 1.0, drawdown < 20%)
+- [ ] Paper trading validation period completed before live capital
+- [ ] Circuit breakers (emergency stop, position limits) tested
+- [ ] All calculations use defined constants — never magic numbers
 
 ---
 
-## 🔍 HOW TO AUDIT A PAGE
+## 🧪 TESTING STRUCTURE — AAA Pattern
 
-When testing any page, run through this script:
+All tests must follow Arrange-Act-Assert:
+
+```python
+def test_risk_limit_blocks_overflow(risk_manager, order):
+    # ARRANGE
+    order.quantity = 999_999
+
+    # ACT
+    result = risk_manager.validate_order(order)
+
+    # ASSERT
+    assert result is False
+```
+
+```typescript
+it('blocks overdraft withdrawal', async () => {
+    // ARRANGE
+    const account = { balance: 100 }
+
+    // ACT
+    const result = await withdrawalService.withdraw(account, 999)
+
+    // ASSERT
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Insufficient funds')
+})
+```
+
+---
+
+## 🔍 HOW TO AUDIT A PAGE/FEATURE
+
+When testing any UI surface, run through this script:
 
 ```
 1. OPEN PAGE
    - Does it load without crashing?
-   - Are there console errors?
+   - Console errors?
 
-2. FOR EVERY BUTTON ON THE PAGE:
-   a. Read the source code — does it have an onClick?
-   b. Click it in the browser — does something happen?
-   c. If it calls an API — check the Network tab for the actual request
-   d. If it shows an error — is the error message helpful?
+2. FOR EVERY INTERACTIVE ELEMENT:
+   a. Read source code — is the handler wired?
+   b. Click/submit in browser — does something happen?
+   c. If async — check Network tab for actual request
+   d. Error case — is the error message helpful?
 
 3. FOR EVERY FORM:
    a. Submit with valid data — does it work?
-   b. Submit with invalid data — is an error shown?
+   b. Submit with invalid data — error shown?
    c. What happens if the API is down?
 
-4. FOR EVERY LINK:
+4. FOR EVERY LINK / ROUTE:
    a. Does it navigate to a real page (not href="#")?
-   b. Does the target page exist?
+   b. Does the target page exist and load?
 
 5. ENVIRONMENT CHECK:
-   a. Are feature flags enabled in .env?
-   b. Are third-party service keys real (not placeholders)?
+   a. Are all required env vars set?
+   b. Are third-party services configured?
 ```
 
 ---
 
-## 📋 KNOWN BUGS FROM FULL AUDIT (2026-03-03)
+## 📊 MINIMUM EVIDENCE REQUIRED
 
-| Bug | Page | Severity | Description | Status |
-|-----|------|----------|-------------|--------|
-| BUG-001 | Login + Signup | HIGH | Terms/Privacy links → `href="#"` (dead) | ✅ FIXED |
-| BUG-002 | Login + Signup | CRITICAL | Email OTP fully disabled (`VITE_AUTH_EMAIL_OTP_ENABLED=false`) | ✅ FIXED |
-| BUG-003 | Pricing | HIGH | 6 CTA buttons (Start Free, 4× Get Started, Contact Sales, Talk to Us) had no `onClick` | ✅ FIXED |
-| BUG-007 | Checkout | CRITICAL | `VITE_RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXX` placeholder — payment fails | 🔴 OPEN |
-| BUG-008 | Login | HIGH | Phone/WhatsApp OTP silently failed (Twilio not configured) — error now shown, but Twilio still needed | ⚠️ PARTIAL |
-| BUG-004 | Global | CRITICAL | Heroku deployment 7 commits stale — production runs old code | ✅ FIXED (2026-04-01 `552b424c` / `f8e93f07`) |
-| BUG-005 | Auth system | CRITICAL | Supabase Site URL = Heroku URL — OTP emails link to wrong domain | ✅ FIXED (2026-04-01 `70e764c5`) |
-
----
-
-## 🤖 AI AGENT INSTRUCTIONS
-
-### NEVER do the following:
-- Mark a task complete by saying "I added the onClick handler" without TESTING it
-- Assume a working implementation from a previous session is still working
-- Skip testing because "it worked last time"
-- Close a bug as fixed based only on writing code (re-run the flow)
-
-### ALWAYS do the following:
-- Start sessions by checking STATE.md KNOWN ISSUES and this document
-- After implementing a button, trace the full user flow (UI → API → DB → response → UI update)
-- Add new bugs found to STATE.md KNOWN ISSUES table immediately
-- If you can't test a feature (e.g., no Twilio keys), document it as "untested" not "working"
-
-### TESTING-FIRST WORKFLOW
+When marking a task done, post in STATE.md / TASK.md:
 
 ```
-IMPLEMENT → TEST → DOCUMENT → COMPLETE
-    │           │
-    │           └─ If broken: fix and re-test before moving on
-    │
-    └─ Before implementing: check if similar feature already has bugs
+## Task: <task name>
+Status: COMPLETE
+Evidence:
+  - Command run: <exact command>
+  - Result: <pass/fail + key numbers>
+  - User flow verified: <what you clicked/tested>
+  - Console errors: none
 ```
 
----
-
-## 📁 RELATED DOCUMENTS
-
-- [STATE.md](STATE.md) — Live bug table and system health
-- [TASK.md](TASK.md) — Bug fix tasks queue
-- [TEST.md](TEST.md) — Test execution instructions
-- [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md) — Pre-launch quality gates
+Incomplete evidence = task is not done.
 
 ---
 
-**This document is REQUIRED READING for any new AI agent joining the project.**
+## 📎 SEE ALSO
+
+- `QUALITY-BASELINE.md` — Definition of Done + gate commands
+- `RULES.md` — Rule 2 (never mark done without testing)
+- `SECURITY.md` — Pre-commit security checklist

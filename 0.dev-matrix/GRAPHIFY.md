@@ -73,6 +73,8 @@ If a graph already exists:
 powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\graphify.ps1 -Status
 ```
 
+The repo start-of-day helper `0.dev-matrix/session-start-maintenance.ps1` is designed to run this status check automatically, refresh `code-review-graph`, refresh Graphify when the root report is stale or missing, and check Graphify hook status. `0.dev-matrix/resume-work.ps1` surfaces that maintenance result.
+
 Then read:
 
 - `graphify-out/GRAPH_REPORT.md`

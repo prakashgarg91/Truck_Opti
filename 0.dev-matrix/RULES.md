@@ -1,114 +1,97 @@
-# 📜 RULES — TruckOpti
-
-> **TruckOpti-specific coding rules and anti-patterns.**
-> Read once before starting any task. Security rules are in SECURITY.md.
+# 📜 RULES — Universal Dev Standards
+> **Applies to every repo in D:\Github without exception.**
+> Per-repo RULES.md adds stack-specific rules on top of this baseline.
+> Security rules are in SECURITY.md. Testing rules are in TESTING_PRINCIPLES.md.
 
 ---
 
 ## 🔴 CRITICAL RULES
 
 ### 1. Build Must Be Clean Before Every Push
-```powershell
-cd d:\Github\Truck_Opti\frontend ; npm run build
-# Must show 0 TypeScript errors
-# Do NOT push if build fails
+The CI gate is never optional. Run the project's validation command before pushing.
+If no `launch-check` script exists, at minimum run lint + type-check + tests.
+```
+# Do NOT push if validation fails.
+# "It works on my machine" is not a passing gate.
 ```
 
-### 1b. Launch-Readiness Gate Check (recommended before every push)
-```powershell
-# From repo root — checks all 8 gates at once:
-.\scripts\launch-readiness.ps1
-# Or via npm:
-npm run launch-check
-```
-Gates: frontend build, root npm audit, frontend npm audit, apps/web npm audit, pip-audit, python compileall, git cleanliness, tree hygiene. All must pass before pushing.
+### 2. Never Mark a Task Done Without Testing the User Flow
+Code that compiles is NOT done.
+The button/endpoint/function must work end-to-end and produce the correct outcome.
+See `TESTING_PRINCIPLES.md` for the full mandatory checklist.
 
-### 2. Git Push Order
-```powershell
-git push origin main    ← FIRST (GitHub)
-git push heroku main    ← SECOND (Heroku deploy)
-```
+### 3. Register in STATE.md and Post a Summary Message
+- Before starting: add yourself to `## 🤖 ACTIVE AGENTS` in the repo's STATE.md or TASK.md.
+- After finishing: post to `## 📝 AGENT MESSAGES` (newest at top) with a summary.
+- After a session: update `AI-HANDOFF.md` so the next session resumes from an exact checkpoint.
 
-### 3. Never Mark a Task Done Without Testing the User Flow
-See `TESTING_PRINCIPLES.md`. Code that compiles is NOT done. The button must work.
+### 4. Security Checklist Before Any Code Generation
+Run through `SECURITY.md §CHECKLIST` before writing code that touches:
+auth, DB access, payments, file uploads, HTTP redirects, env vars, or secrets.
 
-### 4. Register in STATE.md and Post a Summary Message
-Before starting: add yourself to `## 🤖 ACTIVE AGENTS`.
-After finishing: post to `## 📝 AGENT MESSAGES` (newest at top).
-
-### 5. Security Checklist Before Any Code Generation
-Run through `SECURITY.md §6` (15-item checklist). Known violations: `SECURITY.md §2`.
+### 5. No TODO Comments in Shipped Code
+Either implement the feature fully, or add a visible toast placeholder — never leave `// TODO` in code that is pushed to main.
 
 ---
 
-## 🟠 TECH STACK RULES
+## 🟠 UNIVERSAL CODING RULES
 
-### 6. State Management — Zustand Only
+### 6. Parameterized Queries — Never String-Concatenate SQL
+
+```python
+# ❌ WRONG — exploitable
+query = f"SELECT * FROM users WHERE id = '{user_id}'"
+
+# ✅ RIGHT — parameterized
+db.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+```
 ```typescript
-// ❌ WRONG — local state for auth
-const [user, setUser] = useState(null)
-
-// ✅ RIGHT — use authStore
-import { useAuthStore } from '../store/authStore'
-const { user, agencyId, driverId } = useAuthStore()
+// ✅ RIGHT — ORM / Supabase client
+const { data } = await supabase.from('users').select('*').eq('id', userId)
 ```
 
-### 7. Database Access — Supabase Client Only
-```typescript
-// All DB access goes through the shared client:
-import { supabase } from '../lib/supabase'
+### 7. Config Access via Config Module — Never Hardcode Secrets
+```python
+# ✅ Python
+from app.core.config import Config
+config = Config()
+api_key = config.service.api_key
 
-// NEVER create a second client in a component
-// NEVER use supabaseAdmin in frontend code
+# ✅ TypeScript / Node
+import { env } from '../config/env'
+const apiKey = env.SERVICE_API_KEY
+```
+```
+# ❌ NEVER — in any file
+API_KEY = "sk-prod-live-abc123"
 ```
 
-### 8. Error Handling — Never Expose Raw DB Errors
+### 8. Never Expose Raw DB / Provider Errors to Users
 ```typescript
-// ❌ WRONG — raw Supabase error to user
-toast.error(error.message)  // may leak table/column names
+// ❌ WRONG — may leak table/column names or stack traces
+toast.error(error.message)
 
 // ✅ RIGHT — log internally, show generic message
-console.error('[context]', error)
+console.error('[context] DB error:', error)
 toast.error('Something went wrong. Please try again.')
 ```
 
-### 9. Realtime Subscriptions Must Clean Up
+### 9. Subscriptions and Listeners Must Clean Up
 ```typescript
 useEffect(() => {
   const channel = supabase.channel('name').on(...).subscribe()
   return () => { supabase.removeChannel(channel) }  // ← REQUIRED
-}, [dependency])
+}, [dep])
+```
+```python
+# cleanup in __del__ or context manager
 ```
 
-### 10. No TODO Comments in Shipped Code
+### 10. Don't Hardcode Business Constants in Logic
 ```typescript
-// ❌ WRONG — placeholder left in
-async handleWithdrawal() { /* TODO: implement */ }
-
-// ✅ RIGHT — toast placeholder OR full implementation
-async handleWithdrawal() { toast('Withdrawal coming soon') }
-```
-
----
-
-## 🟡 REACT / UI RULES
-
-### 11. Every Page Must Set document.title
-```typescript
-useEffect(() => { document.title = 'Page Name - TruckOpti' }, [])
-```
-
-### 12. Bilingual Labels (English + Hindi)
-All user-facing strings that appear on buttons/toasts/headings must have `language === 'en' ? 'English' : 'Hindi'` variants.
-
-### 13. Mobile-First — Bottom Nav Limited to 5 Items
-The mobile bottom nav is crowded at 5 items already. New nav items go in a page (e.g. settings or a “more” sheet), not in the bottom nav.
-
-### 14. Don't Hardcode Business Values (BUG-020 pattern)
-```typescript
-// ❌ WRONG — ignores the constant
+// ❌ WRONG — bypasses the constant definition
 const GST_RATE = 0.05
-return amount * 0.18  // ← caused real bug in v49
+return amount * 0.18    // ← caused BUG-020 in Truck_Opti
 
 // ✅ RIGHT
 return amount * GST_RATE
@@ -116,139 +99,57 @@ return amount * GST_RATE
 
 ---
 
-## 🟢 DB / MIGRATION RULES
+## 🟡 STATE MANAGEMENT RULES
 
-### 15. New Migration File Naming
-```
-supabase/migrations/YYYYMMDD000000_description.sql
-```
-Use today's date. Never reuse a filename that exists.
+### 11. Use the Designated State Store — Not Scattered Local State
+- Each project designates ONE state management pattern (Zustand, Redux, Pinia, context, etc.).
+- Cross-component shared state ALWAYS goes through the store.
+- API auth state is never held in `useState` within a component.
 
-### 16. Always Enable RLS on New Tables
-```sql
-ALTER TABLE new_table ENABLE ROW LEVEL SECURITY;
--- Then create explicit policies (see SECURITY.md §3.1)
-```
-
-### 17. Alter Existing Tables via Migration, Not Direct Edit
-Never modify `base_schema.sql` directly. Always add a new migration file for schema changes.
-
-### 18. Storage Bucket Paths Must Use auth.uid()
-```typescript
-// ❌ WRONG — user-supplied name
-const path = `uploads/${filename}`
-
-// ✅ RIGHT — deterministic, ownership-scoped
-const path = `driver-docs/${driverId}/${docType}.jpg`
-//                          ^^^^^^^^ = auth.uid()
-```
+### 12. Functional Components: Prefer Derivation Over Sync
+Derive values from state instead of syncing with `useEffect`. Use `useMemo`/`computed` for derived values.
 
 ---
 
-## 🔒 DEPENDENCY / SECURITY RULES
+## 🟢 GIT / PROCESS RULES
 
-### 19. Dependabot Closure Rule — Every Push
-Run `npm audit` in `d:\Github\Truck_Opti\frontend` before and after changing any package:
+### 13. Git Push Order (for repos with multi-remote deploy)
 ```powershell
-cd d:\Github\Truck_Opti\frontend ; npm audit
+git push origin main    # FIRST — source of truth
+git push heroku main    # SECOND — deploy (if applicable)
 ```
-- If 0 vulnerabilities → proceed.
-- If vulnerabilities exist → run `npm audit fix` and commit with `security: fix Dependabot CVE-XXX`.
-- Also check root `package.json` (`express`, `dotenv`, etc.). Upgrade to latest non-vulnerable minor:
-  ```powershell
-  cd d:\Github\Truck_Opti ; npm audit fix
-  ```
-- **BATCH is NOT complete while `npm audit` reports vulnerabilities in either package.json.**
-- GitHub Dependabot alerts must be resolved within the same batch that introduced them — never carry over >1 batch.
 
-### 21. Column Name Verification Before Shipping
-When a page selects or displays a column from a Supabase table, verify the column name against the migration file before committing:
+### 14. Code-Review-Graph: Check Before Edit
+Before any non-trivial task, run:
 ```
-# grep column name in all migrations
-python -c "import os; [print(f, l.strip()) for f in os.listdir('supabase/migrations') for i,l in enumerate(open(f'supabase/migrations/{f}').readlines(),1) if 'col_name' in l]"
+get_minimal_context(task="<what you're about to do>")
 ```
-- ❌ Selecting `full_name` when the column is `name` → silent nulls in UI (BUG-021 pattern)
-- ✅ Always cross-check selected column names against migration DDL
+This costs ~100 tokens and prevents wasted work on call graph / blast radius surprises.
 
-### 22. End-of-Day Closing Questions
-Answer these 4 questions every time you close a batch or a day's work:
-1. **Are there deep hidden bugs?** — grep `error.message`, wrong table names, missing routes, broken RLS.
-2. **Is codebase clean?** — 0 TS errors, 0 `npm audit` vulnerabilities, no TODO comments, no dead code.
-3. **Is every bug resolved?** — Check ROADMAP.md open bugs section; all P0/P1 must be fixed or tracked.
-4. **Is everything glued together?** — Every new page has a route in App.tsx, a nav card, and a Supabase migration applied.
+### 15. Roo Bridge Semantic Search Before grep
+When looking for code by intent or behaviour, use the Roo bridge MCP tools first.
+Start with `search_roo_index`; use `detect_roo_index_collection` when workspace mapping needs confirmation.
+Reserve grep/file_search for exact string matching after Roo has narrowed the candidates.
 
-### 21. When User Pastes External Agent Output
-When the user provides output from another AI agent (claiming tasks complete/deployed), you MUST:
-1. **Read** each claimed file — never trust strings like "already present" or "already existed" without verifying.
-2. **Check table names** — grep `supabase.from(` in every modified file and confirm the table names match migration files.
-3. **Check for raw error.message** — grep `error.message` and `err.message` in every modified file.
-4. **Register** the reporting agent in `STATE.md`, post judgment message (newest at top).
-5. **Mark** tasks ✅ DONE or 🔴 BUG in `TASK.md` with evidence.
-6. **Create** the next `BATCHNN_AGENT_CONTINUATION_PROMPT.md` with any bugs as P0 tasks.
-7. **Output** exactly one single-line summary: `"BATCHXX ✅ PASS / ⚠️ PARTIAL: [issue]. Next: BATCHYY prompt at 0.dev-matrix/BATCHYY_AGENT_CONTINUATION_PROMPT.md"`
+### 16. Junie Stays User-Scope By Default
+If Junie is used in a repo, prefer the hardened user-scope wrapper and config on this machine:
 
-### 17. Alter Existing Tables via Migration, Not Direct Edit
-Never modify `base_schema.sql` directly. Always add a new migration file for schema changes.
-
-### 18. Storage Bucket Paths Must Use auth.uid()
-```typescript
-// ❌ WRONG — user-supplied name
-const path = `uploads/${filename}`
-
-// ✅ RIGHT — deterministic, ownership-scoped
-const path = `driver-docs/${driverId}/${docType}.jpg`
-//                          ^^^^^^^^ = auth.uid()
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Users\Prakash\.junie\junie-zai.ps1 --project D:\Github\<repo>
 ```
+
+Do not create or commit repo-local `.junie/` just because Junie offers to import AGENTS, MCP, or skills on first run. Only add repo-local `.junie/` when the repo truly needs Junie-specific shared behavior that cannot be handled by root `AGENTS.md`, existing repo docs, or user-scope Junie MCP.
 
 ---
 
-## 💫 COMMIT CONVENTIONS
+## 📎 SEE ALSO
 
-```
-feat:      New user-visible feature
-fix:       Bug fix
-security:  Security patch
-refactor:  Code restructure (no behaviour change)
-migration: DB schema change
-chore:     Config, dependencies
-docs:      Documentation only
-```
-
-Examples:
-```
-feat: add shipment history page for customer portal
-fix: BUG-020 GST rate uses constant not hardcoded value
-security: BUG-REDIRECT-001 PhonePe URL domain validation
-migration: add licence_url and rc_url columns to drivers table
-```
-
----
-
-*Last updated: 2026-03-05 | v50 | SONNET-004*
-## Baseline Reference
-
-Use `QUALITY-BASELINE.md` as the standing companion to these rules. It captures the repo-local software quality bar, integration expectations, and documentation discipline for this application.
-
----
-
-## Phase Gate Rule
-
-**You cannot proceed to the next phase until all tasks in the current phase have passing validation output.**
-
-- A phase with even one failing test, broken build, or unresolved FAIL is not done
-- Post the exact passing command output in TASK.md when marking a phase complete
-- Tasks with no validation command do not count as done
-
-## Human-Blocked Task Rule
-
-**Tasks tagged `[HUMAN-BLOCKED]` require Razorpay keys, Google OAuth browser sign-in, Supabase migrations, Sentry DSN, or Twilio configuration the AI cannot perform.**
-
-```
-When you encounter a [HUMAN-BLOCKED] task:
-  1. DO NOT attempt workarounds or use test/sandbox credentials as substitutes
-  2. Write in AI-HANDOFF.md: "Blocked: [task ID] — needs [specific human action]"
-  3. Move immediately to the next AI-executable task
-  4. Never mark a [HUMAN-BLOCKED] task done without explicit human confirmation
-```
-
-AI-executable tasks must never be left waiting while human-blocked ones pile up.
+| File | Purpose |
+|------|---------|
+| `SECURITY.md` | Security safeguards & pre-commit checks |
+| `TESTING_PRINCIPLES.md` | Mandatory DoD checklist for every feature |
+| `QUALITY-BASELINE.md` | Definition of Done + evidence requirements |
+| `CONTEXT-ENGINEERING.md` | How to keep AI context accurate and efficient |
+| `PATTERNS.md` | Approved implementation patterns |
+| `TREE-HYGIENE.md` | Repo cleanliness standard |
+| `JUNIE.md` | Junie role, use cases, setup, and repo-local `.junie` policy |

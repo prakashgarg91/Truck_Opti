@@ -190,6 +190,180 @@
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-10] COPILOT-056:
+  Stitch reference generation moved from vague backlog to a concrete current-route comparison pack.
+
+  NEW VERIFIED WORK:
+  - clarified that the current Stitch work is reference-only for flow and gap review, not prototype-share proof
+  - reused the live TruckOpti design system asset `assets/039d7f7b6b7747e8a76dedad4464c9cb` successfully with `GEMINI_3_1_PRO`
+  - generated six missing current-route reference screens directly into project `817968552986251880`:
+    - `Checkout - TruckOpti` -> `f1185d1971b54a6292d4a49b2dc1c93e`
+    - `Not Found - TruckOpti` -> `b0d5e3711c754465b7c3a7a306f2b003`
+    - `Carton Catalog - TruckOpti` -> `e6d3ed24d299415998e8b126e50dd1a0`
+    - `Profile - TruckOpti` -> `4a7d8f667a8342a684f9a28bcff82cd5`
+    - `Customer Tracking Control Center - TruckOpti` -> `0afcac095d1c417b917d7ca9801a2836`
+    - `Driver Trip Detail - TruckOpti` -> `591699f3ceaf4f4782ffc581b2db9fc5`
+  - defined the current 16-screen reference pack around shipped routes plus those newly generated parity screens
+  - reconfirmed that `mcp_stitch_list_screens` is still laggy enough that direct generation outputs remain the safer source of truth immediately after creation
+
+  JUDGMENT:
+  - the Stitch project is now materially more useful for code-reference and gap-review work even without solved export/share navigation
+  - the next reference-only value is in future-gap screens, not more duplication across current shipped routes
+  - support cleanup still has drift because the old `Contact & Support - TruckOpti` title remains visible alongside canonical `Contact Support - TruckOpti`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-10] COPILOT-055:
+  Live Stitch proof-surface audit narrowed the remaining work to two concrete UI decisions instead of a broad canvas mystery.
+
+  NEW VERIFIED WORK:
+  - reused the working shared authenticated editor for project `817968552986251880` instead of reopening repo-side export artifacts or the larger full-canvas selection
+  - used `Ctrl+A` plus the selected-chip `Remove` buttons to reduce the live selection down to exactly `Public Landing Page` and `Pricing Options`
+  - verified that the top `Export` button and the selection-toolbar `More -> Export` path both open the same AI Studio-centered export panel in the current editor surface
+  - verified that `Share` opens `Share project`, but `Copy link` stays disabled until `Enable sharing and remixing` is turned on
+  - clicked the node-level `play_circle` title row on the landing-page preview and exposed the concrete action set `New Tab`, `Show QR Code`, device presets, `View Code`, `Export`, `Download`, and `Delete`
+  - attempted automated `New Tab` capture from that menu, but no popup or captured preview page surfaced from this workspace
+
+  JUDGMENT:
+  - the remaining blocker is no longer subset selection or export-surface discovery; both are now known and reproducible
+  - relationship proof still needs either an approved public-share step or a manual live-preview action through the node-level menu
+  - the next pass should resume from the same two-screen subset instead of rediscovering the full editor state
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-10] COPILOT-054:
+  Stitch status is now synced to the newer prototype reality instead of stopping at the earlier edge-failure checkpoint.
+
+  NEW VERIFIED WORK:
+  - reopened the shared authenticated Stitch project page for `817968552986251880` and confirmed the live editor now contains `Prototype created`
+  - confirmed the same live editor surface also exposes `Share` and `Export`, so the project is past the earlier pre-prototype state
+  - rechecked the current DOM snapshot and found `0` rendered edge paths on the visible canvas, so relationship wiring is still not independently proved by the canvas state alone
+  - re-audited the repo-side Stitch exports under `0.dev-matrix/stitch folder/` and confirmed the exported HTML remains static/unconnected (`href="#"`), so those artifacts cannot be used as flow proof
+  - settled the export decision for future passes: `Instant prototypes` is the correct export when the goal is preserving/shareable flow relationships; `Stitch React app` is the correct export when the goal is code-side interaction structure; `MCP` remains an IDE/agent integration path rather than a relationship-preserving export artifact
+
+  JUDGMENT:
+  - the repo truth now needs to say `prototype exists` and `relationship proof still pending`, not `no prototype` and not `wiring complete`
+  - the next high-value proof is preview/share navigation or a fresh `Instant prototypes` export on the smallest public flow subset, not more static HTML inspection
+  - exported HTML may still be useful for visual/code review, but it is not evidence that Stitch screen relationships were preserved
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-08] COPILOT-053:
+  Shared Stitch recheck converted the last cleanup uncertainty into a narrower live wiring blocker.
+
+  NEW VERIFIED WORK:
+  - reopened work on the shared authenticated Stitch editor page instead of the earlier unusable 404 inner-frame surface
+  - confirmed the live canvas was loaded with `54` rendered nodes and `0` edges before new actions
+  - selected the stale old internal support node `6ed5645152fc4076984a0239ca5dfe01` (`Contact & Support - TruckOpti`) and successfully removed it with keyboard `Delete`
+  - verified the stale node disappeared from the DOM while the canonical internal support screen `Contact Support - TruckOpti` remained present
+  - rechecked the first public/customer path nodes on the rendered canvas: `Public Landing Page`, `Pricing Options`, `Login - TruckOpti`, `Signup - TruckOpti`, `OTP Verification - TruckOpti`, `Auth Callback - TruckOpti`, `Customer Dashboard`, and `Payment Success - TruckOpti` are visible; `Checkout - TruckOpti` was not discoverable in the rendered canvas during this pass
+  - submitted a `GEMINI_3_1_PRO` prompt instructing Stitch to use existing screens only and create prototype connections for the first public-to-customer flow
+  - waited for the Stitch design-agent cycle to complete; the agent responded that it was wiring the onboarding and customer flow, but the canvas still ended with `0` persisted `rf__edge-*` elements
+
+  JUDGMENT:
+  - stale-node cleanup is now complete; do not spend more time rediscovering or deleting the old internal support screen
+  - the live blocker has narrowed to edge persistence in Stitch, not screen inventory, not duplicate cleanup, and not model selection
+  - the current shared-editor DOM exposes no global React Flow handle elements, and the current AI/composer path can acknowledge a wiring request without creating visible prototype edges
+  - the next high-value pass should target one deterministic manual `Connect to screen` action (`Public Landing Page -> Pricing Options`) and verify a real edge appears before attempting broader flow automation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-08] COPILOT-052:
+  Stitch completeness is now rechecked against the live project instead of the lagging list surface.
+
+  NEW VERIFIED WORK:
+  - proved that `mcp_stitch_list_screens` is materially incomplete for this project and omits many valid screens that still resolve through `mcp_stitch_get_screen`
+  - revalidated the previously generated Stitch backlog by exact id: the eight route-parity screens, five rename replacements, and all fifteen future/exception root screens are still present
+  - identified the only genuinely missing canonical screens after cleanup drift: `Management Hub - TruckOpti` and `Admin: Driver Management Hub`
+  - regenerated those two missing canonical hubs with `GEMINI_3_1_PRO`:
+    - `Management Hub - TruckOpti` -> `812ce430430f4856a97142c2f07d0efe`
+    - `Admin: Driver Management Hub` -> `595aec8e180f47bcb0875f67dedc589c`
+  - confirmed the stale old internal support source is directly visible on the live canvas as node id `6ed5645152fc4076984a0239ca5dfe01`, so the remaining blocker is selection/deletion reliability rather than discovery
+
+  JUDGMENT:
+  - there is no remaining planned or canonical root-screen generation gap in the current Stitch project
+  - the only live prototype cleanup item left is removing the stale old internal `Contact & Support - TruckOpti` node
+  - prototype wiring is still not started; the canvas still exposes nodes without edges and standard click automation is not yet selecting the stale node for deletion
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-07] COPILOT-051:
+  Stitch root-screen closure and rename-cleanup proof are now complete enough that the remaining work is sharply bounded.
+
+  NEW VERIFIED WORK:
+  - completed the remaining `15` planned root-screen generations in Stitch project `817968552986251880`; the final batch returned `COMPLETE` for `Security Admin & Permission Bundle Editor - TruckOpti`, `Growth & Sales Account Workspace - TruckOpti`, `Integration Manager & ERP Onboarding - TruckOpti`, `Cancellation Center - TruckOpti`, and `Refund & Dispute Center - TruckOpti`
+  - proved that title cleanup is feasible from this workspace as `create renamed replacement -> delete stale source`, not as an in-place mutation
+  - created canonical renamed replacements:
+    - `Help Center - TruckOpti` -> `8db564ced53b4d128c355e8b2c56c0b3`
+    - `Contact Support - TruckOpti` -> `0b4d18c8069842bfa29da8bd07ee907b`
+    - `Contact Support - TruckOpti Public` -> `d0eb54bb9d1c4c72b52afde3582d3258`
+    - `Customer: Live Shipment Tracking - Mobile` -> `542bbba591a4419885110019383daa5c`
+    - `Customer Tracking Control Center - TruckOpti` -> `e881f79438d34396bb87cd6d9143f441`
+  - deleted the stale visible source titles `Support & Help Center - TruckOpti`, `Contact & Support - TruckOpti Public`, `Customer: Live Shipment Tracking`, and `Customer: Live Shipment Tracking (Desktop)` from the live canvas after the canonical replacements existed
+
+  JUDGMENT:
+  - there is no remaining planned root-screen generation backlog in the Stitch plan
+  - one hidden stale source screen still needs deletion: old internal `Contact & Support - TruckOpti` at `6ed5645152fc4076984a0239ca5dfe01`
+  - prototype wiring is still blocked by automation limits because the current browser path could not reliably multi-select off-canvas nodes for `Generate -> Instant prototype`
+  - the next pass should focus on surfacing that hidden old internal contact node and then retrying a very small prototype-generation subset rather than reopening broad screen generation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-07] COPILOT-050:
+  Stitch browser cleanup is now real from this workspace instead of remaining a manual blocker.
+
+  NEW VERIFIED WORK:
+  - used the authenticated Stitch browser editor on project `817968552986251880` to remove the exact duplicate auth/legal/support discard set defined in `0.dev-matrix/STITCH_SCREEN_CLEANUP_AND_INTEGRATION_PLAN.md`
+  - archived the near-duplicate `TruckOpti Logistics Platform`, `Shipment History - TruckOpti Customer Portal`, and `Shipment Invoice - TruckOpti Customer Portal` screens
+  - removed the stale `Management Hub - TruckOpti`, `Checkout & Payment Success`, and blueprint artifact screens from the live prototype
+  - recreated the missing canonical internal support surface through Stitch edit output, which produced new live screen `6ed5645152fc4076984a0239ca5dfe01` titled `Contact & Support - TruckOpti`
+  - API follow-up now shows all duplicate auth/legal/support families collapsed to one live title each; `list_screens` still lags the recreated support screen, so the list surface reads `48` while `get_screen` confirms an effective `49`-screen canonical base
+
+  JUDGMENT:
+  - duplicate cleanup is no longer the active problem in Stitch
+  - remaining work is rename plus `Connect to screen` wiring for the cleaned public/customer and driver journeys
+  - future verification should prefer `get_screen` by id whenever Stitch list surfaces lag recent edits or recreations
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-06] COPILOT-049:
+  Stitch parity execution is now partially real, not just planned.
+
+  NEW VERIFIED WORK:
+  - ran live Stitch MCP edit flows against project `817968552986251880`
+  - direct output payloads returned `screenMetadata.status=COMPLETE` for eight route-parity screens:
+    - `Payment Success - TruckOpti`
+    - `Checkout - TruckOpti`
+    - `Not Found - TruckOpti`
+    - `Truck Catalog - TruckOpti`
+    - `Carton Catalog - TruckOpti`
+    - `Sale Orders - TruckOpti`
+    - `Profile - TruckOpti`
+    - `Driver Trip Detail - TruckOpti`
+  - persisted generated screen names from the edit outputs:
+    - `projects/817968552986251880/screens/1e1497ab607841d4b4fdb40345964e66`
+    - `projects/817968552986251880/screens/3663416c392740a5adb37ae779c74e6d`
+    - `projects/817968552986251880/screens/d6f1ac7bdfde4447873391c10beb5cd5`
+    - `projects/817968552986251880/screens/7479e1a82e6c4a28ae616feb0724b4d1`
+    - `projects/817968552986251880/screens/402f4c2fe9584585a27cd7425061aa7f`
+    - `projects/817968552986251880/screens/08e898da0acd4dfa8b2e63f6a93e79e3`
+    - `projects/817968552986251880/screens/43fc96b45d054feea22f27da7727b98b`
+    - `projects/817968552986251880/screens/5bf50df56df0419f827d30cb8f5dbbe5`
+
+  JUDGMENT:
+  - the current-route parity backlog is now materially advanced in Stitch and all eight Phase 1 generated screens are confirmed live by screen ID
+  - there is no remaining pending screen generation in the Phase 1 parity batch
+  - exact duplicate deletion is still blocked from this workspace because the available Stitch MCP tools generate edited outputs but do not expose delete/archive operations for the original duplicate screens
+  - the next high-value step is manual duplicate cleanup in the Stitch UI, followed by flow wiring with `Connect to screen`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-06] COPILOT-048:
+  Live Stitch audit has been converted into an execution plan instead of leaving it as a one-off chat summary.
+
+  NEW VERIFIED WORK:
+  - inspected the live Stitch project `projects/817968552986251880` and confirmed the current prototype shape: `81` total screens, `53` unique titles, `28` duplicate copies
+  - cross-checked the current prototype against `docs/MODULES.md` for shipped route parity and against `0.dev-matrix/PLATFORM-ROLE-INTERFACE-PLAN.md` for future-state partner, reviewer, demo, and permission surfaces
+  - created `0.dev-matrix/STITCH_SCREEN_CLEANUP_AND_INTEGRATION_PLAN.md` with the exact duplicate keep/discard IDs, near-duplicate merge rules, canonical kept inventory, seven missing current-route parity screens, future-state additions, exception-state additions, naming rules, and prototype wiring order
+
+  JUDGMENT:
+  - the current Stitch project is broad enough to keep as the base, but it must be cleaned in place rather than regenerated from scratch
+  - public/auth/common screens are the main source of noise; admin is already structurally clean; driver needs one canonical trip-detail shell; customer still needs management/account parity screens
+  - the next safe execution pass is duplicate cleanup in Stitch UI plus route-parity generation, not more unguided `Imagine new screen` runs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-04-17] GPT-021:
   Future-state planning was pressure-tested with parallel native `opencode` lanes and expanded into a fuller execution roadmap.
 

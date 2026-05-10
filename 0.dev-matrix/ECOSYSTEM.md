@@ -106,7 +106,8 @@ D:\Github\ (the empire)
 
 | Layer | Component | Role |
 |-------|-----------|------|
-| Semantic search | Qdrant (localhost:6333) | Intent-based code discovery |
+| Semantic search | Roo bridge MCP | Intent-based code discovery across repos |
+| Structure map | Graphify | Community map, gap spotting, HTML and JSON graph outputs |
 | Code intelligence | code-review-graph MCP | Call graph + blast radius + review |
 | Session continuity | AI-HANDOFF.md | Checkpoint across sessions |
 | Sprint governance | 0.dev-matrix/STATE.md | Active work tracking |

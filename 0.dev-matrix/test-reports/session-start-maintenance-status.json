@@ -1,0 +1,32 @@
+{
+    "State":  "passed",
+    "StartedAt":  "2026-05-10T16:24:15",
+    "FinishedAt":  "2026-05-10T16:24:41",
+    "DurationMinutes":  0.42,
+    "ExitCode":  0,
+    "Pid":  30536,
+    "Log":  "0.dev-matrix/test-reports/session-start-maintenance-20260510_162415.log",
+    "Summary":  "session-start maintenance completed successfully",
+    "Steps":  [
+                  {
+                      "Label":  "code-review-graph update",
+                      "State":  "updated",
+                      "Detail":  "incremental code-review-graph refresh completed"
+                  },
+                  {
+                      "Label":  "graphify status",
+                      "State":  "checked",
+                      "Detail":  "graphify status checked; root graph report is 44.4 hour(s) old"
+                  },
+                  {
+                      "Label":  "graphify refresh",
+                      "State":  "refreshed",
+                      "Detail":  "graphify report was stale at 44.4 hour(s) and was refreshed"
+                  },
+                  {
+                      "Label":  "graphify hooks status",
+                      "State":  "checked",
+                      "Detail":  "graphify hook status checked"
+                  }
+              ]
+}

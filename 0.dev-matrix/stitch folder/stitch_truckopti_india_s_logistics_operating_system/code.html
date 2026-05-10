@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TruckOpti - India's Logistics Operating System</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#e4e2e4",
+                      "on-secondary-fixed": "#2a1700",
+                      "primary-fixed-dim": "#bec6e0",
+                      "on-secondary-fixed-variant": "#653e00",
+                      "surface-bright": "#fcf8fa",
+                      "inverse-primary": "#bec6e0",
+                      "tertiary-fixed-dim": "#dec29a",
+                      "on-primary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "primary-container": "#131b2e",
+                      "on-tertiary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "tertiary": "#000000",
+                      "on-surface-variant": "#45464d",
+                      "secondary": "#855300",
+                      "tertiary-fixed": "#fcdeb5",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed": "#131b2e",
+                      "surface": "#fcf8fa",
+                      "on-secondary-container": "#684000",
+                      "background": "#fcf8fa",
+                      "on-tertiary-container": "#98805d",
+                      "surface-container": "#f0edef",
+                      "inverse-on-surface": "#f3f0f2",
+                      "on-primary-fixed-variant": "#3f465c",
+                      "secondary-container": "#fea619",
+                      "on-secondary": "#ffffff",
+                      "secondary-fixed-dim": "#ffb95f",
+                      "on-tertiary-fixed": "#271901",
+                      "on-tertiary-fixed-variant": "#574425",
+                      "primary-fixed": "#dae2fd",
+                      "surface-container-high": "#eae7e9",
+                      "surface-tint": "#565e74",
+                      "outline-variant": "#c6c6cd",
+                      "on-primary-container": "#7c839b",
+                      "primary": "#000000",
+                      "inverse-surface": "#303032",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-dim": "#dcd9db",
+                      "surface-variant": "#e4e2e4",
+                      "surface-container-low": "#f6f3f5",
+                      "tertiary-container": "#271901",
+                      "on-error": "#ffffff",
+                      "outline": "#76777d",
+                      "on-background": "#1b1b1d",
+                      "secondary-fixed": "#ffddb8",
+                      "on-surface": "#1b1b1d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "lg": "1.5rem",
+                      "margin-desktop": "2rem",
+                      "xs": "0.25rem",
+                      "md": "1rem",
+                      "sm": "0.5rem",
+                      "gutter": "1rem",
+                      "base": "4px",
+                      "margin-mobile": "1rem",
+                      "xl": "2rem"
+              },
+              "fontFamily": {
+                      "headline-md": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "data-tabular": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "body-base": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                      "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                      "data-tabular": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                      "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                      "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                      "body-base": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Marketing Navigation -->
+<header class="sticky top-0 w-full z-50 bg-surface-container-lowest border-b border-surface-container flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-container" style="font-size: 28px; font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-headline-md text-headline-md text-primary-container tracking-tighter">TruckOpti</span>
+</div>
+<nav class="hidden md:flex items-center gap-lg">
+<a class="font-body-base text-body-base text-on-surface hover:text-primary-container transition-colors" href="#">Platform</a>
+<a class="font-body-base text-body-base text-on-surface hover:text-primary-container transition-colors" href="#">Pricing</a>
+<a class="font-body-base text-body-base text-on-surface hover:text-primary-container transition-colors" href="#">Team</a>
+</nav>
+<div class="flex items-center gap-md">
+<a class="hidden md:block font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface" href="#">Portal Login</a>
+<a class="bg-primary-container text-on-primary-container font-data-tabular text-data-tabular px-md py-sm rounded-lg hover:opacity-90 transition-opacity flex items-center gap-xs" href="#">
+                Get Started
+                <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+</a>
+</div>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative pt-xl pb-xl px-margin-mobile md:px-margin-desktop overflow-hidden">
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-xl items-center">
+<!-- Left: Typography & CTAs -->
+<div class="lg:col-span-6 flex flex-col gap-lg z-10">
+<div class="inline-flex items-center gap-sm bg-surface-container px-md py-xs rounded-full self-start border border-outline-variant">
+<span class="material-symbols-outlined text-secondary-container" style="font-size: 16px; font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">GST Compliant &amp; Verified</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary-container">
+                        India's Logistics<br/>Operating System.
+                    </h1>
+<p class="font-body-base text-body-base text-on-surface-variant max-w-lg">
+                        Bridging the gap between heavy industrial logistics and modern digital marketplaces. Gain operational precision, transparent pricing, and local reliability for your entire fleet.
+                    </p>
+<div class="flex flex-col sm:flex-row gap-md mt-sm">
+<a class="bg-secondary-container text-on-secondary-container font-data-tabular text-data-tabular px-lg py-md rounded-xl text-center shadow-sm hover:brightness-105 transition-all flex items-center justify-center gap-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_add_on</span>
+                            Book a Truck
+                        </a>
+<a class="bg-surface-container-lowest text-primary-container border border-outline-variant font-data-tabular text-data-tabular px-lg py-md rounded-xl text-center shadow-sm hover:bg-surface-container transition-all flex items-center justify-center gap-sm" href="#">
+<span class="material-symbols-outlined">handshake</span>
+                            Join as Partner
+                        </a>
+</div>
+</div>
+<!-- Right: Visual Bento Grid -->
+<div class="lg:col-span-6 grid grid-cols-2 gap-sm md:gap-md relative">
+<!-- Main Dashboard Image -->
+<div class="col-span-2 rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(15,23,42,0.08)] border border-outline-variant bg-surface-container-lowest aspect-video relative">
+<img alt="Dashboard" class="w-full h-full object-cover" data-alt="A sophisticated, high-tech logistics dashboard interface displayed on a sleek monitor. The UI features modern, crisp data visualizations, route maps, and performance metrics in a pristine light-mode setting. The color palette relies heavily on deep corporate navy blues, bright amber highlights, and clean whites. The aesthetic is professional, dense with information, yet perfectly organized, conveying absolute operational control and efficiency." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqlmZTWs5W5xXMhoDgchaKtoyxTKok79Agg6OKmYnyFaVdKGt8mHTz56zi1uIJQpixGTEyQ7qn2b2FPSABSEwN5T-bf0PzeZWBfw96xqyFd1v7GIExI-NZXG_6DrrdRxtQah12QsqbZPiwiEQpWaH-0KjacbggdhKvSBHL8GgP4Q5m9Amk7YFsh-rM5WWjyFr3SLtLha12idm2yVbafuNx45W9dzfmsmAxuxy4rz5-7Y4FNhV1E4HWSHNPYpoF3H6MSkMObWY-ow"/>
+<!-- Floating Glass Card -->
+<div class="absolute bottom-md left-md right-md bg-surface-container-lowest/90 backdrop-blur-md p-md rounded-lg border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">moving</span>
+</div>
+<div>
+<p class="font-data-tabular text-data-tabular text-on-surface">MH 12 AB 1234</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">In Transit • Mumbai to Pune</p>
+</div>
+</div>
+<span class="font-label-caps text-label-caps bg-surface-container-highest text-primary-container px-sm py-xs rounded-full">On Time</span>
+</div>
+</div>
+<!-- Secondary Images -->
+<div class="rounded-xl overflow-hidden shadow-sm border border-outline-variant bg-surface-container-lowest aspect-square">
+<img alt="Truck on Highway" class="w-full h-full object-cover" data-alt="A powerful, modern commercial transport truck driving down a sunlit, multi-lane highway in India. The truck is pristine, branded with subtle geometric patterns in deep navy and bright amber. The environment features clear blue skies, modern highway infrastructure, and a sense of forward momentum. The lighting is dynamic, creating realistic reflections on the vehicle's metallic surfaces, emphasizing industrial strength and reliability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWYYERBvExOgCHznlxd9emRpHOYnltTeHDuag7nBLyMhKJzTYE3Wssl_7C1KXKguVKr3N5zvpFCP-ITl8pBl9kT-pOpbP5xKBu-QVkA8BsryOc-dUpnfKwvy41Q1Y6SCDD1ehfMIdwZGZ1lYqSNaWYmC1MNcCBx5UtourhTMOgpNlZbp_5Hcj-7mxv2q4Dr60GJTL0sjVJsBjKJicUzARUmvBe2PT6NI7kORn94BTt4dIb2qwutpVb1w-NcwmKvwOvPl8UScWkTQ"/>
+</div>
+<div class="rounded-xl p-md bg-primary-container text-on-primary-container flex flex-col justify-between aspect-square border border-primary-fixed-dim">
+<span class="material-symbols-outlined text-secondary-container" style="font-size: 32px;">support_agent</span>
+<div>
+<h3 class="font-headline-md text-headline-md mb-xs">24/7 Support</h3>
+<p class="font-body-sm text-body-sm opacity-80">Highway assistance across all major routes.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Solutions/CTAs Section -->
+<section class="py-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low border-y border-surface-container">
+<div class="max-w-7xl mx-auto">
+<div class="text-center mb-xl">
+<h2 class="font-display-lg text-display-lg text-on-surface">Built for every link in the supply chain.</h2>
+<p class="font-body-base text-body-base text-on-surface-variant mt-sm">Tailored tools for customers, agencies, and drivers.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md md:gap-lg">
+<!-- Customer Card -->
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-[0_4px_12px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] transition-shadow flex flex-col h-full">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center mb-md text-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">package_2</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">For Customers</h3>
+<p class="font-body-base text-body-base text-on-surface-variant mb-lg flex-grow">Book verified trucks instantly. Track your shipments in real-time with transparent, upfront pricing.</p>
+<a class="font-data-tabular text-data-tabular text-primary-container flex items-center gap-xs hover:gap-sm transition-all group" href="#">
+                            Book a Truck <span class="material-symbols-outlined text-[18px]">arrow_right_alt</span>
+</a>
+</div>
+<!-- Agency Card -->
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-[0_4px_12px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] transition-shadow flex flex-col h-full">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center mb-md text-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">domain</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">For Agencies</h3>
+<p class="font-body-base text-body-base text-on-surface-variant mb-lg flex-grow">Manage your fleet, automate invoicing, and access high-volume corporate loads through our network.</p>
+<a class="font-data-tabular text-data-tabular text-primary-container flex items-center gap-xs hover:gap-sm transition-all group" href="#">
+                            Join as Partner <span class="material-symbols-outlined text-[18px]">arrow_right_alt</span>
+</a>
+</div>
+<!-- Driver Card -->
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-[0_4px_12px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] transition-shadow flex flex-col h-full">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center mb-md text-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">steering_wheel_heat</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">For Drivers</h3>
+<p class="font-body-base text-body-base text-on-surface-variant mb-lg flex-grow">Get assured return loads, faster UPI payouts, and 24/7 highway support directly from your mobile app.</p>
+<a class="font-data-tabular text-data-tabular text-primary-container flex items-center gap-xs hover:gap-sm transition-all group" href="#">
+                            Drive with Us <span class="material-symbols-outlined text-[18px]">arrow_right_alt</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+<!-- Value Props Section -->
+<section class="py-xl px-margin-mobile md:px-margin-desktop bg-surface">
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-xl items-center">
+<div class="order-2 lg:order-1 grid grid-cols-2 gap-sm">
+<div class="col-span-2 bg-surface-container p-md rounded-xl border border-outline-variant flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-secondary-container/20 flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">location_on</span>
+</div>
+<div>
+<h4 class="font-data-tabular text-data-tabular text-on-surface">Real-Time Tracking</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Live GPS updates for every shipment.</p>
+</div>
+</div>
+<div class="col-span-2 md:col-span-1 bg-surface-container p-md rounded-xl border border-outline-variant flex flex-col gap-sm">
+<span class="material-symbols-outlined text-primary-container">receipt_long</span>
+<h4 class="font-data-tabular text-data-tabular text-on-surface">Transparent Pricing</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">No hidden fees. Automated GST invoicing.</p>
+</div>
+<div class="col-span-2 md:col-span-1 bg-surface-container p-md rounded-xl border border-outline-variant flex flex-col gap-sm">
+<span class="material-symbols-outlined text-primary-container">shield_person</span>
+<h4 class="font-data-tabular text-data-tabular text-on-surface">Verified Fleet</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">100% KYC compliant drivers and vehicles.</p>
+</div>
+</div>
+<div class="order-1 lg:order-2 flex flex-col gap-md">
+<h2 class="font-display-lg text-display-lg text-primary-container">Authority &amp; Operational Precision.</h2>
+<p class="font-body-base text-body-base text-on-surface-variant">
+                        Our platform is designed for the rigorous demands of heavy industrial logistics. From fast UPI ID verification for driver payouts to complex multi-stop route planning for fleet managers, TruckOpti provides the ultimate control center.
+                    </p>
+<ul class="flex flex-col gap-sm mt-md">
+<li class="flex items-center gap-sm font-data-tabular text-data-tabular text-on-surface">
+<span class="material-symbols-outlined text-secondary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            Optimized for Indian registration formats (MH 12 AB 1234)
+                        </li>
+<li class="flex items-center gap-sm font-data-tabular text-data-tabular text-on-surface">
+<span class="material-symbols-outlined text-secondary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            Instant UPI payouts &amp; GST documentation
+                        </li>
+<li class="flex items-center gap-sm font-data-tabular text-data-tabular text-on-surface">
+<span class="material-symbols-outlined text-secondary-container" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            Mobile-first driver app for low-connectivity areas
+                        </li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Trust / CTA Banner -->
+<section class="py-xl px-margin-mobile md:px-margin-desktop bg-primary-container text-on-primary mt-xl">
+<div class="max-w-4xl mx-auto text-center flex flex-col items-center gap-lg">
+<span class="material-symbols-outlined text-secondary-container" style="font-size: 48px;">workspace_premium</span>
+<h2 class="font-display-lg text-display-lg">Ready to optimize your logistics?</h2>
+<p class="font-body-base text-body-base opacity-90 max-w-2xl">
+                    Join thousands of verified fleet owners and industrial shippers who trust TruckOpti for their daily operations.
+                </p>
+<div class="flex flex-col sm:flex-row gap-md w-full sm:w-auto mt-sm">
+<a class="bg-secondary-container text-on-secondary-container font-data-tabular text-data-tabular px-xl py-md rounded-full text-center hover:brightness-105 transition-all" href="#">
+                        Create Free Account
+                    </a>
+<a class="bg-transparent text-on-primary border border-outline-variant font-data-tabular text-data-tabular px-xl py-md rounded-full text-center hover:bg-white/10 transition-all" href="#">
+                        Contact Sales
+                    </a>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-surface-container pt-xl pb-md px-margin-mobile md:px-margin-desktop">
+<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-lg mb-xl">
+<div class="col-span-1 md:col-span-2 flex flex-col gap-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-container" style="font-size: 24px; font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-headline-md text-headline-md text-primary-container tracking-tighter">TruckOpti</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-sm">
+                    India's premier logistics operating system, connecting verified fleets with enterprise shippers for reliable, transparent transport.
+                </p>
+</div>
+<div class="flex flex-col gap-sm">
+<h4 class="font-data-tabular text-data-tabular text-on-surface mb-xs">Company</h4>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary-container transition-colors" href="#">About Us</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary-container transition-colors" href="#">Team</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary-container transition-colors" href="#">Careers</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary-container transition-colors" href="#">Pricing</a>
+</div>
+<div class="flex flex-col gap-sm">
+<h4 class="font-data-tabular text-data-tabular text-on-surface mb-xs">Portals</h4>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary-container transition-colors" href="#">Customer Login</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary-container transition-colors" href="#">Fleet Admin Login</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary-container transition-colors" href="#">Driver App</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary-container transition-colors" href="#">Support Center</a>
+</div>
+</div>
+<div class="max-w-7xl mx-auto pt-md border-t border-surface-container flex flex-col md:flex-row items-center justify-between gap-sm">
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                © 2024 TruckOpti Logistics Pvt Ltd. All rights reserved.
+            </p>
+<div class="flex gap-md">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+</body></html>
