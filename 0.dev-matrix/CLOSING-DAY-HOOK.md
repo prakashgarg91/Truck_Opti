@@ -2,6 +2,16 @@
 
 Run `npm run close-day` from repo root before ending the work day, before push, or before claiming readiness.
 
+**Auto-commit rule (added 2026-05-11):** As part of close-day, `git add -A` all outstanding work and commit with an AI-generated message that summarises what changed, what was verified, and what the next step is. The generated message format is:
+```
+<type>: <one-line summary>
+
+- <bullet: what changed>
+- <bullet: verified evidence>
+- <bullet: next step>
+```
+Use `chore:` for governance/tooling/dev-matrix changes, `feat:` for product features, `fix:` for bug fixes. The commit message must be machine-generated (not hand-typed) so every close-day commit is self-documenting.
+
 Start the session with `0.dev-matrix/resume-work.ps1` when it exists so background launch-check begins early instead of waiting for close-day. That script now also surfaces start-of-day graph maintenance: incremental `code-review-graph` refresh, Graphify freshness check, Graphify refresh when stale, and Graphify hook-status check.
 
 For a short pause or context switch, use `0.dev-matrix/pause-work.ps1` plus a brief `AI-HANDOFF.md` update instead of the full close-day path.
