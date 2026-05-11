@@ -39,6 +39,11 @@ powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\session-start-maintenanc
    - code-review-graph for impact and blast radius
    - Graphify for architecture map and freshness
 
+   Cheap health checks for this repo:
+   - Roo bridge: verify health and whether resolution mode is real Qdrant or fallback
+   - code-review-graph: refresh before risky slices, but remember brand-new untracked files may not appear in incremental change output yet
+   - Graphify: read `graphify-out/GRAPH_REPORT.md` or run `npm run graph:update` when structural edits or new files were added
+
 5. Pick one smallest validated slice:
    - one user outcome
    - one owning repo
@@ -64,6 +69,7 @@ powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\openharness.ps1 -Prompt 
 - If `LAUNCH_CHECKLIST.md` still contains placeholders, repair launch focus first.
 - If Graphify or code-review-graph is stale, refresh before architecture-heavy work.
 - If Roo bridge has no matching Qdrant collection, note whether the repo is on true Qdrant search or fallback mode before relying on semantic search.
+- If the slice added new untracked files, do not assume `code-review-graph` change detection already sees them; confirm them with direct file reads and validation or track them first.
 - If the slice has no validation command, the slice is not defined well enough yet.
 
 ## Recommended Output Of Start-Day

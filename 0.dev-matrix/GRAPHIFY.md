@@ -54,6 +54,8 @@ Outputs:
 - `graphify-out/graph.json`
 - `graphify-out/graph.html`
 
+This AST refresh scans the current filesystem, so it can surface brand-new untracked files before incremental `code-review-graph` change detection sees them.
+
 If you also want a local agent-readable wiki from the current graph:
 
 ```powershell
@@ -157,6 +159,7 @@ This is optional. Enable it only if the graph becomes part of your normal review
 - Prefer AST-only refresh for daily work in this repo.
 - Use full `/graphify .` only when non-code context materially changes the answer.
 - Refresh the graph after module-boundary, routing, automation, infrastructure, or cross-file integration changes.
+- If `npm run graph:update` warns that the Graphify skill/package versions drifted, run `graphify install` and record the warning in handoff until it is cleared.
 - Read `graphify-out/GRAPH_REPORT.md` before architecture/codebase questions when it exists.
 - Use Graphify report sections such as God Nodes and Surprising Connections to spot structural gaps before deeper review.
 - Treat Graphify as context acceleration, not source-of-truth evidence.

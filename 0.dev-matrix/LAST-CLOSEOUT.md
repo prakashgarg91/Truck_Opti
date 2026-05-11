@@ -1,9 +1,9 @@
 # Last Closeout
 
-- Time: 2026-05-10 19:19:17
+- Time: 2026-05-10 19:48:50
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M .github/hooks/session-start-context.ps1 |  M .github/instructions/repo-guide.instructions.md |  M .vscode/mcp.json |  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/CLOSING-DAY-HOOK.md |  M 0.dev-matrix/CONTEXT-ENGINEERING.md |  M 0.dev-matrix/DISCUSSION.md |  M 0.dev-matrix/ECOSYSTEM.md |  M 0.dev-matrix/GRAPHIFY.md |  M 0.dev-matrix/LAST-CLOSEOUT.md
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-10_191916.log
+- Git status:  M .github/hooks/session-start-context.ps1 |  M .github/instructions/repo-guide.instructions.md |  M .vscode/mcp.json |  M scripts/close-day.ps1 | ?? .openharness/
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-10_194850.log
 
 ## AI Handoff
 - Latest handoff date: 2026-05-10
@@ -34,18 +34,22 @@
 - Summary: launch-check failed; see log
 - Log: 0.dev-matrix/test-reports/launch-check-20260508_200256.log
 
+## Regression Warning
+
+- REGRESSION: pass count dropped from 8 to 7; fail count rose from 2 to 3
+
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
 - [FAIL] background launch-check - latest background launch-check failed - launch-check failed; see log
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [PASS] status update discipline - runtime status files have real content changes
-- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: .github/hooks/session-start-context.ps1, .github/instructions/repo-guide.instructions.md, .vscode/mcp.json, 0.dev-matrix/CLOSING-DAY-HOOK.md, 0.dev-matrix/CONTEXT-ENGINEERING.md
-- [PASS] documentation placement - new docs are in approved zones
+- [FAIL] status update discipline - repo changed without state/task/discussion update
+- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: .github/hooks/session-start-context.ps1, .github/instructions/repo-guide.instructions.md, .vscode/mcp.json, scripts/close-day.ps1, .openharness/
+- [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
 - [PASS] handoff continuity - latest entry is dated today and contains changed/verified/operational-proof/continue/next/blockers fields
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 8
-- Fail: 2
+- Pass: 7
+- Fail: 3

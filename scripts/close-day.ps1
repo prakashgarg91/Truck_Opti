@@ -392,6 +392,12 @@ if (Test-Path $ReportPath) {
 }
 
 # ── 8. Write report ──
+$projectProgress = $null
+$projectProgressScript = Join-Path $RepoRoot '0.dev-matrix\project-progress.ps1'
+if (Test-Path $projectProgressScript) {
+  $projectProgress = & $projectProgressScript -AsObject
+}
+
 $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 $report = @(
   "# Last Closeout",
@@ -409,6 +415,26 @@ $report += "- Operational proof: $latestHandoffOperationalProof"
 $report += "- Continue from: $latestHandoffContinue"
 $report += "- Next step: $latestHandoffNext"
 $report += "- Blockers: $latestHandoffBlockers"
+$report += ""
+$report += "## Project Progress"
+if ($projectProgress) {
+  $report += "- Date: $($projectProgress.Date)"
+  $report += "- Working since: $($projectProgress.WorkingSince)"
+  $report += "- Working days: $($projectProgress.WorkingDays)"
+  if ($null -ne $projectProgress.CompletionPercent) {
+    $report += "- Completion: $($projectProgress.CompletionPercent)% ($($projectProgress.CompletedTasks)/$($projectProgress.TotalTasks) tasks)"
+    $report += "- Pending days at current pace: $($projectProgress.PendingDays)"
+  }
+  else {
+    $report += '- Completion: unavailable'
+  }
+  foreach ($task in @($projectProgress.NextTasks | Select-Object -First 3)) {
+    $report += "- Next: $task"
+  }
+}
+else {
+  $report += '- Completion: unavailable'
+}
 $report += ""
 $report += "## Launch Focus"
 $report += "- Product outcome: $launchProductOutcome"
@@ -438,5 +464,18 @@ Write-Host "- Continue from: $latestHandoffContinue"
 Write-Host "- Next step: $latestHandoffNext"
 Write-Host "- Blockers: $latestHandoffBlockers"
 Write-Host '- Resume command: powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\resume-work.ps1'
+if ($projectProgress) {
+  Write-Host ''
+  Write-Host 'Project progress snapshot' -ForegroundColor Yellow
+  Write-Host "- Date: $($projectProgress.Date)"
+  Write-Host "- Working since: $($projectProgress.WorkingSince)"
+  if ($null -ne $projectProgress.CompletionPercent) {
+    Write-Host "- Completion: $($projectProgress.CompletionPercent)% ($($projectProgress.CompletedTasks)/$($projectProgress.TotalTasks) tasks)"
+    Write-Host "- Pending days at current pace: $($projectProgress.PendingDays)"
+  }
+  foreach ($task in @($projectProgress.NextTasks | Select-Object -First 3)) {
+    Write-Host "- Next: $task"
+  }
+}
 if ($regressionNote) { Write-Host "WARNING: $regressionNote" -ForegroundColor Yellow }
 if ($fail -gt 0) { exit 1 }

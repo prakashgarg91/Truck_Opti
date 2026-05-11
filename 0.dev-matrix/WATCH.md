@@ -12,7 +12,7 @@ It binds every repo's VS Code session to the sprint state, Roo bridge retrieval,
 
 | Layer | Mechanism | What it provides |
 |-------|-----------|-----------------|
-| **Session Context** | `copilot-instructions.md` per repo | AI auto-loads repo state at every chat start |
+| **Session Context** | `AGENTS.md` + targeted `.github/instructions/*.instructions.md` | AI auto-loads repo-wide rules plus focused repo guidance at every chat start |
 | **Semantic Retrieval** | `roo-code-index-bridge` MCP server from `D:\Github\roo-code-index-bridge-mcp` | Code-first semantic search and docs retrieval across repos |
 | **Architecture Retrieval** | `graphify` MCP wrapper from `D:\Github\tools\graphify-opencode-mcp.ps1` | Graph-backed architecture/context retrieval using each repo graph when present |
 | **AST Graph** | `code-review-graph` MCP server, per repo | Call graph, impact radius, blast-radius analysis, 22 MCP tools |
@@ -64,8 +64,9 @@ D:\Github\
 │   └── SPRINT-APRIL-2026.md         ← April 2026 sprint plan
 │
 ├── [repo]\
+│   ├── AGENTS.md                    ← Repo-wide AI contract / always-on rules
 │   ├── .github\
-│   │   ├── copilot-instructions.md  ← Per-repo Watch context (auto-loaded)
+│   │   ├── instructions\           ← Targeted repo guidance by surface / file pattern
 │   │   ├── agents\
 │   │   │   └── system-reconciler.agent.md
 │   │   └── hooks\

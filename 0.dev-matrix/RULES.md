@@ -5,7 +5,30 @@
 
 ---
 
-## 🔴 CRITICAL RULES
+## � SESSION WORKFLOW RULES (enforced from 2026-05-11)
+
+### W-1. Max 2 Gaps + 2 Steps Active at Once
+- At the end of every response, always report **exactly 2 remaining gaps** and **exactly 2 remaining steps**.
+- Never work on more than 2 points concurrently.
+- If no gaps or steps remain, explicitly write `none`.
+
+### W-2. Use opencode / Junie as Helper Agents
+- Delegate implementation work to `opencode` or Junie sub-agents.
+- The Copilot manager agent orchestrates, judges, and verifies — it does not blindly accept helper output.
+- Always run the repo's validation command after helper-agent work completes before declaring a step done.
+
+### W-3. Judge and Verify Before Concluding
+- After each helper-agent task: read the diff, run the validation command, and post evidence (`PASS`/`FAIL` with counts).
+- A helper claiming "done" is not evidence. Machine-verifiable output is evidence.
+- If verification fails, loop back to the helper with the exact error output, not a summary.
+
+### W-4. Update dev-matrix After Every Session
+- Update `AI-HANDOFF.md`, `STATE.md`, and `TASK.md` at the end of every session.
+- The 2-gap / 2-step snapshot must appear at the top of every handoff entry under `Next step:` and `Continue from:`.
+
+---
+
+## �🔴 CRITICAL RULES
 
 ### 1. Build Must Be Clean Before Every Push
 The CI gate is never optional. Run the project's validation command before pushing.

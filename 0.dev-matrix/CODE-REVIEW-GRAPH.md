@@ -70,15 +70,19 @@ Do not rely on implicit workspace detection when multiple repos are open or when
 1. Run `update --repo` at start-day or after pulling changes.
 2. Use Roo bridge first when the question is semantic or behavior-based.
 3. Use code-review-graph once the likely owning file or module is known.
-4. Before committing, run `detect-changes --repo` or the equivalent MCP tool for review risk.
+4. If the slice adds brand-new files, confirm those files with direct reads and build/test validation before trusting change-risk output.
+5. Before committing, run `detect-changes --repo` or the equivalent MCP tool for review risk.
 
 ## Failure Signals
 
 - graph is stale after major refactor
 - repo path was omitted in a multi-repo session
 - review was done from grep only with no impact check on risky code
+- brand-new untracked files are missing from incremental graph/change output, but the review still treats the graph as complete coverage
 - a cross-module change shipped without a blast-radius check
 
 ## Operational Rule
 
 If a change can affect auth, routing, payments, queueing, orchestration, or external integration behavior, use code-review-graph before calling the slice ready.
+
+For untracked new files, treat `code-review-graph` as partial context until those files are validated directly or tracked.

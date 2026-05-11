@@ -112,7 +112,7 @@ D:\Github\ (the empire)
 | Session continuity | AI-HANDOFF.md | Checkpoint across sessions |
 | Sprint governance | 0.dev-matrix/STATE.md | Active work tracking |
 | Standards | 0.dev-matrix/*.md | Universal quality standards (this system) |
-| Agent instructions | .github/copilot-instructions.md | Per-repo AI configuration |
+| Agent instructions | AGENTS.md + .github/instructions/*.instructions.md | Repo-wide AI contract plus targeted per-surface guidance |
 
 ---
 

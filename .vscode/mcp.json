@@ -41,13 +41,6 @@
                                                  "RAZORPAY_KEY_SECRET":  "${input:razorpay_key_secret}"
                                              }
                                  },
-                    "roo-index-bridge":  {
-                                             "type":  "stdio",
-                                             "command":  "node",
-                                             "args":  [
-                                                          "D:/Github/tools/roo-index-mcp-server.mjs"
-                                                      ]
-                                         },
                     "code-review-graph":  {
                                               "type":  "stdio",
                                               "command":  "C:/Users/Prakash/.venvs/code-review-graph/Scripts/python.exe",
@@ -61,7 +54,31 @@
                                                           "CRG_EMBEDDING_MODEL":  "nomic-embed-text-v2-moe:latest",
                                                           "CRG_DISABLE_IGRAPH_COMMUNITIES":  "1"
                                                       }
-                                          }
+                                          },
+                    "graphify":  {
+                                     "type":  "stdio",
+                                     "command":  "powershell.exe",
+                                     "args":  [
+                                                  "-NoProfile",
+                                                  "-ExecutionPolicy",
+                                                  "Bypass",
+                                                  "-File",
+                                                  "D:/Github/tools/graphify-opencode-mcp.ps1"
+                                              ]
+                                 },
+                    "roo-code-index-bridge":  {
+                                                  "type":  "stdio",
+                                                  "command":  "uv",
+                                                  "args":  [
+                                                               "run",
+                                                               "--directory",
+                                                               "D:/Github/roo-code-index-bridge-mcp",
+                                                               "roo-code-index-bridge-mcp"
+                                                           ],
+                                                  "env":  {
+                                                              "ROO_INDEX_BRIDGE_CONFIG_PATH":  "C:/Users/Prakash/AppData/Roaming/Code/User/mcp-tools/roo_code_index_bridge_config.json"
+                                                          }
+                                              }
                 },
     "inputs":  [
                    {

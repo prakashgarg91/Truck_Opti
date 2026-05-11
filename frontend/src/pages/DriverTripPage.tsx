@@ -5,6 +5,11 @@ import {
   Package, Flag
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import {
+  buildJobProgressStatePatch,
+  persistDriverJobProgressRpc,
+  type JobProgressResult,
+} from '../services/driverTripProgress'
 import { useAuthStore } from '../stores/authStore'
 import { useParams, useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
@@ -40,18 +45,6 @@ interface DriverRecord {
   full_name: string
   active_job_id: string | null
   total_trips: number | null
-}
-
-interface JobProgressResult {
-  job_offer_id: string
-  status: string
-  pickup_arrived_at: string | null
-  journey_started_at: string | null
-  delivery_arrived_at: string | null
-  delivered_at: string | null
-  photo_loading_url: string | null
-  photo_delivery_url: string | null
-  total_trips: number
 }
 
 type TripStep = 'navigate' | 'pickup_otp' | 'loading_photo' | 'in_transit' | 'destination_otp' | 'delivery_photo' | 'complete'
@@ -172,15 +165,16 @@ export default function DriverTripPage() {
   const persistJobProgress = async (newStatus?: string | null, extra: Record<string, unknown> = {}) => {
     if (!job?.id) return false
     setSubmitting(true)
-    let data: unknown, error: unknown
+    let result: JobProgressResult | null = null
+    let error: unknown
     try {
-      const result = await supabase.rpc('persist_driver_job_offer_progress', {
-        p_job_offer_id: job.id,
-        p_status: newStatus ?? null,
-        p_extra: extra,
+      const rpcResult = await persistDriverJobProgressRpc({
+        jobOfferId: job.id,
+        newStatus,
+        extra,
       })
-      data = result.data
-      error = result.error
+      result = rpcResult.data
+      error = rpcResult.error
     } finally {
       setSubmitting(false)
     }
@@ -190,26 +184,20 @@ export default function DriverTripPage() {
       return false
     }
 
-    const result = (Array.isArray(data) ? data[0] : data) as JobProgressResult | null
     if (!result) {
       return false
     }
 
+    const { jobPatch, driverPatch } = buildJobProgressStatePatch(result)
+
     setJob(current => current ? {
       ...current,
-      status: result.status,
-      pickup_arrived_at: result.pickup_arrived_at,
-      journey_started_at: result.journey_started_at,
-      delivery_arrived_at: result.delivery_arrived_at,
-      delivered_at: result.delivered_at,
-      photo_loading_url: result.photo_loading_url,
-      photo_delivery_url: result.photo_delivery_url,
+      ...jobPatch,
     } : current)
 
     setDriver(current => current ? {
       ...current,
-      active_job_id: result.status === 'delivered' ? null : current.active_job_id,
-      total_trips: result.total_trips,
+      ...driverPatch,
     } : current)
 
     return result

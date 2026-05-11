@@ -78,7 +78,9 @@ Whenever an AI agent introduces a **new pattern** used in 2+ files, or discovers
 2. If the pattern is security-related, also add to `0.dev-matrix/SECURITY.md`.
 3. If a new Supabase table/column is added, update `0.dev-matrix/DEPENDENCIES.md`.
 4. Examples that MUST trigger a PATTERNS.md update: new auth flow, new Supabase query shape, new bilingual string pattern, new toast pattern, new RLS approach.
-5. Do NOT invent new patterns that conflict with existing ones in PATTERNS.md — resolve conflicts by updating the doc.
+5. If the learning is durable and repo-specific, update the relevant `/memories/repo/*.md` note so future sessions reuse the pattern without rediscovery.
+6. If the learning changes cross-repo workflow or user-wide behavior, sync it into user memory so the updated skill carries forward globally.
+7. Do NOT invent new patterns that conflict with existing ones in PATTERNS.md — resolve conflicts by updating the doc.
 
 ### Hook 4 — End-of-Day / Session Close Checklist
 At the end of every session (or when the user says "close the day" / "update dev-matrix"):
@@ -90,6 +92,15 @@ At the end of every session (or when the user says "close the day" / "update dev
 6. Answer the 4 closing questions (see RULES.md §22) and include in the commit message summary.
 7. `git add -A && git commit && git push origin main` — always push to GitHub before ending.
 8. If this checklist will take >5 minutes, create a `CLAUDE_CODE_CLOSING_PROMPT.md` file with all tasks itemized and tell the user to run it in Claude Code — then judge the output on return.
+9. Before ending, sync durable repo learnings into `0.dev-matrix` docs and `/memories/repo/`, and sync cross-repo/global workflow changes into user memory so updated skills carry forward into other workspaces.
+
+### Hook 5 — Start-of-Day Graph Context Refresh
+At the start of the session:
+1. Run `0.dev-matrix/resume-work.ps1` so background launch-check begins early.
+2. Refresh `code-review-graph` incrementally before broad exploration.
+3. Check Graphify freshness and refresh it when stale or missing; prefer the repo helper `npm run graph:update` for the current synced output path.
+4. Check Graphify hook status so the repo's graph automation does not drift silently.
+5. Use the SessionStart hook for short deterministic kickoff only; keep heavier graph work freshness-aware instead of forcing a full rebuild every single chat start.
 
 ---
 

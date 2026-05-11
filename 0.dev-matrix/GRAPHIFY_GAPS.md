@@ -2,6 +2,44 @@
 
 Purpose: persist Graphify-discovered architecture gaps so future sessions can resume from verified codebase reality instead of re-auditing from scratch.
 
+## 2026-05-11 Refresh
+
+Source of truth:
+- `npm run graph:update`
+- `mcp_roo-code-inde_roo-code-index-health`
+- `mcp_roo-code-inde_roo-code-index-search`
+- `mcp_code-review-g_build_or_update_graph_tool`
+
+Verified graph snapshot after T-151 and the MCP completion audit:
+- 433 nodes
+- 506 edges
+- 73 communities
+- Roo bridge health: `workspace.status=ok`, `resolution_mode=qdrant`, collection `ws-6df6af38d373c83b`
+
+Current graph observations:
+- Community 7 now includes the extracted driver-trip helper boundary (`buildJobProgressStatePatch()` plus related progress functions), so Graphify sees the new trip-progress split.
+- `persistJobProgress()` is still a top god node at 8 edges and `initiateRazorpayPayment()` remains at 7 edges, but that gap is now covered by focused unit proof rather than being an untested blind spot.
+- Graphify picked up the new local frontend files immediately after `npm run graph:update`, while incremental `code-review-graph` change detection still missed untracked new files. Treat the two graph layers as complementary, not interchangeable.
+
+### Closed In This Session
+
+1. Payment and trip regression-proof blind spot
+   - Problem: the previous graph snapshots kept highlighting `initiateRazorpayPayment()` and `persistJobProgress()` as high-connectivity nodes with no focused repeatable regression lane.
+   - Fix: `frontend` now has a Vitest unit lane, Razorpay initiation coverage, and a dedicated `driverTripProgress` helper with direct tests.
+   - Files: `frontend/package.json`, `frontend/vitest.config.ts`, `frontend/src/services/razorpayPayment.test.ts`, `frontend/src/services/driverTripProgress.ts`, `frontend/src/services/driverTripProgress.test.ts`, `frontend/src/pages/DriverTripPage.tsx`.
+   - Verification: `cd frontend && npm run test:unit` PASS (`7/7`), `cd frontend && npm run build` PASS.
+
+### Still Open
+
+1. Graphify local install drift
+   - Problem: `npm run graph:update` currently warns `skill is from graphify 0.4.15, package is 0.4.18`.
+   - Impact: graph refresh still works, but the local Graphify toolchain is not fully reconciled for future sessions.
+   - Next action: run `graphify install` in the repo environment and verify that `npm run graph:update` no longer prints the warning.
+
+2. No new urgent Graphify-owned architecture blocker
+   - Current interpretation: after the May 11 refresh, the remaining blockers are operational and product-proof oriented rather than a missing structural decomposition slice.
+   - Next action: use Graphify for future hotspot confirmation, but do not reopen large structural refactors unless a reproduced bug or benchmark points at a concrete architecture defect.
+
 ## 2026-04-16 Refresh
 
 Source of truth:
