@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-11 (Copilot-062 — Stitch method improved, Trading Rex lessons applied)
+
+Changed: Added `0.dev-matrix/STITCH-PROMPT-PACK.md` — full 5-session role-based prompt pack with canvas governance approach lifted from Trading Rex AI Terminal analysis. Updated `C:\Users\Prakash\.copilot\skills\stitch-design\SKILL.md` with Canvas Governance section: Legacy-tagging discipline, AI-assisted canvas organization, naming convention, chat-first workflow, role-focused sessions, hygiene prompt template.
+Verified: Files created/updated; no build or test changes needed (pure methodology/docs work).
+Operational proof: Stitch skill now contains canvas governance block; STITCH-PROMPT-PACK.md covers Session 0 (governance) → Session 4 (Admin) → prototype wiring with realistic INR/India data and exact screen naming convention.
+Continue from: T-125 (advanced 3D bin-packing quality) — AI-executable, unblocked.
+Next step: Open STITCH-PROMPT-PACK.md, run Session 0 governance prompt against project/817968552986251880 to tag Legacy screens, then begin T-125.
+Blockers: T-110 Razorpay prod keys (human), T-127 SEED_DEMO_PASSWORD (human).
+
 ### 2026-05-11 (Copilot-061 close-day — T-153 cleared, T-124 AI-portion documented)
 Changed: T-153 Graphify install drift fixed — copied SKILL.md + bumped `.graphify_version` to 0.4.18 in `C:\Users\Prakash\.copilot\skills\graphify\`; `npm run graph:update` now silent (no warning). T-124 AI-executable portion complete (7/7 unit tests passing, 17/17 smoke); authenticated real-account slice remains human-blocked (needs `SEED_DEMO_PASSWORD`). dev-matrix docs updated.
 Verified: `npm run graph:update` no version warning; `npm run test:unit` 7/7 PASS; `npm run launch-check` 17/17 PASS.
