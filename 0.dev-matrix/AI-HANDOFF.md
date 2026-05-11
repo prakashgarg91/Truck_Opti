@@ -27,6 +27,14 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-11 (Copilot-061 close-day — T-153 cleared, T-124 AI-portion documented)
+Changed: T-153 Graphify install drift fixed — copied SKILL.md + bumped `.graphify_version` to 0.4.18 in `C:\Users\Prakash\.copilot\skills\graphify\`; `npm run graph:update` now silent (no warning). T-124 AI-executable portion complete (7/7 unit tests passing, 17/17 smoke); authenticated real-account slice remains human-blocked (needs `SEED_DEMO_PASSWORD`). dev-matrix docs updated.
+Verified: `npm run graph:update` no version warning; `npm run test:unit` 7/7 PASS; `npm run launch-check` 17/17 PASS.
+Operational proof: graphify 433 nodes / 506 edges / 73 communities, no drift warning; Vitest 7/7 green; launch-check 17/17.
+Continue from: T-124 authenticated E2E slice (needs human: SEED_DEMO_PASSWORD) → T-125 advanced packing quality → T-126 client-side packing.
+Next step: Owner provides SEED_DEMO_PASSWORD to unblock T-127 authenticated E2E browser flow (T-124 remaining gap), then T-125.
+Blockers: live Razorpay credentials (T-110, human), Google OAuth smoke (T-111, human), SEED_DEMO_PASSWORD for authenticated E2E (T-127).
+
 ### 2026-05-11 (Copilot-060 close-day — clean tree, 17/17)
 - Changed: ran close-day workflow. Fixed 3 frontend devDep vulnerabilities (`npm audit fix` → 0 vulns). Committed 28-file readiness batch (`c00b719c`): T-151 Vitest lane (driverTripProgress.ts + razorpayPayment.test.ts), MCP audit dev-matrix reconciliation (9 docs), RULES.md W-1/W-2/W-3/W-4 session workflow rules, .openharness skills. Updated CLOSING-DAY-HOOK.md with auto-commit rule for generated commit messages.
 - Verified: `npm run test:unit` → 7/7 PASS; `npm run launch-check` → **17/17 PASS** (clean tree); `npm audit --omit=dev` → 0 vulnerabilities; `npm audit` (devDeps) → 0 vulnerabilities after fix.
