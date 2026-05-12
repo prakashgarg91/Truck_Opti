@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-12 (Copilot-067 — live PackingPage browser proof attempt blocked by auth)
+
+- Changed: No code changes. Re-ran the remaining T-126 browser-proof step against `http://127.0.0.1:4173/packing` using the current preview build and confirmed the route still redirects to `/login` under `ProtectedRoute`. Also confirmed the dev-only quick-login lane is unavailable in this workspace because `VITE_TEST_EMAIL` and `VITE_TEST_PASSWORD` are both missing.
+- Verified: Browser snapshot at `http://127.0.0.1:4173/login` shows `/packing` redirecting to the login form; `cd frontend && if (Test-Path Env:VITE_TEST_PASSWORD) { ... }` returned `VITE_TEST_PASSWORD_MISSING` and `VITE_TEST_EMAIL_MISSING`; `opencode` review agreed the real browser proof is blocked until auth credentials/session exist.
+- Operational proof: the remaining T-126 live browser measurement is blocked by the same human auth dependency rather than a code defect, so bundle tuning should wait until a real authenticated PackingPage run can be measured.
+- Continue from: once an authenticated browser session exists or test auth vars are provided, rerun the PackingPage recommendation/pack flow and capture the new end-to-end overhead display.
+- Next step: owner provides `VITE_TEST_EMAIL` + `VITE_TEST_PASSWORD`, or a valid authenticated browser session/shared page, then rerun the live PackingPage overhead check before touching bundle tuning.
+- Blockers: T-110 Razorpay prod keys (human), T-127 auth proof credentials/session (`SEED_DEMO_PASSWORD` or `VITE_TEST_*`) (human).
+
 ### 2026-05-12 (Copilot-066 — worker request router + browser-session packing proof)
 
 - Changed: Reworked `frontend/src/hooks/usePackingWorker.ts` and `frontend/src/workers/packingWorker.ts` to use a persistent single-listener, `requestId`-correlated worker router while preserving single-flight semantics. Extended `frontend/scripts/packing-benchmark.ts` to cover larger session-style recommendation workloads (`16`, `64`, `128` truck sets), and updated `frontend/src/pages/PackingPage.tsx` to record end-to-end wall-clock time plus browser overhead around worker-backed recommendation and pack runs.
