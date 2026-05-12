@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-12 (Copilot-066 — worker request router + browser-session packing proof)
+
+- Changed: Reworked `frontend/src/hooks/usePackingWorker.ts` and `frontend/src/workers/packingWorker.ts` to use a persistent single-listener, `requestId`-correlated worker router while preserving single-flight semantics. Extended `frontend/scripts/packing-benchmark.ts` to cover larger session-style recommendation workloads (`16`, `64`, `128` truck sets), and updated `frontend/src/pages/PackingPage.tsx` to record end-to-end wall-clock time plus browser overhead around worker-backed recommendation and pack runs.
+- Verified: `cd frontend && npx eslint src/hooks/usePackingWorker.ts src/workers/packingWorker.ts` PASS; `cd frontend && npx eslint src/pages/PackingPage.tsx` PASS; `cd frontend && npm run bench:packing` PASS (`16` truck baseline plus `64`/`128` browser-session outputs); `cd frontend && npm run build` PASS.
+- Operational proof: T-126 now has both larger recommendation benchmarks and real UI-side end-to-end timing that separates worker algorithm time from browser overhead, while the worker glue no longer allocates/removes a fresh listener per request.
+- Continue from: use the new PackingPage end-to-end timing to capture a live browser run and decide whether any remaining cost is warm-start/worker overhead or page bundle/render overhead.
+- Next step: measure one real PackingPage recommendation/pack run with the new overhead display, then only tune bundle split or worker warm-start behavior if the measured browser overhead is still material.
+- Blockers: T-110 Razorpay prod keys (human), T-127 SEED_DEMO_PASSWORD (human).
+
 ### 2026-05-12 (Copilot-065 — recommendation benchmark command + fitsAt tuning)
 
 - Changed: Added `frontend/scripts/packing-benchmark.ts`, `frontend/tsconfig.packing-benchmark.json`, and `frontend/package.json` script `bench:packing` so the smart recommendation path can now be benchmarked over a 16-truck candidate set. Also tightened `fitsAt(...)` in `frontend/src/lib/packing.ts` by caching candidate/box bounds inside the collision loop, reducing repeated arithmetic/property access without changing behavior.

@@ -8,6 +8,29 @@
 ## 📋 CURRENT SESSION
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-12] COPILOT-066:
+  Continued only the remaining T-126 browser-side perf step and kept the two named blockers unchanged.
+
+  COMPLETED THIS SESSION:
+  - replaced per-call message listener churn in `frontend/src/hooks/usePackingWorker.ts` + `frontend/src/workers/packingWorker.ts` with a persistent single-listener `requestId` router while preserving the page's existing single-flight behavior
+  - extended `frontend/scripts/packing-benchmark.ts` from a single 16-truck baseline to a broader recommendation surface with `16`/`64`/`128` truck workloads and browser-session-style repeated runs
+  - updated `frontend/src/pages/PackingPage.tsx` so worker-backed recommendation/pack flows now record end-to-end wall-clock timing and explicit browser overhead alongside worker duration
+  - used CRG minimal context, Graphify report context, Roo index search, Explore + SE: Architect audits, and `opencode`; `junie` remains unavailable in this workspace
+  - `opencode` review was attempted twice; the PowerShell lane returned diff-heavy artifacts instead of a concise judgment, so final decisions stayed anchored to lint/build/benchmark evidence
+
+  VERIFIED:
+  - `cd frontend && npx eslint src/hooks/usePackingWorker.ts src/workers/packingWorker.ts` -> PASS
+  - `cd frontend && npx eslint src/pages/PackingPage.tsx` -> PASS
+  - `cd frontend && npm run bench:packing` -> PASS (`16` truck baseline plus `64` truck session total `3ms` and `128` truck session total `6ms`)
+  - `cd frontend && npm run build` -> PASS
+
+  JUDGMENT:
+  - the remaining named gaps are still the same two human-blocked items: live Razorpay keys and `SEED_DEMO_PASSWORD`
+  - the next AI-owned step is now a real browser run using the new end-to-end timing display, followed by bundle or worker warm-start tuning only if that measured overhead is still material
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-05-12] COPILOT-065:
   Continued only the remaining T-126 benchmark/perf step and kept the named human blockers unchanged.
 

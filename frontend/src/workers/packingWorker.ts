@@ -6,7 +6,7 @@
 import { AdvancedBinPacker, recommendTrucks, type SaleOrderItem, type TruckType } from '../lib/packing'
 
 self.onmessage = (e: MessageEvent) => {
-  const { truck, items, algorithm, type } = e.data
+  const { requestId, truck, items, algorithm, type, trucks } = e.data
 
   if (type === 'pack') {
     try {
@@ -14,6 +14,7 @@ self.onmessage = (e: MessageEvent) => {
       const packer = new AdvancedBinPacker(truck as TruckType, items as SaleOrderItem[], algorithm, {
         onProgress: (progress) => {
           self.postMessage({
+            requestId,
             type: 'progress',
             progress,
           })
@@ -23,6 +24,7 @@ self.onmessage = (e: MessageEvent) => {
       const duration = Math.round(performance.now() - startTime)
 
       self.postMessage({
+        requestId,
         type: 'result',
         packed: result.packed,
         unpacked: result.unpacked,
@@ -32,6 +34,7 @@ self.onmessage = (e: MessageEvent) => {
       })
     } catch (_error: unknown) {
       self.postMessage({
+        requestId,
         type: 'error',
         error: 'Packing failed',
       })
@@ -41,10 +44,11 @@ self.onmessage = (e: MessageEvent) => {
   if (type === 'recommend') {
     try {
       const startTime = performance.now()
-      const recommendations = recommendTrucks(items as SaleOrderItem[], algorithm || 'extreme_points', e.data.trucks as TruckType[])
+      const recommendations = recommendTrucks(items as SaleOrderItem[], algorithm || 'extreme_points', trucks as TruckType[])
       const duration = Math.round(performance.now() - startTime)
 
       self.postMessage({
+        requestId,
         type: 'recommendations',
         recommendations,
         duration,
@@ -52,6 +56,7 @@ self.onmessage = (e: MessageEvent) => {
       })
     } catch (_error: unknown) {
       self.postMessage({
+        requestId,
         type: 'error',
         error: 'Recommendation failed',
       })

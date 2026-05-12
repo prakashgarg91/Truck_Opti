@@ -222,6 +222,8 @@ export default function PackingPage() {
   const [lastOptimizationMeta, setLastOptimizationMeta] = useState<{
     operation: 'recommend' | 'pack'
     duration: number
+    wallClockDuration: number
+    overheadDuration: number
     processedOn: 'client' | 'main-thread'
   } | null>(null)
 
@@ -428,9 +430,17 @@ export default function PackingPage() {
     try {
       if (workerSupported) {
         // Use Web Worker (runs on user's CPU, not server)
+        const startedAt = performance.now()
         const { recommendations: recs, duration, processedOn } = await runRecommendation(saleOrderItems, trucks, algorithm)
+        const wallClockDuration = Math.round(performance.now() - startedAt)
         setRecommendations(recs)
-        setLastOptimizationMeta({ operation: 'recommend', duration, processedOn: processedOn === 'client' ? 'client' : 'main-thread' })
+        setLastOptimizationMeta({
+          operation: 'recommend',
+          duration,
+          wallClockDuration,
+          overheadDuration: Math.max(0, wallClockDuration - duration),
+          processedOn: processedOn === 'client' ? 'client' : 'main-thread',
+        })
         if (recs.length > 0) {
           setSelectedRecommendation(recs[0])
           setSelectedTruck(recs[0].truck.id)
@@ -444,7 +454,7 @@ export default function PackingPage() {
         const recs = recommendTrucks(saleOrderItems, algorithm, trucks)
         const duration = Math.round(performance.now() - startedAt)
         setRecommendations(recs)
-        setLastOptimizationMeta({ operation: 'recommend', duration, processedOn: 'main-thread' })
+        setLastOptimizationMeta({ operation: 'recommend', duration, wallClockDuration: duration, overheadDuration: 0, processedOn: 'main-thread' })
         if (recs.length > 0) {
           setSelectedRecommendation(recs[0])
           setSelectedTruck(recs[0].truck.id)
@@ -459,7 +469,7 @@ export default function PackingPage() {
       const recs = recommendTrucks(saleOrderItems, algorithm, trucks)
       const duration = Math.round(performance.now() - startedAt)
       setRecommendations(recs)
-      setLastOptimizationMeta({ operation: 'recommend', duration, processedOn: 'main-thread' })
+      setLastOptimizationMeta({ operation: 'recommend', duration, wallClockDuration: duration, overheadDuration: 0, processedOn: 'main-thread' })
       if (recs.length > 0) {
         setSelectedRecommendation(recs[0])
         setSelectedTruck(recs[0].truck.id)
@@ -489,9 +499,17 @@ export default function PackingPage() {
     try {
       if (workerSupported) {
         // Use Web Worker (runs on user's CPU)
+        const startedAt = performance.now()
         const result = await runPacking(truck, saleOrderItems, algorithm)
+        const wallClockDuration = Math.round(performance.now() - startedAt)
         const recommendation = applyManualRecommendation(result)
-        setLastOptimizationMeta({ operation: 'pack', duration: result.duration, processedOn: result.processedOn === 'client' ? 'client' : 'main-thread' })
+        setLastOptimizationMeta({
+          operation: 'pack',
+          duration: result.duration,
+          wallClockDuration,
+          overheadDuration: Math.max(0, wallClockDuration - result.duration),
+          processedOn: result.processedOn === 'client' ? 'client' : 'main-thread',
+        })
         toast.success(`Packed ${recommendation.itemsFit} items in ${result.duration}ms (on your device)`, { icon: '💻' })
       } else {
         // Fallback: main thread
@@ -500,7 +518,7 @@ export default function PackingPage() {
         const result = packer.pack()
         const duration = Math.round(performance.now() - startedAt)
         const recommendation = applyManualRecommendation(result)
-        setLastOptimizationMeta({ operation: 'pack', duration, processedOn: 'main-thread' })
+        setLastOptimizationMeta({ operation: 'pack', duration, wallClockDuration: duration, overheadDuration: 0, processedOn: 'main-thread' })
         toast.success(`Packed ${recommendation.itemsFit} items in ${duration}ms!`)
       }
     } catch (_err) {
@@ -509,7 +527,7 @@ export default function PackingPage() {
       const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
       const recommendation = applyManualRecommendation(packer.pack())
       const duration = Math.round(performance.now() - startedAt)
-      setLastOptimizationMeta({ operation: 'pack', duration, processedOn: 'main-thread' })
+      setLastOptimizationMeta({ operation: 'pack', duration, wallClockDuration: duration, overheadDuration: 0, processedOn: 'main-thread' })
       toast.success(`Packed ${recommendation.itemsFit} items in ${duration}ms!`)
     } finally {
       setIsProcessing(false)
@@ -1053,7 +1071,7 @@ export default function PackingPage() {
             {lastOptimizationMeta && (
               <p className="mt-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <Zap className="w-3.5 h-3.5 text-amber-500" />
-                Last {lastOptimizationMeta.operation === 'recommend' ? 'recommendation' : 'packing run'}: {lastOptimizationMeta.duration}ms {lastOptimizationMeta.processedOn === 'client' ? 'on your device' : 'on the browser main thread'}
+                Last {lastOptimizationMeta.operation === 'recommend' ? 'recommendation' : 'packing run'}: {lastOptimizationMeta.wallClockDuration}ms end-to-end {lastOptimizationMeta.processedOn === 'client' ? `on your device (${lastOptimizationMeta.duration}ms worker + ${lastOptimizationMeta.overheadDuration}ms browser overhead)` : 'on the browser main thread'}
               </p>
             )}
           </div>

@@ -40,6 +40,38 @@ function benchmarkRecommendationPath(
   )
 }
 
+function benchmarkRecommendationSession(
+  label: string,
+  items: SaleOrderItem[],
+  algorithm: string,
+  trucks: TruckType[],
+  passes = 3,
+): void {
+  const durations: number[] = []
+  let finalRecommendation: TruckRecommendation | null = null
+
+  for (let pass = 0; pass < passes; pass += 1) {
+    const startedAt = performance.now()
+    const recommendations = recommendTrucks(items, algorithm, trucks)
+    const duration = Math.round(performance.now() - startedAt)
+
+    assert(recommendations.length > 0, `${label}: session benchmark should produce at least one recommendation`)
+    durations.push(duration)
+    finalRecommendation = recommendations[0]
+  }
+
+  const totalDuration = durations.reduce((sum, duration) => sum + duration, 0)
+  const warmDurations = durations.slice(1)
+  const warmAverageDuration = warmDurations.length > 0
+    ? Math.round(warmDurations.reduce((sum, duration) => sum + duration, 0) / warmDurations.length)
+    : durations[0]
+
+  console.log(
+    `SESSION ${label}: calls=${passes} total=${totalDuration}ms cold=${durations[0]}ms warmAvg=${warmAverageDuration}ms ` +
+    `final=${finalRecommendation?.truck.name} fit=${finalRecommendation?.itemsFit}/${finalRecommendation?.totalItems}`,
+  )
+}
+
 const benchmarkTrucks: TruckType[] = [
   { id: 'truck-01', name: 'Mini Runner', dimensions: { length: 1.8, width: 1.4, height: 1 }, capacity: 280, costPerKm: 9 },
   { id: 'truck-02', name: 'Compact SXL', dimensions: { length: 2, width: 1.5, height: 1 }, capacity: 320, costPerKm: 10 },
@@ -58,6 +90,26 @@ const benchmarkTrucks: TruckType[] = [
   { id: 'truck-15', name: 'Regional Hauler XL', dimensions: { length: 3.4, width: 2.2, height: 1.2 }, capacity: 980, costPerKm: 22 },
   { id: 'truck-16', name: 'Fleet Max', dimensions: { length: 3.6, width: 2.2, height: 1.2 }, capacity: 1050, costPerKm: 23 },
 ]
+
+function createBenchmarkTruckSet(multiplier: number): TruckType[] {
+  if (multiplier <= 1) {
+    return benchmarkTrucks
+  }
+
+  return Array.from({ length: multiplier }, (_, batchIndex) => {
+    return benchmarkTrucks.map((truck) => {
+      if (batchIndex === 0) {
+        return truck
+      }
+
+      return {
+        ...truck,
+        id: `${truck.id}-${batchIndex}`,
+        name: `${truck.name} ${batchIndex}`,
+      }
+    })
+  }).flat()
+}
 
 const mixedLoad: SaleOrderItem[] = [
   {
@@ -121,9 +173,16 @@ const uniformLoad: SaleOrderItem[] = [
 ]
 
 function main(): void {
-  console.log(`Packing benchmark truck set: ${benchmarkTrucks.length} candidates`)
-  benchmarkRecommendationPath('mixed-load / extreme_points', mixedLoad, 'extreme_points', benchmarkTrucks)
-  benchmarkRecommendationPath('uniform-load / extreme_points', uniformLoad, 'extreme_points', benchmarkTrucks)
+  const expandedTruckSet64 = createBenchmarkTruckSet(4)
+  const expandedTruckSet128 = createBenchmarkTruckSet(8)
+
+  console.log(
+    `Packing benchmark truck sets: baseline=${benchmarkTrucks.length} expanded64=${expandedTruckSet64.length} expanded128=${expandedTruckSet128.length}`,
+  )
+  benchmarkRecommendationPath('mixed-load / 16 trucks / extreme_points', mixedLoad, 'extreme_points', benchmarkTrucks)
+  benchmarkRecommendationPath('uniform-load / 16 trucks / extreme_points', uniformLoad, 'extreme_points', benchmarkTrucks)
+  benchmarkRecommendationSession('mixed-load / browser-session / 64 trucks / extreme_points', mixedLoad, 'extreme_points', expandedTruckSet64)
+  benchmarkRecommendationSession('mixed-load / browser-session / 128 trucks / extreme_points', mixedLoad, 'extreme_points', expandedTruckSet128)
 }
 
 try {

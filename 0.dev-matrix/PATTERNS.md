@@ -130,6 +130,29 @@ with database_connection() as db:
 
 ---
 
+### Pattern: Correlated Web Worker Router
+```typescript
+const pendingRequestRef = useRef<PendingWorkerRequest | null>(null)
+
+const handleWorkerMessage = useCallback((event: MessageEvent<WorkerMessage>) => {
+    const pendingRequest = pendingRequestRef.current
+    if (!pendingRequest || event.data.requestId !== pendingRequest.requestId) {
+        return
+    }
+
+    if (event.data.type === 'result') {
+        pendingRequestRef.current = null
+        pendingRequest.resolve(event.data)
+    }
+}, [])
+
+worker.addEventListener('message', handleWorkerMessage)
+worker.postMessage({ requestId, type: 'recommend', items, trucks, algorithm })
+```
+**Why:** A single listener plus `requestId` correlation avoids add/remove listener churn on every worker call and keeps one scalar `progress` / `isProcessing` state truthful when the UI intentionally supports only one active worker request at a time.
+
+---
+
 ### Pattern: Strategy / Base Class Interface
 ```python
 # ✅ Enforces consistent interface for pluggable strategies
