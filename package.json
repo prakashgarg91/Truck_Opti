@@ -5,6 +5,8 @@
   "scripts": {
     "heroku-postbuild": "cd frontend && npm install --include=dev && npm run build",
     "start": "node server.js",
+    "check:proof-env": "node scripts/check-proof-env.cjs auth",
+    "check:proof-env:seed": "node scripts/check-proof-env.cjs seed",
     "test:packing": "cd frontend && npm run test:packing",
     "test:live-buttons": "node scripts/public_frontend_smoke.mjs",
     "test:public-smoke": "node scripts/public_frontend_smoke.mjs",

@@ -153,6 +153,20 @@ worker.postMessage({ requestId, type: 'recommend', items, trucks, algorithm })
 
 ---
 
+### Pattern: Centralized Proof Env Validation
+```javascript
+const { readEnvValue, validateRequiredEnv } = require('./_proofEnv.cjs')
+
+const password = readEnvValue('SEED_DEMO_PASSWORD')
+
+if (!validateRequiredEnv(['SEED_DEMO_PASSWORD'])) {
+    process.exit(1)
+}
+```
+**Why:** Credential-gated proof lanes should fail through one shared contract and one tracked template (`.env.proof.example`), not through duplicated inline checks that drift across scripts and waste AI retries on the same missing secret.
+
+---
+
 ### Pattern: Strategy / Base Class Interface
 ```python
 # ✅ Enforces consistent interface for pluggable strategies

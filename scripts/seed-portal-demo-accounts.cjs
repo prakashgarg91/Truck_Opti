@@ -1,11 +1,11 @@
 const { createClient } = require('@supabase/supabase-js')
+const { readEnvValue, validateRequiredEnv } = require('./_proofEnv.cjs')
 
-const SUPABASE_URL = process.env.SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const SEED_DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD
+const SUPABASE_URL = readEnvValue('SUPABASE_URL', ['VITE_SUPABASE_URL'])
+const SUPABASE_SERVICE_ROLE_KEY = readEnvValue('SUPABASE_SERVICE_ROLE_KEY')
+const SEED_DEMO_PASSWORD = readEnvValue('SEED_DEMO_PASSWORD')
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SEED_DEMO_PASSWORD) {
-    console.error('Missing SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or SEED_DEMO_PASSWORD')
+if (!validateRequiredEnv(['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SEED_DEMO_PASSWORD'])) {
     process.exit(1)
 }
 

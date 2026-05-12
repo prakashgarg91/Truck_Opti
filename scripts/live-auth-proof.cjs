@@ -2,15 +2,14 @@ const fs = require('fs')
 const path = require('path')
 const { createClient } = require('@supabase/supabase-js')
 const { chromium } = require('playwright')
-const { readEnvValue } = require('./_proofEnv.cjs')
+const { readEnvValue, validateRequiredEnv } = require('./_proofEnv.cjs')
 
 const baseUrl = readEnvValue('PROOF_BASE_URL') || 'https://www.truckopti.in'
 const password = readEnvValue('SEED_DEMO_PASSWORD')
 const supabaseUrl = readEnvValue('SUPABASE_URL', ['VITE_SUPABASE_URL'])
 const supabaseServiceRoleKey = readEnvValue('SUPABASE_SERVICE_ROLE_KEY')
 
-if (!password) {
-    console.error('Missing SEED_DEMO_PASSWORD (set it in .env.proof.local, .env.local, .env, or the shell environment)')
+if (!validateRequiredEnv(['SEED_DEMO_PASSWORD'])) {
     process.exit(1)
 }
 

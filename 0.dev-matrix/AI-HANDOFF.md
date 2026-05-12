@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-12 (Copilot-068 — centralized proof-env contract for auth-blocked lanes)
+
+- Changed: Centralized proof environment validation in `scripts/_proofEnv.cjs`, added `scripts/check-proof-env.cjs`, wired `scripts/live-auth-proof.cjs`, `scripts/live-admin-proof.cjs`, and `scripts/seed-portal-demo-accounts.cjs` through the shared validator, added root scripts `check:proof-env` / `check:proof-env:seed`, and added tracked template `.env.proof.example` plus `.gitignore` allowance so the auth-proof contract is explicit and modular instead of scattered across scripts.
+- Verified: `npm run check:proof-env` now fails cleanly with only the shared missing-variable guidance for `SEED_DEMO_PASSWORD`; `npm run check:proof-env:seed` now fails cleanly with the shared missing-variable guidance for `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SEED_DEMO_PASSWORD`; `node --check scripts\_proofEnv.cjs ; node --check scripts\check-proof-env.cjs ; node --check scripts\live-auth-proof.cjs ; node --check scripts\live-admin-proof.cjs ; node --check scripts\seed-portal-demo-accounts.cjs` PASS.
+- Operational proof: the remaining T-126/T-127 auth blocker is now surfaced through one reusable proof-env contract and one tracked template file, so future AI sessions can verify the missing prerequisite immediately instead of rediscovering it through failed browser runs or scattered script messages.
+- Continue from: once `SEED_DEMO_PASSWORD` exists, run `npm run check:proof-env`, then use the seeded demo login IDs for the live PackingPage proof.
+- Next step: owner sets `SEED_DEMO_PASSWORD` in `.env.proof.local` (or equivalent loaded env file), rerun `npm run check:proof-env`, then rerun the authenticated `/packing` browser proof before any further perf tuning.
+- Blockers: T-110 Razorpay prod keys (human), T-127 auth proof credentials/session (`SEED_DEMO_PASSWORD` or `VITE_TEST_*`) (human).
+
 ### 2026-05-12 (Copilot-067 — live PackingPage browser proof attempt blocked by auth)
 
 - Changed: No code changes. Re-ran the remaining T-126 browser-proof step against `http://127.0.0.1:4173/packing` using the current preview build and confirmed the route still redirects to `/login` under `ProtectedRoute`. Also confirmed the dev-only quick-login lane is unavailable in this workspace because `VITE_TEST_EMAIL` and `VITE_TEST_PASSWORD` are both missing.

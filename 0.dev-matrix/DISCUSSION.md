@@ -8,6 +8,28 @@
 ## 📋 CURRENT SESSION
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-12] COPILOT-068:
+  Continued only the remaining auth-blocked T-126/T-127 lanes and used the AI-owned slice to make the proof surface more modular and repeatable.
+
+  COMPLETED THIS SESSION:
+  - centralized proof-env validation in `scripts/_proofEnv.cjs` instead of leaving missing-env checks duplicated across the proof scripts
+  - added `scripts/check-proof-env.cjs` plus root scripts `check:proof-env` and `check:proof-env:seed` so the credential blocker is machine-verifiable before any browser retry
+  - routed `scripts/live-auth-proof.cjs`, `scripts/live-admin-proof.cjs`, and `scripts/seed-portal-demo-accounts.cjs` through the shared proof-env contract
+  - added tracked `.env.proof.example` and `.gitignore` allowance so the local proof/seeding env shape is documented in-repo without storing secrets
+  - used CRG minimal context, Roo search, Graphify report context, Explore, and multiple `opencode` reviews; `junie` remains unavailable in this workspace
+
+  VERIFIED:
+  - `npm run check:proof-env` -> clean shared failure on missing `SEED_DEMO_PASSWORD`
+  - `npm run check:proof-env:seed` -> clean shared failure on missing `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SEED_DEMO_PASSWORD`
+  - `node --check scripts\_proofEnv.cjs ; node --check scripts\check-proof-env.cjs ; node --check scripts\live-auth-proof.cjs ; node --check scripts\live-admin-proof.cjs ; node --check scripts\seed-portal-demo-accounts.cjs` -> PASS
+
+  JUDGMENT:
+  - the remaining named gaps are still the same two human-blocked items: live Razorpay keys and auth proof credentials/session
+  - the next AI action should start from `npm run check:proof-env` and stop immediately if the owner still has not supplied `SEED_DEMO_PASSWORD`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-05-12] COPILOT-067:
   Continued only the remaining live-browser T-126 step and did not reopen code after the last validated perf slice.
 
