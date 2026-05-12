@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": ".tmp/packing-benchmark",
+    "rootDir": ".",
+    "noEmit": false,
+    "lib": [
+      "ES2020",
+      "DOM"
+    ]
+  },
+  "include": [
+    "src/lib/packing.ts",
+    "scripts/packing-benchmark.ts"
+  ]
+}

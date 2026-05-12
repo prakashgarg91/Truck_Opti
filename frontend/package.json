@@ -9,6 +9,7 @@
     "build": "tsc && vite build",
     "test:unit": "vitest run",
     "test:packing": "tsc -p tsconfig.packing-regression.json && node .tmp/packing-regression/scripts/packing-regression.js",
+    "bench:packing": "tsc -p tsconfig.packing-benchmark.json && node .tmp/packing-benchmark/scripts/packing-benchmark.js",
     "preview": "vite preview",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 80"
   },

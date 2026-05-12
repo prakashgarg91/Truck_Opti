@@ -145,11 +145,15 @@ function createAxisPositions(limit: number, step: number): number[] {
 
 function fitsAt(truck: TruckType, packed: PackedBox[], x: number, y: number, z: number, length: number, width: number, height: number): boolean {
   const dimensions = truck.dimensions
+  const epsilon = POSITION_EPSILON
+  const maxX = x + length
+  const maxY = y + height
+  const maxZ = z + width
 
   if (
-    x + length > dimensions.length + POSITION_EPSILON ||
-    y + height > dimensions.height + POSITION_EPSILON ||
-    z + width > dimensions.width + POSITION_EPSILON
+    maxX > dimensions.length + epsilon ||
+    maxY > dimensions.height + epsilon ||
+    maxZ > dimensions.width + epsilon
   ) {
     return false
   }
@@ -157,9 +161,16 @@ function fitsAt(truck: TruckType, packed: PackedBox[], x: number, y: number, z: 
   if (x < 0 || y < 0 || z < 0) return false
 
   for (const box of packed) {
-    const overlapX = x < box.x + box.width - POSITION_EPSILON && x + length > box.x + POSITION_EPSILON
-    const overlapY = y < box.y + box.height - POSITION_EPSILON && y + height > box.y + POSITION_EPSILON
-    const overlapZ = z < box.z + box.depth - POSITION_EPSILON && z + width > box.z + POSITION_EPSILON
+    const boxX = box.x
+    const boxY = box.y
+    const boxZ = box.z
+    const boxMaxX = boxX + box.width
+    const boxMaxY = boxY + box.height
+    const boxMaxZ = boxZ + box.depth
+
+    const overlapX = x < boxMaxX - epsilon && maxX > boxX + epsilon
+    const overlapY = y < boxMaxY - epsilon && maxY > boxY + epsilon
+    const overlapZ = z < boxMaxZ - epsilon && maxZ > boxZ + epsilon
 
     if (overlapX && overlapY && overlapZ) return false
   }

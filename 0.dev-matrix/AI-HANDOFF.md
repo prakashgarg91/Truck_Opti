@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-12 (Copilot-065 — recommendation benchmark command + fitsAt tuning)
+
+- Changed: Added `frontend/scripts/packing-benchmark.ts`, `frontend/tsconfig.packing-benchmark.json`, and `frontend/package.json` script `bench:packing` so the smart recommendation path can now be benchmarked over a 16-truck candidate set. Also tightened `fitsAt(...)` in `frontend/src/lib/packing.ts` by caching candidate/box bounds inside the collision loop, reducing repeated arithmetic/property access without changing behavior.
+- Verified: `cd frontend && npm run test:packing` PASS (`13/13`); `cd frontend && npm run bench:packing` PASS (16-truck benchmark logged `mixed-load / extreme_points` avg `1ms`, `uniform-load / extreme_points` avg `0ms`); `cd frontend && npm run build` PASS.
+- Operational proof: the repo now has a dedicated packing benchmark command for the remaining T-126 step, and the shared packer still passes all 13 regression fixtures after the `fitsAt` hot-loop tuning.
+- Continue from: benchmark the recommendation path on even larger candidate sets and then profile browser-side worker/page cost against that benchmark.
+- Next step: extend `bench:packing` with larger truck sets and a browser-aligned workload, then tune the remaining PackingPage/worker overhead instead of reopening core packing correctness.
+- Blockers: T-110 Razorpay prod keys (human), T-127 SEED_DEMO_PASSWORD (human).
+
 ### 2026-05-12 (Copilot-064 — packing benchmark and hot-path cache follow-up)
 
 - Changed: Extended the packing slice again in `frontend/src/lib/packing.ts` and `frontend/scripts/packing-regression.ts`. The packer now caches per-item rotations via `WeakMap` and per-runtime color index lookup via `Map<SaleOrderItem, number>`, removing repeated rotation recomputation and repeated `items.indexOf(item)` scans from the hot path without changing public APIs. Added a new mixed-load benchmark fixture where `extreme_points` currently packs 6 items and seeded `genetic` packs 8 on the medium truck.
