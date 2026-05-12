@@ -105,8 +105,11 @@ interface PackerOptions {
 interface PackingRuntime {
   truck: TruckType
   items: SaleOrderItem[]
+  itemColorIndex: Map<SaleOrderItem, number>
   options: PackerOptions
 }
+
+const itemRotationCache = new WeakMap<SaleOrderItem, Rotation[]>()
 
 export const PACKING_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6']
 
@@ -210,7 +213,13 @@ function shuffleItems(items: SaleOrderItem[], random: () => number): SaleOrderIt
   return shuffledItems
 }
 
-function createPackedBox(items: SaleOrderItem[], item: SaleOrderItem, index: number, x: number, y: number, z: number, rotation: Rotation): PackedBox {
+function createItemColorIndex(items: SaleOrderItem[]): Map<SaleOrderItem, number> {
+  return new Map(items.map((item, index) => [item, index]))
+}
+
+function createPackedBox(itemColorIndex: Map<SaleOrderItem, number>, item: SaleOrderItem, index: number, x: number, y: number, z: number, rotation: Rotation): PackedBox {
+  const colorIndex = itemColorIndex.get(item) ?? 0
+
   return {
     id: `${item.id}-${index}`,
     x: snapCoordinate(x),
@@ -219,7 +228,7 @@ function createPackedBox(items: SaleOrderItem[], item: SaleOrderItem, index: num
     width: rotation.l,
     height: rotation.h,
     depth: rotation.w,
-    color: PACKING_COLORS[items.indexOf(item) % PACKING_COLORS.length],
+    color: PACKING_COLORS[colorIndex % PACKING_COLORS.length],
     label: `${item.name.substring(0, 3)}${index + 1}`,
     itemId: item.id,
   }
@@ -244,7 +253,14 @@ function isBetterSkylineCandidate(candidate: SkylinePlacementCandidate, best: Sk
 }
 
 function getItemRotations(item: SaleOrderItem): Rotation[] {
-  return getRotationsForItemDimensions(getItemDimensionsInMeters(item))
+  const cachedRotations = itemRotationCache.get(item)
+  if (cachedRotations) {
+    return cachedRotations
+  }
+
+  const rotations = getRotationsForItemDimensions(getItemDimensionsInMeters(item))
+  itemRotationCache.set(item, rotations)
+  return rotations
 }
 
 function sortSkylineItems(items: SaleOrderItem[]): ExpandedItem[] {
@@ -385,7 +401,7 @@ function formatUnpackedItemLabel(item: SaleOrderItem, index: number): string {
 }
 
 function createExtremePointPackingAttempt(
-  items: SaleOrderItem[],
+  itemColorIndex: Map<SaleOrderItem, number>,
   truck: TruckType,
   packed: PackedBox[],
   extremePoints: Point3D[],
@@ -403,7 +419,7 @@ function createExtremePointPackingAttempt(
 
   return {
     packedBox: createPackedBox(
-      items,
+      itemColorIndex,
       expandedItem.item,
       expandedItem.index,
       bestPlacement.point.x,
@@ -438,7 +454,7 @@ function updateExtremePoints(truck: TruckType, extremePoints: Point3D[], bestPoi
 }
 
 function createPackingRuntime(truck: TruckType, items: SaleOrderItem[], options: PackerOptions = {}): PackingRuntime {
-  return { truck, items, options }
+  return { truck, items, itemColorIndex: createItemColorIndex(items), options }
 }
 
 function packExpandedItemsWithExtremePoints(runtime: PackingRuntime, expandedItems: ExpandedItem[]): PackingResult {
@@ -447,7 +463,7 @@ function packExpandedItemsWithExtremePoints(runtime: PackingRuntime, expandedIte
   let extremePoints: Point3D[] = [{ x: 0, y: 0, z: 0 }]
 
   for (const expandedItem of expandedItems) {
-    const attempt = createExtremePointPackingAttempt(runtime.items, runtime.truck, packed, extremePoints, expandedItem)
+    const attempt = createExtremePointPackingAttempt(runtime.itemColorIndex, runtime.truck, packed, extremePoints, expandedItem)
 
     if (!attempt.packedBox) {
       unpacked.push(attempt.unpackedLabel ?? formatUnpackedItemLabel(expandedItem.item, expandedItem.index))
@@ -481,7 +497,7 @@ function packSkylineBL(runtime: PackingRuntime): PackingResult {
     const bestPlacement = findBestSkylinePlacement(runtime.truck, packed, item)
 
     if (bestPlacement) {
-      packed.push(createPackedBox(runtime.items, item, index, bestPlacement.x, bestPlacement.y, bestPlacement.z, bestPlacement.rotation))
+      packed.push(createPackedBox(runtime.itemColorIndex, item, index, bestPlacement.x, bestPlacement.y, bestPlacement.z, bestPlacement.rotation))
     } else {
       unpacked.push(formatUnpackedItemLabel(item, index))
     }

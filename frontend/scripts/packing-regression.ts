@@ -285,6 +285,65 @@ function runGeneticOrderPreservationFixture(): void {
   logPass('genetic order-preservation fixture', 'genetic packing now preserves shuffled order instead of collapsing to plain extreme-points ordering')
 }
 
+function runGeneticMixedLoadBenchmarkFixture(): void {
+  const items: SaleOrderItem[] = [
+    {
+      id: 'filler-box',
+      name: 'Filler Box',
+      length: 50,
+      width: 50,
+      height: 100,
+      weight: 10,
+      quantity: 3,
+      fragile: false,
+      stackable: true,
+    },
+    {
+      id: 'cube-box',
+      name: 'Cube Box',
+      length: 100,
+      width: 100,
+      height: 100,
+      weight: 10,
+      quantity: 2,
+      fragile: false,
+      stackable: true,
+    },
+    {
+      id: 'floor-beam',
+      name: 'Floor Beam',
+      length: 200,
+      width: 50,
+      height: 50,
+      weight: 10,
+      quantity: 5,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const extremePointsRun = new AdvancedBinPacker(trucks[1], items, 'extreme_points').pack()
+  const geneticRun = new AdvancedBinPacker(trucks[1], items, 'genetic', {
+    geneticIterations: 6,
+    random: createSeededRandom(1),
+  }).pack()
+
+  assert(
+    extremePointsRun.packed.length >= 6,
+    'Genetic mixed-load benchmark should keep extreme points at or above its current 6-item floor on the medium truck',
+  )
+  assert(
+    geneticRun.packed.length >= 8,
+    'Genetic mixed-load benchmark should keep genetic packing at or above its current 8-item floor on the medium truck',
+  )
+  assert(
+    geneticRun.packed.length >= extremePointsRun.packed.length,
+    'Genetic mixed-load benchmark should not underperform extreme points on this mixed load',
+  )
+
+  logPass('genetic mixed-load benchmark', `extreme_points=${extremePointsRun.packed.length}, genetic=${geneticRun.packed.length} on the medium mixed-load benchmark`)
+}
+
 function runOversizedItemFixture(): void {
   // An item bigger than the truck in every dimension must remain unpacked
   const items: SaleOrderItem[] = [
@@ -414,12 +473,13 @@ function main(): void {
   runRecommendationFixture()
   runGeneticDeterminismFixture()
   runGeneticOrderPreservationFixture()
+  runGeneticMixedLoadBenchmarkFixture()
   runOversizedItemFixture()
   runRotationBenefitFixture()
   runWeightCapacityFilterFixture()
   runVolumeUtilizationFixture()
   runPackedWeightUtilizationFixture()
-  console.log('Packing regression complete: 12 checks passed')
+  console.log('Packing regression complete: 13 checks passed')
 }
 
 try {

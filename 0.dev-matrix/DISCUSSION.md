@@ -8,6 +8,27 @@
 ## 📋 CURRENT SESSION
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-12] COPILOT-064:
+  Continued only the remaining T-125/T-126 AI steps instead of reopening blocked launch work.
+
+  COMPLETED THIS SESSION:
+  - found a real harder mixed-load case where `extreme_points` packs 6 items and seeded `genetic` packs 8 on the medium truck
+  - added that case to `frontend/scripts/packing-regression.ts`, growing the lane to `13/13`
+  - optimized `frontend/src/lib/packing.ts` internally by caching per-item rotations with `WeakMap` and per-runtime color lookup with `Map<SaleOrderItem, number>`
+  - used the current MCP stack again: CRG minimal context + incremental refresh, Graphify report context, agent audits, and `opencode`
+  - retried Roo index search twice on the narrowed packing query, but the upstream request timed out both times; no repo-side Roo fix was applied
+
+  VERIFIED:
+  - `cd frontend && npm run test:packing` -> PASS (`13/13`)
+  - `cd frontend && npm run build` -> PASS
+
+  JUDGMENT:
+  - the remaining named gaps are still human-blocked (`T-110` live Razorpay keys, `T-127` `SEED_DEMO_PASSWORD`)
+  - the next AI-owned work is now end-to-end recommendation benchmarking and PackingPage/worker perf profiling, not more core packing correctness fixes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-05-12] COPILOT-063:
   Advanced the requested T-125/T-126 packing slice and then repaired the repo-side close-day workflow mismatch uncovered during packaging.
 

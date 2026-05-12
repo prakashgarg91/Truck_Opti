@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-12 (Copilot-064 — packing benchmark and hot-path cache follow-up)
+
+- Changed: Extended the packing slice again in `frontend/src/lib/packing.ts` and `frontend/scripts/packing-regression.ts`. The packer now caches per-item rotations via `WeakMap` and per-runtime color index lookup via `Map<SaleOrderItem, number>`, removing repeated rotation recomputation and repeated `items.indexOf(item)` scans from the hot path without changing public APIs. Added a new mixed-load benchmark fixture where `extreme_points` currently packs 6 items and seeded `genetic` packs 8 on the medium truck.
+- Verified: `cd frontend && npm run test:packing` PASS (`13/13`); `cd frontend && npm run build` PASS; code-review-graph incremental refresh PASS after the edit.
+- Operational proof: the new benchmark logs `extreme_points=6, genetic=8` on a harder mixed load, and the app still builds with the cached rotation/color path in place.
+- Continue from: focused PackingPage/client-worker perf tuning beyond the now-cached packing core.
+- Next step: measure the smart recommendation path end-to-end on larger candidate-truck sets, then reduce remaining PackingPage/worker bundle and hot-loop cost.
+- Blockers: T-110 Razorpay prod keys (human), T-127 SEED_DEMO_PASSWORD (human).
+
 ### 2026-05-12 (Copilot-063 — T-125/T-126 packing slice advanced)
 
 - Changed: `frontend/src/lib/packing.ts` genetic mode now preserves shuffled item order through the extreme-points path and uses Fisher-Yates shuffling instead of random-sort bias. `frontend/scripts/packing-regression.ts` now has a 12th fixture that proves genetic order preservation against plain extreme-points packing. `frontend/src/workers/packingWorker.ts`, `frontend/src/hooks/usePackingWorker.ts`, and `frontend/src/pages/PackingPage.tsx` now carry and surface recommendation timing + `processedOn` metadata so client-side packing/recommendation claims are backed by real local timing proof. Roo search, Graphify report, code-review-graph incremental update, and an `opencode` audit were used on this slice; requested `junie` agent name is not registered in this workspace.
