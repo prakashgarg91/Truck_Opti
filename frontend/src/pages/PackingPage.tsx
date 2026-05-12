@@ -219,6 +219,11 @@ export default function PackingPage() {
   const [expandedSection, setExpandedSection] = useState<string | null>('items')
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [lastOptimizationMeta, setLastOptimizationMeta] = useState<{
+    operation: 'recommend' | 'pack'
+    duration: number
+    processedOn: 'client' | 'main-thread'
+  } | null>(null)
 
   // Booking modal state
   const [showBookModal, setShowBookModal] = useState(false)
@@ -423,35 +428,42 @@ export default function PackingPage() {
     try {
       if (workerSupported) {
         // Use Web Worker (runs on user's CPU, not server)
-        const recs = await runRecommendation(saleOrderItems, trucks, algorithm) as TruckRecommendation[]
+        const { recommendations: recs, duration, processedOn } = await runRecommendation(saleOrderItems, trucks, algorithm)
         setRecommendations(recs)
+        setLastOptimizationMeta({ operation: 'recommend', duration, processedOn: processedOn === 'client' ? 'client' : 'main-thread' })
         if (recs.length > 0) {
           setSelectedRecommendation(recs[0])
           setSelectedTruck(recs[0].truck.id)
-          toast.success(`Found ${recs.length} truck options! (processed locally)`, { id: 'recommend' })
+          toast.success(`Found ${recs.length} truck options in ${duration}ms (on your device)`, { id: 'recommend' })
         } else {
           toast.error('No suitable truck found.', { id: 'recommend' })
         }
       } else {
         // Fallback: run on main thread  
+        const startedAt = performance.now()
         const recs = recommendTrucks(saleOrderItems, algorithm, trucks)
+        const duration = Math.round(performance.now() - startedAt)
         setRecommendations(recs)
+        setLastOptimizationMeta({ operation: 'recommend', duration, processedOn: 'main-thread' })
         if (recs.length > 0) {
           setSelectedRecommendation(recs[0])
           setSelectedTruck(recs[0].truck.id)
-          toast.success(`Found ${recs.length} truck options!`, { id: 'recommend' })
+          toast.success(`Found ${recs.length} truck options in ${duration}ms`, { id: 'recommend' })
         } else {
           toast.error('No suitable truck found.', { id: 'recommend' })
         }
       }
     } catch (_err) {
       // Fallback to main thread on error
+      const startedAt = performance.now()
       const recs = recommendTrucks(saleOrderItems, algorithm, trucks)
+      const duration = Math.round(performance.now() - startedAt)
       setRecommendations(recs)
+      setLastOptimizationMeta({ operation: 'recommend', duration, processedOn: 'main-thread' })
       if (recs.length > 0) {
         setSelectedRecommendation(recs[0])
         setSelectedTruck(recs[0].truck.id)
-        toast.success(`Found ${recs.length} truck options!`, { id: 'recommend' })
+        toast.success(`Found ${recs.length} truck options in ${duration}ms`, { id: 'recommend' })
       }
     } finally {
       setIsProcessing(false)
@@ -479,19 +491,26 @@ export default function PackingPage() {
         // Use Web Worker (runs on user's CPU)
         const result = await runPacking(truck, saleOrderItems, algorithm)
         const recommendation = applyManualRecommendation(result)
+        setLastOptimizationMeta({ operation: 'pack', duration: result.duration, processedOn: result.processedOn === 'client' ? 'client' : 'main-thread' })
         toast.success(`Packed ${recommendation.itemsFit} items in ${result.duration}ms (on your device)`, { icon: '💻' })
       } else {
         // Fallback: main thread
+        const startedAt = performance.now()
         const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
         const result = packer.pack()
+        const duration = Math.round(performance.now() - startedAt)
         const recommendation = applyManualRecommendation(result)
-        toast.success(`Packed ${recommendation.itemsFit} items!`)
+        setLastOptimizationMeta({ operation: 'pack', duration, processedOn: 'main-thread' })
+        toast.success(`Packed ${recommendation.itemsFit} items in ${duration}ms!`)
       }
     } catch (_err) {
       // Fallback
+      const startedAt = performance.now()
       const packer = new AdvancedBinPacker(truck, saleOrderItems, algorithm)
       const recommendation = applyManualRecommendation(packer.pack())
-      toast.success(`Packed ${recommendation.itemsFit} items!`)
+      const duration = Math.round(performance.now() - startedAt)
+      setLastOptimizationMeta({ operation: 'pack', duration, processedOn: 'main-thread' })
+      toast.success(`Packed ${recommendation.itemsFit} items in ${duration}ms!`)
     } finally {
       setIsProcessing(false)
     }
@@ -1031,6 +1050,12 @@ export default function PackingPage() {
                 </>
               )}
             </button>
+            {lastOptimizationMeta && (
+              <p className="mt-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                Last {lastOptimizationMeta.operation === 'recommend' ? 'recommendation' : 'packing run'}: {lastOptimizationMeta.duration}ms {lastOptimizationMeta.processedOn === 'client' ? 'on your device' : 'on the browser main thread'}
+              </p>
+            )}
           </div>
 
           {/* Right Panel - Visualization & Results */}

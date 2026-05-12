@@ -244,6 +244,47 @@ function runGeneticDeterminismFixture(): void {
   logPass('genetic determinism fixture', 'produced stable seeded output and packed all boxes')
 }
 
+function runGeneticOrderPreservationFixture(): void {
+  const items: SaleOrderItem[] = [
+    {
+      id: 'cube-pack',
+      name: 'Cube Pack',
+      length: 100,
+      width: 100,
+      height: 100,
+      weight: 50,
+      quantity: 2,
+      fragile: false,
+      stackable: true,
+    },
+    {
+      id: 'beam-pack',
+      name: 'Beam Pack',
+      length: 200,
+      width: 50,
+      height: 50,
+      weight: 10,
+      quantity: 3,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const extremePointsRun = new AdvancedBinPacker(trucks[1], items, 'extreme_points').pack()
+  const geneticRun = new AdvancedBinPacker(trucks[1], items, 'genetic', {
+    geneticIterations: 1,
+    random: createSeededRandom(1),
+  }).pack()
+
+  assertEqual(geneticRun.packed.length, 5, 'Genetic order-preservation fixture should still pack all boxes')
+  assert(
+    simplifyResult(extremePointsRun) !== simplifyResult(geneticRun),
+    'Genetic order-preservation fixture should differ from plain extreme points when the shuffled order changes',
+  )
+
+  logPass('genetic order-preservation fixture', 'genetic packing now preserves shuffled order instead of collapsing to plain extreme-points ordering')
+}
+
 function runOversizedItemFixture(): void {
   // An item bigger than the truck in every dimension must remain unpacked
   const items: SaleOrderItem[] = [
@@ -372,12 +413,13 @@ function main(): void {
   runExtremePointsFixture()
   runRecommendationFixture()
   runGeneticDeterminismFixture()
+  runGeneticOrderPreservationFixture()
   runOversizedItemFixture()
   runRotationBenefitFixture()
   runWeightCapacityFilterFixture()
   runVolumeUtilizationFixture()
   runPackedWeightUtilizationFixture()
-  console.log('Packing regression complete: 11 checks passed')
+  console.log('Packing regression complete: 12 checks passed')
 }
 
 try {

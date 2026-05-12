@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-12 (Copilot-063 — T-125/T-126 packing slice advanced)
+
+- Changed: `frontend/src/lib/packing.ts` genetic mode now preserves shuffled item order through the extreme-points path and uses Fisher-Yates shuffling instead of random-sort bias. `frontend/scripts/packing-regression.ts` now has a 12th fixture that proves genetic order preservation against plain extreme-points packing. `frontend/src/workers/packingWorker.ts`, `frontend/src/hooks/usePackingWorker.ts`, and `frontend/src/pages/PackingPage.tsx` now carry and surface recommendation timing + `processedOn` metadata so client-side packing/recommendation claims are backed by real local timing proof. Roo search, Graphify report, code-review-graph incremental update, and an `opencode` audit were used on this slice; requested `junie` agent name is not registered in this workspace.
+- Verified: `cd frontend && npm run test:packing` PASS (`12/12`); `cd frontend && npm run build` PASS; code-review-graph incremental refresh updated the packing slice without errors.
+- Operational proof: the new genetic-order fixture proves `genetic` no longer collapses back to plain `extreme_points` ordering on the mixed-load case, and `PackingPage` now shows measured local runtime for both recommendation and manual pack flows.
+- Continue from: broader packing heuristic benchmarking beyond the current 12 fixtures -> focused PackingPage/client-worker perf tuning.
+- Next step: add harder mixed-load benchmark fixtures to compare `genetic` vs `extreme_points`, then profile and reduce PackingPage/worker bundle cost.
+- Blockers: T-110 Razorpay prod keys (human), T-127 SEED_DEMO_PASSWORD (human).
+
 ### 2026-05-11 (Copilot-062 — Stitch method improved, Trading Rex lessons applied)
 
 Changed: Added `0.dev-matrix/STITCH-PROMPT-PACK.md` — full 5-session role-based prompt pack with canvas governance approach lifted from Trading Rex AI Terminal analysis. Updated `C:\Users\Prakash\.copilot\skills\stitch-design\SKILL.md` with Canvas Governance section: Legacy-tagging discipline, AI-assisted canvas organization, naming convention, chat-first workflow, role-focused sessions, hygiene prompt template.

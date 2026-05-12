@@ -40,11 +40,14 @@ self.onmessage = (e: MessageEvent) => {
 
   if (type === 'recommend') {
     try {
+      const startTime = performance.now()
       const recommendations = recommendTrucks(items as SaleOrderItem[], algorithm || 'extreme_points', e.data.trucks as TruckType[])
+      const duration = Math.round(performance.now() - startTime)
 
       self.postMessage({
         type: 'recommendations',
         recommendations,
+        duration,
         processedOn: 'client',
       })
     } catch (_error: unknown) {

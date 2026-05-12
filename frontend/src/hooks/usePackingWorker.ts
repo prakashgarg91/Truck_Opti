@@ -9,9 +9,15 @@ interface PackingWorkerResult {
   processedOn: string
 }
 
+interface PackingWorkerRecommendationResult {
+  recommendations: TruckRecommendation[]
+  duration: number
+  processedOn: string
+}
+
 interface UsePackingWorkerReturn {
   runPacking: (truck: TruckType, items: SaleOrderItem[], algorithm: string) => Promise<PackingWorkerResult>
-  runRecommendation: (items: SaleOrderItem[], trucks: TruckType[], algorithm: string) => Promise<TruckRecommendation[]>
+  runRecommendation: (items: SaleOrderItem[], trucks: TruckType[], algorithm: string) => Promise<PackingWorkerRecommendationResult>
   progress: number
   isProcessing: boolean
   isSupported: boolean
@@ -104,7 +110,7 @@ export function usePackingWorker(): UsePackingWorkerReturn {
     })
   }, [ensureWorker])
 
-  const runRecommendation = useCallback((items: SaleOrderItem[], trucks: TruckType[], algorithm: string): Promise<TruckRecommendation[]> => {
+  const runRecommendation = useCallback((items: SaleOrderItem[], trucks: TruckType[], algorithm: string): Promise<PackingWorkerRecommendationResult> => {
     return new Promise((resolve, reject) => {
       ensureWorker()
       
@@ -121,7 +127,11 @@ export function usePackingWorker(): UsePackingWorkerReturn {
           setIsProcessing(false)
           setProgress(100)
           workerRef.current?.removeEventListener('message', handler)
-          resolve(e.data.recommendations)
+          resolve({
+            recommendations: e.data.recommendations,
+            duration: e.data.duration,
+            processedOn: e.data.processedOn,
+          })
         } else if (e.data.type === 'error') {
           setIsProcessing(false)
           workerRef.current?.removeEventListener('message', handler)

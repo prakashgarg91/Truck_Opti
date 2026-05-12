@@ -199,6 +199,17 @@ function expandItems(items: SaleOrderItem[]): ExpandedItem[] {
   return expandedItems
 }
 
+function shuffleItems(items: SaleOrderItem[], random: () => number): SaleOrderItem[] {
+  const shuffledItems = [...items]
+
+  for (let index = shuffledItems.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1))
+    ;[shuffledItems[index], shuffledItems[swapIndex]] = [shuffledItems[swapIndex], shuffledItems[index]]
+  }
+
+  return shuffledItems
+}
+
 function createPackedBox(items: SaleOrderItem[], item: SaleOrderItem, index: number, x: number, y: number, z: number, rotation: Rotation): PackedBox {
   return {
     id: `${item.id}-${index}`,
@@ -430,6 +441,26 @@ function createPackingRuntime(truck: TruckType, items: SaleOrderItem[], options:
   return { truck, items, options }
 }
 
+function packExpandedItemsWithExtremePoints(runtime: PackingRuntime, expandedItems: ExpandedItem[]): PackingResult {
+  const packed: PackedBox[] = []
+  const unpacked: string[] = []
+  let extremePoints: Point3D[] = [{ x: 0, y: 0, z: 0 }]
+
+  for (const expandedItem of expandedItems) {
+    const attempt = createExtremePointPackingAttempt(runtime.items, runtime.truck, packed, extremePoints, expandedItem)
+
+    if (!attempt.packedBox) {
+      unpacked.push(attempt.unpackedLabel ?? formatUnpackedItemLabel(expandedItem.item, expandedItem.index))
+      continue
+    }
+
+    packed.push(attempt.packedBox)
+    extremePoints = attempt.nextExtremePoints
+  }
+
+  return { packed, unpacked }
+}
+
 function executePackingStrategy(runtime: PackingRuntime, algorithm: string): PackingResult {
   switch (algorithm) {
     case 'genetic':
@@ -460,24 +491,7 @@ function packSkylineBL(runtime: PackingRuntime): PackingResult {
 }
 
 function packExtremePoints(runtime: PackingRuntime): PackingResult {
-  const packed: PackedBox[] = []
-  const unpacked: string[] = []
-  let extremePoints: Point3D[] = [{ x: 0, y: 0, z: 0 }]
-  const expandedItems = sortExtremePointItems(runtime.items)
-
-  for (const expandedItem of expandedItems) {
-    const attempt = createExtremePointPackingAttempt(runtime.items, runtime.truck, packed, extremePoints, expandedItem)
-
-    if (!attempt.packedBox) {
-      unpacked.push(attempt.unpackedLabel ?? formatUnpackedItemLabel(expandedItem.item, expandedItem.index))
-      continue
-    }
-
-    packed.push(attempt.packedBox)
-    extremePoints = attempt.nextExtremePoints
-  }
-
-  return { packed, unpacked }
+  return packExpandedItemsWithExtremePoints(runtime, sortExtremePointItems(runtime.items))
 }
 
 function packGenetic(runtime: PackingRuntime): PackingResult {
@@ -487,8 +501,9 @@ function packGenetic(runtime: PackingRuntime): PackingResult {
   let bestCount = 0
 
   for (let iteration = 0; iteration < iterations; iteration += 1) {
-    const shuffledItems = [...runtime.items].sort(() => random() - 0.5)
-    const result = packExtremePoints({ ...runtime, items: shuffledItems })
+    const shuffledItems = shuffleItems(runtime.items, random)
+    const shuffledExpandedItems = expandItems(shuffledItems)
+    const result = packExpandedItemsWithExtremePoints({ ...runtime, items: shuffledItems }, shuffledExpandedItems)
 
     if (result.packed.length > bestCount) {
       bestCount = result.packed.length
