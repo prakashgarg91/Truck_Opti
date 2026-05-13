@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-13 (Copilot-070 — repo-side launch gates back to green)
+
+- Changed: Cleared the newly exposed backend dependency gate by bumping `apps/web/requirements.txt` from `ujson==5.12.0` to `ujson==5.12.1` for `CVE-2026-44660`, revalidated `npm run graph:update` with no Graphify drift warning, and reconciled the repo truth so the remaining launch focus is back to the two human-side blockers only.
+- Verified: `d:/Github/Truck_Opti/.venv/Scripts/python.exe -m pip_audit -r apps/web/requirements.txt` now returns `No known vulnerabilities found`; `npm run graph:update` refreshed cleanly (`436 nodes`, `514 edges`, `73 communities`) with no drift warning; `npm run launch-check` PASS (`17/17`) on the clean committed tree.
+- Operational proof: all repo-side launch/readiness gates are green again on the current tree, so the project is AI-complete for launch from this workspace and only owner-supplied credentials/proof remain.
+- Continue from: keep launch work constrained to the two owner-side blockers instead of reopening code work.
+- Next step: owner sets `SEED_DEMO_PASSWORD` and reruns `npm run check:proof-env` plus the authenticated `/packing` proof, then sets live Razorpay keys and reruns `npm run test:prod-config`.
+- Blockers: T-110 Razorpay prod keys (human), T-127 auth proof credentials/session (`SEED_DEMO_PASSWORD` or `VITE_TEST_*`) (human).
+
 ### 2026-05-13 (Copilot-069 — session-start maintenance artifacts untracked)
 
 - Changed: Hardened repo hygiene for the start-of-day maintenance lane by ignoring `0.dev-matrix/test-reports/session-start-maintenance-status.json` and `session-start-maintenance-*.log`, untracking the generated status JSON, and documenting in `0.dev-matrix/GRAPHIFY.md` that these files are runtime artifacts surfaced by `resume-work.ps1`, not source-of-truth files to keep in git.
