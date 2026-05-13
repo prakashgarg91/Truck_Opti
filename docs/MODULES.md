@@ -46,13 +46,14 @@
 | Module | File | Route | Description |
 |--------|------|-------|-------------|
 | Support | `ContactPage.tsx` | `/support` | Authenticated support intake route that reuses the contact form with support-focused copy and back navigation |
+| Subscription | `SubscriptionPage.tsx` | `/subscription` | Current-plan surface for authenticated users: plan status, renewal state, usage meters, invoice history, and upgrade/support handoff |
 
 ---
 
 ## Customer / Logistics Manager Portal
 
 > **Layout**: `MobileLayout.tsx` (bottom navigation)  
-> **Auth**: Any authenticated user with role `user`  
+> **Auth**: Primary persona is role `user`, but this shell currently sits behind bare `ProtectedRoute`, so any authenticated role can reach these shared routes unless a stricter role gate is added  
 > **Key Supabase tables**: `shipments`, `customers`, `trucks`, `cartons`, `routes`, `packing_results`
 
 | Module | File | Route | Key Features | Supabase Tables |

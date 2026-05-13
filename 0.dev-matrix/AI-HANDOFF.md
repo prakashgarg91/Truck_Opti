@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-13 (Copilot-073 — subscription page + route-contract canonicalization)
+
+- Changed: Closed the final AI-owned design gap by replacing the `/subscription` alias with a protected `frontend/src/pages/SubscriptionPage.tsx` current-plan surface that reads from `useSubscription()` and `invoicesApi`, then routed the main shell subscription entry points there. Canonicalized the customer-shell route contract in `docs/MODULES.md`, `docs/ARCHITECTURE.md`, and `0.dev-matrix/DESIGN-GAP-REGISTER.md` so docs now match the current bare-`ProtectedRoute` behavior.
+- Verified: `cd frontend && npm run build` PASS after the subscription-page slice.
+- Operational proof: authenticated users now have a route-backed subscription surface for plan status, renewal timing, usage, and invoice history instead of a redirect-only placeholder, and the design-gap register no longer has open AI-owned current-screen or route-contract gaps.
+- Continue from: only the two owner-side blockers remain: 1) live Razorpay production keys and verification; 2) auth proof credentials/session for the authenticated proof lane.
+- Next step: owner sets real Razorpay prod keys and reruns `npm run test:prod-config`, then provides the proof-auth secrets/session and reruns `npm run check:proof-env` plus the authenticated proof flow.
+- Blockers: T-110 Razorpay prod keys (human), T-127 auth proof credentials/session (`SEED_DEMO_PASSWORD` or `VITE_TEST_*`) (human).
+
 ### 2026-05-13 (Copilot-072 — support route and permission-denied state)
 
 - Changed: Closed two more non-human design gaps by turning the main shell help action into a real routed support flow (`/support`) that reuses `frontend/src/pages/ContactPage.tsx` in authenticated mode, and by replacing silent `frontend/src/components/ProtectedRoute.tsx` role redirects with a reusable `PermissionDeniedState`. Synced the design-gap register plus route docs to the new support/guard contract.

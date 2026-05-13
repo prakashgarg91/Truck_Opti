@@ -33,6 +33,7 @@ const CartonsPage = React.lazy(() => import('./pages/CartonsPage'))
 const CustomersPage = React.lazy(() => import('./pages/CustomersPage'))
 const SaleOrdersPage = React.lazy(() => import('./pages/SaleOrdersPage'))
 const InvoicePage = React.lazy(() => import('./pages/InvoicePage'))
+const SubscriptionPage = React.lazy(() => import('./pages/SubscriptionPage'))
 const PricingPage = React.lazy(() => import('./pages/PricingPage'))
 const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage'))
 const PaymentCallbackPage = React.lazy(() => import('./pages/PaymentCallbackPage'))
@@ -100,7 +101,7 @@ function AppContent() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/support" element={<ProtectedRoute><ContactPage variant="authenticated" /></ProtectedRoute>} />
-          <Route path="/subscription" element={<Navigate to="/pricing" replace />} />
+          <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
           <Route path="/driver/register" element={<DriverRegisterPage />} />
           <Route path="/agency/register" element={<AgencyRegisterPage />} />
           {import.meta.env.DEV && (

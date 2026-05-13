@@ -198,8 +198,8 @@ ProtectedRoute.tsx
     4. else → render children
 
 Route Groups in App.tsx:
-  /support, /checkout                 → ProtectedRoute (any role, standalone page)
-  /dashboard, /packing, /routes ...  → ProtectedRoute (any role)
+  /support, /subscription, /checkout  → ProtectedRoute (any role, standalone page)
+  /dashboard, /packing, /routes ...  → ProtectedRoute (any role; primary customer shell)
   /admin, /admin/*                   → ProtectedRoute allowedRoles=['admin']
   /driver/dashboard, /driver/trip/*  → ProtectedRoute allowedRoles=['driver']
   /agency/dashboard, /agency/*       → ProtectedRoute allowedRoles=['agency']

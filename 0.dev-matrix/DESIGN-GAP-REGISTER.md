@@ -28,9 +28,9 @@ Evidence sources:
 | Type | Count | Notes |
 |---|---:|---|
 | Confirmed broken paths | 0 open / 3 fixed | The initial route/share-path defects were fixed in the current tree on 2026-05-13 |
-| Missing current screens/state views | 1 open / 2 fixed | Support and permission-denied now have shipped surfaces in the current tree; subscription management remains open |
+| Missing current screens/state views | 0 open / 3 fixed | Support, permission-denied, and subscription management now have shipped surfaces in the current tree |
 | Planned future surfaces not route-backed yet | 4 | Already present in plan/Stitch, not current launch blockers |
-| Ambiguous contracts | 1 | Docs and route guards disagree |
+| Ambiguous contracts | 0 open / 1 resolved | Docs now match the current shared-shell guard contract |
 
 ## 1. Recently Resolved Broken Paths
 
@@ -45,7 +45,7 @@ Evidence sources:
 | Gap | Current status | Evidence |
 |---|---|---|
 | Authenticated help/support flow | Fixed: the main shell help action now routes to protected `/support`, which reuses `ContactPage` in authenticated mode instead of showing a toast-only placeholder. | `frontend/src/layouts/MobileLayout.tsx`, `frontend/src/App.tsx`, `frontend/src/pages/ContactPage.tsx`, `docs/MODULES.md` |
-| Self-serve subscription management | Open: `/subscription` still redirects straight to `/pricing`, so the app still lacks a user-facing current-plan management surface. | `frontend/src/App.tsx`, `docs/MODULES.md` |
+| Self-serve subscription management | Fixed: `/subscription` is now a protected current-plan page with renewal state, usage, invoice history, and clear plan-change/support handoffs, and the main shell routes subscription entry points there instead of aliasing `/pricing`. | `frontend/src/pages/SubscriptionPage.tsx`, `frontend/src/App.tsx`, `frontend/src/layouts/MobileLayout.tsx`, `docs/MODULES.md` |
 | Permission denied state view | Fixed: `ProtectedRoute` now renders a reusable `PermissionDeniedState` with requested-path context and safe navigation instead of silently redirecting away on a role mismatch. | `frontend/src/components/ProtectedRoute.tsx`, `frontend/src/components/PermissionDeniedState.tsx`, `0.dev-matrix/STITCH_SCREEN_CLEANUP_AND_INTEGRATION_PLAN.md` |
 
 ## 3. Planned Future Surfaces Not Yet Backed By Routes
@@ -59,11 +59,11 @@ These are not current launch blockers, but they are real design gaps between the
 | Cancellation center | Exists in the Stitch/design backlog, not in the current route tree | `0.dev-matrix/STITCH_SCREEN_CLEANUP_AND_INTEGRATION_PLAN.md` |
 | Refund & dispute center | Exists in the Stitch/design backlog, not in the current route tree | `0.dev-matrix/STITCH_SCREEN_CLEANUP_AND_INTEGRATION_PLAN.md` |
 
-## 4. Ambiguous Route Contract
+## 4. Resolved Route Contract
 
 | Contract | Current code | Current docs | Why it matters |
 |---|---|---|---|
-| Customer-shell role boundary | `/dashboard`, `/packing`, `/routes`, `/tracking`, `/booking/new`, `/profile`, `/management`, and related routes sit behind bare `ProtectedRoute`, which allows any authenticated role | `docs/MODULES.md` describes the customer/logistics-manager portal as role `user`, while `docs/ARCHITECTURE.md` describes these routes as `ProtectedRoute (any role)` | Future AI edits can easily mis-harden or over-open the shell unless one contract becomes canonical. |
+| Customer-shell role boundary | `/dashboard`, `/packing`, `/routes`, `/tracking`, `/booking/new`, `/profile`, `/management`, and related routes still sit behind bare `ProtectedRoute`, which allows any authenticated role | `docs/MODULES.md` and `docs/ARCHITECTURE.md` now both document the same contract: primary persona `user`, current route guard `ProtectedRoute (any authenticated role)` | Future AI edits now have one canonical contract to follow unless the route guard itself is intentionally tightened. |
 
 ## 5. What Should Not Be Treated As Missing Routes
 
@@ -75,10 +75,9 @@ These are already intended to live inside existing route/state machines and shou
 
 ## Review Order
 
-1. Fix the three confirmed broken paths first because they are live user-facing defects.
-2. Decide whether authenticated help/support and subscription management need full routes or state views inside existing pages.
-3. Resolve the customer-shell role contract so docs and guards say the same thing.
-4. Keep partner/demo/reviewer/cancellation/refund surfaces in backlog unless they are intentionally promoted into the shipped route tree.
+1. Treat the broken-path, support, permission-denied, subscription, and route-contract items above as resolved shipped truth unless regression evidence appears.
+2. Keep partner/demo/reviewer/cancellation/refund surfaces in backlog unless they are intentionally promoted into the shipped route tree.
+3. Reopen the customer-shell role contract only if `ProtectedRoute` ownership or route-group structure actually changes.
 
 ## Best Next Follow-Up Artifact Use
 

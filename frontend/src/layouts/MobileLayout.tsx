@@ -465,7 +465,7 @@ export default function MobileLayout() {
                   )}
                   {isExpired && (
                     <span
-                      onClick={(e) => { e.stopPropagation(); navigate('/pricing'); setSidebarOpen(false) }}
+                      onClick={(e) => { e.stopPropagation(); navigate('/subscription'); setSidebarOpen(false) }}
                       className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium cursor-pointer hover:opacity-80"
                     >
                       ⚠ Subscription expired · Upgrade
@@ -473,7 +473,7 @@ export default function MobileLayout() {
                   )}
                   {!isActive && !isTrial && !isExpired && !subLoading && user?.role !== 'admin' && (
                     <span
-                      onClick={(e) => { e.stopPropagation(); navigate('/pricing'); setSidebarOpen(false) }}
+                      onClick={(e) => { e.stopPropagation(); navigate('/subscription'); setSidebarOpen(false) }}
                       className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-medium cursor-pointer hover:opacity-80"
                     >
                       Free Plan · Upgrade
@@ -574,7 +574,7 @@ export default function MobileLayout() {
               </p>
               <button
                 onClick={() => {
-                  navigate('/pricing')
+                  navigate('/subscription')
                   setSidebarOpen(false)
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
