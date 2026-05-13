@@ -177,6 +177,7 @@ function AppContent() {
             <Route path="/agency/billing" element={<AgencyBillingPage />} />
             <Route path="/agency/drivers" element={<AgencyDriversPage />} />
             <Route path="/agency/rates" element={<AgencyRatesPage />} />
+            <Route path="/agency/profile" element={<ProfilePage />} />
           </Route>
 
           {/* Catch all - show 404 page */}

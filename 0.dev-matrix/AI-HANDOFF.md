@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-13 (Copilot-071 — broken route/share-path contract repairs)
+
+- Changed: Closed two non-human design gaps from `0.dev-matrix/DESIGN-GAP-REGISTER.md` by adding the missing `/agency/profile` route in `frontend/src/App.tsx` and correcting the WhatsApp share-path contract in `frontend/src/utils/whatsappShare.ts` so tracking shares preserve `?shipment=<id>` and invoice shares use the owned `/invoice/:shipmentId` route instead of an unowned payment URL. Updated the design-gap register to mark those broken-path defects resolved in the current tree.
+- Verified: `cd frontend && npm run build` PASS after the route/share fixes.
+- Operational proof: the current route tree no longer contains the dead agency profile navigation, and the current share helper only emits owned app URLs for invoice/tracking flows while preserving shipment context where the destination screen requires it.
+- Continue from: keep launch work constrained to the two owner-side blockers unless choosing a new optional design-gap slice from `0.dev-matrix/DESIGN-GAP-REGISTER.md`.
+- Next step: owner sets `SEED_DEMO_PASSWORD` and reruns `npm run check:proof-env` plus the authenticated `/packing` proof, then sets live Razorpay keys and reruns `npm run test:prod-config`.
+- Blockers: T-110 Razorpay prod keys (human), T-127 auth proof credentials/session (`SEED_DEMO_PASSWORD` or `VITE_TEST_*`) (human).
+
 ### 2026-05-13 (Copilot-070 — repo-side launch gates back to green)
 
 - Changed: Cleared the newly exposed backend dependency gate by bumping `apps/web/requirements.txt` from `ujson==5.12.0` to `ujson==5.12.1` for `CVE-2026-44660`, revalidated `npm run graph:update` with no Graphify drift warning, and reconciled the repo truth so the remaining launch focus is back to the two human-side blockers only.

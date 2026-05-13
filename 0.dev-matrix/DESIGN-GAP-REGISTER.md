@@ -27,18 +27,18 @@ Evidence sources:
 
 | Type | Count | Notes |
 |---|---:|---|
-| Confirmed broken paths | 3 | Live defects in route ownership or shared-link contract |
+| Confirmed broken paths | 0 open / 3 fixed | The initial route/share-path defects were fixed in the current tree on 2026-05-13 |
 | Missing current screens/state views | 3 | Current UX falls back to redirect or toast instead of a real surface |
 | Planned future surfaces not route-backed yet | 4 | Already present in plan/Stitch, not current launch blockers |
 | Ambiguous contracts | 1 | Docs and route guards disagree |
 
-## 1. Confirmed Broken Paths
+## 1. Recently Resolved Broken Paths
 
-| Gap | Current producer | Why it is broken | Evidence |
+| Gap | Current resolution | Evidence |
 |---|---|---|---|
-| Agency profile dead link | `AgencyLayout` links to `/agency/profile` | The agency route group in `App.tsx` does not define `/agency/profile`, so the link falls through to the catch-all 404 route. | `frontend/src/layouts/AgencyLayout.tsx`, `frontend/src/App.tsx` |
-| Invoice WhatsApp share uses an unowned payment URL | `shareInvoice(...)` builds `${APP_URL}/payment/${shipmentId}` | The app owns `/checkout`, `/payment/callback`, and `/payment/success`, but no `/payment/:shipmentId` route exists. Shared invoice links point outside the real route contract. | `frontend/src/utils/whatsappShare.ts`, `frontend/src/pages/InvoicePage.tsx`, `frontend/src/App.tsx` |
-| Tracking WhatsApp share loses shipment context | `shareTrackingLink(...)` and `generateShareText('tracking')` build `${APP_URL}/tracking` | `TrackingPage` reads `?shipment=` from search params, and `ShipmentHistoryPage` already deep-links correctly with `/tracking?shipment=<id>`. Generic share links drop the selected shipment context. | `frontend/src/utils/whatsappShare.ts`, `frontend/src/pages/TrackingPage.tsx`, `frontend/src/pages/ShipmentHistoryPage.tsx` |
+| Agency profile dead link | Added `/agency/profile` to the agency protected route group so the existing layout link now resolves to `ProfilePage` inside `AgencyLayout`. | `frontend/src/layouts/AgencyLayout.tsx`, `frontend/src/App.tsx` |
+| Invoice WhatsApp share used an unowned payment URL | `shareInvoice(...)` now emits the owned invoice route `/invoice/:shipmentId` instead of an unowned `/payment/:shipmentId` path. | `frontend/src/utils/whatsappShare.ts`, `frontend/src/pages/InvoicePage.tsx`, `frontend/src/App.tsx` |
+| Tracking WhatsApp share lost shipment context | `shareTrackingLink(...)` and the generic tracking share text now preserve `?shipment=<id>` when the shipment id is available, matching `TrackingPage` and `ShipmentHistoryPage`. | `frontend/src/utils/whatsappShare.ts`, `frontend/src/pages/TrackingPage.tsx`, `frontend/src/pages/ShipmentHistoryPage.tsx` |
 
 ## 2. Missing Current Screens Or State Views
 

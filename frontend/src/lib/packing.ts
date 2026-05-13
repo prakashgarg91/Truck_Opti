@@ -218,7 +218,7 @@ function shuffleItems(items: SaleOrderItem[], random: () => number): SaleOrderIt
 
   for (let index = shuffledItems.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(random() * (index + 1))
-    ;[shuffledItems[index], shuffledItems[swapIndex]] = [shuffledItems[swapIndex], shuffledItems[index]]
+      ;[shuffledItems[index], shuffledItems[swapIndex]] = [shuffledItems[swapIndex], shuffledItems[index]]
   }
 
   return shuffledItems

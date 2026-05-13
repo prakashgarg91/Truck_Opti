@@ -7,6 +7,15 @@ import type { Shipment } from '../services/supabaseApi'
 
 const APP_URL = window.location.origin
 
+function buildTrackingUrl(shipmentId?: string): string {
+  if (!shipmentId) return `${APP_URL}/tracking`
+  return `${APP_URL}/tracking?shipment=${encodeURIComponent(shipmentId)}`
+}
+
+function buildInvoiceUrl(shipmentId: string): string {
+  return `${APP_URL}/invoice/${encodeURIComponent(shipmentId)}`
+}
+
 /**
  * Encode text for WhatsApp URL
  */
@@ -71,7 +80,7 @@ export function shareTrackingLink(shipment: Shipment): void {
 📊 Status: ${shipment.status.replace('_', ' ').toUpperCase()}
 ⚖️ Weight: ${shipment.total_weight} kg
 
-Track live: ${APP_URL}/tracking`
+Track live: ${buildTrackingUrl(shipment.id)}`
 
   openWhatsApp(text)
 }
@@ -100,7 +109,7 @@ export function shareInvoice(invoice: {
 💵 *Total: ₹${invoice.totalAmount + invoice.gstAmount}*
 
 SAC Code: 996511
-Pay online: ${APP_URL}/payment/${invoice.shipmentId}`
+View invoice: ${buildInvoiceUrl(invoice.shipmentId)}`
 
   openWhatsApp(text)
 }
@@ -114,9 +123,14 @@ export function generateShareText(type: 'packing' | 'route' | 'tracking' | 'invo
       return `📦 TruckOpti Packing - ${data.truckName || 'Optimized Load'}\nView: ${APP_URL}/packing`
     case 'route':
       return `🚚 TruckOpti Route - ${data.origin || ''} to ${data.destination || ''}\nView: ${APP_URL}/routes`
-    case 'tracking':
-      return `📍 Track your shipment: ${APP_URL}/tracking`
+    case 'tracking': {
+      const shipmentId = typeof data.shipmentId === 'string' ? data.shipmentId : undefined
+      return `📍 Track your shipment: ${buildTrackingUrl(shipmentId)}`
+    }
     case 'invoice':
+      if (typeof data.shipmentId === 'string') {
+        return `🧾 TruckOpti Invoice ${data.invoiceNumber || ''}\nAmount: ₹${data.totalAmount || 0}\nView: ${buildInvoiceUrl(data.shipmentId)}`
+      }
       return `🧾 TruckOpti Invoice ${data.invoiceNumber || ''}\nAmount: ₹${data.totalAmount || 0}`
     default:
       return `Check out TruckOpti: ${APP_URL}`

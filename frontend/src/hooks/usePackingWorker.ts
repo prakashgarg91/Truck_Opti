@@ -26,17 +26,17 @@ interface UsePackingWorkerReturn {
 
 type PendingWorkerRequest =
   | {
-      requestId: string
-      requestType: 'pack'
-      resolve: (value: PackingWorkerResult) => void
-      reject: (error: Error) => void
-    }
+    requestId: string
+    requestType: 'pack'
+    resolve: (value: PackingWorkerResult) => void
+    reject: (error: Error) => void
+  }
   | {
-      requestId: string
-      requestType: 'recommend'
-      resolve: (value: PackingWorkerRecommendationResult) => void
-      reject: (error: Error) => void
-    }
+    requestId: string
+    requestType: 'recommend'
+    resolve: (value: PackingWorkerRecommendationResult) => void
+    reject: (error: Error) => void
+  }
 
 interface PackingWorkerMessage {
   type: 'progress' | 'result' | 'recommendations' | 'error'
