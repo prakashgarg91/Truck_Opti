@@ -1,16 +1,16 @@
 # Last Closeout
 
-- Time: 2026-05-13 08:24:14
+- Time: 2026-05-13 21:14:27
 - Launch verification mode: background launch-check started from resume-work
 - Git status: clean
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-13_082413.log
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-13_211426.log
 
 ## AI Handoff
 - Latest handoff date: 2026-05-13
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: all repo-side launch/readiness gates are green again on the current tree, so the project is AI-complete for launch from this workspace and only owner-supplied credentials/proof remain.
-- Continue from: keep launch work constrained to the two owner-side blockers instead of reopening code work.
-- Next step: owner sets `SEED_DEMO_PASSWORD` and reruns `npm run check:proof-env` plus the authenticated `/packing` proof, then sets live Razorpay keys and reruns `npm run test:prod-config`.
+- Operational proof: authenticated users now have a route-backed subscription surface for plan status, renewal timing, usage, and invoice history instead of a redirect-only placeholder, and the design-gap register no longer has open AI-owned current-screen or route-contract gaps.
+- Continue from: only the two owner-side blockers remain: 1) live Razorpay production keys and verification; 2) auth proof credentials/session for the authenticated proof lane.
+- Next step: owner sets real Razorpay prod keys and reruns `npm run test:prod-config`, then provides the proof-auth secrets/session and reruns `npm run check:proof-env` plus the authenticated proof flow.
 - Blockers: T-110 Razorpay prod keys (human), T-127 auth proof credentials/session (`SEED_DEMO_PASSWORD` or `VITE_TEST_*`) (human).
 
 ## Project Progress
