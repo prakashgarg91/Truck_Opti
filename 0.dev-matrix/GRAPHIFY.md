@@ -77,6 +77,8 @@ powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\graphify.ps1 -Status
 
 The repo start-of-day helper `0.dev-matrix/session-start-maintenance.ps1` is designed to run this status check automatically, refresh `code-review-graph`, refresh Graphify when the root report is stale or missing, and check Graphify hook status. `0.dev-matrix/resume-work.ps1` surfaces that maintenance result.
 
+The generated status JSON and timestamped `session-start-maintenance-*.log` files under `0.dev-matrix/test-reports/` are runtime artifacts for that helper and should remain untracked in git, just like the launch-check status outputs.
+
 Then read:
 
 - `graphify-out/GRAPH_REPORT.md`

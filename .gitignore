@@ -35,6 +35,8 @@ logs/
 0.dev-matrix/closeout-logs/
 0.dev-matrix/test-reports/launch-check-*.log
 0.dev-matrix/test-reports/launch-check-status.json
+0.dev-matrix/test-reports/session-start-maintenance-*.log
+0.dev-matrix/test-reports/session-start-maintenance-status.json
 
 # Screenshots and test images
 screenshots/

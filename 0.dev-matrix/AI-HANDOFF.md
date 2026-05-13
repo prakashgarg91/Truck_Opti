@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-13 (Copilot-069 — session-start maintenance artifacts untracked)
+
+- Changed: Hardened repo hygiene for the start-of-day maintenance lane by ignoring `0.dev-matrix/test-reports/session-start-maintenance-status.json` and `session-start-maintenance-*.log`, untracking the generated status JSON, and documenting in `0.dev-matrix/GRAPHIFY.md` that these files are runtime artifacts surfaced by `resume-work.ps1`, not source-of-truth files to keep in git.
+- Verified: `git ls-files 0.dev-matrix/test-reports/session-start-maintenance-status.json` showed the status JSON was tracked while the timestamped logs were not; `git status --short` after the ignore-rule edit still showed the JSON as modified; `git rm --cached -- 0.dev-matrix/test-reports/session-start-maintenance-status.json` removed that runtime file from the index so future session-start runs no longer re-dirty git through this path.
+- Operational proof: the recurring dirty-tree source from start-of-day graph maintenance is now fixed at the repo boundary, so `resume-work.ps1` can keep writing live maintenance status/log output without silently reintroducing tracked runtime state.
+- Continue from: with the session-start artifact path fixed, the only remaining launch blockers are still the human-side auth/prod prerequisites already documented below.
+- Next step: owner sets `SEED_DEMO_PASSWORD` and live Razorpay production keys, then rerun `npm run check:proof-env` and the authenticated `/packing` proof before claiming further completion.
+- Blockers: T-110 Razorpay prod keys (human), T-127 auth proof credentials/session (`SEED_DEMO_PASSWORD` or `VITE_TEST_*`) (human).
+
 ### 2026-05-12 (Copilot-068 — centralized proof-env contract for auth-blocked lanes)
 
 - Changed: Centralized proof environment validation in `scripts/_proofEnv.cjs`, added `scripts/check-proof-env.cjs`, wired `scripts/live-auth-proof.cjs`, `scripts/live-admin-proof.cjs`, and `scripts/seed-portal-demo-accounts.cjs` through the shared validator, added root scripts `check:proof-env` / `check:proof-env:seed`, and added tracked template `.env.proof.example` plus `.gitignore` allowance so the auth-proof contract is explicit and modular instead of scattered across scripts.
