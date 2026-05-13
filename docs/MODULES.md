@@ -41,6 +41,14 @@
 
 ---
 
+## Shared Authenticated Utility Pages
+
+| Module | File | Route | Description |
+|--------|------|-------|-------------|
+| Support | `ContactPage.tsx` | `/support` | Authenticated support intake route that reuses the contact form with support-focused copy and back navigation |
+
+---
+
 ## Customer / Logistics Manager Portal
 
 > **Layout**: `MobileLayout.tsx` (bottom navigation)  
@@ -171,7 +179,7 @@ Generates PDF invoices using jsPDF for completed `agency_jobs`. Includes GST-com
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `ProtectedRoute` | `components/ProtectedRoute.tsx` | Auth + role guard for route groups; redirects unauthenticated users to `/login` |
+| `ProtectedRoute` | `components/ProtectedRoute.tsx` | Auth + role guard for route groups; redirects unauthenticated users to `/login` and renders a permission-denied state on role mismatch |
 | `ErrorBoundary` | `components/ErrorBoundary.tsx` | Wraps the entire app; catches unhandled React render errors |
 | `PageSkeleton` | `components/PageSkeleton.tsx` | Suspense fallback shown during lazy-loaded page import |
 | `MapView` | `components/MapView.tsx` | Leaflet map wrapper; used in TrackingPage |

@@ -17,6 +17,10 @@ const SUBJECTS = ['General', 'Support', 'Sales', 'Partnership']
 const SUPPORT_EMAIL = 'prakashgarg91@gmail.com'
 const SUPPORT_PHONE = '+91 99993 52050'
 
+interface ContactPageProps {
+  variant?: 'public' | 'authenticated'
+}
+
 const getContactFailureMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error ?? '')
   const lowered = message.toLowerCase()
@@ -34,8 +38,9 @@ const getContactFailureMessage = (error: unknown) => {
   return 'Unable to send your message right now. It has been saved here for retry.'
 }
 
-export default function ContactPage() {
+export default function ContactPage({ variant = 'public' }: ContactPageProps) {
   const navigate = useNavigate()
+  const defaultSubject = variant === 'authenticated' ? 'Support' : 'General'
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [pendingSubmission, setPendingSubmission] = useState<StoredContactInquiry | null>(null)
@@ -43,14 +48,16 @@ export default function ContactPage() {
     name: '',
     email: '',
     phone: '',
-    subject: 'General',
+    subject: defaultSubject,
     message: ''
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    document.title = 'Contact Us - TruckOpti'
-  }, [])
+    document.title = variant === 'authenticated'
+      ? 'Contact Support - TruckOpti'
+      : 'Contact Us - TruckOpti'
+  }, [variant])
 
   useEffect(() => {
     const savedDraft = getStoredContactDraft()
@@ -114,7 +121,7 @@ export default function ContactPage() {
     try {
       const storedSubmission = await submitContactInquiry(payload, clientSubmissionId)
       clearContactState()
-      setForm({ name: '', email: '', phone: '', subject: 'General', message: '' })
+      setForm({ name: '', email: '', phone: '', subject: defaultSubject, message: '' })
       if (options.showSuccessToast) {
         toast.success('Thank you! We will get back to you soon.')
       }
@@ -187,10 +194,12 @@ export default function ContactPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Contact Us
+              {variant === 'authenticated' ? 'Contact Support' : 'Contact Us'}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              We'd love to hear from you
+              {variant === 'authenticated'
+                ? 'Get help with bookings, tracking, billing, or account issues'
+                : "We'd love to hear from you"}
             </p>
           </div>
         </div>

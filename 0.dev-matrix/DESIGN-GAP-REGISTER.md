@@ -28,7 +28,7 @@ Evidence sources:
 | Type | Count | Notes |
 |---|---:|---|
 | Confirmed broken paths | 0 open / 3 fixed | The initial route/share-path defects were fixed in the current tree on 2026-05-13 |
-| Missing current screens/state views | 3 | Current UX falls back to redirect or toast instead of a real surface |
+| Missing current screens/state views | 1 open / 2 fixed | Support and permission-denied now have shipped surfaces in the current tree; subscription management remains open |
 | Planned future surfaces not route-backed yet | 4 | Already present in plan/Stitch, not current launch blockers |
 | Ambiguous contracts | 1 | Docs and route guards disagree |
 
@@ -40,13 +40,13 @@ Evidence sources:
 | Invoice WhatsApp share used an unowned payment URL | `shareInvoice(...)` now emits the owned invoice route `/invoice/:shipmentId` instead of an unowned `/payment/:shipmentId` path. | `frontend/src/utils/whatsappShare.ts`, `frontend/src/pages/InvoicePage.tsx`, `frontend/src/App.tsx` |
 | Tracking WhatsApp share lost shipment context | `shareTrackingLink(...)` and the generic tracking share text now preserve `?shipment=<id>` when the shipment id is available, matching `TrackingPage` and `ShipmentHistoryPage`. | `frontend/src/utils/whatsappShare.ts`, `frontend/src/pages/TrackingPage.tsx`, `frontend/src/pages/ShipmentHistoryPage.tsx` |
 
-## 2. Missing Current Screens Or State Views
+## 2. Current Screens Or State Views
 
-| Gap | Current behavior | Why it is a gap | Evidence |
-|---|---|---|---|
-| Authenticated help/support flow | Main shell help action only shows a toast with email/phone | The shipped app has a public `/contact` page, but authenticated users do not have a real routed help/support surface even though the design plan expects support flows from the dashboard/tracking journey. | `frontend/src/layouts/MobileLayout.tsx`, `frontend/src/App.tsx`, `docs/MODULES.md`, `0.dev-matrix/STITCH_SCREEN_CLEANUP_AND_INTEGRATION_PLAN.md` |
-| Self-serve subscription management | `/subscription` redirects straight to `/pricing` | The app has checkout and payment callback flows, but no user-facing plan-management screen for current subscribers to review or change billing state. | `frontend/src/App.tsx`, `docs/MODULES.md` |
-| Permission denied state view | Unauthorized role access redirects to the default home route | The current guard silently redirects instead of showing a clear permission-denied state, while the design plan already expects a `Permission Denied - TruckOpti` surface. | `frontend/src/components/ProtectedRoute.tsx`, `0.dev-matrix/STITCH_SCREEN_CLEANUP_AND_INTEGRATION_PLAN.md` |
+| Gap | Current status | Evidence |
+|---|---|---|
+| Authenticated help/support flow | Fixed: the main shell help action now routes to protected `/support`, which reuses `ContactPage` in authenticated mode instead of showing a toast-only placeholder. | `frontend/src/layouts/MobileLayout.tsx`, `frontend/src/App.tsx`, `frontend/src/pages/ContactPage.tsx`, `docs/MODULES.md` |
+| Self-serve subscription management | Open: `/subscription` still redirects straight to `/pricing`, so the app still lacks a user-facing current-plan management surface. | `frontend/src/App.tsx`, `docs/MODULES.md` |
+| Permission denied state view | Fixed: `ProtectedRoute` now renders a reusable `PermissionDeniedState` with requested-path context and safe navigation instead of silently redirecting away on a role mismatch. | `frontend/src/components/ProtectedRoute.tsx`, `frontend/src/components/PermissionDeniedState.tsx`, `0.dev-matrix/STITCH_SCREEN_CLEANUP_AND_INTEGRATION_PLAN.md` |
 
 ## 3. Planned Future Surfaces Not Yet Backed By Routes
 

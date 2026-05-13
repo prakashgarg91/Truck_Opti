@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import PageSkeleton from './PageSkeleton'
+import PermissionDeniedState from './PermissionDeniedState'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -20,7 +21,7 @@ export function getDefaultHomePathForRole(role?: string | null) {
  * 
  * - Shows loading skeleton while auth state is initializing
  * - Redirects to /login if not authenticated
- * - Redirects to the user's role home if the route is outside their allowed roles
+ * - Renders a permission-denied state if the route is outside the user's allowed roles
  * - Renders children if authenticated
  */
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -42,7 +43,13 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
   }
 
   if (allowedRoles && (!user || !allowedRoles.includes(user.role))) {
-    return <Navigate to={getDefaultHomePathForRole(user?.role)} replace />
+    return (
+      <PermissionDeniedState
+        attemptedPath={location.pathname}
+        allowedRoles={allowedRoles}
+        homePath={getDefaultHomePathForRole(user?.role)}
+      />
+    )
   }
 
   // Render protected content

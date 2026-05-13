@@ -99,6 +99,7 @@ function AppContent() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/support" element={<ProtectedRoute><ContactPage variant="authenticated" /></ProtectedRoute>} />
           <Route path="/subscription" element={<Navigate to="/pricing" replace />} />
           <Route path="/driver/register" element={<DriverRegisterPage />} />
           <Route path="/agency/register" element={<AgencyRegisterPage />} />

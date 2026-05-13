@@ -194,10 +194,11 @@ ProtectedRoute.tsx
   Logic:
     1. if !isAuthenticated → <Navigate to="/login" />
     2. if isLoading → show PageSkeleton
-    3. if allowedRoles && !allowedRoles.includes(user.role) → <Navigate to="/" />
+    3. if allowedRoles && !allowedRoles.includes(user.role) → render PermissionDeniedState
     4. else → render children
 
 Route Groups in App.tsx:
+  /support, /checkout                 → ProtectedRoute (any role, standalone page)
   /dashboard, /packing, /routes ...  → ProtectedRoute (any role)
   /admin, /admin/*                   → ProtectedRoute allowedRoles=['admin']
   /driver/dashboard, /driver/trip/*  → ProtectedRoute allowedRoles=['driver']

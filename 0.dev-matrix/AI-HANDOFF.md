@@ -27,6 +27,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-13 (Copilot-072 — support route and permission-denied state)
+
+- Changed: Closed two more non-human design gaps by turning the main shell help action into a real routed support flow (`/support`) that reuses `frontend/src/pages/ContactPage.tsx` in authenticated mode, and by replacing silent `frontend/src/components/ProtectedRoute.tsx` role redirects with a reusable `PermissionDeniedState`. Synced the design-gap register plus route docs to the new support/guard contract.
+- Verified: `cd frontend && npm run build` PASS after the support-route and permission-denied slice.
+- Operational proof: signed-in users now have a route-backed support surface instead of a toast-only action, and unauthorized role entries now stop on a clear denial state with requested-path context and safe navigation instead of silently jumping away.
+- Continue from: 1) remaining AI-owned design gap is self-serve subscription management (`/subscription` still aliases `/pricing`); 2) remaining external blocker bundle is unchanged: live Razorpay keys plus auth proof credentials/session.
+- Next step: 1) decide whether the last AI-owned gap should become a lightweight current-plan/subscription page or stay explicit backlog; 2) owner reruns `npm run check:proof-env` and `npm run test:prod-config` after setting real auth and Razorpay secrets.
+- Blockers: T-110 Razorpay prod keys (human), T-127 auth proof credentials/session (`SEED_DEMO_PASSWORD` or `VITE_TEST_*`) (human).
+
 ### 2026-05-13 (Copilot-071 — broken route/share-path contract repairs)
 
 - Changed: Closed two non-human design gaps from `0.dev-matrix/DESIGN-GAP-REGISTER.md` by adding the missing `/agency/profile` route in `frontend/src/App.tsx` and correcting the WhatsApp share-path contract in `frontend/src/utils/whatsappShare.ts` so tracking shares preserve `?shipment=<id>` and invoice shares use the owned `/invoice/:shipmentId` route instead of an unowned payment URL. Updated the design-gap register to mark those broken-path defects resolved in the current tree.
