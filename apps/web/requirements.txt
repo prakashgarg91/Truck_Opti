@@ -95,7 +95,7 @@ faker==21.0.0  # For testing/seeding
 py3dbp==1.1.2
 
 # Performance
-ujson==5.12.0  # Faster JSON
+ujson==5.12.1  # Faster JSON
 
 # Monitoring
 prometheus-flask-exporter==0.23.0
