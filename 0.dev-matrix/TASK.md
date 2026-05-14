@@ -2,6 +2,8 @@
 
 > **Task Queue + Claims - Multi-Agent Coordination**
 > Claim before working. Update when done.
+>
+> **Queue normalization note (2026-05-14):** the canonical machine-owned queue now lives in `0.dev-matrix/AI-TASKS.json`. Active pair: `TO-101` add the sellable product contract artifact and `TO-102` prepare the post-credentials launch proof surface. `TO-103` is the explicit human-blocked live Razorpay credential task, and `TO-104` is the planned evidence-capture follow-through. Treat the legacy `T-*` board below as detailed engineering history, not as the active launch queue.
 > **2026-05-13 (Copilot-073)**: closed the last AI-owned design gap from `0.dev-matrix/DESIGN-GAP-REGISTER.md`. `frontend/src/pages/SubscriptionPage.tsx` now provides a protected self-serve current-plan surface on `/subscription`, `frontend/src/App.tsx` owns that route directly, and `frontend/src/layouts/MobileLayout.tsx` routes subscription entry points there instead of straight to pricing. The customer-shell role contract is now canonicalized in `docs/MODULES.md` and `docs/ARCHITECTURE.md` as primary persona `user` with current bare-`ProtectedRoute` guard behavior. Validation: `cd frontend && npm run build` PASS. Remaining blockers are now only T-110 live Razorpay keys and T-127 auth proof credentials/session.
 > **2026-05-13 (Copilot-072)**: closed the two next-smallest non-human design gaps from `0.dev-matrix/DESIGN-GAP-REGISTER.md`. The shared shell help action now routes to protected `/support` using the existing `ContactPage.tsx` in authenticated mode, and `ProtectedRoute.tsx` now renders a reusable `PermissionDeniedState` instead of silently redirecting on role mismatch. Validation: `cd frontend && npm run build` PASS. Remaining AI-owned design gap is now only self-serve subscription management; external blockers stay T-110 live Razorpay keys and T-127 auth proof credentials/session.
 > **2026-05-13 (Copilot-071)**: closed the two highest-confidence non-human broken-path gaps from `0.dev-matrix/DESIGN-GAP-REGISTER.md`. `frontend/src/App.tsx` now owns `/agency/profile`, and `frontend/src/utils/whatsappShare.ts` now emits owned tracking/invoice deep links with shipment context preserved where needed. Validation: `cd frontend && npm run build` PASS. Remaining launch blockers are still only T-110 live Razorpay keys and T-127 auth proof credentials/session.
@@ -45,6 +47,9 @@
 ---
 
 ## 🎯 ACTIVE TASKS
+
+> **Canonical queue snapshot (2026-05-14):** `TO-101` and `TO-102` are the active launch tasks. `TO-103` is the isolated human-blocked credential task, and `TO-104` is the planned evidence capture step after the blocker clears.
+> **Queue intent:** keep launch work constrained to the accepted sellable-product contract and the post-credential proof path instead of reopening broad backlog discovery.
 
 > **Repo-side launch/readiness work is green on the current tree; remaining launch blockers are now exactly two owner-side items: live Razorpay production keys and auth proof credentials/session.**
 > **Evidence:** `npm run launch-check` passes `17/17` on 2026-05-13; `cd frontend && npm audit --omit=dev` passes 0 vulnerabilities; `cd apps/web && npm audit` passes 0 vulnerabilities; `d:/Github/Truck_Opti/.venv/Scripts/python.exe -m pip_audit -r apps/web/requirements.txt` is at 0 known vulnerabilities; `npm run graph:update` refreshes cleanly with `436/514/73`; `npm run test:prod-config` remains `5/6` with only Razorpay live readiness failing; and the authenticated proof lane remains blocked only by missing owner-supplied test credentials/session.

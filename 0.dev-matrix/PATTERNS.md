@@ -130,43 +130,6 @@ with database_connection() as db:
 
 ---
 
-### Pattern: Correlated Web Worker Router
-```typescript
-const pendingRequestRef = useRef<PendingWorkerRequest | null>(null)
-
-const handleWorkerMessage = useCallback((event: MessageEvent<WorkerMessage>) => {
-    const pendingRequest = pendingRequestRef.current
-    if (!pendingRequest || event.data.requestId !== pendingRequest.requestId) {
-        return
-    }
-
-    if (event.data.type === 'result') {
-        pendingRequestRef.current = null
-        pendingRequest.resolve(event.data)
-    }
-}, [])
-
-worker.addEventListener('message', handleWorkerMessage)
-worker.postMessage({ requestId, type: 'recommend', items, trucks, algorithm })
-```
-**Why:** A single listener plus `requestId` correlation avoids add/remove listener churn on every worker call and keeps one scalar `progress` / `isProcessing` state truthful when the UI intentionally supports only one active worker request at a time.
-
----
-
-### Pattern: Centralized Proof Env Validation
-```javascript
-const { readEnvValue, validateRequiredEnv } = require('./_proofEnv.cjs')
-
-const password = readEnvValue('SEED_DEMO_PASSWORD')
-
-if (!validateRequiredEnv(['SEED_DEMO_PASSWORD'])) {
-    process.exit(1)
-}
-```
-**Why:** Credential-gated proof lanes should fail through one shared contract and one tracked template (`.env.proof.example`), not through duplicated inline checks that drift across scripts and waste AI retries on the same missing secret.
-
----
-
 ### Pattern: Strategy / Base Class Interface
 ```python
 # ✅ Enforces consistent interface for pluggable strategies

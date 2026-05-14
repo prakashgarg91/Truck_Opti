@@ -1,0 +1,37 @@
+{
+    "id": "truck-opti-sellable-product-contract-v1",
+    "title": "TruckOpti Sellable Product Contract",
+    "version": "1.0.0",
+    "acceptedAt": "2026-05-14",
+    "owner": "Truck_Opti repo",
+    "entrypoint": "server.js",
+    "canonicalArtifact": "0.dev-matrix/SPEC.json",
+    "artifactFormat": "Repo contract manifest JSON",
+    "status": "accepted",
+    "why": "Anchor TruckOpti's current launch claim on one accepted, repo-owned contract artifact for the sellable product slice instead of leaving the launch scope implied across long task history and checklist prose.",
+    "scope": {
+        "included": [
+            "Public marketing, pricing, checkout, and auth shell served by the current frontend",
+            "Protected customer, agency, driver, and admin workflows already called out in the current launch checklist",
+            "Production configuration proof for subscriptions, auth, and payment readiness on the current sellable-product slice"
+        ],
+        "excluded": [
+            "Optional future auth variants such as re-enabled phone OTP",
+            "Deferred native Supabase PITR and backup upgrades beyond the currently accepted temporary backup posture",
+            "Future optimization or packing-quality work that is not required for the immediate sellable-product launch slice"
+        ]
+    },
+    "validation": {
+        "commands": [
+            "npm run launch-check",
+            "npm run test:prod-config",
+            "npm run check:proof-env"
+        ],
+        "expectedGuardrail": "TO-101 and TO-102 remain the active launch slice, with live Razorpay credentials isolated honestly in TO-103 as the only human blocker"
+    },
+    "links": {
+        "launchChecklist": "0.dev-matrix/LAUNCH_CHECKLIST.md",
+        "taskBoard": "0.dev-matrix/TASK.md",
+        "handoff": "0.dev-matrix/AI-HANDOFF.md"
+    }
+}

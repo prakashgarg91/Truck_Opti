@@ -12,8 +12,9 @@
 #   4. apps/web npm audit
 #   5. pip-audit on apps/web/requirements.txt
 #   6. Python compileall on apps/web/app and apps/web/run.py
-#   7. Git working tree cleanliness (no uncommitted/unignored changes)
-#   8. Tree hygiene (required doc, no junk artifacts, no merge markers in active code/config files)
+#   7. Runtime error loop (required doc plus real local capture/resolve path)
+#   8. Git working tree cleanliness (no uncommitted/unignored changes)
+#   9. Tree hygiene (required doc, no junk artifacts, no merge markers in active code/config files)
 # ============================================================
 
 param(
@@ -36,9 +37,9 @@ $AllowedRuntimeDirtyPrefixes = @(
 
 # ---------- helpers ----------
 
-$script:PassCount  = 0
-$script:FailCount  = 0
-$script:SkipCount  = 0
+$script:PassCount = 0
+$script:FailCount = 0
+$script:SkipCount = 0
 
 function Write-Gate {
     param(
@@ -46,13 +47,13 @@ function Write-Gate {
         [string]$Status,
         [string]$Detail
     )
-    $icon  = 'OK'
+    $icon = 'OK'
     $color = 'Green'
     if ($Status -eq 'FAIL') { $icon = 'FAIL'; $color = 'Red' }
     if ($Status -eq 'SKIP') { $icon = 'SKIP'; $color = 'Yellow' }
 
     $padded = $Label.PadRight(48)
-    $line   = "  [$icon] $padded  $Detail"
+    $line = "  [$icon] $padded  $Detail"
     Write-Host $line -ForegroundColor $color
 
     if ($Status -eq 'PASS') { $script:PassCount++ }
@@ -103,6 +104,101 @@ function Test-IsMeaningfulLaunchFocus {
     return $Value.Trim() -notmatch '^(?i:todo|tbd|unknown)$'
 }
 
+$script:RootPackageScripts = $null
+
+function Get-RootPackageScripts {
+    if ($null -ne $script:RootPackageScripts) {
+        return $script:RootPackageScripts
+    }
+
+    $script:RootPackageScripts = @{}
+    $packageJsonPath = Join-Path $RepoRoot 'package.json'
+    if (-not (Test-Path $packageJsonPath)) {
+        return $script:RootPackageScripts
+    }
+
+    try {
+        $packageJson = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
+        if ($packageJson.scripts) {
+            foreach ($property in $packageJson.scripts.PSObject.Properties) {
+                $script:RootPackageScripts[$property.Name] = [string]$property.Value
+            }
+        }
+    }
+    catch {
+        $script:RootPackageScripts = @{}
+    }
+
+    return $script:RootPackageScripts
+}
+
+function Test-RootNpmScript {
+    param([string]$Name)
+
+    $scripts = Get-RootPackageScripts
+    return $scripts.ContainsKey($Name)
+}
+
+function Get-RepoPythonCommandPrefix {
+    $venvPython = Join-Path $RepoRoot '.venv\Scripts\python.exe'
+    if (Test-Path $venvPython) {
+        return '.\\.venv\\Scripts\\python.exe'
+    }
+
+    if (Get-Command python -ErrorAction SilentlyContinue) {
+        return 'python'
+    }
+
+    return $null
+}
+
+function Get-RuntimeLoopDetection {
+    $captureCommand = $null
+    $resolveCommand = $null
+
+    if (Test-RootNpmScript 'track-errors') {
+        $captureCommand = 'npm run track-errors'
+    }
+    elseif (Test-RootNpmScript 'start') {
+        $captureCommand = 'npm run start'
+    }
+    elseif (Test-RootNpmScript 'dev') {
+        $captureCommand = 'npm run dev'
+    }
+    else {
+        $pythonPrefix = Get-RepoPythonCommandPrefix
+        if ($pythonPrefix) {
+            foreach ($entryPoint in @('launcher.py', 'main.py', 'app.py', 'manage.py')) {
+                if (Test-Path (Join-Path $RepoRoot $entryPoint)) {
+                    $captureCommand = "$pythonPrefix $entryPoint"
+                    break
+                }
+            }
+        }
+    }
+
+    if (Test-RootNpmScript 'test:hidden-errors') {
+        $resolveCommand = 'npm run test:hidden-errors'
+    }
+    elseif (Test-Path (Join-Path $RepoRoot '0.dev-matrix\launch-check.ps1')) {
+        $resolveCommand = 'powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\launch-check.ps1'
+    }
+    elseif (Test-RootNpmScript 'test') {
+        $resolveCommand = 'npm test'
+    }
+    else {
+        $pythonPrefix = Get-RepoPythonCommandPrefix
+        if ($pythonPrefix -and (Test-Path (Join-Path $RepoRoot 'pytest.ini'))) {
+            $resolveCommand = "$pythonPrefix -m pytest"
+        }
+    }
+
+    return [PSCustomObject]@{
+        CaptureCommand = $captureCommand
+        ResolveCommand = $resolveCommand
+    }
+}
+
 # ---------- banner ----------
 
 Write-Host ''
@@ -120,11 +216,12 @@ $frontendDir = Join-Path $RepoRoot 'frontend'
 Push-Location $frontendDir
 try {
     $buildOutput = npm run build 2>&1
-    $buildExit   = $LASTEXITCODE
+    $buildExit = $LASTEXITCODE
     if ($buildExit -ne 0) {
         $tail = ($buildOutput | Select-Object -Last 3) -join ' | '
         Write-Gate 'Frontend build (tsc + vite)' 'FAIL' "exit $buildExit - $tail"
-    } else {
+    }
+    else {
         $builtLine = ''
         foreach ($line in $buildOutput) {
             if ($line -match 'built in') { $builtLine = $line; break }
@@ -136,7 +233,8 @@ try {
         }
         Write-Gate 'Frontend build (tsc + vite)' 'PASS' $builtLine
     }
-} finally {
+}
+finally {
     Pop-Location
 }
 
@@ -146,17 +244,19 @@ Write-Host '  Gate 2: Root npm audit --omit=dev' -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
     $auditOutput = npm audit --omit=dev 2>&1
-    $auditExit   = $LASTEXITCODE
+    $auditExit = $LASTEXITCODE
     if ($auditExit -ne 0) {
         $vulnLine = ''
         foreach ($line in $auditOutput) {
             if ($line -match 'vulnerabilit') { $vulnLine = $line; break }
         }
         Write-Gate 'Root npm audit --omit=dev' 'FAIL' $vulnLine
-    } else {
+    }
+    else {
         Write-Gate 'Root npm audit --omit=dev' 'PASS' '0 vulnerabilities'
     }
-} finally {
+}
+finally {
     Pop-Location
 }
 
@@ -166,17 +266,19 @@ Write-Host '  Gate 3: Frontend npm audit --omit=dev' -ForegroundColor Cyan
 Push-Location (Join-Path $RepoRoot 'frontend')
 try {
     $auditOutput = npm audit --omit=dev 2>&1
-    $auditExit   = $LASTEXITCODE
+    $auditExit = $LASTEXITCODE
     if ($auditExit -ne 0) {
         $vulnLine = ''
         foreach ($line in $auditOutput) {
             if ($line -match 'vulnerabilit') { $vulnLine = $line; break }
         }
         Write-Gate 'Frontend npm audit --omit=dev' 'FAIL' $vulnLine
-    } else {
+    }
+    else {
         Write-Gate 'Frontend npm audit --omit=dev' 'PASS' '0 vulnerabilities'
     }
-} finally {
+}
+finally {
     Pop-Location
 }
 
@@ -187,21 +289,24 @@ $webPkg = Join-Path $RepoRoot 'apps\web'
 $webPkgJson = Join-Path $webPkg 'package.json'
 if (-not (Test-Path $webPkgJson)) {
     Write-Gate 'apps/web npm audit' 'SKIP' 'no package.json'
-} else {
+}
+else {
     Push-Location $webPkg
     try {
         $auditOutput = npm audit 2>&1
-        $auditExit   = $LASTEXITCODE
+        $auditExit = $LASTEXITCODE
         if ($auditExit -ne 0) {
             $vulnLine = ''
             foreach ($line in $auditOutput) {
                 if ($line -match 'vulnerabilit') { $vulnLine = $line; break }
             }
             Write-Gate 'apps/web npm audit' 'FAIL' $vulnLine
-        } else {
+        }
+        else {
             Write-Gate 'apps/web npm audit' 'PASS' '0 vulnerabilities'
         }
-    } finally {
+    }
+    finally {
         Pop-Location
     }
 }
@@ -212,9 +317,10 @@ Write-Host '  Gate 5: pip-audit (apps/web/requirements.txt)' -ForegroundColor Cy
 $reqFile = Join-Path $RepoRoot 'apps\web\requirements.txt'
 if (-not (Test-Path $reqFile)) {
     Write-Gate 'pip-audit (requirements.txt)' 'SKIP' 'requirements.txt not found'
-} else {
+}
+else {
     $pipOutput = python -m pip_audit -r $reqFile 2>&1
-    $pipExit   = $LASTEXITCODE
+    $pipExit = $LASTEXITCODE
     if ($pipExit -ne 0) {
         $vulnLine = ''
         foreach ($line in $pipOutput) {
@@ -227,7 +333,8 @@ if (-not (Test-Path $reqFile)) {
         }
         if ($vulnLine -eq '') { $vulnLine = 'vulnerabilities detected (run with -VerboseOutput for details)' }
         Write-Gate 'pip-audit (requirements.txt)' 'FAIL' $vulnLine
-    } else {
+    }
+    else {
         Write-Gate 'pip-audit (requirements.txt)' 'PASS' '0 known vulnerabilities'
     }
 }
@@ -236,15 +343,16 @@ if (-not (Test-Path $reqFile)) {
 
 Write-Host '  Gate 6: Python compileall (apps/web)' -ForegroundColor Cyan
 $webAppDir = Join-Path $RepoRoot 'apps\web\app'
-$runPy     = Join-Path $RepoRoot 'apps\web\run.py'
+$runPy = Join-Path $RepoRoot 'apps\web\run.py'
 $compileTargets = @()
 if (Test-Path $webAppDir) { $compileTargets += $webAppDir }
-if (Test-Path $runPy)     { $compileTargets += $runPy }
+if (Test-Path $runPy) { $compileTargets += $runPy }
 if ($compileTargets.Count -eq 0) {
     Write-Gate 'Python compileall (apps/web)' 'SKIP' 'no Python sources'
-} else {
+}
+else {
     $compOutput = python -m compileall $compileTargets -q 2>&1
-    $compExit   = $LASTEXITCODE
+    $compExit = $LASTEXITCODE
     $errors = @()
     foreach ($line in $compOutput) {
         if ($line -match 'SyntaxError|Error') { $errors += $line }
@@ -253,11 +361,13 @@ if ($compileTargets.Count -eq 0) {
         $errDetail = ''
         if ($errors.Count -gt 0) {
             $errDetail = ($errors | Select-Object -First 3) -join '; '
-        } else {
+        }
+        else {
             $errDetail = "exit $compExit"
         }
         Write-Gate 'Python compileall (apps/web)' 'FAIL' $errDetail
-    } else {
+    }
+    else {
         $targetCount = $compileTargets.Count
         Write-Gate 'Python compileall (apps/web)' 'PASS' "$targetCount target(s) compiled clean"
     }
@@ -272,10 +382,12 @@ try {
     $scanExit = $LASTEXITCODE
     if ($scanExit -ne 0) {
         Write-Gate 'Deep error scan' 'FAIL' "deep-error-scanner exited $scanExit"
-    } else {
+    }
+    else {
         Write-Gate 'Deep error scan' 'PASS' '0 errors found'
     }
-} finally {
+}
+finally {
     Pop-Location
 }
 
@@ -288,16 +400,45 @@ try {
     $glueExit = $LASTEXITCODE
     if ($glueExit -ne 0) {
         Write-Gate 'Glue check' 'FAIL' "glue-check exited $glueExit"
-    } else {
+    }
+    else {
         Write-Gate 'Glue check' 'PASS' '0 integration gaps'
     }
-} finally {
+}
+finally {
     Pop-Location
 }
 
-# ---------- Gate 7: Git cleanliness ----------
+# ---------- Gate 7: Runtime error loop ----------
 
-Write-Host '  Gate 7: Git working tree cleanliness' -ForegroundColor Cyan
+Write-Host '  Gate 7: Runtime error loop' -ForegroundColor Cyan
+$runtimeLoopWrapper = Join-Path $RepoRoot 'runtime-error-loop.ps1'
+$runtimeLoopDoc = Join-Path $RepoRoot '0.dev-matrix\RUNTIME-ERROR-LOOP.md'
+$runtimeLoopDetection = Get-RuntimeLoopDetection
+$runtimeLoopMissing = @()
+if (-not (Test-Path $runtimeLoopWrapper)) { $runtimeLoopMissing += 'runtime-error-loop.ps1' }
+if (-not (Test-Path $runtimeLoopDoc)) { $runtimeLoopMissing += '0.dev-matrix/RUNTIME-ERROR-LOOP.md' }
+if ([string]::IsNullOrWhiteSpace($runtimeLoopDetection.CaptureCommand)) { $runtimeLoopMissing += 'capture command' }
+if ([string]::IsNullOrWhiteSpace($runtimeLoopDetection.ResolveCommand)) { $runtimeLoopMissing += 'resolve command' }
+
+if ($runtimeLoopMissing.Count -eq 0) {
+    $runtimeLoopDetail = "capture: $($runtimeLoopDetection.CaptureCommand) | resolve: $($runtimeLoopDetection.ResolveCommand)"
+    Write-Gate 'Runtime error loop' 'PASS' $runtimeLoopDetail
+}
+else {
+    $runtimeLoopDetail = 'missing: ' + ($runtimeLoopMissing -join ', ')
+    if (-not [string]::IsNullOrWhiteSpace($runtimeLoopDetection.CaptureCommand)) {
+        $runtimeLoopDetail += " | capture: $($runtimeLoopDetection.CaptureCommand)"
+    }
+    if (-not [string]::IsNullOrWhiteSpace($runtimeLoopDetection.ResolveCommand)) {
+        $runtimeLoopDetail += " | resolve: $($runtimeLoopDetection.ResolveCommand)"
+    }
+    Write-Gate 'Runtime error loop' 'FAIL' $runtimeLoopDetail
+}
+
+# ---------- Gate 8: Git cleanliness ----------
+
+Write-Host '  Gate 8: Git working tree cleanliness' -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
     # Refresh the git index so .gitignore changes take effect for status
@@ -305,11 +446,12 @@ try {
 
     # Collect porcelain status (short format)
     $gitStatusOutput = git status --porcelain 2>&1
-    $gitStatusExit   = $LASTEXITCODE
+    $gitStatusExit = $LASTEXITCODE
 
     if ($gitStatusExit -ne 0) {
         Write-Gate 'Git working tree cleanliness' 'FAIL' "git status exited $gitStatusExit"
-    } else {
+    }
+    else {
         $dirtyPaths = @()
         foreach ($line in $gitStatusOutput) {
             if ($line -match '^\s*$') { continue }
@@ -321,24 +463,27 @@ try {
         $blockingDirty = @($dirtyPaths | Where-Object { -not (Test-IsAllowedRuntimeDirtyPath $_) } | Select-Object -Unique)
         if ($blockingDirty.Count -gt 0) {
             $sample = ($blockingDirty | Select-Object -First 5) -join ' | '
-            $count  = $blockingDirty.Count
+            $count = $blockingDirty.Count
             Write-Gate 'Git working tree cleanliness' 'FAIL' "$count dirty path(s): $sample"
-        } elseif ($dirtyPaths.Count -gt 0) {
+        }
+        elseif ($dirtyPaths.Count -gt 0) {
             Write-Gate 'Git working tree cleanliness' 'PASS' 'only runtime handoff/evidence files are dirty'
-        } else {
+        }
+        else {
             Write-Gate 'Git working tree cleanliness' 'PASS' 'working tree clean'
         }
     }
-} finally {
+}
+finally {
     Pop-Location
 }
 
-# ---------- Gate 8: Tree hygiene ----------
+# ---------- Gate 9: Tree hygiene ----------
 
-Write-Host '  Gate 8: Tree hygiene' -ForegroundColor Cyan
+Write-Host '  Gate 9: Tree hygiene' -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
-    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\DOCUMENTATION-GOVERNANCE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md', '0.dev-matrix\CLOSING-DAY-HOOK.md', '0.dev-matrix\AI-HANDOFF.md')
+    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\DOCUMENTATION-GOVERNANCE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md', '0.dev-matrix\CLOSING-DAY-HOOK.md', '0.dev-matrix\AI-HANDOFF.md', '0.dev-matrix\RUNTIME-ERROR-LOOP.md')
     $missingDocs = $requiredDocs | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
     $requiredStandards = @(
         '0.dev-matrix\standards\CLOSING-DAY-STANDARD.md',
@@ -355,26 +500,28 @@ try {
     $junkNames = @('nul', '.DS_Store', 'Thumbs.db', 'Desktop.ini')
     $junkPaths = @(
         Get-ChildItem -Path $RepoRoot -Recurse -Force -File -ErrorAction SilentlyContinue |
-            Where-Object { $junkNames -contains $_.Name } |
-            Select-Object -ExpandProperty FullName
+        Where-Object { $junkNames -contains $_.Name } |
+        Select-Object -ExpandProperty FullName
     )
     $scanFiles = Get-ChildItem -Path $RepoRoot -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.FullName -notmatch '\\(node_modules|dist|coverage|logs|playwright-report|test-results|venv|\.venv|docs\\archive|0\.dev-matrix\\(test-reports|archive|backup|closeout-logs|error-logs)|\.git)\\' -and
-            $_.Extension -in @('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.json', '.yml', '.yaml', '.toml', '.ini', '.env', '.ps1', '.sh', '.bat', '.md', '.html', '.css', '.sql', '.dockerfile')
-        }
+    Where-Object {
+        $_.FullName -notmatch '\\(node_modules|dist|coverage|logs|playwright-report|test-results|venv|\.venv|docs\\archive|0\.dev-matrix\\(test-reports|archive|backup|closeout-logs|error-logs)|\.git)\\' -and
+        $_.Extension -in @('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.json', '.yml', '.yaml', '.toml', '.ini', '.env', '.ps1', '.sh', '.bat', '.md', '.html', '.css', '.sql', '.dockerfile')
+    }
     $conflictHit = $scanFiles | Select-String -Pattern '^(<{7}|={7}|>{7})( .*)?$' | Select-Object -First 1
     $treeClean = ($junkPaths.Count -eq 0) -and ($null -eq $conflictHit)
 
     if ($missingStandards.Count -eq 0) {
         Write-Gate 'Standards presence' 'PASS' 'required standards present'
-    } else {
+    }
+    else {
         Write-Gate 'Standards presence' 'FAIL' ('missing: ' + ($missingStandards -join ', '))
     }
 
     if ($missingDocs.Count -eq 0) {
         Write-Gate 'Runtime docs' 'PASS' 'tree hygiene, launch checklist, closing-day hook, documentation governance, and handoff present'
-    } else {
+    }
+    else {
         Write-Gate 'Runtime docs' 'FAIL' ('missing: ' + ($missingDocs -join ', '))
     }
 
@@ -385,7 +532,8 @@ try {
     if (-not (Test-Path $pauseScript)) { $fastWorkflowMissing += 'pause-work.ps1' }
     if ($fastWorkflowMissing.Count -eq 0) {
         Write-Gate 'Fast handoff workflow' 'PASS' 'resume-work.ps1 and pause-work.ps1 present for fast session restart/stop'
-    } else {
+    }
+    else {
         Write-Gate 'Fast handoff workflow' 'FAIL' ('missing: ' + ($fastWorkflowMissing -join ', '))
     }
 
@@ -394,10 +542,12 @@ try {
         $handoffContent = Get-Content $handoffFile -Raw
         if ($handoffContent -match 'Operational proof:') {
             Write-Gate 'Operational proof contract' 'PASS' 'AI-HANDOFF includes the Operational proof handoff label'
-        } else {
+        }
+        else {
             Write-Gate 'Operational proof contract' 'FAIL' 'AI-HANDOFF missing Operational proof label in the handoff contract'
         }
-    } else {
+    }
+    else {
         Write-Gate 'Operational proof contract' 'FAIL' 'AI-HANDOFF.md not found'
     }
 
@@ -415,10 +565,12 @@ try {
         if (-not (Test-IsMeaningfulLaunchFocus $launchNextEarningStep)) { $launchFocusMissing += 'Next earning step' }
         if ($launchFocusMissing.Count -eq 0) {
             Write-Gate 'Launch focus contract' 'PASS' 'launch checklist includes product outcome/current launch slice/current blocker/next earning step'
-        } else {
+        }
+        else {
             Write-Gate 'Launch focus contract' 'FAIL' ('launch checklist missing focus lines: ' + ($launchFocusMissing -join ', '))
         }
-    } else {
+    }
+    else {
         Write-Gate 'Launch focus contract' 'FAIL' 'LAUNCH_CHECKLIST.md not found'
     }
 
@@ -428,15 +580,18 @@ try {
         $docGovOk = ($docGovContent -match 'Approved Documentation Zones') -and ($docGovContent -match 'AI Rules')
         $docGovDetail = if ($docGovOk) { 'approved zones and AI rules recorded' } else { 'missing required sections in DOCUMENTATION-GOVERNANCE.md' }
         Write-Gate 'Documentation governance' ($(if ($docGovOk) { 'PASS' } else { 'FAIL' })) $docGovDetail
-    } else {
+    }
+    else {
         Write-Gate 'Documentation governance' 'FAIL' 'DOCUMENTATION-GOVERNANCE.md not found'
     }
 
     if ($treeClean) {
         Write-Gate 'Tree hygiene' 'PASS' 'active code tree is clean'
-    } elseif ($junkPaths.Count -gt 0) {
+    }
+    elseif ($junkPaths.Count -gt 0) {
         Write-Gate 'Tree hygiene' 'FAIL' ("junk artifact: " + $junkPaths[0])
-    } else {
+    }
+    else {
         Write-Gate 'Tree hygiene' 'FAIL' ("merge marker: " + $conflictHit.Path + ':' + $conflictHit.LineNumber)
     }
 
@@ -447,13 +602,16 @@ try {
         $staleDays = ((Get-Date) - $stateLastWrite).Days
         if ($staleDays -gt 7) {
             Write-Gate 'State freshness' 'FAIL' "STATE.md last modified $staleDays days ago (stale >7 days)"
-        } else {
+        }
+        else {
             Write-Gate 'State freshness' 'PASS' "STATE.md modified $staleDays day(s) ago"
         }
-    } else {
+    }
+    else {
         Write-Gate 'State freshness' 'FAIL' 'STATE.md not found'
     }
-} finally {
+}
+finally {
     Pop-Location
 }
 
@@ -465,7 +623,8 @@ $total = $script:PassCount + $script:FailCount + $script:SkipCount
 if ($script:FailCount -eq 0) {
     $p = $script:PassCount
     Write-Host "  RESULT: ALL GATES PASSED ($p/$total)" -ForegroundColor Green
-} else {
+}
+else {
     $f = $script:FailCount
     $p = $script:PassCount
     $s = $script:SkipCount

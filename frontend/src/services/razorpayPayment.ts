@@ -83,9 +83,9 @@ export function getRazorpayConfig() {
       ? null
       : RAZORPAY_CONFIG.allowTestModeOnProduction && RAZORPAY_CONFIG.isTestMode
         ? null
-      : !isConfigured
-        ? 'Missing VITE_RAZORPAY_KEY_ID'
-        : 'Razorpay is still using a test key',
+        : !isConfigured
+          ? 'Missing VITE_RAZORPAY_KEY_ID'
+          : 'Razorpay is still using a test key',
   };
 }
 

@@ -10,9 +10,20 @@
 WATCH is the **always-on meta-operating layer** for the 0.dev-matrix development system.
 It binds every repo's VS Code session to the sprint state, Roo bridge retrieval, and close-day discipline automatically.
 
+## Runtime Error Loop
+
+Truck_Opti now exposes a repo-root runtime loop entrypoint:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\runtime-error-loop.ps1 -Mode latest
+```
+
+Current repo-detected paths are `npm run start` for capture and `powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\launch-check.ps1` for resolve. Use `latest` before runtime debugging so the next slice starts from the repo's real capture/resolve paths instead of assumptions.
+Current repo-detected paths are now `npm run track-errors` for capture and `npm run test:hidden-errors` for resolve. `npm run dev` and `npm test` also exist as lighter root wrappers over the frontend dev and unit-test lanes.
+
 | Layer | Mechanism | What it provides |
 |-------|-----------|-----------------|
-| **Session Context** | `AGENTS.md` + targeted `.github/instructions/*.instructions.md` | AI auto-loads repo-wide rules plus focused repo guidance at every chat start |
+| **Session Context** | `copilot-instructions.md` per repo | AI auto-loads repo state at every chat start |
 | **Semantic Retrieval** | `roo-code-index-bridge` MCP server from `D:\Github\roo-code-index-bridge-mcp` | Code-first semantic search and docs retrieval across repos |
 | **Architecture Retrieval** | `graphify` MCP wrapper from `D:\Github\tools\graphify-opencode-mcp.ps1` | Graph-backed architecture/context retrieval using each repo graph when present |
 | **AST Graph** | `code-review-graph` MCP server, per repo | Call graph, impact radius, blast-radius analysis, 22 MCP tools |
@@ -64,14 +75,13 @@ D:\Github\
 │   └── SPRINT-APRIL-2026.md         ← April 2026 sprint plan
 │
 ├── [repo]\
-│   ├── AGENTS.md                    ← Repo-wide AI contract / always-on rules
 │   ├── .github\
-│   │   ├── instructions\           ← Targeted repo guidance by surface / file pattern
+│   │   ├── copilot-instructions.md  ← Per-repo Watch context (auto-loaded)
 │   │   ├── agents\
 │   │   │   └── system-reconciler.agent.md
 │   │   └── hooks\
 │   │       ├── watch-session.json   ← Per-repo session hook
-│       └── delivery-intelligence.json ← Bridge to central delivery hub
+│   │       └── delivery-intelligence.json ← Bridge to central delivery hub
 │   ├── .openharness\
 │   │   └── skills\
 │   │       └── launch-revenue\
@@ -107,6 +117,26 @@ D:\Github\
 | `Truck_Opti_verify_packing` | Python | P0 Support | Launch |
 
 ---
+
+## Shared Asset Intake
+
+For repo-operations reuse, audit `D:\Github\Office_Scripts\Shared-scripts\` as an optional secondary source, not as the canonical automation root.
+
+Current audit snapshot (`2026-05-14`):
+
+- `openrouter-free-model-fallbacks.ts` is executable code and can help AI runtime model selection, but it belongs to product/provider fallback logic rather than 0.dev-matrix operations.
+- `Skills/canva-professional-book-editing/` is guidance-only and design-specific.
+- `Skills/chatgpt-nano-banana-image-generation/` is guidance-only and asset-pipeline-specific.
+
+Operational rule:
+
+- Prefer shared repo-operations helpers from `D:\Github\0.dev-matrix\` first.
+- Treat `Shared-scripts` skills as guidance only unless they directly automate handoff, close-day, resume/start-day, validation, guardrails, or repo-status work.
+- Treat shared AI/model-selection utilities such as `openrouter-free-model-fallbacks.ts` as product-runtime helpers, not governance helpers.
+- Do not copy non-operational helpers into repo governance just because they are shared.
+- Re-audit `Shared-scripts` only when new repo-operations assets land there.
+
+This keeps repo governance aligned to the actual shared automation root while still leaving a clear intake path for future reusable automation.
 
 ## Session Start Protocol
 

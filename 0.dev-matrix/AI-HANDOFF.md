@@ -6,6 +6,7 @@ Working rules:
 - Start every session by reading this file first, then `git status`, `AGENTS.md`, and any relevant `.github/instructions` or `.github/agents` files if they exist.
 - If `0.dev-matrix/resume-work.ps1` exists, run it before coding instead of starting with the full launch-check flow.
 - If `0.dev-matrix/pause-work.ps1` exists, use it before a short stop so the next restart can resume immediately.
+- For runtime failures, start with `powershell -ExecutionPolicy Bypass -File .\runtime-error-loop.ps1 -Mode latest`; this repo now detects `npm run track-errors` for capture and `npm run test:hidden-errors` for resolve, with `npm run dev` and `npm test` available as lighter root wrappers.
 - Fix root causes when possible and avoid unrelated churn.
 - Do not commit generated logs, screenshots, or temporary test artifacts unless they are the intended deliverable.
 - Before pushing, record what changed, how it was verified, and what still needs work.
@@ -26,6 +27,33 @@ Update protocol:
 - The latest entry should let the next AI continue from the exact checkpoint without re-discovering context.
 
 ## Handoff Log
+
+### 2026-05-14 (Copilot — runtime loop root scripts + launch-ready handoff)
+
+- Changed: added repo-root runtime wrappers and root npm script coverage for `track-errors`, `dev`, `test:hidden-errors`, and `test`, wired the repo-local launch-check wrapper plus runtime-loop enforcement/docs, and kept the current repo queue/governance updates in the tree for a clean commit/close-day pass.
+- Verified: `npm run test:hidden-errors` PASS (`deep-error-scanner: 0 errors`, `glue-check: 0 gaps / 23 warnings`, `frontend vitest: 8/8 tests`); `npm test` PASS (`frontend vitest: 8/8 tests`); `powershell -ExecutionPolicy Bypass -File .\runtime-error-loop.ps1 -Mode latest` now detects `npm run track-errors` and `npm run test:hidden-errors`; `npm run dev -- --host 127.0.0.1 --clearScreen false` served on `http://127.0.0.1:5173`; `npm run track-errors` started `node server.js` and wrote a capture log.
+- Operational proof: the repo-side app/runtime workflow now boots locally and has explicit root capture/resolve commands, so the remaining payment blocker is real Razorpay production credentials rather than missing webapp/runtime plumbing.
+- Continue from: rerun `npm run launch-check` on a clean committed tree, then use close-day output as the new restart point.
+- Next step: set real Razorpay production keys and rerun the payment config/proof lane once the clean-tree repo validations are green.
+- Blockers: `TO-103` real Razorpay production credentials remain the hard live-payment blocker; authenticated proof secrets/session remain the other owner-side dependency for repeatable live protected-flow proof.
+
+### 2026-05-14 (Copilot — shared-scripts intake boundary codified)
+
+- Changed: audited `D:\Github\Office_Scripts\Shared-scripts\` for reusable repo-operations assets and updated `0.dev-matrix/WATCH.md` with an explicit intake rule so future sessions do not re-audit unrelated shared design skills or non-operational helpers.
+- Verified: exact inventory check found only five files under `Shared-scripts`: one executable helper (`openrouter-free-model-fallbacks.ts`) and four design-skill files under Canva and ChatGPT/Nano Banana image-generation skills. None automate close-day, resume/start-day, handoff quality, validation runners, repo-status reporting, or guardrail checks.
+- Operational proof: this repo should keep using `D:\Github\0.dev-matrix\` as the canonical shared repo-operations source; the shared-scripts audit confirmed there is nothing safer or more relevant there to replace current repo-operation surfaces right now.
+- Continue from: keep the current repo queue and launch slice in `TASK.md` / `STATE.md`; treat `Office_Scripts\Shared-scripts` as optional and currently non-operational for repo governance.
+- Next step: resume the existing queue instead of widening into unrelated shared asset copying.
+- Blockers: none from `Shared-scripts`; only the repo's existing queue or launch blockers remain.
+
+### 2026-05-14 (Copilot — contract artifact + queue truth alignment)
+
+- Changed: added the accepted sellable-product contract manifest at `0.dev-matrix/SPEC.json` and synced the top of `0.dev-matrix/TASK.md` plus `0.dev-matrix/STATE.md` to the repo-specific queue so `TO-101` and `TO-102` are the active launch slice, `TO-103` is the explicit human-blocked Razorpay credential task, and `TO-104` is the planned evidence-capture follow-through.
+- Verified: parsed `0.dev-matrix/SPEC.json` successfully and reran `powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\sync-two-task-loop.ps1 -Mode manual`, which returned `active: TO-101, TO-102` and `next: TO-104` with `normalization: none`.
+- Operational proof: TruckOpti now has one accepted contract artifact tied directly to the current sellable-product launch slice, and the canonical queue can be resumed without falling back to the legacy `T-*` board.
+- Continue from: keep launch work constrained to `TO-101`/`TO-102` until the live Razorpay blocker in `TO-103` is resolved; do not reopen broad backlog discovery while the sellable-product slice is already bounded.
+- Next step: use the accepted contract plus the existing launch checklist to run the post-credential proof commands once real Razorpay production credentials exist, then capture `TO-104` evidence across task, state, handoff, and closeout.
+- Blockers: `TO-103` live Razorpay production credentials remain human-blocked; authenticated proof secrets/session remain the other owner-side proof dependency already documented in the launch checklist.
 
 ### 2026-05-13 (Copilot-073 — subscription page + route-contract canonicalization)
 

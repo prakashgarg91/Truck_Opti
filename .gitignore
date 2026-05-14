@@ -35,6 +35,7 @@ logs/
 0.dev-matrix/closeout-logs/
 0.dev-matrix/test-reports/launch-check-*.log
 0.dev-matrix/test-reports/launch-check-status.json
+0.dev-matrix/test-reports/hidden-error-latest.json
 0.dev-matrix/test-reports/session-start-maintenance-*.log
 0.dev-matrix/test-reports/session-start-maintenance-status.json
 
@@ -52,6 +53,7 @@ venv/
 
 # Temp files
 _gitstatus.txt
+scripts/tmp-razorpay-checkout-probe.cjs
 
 # Supabase local
 supabase/.temp/

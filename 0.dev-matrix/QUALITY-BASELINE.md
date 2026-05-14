@@ -63,7 +63,7 @@ Common patterns:
 ## DOCUMENTATION DISCIPLINE
 
 - **Search before creating.** Before writing a new doc, search for existing ones.
-- **Canonical locations only.** `AGENTS.md`, relevant `.github/instructions/*.instructions.md`, and `0.dev-matrix/` docs must stay aligned — agent instructions, hooks, and context files must not drift into parallel systems.
+- **Canonical locations only.** `AGENTS.md`, `.github/copilot-instructions.md`, and `0.dev-matrix/` docs must stay aligned — agent instructions, hooks, and context files must not drift into parallel systems.
 - **Archive, don't leave duplicates.** Superseded docs go to `archive/` or are deleted, not left active alongside the replacement.
 - **Keep `AI-HANDOFF.md` current.** Every session ends with an updated handoff so work continues from a specific checkpoint, not from scratch.
 

@@ -45,7 +45,7 @@ powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\graphify.ps1 -Refresh
 This runs:
 
 ```powershell
-d:\Github\Truck_Opti\.venv\Scripts\python.exe -m graphify update .
+d:\Github\0.dev-matrix\.venv\Scripts\python.exe -m graphify update .
 ```
 
 Outputs:
@@ -53,8 +53,6 @@ Outputs:
 - `graphify-out/GRAPH_REPORT.md`
 - `graphify-out/graph.json`
 - `graphify-out/graph.html`
-
-This AST refresh scans the current filesystem, so it can surface brand-new untracked files before incremental `code-review-graph` change detection sees them.
 
 If you also want a local agent-readable wiki from the current graph:
 
@@ -75,9 +73,14 @@ If a graph already exists:
 powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\graphify.ps1 -Status
 ```
 
-The repo start-of-day helper `0.dev-matrix/session-start-maintenance.ps1` is designed to run this status check automatically, refresh `code-review-graph`, refresh Graphify when the root report is stale or missing, and check Graphify hook status. `0.dev-matrix/resume-work.ps1` surfaces that maintenance result.
+For repos that implement a start-of-day maintenance helper, the preferred startup behavior is:
 
-The generated status JSON and timestamped `session-start-maintenance-*.log` files under `0.dev-matrix/test-reports/` are runtime artifacts for that helper and should remain untracked in git, just like the launch-check status outputs.
+- refresh `code-review-graph` incrementally
+- check Graphify freshness with `graphify.ps1 -Status`
+- refresh Graphify only when the report is stale or missing
+- check `graphify.ps1 -HooksStatus`
+
+Use this freshness-aware startup path instead of forcing a full Graphify rebuild on every session start.
 
 Then read:
 
@@ -133,11 +136,11 @@ Suggested MCP server snippet for a user-managed `.vscode/mcp.json`:
 {
   "graphify": {
     "type": "stdio",
-    "command": "d:/Github/Truck_Opti/.venv/Scripts/python.exe",
+    "command": "d:/Github/0.dev-matrix/.venv/Scripts/python.exe",
     "args": [
       "-m",
       "graphify.serve",
-      "d:/Github/Truck_Opti/graphify-out/graph.json"
+      "d:/Github/0.dev-matrix/graphify-out/graph.json"
     ]
   }
 }
@@ -161,7 +164,6 @@ This is optional. Enable it only if the graph becomes part of your normal review
 - Prefer AST-only refresh for daily work in this repo.
 - Use full `/graphify .` only when non-code context materially changes the answer.
 - Refresh the graph after module-boundary, routing, automation, infrastructure, or cross-file integration changes.
-- If `npm run graph:update` warns that the Graphify skill/package versions drifted, run `graphify install` and record the warning in handoff until it is cleared.
 - Read `graphify-out/GRAPH_REPORT.md` before architecture/codebase questions when it exists.
 - Use Graphify report sections such as God Nodes and Surprising Connections to spot structural gaps before deeper review.
 - Treat Graphify as context acceleration, not source-of-truth evidence.

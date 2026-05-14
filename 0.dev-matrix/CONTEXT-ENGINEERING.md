@@ -31,12 +31,6 @@ Step 5 → review_changes(repo_root="<path>")              final diff review
 
 **Target: ≤5 tool calls, ≤800 total tokens of graph context per task.**
 
-Important local caveat:
-
-- incremental `code-review-graph` refresh and change-detection are strongest on tracked files
-- brand-new untracked files may not appear in blast-radius output yet
-- when a slice adds new files, confirm them with direct file reads plus build/test validation, or track them before relying on graph-only change coverage
-
 ---
 
 ## SEMANTIC RETRIEVAL (ROO BRIDGE)
@@ -53,18 +47,6 @@ When searching for code by **intent or behaviour** (not exact string):
 2. `grep_search` / regex (exact string matches)
 3. `file_search` (filename patterns)
 4. `read_file` (after search has narrowed candidates)
-
----
-
-## MCP READINESS / COMPLETION AUDIT LOOP
-
-For launch-readiness, completion, or development-flow audits:
-
-1. Check Roo bridge health first so you know whether search is true Qdrant or fallback mode.
-2. Use Roo bridge to discover the current blocker, owning files, and repo workflow anchors.
-3. Read `graphify-out/GRAPH_REPORT.md` or refresh Graphify to see structural hotspots and community clusters.
-4. Use `code-review-graph` only after the likely owning slice is known, then check blast radius on that specific slice.
-5. Confirm every finding with real files and executable validation before updating `STATE.md`, `TASK.md`, or `AI-HANDOFF.md`.
 
 ---
 
@@ -103,20 +85,18 @@ If a change only "works" with huge prompts and weak validation, the context syst
 
 ## AI-HANDOFF.MD CONTRACT
 
-Every session MUST end with the repo-local `AI-HANDOFF.md` contract, not an invented parallel format.
+Every session MUST end with `AI-HANDOFF.md` containing:
 
-In Truck_Opti, the required continuation fields are:
+```markdown
+## Task: <name>
+## Status: <completed | in-progress | blocked>
+## Last checkpoint: <what was done>
+## Next step: <exact first action for next session>
+## Blockers: <human actions needed, if any>
+## Validated by: <command + result>
+```
 
-- `Changed:`
-- `Verified:`
-- `Operational proof:`
-- `Continue from:`
-- `Next step:`
-- `Blockers:`
-
-If another repo uses a stricter local handoff contract, use that repo's exact required fields.
-
-Without a continuation-grade handoff, the next session restarts from scratch. That is wasted tokens and wasted time.
+Without this, the next session restarts from scratch. That is wasted tokens and wasted time.
 
 ---
 
