@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { PRICING_TIERS, type PricingTier } from '../config/pricing';
 
 // ============= SUBSCRIPTION PLAN TYPES =============
 export interface SubscriptionPlan {
@@ -64,6 +65,49 @@ export interface Invoice {
   pdf_url?: string;
 }
 
+function mapPlanFeatures(features: unknown): string[] {
+  if (typeof features === 'string') {
+    try {
+      const parsed = JSON.parse(features)
+      return Array.isArray(parsed) ? parsed.filter((feature): feature is string => typeof feature === 'string') : []
+    } catch {
+      return []
+    }
+  }
+
+  return Array.isArray(features) ? features.filter((feature): feature is string => typeof feature === 'string') : []
+}
+
+function mapSupportLevel(level: PricingTier['limits']['supportLevel']): SubscriptionPlan['support_level'] {
+  return level === 'community' ? 'email' : level
+}
+
+function mapPricingTierToSubscriptionPlan(tier: PricingTier): SubscriptionPlan {
+  return {
+    id: tier.id,
+    name: tier.name,
+    name_hi: tier.name,
+    tier: tier.id as SubscriptionPlan['tier'],
+    price_monthly: tier.monthlyPrice * 100,
+    price_yearly: tier.yearlyPrice * 100,
+    trucks_limit: tier.limits.trucksManaged,
+    shipments_monthly: tier.limits.shipmentsPerMonth,
+    users_limit: tier.limits.users,
+    storage_gb: tier.limits.storageGB,
+    api_calls_monthly: tier.limits.apiCallsPerMonth,
+    sms_included: tier.limits.smsOtpPerMonth,
+    maps_requests_monthly: tier.limits.routeOptimizations,
+    support_level: mapSupportLevel(tier.limits.supportLevel),
+    features: tier.features,
+    is_active: true,
+  };
+}
+
+function getFallbackPlan(identifier: string): SubscriptionPlan | null {
+  const matchedTier = PRICING_TIERS.find((tier) => tier.id === identifier)
+  return matchedTier ? mapPricingTierToSubscriptionPlan(matchedTier) : null
+}
+
 // ============= SUBSCRIPTION PLANS API =============
 export const subscriptionPlansApi = {
   // Get all active plans
@@ -77,7 +121,7 @@ export const subscriptionPlansApi = {
     if (error) throw error;
     return (data || []).map(plan => ({
       ...plan,
-      features: typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features
+      features: mapPlanFeatures(plan.features)
     }));
   },
 
@@ -89,10 +133,10 @@ export const subscriptionPlansApi = {
       .eq('tier', tier)
       .single();
 
-    if (error) return null;
+    if (error) return getFallbackPlan(tier);
     return {
       ...data,
-      features: typeof data.features === 'string' ? JSON.parse(data.features) : data.features
+      features: mapPlanFeatures(data.features)
     };
   },
 
@@ -104,10 +148,17 @@ export const subscriptionPlansApi = {
       .eq('id', id)
       .single();
 
-    if (error) return null;
+    if (error) {
+      return await this.getByTier(id) || getFallbackPlan(id);
+    }
+
+    if (!data) {
+      return await this.getByTier(id) || getFallbackPlan(id);
+    }
+
     return {
       ...data,
-      features: typeof data.features === 'string' ? JSON.parse(data.features) : data.features
+      features: mapPlanFeatures(data.features)
     };
   }
 };
