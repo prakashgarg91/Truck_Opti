@@ -138,7 +138,7 @@ export default function SubscriptionPage() {
   }
   const statusLabel = isAdmin ? 'Admin Access' : buildStatusLabel(status)
   const planName = isAdmin ? 'Platform Admin Access' : plan?.name || 'Free Plan'
-  const recentInvoices = invoices.slice(0, 5)
+  const invoiceHistory = invoices
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4 md:p-8">
@@ -299,7 +299,7 @@ export default function SubscriptionPage() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Receipt className="h-5 w-5 text-primary-600" />
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent invoices</h2>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Invoice history</h2>
                 </div>
                 <button
                   onClick={() => refetch()}
@@ -313,7 +313,7 @@ export default function SubscriptionPage() {
                 <div className="mt-6 flex items-center justify-center py-10">
                   <RefreshCw className="h-6 w-6 animate-spin text-primary-600" />
                 </div>
-              ) : recentInvoices.length === 0 ? (
+              ) : invoiceHistory.length === 0 ? (
                 <EmptyState
                   icon={Receipt}
                   title="No invoices yet"
@@ -334,7 +334,7 @@ export default function SubscriptionPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {recentInvoices.map((invoice: Invoice) => (
+                      {invoiceHistory.map((invoice: Invoice) => (
                         <tr key={invoice.id}>
                           <td className="py-3 pr-4">
                             <p className="font-medium text-slate-900 dark:text-white">{invoice.invoice_number}</p>

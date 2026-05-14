@@ -84,6 +84,9 @@ export default function DriverTripPage() {
   const [submitting, setSubmitting] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'starting' | 'active' | 'error'>('idle')
+  const [gpsMessage, setGpsMessage] = useState('GPS tracking will start when the journey begins.')
+  const [lastLocationUpdateAt, setLastLocationUpdateAt] = useState<string | null>(null)
 
   // GPS tracking refs
   const watchIdRef = useRef<number | null>(null)
@@ -133,24 +136,87 @@ export default function DriverTripPage() {
     fetchTrip()
   }, [fetchTrip])
 
+  const upsertDriverLocation = useCallback(async (position: GeolocationPosition) => {
+    if (!driver?.id) {
+      return
+    }
+
+    const payload = {
+      driver_id: driver.id,
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      heading: position.coords.heading ?? null,
+      speed_kmh: position.coords.speed != null ? position.coords.speed * 3.6 : null,
+      accuracy_m: position.coords.accuracy,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error } = await supabase.from('driver_locations').upsert(payload)
+
+    if (error) {
+      logger.error('[DriverTripPage] driver location upsert failed', error)
+      setGpsStatus('error')
+      setGpsMessage('Location sharing could not be saved. Please retry with GPS enabled.')
+      return
+    }
+
+    setGpsStatus('active')
+    setGpsMessage('Live location is being shared with the customer and agency.')
+    setLastLocationUpdateAt(payload.updated_at)
+  }, [driver?.id])
+
+  const handleGeolocationError = useCallback((error: GeolocationPositionError) => {
+    logger.error('[DriverTripPage] geolocation failed', error)
+    setGpsStatus('error')
+
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        setGpsMessage('Location permission is blocked. Enable GPS permission for live tracking.')
+        break
+      case error.POSITION_UNAVAILABLE:
+        setGpsMessage('Current location is unavailable. Move to a better-signal area and retry.')
+        break
+      case error.TIMEOUT:
+        setGpsMessage('Location lookup timed out. Keep GPS on and try again.')
+        break
+      default:
+        setGpsMessage('Live location could not start. Check GPS and internet, then retry.')
+        break
+    }
+  }, [])
+
   // GPS tracking when in_transit
   useEffect(() => {
-    if (step !== 'in_transit' || !driver?.id) return
-    if (!navigator.geolocation) return
+    if (step !== 'in_transit' || !driver?.id) {
+      if (step !== 'in_transit') {
+        setGpsStatus('idle')
+        setGpsMessage('GPS tracking will start when the journey begins.')
+      }
+      return
+    }
+
+    if (!navigator.geolocation) {
+      setGpsStatus('error')
+      setGpsMessage('This device does not support browser geolocation for live tracking.')
+      return
+    }
+
+    setGpsStatus('starting')
+    setGpsMessage('Starting live GPS tracking...')
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        void upsertDriverLocation(position)
+      },
+      handleGeolocationError,
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+    )
 
     watchIdRef.current = navigator.geolocation.watchPosition(
-      async (pos) => {
-        await supabase.from('driver_locations').upsert({
-          driver_id: driver.id,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          heading: pos.coords.heading ?? null,
-          speed_kmh: pos.coords.speed != null ? pos.coords.speed * 3.6 : null,
-          accuracy_m: pos.coords.accuracy,
-          updated_at: new Date().toISOString(),
-        })
+      (position) => {
+        void upsertDriverLocation(position)
       },
-      () => { /* silently fail location errors */ },
+      handleGeolocationError,
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 30000 }
     )
 
@@ -160,7 +226,7 @@ export default function DriverTripPage() {
         watchIdRef.current = null
       }
     }
-  }, [step, driver?.id])
+  }, [driver?.id, handleGeolocationError, step, upsertDriverLocation])
 
   const persistJobProgress = async (newStatus?: string | null, extra: Record<string, unknown> = {}) => {
     if (!job?.id) return false
@@ -322,7 +388,8 @@ export default function DriverTripPage() {
 
   const openMaps = (address: string) => {
     const encoded = encodeURIComponent(address)
-    window.open(`https://maps.google.com/?q=${encoded}`, '_blank')
+    const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encoded}`
+    window.open(directionsUrl, '_blank', 'noopener,noreferrer')
   }
 
   if (loading) {
@@ -596,6 +663,32 @@ export default function DriverTripPage() {
               <p className="text-sm text-green-700 dark:text-green-400">
                 GPS location is being shared with the customer in real-time.
               </p>
+            </div>
+            <div className={`rounded-2xl border p-4 ${gpsStatus === 'error'
+              ? 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/20'
+              : gpsStatus === 'active'
+                ? 'border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-900/20'
+                : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800'
+              }`}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">GPS status</p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{gpsMessage}</p>
+                </div>
+                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${gpsStatus === 'error'
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                  : gpsStatus === 'active'
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                  }`}>
+                  {gpsStatus === 'active' ? 'Active' : gpsStatus === 'starting' ? 'Starting' : gpsStatus === 'error' ? 'Attention needed' : 'Idle'}
+                </span>
+              </div>
+              {lastLocationUpdateAt && (
+                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  Last location sync: {new Date(lastLocationUpdateAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </p>
+              )}
             </div>
             {shipment?.destination && (
               <button

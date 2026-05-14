@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
-import { Wallet, TrendingUp, Calendar, CheckCircle2, RefreshCw, DollarSign, X, AlertCircle } from 'lucide-react'
+import { Wallet, TrendingUp, Calendar, CheckCircle2, RefreshCw, DollarSign, X, AlertCircle, Download } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { formatCurrency } from '../utils/formatters'
+import { downloadCsv, downloadJson, downloadXlsx, type ExportColumn } from '../utils/dataExport'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 
@@ -18,10 +19,19 @@ interface JobRecord {
   delivered_at: string | null
   status: string
   shipments?: {
+    shipment_id?: string
     origin: string
     destination: string
     estimated_cost: number
   }
+}
+
+interface TripEarningRow {
+  tripId: string
+  shipmentRef: string
+  route: string
+  deliveredOn: string
+  earning: number
 }
 
 function calculateAvailableBalance(totalEarned: number, payouts: { amount: number; status: string }[]) {
@@ -97,7 +107,7 @@ export default function DriverEarningsPage() {
     setLoading(true)
     let query = supabase
       .from('job_offers')
-      .select('id, delivered_at, status, shipments(origin, destination, estimated_cost)')
+      .select('id, delivered_at, status, shipments(shipment_id, origin, destination, estimated_cost)')
       .eq('driver_id', drId)
       .eq('status', 'delivered')
       .order('delivered_at', { ascending: false })
@@ -118,6 +128,7 @@ export default function DriverEarningsPage() {
         status: job.status as string,
         shipments: shipment
           ? {
+            shipment_id: (shipment as Record<string, unknown>).shipment_id as string | undefined,
             origin: (shipment as Record<string, unknown>).origin as string,
             destination: (shipment as Record<string, unknown>).destination as string,
             estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
@@ -175,6 +186,49 @@ export default function DriverEarningsPage() {
   }
 
   const totalEarnings = jobs.reduce((sum, j) => sum + (j.shipments?.estimated_cost || 0), 0)
+  const tripRows: TripEarningRow[] = jobs.map((job) => ({
+    tripId: job.id,
+    shipmentRef: job.shipments?.shipment_id || job.id.slice(-8).toUpperCase(),
+    route: `${job.shipments?.origin || '—'} → ${job.shipments?.destination || '—'}`,
+    deliveredOn: new Date(job.delivered_at || Date.now()).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }),
+    earning: job.shipments?.estimated_cost || 0,
+  }))
+
+  const tripExportColumns: ExportColumn<TripEarningRow>[] = [
+    { label: 'Trip ID', value: (row) => row.tripId },
+    { label: 'Shipment Ref', value: (row) => row.shipmentRef },
+    { label: 'Route', value: (row) => row.route },
+    { label: 'Delivered On', value: (row) => row.deliveredOn },
+    { label: 'Earning (INR)', value: (row) => row.earning },
+  ]
+
+  const handleExport = async (format: 'csv' | 'json' | 'xlsx') => {
+    if (tripRows.length === 0) {
+      toast.error('No trip earnings available to export')
+      return
+    }
+
+    const fileBase = `driver-earnings-${period}-${new Date().toISOString().slice(0, 10)}`
+
+    try {
+      if (format === 'csv') {
+        downloadCsv(tripRows, tripExportColumns, `${fileBase}.csv`)
+      } else if (format === 'json') {
+        downloadJson(tripRows, `${fileBase}.json`)
+      } else {
+        await downloadXlsx(tripRows, tripExportColumns, `${fileBase}.xlsx`, 'Trip Earnings')
+      }
+
+      toast.success(`${format.toUpperCase()} export ready`)
+    } catch (error) {
+      logger.error('[DriverEarnings] export failed:', error)
+      toast.error('Failed to export trip earnings')
+    }
+  }
 
   // Group by date
   const byDate: Record<string, EarningSummary> = {}
@@ -271,11 +325,50 @@ export default function DriverEarningsPage() {
               </div>
             </div>
 
+            {/* Per-trip earnings */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h3 className="font-semibold text-slate-700 dark:text-slate-300 text-sm">Per-Trip Earnings</h3>
+                  <p className="text-xs text-slate-400">Filtered by the currently selected period</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(['csv', 'xlsx', 'json'] as const).map((format) => (
+                    <button
+                      key={format}
+                      onClick={() => void handleExport(format)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <Download size={12} />
+                      {format.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {tripRows.length > 0 ? (
+                <div className="divide-y divide-slate-50 dark:divide-slate-700/40">
+                  {tripRows.map((trip) => (
+                    <div key={trip.tripId} className="px-4 py-3 flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{trip.route}</p>
+                        <p className="text-xs text-slate-400">#{trip.shipmentRef} • {trip.deliveredOn}</p>
+                      </div>
+                      <p className="text-sm font-bold text-green-600 dark:text-green-400 whitespace-nowrap">{formatCurrency(trip.earning)}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                  No trip earnings in this period
+                </div>
+              )}
+            </div>
+
             {/* Daily breakdown */}
             {dailySummary.length > 0 ? (
               <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-                  <h3 className="font-semibold text-slate-700 dark:text-slate-300 text-sm">Daily Breakdown</h3>
+                  <h3 className="font-semibold text-slate-700 dark:text-slate-300 text-sm">Daily Summary</h3>
                 </div>
                 <div className="divide-y divide-slate-50 dark:divide-slate-700/40">
                   {dailySummary.map(day => (

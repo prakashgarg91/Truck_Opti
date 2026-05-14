@@ -3,6 +3,7 @@ import { FileText, TrendingUp, Download, Clock, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { formatCurrency } from '../utils/formatters'
+import { downloadCsv, downloadJson, downloadXlsx, type ExportColumn } from '../utils/dataExport'
 import { logger } from '../utils/logger'
 import toast from 'react-hot-toast'
 
@@ -20,6 +21,16 @@ interface DeliveredJob {
   destination: string
   updated_at: string
   shipment_id: string
+}
+
+interface AgencyExportRow {
+  shipmentId: string
+  origin: string
+  destination: string
+  deliveredDate: string
+  taxableValue: number
+  gstAmount: number
+  invoiceTotal: number
 }
 
 // GST on freight: 5% of taxable value
@@ -93,46 +104,61 @@ export default function AgencyBillingPage() {
 
   useEffect(() => { fetchBilling() }, [fetchBilling])
 
-  const exportMonthlyCsv = (reportMonth: string) => {
-    const reportJobs = deliveredJobs.filter((job) => job.updated_at.slice(0, 7) === reportMonth)
+  const buildExportRows = (reportMonth?: string): AgencyExportRow[] => {
+    const reportJobs = reportMonth
+      ? deliveredJobs.filter((job) => job.updated_at.slice(0, 7) === reportMonth)
+      : deliveredJobs
 
-    if (reportJobs.length === 0) {
-      toast.error('No delivered jobs found for this report month')
+    return reportJobs.map((job) => {
+      const gstAmount = Number((job.fare * GST_RATE).toFixed(2))
+      const invoiceTotal = Number((job.fare + gstAmount).toFixed(2))
+
+      return {
+        shipmentId: job.shipment_id || job.id.slice(-8),
+        origin: job.origin,
+        destination: job.destination,
+        deliveredDate: new Date(job.updated_at).toLocaleDateString('en-IN'),
+        taxableValue: job.fare,
+        gstAmount,
+        invoiceTotal,
+      }
+    })
+  }
+
+  const exportColumns: ExportColumn<AgencyExportRow>[] = [
+    { label: 'Shipment ID', value: (row) => row.shipmentId },
+    { label: 'Origin', value: (row) => row.origin },
+    { label: 'Destination', value: (row) => row.destination },
+    { label: 'Delivered Date', value: (row) => row.deliveredDate },
+    { label: 'Taxable Value (INR)', value: (row) => row.taxableValue },
+    { label: 'GST 5% (INR)', value: (row) => row.gstAmount },
+    { label: 'Invoice Total (INR)', value: (row) => row.invoiceTotal },
+  ]
+
+  const handleExport = async (format: 'csv' | 'json' | 'xlsx', reportMonth?: string) => {
+    const rows = buildExportRows(reportMonth)
+
+    if (rows.length === 0) {
+      toast.error(reportMonth ? 'No delivered jobs found for this report month' : 'No delivered jobs available to export')
       return
     }
 
-    const headers = ['Shipment ID', 'Origin', 'Destination', 'Delivered Date', 'Taxable Value (INR)', 'GST 5% (INR)', 'Invoice Total (INR)']
-    const rows = reportJobs.map((job) => {
-      const gstAmount = Number((job.fare * GST_RATE).toFixed(2))
-      const totalAmount = Number((job.fare + gstAmount).toFixed(2))
+    const suffix = reportMonth ?? 'all-delivered'
 
-      return [
-        job.shipment_id || job.id.slice(-8),
-        job.origin,
-        job.destination,
-        new Date(job.updated_at).toLocaleDateString('en-IN'),
-        job.fare,
-        gstAmount,
-        totalAmount,
-      ]
-    })
+    try {
+      if (format === 'csv') {
+        downloadCsv(rows, exportColumns, `truckopti-agency-earnings-${suffix}.csv`)
+      } else if (format === 'json') {
+        downloadJson(rows, `truckopti-agency-earnings-${suffix}.json`)
+      } else {
+        await downloadXlsx(rows, exportColumns, `truckopti-agency-earnings-${suffix}.xlsx`, 'Agency Earnings')
+      }
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `truckopti-gstr1-${reportMonth}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-
-    toast.success('CSV exported successfully!')
+      toast.success(`${format.toUpperCase()} exported successfully!`)
+    } catch (error) {
+      logger.error('[AgencyBillingPage] export failed:', error)
+      toast.error('Failed to export delivered jobs')
+    }
   }
 
   const generateInvoice = async (job: DeliveredJob) => {
@@ -202,13 +228,18 @@ export default function AgencyBillingPage() {
                 <FileText size={16} className="text-slate-400" />
                 <span className="text-sm text-slate-700 dark:text-slate-300">{report.label}</span>
               </div>
-              <button
-                className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium"
-                onClick={() => exportMonthlyCsv(report.key)}
-              >
-                <Download size={12} />
-                CSV
-              </button>
+              <div className="flex items-center gap-2">
+                {(['csv', 'xlsx', 'json'] as const).map((format) => (
+                  <button
+                    key={`${report.key}-${format}`}
+                    className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium"
+                    onClick={() => void handleExport(format, report.key)}
+                  >
+                    <Download size={12} />
+                    {format.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -220,11 +251,23 @@ export default function AgencyBillingPage() {
       {/* Delivered Jobs Invoices */}
       {deliveredJobs.length > 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <FileText size={16} className="text-green-500" />
               Invoices ({deliveredJobs.length})
             </h3>
+            <div className="flex flex-wrap gap-2">
+              {(['csv', 'xlsx', 'json'] as const).map((format) => (
+                <button
+                  key={`all-${format}`}
+                  onClick={() => void handleExport(format)}
+                  className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <Download size={12} />
+                  Export {format.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {deliveredJobs.map(job => (
