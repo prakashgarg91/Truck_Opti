@@ -4,8 +4,14 @@ const { readEnvValue, validateRequiredEnv } = require('./_proofEnv.cjs')
 const SUPABASE_URL = readEnvValue('SUPABASE_URL', ['VITE_SUPABASE_URL'])
 const SUPABASE_SERVICE_ROLE_KEY = readEnvValue('SUPABASE_SERVICE_ROLE_KEY')
 const SEED_DEMO_PASSWORD = readEnvValue('SEED_DEMO_PASSWORD')
+const RAZORPAY_REVIEW_DEMO_PASSWORD = readEnvValue('RAZORPAY_REVIEW_DEMO_PASSWORD')
 
-if (!validateRequiredEnv(['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SEED_DEMO_PASSWORD'])) {
+if (!validateRequiredEnv(['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'])) {
+    process.exit(1)
+}
+
+if (!SEED_DEMO_PASSWORD && !RAZORPAY_REVIEW_DEMO_PASSWORD) {
+    console.error('Seeding requires SEED_DEMO_PASSWORD for the shared demo accounts or RAZORPAY_REVIEW_DEMO_PASSWORD for the isolated reviewer account.')
     process.exit(1)
 }
 
@@ -73,6 +79,14 @@ const accounts = [
         authMetadataRole: 'user',
     },
     {
+        key: 'razorpay',
+        email: 'demo.razorpay@truckopti.in',
+        name: 'TruckOpti Razorpay Review',
+        publicRole: 'user',
+        authMetadataRole: 'user',
+        passwordOverride: RAZORPAY_REVIEW_DEMO_PASSWORD,
+    },
+    {
         key: 'admin',
         email: 'demo.admin@truckopti.in',
         name: 'TruckOpti Demo Admin',
@@ -81,6 +95,8 @@ const accounts = [
         // No profile table — resolveAppRole() reads users.role = 'admin' directly
     },
 ]
+
+const accountsToSeed = accounts.filter((account) => Boolean(account.passwordOverride || SEED_DEMO_PASSWORD))
 
 async function listAllUsers() {
     const users = []
@@ -97,12 +113,13 @@ async function listAllUsers() {
 }
 
 async function ensureAuthUser(account) {
+    const accountPassword = account.passwordOverride || SEED_DEMO_PASSWORD
     const users = await listAllUsers()
     const existing = users.find((user) => user.email?.toLowerCase() === account.email.toLowerCase())
 
     if (existing) {
         const { data, error } = await supabase.auth.admin.updateUserById(existing.id, {
-            password: SEED_DEMO_PASSWORD,
+            password: accountPassword,
             user_metadata: {
                 ...(existing.user_metadata || {}),
                 full_name: account.name,
@@ -117,7 +134,7 @@ async function ensureAuthUser(account) {
 
     const { data, error } = await supabase.auth.admin.createUser({
         email: account.email,
-        password: SEED_DEMO_PASSWORD,
+        password: accountPassword,
         email_confirm: true,
         user_metadata: {
             full_name: account.name,
@@ -211,7 +228,7 @@ async function ensureProfile(account, userId) {
 async function main() {
     const summary = []
 
-    for (const account of accounts) {
+    for (const account of accountsToSeed) {
         const authUser = await ensureAuthUser(account)
         const publicUser = await ensurePublicUser(account, authUser.id)
         const profile = await ensureProfile(account, authUser.id)
@@ -226,6 +243,10 @@ async function main() {
             profileId: profile?.id || null,
             profileStatus: profile?.status || null,
         })
+    }
+
+    if (summary.length === 0) {
+        throw new Error('No demo accounts were eligible for seeding with the current environment contract')
     }
 
     console.table(summary)
