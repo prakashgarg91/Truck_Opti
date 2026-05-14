@@ -31,12 +31,16 @@ const request: RazorpayPaymentRequest = {
     billingCycle: 'monthly',
 }
 
-async function importRazorpayModule(keyId: string | undefined) {
+async function importRazorpayModule(keyId: string | undefined, extraEnv: Record<string, string> = {}) {
     vi.resetModules()
     vi.unstubAllEnvs()
 
     if (keyId !== undefined) {
         vi.stubEnv('VITE_RAZORPAY_KEY_ID', keyId)
+    }
+
+    for (const [envKey, envValue] of Object.entries(extraEnv)) {
+        vi.stubEnv(envKey, envValue)
     }
 
     return import('./razorpayPayment')
@@ -73,6 +77,43 @@ describe('initiateRazorpayPayment', () => {
         await expect(initiateRazorpayPayment(request)).resolves.toEqual({
             success: false,
             error: 'Razorpay live payments are not enabled yet. Please contact support.',
+        })
+    })
+
+    it('allows test keys on the live TruckOpti site when verification override is enabled', async () => {
+        invokeMock
+            .mockResolvedValueOnce({ data: { id: 'order_1' }, error: null })
+            .mockResolvedValueOnce({ data: { success: true }, error: null })
+
+        class RazorpayMock {
+            constructor(private options: { handler: (response: Record<string, string>) => Promise<void> }) { }
+
+            on() {
+                return undefined
+            }
+
+            open() {
+                void this.options.handler({
+                    razorpay_payment_id: 'pay_1',
+                    razorpay_order_id: 'order_1',
+                    razorpay_signature: 'sig_1',
+                })
+            }
+        }
+
+        ; (window as Window & { Razorpay?: unknown }).Razorpay = RazorpayMock
+
+        const { initiateRazorpayPayment } = await importRazorpayModule('rzp_test_12345', {
+            VITE_ALLOW_TEST_RAZORPAY_ON_PRODUCTION: 'true',
+        })
+        const result = await initiateRazorpayPayment(request)
+
+        expect(result).toEqual({
+            success: true,
+            status: 'success',
+            paymentId: 'pay_1',
+            orderId: 'order_1',
+            signature: 'sig_1',
         })
     })
 

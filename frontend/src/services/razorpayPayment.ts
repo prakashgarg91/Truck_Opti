@@ -16,6 +16,7 @@ function isUnset(value?: string): boolean {
 const RAZORPAY_CONFIG = {
   keyId: import.meta.env.VITE_RAZORPAY_KEY_ID,
   isTestMode: (import.meta.env.VITE_RAZORPAY_KEY_ID || '').includes('test'),
+  allowTestModeOnProduction: import.meta.env.VITE_ALLOW_TEST_RAZORPAY_ON_PRODUCTION === 'true',
 };
 
 function isLiveTruckOptiSite(): boolean {
@@ -66,14 +67,22 @@ function loadRazorpayScript(): Promise<boolean> {
 export function getRazorpayConfig() {
   const isConfigured = !isUnset(RAZORPAY_CONFIG.keyId);
   const isLaunchReady = isConfigured && !RAZORPAY_CONFIG.isTestMode;
+  const isCheckoutEnabled = isConfigured && (
+    !isLiveTruckOptiSite() ||
+    !RAZORPAY_CONFIG.isTestMode ||
+    RAZORPAY_CONFIG.allowTestModeOnProduction
+  );
 
   return {
     keyId: RAZORPAY_CONFIG.keyId || '',
     isConfigured,
     isTestMode: RAZORPAY_CONFIG.isTestMode,
+    isCheckoutEnabled,
     isLaunchReady,
     launchBlocker: isLaunchReady
       ? null
+      : RAZORPAY_CONFIG.allowTestModeOnProduction && RAZORPAY_CONFIG.isTestMode
+        ? null
       : !isConfigured
         ? 'Missing VITE_RAZORPAY_KEY_ID'
         : 'Razorpay is still using a test key',
@@ -127,7 +136,7 @@ export async function initiateRazorpayPayment(
     };
   }
 
-  if (isLiveTruckOptiSite() && !config.isLaunchReady) {
+  if (!config.isCheckoutEnabled) {
     return {
       success: false,
       error: 'Razorpay live payments are not enabled yet. Please contact support.',

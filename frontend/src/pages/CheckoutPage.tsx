@@ -39,8 +39,8 @@ const CheckoutPage: React.FC = () => {
   const razorpayConfig = getRazorpayConfig();
   const phonePeConfig = getPaymentConfig();
   const hasLivePhonePe = phonePeConfig.isLaunchReady;
-  const hasLiveRazorpay = razorpayConfig.isLaunchReady;
-  const paymentTemporarilyUnavailable = !hasLivePhonePe && !hasLiveRazorpay;
+  const hasRazorpayCheckout = razorpayConfig.isCheckoutEnabled;
+  const paymentTemporarilyUnavailable = !hasLivePhonePe && !hasRazorpayCheckout;
 
   useEffect(() => {
     document.title = 'Checkout - TruckOpti'
@@ -370,6 +370,12 @@ const CheckoutPage: React.FC = () => {
               {paymentTemporarilyUnavailable && (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   Live payments are temporarily unavailable on this deployment. Please contact support before attempting a subscription checkout.
+                </div>
+              )}
+
+              {razorpayConfig.isTestMode && hasRazorpayCheckout && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  Razorpay test verification mode is enabled for this deployment. No real money will be charged.
                 </div>
               )}
 

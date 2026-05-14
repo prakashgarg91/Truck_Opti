@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_AUTH_EMAIL_OTP_ENABLED?: string
   readonly VITE_AUTH_PHONE_OTP_ENABLED?: string
   readonly VITE_AUTH_PASSWORD_ENABLED?: string
+  readonly VITE_ALLOW_TEST_RAZORPAY_ON_PRODUCTION?: string
 }
 
 interface ImportMeta {
