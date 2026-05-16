@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { calculateExpectedAmounts } from '../_shared/billing.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,16 +42,6 @@ function normalizeBillingCycle(value: unknown): 'monthly' | 'yearly' | null {
   }
 
   return null
-}
-
-function calculateExpectedAmounts(baseAmount: number) {
-  const taxAmount = Math.round(baseAmount * 0.18)
-
-  return {
-    subtotalAmount: baseAmount,
-    taxAmount,
-    totalAmount: baseAmount + taxAmount,
-  }
 }
 
 type PaidInvoiceParams = {

@@ -4,6 +4,7 @@ import { Check, Loader2, CreditCard, Smartphone, AlertCircle } from 'lucide-reac
 import { initiateRazorpayPayment, getRazorpayConfig, RazorpayPaymentResult } from '../services/razorpayPayment';
 import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
 import { subscriptionPlansApi } from '../services/subscriptionApi';
+import { calculateSubscriptionBillingAmounts } from '../config/billing';
 import toast from 'react-hot-toast';
 import { logger } from '../utils/logger';
 import { useSubscription } from '../hooks/useSubscription';
@@ -115,8 +116,7 @@ const CheckoutPage: React.FC = () => {
 
     try {
       const amount = billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
-      const taxAmount = Math.round(amount * 0.18); // 18% GST
-      const totalAmount = amount + taxAmount;
+      const { totalAmount } = calculateSubscriptionBillingAmounts(amount);
 
       const phonePeResult = await initiatePhonePePayment({
         amount: totalAmount,
@@ -209,8 +209,7 @@ const CheckoutPage: React.FC = () => {
   }
 
   const amount = billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
-  const taxAmount = Math.round(amount * 0.18);
-  const totalAmount = amount + taxAmount;
+  const { taxAmount, totalAmount, gstEnabled, gstRatePercent } = calculateSubscriptionBillingAmounts(amount);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
@@ -290,7 +289,7 @@ const CheckoutPage: React.FC = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">
-                  {'GST (18%)'}
+                  {gstEnabled ? `GST (${gstRatePercent}%)` : 'GST (currently disabled)'}
                 </span>
                 <span className="text-gray-900 dark:text-white">{formatPrice(taxAmount)}</span>
               </div>
@@ -301,6 +300,12 @@ const CheckoutPage: React.FC = () => {
                 <span className="text-blue-600">{formatPrice(totalAmount)}</span>
               </div>
             </div>
+
+            {!gstEnabled && (
+              <p className="mt-4 text-xs text-amber-600 dark:text-amber-400">
+                {'GST is not being charged yet. TruckOpti billing can enable GST later after tax registration is active.'}
+              </p>
+            )}
           </div>
 
           {/* Payment Form */}
