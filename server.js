@@ -15,7 +15,7 @@ const DIST_DIR     = path.join(__dirname, 'frontend', 'dist');
 function setStaticCacheHeaders(res, filePath) {
   const relativePath = path.relative(DIST_DIR, filePath).replace(/\\/g, '/');
 
-  if (relativePath === 'sw.js') {
+  if (/^sw(?:-[a-z0-9-]+)?\.js$/i.test(relativePath)) {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Service-Worker-Allowed', '/');
     return;
