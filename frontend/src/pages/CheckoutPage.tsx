@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Check, Loader2, CreditCard, Smartphone, AlertCircle } from 'lucide-react';
+import { Check, Loader2, CreditCard, Smartphone, AlertCircle, ShieldCheck } from 'lucide-react';
 import { initiateRazorpayPayment, getRazorpayConfig, RazorpayPaymentResult } from '../services/razorpayPayment';
 import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
 import { subscriptionPlansApi } from '../services/subscriptionApi';
@@ -19,6 +19,27 @@ interface Plan {
   price_yearly: number;
   features: string[];
 }
+
+const SUPPORTED_UPI_APPS = [
+  {
+    name: 'PhonePe',
+    label: 'PP',
+    tone: 'bg-fuchsia-100 text-fuchsia-700 ring-fuchsia-200',
+    detail: 'Fast UPI collect flow',
+  },
+  {
+    name: 'Google Pay',
+    label: 'G',
+    tone: 'bg-sky-100 text-sky-700 ring-sky-200',
+    detail: 'Popular UPI app support',
+  },
+  {
+    name: 'Any UPI App',
+    label: 'UPI',
+    tone: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+    detail: 'Works with most bank apps',
+  },
+] as const;
 
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
@@ -366,10 +387,41 @@ const CheckoutPage: React.FC = () => {
               </div>
 
               {/* UPI Apps */}
-              <div className="flex justify-center gap-4 py-4">
-                <img loading="lazy" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/PhonePe_Logo.svg/1200px-PhonePe_Logo.svg.png" alt="PhonePe" className="h-8 object-contain" />
-                <img loading="lazy" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Google_Pay_Logo.svg/1200px-Google_Pay_Logo.svg.png" alt="GPay" className="h-8 object-contain" />
-                <img loading="lazy" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/UPI-Logo-vector.svg/1200px-UPI-Logo-vector.svg.png" alt="UPI" className="h-8 object-contain" />
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                      {'Accepted UPI apps'}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {'Complete payment with PhonePe, Google Pay, or any supported UPI app after checkout opens.'}
+                    </p>
+                  </div>
+                  <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    {'UPI Ready'}
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {SUPPORTED_UPI_APPS.map((app) => (
+                    <div
+                      key={app.name}
+                      className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/80"
+                    >
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-semibold ring-1 ${app.tone}`}>
+                        {app.label}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                          {app.name}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {app.detail}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {paymentTemporarilyUnavailable && (
@@ -404,9 +456,10 @@ const CheckoutPage: React.FC = () => {
               </button>
 
               {/* Security Note */}
-              <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-                🔒
-              </p>
+              <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+                <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span>{'Payments are completed on secure gateway pages. TruckOpti never asks for your UPI PIN.'}</span>
+              </div>
             </div>
           </div>
         </div>
