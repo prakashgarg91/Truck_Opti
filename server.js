@@ -12,6 +12,28 @@ const HEROKU_HOST  = 'truck-opti-app-efabf95bd306.herokuapp.com';
 const CANONICAL    = 'https://www.truckopti.in';
 const DIST_DIR     = path.join(__dirname, 'frontend', 'dist');
 
+function setStaticCacheHeaders(res, filePath) {
+  const relativePath = path.relative(DIST_DIR, filePath).replace(/\\/g, '/');
+
+  if (relativePath === 'sw.js') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Service-Worker-Allowed', '/');
+    return;
+  }
+
+  if (relativePath === 'manifest.webmanifest') {
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    return;
+  }
+
+  if (relativePath.startsWith('assets/')) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return;
+  }
+
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+}
+
 // ── 1. Force canonical domain ─────────────────────────────────────────────────
 app.use((req, res, next) => {
   const host = (req.headers['x-forwarded-host'] || req.headers.host || '').toLowerCase();
@@ -23,9 +45,9 @@ app.use((req, res, next) => {
 
 // ── 2. Serve static assets ────────────────────────────────────────────────────
 app.use(express.static(DIST_DIR, {
-  maxAge: '1y',          // cache immutable hashed assets
   etag: true,
   index: false,          // we handle index.html manually below (SPA fallback)
+  setHeaders: setStaticCacheHeaders,
 }));
 
 // ── 3. SPA fallback — serve index.html for all unmatched routes ───────────────
@@ -35,6 +57,7 @@ app.get('/{*splat}', (req, res) => {
   if (!fs.existsSync(indexPath)) {
     return res.status(503).send('App not built. Run npm run build.');
   }
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(indexPath);
 });
 
