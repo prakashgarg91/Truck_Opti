@@ -20,6 +20,12 @@ interface Plan {
   features: string[];
 }
 
+const PLAN_TIERS = ['starter', 'growth', 'professional', 'enterprise'] as const;
+
+function isPlanTierLookup(value: string): value is Plan['tier'] {
+  return (PLAN_TIERS as readonly string[]).includes(value);
+}
+
 const SUPPORTED_UPI_APPS = [
   {
     name: 'PhonePe',
@@ -84,10 +90,16 @@ const CheckoutPage: React.FC = () => {
         return;
       }
       if (planId) {
-        const planData = await subscriptionPlansApi.getById(planId);
+        const planData = isPlanTierLookup(planId)
+          ? await subscriptionPlansApi.getByTier(planId)
+          : await subscriptionPlansApi.getById(planId);
 
         if (!planData) {
-          toast.error('Plan not found');
+          toast.error(
+            isPlanTierLookup(planId)
+              ? 'Selected plan is temporarily unavailable. Please refresh pricing and try again.'
+              : 'Plan not found'
+          );
           navigate('/pricing');
           return;
         }

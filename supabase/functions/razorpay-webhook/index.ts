@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js'
+import { finalizePaidInvoiceDelivery } from '../_shared/invoice-delivery.ts'
+import { resolveSubscriptionPlanByIdentifier } from '../_shared/plans.ts'
 
 const VALID_PAYMENT_METHODS = new Set(['card', 'upi', 'netbanking', 'wallet'])
 
@@ -215,17 +217,33 @@ serve(async (req) => {
         return new Response('Payment history not found', { status: 404 })
       }
 
+      const paymentMetadata = toRecord(paymentRow.metadata)
+
       if (
         paymentRow.status === 'success' &&
         paymentRow.razorpay_payment_id === paymentId &&
         paymentRow.subscription_id &&
         paymentRow.invoice_id
       ) {
+        try {
+          await finalizePaidInvoiceDelivery(supabase, {
+            invoiceId: paymentRow.invoice_id,
+            paymentHistoryId: paymentRow.id,
+            paymentMetadata,
+            userId: paymentRow.user_id,
+            customerEmail: typeof paymentMetadata.customer_email === 'string' ? paymentMetadata.customer_email : null,
+            customerPhone: typeof paymentMetadata.customer_phone === 'string' ? paymentMetadata.customer_phone : null,
+            paymentProvider: 'razorpay',
+            providerPaymentId: paymentId,
+          })
+        } catch (deliveryError) {
+          console.error('Invoice delivery follow-up failed for a duplicate Razorpay webhook:', deliveryError)
+        }
+
         console.log('Ignoring duplicate Razorpay webhook for order:', orderId)
         return new Response('ok', { status: 200 })
       }
 
-      const paymentMetadata = toRecord(paymentRow.metadata)
       const planId = typeof paymentMetadata.plan_id === 'string' ? paymentMetadata.plan_id : null
       const billingCycle: 'monthly' | 'yearly' = paymentMetadata.billing_cycle === 'yearly' ? 'yearly' : 'monthly'
       const capturedPaymentMethod = getCapturedPaymentMethod(method)
@@ -240,14 +258,10 @@ serve(async (req) => {
       let invoiceId = paymentRow.invoice_id || null
 
       if (planId) {
-        const { data: planData, error: planError } = await supabase
-          .from('subscription_plans')
-          .select('id, price_monthly, price_yearly')
-          .eq('id', planId)
-          .single()
+        const planData = await resolveSubscriptionPlanByIdentifier(supabase, planId)
 
-        if (planError || !planData) {
-          console.error('Failed to load subscription plan for webhook activation:', planError)
+        if (!planData) {
+          console.error('Failed to load subscription plan for webhook activation')
           return new Response('Subscription plan lookup failed', { status: 500 })
         }
 
@@ -256,7 +270,7 @@ serve(async (req) => {
           .from('subscriptions')
           .upsert({
             user_id: userId,
-            plan_id: planId,
+            plan_id: planData.id,
             status: 'active',
             billing_cycle: billingCycle,
             current_period_start: startDate,
@@ -321,6 +335,32 @@ serve(async (req) => {
       if (updateError) {
         console.error('Failed to update payment history after webhook:', updateError)
         return new Response('Database update failed', { status: 500 })
+      }
+
+      if (invoiceId && userId) {
+        try {
+          await finalizePaidInvoiceDelivery(supabase, {
+            invoiceId,
+            paymentHistoryId: paymentRow.id,
+            paymentMetadata: {
+              ...paymentMetadata,
+              payment_provider: 'razorpay',
+              customer_phone: paymentMetadata.customer_phone || phone || null,
+              webhook_event: event.event,
+            },
+            userId,
+            customerEmail: typeof paymentMetadata.customer_email === 'string' ? paymentMetadata.customer_email : null,
+            customerPhone: typeof paymentMetadata.customer_phone === 'string'
+              ? paymentMetadata.customer_phone
+              : typeof phone === 'string'
+                ? phone
+                : null,
+            paymentProvider: 'razorpay',
+            providerPaymentId: paymentId,
+          })
+        } catch (deliveryError) {
+          console.error('Invoice delivery follow-up failed after webhook:', deliveryError)
+        }
       }
 
       console.log('Subscription activation reconciled for order:', orderId)

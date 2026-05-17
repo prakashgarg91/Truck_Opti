@@ -4,6 +4,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { calculateExpectedAmounts } from '../_shared/billing.ts'
+import { finalizePaidInvoiceDelivery } from '../_shared/invoice-delivery.ts'
+import { resolveSubscriptionPlanByIdentifier } from '../_shared/plans.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -288,6 +290,23 @@ serve(async (req) => {
     const normalizedBillingCycle = normalizeBillingCycle(paymentMetadata.billing_cycle)
 
     if (paymentRow.status === 'success' && (paymentRow.subscription_id || paymentRow.invoice_id)) {
+      if (paymentRow.invoice_id) {
+        try {
+          await finalizePaidInvoiceDelivery(supabase, {
+            invoiceId: paymentRow.invoice_id,
+            paymentHistoryId: paymentRow.id,
+            paymentMetadata,
+            userId: user.id,
+            customerEmail: typeof paymentMetadata.customer_email === 'string' ? paymentMetadata.customer_email : null,
+            customerPhone: typeof paymentMetadata.customer_phone === 'string' ? paymentMetadata.customer_phone : null,
+            paymentProvider: 'phonepe',
+            providerPaymentId: paymentRow.razorpay_payment_id || merchantTransactionId,
+          })
+        } catch (deliveryError) {
+          console.error('Invoice delivery follow-up failed for an already-verified PhonePe payment:', deliveryError)
+        }
+      }
+
       return new Response(JSON.stringify({
         success: true,
         subscriptionId: paymentRow.subscription_id ?? null,
@@ -332,14 +351,10 @@ serve(async (req) => {
       throw new Error('Payment record is missing required plan metadata')
     }
 
-    const { data: planData, error: planError } = await supabase
-      .from('subscription_plans')
-      .select('id, price_monthly, price_yearly')
-      .eq('id', resolvedPlanId)
-      .single()
+    const planData = await resolveSubscriptionPlanByIdentifier(supabase, resolvedPlanId)
 
-    if (planError || !planData) {
-      throw planError || new Error('Subscription plan not found')
+    if (!planData) {
+      throw new Error('Subscription plan not found')
     }
 
     const planAmount = normalizedBillingCycle === 'yearly'
@@ -357,7 +372,7 @@ serve(async (req) => {
       .from('subscriptions')
       .upsert({
         user_id: user.id,
-        plan_id: resolvedPlanId,
+        plan_id: planData.id,
         status: 'active',
         billing_cycle: normalizedBillingCycle,
         current_period_start: startDate,
@@ -405,6 +420,27 @@ serve(async (req) => {
 
     if (updateError) {
       throw updateError
+    }
+
+    try {
+      await finalizePaidInvoiceDelivery(supabase, {
+        invoiceId,
+        paymentHistoryId: paymentRow.id,
+        paymentMetadata: {
+          ...paymentMetadata,
+          verified: true,
+          payment_provider: payment_provider || 'phonepe',
+          phonepe_response: phonePeStatus.raw,
+          phonepe_transaction_id: resolvedProviderTransactionId,
+        },
+        userId: user.id,
+        customerEmail: typeof paymentMetadata.customer_email === 'string' ? paymentMetadata.customer_email : null,
+        customerPhone: typeof paymentMetadata.customer_phone === 'string' ? paymentMetadata.customer_phone : null,
+        paymentProvider: 'phonepe',
+        providerPaymentId: resolvedProviderTransactionId,
+      })
+    } catch (deliveryError) {
+      console.error('Invoice delivery follow-up failed after PhonePe verification:', deliveryError)
     }
 
     return new Response(JSON.stringify({ success: true, subscriptionId: subscription.id }), {

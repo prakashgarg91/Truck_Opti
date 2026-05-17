@@ -4,6 +4,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { calculateExpectedAmounts } from '../_shared/billing.ts'
+import { resolveSubscriptionPlanByIdentifier } from '../_shared/plans.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -89,7 +90,7 @@ serve(async (req) => {
       ...normalizedNotes,
       user_id: user.id,
     }
-    const resolvedPlanId = typeof orderNotes.plan_id === 'string' ? orderNotes.plan_id : null
+    const requestedPlanId = typeof orderNotes.plan_id === 'string' ? orderNotes.plan_id : null
     const resolvedBillingCycle = normalizeBillingCycle(orderNotes.billing_cycle)
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 
@@ -98,7 +99,7 @@ serve(async (req) => {
       throw new Error('Amount must be at least ₹1 (100 paise)')
     }
 
-    if (!resolvedPlanId) {
+    if (!requestedPlanId) {
       throw new Error('plan_id is required to create a Razorpay order')
     }
 
@@ -106,14 +107,17 @@ serve(async (req) => {
       throw new Error('billing_cycle must be monthly or yearly')
     }
 
-    const { data: planData, error: planError } = await supabase
-      .from('subscription_plans')
-      .select('id, price_monthly, price_yearly')
-      .eq('id', resolvedPlanId)
-      .single()
+    const planData = await resolveSubscriptionPlanByIdentifier(supabase, requestedPlanId)
 
-    if (planError || !planData) {
-      throw planError || new Error('Subscription plan not found')
+    if (!planData) {
+      throw new Error('Subscription plan not found')
+    }
+
+    const canonicalPlanId = planData.id
+    const canonicalOrderNotes = {
+      ...orderNotes,
+      plan_id: canonicalPlanId,
+      billing_cycle: resolvedBillingCycle,
     }
 
     const planAmount = resolvedBillingCycle === 'yearly'
@@ -130,7 +134,7 @@ serve(async (req) => {
       amount: amount, // in paise
       currency: currency || 'INR',
       receipt: receipt || `rcpt_${Date.now()}`,
-      notes: orderNotes,
+      notes: canonicalOrderNotes,
     }
 
     const auth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
@@ -157,17 +161,17 @@ serve(async (req) => {
       user_id: user.id,
       amount: amount,
       currency: currency || 'INR',
-      payment_method: getPendingPaymentMethod(orderNotes.payment_method),
+      payment_method: getPendingPaymentMethod(canonicalOrderNotes.payment_method),
       status: 'pending',
       razorpay_order_id: order.id,
       metadata: {
         payment_provider: 'razorpay',
         receipt: receipt || orderData.receipt,
-        plan_id: resolvedPlanId,
+        plan_id: canonicalPlanId,
         billing_cycle: resolvedBillingCycle,
         customer_phone: customerPhone || null,
         customer_email: customerEmail || null,
-        notes: orderNotes,
+        notes: canonicalOrderNotes,
       }
     })
 

@@ -6,11 +6,13 @@ import {
   Calendar,
   ChevronLeft,
   CreditCard,
+  Download,
   ExternalLink,
   LifeBuoy,
   Receipt,
   RefreshCw,
 } from 'lucide-react'
+import jsPDF from 'jspdf'
 import EmptyState from '../components/EmptyState'
 import { useSubscription } from '../hooks/useSubscription'
 import { invoicesApi, type Invoice } from '../services/subscriptionApi'
@@ -42,6 +44,92 @@ function formatDate(value?: string | null) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
   return dateFormatter.format(date)
+}
+
+function buildSubscriptionInvoiceFileName(invoice: Invoice) {
+  return `${invoice.invoice_number.toLowerCase()}.pdf`
+}
+
+function buildCustomerAddress(user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>) {
+  const company = user.user_metadata?.company
+  const addressParts = [
+    company?.address_line1,
+    company?.address_line2,
+    company?.address,
+    company?.city,
+    company?.state,
+    company?.pincode,
+  ].filter(Boolean)
+
+  return addressParts.length > 0 ? addressParts.join(', ') : 'Not provided'
+}
+
+function downloadInvoiceFallback(invoice: Invoice, options: {
+  customerName: string
+  customerEmail: string
+  customerPhone?: string | null
+  customerGstin?: string
+  planName: string
+}) {
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+  let cursorY = 18
+
+  const writeLine = (label: string, value: string, indent = 0) => {
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(label, 14 + indent, cursorY)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(value, 62 + indent, cursorY)
+    cursorY += 7
+  }
+
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(18)
+  pdf.text('TruckOpti Subscription Invoice', 14, cursorY)
+  cursorY += 10
+
+  pdf.setFontSize(11)
+  writeLine('Invoice Number', invoice.invoice_number)
+  writeLine('Status', invoice.status.toUpperCase())
+  writeLine('Paid On', formatDate(invoice.paid_at || invoice.billing_period_start))
+  writeLine('Billing Period', `${formatDate(invoice.billing_period_start)} to ${formatDate(invoice.billing_period_end)}`)
+  writeLine('Plan', options.planName)
+  cursorY += 3
+
+  pdf.setFont('helvetica', 'bold')
+  pdf.text('Billed To', 14, cursorY)
+  cursorY += 7
+  pdf.setFont('helvetica', 'normal')
+  pdf.text(options.customerName, 14, cursorY)
+  cursorY += 6
+  pdf.text(options.customerEmail, 14, cursorY)
+  cursorY += 6
+  if (options.customerPhone) {
+    pdf.text(options.customerPhone, 14, cursorY)
+    cursorY += 6
+  }
+  pdf.text(buildCustomerAddress(useAuthStore.getState().user!), 14, cursorY)
+  cursorY += 6
+  if (options.customerGstin) {
+    pdf.text(`GSTIN: ${options.customerGstin}`, 14, cursorY)
+    cursorY += 6
+  }
+
+  cursorY += 4
+  pdf.setDrawColor(226, 232, 240)
+  pdf.line(14, cursorY, 196, cursorY)
+  cursorY += 10
+
+  writeLine('Subtotal', formatMoney(invoice.amount))
+  writeLine('Tax', formatMoney(invoice.tax_amount))
+  writeLine('Total Paid', formatMoney(invoice.total_amount))
+  writeLine('Currency', invoice.currency || 'INR')
+
+  cursorY += 6
+  pdf.setFontSize(10)
+  pdf.setTextColor(100, 116, 139)
+  pdf.text('This invoice was generated from your TruckOpti billing history because no hosted PDF was attached to the payment record yet.', 14, cursorY, { maxWidth: 180 })
+
+  pdf.save(buildSubscriptionInvoiceFileName(invoice))
 }
 
 function buildStatusLabel(input: {
@@ -139,6 +227,23 @@ export default function SubscriptionPage() {
   const statusLabel = isAdmin ? 'Admin Access' : buildStatusLabel(status)
   const planName = isAdmin ? 'Platform Admin Access' : plan?.name || 'Free Plan'
   const invoiceHistory = invoices
+
+  const handleInvoiceDownload = (invoice: Invoice) => {
+    if (!user) return
+
+    if (invoice.pdf_url) {
+      window.open(invoice.pdf_url, '_blank', 'noopener,noreferrer')
+      return
+    }
+
+    downloadInvoiceFallback(invoice, {
+      customerName: user.name || user.email,
+      customerEmail: user.email,
+      customerPhone: user.phone,
+      customerGstin: user.user_metadata?.company?.gstin,
+      planName: plan?.name || plan?.tier || 'Subscription plan',
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4 md:p-8">
@@ -352,17 +457,13 @@ export default function SubscriptionPage() {
                             {formatMoney(invoice.total_amount)}
                           </td>
                           <td className="py-3 text-sm">
-                            {invoice.pdf_url ? (
-                              <button
-                                onClick={() => window.open(invoice.pdf_url, '_blank', 'noopener,noreferrer')}
-                                className="inline-flex items-center gap-1 font-medium text-primary-600 hover:text-primary-700"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                                Open
-                              </button>
-                            ) : (
-                              <span className="text-slate-400">Unavailable</span>
-                            )}
+                            <button
+                              onClick={() => handleInvoiceDownload(invoice)}
+                              className="inline-flex items-center gap-1 font-medium text-primary-600 hover:text-primary-700"
+                            >
+                              {invoice.pdf_url ? <ExternalLink className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+                              {invoice.pdf_url ? 'Open' : 'Download'}
+                            </button>
                           </td>
                         </tr>
                       ))}

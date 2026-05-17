@@ -194,13 +194,21 @@ const PaymentCallbackPage: React.FC = () => {
         {/* Actions */}
         <div className="space-y-3">
           {status === 'success' && (
-            <button
-              onClick={() => navigate(successDestination)}
-              className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 flex items-center justify-center gap-2"
-            >
-              <Home className="w-5 h-5" />
-              Go to Home
-            </button>
+            <>
+              <button
+                onClick={() => navigate(successDestination)}
+                className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 flex items-center justify-center gap-2"
+              >
+                <Home className="w-5 h-5" />
+                Go to Home
+              </button>
+              <button
+                onClick={() => navigate('/subscription')}
+                className="w-full py-3 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 font-semibold rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20"
+              >
+                View billing history
+              </button>
+            </>
           )}
 
           {status === 'failed' && (

@@ -4,6 +4,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { calculateExpectedAmounts } from '../_shared/billing.ts'
+import { finalizePaidInvoiceDelivery } from '../_shared/invoice-delivery.ts'
+import { resolveSubscriptionPlanByIdentifier } from '../_shared/plans.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -251,11 +253,30 @@ serve(async (req) => {
       throw new Error('Authenticated user does not match the payment being verified')
     }
 
+    const paymentMetadata = toRecord(paymentRow.metadata)
+
     if (
       paymentRow.status === 'success' &&
       paymentRow.razorpay_payment_id === razorpay_payment_id &&
       (paymentRow.subscription_id || paymentRow.invoice_id)
     ) {
+      if (paymentRow.invoice_id) {
+        try {
+          await finalizePaidInvoiceDelivery(supabase, {
+            invoiceId: paymentRow.invoice_id,
+            paymentHistoryId: paymentRow.id,
+            paymentMetadata,
+            userId: user.id,
+            customerEmail: customer_email,
+            customerPhone: customer_phone,
+            paymentProvider: 'razorpay',
+            providerPaymentId: razorpay_payment_id,
+          })
+        } catch (deliveryError) {
+          console.error('Invoice delivery follow-up failed for an already-verified Razorpay payment:', deliveryError)
+        }
+      }
+
       return new Response(JSON.stringify({
         success: true,
         subscriptionId: paymentRow.subscription_id ?? null,
@@ -274,7 +295,6 @@ serve(async (req) => {
       throw new Error('Payment record is already linked to a different Razorpay payment')
     }
 
-    const paymentMetadata = toRecord(paymentRow.metadata)
     const resolvedPlanId = typeof paymentMetadata.plan_id === 'string' ? paymentMetadata.plan_id : null
     const resolvedBillingCycle = normalizeBillingCycle(paymentMetadata.billing_cycle)
 
@@ -282,14 +302,10 @@ serve(async (req) => {
       throw new Error('Payment record is missing required plan metadata')
     }
 
-    const { data: planData, error: planError } = await supabase
-      .from('subscription_plans')
-      .select('id, price_monthly, price_yearly')
-      .eq('id', resolvedPlanId)
-      .single()
+    const planData = await resolveSubscriptionPlanByIdentifier(supabase, resolvedPlanId)
 
-    if (planError || !planData) {
-      throw planError || new Error('Subscription plan not found')
+    if (!planData) {
+      throw new Error('Subscription plan not found')
     }
 
     const planAmount = resolvedBillingCycle === 'yearly'
@@ -307,7 +323,7 @@ serve(async (req) => {
       .from('subscriptions')
       .upsert({
         user_id: user.id,
-        plan_id: resolvedPlanId,
+        plan_id: planData.id,
         status: 'active',
         billing_cycle: resolvedBillingCycle,
         current_period_start: startDate,
@@ -355,6 +371,26 @@ serve(async (req) => {
 
     if (updateError) {
       throw updateError
+    }
+
+    try {
+      await finalizePaidInvoiceDelivery(supabase, {
+        invoiceId,
+        paymentHistoryId: paymentRow.id,
+        paymentMetadata: {
+          ...paymentMetadata,
+          razorpay_signature,
+          customer_phone,
+          customer_email,
+        },
+        userId: user.id,
+        customerEmail: customer_email,
+        customerPhone: customer_phone,
+        paymentProvider: 'razorpay',
+        providerPaymentId: razorpay_payment_id,
+      })
+    } catch (deliveryError) {
+      console.error('Invoice delivery follow-up failed after Razorpay verification:', deliveryError)
     }
 
     return new Response(JSON.stringify({

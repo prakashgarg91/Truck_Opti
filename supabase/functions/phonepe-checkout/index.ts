@@ -4,6 +4,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { calculateExpectedAmounts } from '../_shared/billing.ts'
+import { resolveSubscriptionPlanByIdentifier } from '../_shared/plans.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -182,15 +183,13 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey)
-    const { data: planData, error: planError } = await supabase
-      .from('subscription_plans')
-      .select('id, price_monthly, price_yearly')
-      .eq('id', planId)
-      .single()
+    const planData = await resolveSubscriptionPlanByIdentifier(supabase, planId)
 
-    if (planError || !planData) {
-      throw planError || new Error('Subscription plan not found')
+    if (!planData) {
+      throw new Error('Subscription plan not found')
     }
+
+    const canonicalPlanId = planData.id
 
     const planAmount = resolvedBillingCycle === 'yearly'
       ? planData.price_yearly
@@ -248,7 +247,7 @@ serve(async (req) => {
       metadata: {
         merchantTransactionId,
         userId: user.id,
-        plan_id: planId,
+        plan_id: canonicalPlanId,
         billing_cycle: resolvedBillingCycle,
         customer_phone: customerPhone,
         customer_email: customerEmail,
