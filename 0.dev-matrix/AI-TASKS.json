@@ -1,129 +1,181 @@
 ﻿{
-    "$schema": "AI Task Queue v2.0",
-    "meta": {
-        "purpose": "Canonical machine-owned queue for Truck_Opti launch normalization.",
-        "generatedOutputs": [
-            "0.dev-matrix/NEXT-2-TASKS.md",
-            "2-task.md"
-        ],
-        "notes": [
-            "Keep at most two active tasks.",
-            "Use proof-driven validation on every task.",
-            "Treat live credential blockers explicitly instead of hiding them inside generic launch work."
-        ]
-    },
-    "policy": {
-        "maxActiveTasks": 2,
-        "promotableStatuses": [
-            "planned",
-            "queued",
-            "ready"
-        ],
-        "blockedStatuses": [
-            "blocked",
-            "parked",
-            "human-blocked"
-        ],
-        "terminalStatuses": [
-            "done",
-            "completed",
-            "cancelled"
-        ]
-    },
-    "tasks": [
-        {
-            "id": "TO-101",
-            "title": "Add the sellable product contract artifact",
-            "status": "active",
-            "priority": "P1",
-            "phase": "contract",
-            "order": 1,
-            "ownerFiles": [
-                "0.dev-matrix/SPEC.json",
-                "0.dev-matrix/LAUNCH_CHECKLIST.md",
-                "0.dev-matrix/TASK.md",
-                "0.dev-matrix/AI-HANDOFF.md"
-            ],
-            "dependsOn": [],
-            "why": "TruckOpti is being carried as a sellable near-launch product, but the repo still lacks an accepted contract artifact that ties the live launch slice to one owned surface.",
-            "definitionOfDone": "Truck_Opti has an accepted product contract artifact and the launch, task, and handoff surfaces all point at the same sellable-product slice.",
-            "validation": [
-                "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",
-                "Run 0.dev-matrix/sync-two-task-loop.ps1 -Mode manual and confirm the active pair points at the live sellable-product slice."
-            ],
-            "businessValue": "Turns TruckOpti\u0027s launch claims into contract-backed commercial readiness instead of implied product scope."
-        },
-        {
-            "id": "TO-102",
-            "title": "Prepare the post-credentials launch proof surface",
-            "status": "active",
-            "priority": "P1",
-            "phase": "validate",
-            "order": 2,
-            "ownerFiles": [
-                "0.dev-matrix/LAUNCH_CHECKLIST.md",
-                "0.dev-matrix/TASK.md",
-                "0.dev-matrix/AI-HANDOFF.md",
-                "scripts/launch-readiness.ps1"
-            ],
-            "dependsOn": [],
-            "why": "The remaining hard blocker is live Razorpay credentials, so the repo needs an explicit proof path that can be run immediately once those credentials exist.",
-            "definitionOfDone": "TruckOpti names the exact post-credential validation sequence for launch readiness, live auth proof, and production configuration proof.",
-            "validation": [
-                "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",
-                "node scripts/live-auth-proof.cjs",
-                "node scripts/production_config_audit.mjs"
-            ],
-            "businessValue": "Removes ambiguity between a configuration blocker and the proof steps needed to convert TruckOpti into a live sellable product."
-        },
-        {
-            "id": "TO-103",
-            "title": "Provision live Razorpay credentials for launch",
-            "status": "human-blocked",
-            "priority": "P1",
-            "phase": "deploy",
-            "order": 3,
-            "ownerFiles": [
-                "0.dev-matrix/LAUNCH_CHECKLIST.md",
-                "0.dev-matrix/TASK.md",
-                "scripts/production_config_audit.mjs"
-            ],
-            "dependsOn": [
-                "TO-102"
-            ],
-            "why": "TruckOpti\u0027s current blocker is not another code refactor. It is the absence of live Razorpay production credentials in the target environment.",
-            "definitionOfDone": "Production Razorpay credentials are present in the live environment and the repo can proceed to launch proof without pretending the blocker is solved in code.",
-            "validation": [
-                "node scripts/production_config_audit.mjs",
-                "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1"
-            ],
-            "businessValue": "Unblocks the only hard production launch blocker currently recorded for TruckOpti."
-        },
-        {
-            "id": "TO-104",
-            "title": "Capture normalized TruckOpti launch evidence",
-            "status": "planned",
-            "priority": "P1",
-            "phase": "prove",
-            "order": 4,
-            "ownerFiles": [
-                "0.dev-matrix/AI-HANDOFF.md",
-                "0.dev-matrix/STATE.md",
-                "0.dev-matrix/TASK.md",
-                "0.dev-matrix/LAST-CLOSEOUT.md"
-            ],
-            "dependsOn": [
-                "TO-101",
-                "TO-102",
-                "TO-103"
-            ],
-            "why": "The repo should finish the launch slice with explicit proof and aligned handoff surfaces instead of carrying implicit status.",
-            "definitionOfDone": "TruckOpti handoff, state, task board, and closeout all reflect the same validated launch evidence after the credential blocker clears.",
-            "validation": [
-                "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",
-                "Run 0.dev-matrix/sync-two-task-loop.ps1 -Mode manual after the proof files are updated."
-            ],
-            "businessValue": "Locks launch readiness into durable proof that sales and delivery work can trust."
-        }
-    ]
+    "$schema":  "AI Task Queue v2.0",
+    "meta":  {
+                 "purpose":  "Canonical machine-owned queue for Truck_Opti launch normalization.",
+                 "generatedOutputs":  [
+                                          "0.dev-matrix/NEXT-2-TASKS.md",
+                                          "2-task.md"
+                                      ],
+                 "notes":  [
+                               "Keep at most two active tasks.",
+                               "Use proof-driven validation on every task.",
+                               "Treat live credential blockers explicitly instead of hiding them inside generic launch work."
+                           ]
+             },
+    "policy":  {
+                   "maxActiveTasks":  2,
+                   "promotableStatuses":  [
+                                              "planned",
+                                              "queued",
+                                              "ready"
+                                          ],
+                   "blockedStatuses":  [
+                                           "blocked",
+                                           "parked",
+                                           "human-blocked"
+                                       ],
+                   "terminalStatuses":  [
+                                            "done",
+                                            "completed",
+                                            "cancelled"
+                                        ]
+               },
+    "tasks":  [
+                  {
+                      "id":  "TO-101",
+                      "title":  "Add the sellable product contract artifact",
+                      "status":  "completed",
+                      "priority":  "P1",
+                      "phase":  "contract",
+                      "order":  1,
+                      "ownerFiles":  [
+                                         "0.dev-matrix/SPEC.json",
+                                         "0.dev-matrix/LAUNCH_CHECKLIST.md",
+                                         "0.dev-matrix/TASK.md",
+                                         "0.dev-matrix/AI-HANDOFF.md"
+                                     ],
+                      "dependsOn":  [
+
+                                    ],
+                      "why":  "TruckOpti is being carried as a sellable near-launch product, but the repo still lacks an accepted contract artifact that ties the live launch slice to one owned surface.",
+                      "definitionOfDone":  "Truck_Opti has an accepted product contract artifact and the launch, task, and handoff surfaces all point at the same sellable-product slice.",
+                      "validation":  [
+                                         "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",
+                                         "Run 0.dev-matrix/sync-two-task-loop.ps1 -Mode manual and confirm the active pair points at the live sellable-product slice."
+                                     ],
+                      "businessValue":  "Turns TruckOpti\u0027s launch claims into contract-backed commercial readiness instead of implied product scope."
+                  },
+                  {
+                      "id":  "TO-102",
+                      "title":  "Prepare the post-credentials launch proof surface",
+                      "status":  "completed",
+                      "priority":  "P1",
+                      "phase":  "validate",
+                      "order":  2,
+                      "ownerFiles":  [
+                                         "0.dev-matrix/LAUNCH_CHECKLIST.md",
+                                         "0.dev-matrix/TASK.md",
+                                         "0.dev-matrix/AI-HANDOFF.md",
+                                         "scripts/launch-readiness.ps1"
+                                     ],
+                      "dependsOn":  [
+
+                                    ],
+                      "why":  "The remaining hard blocker is live Razorpay credentials, so the repo needs an explicit proof path that can be run immediately once those credentials exist.",
+                      "definitionOfDone":  "TruckOpti names the exact post-credential validation sequence for launch readiness, live auth proof, and production configuration proof.",
+                      "validation":  [
+                                         "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",
+                                         "node scripts/live-auth-proof.cjs",
+                                         "node scripts/production_config_audit.mjs"
+                                     ],
+                      "businessValue":  "Removes ambiguity between a configuration blocker and the proof steps needed to convert TruckOpti into a live sellable product."
+                  },
+                  {
+                      "id":  "TO-103",
+                      "title":  "Provision live Razorpay credentials for launch",
+                      "status":  "completed",
+                      "priority":  "P1",
+                      "phase":  "deploy",
+                      "order":  3,
+                      "ownerFiles":  [
+                                         "0.dev-matrix/LAUNCH_CHECKLIST.md",
+                                         "0.dev-matrix/TASK.md",
+                                         "scripts/production_config_audit.mjs"
+                                     ],
+                      "dependsOn":  [
+                                        "TO-102"
+                                    ],
+                      "why":  "TruckOpti\u0027s current blocker is not another code refactor. It is the absence of live Razorpay production credentials in the target environment.",
+                      "definitionOfDone":  "Production Razorpay credentials are present in the live environment and the repo can proceed to launch proof without pretending the blocker is solved in code.",
+                      "validation":  [
+                                         "node scripts/production_config_audit.mjs",
+                                         "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1"
+                                     ],
+                      "businessValue":  "Unblocks the only hard production launch blocker currently recorded for TruckOpti."
+                  },
+                  {
+                      "id":  "TO-105",
+                      "title":  "Verify controlled live checkout proof",
+                      "status":  "completed",
+                      "priority":  "P1",
+                      "phase":  "prove",
+                      "order":  4,
+                      "ownerFiles":  [
+                                         "0.dev-matrix/AI-HANDOFF.md",
+                                         "0.dev-matrix/LAUNCH_CHECKLIST.md",
+                                         "0.dev-matrix/STATE.md",
+                                         "0.dev-matrix/LAST-CLOSEOUT.md"
+                                     ],
+                      "dependsOn":  [
+                                        "TO-103"
+                                    ],
+                      "why":  "Live Razorpay keys, GST-disabled billing, and the production checkout bundle are already deployed. The remaining payment-side launch proof is one controlled authenticated checkout that reaches the server-side verify-razorpay-payment path on the live site.",
+                      "definitionOfDone":  "One controlled authenticated live checkout on https://www.truckopti.in reaches the server-side verify-razorpay-payment path with GST disabled and the outcome is captured in the launch surfaces.",
+                      "validation":  [
+                                         "node scripts/production_config_audit.mjs",
+                                         "Run one controlled authenticated checkout on https://www.truckopti.in and confirm the verify-razorpay-payment path completes."
+                                     ],
+                      "businessValue":  "Turns production payment readiness from config-only confidence into revenue-grade proof."
+                  },
+                  {
+                      "id":  "TO-106",
+                      "title":  "Retest returning-user stale-client recovery",
+                      "status":  "completed",
+                      "priority":  "P1",
+                      "phase":  "prove",
+                      "order":  5,
+                      "ownerFiles":  [
+                                         "frontend/vite.config.ts",
+                                         "server.js",
+                                         "0.dev-matrix/AI-HANDOFF.md",
+                                         "0.dev-matrix/STATE.md"
+                                     ],
+                      "dependsOn":  [
+                                        "TO-103"
+                                    ],
+                      "why":  "The old stale checkout/UI problem was traced to a cached service worker on the public host and mitigated with sw-v2.js plus corrected origin cache headers. Launch proof still needs one returning-user/browser-cache retest against the new service-worker path.",
+                      "definitionOfDone":  "A returning-user retest confirms the live app updates onto the sw-v2.js path without stale chunk failures or old checkout payment-logo regressions, and the proof is captured in the launch surfaces.",
+                      "validation":  [
+                                         "npm run test:public-smoke",
+                                         "Open a returning-user/browser-cache path on https://www.truckopti.in and confirm the live checkout renders the new payment badges with no stale chunk failures."
+                                     ],
+                      "businessValue":  "Reduces launch risk for returning users by proving stale-client recovery on the live host rather than only in code or origin headers."
+                  },
+                  {
+                      "id":  "TO-104",
+                      "title":  "Capture normalized TruckOpti launch evidence",
+                      "status":  "completed",
+                      "priority":  "P1",
+                      "phase":  "prove",
+                      "order":  6,
+                      "ownerFiles":  [
+                                         "0.dev-matrix/AI-HANDOFF.md",
+                                         "0.dev-matrix/STATE.md",
+                                         "0.dev-matrix/TASK.md",
+                                         "0.dev-matrix/LAST-CLOSEOUT.md"
+                                     ],
+                      "dependsOn":  [
+                                        "TO-105",
+                                        "TO-106"
+                                    ],
+                      "why":  "The repo should finish the launch slice with explicit proof and aligned handoff surfaces once the live checkout proof and stale-client retest are captured.",
+                      "definitionOfDone":  "TruckOpti handoff, state, task board, and closeout all reflect the same validated live payment and stale-client launch evidence.",
+                      "validation":  [
+                                         "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",
+                                         "Run 0.dev-matrix/sync-two-task-loop.ps1 -Mode manual after the proof files are updated."
+                                     ],
+                      "businessValue":  "Locks launch readiness into durable proof that sales and delivery work can trust."
+                  }
+              ]
 }
+

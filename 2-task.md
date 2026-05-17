@@ -4,43 +4,17 @@ This file is auto-generated from 0.dev-matrix/AI-TASKS.json.
 
 ## Current 2 Active Tasks
 
-1. TO-101 - Add the sellable product contract artifact
-- Priority: P1 | Phase: contract | Status: active
-- Owner files: 0.dev-matrix/SPEC.json, 0.dev-matrix/LAUNCH_CHECKLIST.md, 0.dev-matrix/TASK.md, 0.dev-matrix/AI-HANDOFF.md
-- Why: TruckOpti is being carried as a sellable near-launch product, but the repo still lacks an accepted contract artifact that ties the live launch slice to one owned surface.
-- Done when: Truck_Opti has an accepted product contract artifact and the launch, task, and handoff surfaces all point at the same sellable-product slice.
-- Validate: powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1 ; Run 0.dev-matrix/sync-two-task-loop.ps1 -Mode manual and confirm the active pair points at the live sellable-product slice.
-- Business value: Turns TruckOpti's launch claims into contract-backed commercial readiness instead of implied product scope.
-
-2. TO-102 - Prepare the post-credentials launch proof surface
-- Priority: P1 | Phase: validate | Status: active
-- Owner files: 0.dev-matrix/LAUNCH_CHECKLIST.md, 0.dev-matrix/TASK.md, 0.dev-matrix/AI-HANDOFF.md, scripts/launch-readiness.ps1
-- Why: The remaining hard blocker is live Razorpay credentials, so the repo needs an explicit proof path that can be run immediately once those credentials exist.
-- Done when: TruckOpti names the exact post-credential validation sequence for launch readiness, live auth proof, and production configuration proof.
-- Validate: powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1 ; node scripts/live-auth-proof.cjs ; node scripts/production_config_audit.mjs
-- Business value: Removes ambiguity between a configuration blocker and the proof steps needed to convert TruckOpti into a live sellable product.
+1.  - 
+- Priority:  | Phase:  | Status: 
 
 ## Next 2 Queued Tasks
 
-1. TO-104 - Capture normalized TruckOpti launch evidence
-- Priority: P1 | Phase: prove | Status: planned
-- Waiting on: TO-101, TO-102, TO-103
-- Owner files: 0.dev-matrix/AI-HANDOFF.md, 0.dev-matrix/STATE.md, 0.dev-matrix/TASK.md, 0.dev-matrix/LAST-CLOSEOUT.md
-- Why: The repo should finish the launch slice with explicit proof and aligned handoff surfaces instead of carrying implicit status.
-- Done when: TruckOpti handoff, state, task board, and closeout all reflect the same validated launch evidence after the credential blocker clears.
-- Validate: powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1 ; Run 0.dev-matrix/sync-two-task-loop.ps1 -Mode manual after the proof files are updated.
-- Business value: Locks launch readiness into durable proof that sales and delivery work can trust.
+- none
 
 ## Explicitly Blocked Tasks
 
-1. TO-103 - Provision live Razorpay credentials for launch
-- Priority: P1 | Phase: deploy | Status: human-blocked
-- Waiting on: TO-102
-- Owner files: 0.dev-matrix/LAUNCH_CHECKLIST.md, 0.dev-matrix/TASK.md, scripts/production_config_audit.mjs
-- Why: TruckOpti's current blocker is not another code refactor. It is the absence of live Razorpay production credentials in the target environment.
-- Done when: Production Razorpay credentials are present in the live environment and the repo can proceed to launch proof without pretending the blocker is solved in code.
-- Validate: node scripts/production_config_audit.mjs ; powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1
-- Business value: Unblocks the only hard production launch blocker currently recorded for TruckOpti.
+1.  - 
+- Priority:  | Phase:  | Status: 
 
 ## Rule
 

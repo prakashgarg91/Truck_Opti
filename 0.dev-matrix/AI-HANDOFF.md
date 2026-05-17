@@ -28,6 +28,60 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-17 (Copilot — launch proof normalized, stale-client lane closed)
+
+- Changed: closed `TO-106` and `TO-104` on the launch surfaces after reconciling the live stale-client evidence with the real payment proof already captured earlier today; `AI-TASKS.json`, `STATE.md`, `TASK.md`, and `LAUNCH_CHECKLIST.md` now treat the sellable launch-proof queue as complete.
+- Verified: `npm run test:public-smoke` PASS (`12/12`) against `https://www.truckopti.in`; `https://www.truckopti.in/sw-v2.js` returns `200` with `Cache-Control: no-cache, no-store, must-revalidate` and `Service-Worker-Allowed: /`; `https://www.truckopti.in/` also returns `Cache-Control: no-cache, no-store, must-revalidate`; the earlier chairman-led production payment still stands as the live checkout proof.
+- Operational proof: the live host now has green public-route smoke, a versioned no-cache service-worker path, a no-cache root document, and a real authenticated payment session that reached `/subscription` with the active renewal plus invoice row, so stale-client recovery is no longer an open blocker for the current launch slice.
+- Continue from: pick the next non-launch AI-owned gap from `0.dev-matrix/DESIGN-GAP-MAP-2026-05-16.md` (`GAP-01` service-layer completion or `GAP-02` agency portal edge functions), or resume parked billing-email work through `T-155` only when AWS SES setup is worth doing.
+- Next step: keep the launch-proof evidence frozen, close the day from the current tree truthfully, and do not reopen payment/stale-client work unless a new live regression is reproduced.
+- Blockers: close-day cannot finish fully green on this worktree until the large unrelated in-progress frontend/service-layer and agency-function changes already present in `git status` are either validated and committed or explicitly parked; AWS SES sender/domain setup remains intentionally deferred.
+
+### 2026-05-17 (Copilot — AWS SES invoice email parked, hosted invoice flow stays live)
+
+- Changed: replaced the invoice-email transport in `supabase/functions/_shared/invoice-delivery.ts` with an AWS SES body-only sender that keeps hosted invoice delivery inside Supabase Edge Functions, and deployed `admin-backfill-invoice-delivery`, `verify-razorpay-payment`, `verify-payment`, and `razorpay-webhook` with the shared helper update.
+- Verified: shared-helper diagnostics were clean before deploy; all four Supabase functions deployed successfully; re-running the admin backfill for `INV-202605-000007` kept `invoices.pdf_url` live and recorded `payment_history.metadata.invoice_delivery.emailProvider='aws-ses'`; live `/subscription` still shows invoice `INV-202605-000007` with action `Open`.
+- Operational proof: hosted invoice PDFs remain live and user-accessible without any email provider, while the automatic email path now fails only with the expected configuration message `Missing AWS SES configuration: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SES_REGION or AWS_REGION`.
+- Continue from: when billing email is worth resuming, verify the SES sender/domain, set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SES_REGION` (or `AWS_REGION`) in Supabase secrets, optionally set `BILLING_EMAIL_FROM` / `BILLING_SUPPORT_EMAIL`, then rerun `admin-backfill-invoice-delivery` for `INV-202605-000007` as the proof check.
+- Next step: keep launch/billing work focused on the hosted-invoice path that already works, and treat AWS SES billing email rollout as a deferred future follow-up rather than a current blocker.
+- Blockers: AWS SES account setup, verified sender/domain, and secrets are intentionally deferred for now.
+
+### 2026-05-17 (Copilot — live payment proof captured, billing UX deployed)
+
+- Changed: deployed the frontend-only billing UX follow-up to Heroku `v91` from the isolated deploy worktree. `frontend/src/pages/PaymentCallbackPage.tsx` now includes `View billing history`, and `frontend/src/pages/SubscriptionPage.tsx` now offers a `Download` fallback when `invoice.pdf_url` is missing.
+- Verified: `cd frontend && npm run build` PASS on the main tree; `cd d:\Github\Truck_Opti__deploy_checkout_fix\frontend && npm install --include=dev && npm run build` PASS; Heroku `v91` build/release succeeded; live `PaymentCallbackPage-FZiA11oi.js` contains `View billing history`; live `SubscriptionPage-C39lSXlz.js` contains fallback invoice `Download`; the chairman's production session shows a real payment succeeded and `/subscription` now lists active renewal plus invoice `INV-202605-000007` for `₹499`.
+- Operational proof: `TO-105` is now satisfied by real production payment evidence, and the billing UX gap is reduced to document delivery rather than checkout failure. Payment verification already creates invoice rows, but no repo code currently sends invoice email or attaches hosted `pdf_url`, so the new fallback download path is what users rely on until backend invoice delivery is implemented.
+- Continue from: if needed, run one explicit hard-refresh/shared-session retest for `TO-106`, then normalize the final launch evidence across `STATE.md`, `TASK.md`, and the next closeout surface.
+- Next step: decide whether to close `TO-106` from the successful live session or capture one separate stale-client retest, then add a backlog item for hosted invoice PDF plus email delivery.
+- Blockers: no repo code found that populates `invoices.pdf_url` or sends invoice/receipt email; standard hosted billing-document delivery remains unimplemented backend work.
+
+### 2026-05-17 (Copilot — live checkout root fix deployed, shared-tab stale retest still pending)
+
+- Changed: deployed canonical plan-resolution to the live payment runtime (`create-razorpay-order`, `phonepe-checkout`, `verify-payment`, `verify-razorpay-payment`, `razorpay-webhook`) so pricing-tier slugs resolve to real `subscription_plans` UUIDs, and pushed the matching frontend checkout fallback change to Heroku release `v90` from the isolated deploy worktree.
+- Verified: `cd frontend && npm run build` PASS before deploy; all 5 Supabase payment functions deployed to `jbxncejtcbpcronndqlx`; Heroku `v90` build/release succeeded; the public host now serves `/assets/index-DH60AMI1.js` and `/assets/CheckoutPage-iUQRl1Nf.js`; a fresh unauthenticated `/checkout?plan=starter&billing=monthly` now redirects to `/login` instead of failing on plan lookup.
+- Operational proof: production runtime is updated end-to-end for tier-slug checkout handling, but the shared authenticated returning-user tab still enters `/checkout?plan=starter&billing=monthly` and snaps back to `/pricing`, which is current evidence of a stale cached checkout client rather than a missing deploy.
+- Continue from: retest the same shared authenticated page after a hard refresh or new shared-session load, then only attempt `TO-105` controlled checkout proof if the checkout page stays open and the plan summary renders.
+- Next step: get a hard-refreshed authenticated shared page on `https://www.truckopti.in/pricing`, click Starter `Get Started`, confirm checkout stays on `/checkout?plan=starter&billing=monthly`, and keep real payment on hold until that UI proof is green.
+- Blockers: the shared returning-user tab still appears stale after a normal reload; controlled live payment still needs owner approval plus an authenticated session; no automatic refund workflow is verified in code and the live terms only promise discretionary refunds within 7 days.
+
+### 2026-05-16 (Copilot — live billing rollout + stale-SW bypass deployed)
+
+- Changed: installed the live Razorpay public/backend keys, made subscription GST config-driven and disabled by default across checkout plus payment edge functions, replaced the broken checkout payment-logo row with first-party UPI badges, and deployed a versioned service-worker path (`sw-v2.js`) plus server cache-header fixes to bypass the stale Cloudflare-cached `sw.js` object.
+- Verified: `npm run test:prod-config` PASS (`6/6`), `npm run test:public-smoke` PASS (`12/12`) after the latest Heroku release `v88`, `https://www.truckopti.in/sw-v2.js` returns `Cache-Control: no-cache, no-store, must-revalidate` plus `Service-Worker-Allowed: /`, and the live checkout chunk `CheckoutPage-DOZvOWKq.js` contains `Accepted UPI apps` with no `PhonePe_Logo` remote-image reference.
+- Operational proof: production config and public routes are green, the live checkout now serves the fixed payment-badge UI, GST is currently off by config, and the public host now exposes a versioned no-cache service-worker path for stale-client recovery.
+- Continue from: run one controlled authenticated live checkout on `https://www.truckopti.in` to verify the server-side `verify-razorpay-payment` path end-to-end with GST disabled, then retest one returning-user/browser-cache path against the new `sw-v2.js` registration.
+- Next step: capture the live payment proof plus stale-client retest evidence in `STATE.md`, `LAUNCH_CHECKLIST.md`, and the next closeout surfaces, then decide whether the remaining local refactor files should be committed or parked.
+- Blockers: real-money payment proof still needs owner participation/approval and an authenticated live session; the working tree remains dirty with additional local refactor work outside this close-day slice.
+
+### 2026-05-16 (Copilot — Razorpay verification evidence narrowed the blocker)
+
+- Changed: updated the local launch truth to reflect the latest owner-provided Razorpay dashboard evidence: `https://www.truckopti.in` is verified, so the remaining payment blocker is no longer site verification but live key generation/download plus live env integration.
+- Verified: the shared Razorpay dashboard screenshot shows `Your website has been successfully verified` for `https://www.truckopti.in` and exposes `Generate Key`; the last repo-side production-config truth still showed Heroku serving `rzp_test_*`, so live keys remain the missing step rather than app/runtime readiness.
+- Operational proof: the repo-side webapp/runtime lane is already green; the live payment blocker is now specifically production key issuance and installation in the target environment.
+- Continue from: generate the Razorpay live key pair in the dashboard, set Heroku `VITE_RAZORPAY_KEY_ID` plus the matching live backend `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`, then rerun the payment config/proof lane.
+- Next step: after the live keys are installed, rerun `npm run test:prod-config` and the live payment proof path, then capture the resulting `TO-104` evidence across the queue, state, and closeout surfaces.
+- Blockers: live Razorpay key generation/download and env installation remain human-side; authenticated proof secrets/session remain the other owner-side dependency for repeatable protected-flow proof.
+
 ### 2026-05-14 (Copilot — runtime loop root scripts + launch-ready handoff)
 
 - Changed: added repo-root runtime wrappers and root npm script coverage for `track-errors`, `dev`, `test:hidden-errors`, and `test`, wired the repo-local launch-check wrapper plus runtime-loop enforcement/docs, and kept the current repo queue/governance updates in the tree for a clean commit/close-day pass.

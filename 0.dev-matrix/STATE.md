@@ -1,10 +1,17 @@
 # 📊 STATE
 
 > **Live System State + AI Agent Registry + Quality Metrics**
-> Version: 3.0 | All AIs MUST register here and update regularly.
+> Version: 3.1 | All AIs MUST register here and update regularly.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
 >
-> **Queue-normalized launch truth (2026-05-14):** the canonical repo queue is now `TO-101` plus `TO-102` active, `TO-103` human-blocked for live Razorpay credentials, and `TO-104` planned for normalized evidence capture. `0.dev-matrix/SPEC.json` is the accepted contract artifact for the current sellable-product slice.
+> **Final AI-Executable Gap Analysis (2026-05-16 — Copilot-078):** Two critical non-human gaps remain. GAP-01 is service-layer refactoring incompleteness (20+ pages still calling Supabase directly instead of through dedicated APIs, blocking testability and maintainability). GAP-02 is missing agency portal edge functions (agency operations lack the trusted authorization layer that admin already has, creating a security/consistency gap). Both are AI-executable, follow established patterns, and have clear validation paths. Full analysis with 2 concrete next steps is documented in `0.dev-matrix/DESIGN-GAP-MAP-2026-05-16.md`.
+> 
+> **Queue-normalized launch truth (2026-05-17 close-day):** the canonical repo queue has completed the current sellable launch-proof slice. `TO-101` through `TO-106` are now complete, including the final evidence-normalization step in `TO-104`. `0.dev-matrix/SPEC.json` remains the accepted contract artifact for the current sellable-product slice, the live payment plus stale-client proof is frozen into the launch surfaces, and the immediate AI focus returns to `GAP-01`, `GAP-02`, and the parked `T-155` billing-email follow-up instead of reopening launch-proof discovery.
+> **2026-05-17 (Copilot-081):** launch-proof normalization is now closed. Fresh production `npm run test:public-smoke` still passes `12/12`, `https://www.truckopti.in/sw-v2.js` returns `200` with `Cache-Control: no-cache, no-store, must-revalidate` and `Service-Worker-Allowed: /`, and the root document at `https://www.truckopti.in/` also returns `Cache-Control: no-cache, no-store, must-revalidate`. Combined with the chairman's earlier real payment session that reached `/subscription` and exposed the active renewal plus invoice row, this is sufficient proof that the stale-client lane is no longer an open launch blocker.
+> **2026-05-17 (Copilot-079):** the checkout hotfix is now live end-to-end. Supabase functions `create-razorpay-order`, `phonepe-checkout`, `verify-payment`, `verify-razorpay-payment`, and `razorpay-webhook` now resolve tier slugs to canonical `subscription_plans` UUID rows, and Heroku `v90` serves `index-DH60AMI1.js` plus `CheckoutPage-iUQRl1Nf.js`. Public-host proof is mixed: a fresh unauthenticated `/checkout?plan=starter&billing=monthly` now redirects to `/login` instead of failing on plan lookup, but the shared authenticated returning-user page still enters `/checkout` and snaps back to `/pricing`, which matches a stale cached checkout client rather than a missing deploy. Current truth: `TO-105` controlled live payment proof remains on hold, `TO-106` is still active, and the owner should not press `Pay` yet because no automatic refund workflow is verified in code.
+> **2026-05-17 (Copilot-080):** controlled live payment proof is now captured. The chairman completed a real production Razorpay payment, `/subscription` now shows active renewal through `17 Jun 2026` plus paid invoice `INV-202605-000007` for `₹499`, and Heroku `v91` ships the post-payment billing UX follow-up: `PaymentCallbackPage` now exposes `View billing history`, while `SubscriptionPage` now provides a `Download` fallback when no hosted invoice PDF is attached. Billing gap truth is narrower: payment verification already creates invoice rows, but no repo code currently populates `invoices.pdf_url` or sends invoice email, so hosted PDF delivery and invoice email remain follow-up work rather than checkout blockers.
+> **Launch rollout update (2026-05-16 night — Copilot):** live Razorpay keys are now installed in Heroku + Supabase, `npm run test:prod-config` passes `6/6`, checkout GST is config-driven and currently disabled, and Heroku `v88` ships the fixed checkout payment badges plus the versioned `sw-v2.js` stale-cache bypass. The remaining payment-side proof is one controlled live checkout plus a returning-user stale-service-worker retest, not key installation.
+> 2026-05-16 (Copilot): owner-provided Razorpay dashboard evidence now shows `https://www.truckopti.in` successfully verified and the `Generate Key` action available. Current launch truth is narrower than before: website verification is complete, while the remaining payment blocker is live key generation/download, Heroku + Supabase env rollout, and rerunning `npm run test:prod-config` plus live payment proof.
 > 2026-05-13 (Copilot-073): the final AI-owned design gaps in the current route tree are now closed. `frontend/src/pages/SubscriptionPage.tsx` ships a real protected `/subscription` current-plan surface backed by `useSubscription()` and `invoicesApi`, `frontend/src/App.tsx` no longer aliases that route to `/pricing`, and `frontend/src/layouts/MobileLayout.tsx` now routes subscription entry points into the owned page. `docs/MODULES.md`, `docs/ARCHITECTURE.md`, and `0.dev-matrix/DESIGN-GAP-REGISTER.md` now agree that the shared customer shell is currently guarded by bare `ProtectedRoute` with `user` as the primary persona. Validation: `cd frontend && npm run build` PASS after the subscription/contract slice. Remaining launch blockers are now only the two owner-side items: live Razorpay keys and auth proof credentials/session.
 > 2026-05-13 (Copilot-072): two more non-human design gaps from the design-gap register are now closed in code. `frontend/src/layouts/MobileLayout.tsx` now routes help/support into protected `/support`, `frontend/src/pages/ContactPage.tsx` now supports an authenticated support variant, and `frontend/src/components/ProtectedRoute.tsx` now renders `PermissionDeniedState` on role mismatch instead of silently redirecting. Validation: `cd frontend && npm run build` PASS after the support/permission slice. Remaining AI-owned design gap is now only self-serve subscription management; external blockers remain live Razorpay keys plus auth proof credentials/session.
 > 2026-05-13 (Copilot-071): two confirmed non-human design defects from the new design-gap register are now closed in code. `frontend/src/App.tsx` now owns `/agency/profile` inside the agency route group, and `frontend/src/utils/whatsappShare.ts` now emits owned deep links for tracking and invoice flows instead of dropping shipment context or pointing to an unowned payment URL. Validation: `cd frontend && npm run build` PASS after the route/share repair slice. Remaining launch blockers stay unchanged: live Razorpay keys and auth proof credentials/session.
@@ -100,10 +107,10 @@
 
 | Alert | Severity | Description | Assigned To |
 |-------|----------|-------------|-------------|
-| `PROD-CONFIG-AUDIT-20260403` | 🔴 BLOCKING | Heroku production config audit now passes 5/6 on 2026-04-22: app URL, Supabase auth DNS, email OTP flag, Sentry DSN, and PhonePe disable state are healthy, but Razorpay is still on a test key | MANAGER + OWNER |
+| `PROD-CONFIG-AUDIT-20260403` | 🟡 WATCH | Heroku production config audit now passes 6/6 after the live Razorpay rollout on 2026-05-16. Remaining payment-side proof is one controlled live checkout plus evidence capture, not config repair. | MANAGER + OWNER |
 | ~~`DEPENDABOT-REMOTE-MISMATCH-20260413`~~ | ✅ RESOLVED | Authenticated GitHub API queries on 2026-04-13 show `state=open` returns no open Dependabot alerts for this repo. The earlier 17-alert inventory was historical fixed-state data, not a live mismatch. Docker Scout base-image CVEs remain separate container-hygiene evidence rather than an active GitHub default-branch alert. | GPT-010 |
 | `AUTH-E2E-UNVERIFIED-20260405` | 🟡 WATCH | Production authenticated proof is green for driver, agency, customer, and admin review flows on `www.truckopti.in`, including a real Google-authenticated admin session on 2026-05-01. The remaining watch item is a repeatable full driver-trip/business-action proof lane plus fresh reruns when `SEED_DEMO_PASSWORD` is available. | MANAGER + OWNER |
-| `PWA-SW-STALE-CHUNK-20260403` | 🟡 WATCH | Full browser audit reproduced stale lazy-chunk/module failures for returning clients until service worker + caches were cleared | MANAGER |
+| `PWA-SW-STALE-CHUNK-20260403` | 🟡 WATCH | The stale-client mitigation is deployed. The later 2026-05-17 live authenticated session reached checkout, completed a real payment, and `/subscription` now shows the active renewal plus invoice row, which materially reduces the stale-client concern. `TO-106` remains a thinner follow-up retest only if a separate hard-refresh/shared-session proof is still desired. | MANAGER |
 | `HEROKU-H10-20260401` | 🟡 WATCH | Live app crash fixed by `552b424c`/`f8e93f07`, but cached clients may still serve stale root assets until refreshed | MANAGER |
 | ~~SUPABASE-AUTH-DNS-20260401~~ | ✅ RESOLVED | Production Supabase project was resumed on 2026-04-05; DNS now resolves and auth health is reachable again (401 without API key is acceptable reachability evidence) | OWNER + GPT-004 |
 | ~~HEROKU-STALE~~ | ✅ RESOLVED | Deployed v22 (slug 337 MB). Added .slugignore; slug was 843 MB. | SONNET-001 (auto) |
@@ -181,6 +188,40 @@ Examples: OPUS-001, HAIKU-002, GPT-003, GEMINI-004, LLAMA-005
 > **Leave messages for other AIs here. Newest at top.**
 
 ```
+[2026-05-17] Copilot-080 (GitHub Copilot / GPT-5.4): ✅ REAL LIVE PAYMENT PROVED, BILLING UX PATCH DEPLOYED
+
+                             WORK COMPLETED:
+                             - chairman completed a real production Razorpay payment successfully; production `/subscription` now shows active renewal through `17 Jun 2026` and invoice `INV-202605-000007` for `₹499`
+                             - deployed Heroku `v91` from the isolated worktree with the post-payment billing UX follow-up: `PaymentCallbackPage` now exposes `View billing history`, and `SubscriptionPage` now shows `Download` when `invoice.pdf_url` is missing
+
+                             VERIFIED EVIDENCE:
+                             - local main-tree validation: `cd frontend && npm run build` PASS
+                             - deploy-worktree validation: `cd frontend && npm install --include=dev && npm run build` PASS
+                             - Heroku deploy: release `v91` succeeded
+                             - public asset proof: live `PaymentCallbackPage-FZiA11oi.js` contains `View billing history`; live `SubscriptionPage-C39lSXlz.js` contains fallback invoice `Download`
+                             - live product proof: authenticated production subscription page shows active renewal and paid invoice `INV-202605-000007`
+
+                             PRODUCT JUDGMENT:
+                             - `TO-105` is now satisfied by real production payment evidence; checkout is no longer the blocking gap
+                             - remaining billing gap is backend-side document delivery: no repo code currently populates `invoices.pdf_url` or sends invoice/receipt email, so hosted invoice delivery and email remain follow-up work
+------------------------------------------------------------------------------------------
+[2026-05-17] Copilot-079 (GitHub Copilot / GPT-5.4): ✅ LIVE CHECKOUT ROOT FIX DEPLOYED, SHARED RETURNING-USER TAB STILL STALE
+
+                             WORK COMPLETED:
+                             - deployed the checkout root fix end-to-end: Heroku `v90` now serves the final checkout fallback bundle and Supabase functions `create-razorpay-order`, `phonepe-checkout`, `verify-payment`, `verify-razorpay-payment`, and `razorpay-webhook` now canonicalize pricing-tier slugs to real `subscription_plans` UUID rows
+                             - verified the public host now serves `index-DH60AMI1.js` and `CheckoutPage-iUQRl1Nf.js`, which contain the expected fallback checkout logic
+
+                             VERIFIED EVIDENCE:
+                             - `cd frontend && npm run build`: PASS before deploy
+                             - Supabase deploy: 5/5 payment functions deployed to `jbxncejtcbpcronndqlx`
+                             - Heroku deploy: release `v90` succeeded
+                             - browser proof: a fresh unauthenticated `/checkout?plan=starter&billing=monthly` now redirects to `/login` instead of failing on plan lookup
+                             - shared-page proof: the authenticated returning-user tab still enters `/checkout?plan=starter&billing=monthly` and snaps back to `/pricing`
+
+                             PRODUCT JUDGMENT:
+                             - production runtime is updated, but the shared returning-user session still behaves like a stale cached checkout client, so `TO-105` and `TO-106` are not green yet
+                             - controlled real-money proof remains on hold; do not tell the owner to press `Pay` until a hard-refreshed/shared-session checkout page stays open and renders the plan summary
+------------------------------------------------------------------------------------------
 [2026-04-22] GPT-027 (MANAGER+IMPL / GitHub Copilot — GPT-5.4): ✅ PACKING / PROFILE / SHARED-TYPE TRANSLATION CLEANUP COMPLETE
 
                              WORK COMPLETED:

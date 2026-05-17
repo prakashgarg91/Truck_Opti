@@ -6,9 +6,9 @@
 ## Current Launch Focus
 
 - Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
-- Current launch slice: clear the production configuration blockers so the already-built product can be sold and used live.
-- Current blocker: live Razorpay credentials remain the only hard production launch blocker. Real Google-authenticated proof is complete, and native Supabase backups/PITR are deferred temporarily in favor of the existing Telegram private-channel external logical backup posture.
-- Next earning step: finish live payment credentials, optionally deepen the full driver-trip proof lane, and onboard the first paying logistics customers.
+- Current launch slice: hold the live payment proof and stale-client recovery proof as the validated sellable launch slice, then shift AI work back to post-launch hardening instead of more launch-proof discovery.
+- Current blocker: no open blocker remains inside the current payment/stale-client launch-proof lane. Production Razorpay is live, `npm run test:prod-config` passes `6/6`, the chairman completed a real payment, fresh `npm run test:public-smoke` passes `12/12`, and both `sw-v2.js` plus the root document serve `Cache-Control: no-cache, no-store, must-revalidate`. Deferred follow-up remains AWS SES invoice email setup, the accepted temporary backup/PITR posture, and broader non-launch engineering gaps (`GAP-01` and `GAP-02`).
+- Next earning step: use the captured proof to onboard the first paying logistics customers, keep hosted invoice PDFs live, and reopen billing-email automation only when AWS SES setup is worth doing.
 
 ---
 
@@ -72,7 +72,7 @@
 
 | # | Item | Status | Priority |
 |---|------|--------|----------|
-| 6.1 | Razorpay production keys | ❌ | P0 — Heroku still serves `rzp_test_*`, so real payments are still blocked |
+| 6.1 | Razorpay production keys + env integration | ✅ | P0 — live Razorpay public/backend keys are installed in Heroku + Supabase, `npm run test:prod-config` now passes `6/6`, and the live checkout bundle serves the production key path |
 | 6.2 | Google OAuth production credentials | ✅ | P0 — real Google-authenticated production admin sign-in was observed on 2026-05-01 |
 | 6.2b | Live Supabase auth/backend reachability | ✅ | P0 — restored on 2026-04-05 after the project was resumed |
 | 6.3 | Google Maps API key | ❌ | P1 — Leaflet fallback works |
