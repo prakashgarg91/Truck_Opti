@@ -39,7 +39,6 @@ const VEHICLE_LABELS: Record<string, string> = {
 
 export default function AgencyDriversPage() {
   const { user } = useAuthStore()
-  const [agencyId, setAgencyId] = useState<string | null>(null)
   const [drivers, setDrivers] = useState<AssignedDriver[]>([])
   const [trucks, setTrucks] = useState<AgencyTruck[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,39 +51,28 @@ export default function AgencyDriversPage() {
 
   const fetchData = useCallback(async () => {
     if (!user?.id) return
-    const agency = await agencyDriversApi.getAgencyByUserId(user.id)
-    if (!agency?.id) { setLoading(false); return }
-    setAgencyId(agency.id)
-
-    const [truckData, driverData] = await Promise.all([
-      agencyDriversApi.getAgencyTrucks(agency.id),
-      agencyDriversApi.getAssignedDrivers(agency.id),
-    ])
-
-    setTrucks((truckData ?? []) as AgencyTruck[])
-
-    // Flatten trucks-with-drivers into driver list
-    const assigned: AssignedDriver[] = []
-    for (const t of (driverData ?? []) as Record<string, unknown>[]) {
-      const d = (Array.isArray(t.drivers) ? t.drivers[0] : t.drivers) as Record<string, unknown> | null
-      if (d) {
-        assigned.push({
-          ...(d as unknown as AssignedDriver),
-          truck_id: t.id as string,
-        })
-      }
+    setLoading(true)
+    try {
+      const snapshot = await agencyDriversApi.getSnapshot()
+      setTrucks(snapshot.trucks as AgencyTruck[])
+      setDrivers(snapshot.drivers as AssignedDriver[])
+    } catch (error) {
+      logger.error('[AgencyDriversPage] fetchData', error)
+      toast.error('Failed to load drivers')
+      setDrivers([])
+      setTrucks([])
+    } finally {
+      setLoading(false)
     }
-    setDrivers(assigned)
-    setLoading(false)
   }, [user?.id])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   const handleAssignTruck = async () => {
-    if (!assignModal || !selectedTruckId || !agencyId) return
+    if (!assignModal || !selectedTruckId) return
     setSaving(true)
     try {
-      await agencyDriversApi.assignTruckToDriver(agencyId, selectedTruckId, assignModal.driverId)
+      await agencyDriversApi.assignTruckToDriver(selectedTruckId, assignModal.driverId)
       toast.success(`Truck assigned to ${assignModal.driverName}`)
       setAssignModal(null)
       setSelectedTruckId('')
@@ -97,7 +85,7 @@ export default function AgencyDriversPage() {
 
   const handleUnassign = async (truckId: string, driverName: string) => {
     try {
-      await agencyDriversApi.unassignTruck(agencyId!, truckId)
+      await agencyDriversApi.unassignTruck(truckId)
       toast.success(`${driverName} unassigned from truck`)
       setDrivers(prev => prev.filter(d => d.truck_id !== truckId))
     } catch (_error) {
@@ -106,7 +94,7 @@ export default function AgencyDriversPage() {
   }
 
   const handlePayDriver = async () => {
-    if (!payModal || !payAmount || !agencyId) return
+    if (!payModal || !payAmount) return
     const amount = parseFloat(payAmount)
     if (isNaN(amount) || amount < 1) {
       toast.error('Enter a valid amount (min ₹1)')
@@ -114,7 +102,7 @@ export default function AgencyDriversPage() {
     }
     setSaving(true)
     try {
-      await agencyDriversApi.createPayout(agencyId, payModal.driverId, amount, payNote || undefined)
+      await agencyDriversApi.createPayout(payModal.driverId, amount, payNote || undefined)
     } catch (error) {
       logger.error('[AgencyDrivers] pay:', error)
       toast.error('Payment failed')

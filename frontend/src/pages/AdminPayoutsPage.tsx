@@ -4,7 +4,7 @@ import {
   DollarSign, CheckCircle2, XCircle, Clock, Search,
   RefreshCw, AlertTriangle, ChevronLeft
 } from 'lucide-react'
-import { adminPayoutsApi, type DriverPayout } from '../services/supabaseApi'
+import { adminPayoutsApi, type DriverPayout } from '../services/adminSupabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'

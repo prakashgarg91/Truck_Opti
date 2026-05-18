@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { UserFacingError } from '../utils/userFacingError'
+import { logger } from '../utils/logger'
 
 // ============= TYPES =============
 export interface Agency {
@@ -79,327 +80,154 @@ export interface AdminUser {
     created_at: string | null
 }
 
-// ============= AGENCIES API =============
-export const adminAgenciesApi = {
-    async getByStatus(status: 'pending' | 'approved' | 'rejected' | 'suspended'): Promise<Agency[]> {
-        const { data, error } = await supabase
-            .from('transport_agencies')
-            .select('*')
-            .eq('status', status)
-            .order('created_at', { ascending: false })
+export interface AdminDriverProfile {
+    id: string
+    user_id: string | null
+    full_name: string
+    phone: string
+    aadhaar_last4: string | null
+    pan_number: string | null
+    date_of_birth: string | null
+    vehicle_type: string
+    rc_number: string | null
+    license_number: string | null
+    vehicle_capacity: number | null
+    dl_url: string | null
+    rc_url: string | null
+    insurance_url: string | null
+    selfie_url: string | null
+    bank_account: string | null
+    ifsc_code: string | null
+    upi_id: string | null
+    status: 'pending' | 'approved' | 'rejected' | 'suspended'
+    rejection_reason: string | null
+    approved_by: string | null
+    approved_at: string | null
+    home_city: string | null
+    rating: number | null
+    total_trips: number | null
+    is_online: boolean
+    created_at: string
+    updated_at: string
+}
 
-        if (error) {
-            throw new UserFacingError('Failed to load agencies')
+async function getFunctionErrorMessage(error: unknown, fallbackMessage: string) {
+    if (error && typeof error === 'object') {
+        const response = 'context' in error ? error.context : null
+
+        if (response instanceof Response) {
+            try {
+                const payload = (await response.clone().json()) as { error?: string }
+
+                if (typeof payload.error === 'string' && payload.error.trim()) {
+                    return payload.error
+                }
+            } catch {
+                // Fall through to generic handling.
+            }
         }
 
-        return (data as Agency[]) || []
-    },
+        if ('message' in error && typeof error.message === 'string' && error.message.trim()) {
+            return error.message
+        }
+    }
 
-    async getCountsByStatus(): Promise<Record<string, number>> {
-        const statuses = ['pending', 'approved', 'rejected', 'suspended'] as const
-        const results = await Promise.all(
-            statuses.map(status =>
-                supabase.from('transport_agencies').select('id', { count: 'exact', head: true }).eq('status', status)
-            )
-        )
+    return fallbackMessage
+}
 
-        const counts: Record<string, number> = {}
-        statuses.forEach((status, i) => {
-            counts[status] = results[i].count || 0
-        })
+async function invokeAdminFunction<T>(functionName: string, body: Record<string, unknown>, fallbackMessage: string): Promise<T> {
+    try {
+        const { data, error } = await supabase.functions.invoke<T>(functionName, { body })
 
-        return counts
+        if (error) {
+            logger.error(`[${functionName}]`, error)
+            throw new UserFacingError(await getFunctionErrorMessage(error, fallbackMessage))
+        }
+
+        return data as T
+    } catch (error) {
+        logger.error(`[${functionName}]`, error)
+        if (error instanceof UserFacingError) {
+            throw error
+        }
+
+        throw new UserFacingError(fallbackMessage)
+    }
+}
+
+// ============= AGENCIES API =============
+export const adminAgenciesApi = {
+    async getSnapshot(status: 'pending' | 'approved' | 'rejected' | 'suspended'): Promise<{ agencies: Agency[]; counts: Record<'pending' | 'approved' | 'rejected' | 'suspended', number> }> {
+        const data = await invokeAdminFunction<{
+            agencies: Agency[]
+            counts: Record<'pending' | 'approved' | 'rejected' | 'suspended', number>
+        }>('admin-portal-agencies', { action: 'list', status }, 'Failed to load agencies')
+
+        return {
+            agencies: data?.agencies ?? [],
+            counts: data?.counts ?? { pending: 0, approved: 0, rejected: 0, suspended: 0 },
+        }
     },
 
     async approve(agencyId: string): Promise<Agency> {
-        const { data, error } = await supabase
-            .from('transport_agencies')
-            .update({
-                status: 'approved',
-                approved_at: new Date().toISOString(),
-                rejection_reason: null,
-            })
-            .eq('id', agencyId)
-            .select('*')
-            .single()
-
-        if (error) {
-            throw new UserFacingError('Failed to approve agency. Please try again.')
-        }
-
-        return data as Agency
+        const data = await invokeAdminFunction<{ agency: Agency }>('admin-portal-agencies', { action: 'approve', agencyId }, 'Failed to approve agency. Please try again.')
+        return data.agency
     },
 
     async reject(agencyId: string, rejectionReason: string): Promise<Agency> {
-        const { data, error } = await supabase
-            .from('transport_agencies')
-            .update({
-                status: 'rejected',
-                rejection_reason: rejectionReason,
-            })
-            .eq('id', agencyId)
-            .select('*')
-            .single()
-
-        if (error) {
-            throw new UserFacingError('Failed to reject agency. Please try again.')
-        }
-
-        return data as Agency
+        const data = await invokeAdminFunction<{ agency: Agency }>('admin-portal-agencies', { action: 'reject', agencyId, rejectionReason }, 'Failed to reject agency. Please try again.')
+        return data.agency
     },
 
     async suspend(agencyId: string): Promise<Agency> {
-        const { data, error } = await supabase
-            .from('transport_agencies')
-            .update({ status: 'suspended' })
-            .eq('id', agencyId)
-            .select('*')
-            .single()
-
-        if (error) {
-            throw new UserFacingError('Failed to suspend agency. Please try again.')
-        }
-
-        return data as Agency
+        const data = await invokeAdminFunction<{ agency: Agency }>('admin-portal-agencies', { action: 'suspend', agencyId }, 'Failed to suspend agency. Please try again.')
+        return data.agency
     }
 }
 
 // ============= ADMIN PAYOUTS API =============
 export const adminPayoutsApi = {
     async getAll(): Promise<DriverPayout[]> {
-        const { data, error } = await supabase
-            .from('driver_payouts')
-            .select('*, drivers(full_name, phone)')
-            .order('requested_at', { ascending: false })
-
-        if (error) {
-            throw new UserFacingError('Failed to load payouts')
-        }
-
-        return (data as DriverPayout[]) || []
+        const data = await invokeAdminFunction<{ payouts: DriverPayout[] }>('admin-portal-payouts', { action: 'list' }, 'Failed to load payouts')
+        return data?.payouts ?? []
     },
 
     async approve(payoutId: string): Promise<DriverPayout> {
-        const { data, error } = await supabase
-            .from('driver_payouts')
-            .update({
-                status: 'approved',
-                processed_at: new Date().toISOString(),
-            })
-            .eq('id', payoutId)
-            .select('*, drivers(full_name, phone)')
-            .single()
-
-        if (error) {
-            throw new UserFacingError('Failed to approve payout. Please try again.')
-        }
-
-        return data as DriverPayout
+        const data = await invokeAdminFunction<{ payout: DriverPayout }>('admin-portal-payouts', { action: 'approve', payoutId }, 'Failed to approve payout. Please try again.')
+        return data.payout
     },
 
     async reject(payoutId: string, rejectionNote: string): Promise<DriverPayout> {
-        const { data, error } = await supabase
-            .from('driver_payouts')
-            .update({
-                status: 'rejected',
-                note: rejectionNote,
-                processed_at: new Date().toISOString(),
-            })
-            .eq('id', payoutId)
-            .select('*, drivers(full_name, phone)')
-            .single()
-
-        if (error) {
-            throw new UserFacingError('Failed to reject payout. Please try again.')
-        }
-
-        return data as DriverPayout
+        const data = await invokeAdminFunction<{ payout: DriverPayout }>('admin-portal-payouts', { action: 'reject', payoutId, rejectionNote }, 'Failed to reject payout. Please try again.')
+        return data.payout
     },
 
     async markAsPaid(payoutId: string): Promise<DriverPayout> {
-        const { data, error } = await supabase
-            .from('driver_payouts')
-            .update({
-                status: 'paid',
-                processed_at: new Date().toISOString(),
-            })
-            .eq('id', payoutId)
-            .select('*, drivers(full_name, phone)')
-            .single()
-
-        if (error) {
-            throw new UserFacingError('Failed to mark payout as paid. Please try again.')
-        }
-
-        return data as DriverPayout
+        const data = await invokeAdminFunction<{ payout: DriverPayout }>('admin-portal-payouts', { action: 'mark-paid', payoutId }, 'Failed to mark payout as paid. Please try again.')
+        return data.payout
     }
 }
 
 // ============= ADMIN DASHBOARD API =============
 export const adminDashboardApi = {
-    async getDashboardData(): Promise<AdminDashboardData> {
-        try {
-            // Fetch all required data in parallel
-            const [agencyJobsRes, agencyShipmentRefsRes, driverJobsRes, directBookingCandidatesRes, agenciesRes, driversRes, shipmentsRes] = await Promise.all([
-                supabase
-                    .from('agency_jobs')
-                    .select('id, agency_id, shipment_id, fare, created_at, updated_at, shipments(origin, destination, shipment_id)')
-                    .eq('status', 'delivered')
-                    .order('updated_at', { ascending: false }),
-                supabase
-                    .from('agency_jobs')
-                    .select('shipment_id'),
-                supabase
-                    .from('job_offers')
-                    .select('id, shipment_id, driver_id, delivered_at, shipments(origin, destination, shipment_id, estimated_cost)')
-                    .eq('status', 'delivered')
-                    .order('delivered_at', { ascending: false }),
-                supabase
-                    .from('shipments')
-                    .select('id, shipment_id, origin, destination, estimated_cost, status, created_at, updated_at, created_by')
-                    .not('created_by', 'is', null)
-                    .order('created_at', { ascending: false }),
-                supabase.from('transport_agencies').select('id', { count: 'exact', head: true }),
-                supabase.from('drivers').select('id', { count: 'exact', head: true }),
-                supabase.from('shipments').select('id', { count: 'exact', head: true }),
-            ])
+    async getSnapshot(limit = 20): Promise<{ analytics: AdminDashboardData; recentJobs: RevenueEvent[] }> {
+        const data = await invokeAdminFunction<{
+            analytics: AdminDashboardData
+            recentJobs: RevenueEvent[]
+        }>('admin-portal-dashboard', { action: 'snapshot', limit }, 'Failed to load dashboard analytics. Please try again.')
 
-            const analyticsError = agencyJobsRes.error || agencyShipmentRefsRes.error || driverJobsRes.error || directBookingCandidatesRes.error || agenciesRes.error || driversRes.error || shipmentsRes.error
-            if (analyticsError) {
-                throw analyticsError
-            }
-
-            // Process the data
-            const agencyJobsData = agencyJobsRes.data ?? []
-            const driverJobsData = driverJobsRes.data ?? []
-            const directBookingCandidates = directBookingCandidatesRes.data ?? []
-
-            const agencyShipmentIds = new Set(
-                ((agencyShipmentRefsRes.data ?? []) as Array<{ shipment_id: string | null }>)
-                    .map((row) => row.shipment_id)
-                    .filter((shipmentId): shipmentId is string => Boolean(shipmentId))
-            )
-
-            const directAppBookings = directBookingCandidates.filter((shipment: any) => !agencyShipmentIds.has(shipment.id))
-
-            const agencyRevenue = agencyJobsData.reduce((sum, job: any) => sum + Number(job.fare ?? 0), 0)
-            const driverRevenue = driverJobsData.reduce((sum, job: any) => {
-                const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
-                return sum + Number(shipment?.estimated_cost ?? 0)
-            }, 0)
-
-            const directAppShipmentIds = new Set(directAppBookings.map((booking: any) => booking.id))
-            const directAppRevenue = driverJobsData.reduce((sum, job: any) => {
-                if (!job.shipment_id || !directAppShipmentIds.has(job.shipment_id)) {
-                    return sum
-                }
-                const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
-                return sum + Number(shipment?.estimated_cost ?? 0)
-            }, 0)
-
-            const directAppBookingValue = directAppBookings.reduce((sum: number, booking: any) => sum + Number(booking.estimated_cost ?? 0), 0)
-            const totalRevenue = agencyRevenue + driverRevenue
-
-            return {
-                totalRevenue,
-                agencyRevenue,
-                driverRevenue,
-                directAppRevenue,
-                directAppBookingValue,
-                directAppBookingCount: directAppBookings.length,
-                totalAgencies: agenciesRes.count ?? 0,
-                totalDrivers: driversRes.count ?? 0,
-                totalShipments: shipmentsRes.count ?? 0,
-                platformFee: totalRevenue * 0.10,
-            }
-        } catch (error) {
-            throw new UserFacingError('Failed to load dashboard analytics. Please try again.')
+        return {
+            analytics: data.analytics,
+            recentJobs: data.recentJobs ?? [],
         }
     },
-
-    async getRecentJobs(limit = 20): Promise<RevenueEvent[]> {
-        try {
-            const [agencyJobsRes, driverJobsRes] = await Promise.all([
-                supabase
-                    .from('agency_jobs')
-                    .select('id, agency_id, shipment_id, fare, created_at, updated_at, shipments(origin, destination, shipment_id)')
-                    .eq('status', 'delivered')
-                    .order('updated_at', { ascending: false })
-                    .limit(limit),
-                supabase
-                    .from('job_offers')
-                    .select('id, shipment_id, driver_id, delivered_at, shipments(origin, destination, shipment_id, estimated_cost)')
-                    .eq('status', 'delivered')
-                    .order('delivered_at', { ascending: false })
-                    .limit(limit),
-            ])
-
-            if (agencyJobsRes.error || driverJobsRes.error) {
-                throw agencyJobsRes.error || driverJobsRes.error
-            }
-
-            // Get agency and driver names
-            const agencyIds = Array.from(new Set(
-                (agencyJobsRes.data ?? [])
-                    .map((job: any) => job.agency_id)
-                    .filter((id): id is string => Boolean(id))
-            ))
-
-            const driverIds = Array.from(new Set(
-                (driverJobsRes.data ?? [])
-                    .map((job: any) => job.driver_id)
-                    .filter((id): id is string => Boolean(id))
-            ))
-
-            const agenciesData: Array<{ id: string; company_name: string | null }> = agencyIds.length > 0
-                ? (await supabase.from('transport_agencies').select('id, company_name').in('id', agencyIds)).data ?? []
-                : []
-
-            const driversData: Array<{ id: string; full_name: string | null; phone: string | null }> = driverIds.length > 0
-                ? (await supabase.from('drivers').select('id, full_name, phone').in('id', driverIds)).data ?? []
-                : []
-
-            const agencyNameById = new Map(agenciesData.map((agency) => [agency.id, agency.company_name ?? 'Unknown Agency']))
-            const driverNameById = new Map(driversData.map((driver) => [driver.id, driver.full_name || driver.phone || 'Unknown Driver']))
-
-            const events: RevenueEvent[] = [
-                ...(agencyJobsRes.data ?? []).map((job: any) => {
-                    const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
-                    return {
-                        id: job.id,
-                        source: 'Agency Network',
-                        ownerName: job.agency_id ? (agencyNameById.get(job.agency_id) ?? 'Unknown Agency') : 'Unknown Agency',
-                        origin: shipment?.origin ?? '',
-                        destination: shipment?.destination ?? '',
-                        amount: Number(job.fare ?? 0),
-                        eventDate: job.updated_at ?? job.created_at,
-                    }
-                }),
-                ...(driverJobsRes.data ?? []).map((job: any) => {
-                    const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
-                    return {
-                        id: job.id,
-                        source: 'Driver Network',
-                        ownerName: job.driver_id ? (driverNameById.get(job.driver_id) ?? 'Unknown Driver') : 'Unknown Driver',
-                        origin: shipment?.origin ?? '',
-                        destination: shipment?.destination ?? '',
-                        amount: Number(shipment?.estimated_cost ?? 0),
-                        eventDate: job.delivered_at ?? new Date().toISOString(),
-                    }
-                }),
-            ]
-
-            return events.sort((left, right) => new Date(right.eventDate).getTime() - new Date(left.eventDate).getTime()).slice(0, limit)
-        } catch (error) {
-            throw new UserFacingError('Failed to load recent jobs. Please try again.')
-        }
-    }
 }
 
 // ============= CONSOLIDATED ADMIN API =============
 export const adminSupabaseApi = {
     async getAdminDashboardData(): Promise<AdminDashboardData> {
-        return adminDashboardApi.getDashboardData()
+        const snapshot = await adminDashboardApi.getSnapshot()
+        return snapshot.analytics
     },
 
     async getAdminUsers(): Promise<AdminUser[]> {
@@ -407,7 +235,8 @@ export const adminSupabaseApi = {
     },
 
     async getAdminAgencies(status: 'pending' | 'approved' | 'rejected' | 'suspended'): Promise<Agency[]> {
-        return adminAgenciesApi.getByStatus(status)
+        const snapshot = await adminAgenciesApi.getSnapshot(status)
+        return snapshot.agencies
     },
 
     async getAdminPayouts(): Promise<DriverPayout[]> {
@@ -427,40 +256,36 @@ export const adminSupabaseApi = {
     },
 
     async getContactInquiries(): Promise<ContactInquiry[]> {
-        const { data, error } = await supabase
-            .from('contact_inquiries')
-            .select('*')
-            .order('created_at', { ascending: false })
-
-        if (error) {
-            throw new UserFacingError('Unable to load contact inquiries right now. Please try again.')
-        }
-
-        return (data as ContactInquiry[]) || []
+        const data = await invokeAdminFunction<{ inquiries: ContactInquiry[] }>('admin-portal-contact', { action: 'list' }, 'Unable to load contact inquiries right now. Please try again.')
+        return data?.inquiries ?? []
     },
 
     async resolveContactInquiry(id: string): Promise<void> {
-        const { error } = await supabase
-            .from('contact_inquiries')
-            .update({ status: 'resolved' })
-            .eq('id', id)
-
-        if (error) {
-            throw new UserFacingError('Unable to update this inquiry right now. Please try again.')
-        }
+        await invokeAdminFunction('admin-portal-contact', { action: 'resolve', inquiryId: id }, 'Unable to update this inquiry right now. Please try again.')
     },
 
-    async getDriversByStatus(status: 'pending' | 'approved' | 'rejected' | 'suspended'): Promise<any[]> {
-        const { data, error } = await supabase
-            .from('drivers')
-            .select('*')
-            .eq('status', status)
-            .order('created_at', { ascending: false })
+    async getDriversByStatus(status: 'pending' | 'approved' | 'rejected' | 'suspended'): Promise<AdminDriverProfile[]> {
+        const data = await invokeAdminFunction<{ drivers: AdminDriverProfile[] }>('admin-portal-drivers', { action: 'list', status }, 'Unable to load drivers right now. Please try again.')
+        return data?.drivers ?? []
+    },
 
-        if (error) {
-            throw new UserFacingError('Unable to load drivers right now. Please try again.')
-        }
+    async getDriverById(driverId: string): Promise<AdminDriverProfile | null> {
+        const data = await invokeAdminFunction<{ driver: AdminDriverProfile | null }>('admin-portal-drivers', { action: 'get', driverId }, 'Unable to load driver details right now. Please try again.')
+        return data?.driver ?? null
+    },
 
-        return (data as any[]) || []
+    async approveDriver(driverId: string): Promise<AdminDriverProfile> {
+        const data = await invokeAdminFunction<{ driver: AdminDriverProfile }>('admin-portal-drivers', { action: 'approve', driverId }, 'Failed to approve driver. Please try again.')
+        return data.driver
+    },
+
+    async rejectDriver(driverId: string, rejectionReason: string): Promise<AdminDriverProfile> {
+        const data = await invokeAdminFunction<{ driver: AdminDriverProfile }>('admin-portal-drivers', { action: 'reject', driverId, rejectionReason }, 'Failed to reject driver. Please try again.')
+        return data.driver
+    },
+
+    async suspendDriver(driverId: string): Promise<AdminDriverProfile> {
+        const data = await invokeAdminFunction<{ driver: AdminDriverProfile }>('admin-portal-drivers', { action: 'suspend', driverId }, 'Failed to suspend driver. Please try again.')
+        return data.driver
     },
 }

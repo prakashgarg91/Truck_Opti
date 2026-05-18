@@ -3,9 +3,8 @@ import {
   Users, CheckCircle2, XCircle, Clock, Search,
   Phone, Truck, Calendar, AlertTriangle, RefreshCw, ShieldCheck, Download
 } from 'lucide-react'
-import { adminSupabaseApi, driverSupabaseApi } from '../services/supabaseApi'
+import { adminSupabaseApi } from '../services/adminSupabaseApi'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
@@ -63,7 +62,6 @@ function vehicleLabel(type: string) {
 
 export default function AdminDriversPage() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
   const { language } = useLanguageStore()
   const [tab, setTab] = useState<Tab>('pending')
   const [drivers, setDrivers] = useState<Driver[]>([])
@@ -91,7 +89,7 @@ export default function AdminDriversPage() {
   const handleApprove = async (driverId: string, driverName: string) => {
     setActionLoading(driverId)
     try {
-      await driverSupabaseApi.approve(driverId, user?.id ?? null)
+      await adminSupabaseApi.approveDriver(driverId)
       toast.success(`${driverName} approved!`)
       setDrivers(prev => prev.filter(d => d.id !== driverId))
     } catch (error: unknown) {
@@ -111,7 +109,7 @@ export default function AdminDriversPage() {
 
     setActionLoading(rejectedDriverId)
     try {
-      await driverSupabaseApi.reject(rejectedDriverId, trimmedReason)
+      await adminSupabaseApi.rejectDriver(rejectedDriverId, trimmedReason)
       toast.success(`${rejectModal.name} rejected`)
       setDrivers(prev => prev.filter(d => d.id !== rejectedDriverId))
       setRejectModal(null)
@@ -126,7 +124,7 @@ export default function AdminDriversPage() {
   const handleSuspend = async (driverId: string, driverName: string) => {
     setActionLoading(driverId)
     try {
-      await driverSupabaseApi.suspend(driverId)
+      await adminSupabaseApi.suspendDriver(driverId)
       toast.success(`${driverName} suspended`)
       setDrivers(prev => prev.filter(d => d.id !== driverId))
     } catch (error: unknown) {

@@ -2,6 +2,30 @@ import { supabase } from '../lib/supabase'
 import { UserFacingError } from '../utils/userFacingError'
 import { logger } from '../utils/logger'
 
+async function getFunctionErrorMessage(error: unknown, fallbackMessage: string) {
+    if (error && typeof error === 'object') {
+        const response = 'context' in error ? error.context : null
+
+        if (response instanceof Response) {
+            try {
+                const payload = (await response.clone().json()) as { error?: string }
+
+                if (typeof payload.error === 'string' && payload.error.trim()) {
+                    return payload.error
+                }
+            } catch {
+                // Fall through to fallback handling.
+            }
+        }
+
+        if ('message' in error && typeof error.message === 'string' && error.message.trim()) {
+            return error.message
+        }
+    }
+
+    return fallbackMessage
+}
+
 // ============= TYPES =============
 export interface AgencyJob {
     id: string
@@ -75,6 +99,82 @@ export interface AgencyDriverAssignmentRow {
         phone?: string
         rating?: number
     } | null
+}
+
+export interface AgencyPortalProfile {
+    id: string
+    company_name: string
+    status: 'pending' | 'approved' | 'rejected' | 'suspended'
+    rating: number | null
+    total_jobs: number | null
+    fleet_size: number | null
+    city: string | null
+    gstin: string | null
+}
+
+export interface AgencyPortalSummary {
+    active: number
+    today: number
+    pending: number
+    thirtyDayRevenue: number
+    thirtyDayJobs: number
+}
+
+export interface AgencyAssignedDriver {
+    id: string
+    full_name: string
+    phone: string
+    vehicle_type: string
+    home_city: string | null
+    rating: number | null
+    total_trips: number | null
+    status: string
+    is_online: boolean
+    active_job_id: string | null
+    truck_id: string | null
+}
+
+export interface AgencyFleetTruckSummary {
+    id: string
+    vehicle_type: string
+    rc_number: string
+}
+
+// ============= DASHBOARD API =============
+export const agencyDashboardApi = {
+    async getSnapshot(): Promise<{ agency: AgencyPortalProfile | null; summary: AgencyPortalSummary }> {
+        try {
+            const { data, error } = await supabase.functions.invoke<{
+                agency: AgencyPortalProfile | null
+                summary: AgencyPortalSummary
+            }>('agency-portal-dashboard', {
+                body: { action: 'snapshot' },
+            })
+
+            if (error) {
+                logger.error('[agencyDashboardApi.getSnapshot]', error)
+                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to load dashboard summary'))
+            }
+
+            return {
+                agency: data?.agency ?? null,
+                summary: data?.summary ?? {
+                    active: 0,
+                    today: 0,
+                    pending: 0,
+                    thirtyDayRevenue: 0,
+                    thirtyDayJobs: 0,
+                },
+            }
+        } catch (e) {
+            logger.error('[agencyDashboardApi.getSnapshot]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            throw new UserFacingError('Failed to load dashboard summary')
+        }
+    },
 }
 
 // ============= JOBS API =============
@@ -363,93 +463,90 @@ export const agencyRatesApi = {
 }
 
 export const agencyDriversApi = {
-    async getAgencyByUserId(userId: string): Promise<{ id: string } | null> {
-        const { data, error } = await supabase
-            .from('transport_agencies')
-            .select('id')
-            .eq('user_id', userId)
-            .maybeSingle()
+    async getSnapshot(): Promise<{ trucks: AgencyFleetTruckSummary[]; drivers: AgencyAssignedDriver[] }> {
+        try {
+            const { data, error } = await supabase.functions.invoke<{
+                trucks: AgencyFleetTruckSummary[]
+                drivers: AgencyAssignedDriver[]
+            }>('agency-portal-drivers', {
+                body: { action: 'snapshot' },
+            })
 
-        if (error) {
-            throw new UserFacingError('Failed to load agency profile')
-        }
+            if (error) {
+                logger.error('[agencyDriversApi.getSnapshot]', error)
+                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to load drivers'))
+            }
 
-        return (data as { id: string } | null) ?? null
-    },
+            return {
+                trucks: data?.trucks ?? [],
+                drivers: data?.drivers ?? [],
+            }
+        } catch (e) {
+            logger.error('[agencyDriversApi.getSnapshot]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
 
-    async getAgencyTrucks(agencyId: string): Promise<Array<{ id: string; vehicle_type: string; rc_number: string }>> {
-        const { data, error } = await supabase
-            .from('agency_trucks')
-            .select('id, vehicle_type, rc_number')
-            .eq('agency_id', agencyId)
-
-        if (error) {
-            throw new UserFacingError('Failed to load trucks')
-        }
-
-        return (data as Array<{ id: string; vehicle_type: string; rc_number: string }>) || []
-    },
-
-    async getAssignedDrivers(agencyId: string): Promise<Array<Record<string, unknown>>> {
-        const { data, error } = await supabase
-            .from('agency_trucks')
-            .select(`
-        id,
-        driver_id,
-        vehicle_type,
-        rc_number,
-        drivers!agency_trucks_driver_id_fkey (
-          id, full_name, phone, vehicle_type, home_city,
-          rating, total_trips, status, is_online, active_job_id
-        )
-      `)
-            .eq('agency_id', agencyId)
-            .not('driver_id', 'is', null)
-
-        if (error) {
             throw new UserFacingError('Failed to load drivers')
         }
-
-        return (data as Array<Record<string, unknown>>) || []
     },
 
-    async assignTruckToDriver(agencyId: string, truckId: string, driverId: string): Promise<void> {
-        const { error } = await supabase
-            .from('agency_trucks')
-            .update({ driver_id: driverId })
-            .eq('id', truckId)
-            .eq('agency_id', agencyId)
+    async assignTruckToDriver(truckId: string, driverId: string): Promise<void> {
+        try {
+            const { error } = await supabase.functions.invoke('agency-portal-drivers', {
+                body: { action: 'assign-truck', truckId, driverId },
+            })
 
-        if (error) {
+            if (error) {
+                logger.error('[agencyDriversApi.assignTruckToDriver]', error)
+                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to assign truck'))
+            }
+        } catch (e) {
+            logger.error('[agencyDriversApi.assignTruckToDriver]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
             throw new UserFacingError('Failed to assign truck')
         }
     },
 
-    async unassignTruck(agencyId: string, truckId: string): Promise<void> {
-        const { error } = await supabase
-            .from('agency_trucks')
-            .update({ driver_id: null })
-            .eq('id', truckId)
-            .eq('agency_id', agencyId)
+    async unassignTruck(truckId: string): Promise<void> {
+        try {
+            const { error } = await supabase.functions.invoke('agency-portal-drivers', {
+                body: { action: 'unassign-truck', truckId },
+            })
 
-        if (error) {
+            if (error) {
+                logger.error('[agencyDriversApi.unassignTruck]', error)
+                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to unassign driver'))
+            }
+        } catch (e) {
+            logger.error('[agencyDriversApi.unassignTruck]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
             throw new UserFacingError('Failed to unassign driver')
         }
     },
 
-    async createPayout(agencyId: string, driverId: string, amount: number, note?: string): Promise<void> {
-        const { error } = await supabase
-            .from('driver_payouts')
-            .insert({
-                driver_id: driverId,
-                agency_id: agencyId,
-                amount,
-                type: 'agency_pay',
-                status: 'pending',
-                note: note || null,
+    async createPayout(driverId: string, amount: number, note?: string): Promise<void> {
+        try {
+            const { error } = await supabase.functions.invoke('agency-portal-drivers', {
+                body: { action: 'create-payout', driverId, amount, note },
             })
 
-        if (error) {
+            if (error) {
+                logger.error('[agencyDriversApi.createPayout]', error)
+                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to submit payment request'))
+            }
+        } catch (e) {
+            logger.error('[agencyDriversApi.createPayout]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
             throw new UserFacingError('Failed to submit payment request')
         }
     },

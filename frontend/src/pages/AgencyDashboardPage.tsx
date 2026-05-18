@@ -4,7 +4,7 @@ import {
   AlertTriangle, RefreshCw, CheckCircle2, Clock,
   ChevronRight, BarChart3
 } from 'lucide-react'
-import { agencyDashboardApi } from '../services/agencySupabaseApi'
+import { agencyDashboardApi } from '../services/agencyPortalApi'
 import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
@@ -39,29 +39,18 @@ export default function AgencyDashboardPage() {
     active: 0, today: 0, pending: 0, thirtyDayRevenue: 0, thirtyDayJobs: 0
   })
 
-  const fetchAgency = useCallback(async () => {
+  const fetchSnapshot = useCallback(async () => {
     if (!user?.id) return
 
     setLoading(true)
     try {
-      const data = await agencyDashboardApi.getAgencyProfile(user.id)
-      setAgency(data as AgencyRecord | null)
+      const snapshot = await agencyDashboardApi.getSnapshot()
+      setAgency(snapshot.agency as AgencyRecord | null)
+      setSummary(snapshot.summary)
     } catch (error) {
-      logger.error('[AgencyDashboardPage] fetchAgency', error)
-      toast.error('Failed to load agency profile')
-      setAgency(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [user?.id])
-
-  const fetchSummary = useCallback(async (agencyId: string) => {
-    try {
-      const jobSummary = await agencyDashboardApi.getJobSummary(agencyId)
-      setSummary(jobSummary)
-    } catch (error) {
-      logger.error('[AgencyDashboardPage] fetchSummary', error)
+      logger.error('[AgencyDashboardPage] fetchSnapshot', error)
       toast.error('Failed to load dashboard summary')
+      setAgency(null)
       setSummary({
         active: 0,
         today: 0,
@@ -69,18 +58,14 @@ export default function AgencyDashboardPage() {
         thirtyDayRevenue: 0,
         thirtyDayJobs: 0,
       })
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }, [user?.id])
 
   useEffect(() => {
-    fetchAgency()
-  }, [fetchAgency])
-
-  useEffect(() => {
-    if (agency?.id) {
-      fetchSummary(agency.id)
-    }
-  }, [agency?.id, fetchSummary])
+    fetchSnapshot()
+  }, [fetchSnapshot])
 
   if (loading) {
     return (

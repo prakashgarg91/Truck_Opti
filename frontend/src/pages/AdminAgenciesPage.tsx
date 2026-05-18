@@ -5,7 +5,7 @@ import {
   Phone, MapPin, Briefcase, AlertTriangle, RefreshCw,
   ShieldCheck, Users, ChevronLeft
 } from 'lucide-react'
-import { adminAgenciesApi, type Agency } from '../services/supabaseApi'
+import { adminAgenciesApi, type Agency } from '../services/adminSupabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 
@@ -41,11 +41,12 @@ export default function AdminAgenciesPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [counts, setCounts] = useState<Record<Tab, number>>({ pending: 0, approved: 0, rejected: 0, suspended: 0 })
 
-  const fetchAgencies = useCallback(async () => {
+  const fetchSnapshot = useCallback(async () => {
     setLoading(true)
     try {
-      const agencies = await adminAgenciesApi.getByStatus(tab)
-      setAgencies(agencies)
+      const snapshot = await adminAgenciesApi.getSnapshot(tab)
+      setAgencies(snapshot.agencies)
+      setCounts(snapshot.counts)
     } catch (error) {
       toast.error('Failed to load agencies')
     } finally {
@@ -53,29 +54,18 @@ export default function AdminAgenciesPage() {
     }
   }, [tab])
 
-  const fetchCounts = useCallback(async () => {
-    try {
-      const newCounts = await adminAgenciesApi.getCountsByStatus()
-      setCounts(newCounts)
-    } catch (error) {
-      toast.error('Failed to load agency counts')
-    }
-  }, [])
-
   useEffect(() => {
     if (user?.role === 'admin') {
-      fetchAgencies()
-      fetchCounts()
+      fetchSnapshot()
     }
-  }, [fetchAgencies, fetchCounts, user?.role])
+  }, [fetchSnapshot, user?.role])
 
   const handleApprove = async (agencyId: string) => {
     setActionLoading(agencyId)
     try {
       await adminAgenciesApi.approve(agencyId)
       toast.success('Agency approved successfully')
-      fetchAgencies()
-      fetchCounts()
+      fetchSnapshot()
     } catch (error) {
       toast.error('Failed to approve agency')
     } finally {
@@ -92,8 +82,7 @@ export default function AdminAgenciesPage() {
       toast.success('Agency rejected')
       setRejectModal(null)
       setRejectReason('')
-      fetchAgencies()
-      fetchCounts()
+      fetchSnapshot()
     } catch (error) {
       toast.error('Failed to reject agency')
     } finally {
@@ -106,8 +95,7 @@ export default function AdminAgenciesPage() {
     try {
       await adminAgenciesApi.suspend(agencyId)
       toast.success('Agency suspended')
-      fetchAgencies()
-      fetchCounts()
+      fetchSnapshot()
     } catch (error) {
       toast.error('Failed to suspend agency')
     } finally {
@@ -174,7 +162,7 @@ export default function AdminAgenciesPage() {
             <h1 className="font-bold text-slate-800 dark:text-slate-100">Agency Approvals</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">Manage transport agency registrations</p>
           </div>
-          <button onClick={() => { fetchAgencies(); fetchCounts() }} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700">
+          <button onClick={fetchSnapshot} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700">
             <RefreshCw size={16} className="text-slate-500 dark:text-slate-400" />
           </button>
         </div>

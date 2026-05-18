@@ -5,8 +5,7 @@ import {
   FileText, RefreshCw, ShieldCheck
 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { driverSupabaseApi, type DriverProfile } from '../services/supabaseApi'
-import { useAuthStore } from '../stores/authStore'
+import { adminSupabaseApi, type AdminDriverProfile as DriverProfile } from '../services/adminSupabaseApi'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import toast from 'react-hot-toast'
 
@@ -58,7 +57,6 @@ function DocBadge({ label, url }: { label: string; url: string | null }) {
 export default function DriverDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuthStore()
   const [driver, setDriver] = useState<DriverProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
@@ -71,7 +69,7 @@ export default function DriverDetailPage() {
 
     async function fetch() {
       try {
-        const data = await driverSupabaseApi.getById(driverId)
+        const data = await adminSupabaseApi.getDriverById(driverId)
 
         if (!data) {
           toast.error('Driver not found')
@@ -94,7 +92,7 @@ export default function DriverDetailPage() {
     if (!driver) return
     setActionLoading(true)
     try {
-      const updatedDriver = await driverSupabaseApi.approve(driver.id, user?.id ?? null)
+      const updatedDriver = await adminSupabaseApi.approveDriver(driver.id)
       toast.success('Driver approved!')
       setDriver(updatedDriver)
     } catch (error) {
@@ -115,7 +113,7 @@ export default function DriverDetailPage() {
     setActionLoading(true)
 
     try {
-      const updatedDriver = await driverSupabaseApi.reject(driver.id, trimmedReason)
+      const updatedDriver = await adminSupabaseApi.rejectDriver(driver.id, trimmedReason)
       toast.success('Driver rejected')
       setDriver(updatedDriver)
       setRejectReason('')
@@ -132,7 +130,7 @@ export default function DriverDetailPage() {
     setActionLoading(true)
 
     try {
-      const updatedDriver = await driverSupabaseApi.suspend(driver.id)
+      const updatedDriver = await adminSupabaseApi.suspendDriver(driver.id)
       toast.success('Driver suspended')
       setDriver(updatedDriver)
     } catch (error) {

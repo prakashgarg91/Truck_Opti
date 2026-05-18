@@ -3,7 +3,7 @@ import {
   Users, Truck, Package, DollarSign, TrendingUp,
   RefreshCw, Building2, Calendar, Wallet, MessageSquare, Download, Shield, CreditCard
 } from 'lucide-react'
-import { adminDashboardApi } from '../services/supabaseApi'
+import { adminDashboardApi } from '../services/adminSupabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
@@ -85,12 +85,10 @@ export default function AdminDashboardPage() {
   const fetchAnalytics = useCallback(async () => {
     setLoading(true)
     try {
-      // Use service APIs to get dashboard data
-      const dashboardData = await adminDashboardApi.getDashboardData()
-      const recentJobsList = await adminDashboardApi.getRecentJobs(20)
+      const snapshot = await adminDashboardApi.getSnapshot(20)
 
-      setAnalytics(dashboardData)
-      setRecentJobs(recentJobsList)
+      setAnalytics(snapshot.analytics)
+      setRecentJobs(snapshot.recentJobs)
 
       // TODO: Add revenue trend and leaderboard calculations here if needed
       // For now, just set empty arrays

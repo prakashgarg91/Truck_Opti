@@ -56,12 +56,14 @@ const DriverTripPage = React.lazy(() => import('./pages/DriverTripPage'))
 const DriverEarningsPage = React.lazy(() => import('./pages/DriverEarningsPage'))
 const DriverHistoryPage = React.lazy(() => import('./pages/DriverHistoryPage'))
 const DriverDetailPage = React.lazy(() => import('./pages/DriverDetailPage'))
+const DriverProfilePage = React.lazy(() => import('./pages/DriverProfilePage'))
 const AgencyDashboardPage = React.lazy(() => import('./pages/AgencyDashboardPage'))
 const AgencyFleetPage = React.lazy(() => import('./pages/AgencyFleetPage'))
 const AgencyJobsPage = React.lazy(() => import('./pages/AgencyJobsPage'))
 const AgencyBillingPage = React.lazy(() => import('./pages/AgencyBillingPage'))
 const AgencyDriversPage = React.lazy(() => import('./pages/AgencyDriversPage'))
 const AgencyRatesPage = React.lazy(() => import('./pages/AgencyRatesPage'))
+const AgencyProfilePage = React.lazy(() => import('./pages/AgencyProfilePage'))
 const NewShipmentPage = React.lazy(() => import('./pages/NewShipmentPage'))
 const ShipmentHistoryPage = React.lazy(() => import('./pages/ShipmentHistoryPage'))
 const ContactPage = React.lazy(() => import('./pages/ContactPage'))
@@ -164,7 +166,7 @@ function AppContent() {
             <Route path="/driver/trip/:jobId" element={<DriverTripPage />} />
             <Route path="/driver/earnings" element={<DriverEarningsPage />} />
             <Route path="/driver/history" element={<DriverHistoryPage />} />
-            <Route path="/driver/profile" element={<ProfilePage />} />
+            <Route path="/driver/profile" element={<DriverProfilePage />} />
           </Route>
 
           {/* Agency Portal — separate layout with agency bottom nav */}
@@ -179,7 +181,7 @@ function AppContent() {
             <Route path="/agency/billing" element={<AgencyBillingPage />} />
             <Route path="/agency/drivers" element={<AgencyDriversPage />} />
             <Route path="/agency/rates" element={<AgencyRatesPage />} />
-            <Route path="/agency/profile" element={<ProfilePage />} />
+            <Route path="/agency/profile" element={<AgencyProfilePage />} />
           </Route>
 
           {/* Catch all - show 404 page */}

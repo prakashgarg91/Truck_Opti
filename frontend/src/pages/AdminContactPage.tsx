@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom'
 import { MessageSquare, ChevronLeft, RefreshCw, CheckCircle2, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { adminSupabaseApi, type ContactInquiry as Inquiry } from '../services/supabaseApi'
+import { adminSupabaseApi, type ContactInquiry as Inquiry } from '../services/adminSupabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
 
