@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Briefcase, CheckCircle2, XCircle,
-  RefreshCw, AlertTriangle, MapPin, Truck, UserPlus, X, UserCheck
+  RefreshCw, MapPin, Truck, UserPlus, X, UserCheck
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import MapViewWrapper, { MapMarker, MapRoute } from '../components/MapViewWrapper'
 import { logger } from '../utils/logger'
+import { agencyJobsApi } from '../services/agencyPortalApi'
 
 type JobFilter = 'all' | 'in_transit' | 'pending' | 'accepted' | 'delivered' | 'cancelled'
 
@@ -39,8 +40,8 @@ interface AvailableDriver {
 }
 
 interface DriverLocation {
-  lat: number
-  lng: number
+  lat: number | null
+  lng: number | null
   updated_at: string
   speed_kmh: number | null
 }
@@ -55,11 +56,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function AgencyJobsPage() {
   const { user } = useAuthStore()
-  const [agencyId, setAgencyId] = useState<string | null>(null)
   const [jobs, setJobs] = useState<AgencyJob[]>([])
   const [filter, setFilter] = useState<JobFilter>('all')
   const [loading, setLoading] = useState(true)
   const [processingJobId, setProcessingJobId] = useState<string | null>(null)
+  const [agencyId, setAgencyId] = useState<string | null>(null)
 
   // Assign Driver Modal State
   const [showAssignModal, setShowAssignModal] = useState(false)
@@ -74,44 +75,11 @@ export default function AgencyJobsPage() {
 
   const fetchAgency = useCallback(async () => {
     if (!user?.id) return
-    const { data } = await supabase
-      .from('transport_agencies')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle()
-    setAgencyId(data?.id || null)
+    try {
+      const jobs = await agencyJobsApi.list()
 
-    if (data?.id) {
-      const { data: jobData } = await supabase
-        .from('agency_jobs')
-        .select(`
-          id,
-          shipment_id,
-          status,
-          fare,
-          driver_id,
-          created_at,
-          updated_at,
-          shipments (
-            shipment_id,
-            origin,
-            destination,
-            total_weight,
-            estimated_cost,
-            vehicle_type
-          ),
-          drivers!agency_jobs_driver_id_fkey (
-            id,
-            full_name,
-            phone
-          )
-        `)
-        .eq('agency_id', data.id)
-        .order('created_at', { ascending: false })
-
-      const mapped: AgencyJob[] = (jobData ?? []).map((j: Record<string, unknown>) => {
+      const mapped: AgencyJob[] = (jobs ?? []).map((j: any) => {
         const s = (Array.isArray(j.shipments) ? j.shipments[0] : j.shipments) as Record<string, unknown> | null
-        const d = Array.isArray(j.drivers) ? j.drivers[0] : j.drivers as { id?: string; full_name?: string; phone?: string } | null
         return {
           id: j.id as string,
           shipment_id: j.shipment_id as string,
@@ -125,58 +93,48 @@ export default function AgencyJobsPage() {
           weight_kg: Number(s?.total_weight ?? 0),
           estimated_fare: Number(j.fare ?? s?.estimated_cost ?? 0),
           driver_id: j.driver_id as string | undefined,
-          driver_name: d?.full_name ?? undefined,
-          driver_phone: d?.phone ?? undefined,
+          driver_name: undefined,
+          driver_phone: undefined,
         }
       })
       setJobs(mapped)
+
+      // Fetch agency ID for driver assignment modal
+      const agencyDataId = await agencyJobsApi.getAgencyIdByUser(user.id)
+      setAgencyId(agencyDataId || null)
+    } catch (e) {
+      logger.error('[AgencyJobsPage] fetchAgency failed:', e)
+      toast.error('Failed to load jobs')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [user?.id])
 
   useEffect(() => { fetchAgency() }, [fetchAgency])
 
   // Fetch available drivers when modal opens
   const fetchAvailableDrivers = async () => {
-    if (!agencyId) return
+    try {
+      const trucksData = await agencyJobsApi.getAvailableDrivers(agencyId!)
 
-    const { data: trucksData, error } = await supabase
-      .from('agency_trucks')
-      .select(`
-        id,
-        vehicle_type,
-        rc_number,
-        driver_id,
-        drivers!agency_trucks_driver_id_fkey (
-          id,
-          full_name,
-          phone,
-          rating
-        )
-      `)
-      .eq('agency_id', agencyId)
-      .not('driver_id', 'is', null)
-      .eq('is_available', true)
+      const drivers: AvailableDriver[] = (trucksData ?? []).map(t => {
+        const driver = Array.isArray(t.drivers) ? t.drivers[0] : t.drivers as { id?: string; full_name?: string; phone?: string; rating?: number } | null
+        return {
+          id: driver?.id ?? '',
+          truck_id: t.id,
+          vehicle_type: t.vehicle_type ?? '',
+          rc_number: t.rc_number ?? '',
+          driver_name: driver?.full_name ?? 'Unknown',
+          driver_phone: driver?.phone ?? '',
+          rating: driver?.rating ?? 0,
+        }
+      }).filter(d => d.id)
 
-    if (error) {
+      setAvailableDrivers(drivers)
+    } catch (_error) {
       toast.error('Failed to load drivers')
       return
     }
-
-    const drivers: AvailableDriver[] = (trucksData ?? []).map(t => {
-      const driver = Array.isArray(t.drivers) ? t.drivers[0] : t.drivers as { id?: string; full_name?: string; phone?: string; rating?: number } | null
-      return {
-        id: driver?.id ?? '',
-        truck_id: t.id,
-        vehicle_type: t.vehicle_type ?? '',
-        rc_number: t.rc_number ?? '',
-        driver_name: driver?.full_name ?? 'Unknown',
-        driver_phone: driver?.phone ?? '',
-        rating: driver?.rating ?? 0,
-      }
-    }).filter(d => d.id)
-
-    setAvailableDrivers(drivers)
   }
 
   const openAssignModal = async (job: AgencyJob) => {
@@ -186,67 +144,11 @@ export default function AgencyJobsPage() {
   }
 
   const handleAssignDriver = async (driver: AvailableDriver) => {
-    if (!selectedJob || !agencyId) return
+    if (!selectedJob) return
     setAssigning(true)
 
     try {
-      const pickupOTP = Math.floor(1000 + Math.random() * 9000).toString()
-      const deliveryOTP = Math.floor(1000 + Math.random() * 9000).toString()
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
-
-      // 1. Update agency_jobs with selected driver
-      const { error: updateError } = await supabase
-        .from('agency_jobs')
-        .update({ driver_id: driver.id, truck_id: driver.truck_id })
-        .eq('id', selectedJob.id)
-
-      if (updateError) throw updateError
-
-      // 2. Mark truck as not available
-      const { error: truckError } = await supabase
-        .from('agency_trucks')
-        .update({ is_available: false })
-        .eq('id', driver.truck_id)
-
-      if (truckError) {
-        await supabase
-          .from('agency_jobs')
-          .update({ driver_id: null, truck_id: null })
-          .eq('id', selectedJob.id)
-        throw truckError
-      }
-
-      // 3. Check if job_offer already exists
-      const { data: existing } = await supabase
-        .from('job_offers')
-        .select('id')
-        .eq('shipment_id', selectedJob.shipment_id)
-        .eq('driver_id', driver.id)
-        .maybeSingle()
-
-      // 4. Insert job_offer if not exists
-      if (!existing) {
-        const { error: offerError } = await supabase.from('job_offers').insert({
-          shipment_id: selectedJob.shipment_id,
-          driver_id: driver.id,
-          status: 'pending',
-          expires_at: expiresAt,
-          pickup_otp: pickupOTP,
-          delivery_otp: deliveryOTP,
-        })
-
-        if (offerError) {
-          await supabase
-            .from('agency_trucks')
-            .update({ is_available: true })
-            .eq('id', driver.truck_id)
-          await supabase
-            .from('agency_jobs')
-            .update({ driver_id: null, truck_id: null })
-            .eq('id', selectedJob.id)
-          throw offerError
-        }
-      }
+      await agencyJobsApi.assignDriver(selectedJob.id, driver.id)
 
       toast.success(`Driver ${driver.driver_name} assigned!`)
       setShowAssignModal(false)
@@ -263,13 +165,12 @@ export default function AgencyJobsPage() {
   const handleAccept = async (job: AgencyJob) => {
     setProcessingJobId(job.id)
     try {
-      const { error } = await supabase
-        .from('agency_jobs')
-        .update({ status: 'accepted', assigned_at: new Date().toISOString() })
-        .eq('id', job.id)
-      if (error) { toast.error('Failed to accept job'); return }
+      await agencyJobsApi.updateStatus(job.id, 'accepted')
       setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'accepted' } : j))
       toast.success('Job accepted!')
+    } catch (e) {
+      logger.error('Accept error:', e)
+      toast.error('Failed to accept job')
     } finally {
       setProcessingJobId(null)
     }
@@ -278,13 +179,12 @@ export default function AgencyJobsPage() {
   const handleDecline = async (job: AgencyJob) => {
     setProcessingJobId(job.id)
     try {
-      const { error } = await supabase
-        .from('agency_jobs')
-        .update({ status: 'cancelled' })
-        .eq('id', job.id)
-      if (error) { toast.error('Failed to decline job'); return }
+      await agencyJobsApi.updateStatus(job.id, 'cancelled')
       setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'cancelled' } : j))
       toast.success('Job declined')
+    } catch (e) {
+      logger.error('Decline error:', e)
+      toast.error('Failed to decline job')
     } finally {
       setProcessingJobId(null)
     }
@@ -293,13 +193,12 @@ export default function AgencyJobsPage() {
   const confirmDelivery = async (job: AgencyJob) => {
     setProcessingJobId(job.id)
     try {
-      const { error } = await supabase
-        .from('agency_jobs')
-        .update({ status: 'delivered', updated_at: new Date().toISOString() })
-        .eq('id', job.id)
-      if (error) { toast.error('Failed to confirm delivery'); return }
+      await agencyJobsApi.updateStatus(job.id, 'delivered')
       setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'delivered' } : j))
       toast.success('Job marked as delivered')
+    } catch (e) {
+      logger.error('Delivery error:', e)
+      toast.error('Failed to confirm delivery')
     } finally {
       setProcessingJobId(null)
     }
@@ -312,14 +211,7 @@ export default function AgencyJobsPage() {
 
     // Fetch initial location
     if (job.driver_id) {
-      const { data: loc } = await supabase
-        .from('driver_locations')
-        .select('lat, lng, updated_at, speed_kmh')
-        .eq('driver_id', job.driver_id)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
+      const loc = await agencyJobsApi.getDriverLatestLocation(job.driver_id)
       setDriverLocation(loc)
     }
   }
@@ -359,22 +251,13 @@ export default function AgencyJobsPage() {
     )
   }
 
-  if (!agencyId) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <AlertTriangle size={48} className="text-amber-400 mb-4" />
-        <p className="text-slate-500 dark:text-slate-400 text-sm">
-          No agency profile found. Please register your agency first.
-        </p>
-      </div>
-    )
-  }
-
   // Build markers and routes for tracking map
-  const trackingMarkers: MapMarker[] = driverLocation ? [
+  const hasValidDriverCoordinates = Boolean(driverLocation && driverLocation.lat != null && driverLocation.lng != null)
+
+  const trackingMarkers: MapMarker[] = hasValidDriverCoordinates ? [
     {
       id: 'driver',
-      position: [driverLocation.lat, driverLocation.lng],
+      position: [driverLocation!.lat as number, driverLocation!.lng as number],
       label: '🚚',
       type: 'truck'
     }
@@ -632,11 +515,11 @@ export default function AgencyJobsPage() {
 
             {/* Map */}
             <div className="h-[50vh] bg-slate-100 dark:bg-slate-900">
-              {driverLocation ? (
+              {hasValidDriverCoordinates ? (
                 <MapViewWrapper
                   markers={trackingMarkers}
                   routes={trackingRoutes}
-                  center={[driverLocation.lat, driverLocation.lng]}
+                  center={[driverLocation!.lat as number, driverLocation!.lng as number]}
                   zoom={14}
                   height="100%"
                 />

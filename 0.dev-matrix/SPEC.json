@@ -27,7 +27,7 @@
             "npm run test:prod-config",
             "npm run check:proof-env"
         ],
-        "expectedGuardrail": "TO-101 and TO-102 remain the active launch slice, with live Razorpay credentials isolated honestly in TO-103 as the only human blocker"
+        "expectedGuardrail": "TO-105 and TO-106 remain the active launch-proof slice, with TO-104 queued for normalized evidence capture once live checkout and stale-client proof land"
     },
     "links": {
         "launchChecklist": "0.dev-matrix/LAUNCH_CHECKLIST.md",

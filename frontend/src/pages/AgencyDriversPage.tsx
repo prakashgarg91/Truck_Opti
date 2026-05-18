@@ -3,7 +3,7 @@ import {
   Users, Truck, Star, RefreshCw, AlertTriangle,
   Phone, MapPin, CheckCircle2, XCircle, Wallet
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { agencyDriversApi } from '../services/agencyPortalApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
@@ -52,26 +52,13 @@ export default function AgencyDriversPage() {
 
   const fetchData = useCallback(async () => {
     if (!user?.id) return
-    const { data: agency } = await supabase
-      .from('transport_agencies')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const agency = await agencyDriversApi.getAgencyByUserId(user.id)
     if (!agency?.id) { setLoading(false); return }
     setAgencyId(agency.id)
 
-    const [{ data: truckData }, { data: driverData }] = await Promise.all([
-      supabase.from('agency_trucks').select('id, vehicle_type, rc_number').eq('agency_id', agency.id),
-      supabase.from('agency_trucks').select(`
-        id,
-        driver_id,
-        vehicle_type,
-        rc_number,
-        drivers!agency_trucks_driver_id_fkey (
-          id, full_name, phone, vehicle_type, home_city,
-          rating, total_trips, status, is_online, active_job_id
-        )
-      `).eq('agency_id', agency.id).not('driver_id', 'is', null),
+    const [truckData, driverData] = await Promise.all([
+      agencyDriversApi.getAgencyTrucks(agency.id),
+      agencyDriversApi.getAssignedDrivers(agency.id),
     ])
 
     setTrucks((truckData ?? []) as AgencyTruck[])
@@ -96,33 +83,25 @@ export default function AgencyDriversPage() {
   const handleAssignTruck = async () => {
     if (!assignModal || !selectedTruckId || !agencyId) return
     setSaving(true)
-    const { error } = await supabase
-      .from('agency_trucks')
-      .update({ driver_id: assignModal.driverId })
-      .eq('id', selectedTruckId)
-      .eq('agency_id', agencyId)
-    if (error) {
-      toast.error('Failed to assign truck')
-    } else {
+    try {
+      await agencyDriversApi.assignTruckToDriver(agencyId, selectedTruckId, assignModal.driverId)
       toast.success(`Truck assigned to ${assignModal.driverName}`)
       setAssignModal(null)
       setSelectedTruckId('')
       fetchData()
+    } catch (_error) {
+      toast.error('Failed to assign truck')
     }
     setSaving(false)
   }
 
   const handleUnassign = async (truckId: string, driverName: string) => {
-    const { error } = await supabase
-      .from('agency_trucks')
-      .update({ driver_id: null })
-      .eq('id', truckId)
-      .eq('agency_id', agencyId!)
-    if (error) {
-      toast.error('Failed to unassign')
-    } else {
+    try {
+      await agencyDriversApi.unassignTruck(agencyId!, truckId)
       toast.success(`${driverName} unassigned from truck`)
       setDrivers(prev => prev.filter(d => d.truck_id !== truckId))
+    } catch (_error) {
+      toast.error('Failed to unassign')
     }
   }
 
@@ -134,15 +113,9 @@ export default function AgencyDriversPage() {
       return
     }
     setSaving(true)
-    const { error } = await supabase.from('driver_payouts').insert({
-      driver_id: payModal.driverId,
-      agency_id: agencyId,
-      amount: amount,
-      type: 'agency_pay',
-      status: 'pending',
-      note: payNote || null
-    })
-    if (error) {
+    try {
+      await agencyDriversApi.createPayout(agencyId, payModal.driverId, amount, payNote || undefined)
+    } catch (error) {
       logger.error('[AgencyDrivers] pay:', error)
       toast.error('Payment failed')
       setSaving(false)

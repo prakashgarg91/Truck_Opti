@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Package, Truck, Route, MapPin, TrendingUp, Clock, ChevronRight, Zap, Bell, FileText, Calculator, AlertCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
-import { supabase } from '../lib/supabase'
-import { packingJobsSupabaseApi, analyticsSupabaseApi, saleOrdersSupabaseApi, type PackingJob, type SaleOrder } from '../services/supabaseApi'
+import { packingJobsSupabaseApi, analyticsSupabaseApi, saleOrdersSupabaseApi, customerDashboardApi, type PackingJob, type SaleOrder } from '../services/supabaseApi'
 import { calculateShipmentCost, formatCost } from '../utils/costEngine'
 
 // Skeleton loader for stats cards
@@ -76,27 +75,8 @@ const TRUCK_TYPES = [
 ]
 
 const fetchDashboardData = async (): Promise<DashboardData> => {
-  // Fetch counts from Supabase
-  const [trucksRes, shipmentsRes, routesRes, pendingJobsRes] = await Promise.all([
-    supabase.from('trucks').select('id', { count: 'exact' }),
-    supabase.from('shipments').select('id, status', { count: 'exact' }),
-    supabase.from('routes').select('id', { count: 'exact' }),
-    supabase.from('packing_jobs').select('id', { count: 'exact' }).eq('status', 'draft')
-  ])
-
-  // Surface any query-level errors before computing stats
-  const firstError = trucksRes.error || shipmentsRes.error || routesRes.error || pendingJobsRes.error
-  if (firstError) throw firstError
-
-  const activeShipments = shipmentsRes.data?.filter(s => s.status === 'in_transit').length || 0
-  const deliveriesDone = shipmentsRes.data?.filter(s => s.status === 'delivered').length || 0
-
-  const stats = {
-    activeShipments,
-    trucksCount: trucksRes.count || 0,
-    routesToday: routesRes.count || 0,
-    deliveriesDone
-  }
+  const stats = await customerDashboardApi.getDashboardStats()
+  const pendingOptimizations = await customerDashboardApi.getPendingOptimizationsCount()
 
   // Fetch weekly packing data
   const weeklyCounts = await analyticsSupabaseApi.getWeeklyPackingCounts()
@@ -120,7 +100,7 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
   if (activities.length === 0) {
     activities.push(
       { id: '1', type: 'packing', message: 'System ready for packing', time: 'Just now', status: 'success' },
-      { id: '2', type: 'info', message: `${trucksRes.count || 0} trucks loaded in database`, time: '1 min ago', status: 'info' },
+      { id: '2', type: 'info', message: `${stats.trucksCount || 0} trucks loaded in database`, time: '1 min ago', status: 'info' },
       { id: '3', type: 'route', message: 'Route optimization ready', time: '5 min ago', status: 'info' }
     )
   }
@@ -133,7 +113,7 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
     weeklyData,
     recentActivity: activities,
     recentSaleOrders,
-    pendingOptimizations: pendingJobsRes.count || 0
+    pendingOptimizations,
   }
 }
 

@@ -4,7 +4,7 @@ import {
   Package, Search,
   CheckCircle2, XCircle, Clock, RefreshCw, Truck
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { customerShipmentsApi } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
@@ -38,14 +38,8 @@ export default function ShipmentHistoryPage() {
     if (!user?.id) return
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('shipments')
-        .select('*')
-        .eq('created_by', user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setShipments(data ?? [])
+      const shipmentRows = await customerShipmentsApi.getCreatedByUser(user.id)
+      setShipments(shipmentRows as unknown as Shipment[])
     } catch (err) {
       logger.error('Failed to load shipments:', err)
       toast.error('Failed to load shipment history')

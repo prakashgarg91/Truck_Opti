@@ -99,9 +99,13 @@ supabase secrets set KEY=value --project-ref jbxncejtcbpcronndqlx
 | `VITE_SUPABASE_URL` | `.env` | ✅ Public | Supabase client |
 | `VITE_SUPABASE_ANON_KEY` | `.env` | ✅ Public | Supabase client |
 | `VITE_RAZORPAY_KEY_ID` | `.env` | ✅ Public | Razorpay SDK init |
+| `VITE_BILLING_GST_ENABLED` | Heroku config vars / `.env` | ✅ Public | Frontend billing GST toggle |
+| `VITE_BILLING_GST_RATE_PERCENT` | Heroku config vars / `.env` | ✅ Public | Frontend GST rate when enabled |
 | `VITE_AUTH_EMAIL_OTP_ENABLED` | `.env` | ✅ Public | Feature flag |
 | `VITE_AUTH_PHONE_OTP_ENABLED` | `.env` | ✅ Public | Feature flag |
 | `VITE_AUTH_PASSWORD_ENABLED` | `.env` | ✅ Public | Feature flag |
+| `BILLING_GST_ENABLED` | Supabase secrets | ❌ Server-side config | Subscription payment GST toggle |
+| `BILLING_GST_RATE_PERCENT` | Supabase secrets | ❌ Server-side config | Subscription payment GST rate when enabled |
 | `RAZORPAY_KEY_SECRET` | Heroku config vars | ❌ Secret | Server-side Razorpay |
 | `RAZORPAY_WEBHOOK_SECRET` | Heroku config vars + Supabase secrets | ❌ Secret | Webhook HMAC verify |
 | `PHONEPE_MERCHANT_SECRET` | Heroku config vars | ❌ Secret | PhonePe HMAC |

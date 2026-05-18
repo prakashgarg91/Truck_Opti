@@ -5,6 +5,7 @@ import {
   ChevronRight, ChevronLeft, FileText, ArrowLeft, Upload, X
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { driverSupabaseApi } from '../services/supabaseApi'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
@@ -139,7 +140,7 @@ export default function DriverRegisterPage() {
 
     setSubmitting(true)
     try {
-      const { error } = await supabase.from('drivers').insert({
+      await driverSupabaseApi.register({
         user_id: user.id,
         full_name: form.full_name.trim(),
         phone: form.phone.trim(),
@@ -156,7 +157,6 @@ export default function DriverRegisterPage() {
         rc_url: form.rc_url.trim() || null,
         status: 'pending',
       })
-      if (error) throw error
       updateUser({ role: 'driver' })
       setStep(4)
     } catch (err: unknown) {

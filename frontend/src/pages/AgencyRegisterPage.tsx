@@ -4,7 +4,7 @@ import {
   Building2, User, CreditCard, CheckCircle2,
   ChevronRight, ChevronLeft, ArrowLeft
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { agencyRegistrationApi } from '../services/agencyPortalApi'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
@@ -108,7 +108,7 @@ export default function AgencyRegisterPage() {
 
     setSubmitting(true)
     try {
-      const { error } = await supabase.from('transport_agencies').insert({
+      await agencyRegistrationApi.register({
         user_id: user.id,
         company_name: form.company_name.trim(),
         gstin: form.gstin.toUpperCase().trim() || null,
@@ -127,7 +127,6 @@ export default function AgencyRegisterPage() {
         ifsc_code: form.ifsc_code.toUpperCase().trim(),
         status: 'pending',
       })
-      if (error) throw error
       updateUser({ role: 'agency' })
       setStep(4)
     } catch (err: unknown) {

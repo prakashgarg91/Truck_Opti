@@ -13,6 +13,7 @@ name: "Context Engineering"
   - Implement: execute in a narrow context with the plan already fixed.
 - Keep always-on instructions small. Put durable rules in `AGENTS.md`, targeted guidance here, and deep repo truth in `0.dev-matrix`.
 - If the Roo bridge MCP server is available, use it as the default semantic retrieval layer before grep or regex search. Prefer it for code chunks, scoped semantic file discovery, quick cross-repo code lookups, and docs retrieval.
+- If the built-in semantic workspace search tool is not available in the current session, is disabled, or fails to return usable workspace context, treat Roo code index / Roo bridge as the semantic-search replacement before exact grep, regex, or raw-file exploration.
 - If `graphify-out/GRAPH_REPORT.md` exists, read it before raw-file search for architecture or cross-module questions. Use Graphify as the structure-map layer after Roo bridge narrows the semantic search surface.
 - Prefer `graphify update .` for zero-token AST refresh after structural code changes. Use `/graphify .` in Copilot Chat only when docs, images, markdown, or other non-code corpus files need to shape the graph.
 - For large navigation tasks, the preferred stack is: Roo bridge targeted search -> Graphify structure map -> code-review-graph precision -> exact file search.

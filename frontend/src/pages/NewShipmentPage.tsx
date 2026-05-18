@@ -4,6 +4,7 @@ import { Truck, MapPin, Calendar, Scale, FileText, DollarSign, ArrowLeft, Loader
 import { useAuthStore } from '../stores/authStore'
 import { useSubscription } from '../hooks/useSubscription'
 import { supabase } from '../lib/supabase'
+import { customerShipmentsApi } from '../services/supabaseApi'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { generateShipmentId } from '../utils/shipmentId'
@@ -73,35 +74,24 @@ export default function NewShipmentPage() {
       const shipmentId = generateShipmentId()
 
       // Step 1: Insert into shipments table
-      const { data: shipmentData, error: shipmentError } = await supabase
-        .from('shipments')
-        .insert({
-          shipment_id: shipmentId,
-          customer_id: null,
-          created_by: user.id,
-          origin: formData.origin_city.trim(),
-          destination: formData.destination_city.trim(),
-          status: 'pending',
-          total_weight: formData.weight_kg,
-          estimated_cost: formData.estimated_value,
-          vehicle_type: formData.vehicle_type,
-          pickup_date: formData.pickup_date,
-          goods_description: formData.goods_description.trim(),
-          estimated_value: formData.estimated_value,
-        })
-        .select()
-        .single()
-
-      if (shipmentError) {
-        logger.error('Shipment insert error:', shipmentError)
-        toast.error('Failed to create booking')
-        setIsSubmitting(false)
-        return
-      }
+      const shipmentData = await customerShipmentsApi.createBooking({
+        shipment_id: shipmentId,
+        customer_id: null,
+        created_by: user.id,
+        origin: formData.origin_city.trim(),
+        destination: formData.destination_city.trim(),
+        status: 'pending',
+        total_weight: formData.weight_kg,
+        estimated_cost: formData.estimated_value,
+        vehicle_type: formData.vehicle_type,
+        pickup_date: formData.pickup_date,
+        goods_description: formData.goods_description.trim(),
+        estimated_value: formData.estimated_value,
+      })
 
       // Step 2: Call dispatch_job_to_drivers RPC
       const { data: dispatchResult, error: dispatchError } = await supabase.rpc('dispatch_job_to_drivers', {
-        p_shipment_id: shipmentData.id,
+        p_shipment_id: shipmentData.id as string,
         p_vehicle_type: formData.vehicle_type,
       })
 
@@ -114,7 +104,7 @@ export default function NewShipmentPage() {
       }
 
       // Store shipment ID for e-way bill
-      setNewShipmentId(shipmentData.id)
+      setNewShipmentId(shipmentData.id as string)
 
       // Show success (don't auto-redirect, give time for e-way bill)
       setShowSuccess(true)
@@ -151,27 +141,18 @@ export default function NewShipmentPage() {
     setIsSubmittingEWayBill(true)
 
     try {
-      const { error } = await supabase
-        .from('shipments')
-        .update({
-          eway_bill_data: {
-            consignor_gstin: consignorGSTIN || null,
-            consignee_gstin: consigneeGSTIN || null,
-            invoice_value: invoiceValue || null,
-            hsn_code: hsnCode || null,
-          },
-        })
-        .eq('id', newShipmentId)
-        .eq('created_by', user.id) // defence-in-depth: only update own shipments
-
-      if (error) {
-        logger.error('[NewShipment] eway:', error)
-        toast.error('Failed to save e-way bill')
-        return
-      }
+      await customerShipmentsApi.updateEWayBill(newShipmentId, user.id, {
+        consignor_gstin: consignorGSTIN || null,
+        consignee_gstin: consigneeGSTIN || null,
+        invoice_value: invoiceValue || null,
+        hsn_code: hsnCode || null,
+      })
 
       toast.success('E-way bill saved — NIC API integration coming soon')
       setTimeout(() => navigate('/tracking'), 1500)
+    } catch (error) {
+      logger.error('[NewShipment] eway:', error)
+      toast.error('Failed to save e-way bill')
     } finally {
       setIsSubmittingEWayBill(false)
     }

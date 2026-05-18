@@ -28,6 +28,24 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-05-18 (Copilot — parked gap pair restored, current gap map refreshed)
+
+- Changed: restored the parked broad refactor from `stash@{0}` into the working tree, reviving the dedicated role service files plus the four `agency-portal-*` edge functions; aligned `scripts/frontend_launch_smoke.mjs` so unauthenticated `/subscription` is treated as a protected-route redirect to `/login`; added `0.dev-matrix/CURRENT-GAP-VISIBILITY.md` and marked `0.dev-matrix/DESIGN-GAP-MAP-2026-05-16.md` as historical.
+- Verified: `cd frontend && npm run build` PASS; `npm run glue:check` PASS (`0 gaps, 0 warnings`); `npm run test:frontend-smoke` PASS (`50/50`); direct diagnostics are clean for the restored role services and agency portal edge-function files.
+- Operational proof: the two parked non-human gaps from the 2026-05-16 design map are now code-closed locally, and the current remaining design work is narrowed to `GV-01` trusted-backend coverage and `GV-02` role-specific profile ownership as recorded in `0.dev-matrix/CURRENT-GAP-VISIBILITY.md`.
+- Continue from: use `0.dev-matrix/CURRENT-GAP-VISIBILITY.md` instead of the old 2026-05-16 gap map, and take the next focused slice from `GV-01` or `GV-02` after the current refactor is committed cleanly.
+- Next step: keep the restored role-service and agency-portal slice intact, commit it on a clean tree, and then extend trusted portal functions for agency/admin privileged operations before opening any new launch work.
+- Blockers: none for the restored code slice itself; AWS SES sender/domain setup remains intentionally deferred, and the new remaining gaps are structural rather than human-blocked.
+
+### 2026-05-17 (Copilot — launch proof committed, billing flow preserved, broad refactor parked)
+
+- Changed: committed the launch-proof normalization slice (`0ffcd065`) and the hosted billing/invoice-delivery slice (`90dd3c76`) onto `main`, then parked the unrelated service-layer and agency-portal refactor work in stash `stash@{0}` (`park broad service-layer and agency-portal refactor 2026-05-17`) while leaving the earlier verifier-worktree stash untouched.
+- Verified: `cd frontend && npm run build` PASS on the reduced main tree; `npm run test:public-smoke` PASS (`12/12`); `get_errors` returned clean diagnostics for the touched billing edge functions and shared helpers; `0.dev-matrix/launch-check-runner.ps1` refreshed `launch-check-status.json` to `passed`; `npm run close-day` PASS (`10 pass, 0 fail`).
+- Operational proof: the validated launch slice is now committed on `main`, the live host still has green public-route smoke plus the no-cache service-worker/root headers, and the hosted invoice flow is preserved locally with the shared delivery helper, backfill function, and payment verification wiring.
+- Continue from: start the next non-launch AI-owned gap from `0.dev-matrix/DESIGN-GAP-MAP-2026-05-16.md`, and restore stash `stash@{0}` only when resuming the parked service-layer and agency-portal refactor slice.
+- Next step: keep the current launch-proof and billing slices stable, and treat the parked refactor stash plus deferred AWS SES sender setup as explicit follow-up work rather than active dirt on `main`.
+- Blockers: none for close-day on `main`; AWS SES sender/domain setup remains intentionally deferred, and the broad service-layer plus agency-portal refactor is intentionally parked in stash `stash@{0}` until resumed.
+
 ### 2026-05-17 (Copilot — launch proof normalized, stale-client lane closed)
 
 - Changed: closed `TO-106` and `TO-104` on the launch surfaces after reconciling the live stale-client evidence with the real payment proof already captured earlier today; `AI-TASKS.json`, `STATE.md`, `TASK.md`, and `LAUNCH_CHECKLIST.md` now treat the sellable launch-proof queue as complete.

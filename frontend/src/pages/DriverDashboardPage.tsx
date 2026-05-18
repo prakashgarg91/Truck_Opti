@@ -5,11 +5,11 @@ import {
   Wallet, Navigation, PhoneCall, RefreshCw, UserCircle, X, DollarSign
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { driverDashboardApi, driverEarningsApi, driverSupabaseApi } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
-import { logger } from '../utils/logger'
 
 interface DriverRecord {
   id: string
@@ -110,51 +110,39 @@ export default function DriverDashboardPage() {
   const [payoutHistory, setPayoutHistory] = useState<{ id: string, amount: number, status: string, requested_at: string }[]>([])
 
   const fetchIncomingJob = useCallback(async (jobOfferId: string): Promise<JobOffer | null> => {
-    const { data, error } = await supabase
-      .from('job_offers')
-      .select('id, shipment_id, offered_at, expires_at, status, shipments(origin, destination, total_weight, estimated_cost)')
-      .eq('id', jobOfferId)
-      .maybeSingle()
-
-    if (error || !data) {
+    const data = await driverDashboardApi.getIncomingJobById(jobOfferId)
+    if (!data) {
       return null
     }
 
     const shipment = Array.isArray(data.shipments) ? data.shipments[0] : data.shipments
+    const row = data as Record<string, any>
 
     return {
-      id: data.id,
-      shipment_id: data.shipment_id,
-      offered_at: data.offered_at,
-      expires_at: data.expires_at,
-      status: data.status,
+      id: String(row.id || ''),
+      shipment_id: String(row.shipment_id || ''),
+      offered_at: String(row.offered_at || ''),
+      expires_at: String(row.expires_at || ''),
+      status: String(row.status || ''),
       shipments: normalizeShipmentSummary(shipment as Record<string, unknown> | null | undefined),
     }
   }, [])
 
   const loadPendingOffer = useCallback(async (driverId: string): Promise<JobOffer | null> => {
-    const { data, error } = await supabase
-      .from('job_offers')
-      .select('id, shipment_id, offered_at, expires_at, status, shipments(origin, destination, total_weight, estimated_cost)')
-      .eq('driver_id', driverId)
-      .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString())
-      .order('expires_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-
-    if (error || !data) {
+    const data = await driverDashboardApi.getPendingOffer(driverId)
+    if (!data) {
       return null
     }
 
     const shipment = Array.isArray(data.shipments) ? data.shipments[0] : data.shipments
+    const row = data as Record<string, any>
 
     return {
-      id: data.id,
-      shipment_id: data.shipment_id,
-      offered_at: data.offered_at,
-      expires_at: data.expires_at,
-      status: data.status,
+      id: String(row.id || ''),
+      shipment_id: String(row.shipment_id || ''),
+      offered_at: String(row.offered_at || ''),
+      expires_at: String(row.expires_at || ''),
+      status: String(row.status || ''),
       shipments: normalizeShipmentSummary(shipment as Record<string, unknown> | null | undefined),
     }
   }, [])
@@ -172,80 +160,64 @@ export default function DriverDashboardPage() {
 
   const fetchDriver = useCallback(async () => {
     if (!user?.id) return
-    const { data, error } = await supabase
-      .from('drivers')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle()
-    if (error) {
+    try {
+      const data = await driverSupabaseApi.getByUserId(user.id)
+      setDriver(data as DriverRecord | null)
+    } catch (_error) {
       toast.error('Failed to load driver profile')
     }
-    setDriver(data)
     setLoading(false)
   }, [user?.id])
 
   const fetchHistory = useCallback(async (driverId: string) => {
-    const { data, error } = await supabase
-      .from('job_offers')
-      .select('id, offered_at, responded_at, delivered_at, status, shipments(origin, destination, estimated_cost)')
-      .eq('driver_id', driverId)
-      .in('status', ['accepted', 'declined', 'expired', 'delivered'])
-      .order('offered_at', { ascending: false })
-      .limit(10)
+    try {
+      const data = await driverDashboardApi.getTripHistory(driverId)
+      const rawData: TripHistory[] = (data ?? []).map((job: Record<string, unknown>) => {
+        const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
+        const normalizedShipment = normalizeShipmentSummary(shipment as Record<string, unknown> | null | undefined)
 
-    if (error) {
+        return {
+          id: job.id as string,
+          offered_at: job.offered_at as string,
+          responded_at: (job.responded_at as string | null) ?? null,
+          delivered_at: (job.delivered_at as string | null) ?? null,
+          status: job.status as string,
+          estimated_fare: normalizedShipment?.estimated_cost ?? 0,
+          shipments: normalizedShipment
+            ? {
+              origin: normalizedShipment.origin,
+              destination: normalizedShipment.destination,
+              estimated_cost: normalizedShipment.estimated_cost,
+            }
+            : undefined,
+        }
+      })
+
+      setTripHistory(rawData)
+
+      // Count today's delivered trips (delivered_at only — not offered/responded dates)
+      const today = new Date().toISOString().split('T')[0]
+      const delivered = rawData.filter((j: TripHistory) => j.status === 'delivered')
+      const todayDelivered = delivered.filter(
+        (j: TripHistory) => j.delivered_at?.startsWith(today)
+      )
+      setTodayTrips(todayDelivered.length)
+      setTodayEarnings(todayDelivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0))
+
+      // Calculate wallet earnings from delivered trips
+      const total = delivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0)
+      setTotalEarned(total)
+      setCompletedTrips(delivered.slice(0, 5))
+
+      const payouts = await driverDashboardApi.getPayoutHistory(driverId)
+      setPayoutHistory(payouts || [])
+
+      // Wallet balance = total earned minus already-requested payouts
+      setWalletBalance(calculateWalletBalance(total, payouts || []))
+    } catch (_error) {
       toast.error('Failed to load trip history')
       return
     }
-
-    const rawData: TripHistory[] = (data ?? []).map((job: Record<string, unknown>) => {
-      const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
-      const normalizedShipment = normalizeShipmentSummary(shipment as Record<string, unknown> | null | undefined)
-
-      return {
-        id: job.id as string,
-        offered_at: job.offered_at as string,
-        responded_at: (job.responded_at as string | null) ?? null,
-        delivered_at: (job.delivered_at as string | null) ?? null,
-        status: job.status as string,
-        estimated_fare: normalizedShipment?.estimated_cost ?? 0,
-        shipments: normalizedShipment
-          ? {
-            origin: normalizedShipment.origin,
-            destination: normalizedShipment.destination,
-            estimated_cost: normalizedShipment.estimated_cost,
-          }
-          : undefined,
-      }
-    })
-
-    setTripHistory(rawData)
-
-    // Count today's delivered trips (delivered_at only — not offered/responded dates)
-    const today = new Date().toISOString().split('T')[0]
-    const delivered = rawData.filter((j: TripHistory) => j.status === 'delivered')
-    const todayDelivered = delivered.filter(
-      (j: TripHistory) => j.delivered_at?.startsWith(today)
-    )
-    setTodayTrips(todayDelivered.length)
-    setTodayEarnings(todayDelivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0))
-
-    // Calculate wallet earnings from delivered trips
-    const total = delivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0)
-    setTotalEarned(total)
-    setCompletedTrips(delivered.slice(0, 5))
-
-    // Fetch payout history
-    const { data: payouts } = await supabase
-      .from('driver_payouts')
-      .select('id, amount, status, requested_at')
-      .eq('driver_id', driverId)
-      .order('requested_at', { ascending: false })
-      .limit(5)
-    setPayoutHistory(payouts || [])
-
-    // Wallet balance = total earned minus already-requested payouts
-    setWalletBalance(calculateWalletBalance(total, payouts || []))
   }, [])
 
   const handleWithdrawal = async () => {
@@ -261,20 +233,11 @@ export default function DriverDashboardPage() {
     }
     setWithdrawing(true)
     try {
-      const { error } = await supabase.from('driver_payouts').insert({
-        driver_id: driver.id,
-        amount: amount,
-        status: 'pending'
-      })
-      if (error) {
-        logger.error('[Withdrawal]', error)
-        toast.error('Failed to submit withdrawal request')
-      } else {
-        toast.success('Withdrawal request submitted')
-        setShowWithdrawalModal(false)
-        setWithdrawalAmount('')
-        await fetchHistory(driver.id)
-      }
+      await driverEarningsApi.requestPayout(driver.id, amount)
+      toast.success('Withdrawal request submitted')
+      setShowWithdrawalModal(false)
+      setWithdrawalAmount('')
+      await fetchHistory(driver.id)
     } finally {
       setWithdrawing(false)
     }
@@ -383,15 +346,12 @@ export default function DriverDashboardPage() {
     }
     setTogglingOnline(true)
     const newOnline = !driver.is_online
-    const { error } = await supabase
-      .from('drivers')
-      .update({ is_online: newOnline })
-      .eq('id', driver.id)
-    if (error) {
-      toast.error('Failed to update status')
-    } else {
+    try {
+      await driverDashboardApi.setDriverOnlineStatus(driver.id, newOnline)
       setDriver(d => d ? { ...d, is_online: newOnline } : d)
       toast.success(newOnline ? '🟢 You are now Online' : '⚫ You are now Offline')
+    } catch (_error) {
+      toast.error('Failed to update status')
     }
     setTogglingOnline(false)
   }
@@ -399,23 +359,14 @@ export default function DriverDashboardPage() {
   const respondToJob = async (accept: boolean) => {
     if (!incomingJob || !driver?.id) return
     setRespondingJob(true)
-    const { error } = await supabase
-      .from('job_offers')
-      .update({
-        status: accept ? 'accepted' : 'declined',
-        responded_at: new Date().toISOString(),
-      })
-      .eq('id', incomingJob.id)
-    if (error) {
-      toast.error('Failed to respond to job')
-    } else {
+    try {
+      await driverDashboardApi.respondToJobOffer(incomingJob.id, accept)
       toast.success(accept ? '✅ Job Accepted! Navigate to pickup.' : 'Job declined.')
       if (accept) {
-        await supabase
-          .from('drivers')
-          .update({ active_job_id: incomingJob.id })
-          .eq('id', driver.id)
+        await driverDashboardApi.setActiveJob(driver.id, incomingJob.id)
       }
+    } catch (_error) {
+      toast.error('Failed to respond to job')
     }
     setIncomingJob(null)
     setRespondingJob(false)

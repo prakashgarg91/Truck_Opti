@@ -6,7 +6,6 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { trucksSupabaseApi } from '../services/supabaseApi'
 import { truckTypeSchema, validateWithZod } from '../utils/validators'
 import toast from 'react-hot-toast'
-import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { useAuthStore } from '../stores/authStore'
 import { useDebouncedCallback } from '../hooks/useDebounce'
@@ -182,12 +181,8 @@ export default function TrucksPage() {
       }
 
       // Check if trucks already exist
-      const { data: existingTrucks } = await supabase
-        .from('trucks')
-        .select('name')
-        .in('name', DEFAULT_INDIAN_TRUCKS.map(t => t.name))
-
-      const existingNames = new Set(existingTrucks?.map((t: { name: string }) => t.name) || [])
+      const existingNamesList = await trucksSupabaseApi.getExistingNames(DEFAULT_INDIAN_TRUCKS.map(t => t.name))
+      const existingNames = new Set(existingNamesList)
       const trucksToAdd = DEFAULT_INDIAN_TRUCKS.filter(t => !existingNames.has(t.name))
 
       if (trucksToAdd.length === 0) {
@@ -195,11 +190,7 @@ export default function TrucksPage() {
       }
 
       // Insert trucks
-      const { error } = await supabase
-        .from('trucks')
-        .insert(trucksToAdd)
-
-      if (error) throw error
+      await trucksSupabaseApi.createMany(trucksToAdd as Array<Record<string, unknown>>)
       return trucksToAdd.length
     },
     onSuccess: (count) => {

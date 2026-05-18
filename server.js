@@ -2,15 +2,15 @@
 // Redirects all traffic arriving at the Heroku URL to https://www.truckopti.in
 
 const express = require('express');
-const path    = require('path');
-const fs      = require('fs');
+const path = require('path');
+const fs = require('fs');
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-const HEROKU_HOST  = 'truck-opti-app-efabf95bd306.herokuapp.com';
-const CANONICAL    = 'https://www.truckopti.in';
-const DIST_DIR     = path.join(__dirname, 'frontend', 'dist');
+const HEROKU_HOST = 'truck-opti-app-efabf95bd306.herokuapp.com';
+const CANONICAL = 'https://www.truckopti.in';
+const DIST_DIR = path.join(__dirname, 'frontend', 'dist');
 
 function setStaticCacheHeaders(res, filePath) {
   const relativePath = path.relative(DIST_DIR, filePath).replace(/\\/g, '/');

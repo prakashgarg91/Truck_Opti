@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
 import { Wallet, TrendingUp, Calendar, CheckCircle2, RefreshCw, DollarSign, X, AlertCircle, Download } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { driverEarningsApi, driverTripsApi } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
 import { formatCurrency } from '../utils/formatters'
@@ -60,82 +60,48 @@ export default function DriverEarningsPage() {
 
   const fetchDriverId = useCallback(async () => {
     if (!user?.id) return
-    const { data } = await supabase.from('drivers').select('id').eq('user_id', user.id).maybeSingle()
-    if (data?.id) {
-      setDriverId(data.id)
+    const id = await driverTripsApi.getDriverIdByUserId(user.id)
+    if (id) {
+      setDriverId(id)
     }
   }, [user?.id])
 
   const loadData = useCallback(async (drId: string) => {
-    const [
-      { data: payouts, error: payErr },
-      { data: deliveredJobs, error: jobsErr },
-    ] = await Promise.all([
-      supabase
-        .from('driver_payouts')
-        .select('amount, status')
-        .eq('driver_id', drId),
-      supabase
-        .from('job_offers')
-        .select('shipments(estimated_cost)')
-        .eq('driver_id', drId)
-        .eq('status', 'delivered'),
-    ])
-
-    if (payErr || jobsErr) {
-      logger.error('[DriverEarnings] balance:', payErr || jobsErr)
-      logger.error('[DriverEarnings] balance:', payErr)
+    try {
+      const snapshot = await driverEarningsApi.getBalanceSnapshot(drId)
+      setAvailableBalance(calculateAvailableBalance(snapshot.totalDelivered, snapshot.payouts))
+      setPayoutPaid(snapshot.paid)
+      setPayoutApproved(snapshot.approved)
+      setPayoutPending(snapshot.pending)
+    } catch (error) {
+      logger.error('[DriverEarnings] balance:', error)
       toast.error('Failed to load balance')
-      return
     }
-
-    const paid = payouts?.filter(p => p.status === 'paid').reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0
-    const approved = payouts?.filter(p => p.status === 'approved').reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0
-    const pending = payouts?.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount ?? 0), 0) ?? 0
-    const totalDelivered = (deliveredJobs ?? []).reduce((sum, job) => {
-      const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
-      return sum + Number((shipment as Record<string, unknown> | null | undefined)?.estimated_cost ?? 0)
-    }, 0)
-
-    setAvailableBalance(calculateAvailableBalance(totalDelivered, payouts ?? []))
-    setPayoutPaid(paid)
-    setPayoutApproved(approved)
-    setPayoutPending(pending)
   }, [language])
 
   const fetchJobs = useCallback(async (drId: string) => {
     setLoading(true)
-    let query = supabase
-      .from('job_offers')
-      .select('id, delivered_at, status, shipments(shipment_id, origin, destination, estimated_cost)')
-      .eq('driver_id', drId)
-      .eq('status', 'delivered')
-      .order('delivered_at', { ascending: false })
-
-    if (period !== 'total') {
-      const days = period === 'week' ? 7 : 30
-      const since = new Date(Date.now() - days * 86400000).toISOString()
-      query = query.gte('delivered_at', since)
+    try {
+      const data = await driverTripsApi.getDeliveredTrips(drId, period)
+      setJobs(((data ?? []) as Record<string, unknown>[]).map((job) => {
+        const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
+        return {
+          id: job.id as string,
+          delivered_at: (job.delivered_at as string | null) ?? null,
+          status: job.status as string,
+          shipments: shipment
+            ? {
+              shipment_id: (shipment as Record<string, unknown>).shipment_id as string | undefined,
+              origin: (shipment as Record<string, unknown>).origin as string,
+              destination: (shipment as Record<string, unknown>).destination as string,
+              estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
+            }
+            : undefined,
+        }
+      }))
+    } catch (_error) {
+      toast.error('Failed to load earnings')
     }
-
-    const { data, error } = await query.limit(100)
-    if (error) toast.error('Failed to load earnings')
-    setJobs(((data ?? []) as Record<string, unknown>[]).map((job) => {
-      const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
-      return {
-        id: job.id as string,
-        delivered_at: (job.delivered_at as string | null) ?? null,
-        status: job.status as string,
-        shipments: shipment
-          ? {
-            shipment_id: (shipment as Record<string, unknown>).shipment_id as string | undefined,
-            origin: (shipment as Record<string, unknown>).origin as string,
-            destination: (shipment as Record<string, unknown>).destination as string,
-            estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
-          }
-          : undefined,
-      }
-    }))
     setLoading(false)
   }, [period])
 
@@ -161,25 +127,16 @@ export default function DriverEarningsPage() {
     }
     setWithdrawLoading(true)
     try {
-      const { error } = await supabase.from('driver_payouts').insert({
-        driver_id: driverId,
-        amount: amount,
-        status: 'pending',
-        requested_at: new Date().toISOString()
-      })
-      if (error) {
-        toast.error('Failed to submit request')
-      } else {
-        toast.success('Withdrawal request submitted!')
-        setShowWithdrawModal(false)
-        setWithdrawAmount('')
-        await Promise.all([
-          loadData(driverId),
-          fetchJobs(driverId),
-        ])
-      }
+      await driverEarningsApi.requestPayout(driverId, amount)
+      toast.success('Withdrawal request submitted!')
+      setShowWithdrawModal(false)
+      setWithdrawAmount('')
+      await Promise.all([
+        loadData(driverId),
+        fetchJobs(driverId),
+      ])
     } catch (_err) {
-      toast.error('Something went wrong')
+      toast.error('Failed to submit request')
     } finally {
       setWithdrawLoading(false)
     }

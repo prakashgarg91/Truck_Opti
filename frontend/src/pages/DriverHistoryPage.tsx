@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Clock, MapPin, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { driverTripsApi } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { formatCurrency } from '../utils/formatters'
@@ -35,44 +35,40 @@ export default function DriverHistoryPage() {
 
   const fetchDriverId = useCallback(async () => {
     if (!user?.id) return
-    const { data } = await supabase.from('drivers').select('id').eq('user_id', user.id).maybeSingle()
-    if (data?.id) setDriverId(data.id)
-    else setLoading(false)
+    try {
+      const driverId = await driverTripsApi.getDriverIdByUserId(user.id)
+      if (driverId) setDriverId(driverId)
+      else setLoading(false)
+    } catch (_error) {
+      toast.error('Failed to load driver profile')
+      setLoading(false)
+    }
   }, [user?.id])
 
   const fetchTrips = useCallback(async (drId: string) => {
     setLoading(true)
-    let query = supabase
-      .from('job_offers')
-      .select('id, offered_at, responded_at, status, shipments(origin, destination, estimated_cost, total_weight)')
-      .eq('driver_id', drId)
-      .in('status', ['delivered', 'accepted', 'declined', 'expired', 'cancelled'])
-      .order('offered_at', { ascending: false })
-      .limit(50)
-
-    if (filter !== 'all') {
-      query = (query as typeof query).eq('status', filter)
+    try {
+      const data = await driverTripsApi.getHistory(drId, filter)
+      setTrips(((data ?? []) as Record<string, unknown>[]).map((trip) => {
+        const shipment = Array.isArray(trip.shipments) ? trip.shipments[0] : trip.shipments
+        return {
+          id: trip.id as string,
+          offered_at: trip.offered_at as string,
+          responded_at: (trip.responded_at as string | null) ?? null,
+          status: trip.status as TripRecord['status'],
+          shipments: shipment
+            ? {
+              origin: (shipment as Record<string, unknown>).origin as string,
+              destination: (shipment as Record<string, unknown>).destination as string,
+              estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
+              total_weight: Number((shipment as Record<string, unknown>).total_weight ?? 0),
+            }
+            : undefined,
+        }
+      }))
+    } catch (_error) {
+      toast.error('Failed to load trip history')
     }
-
-    const { data, error } = await query
-    if (error) toast.error('Failed to load trip history')
-    setTrips(((data ?? []) as Record<string, unknown>[]).map((trip) => {
-      const shipment = Array.isArray(trip.shipments) ? trip.shipments[0] : trip.shipments
-      return {
-        id: trip.id as string,
-        offered_at: trip.offered_at as string,
-        responded_at: (trip.responded_at as string | null) ?? null,
-        status: trip.status as TripRecord['status'],
-        shipments: shipment
-          ? {
-            origin: (shipment as Record<string, unknown>).origin as string,
-            destination: (shipment as Record<string, unknown>).destination as string,
-            estimated_cost: Number((shipment as Record<string, unknown>).estimated_cost ?? 0),
-            total_weight: Number((shipment as Record<string, unknown>).total_weight ?? 0),
-          }
-          : undefined,
-      }
-    }))
     setLoading(false)
   }, [filter])
 

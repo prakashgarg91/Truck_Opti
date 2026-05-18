@@ -2,11 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Tag, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
-import { useAuthStore } from '../stores/authStore'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import { agencyRatesApi } from '../services/agencyPortalApi'
 
 interface RateCard {
   id: string
@@ -46,8 +45,6 @@ const EMPTY_FORM = {
 }
 
 export default function AgencyRatesPage() {
-  const { user } = useAuthStore()
-  const [agencyId, setAgencyId] = useState<string | null>(null)
   const [rates, setRates] = useState<RateCard[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -55,33 +52,20 @@ export default function AgencyRatesPage() {
   const [saving, setSaving] = useState(false)
 
   const fetchData = useCallback(async () => {
-    if (!user?.id) return
     try {
-      const { data: agency, error: agencyErr } = await supabase
-        .from('transport_agencies').select('id').eq('user_id', user.id).maybeSingle()
-      if (agencyErr) throw agencyErr
-      if (!agency?.id) return
-      setAgencyId(agency.id)
-
-      const { data, error: ratesErr } = await supabase
-        .from('agency_rate_cards')
-        .select('*')
-        .eq('agency_id', agency.id)
-        .order('created_at', { ascending: false })
-      if (ratesErr) throw ratesErr
-      setRates((data ?? []) as RateCard[])
+      const rates = await agencyRatesApi.list()
+      setRates((rates ?? []) as RateCard[])
     } catch (e) {
       logger.error('[AgencyRatesPage]', e)
       toast.error('Failed to load rate cards')
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   const handleAdd = async () => {
-    if (!agencyId) return
     if (!form.origin_city.trim() || !form.dest_city.trim()) {
       toast.error('Origin and destination city are required')
       return
@@ -91,54 +75,50 @@ export default function AgencyRatesPage() {
       return
     }
     setSaving(true)
-    const { data, error } = await supabase
-      .from('agency_rate_cards')
-      .insert({
-        agency_id: agencyId,
+    try {
+      const newRate = await agencyRatesApi.addRate({
         vehicle_type: form.vehicle_type,
         origin_city: form.origin_city.trim(),
         dest_city: form.dest_city.trim(),
-        rate_per_km: form.rate_per_km ? parseFloat(form.rate_per_km) : null,
-        flat_rate: form.flat_rate ? parseFloat(form.flat_rate) : null,
-        min_weight_kg: form.min_weight_kg ? parseFloat(form.min_weight_kg) : null,
-        max_weight_kg: form.max_weight_kg ? parseFloat(form.max_weight_kg) : null,
-        valid_until: form.valid_until || null,
-        notes: form.notes || null,
+        rate_per_km: form.rate_per_km ? parseFloat(form.rate_per_km) : undefined,
+        flat_rate: form.flat_rate ? parseFloat(form.flat_rate) : undefined,
+        min_weight_kg: form.min_weight_kg ? parseFloat(form.min_weight_kg) : undefined,
+        max_weight_kg: form.max_weight_kg ? parseFloat(form.max_weight_kg) : undefined,
+        valid_until: form.valid_until || undefined,
+        notes: form.notes || undefined,
       })
-      .select()
-      .single()
-    if (error || !data) {
-      toast.error('Failed to add rate card')
-    } else {
-      setRates(prev => [data as RateCard, ...prev])
+      setRates(prev => [newRate as RateCard, ...prev])
       setForm(EMPTY_FORM)
       setShowAdd(false)
       toast.success('Rate card added!')
+    } catch (e) {
+      logger.error('[AgencyRatesPage] handleAdd failed:', e)
+      toast.error('Failed to add rate card')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   const handleToggleActive = async (rate: RateCard) => {
-    const { error } = await supabase
-      .from('agency_rate_cards')
-      .update({ is_active: !rate.is_active })
-      .eq('id', rate.id)
-    if (error) {
-      toast.error('Failed to update')
-    } else {
+    try {
+      await agencyRatesApi.updateRate(rate.id, { is_active: !rate.is_active })
       setRates(prev => prev.map(r => r.id === rate.id ? { ...r, is_active: !r.is_active } : r))
       toast.success(rate.is_active ? 'Rate deactivated' : 'Rate activated')
+    } catch (e) {
+      logger.error('[AgencyRatesPage] handleToggleActive failed:', e)
+      toast.error('Failed to update')
     }
   }
 
   const handleDelete = async (rateId: string) => {
     if (!confirm('Delete this rate card?')) return
-    const { error } = await supabase.from('agency_rate_cards').delete().eq('id', rateId)
-    if (error) {
-      toast.error('Failed to delete')
-    } else {
+    try {
+      await agencyRatesApi.deleteRate(rateId)
       setRates(prev => prev.filter(r => r.id !== rateId))
       toast.success('Rate card deleted')
+    } catch (e) {
+      logger.error('[AgencyRatesPage] handleDelete failed:', e)
+      toast.error('Failed to delete')
     }
   }
 

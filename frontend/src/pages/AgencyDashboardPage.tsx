@@ -4,7 +4,7 @@ import {
   AlertTriangle, RefreshCw, CheckCircle2, Clock,
   ChevronRight, BarChart3
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { agencyDashboardApi } from '../services/agencySupabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
@@ -44,17 +44,8 @@ export default function AgencyDashboardPage() {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('transport_agencies')
-        .select('id, company_name, status, rating, total_jobs, fleet_size, city, gstin')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (error) {
-        throw error
-      }
-
-      setAgency(data)
+      const data = await agencyDashboardApi.getAgencyProfile(user.id)
+      setAgency(data as AgencyRecord | null)
     } catch (error) {
       logger.error('[AgencyDashboardPage] fetchAgency', error)
       toast.error('Failed to load agency profile')
@@ -66,37 +57,8 @@ export default function AgencyDashboardPage() {
 
   const fetchSummary = useCallback(async (agencyId: string) => {
     try {
-      const today = new Date().toISOString().split('T')[0]
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-
-      const [activeRes, todayRes, pendingRes, revenueRes] = await Promise.all([
-        supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
-          .eq('agency_id', agencyId).in('status', ['accepted', 'in_transit']),
-        supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
-          .eq('agency_id', agencyId).gte('created_at', today),
-        supabase.from('agency_jobs').select('id', { count: 'exact', head: true })
-          .eq('agency_id', agencyId).eq('status', 'pending'),
-        supabase.from('agency_jobs').select('fare')
-          .eq('agency_id', agencyId).eq('status', 'delivered').gte('updated_at', thirtyDaysAgo),
-      ])
-
-      const queryError = activeRes.error || todayRes.error || pendingRes.error || revenueRes.error
-      if (queryError) {
-        throw queryError
-      }
-
-      const thirtyDayJobs = revenueRes.data?.length ?? 0
-      const thirtyDayRevenue = (revenueRes.data ?? []).reduce(
-        (acc: number, j: { fare: number | null }) => acc + (j.fare ?? 0), 0
-      )
-
-      setSummary({
-        active: activeRes.count ?? 0,
-        today: todayRes.count ?? 0,
-        pending: pendingRes.count ?? 0,
-        thirtyDayRevenue,
-        thirtyDayJobs,
-      })
+      const jobSummary = await agencyDashboardApi.getJobSummary(agencyId)
+      setSummary(jobSummary)
     } catch (error) {
       logger.error('[AgencyDashboardPage] fetchSummary', error)
       toast.error('Failed to load dashboard summary')

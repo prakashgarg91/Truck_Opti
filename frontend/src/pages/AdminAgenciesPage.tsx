@@ -5,29 +5,9 @@ import {
   Phone, MapPin, Briefcase, AlertTriangle, RefreshCw,
   ShieldCheck, Users, ChevronLeft
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { adminAgenciesApi, type Agency } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
-
-interface Agency {
-  id: string
-  company_name: string
-  gstin: string | null
-  pan_number: string | null
-  transport_license: string
-  contact_name: string | null
-  contact_phone: string | null
-  city: string | null
-  state: string | null
-  fleet_size: number | null
-  operating_routes: string | null
-  status: 'pending' | 'approved' | 'rejected' | 'suspended'
-  rating: number | null
-  total_jobs: number | null
-  created_at: string
-  approved_at: string | null
-  rejection_reason: string | null
-}
 
 type Tab = 'pending' | 'approved' | 'rejected' | 'suspended'
 
@@ -63,29 +43,23 @@ export default function AdminAgenciesPage() {
 
   const fetchAgencies = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('transport_agencies')
-      .select('*')
-      .eq('status', tab)
-      .order('created_at', { ascending: false })
-    if (error) {
+    try {
+      const agencies = await adminAgenciesApi.getByStatus(tab)
+      setAgencies(agencies)
+    } catch (error) {
       toast.error('Failed to load agencies')
-    } else {
-      setAgencies((data as Agency[]) || [])
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [tab])
 
   const fetchCounts = useCallback(async () => {
-    const tabs: Tab[] = ['pending', 'approved', 'rejected', 'suspended']
-    const results = await Promise.all(
-      tabs.map(t =>
-        supabase.from('transport_agencies').select('id', { count: 'exact', head: true }).eq('status', t)
-      )
-    )
-    const newCounts = {} as Record<Tab, number>
-    tabs.forEach((t, i) => { newCounts[t] = results[i].count || 0 })
-    setCounts(newCounts)
+    try {
+      const newCounts = await adminAgenciesApi.getCountsByStatus()
+      setCounts(newCounts)
+    } catch (error) {
+      toast.error('Failed to load agency counts')
+    }
   }, [])
 
   useEffect(() => {
@@ -97,54 +71,48 @@ export default function AdminAgenciesPage() {
 
   const handleApprove = async (agencyId: string) => {
     setActionLoading(agencyId)
-    const { error } = await supabase
-      .from('transport_agencies')
-      .update({ status: 'approved', approved_by: user?.id, approved_at: new Date().toISOString() })
-      .eq('id', agencyId)
-    if (error) {
-      toast.error('Failed to approve agency')
-    } else {
+    try {
+      await adminAgenciesApi.approve(agencyId)
       toast.success('Agency approved successfully')
       fetchAgencies()
       fetchCounts()
+    } catch (error) {
+      toast.error('Failed to approve agency')
+    } finally {
+      setActionLoading(null)
     }
-    setActionLoading(null)
   }
 
   const handleReject = async () => {
     if (!rejectModal) return
     if (!rejectReason.trim()) { toast.error('Please enter a rejection reason'); return }
     setActionLoading(rejectModal.agencyId)
-    const { error } = await supabase
-      .from('transport_agencies')
-      .update({ status: 'rejected', rejection_reason: rejectReason.trim() })
-      .eq('id', rejectModal.agencyId)
-    if (error) {
-      toast.error('Failed to reject agency')
-    } else {
+    try {
+      await adminAgenciesApi.reject(rejectModal.agencyId, rejectReason.trim())
       toast.success('Agency rejected')
       setRejectModal(null)
       setRejectReason('')
       fetchAgencies()
       fetchCounts()
+    } catch (error) {
+      toast.error('Failed to reject agency')
+    } finally {
+      setActionLoading(null)
     }
-    setActionLoading(null)
   }
 
   const handleSuspend = async (agencyId: string) => {
     setActionLoading(agencyId)
-    const { error } = await supabase
-      .from('transport_agencies')
-      .update({ status: 'suspended' })
-      .eq('id', agencyId)
-    if (error) {
-      toast.error('Failed to suspend agency')
-    } else {
+    try {
+      await adminAgenciesApi.suspend(agencyId)
       toast.success('Agency suspended')
       fetchAgencies()
       fetchCounts()
+    } catch (error) {
+      toast.error('Failed to suspend agency')
+    } finally {
+      setActionLoading(null)
     }
-    setActionLoading(null)
   }
 
   const filtered = agencies.filter(a =>

@@ -19,7 +19,7 @@ const PUBLIC_ROUTES = [
   { path: '/reset-password', expectedTitle: 'Set New Password' },
   { path: '/payment/callback', expectedTitle: 'Payment Status', forbiddenBodyTexts: ['Invalid payment callback', 'Payment Failed'] },
   { path: '/payment/success', expectedTitle: 'Payment Status', forbiddenBodyTexts: ['Invalid payment callback', 'Payment Failed'] },
-  { path: '/subscription', expectedTitle: 'Pricing', expectedFinalUrlIncludes: '/pricing' },
+  { path: '/subscription', expectedTitle: 'Welcome Back', expectedFinalUrlIncludes: '/login' },
 ];
 
 const PROTECTED_ROUTES = [

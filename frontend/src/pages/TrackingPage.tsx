@@ -3,7 +3,7 @@ import { useLanguageStore } from '../stores/languageStore'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, Trash2, Loader2 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { shipmentsSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
+import { customerTrackingApi, shipmentsSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
 import { supabase } from '../lib/supabase'
 import MapViewWrapper from '../components/MapViewWrapper'
 import EmptyState from '../components/EmptyState'
@@ -87,15 +87,11 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
     return mappedData
   }
 
-  const { data: activeOffers, error: activeOffersError } = await supabase
-    .from('job_offers')
-    .select('shipment_id, driver_id')
-    .in('shipment_id', inTransitShipmentIds)
-    .not('driver_id', 'is', null)
-    .in('status', ['accepted', 'pickup_arrived', 'in_transit', 'delivery_arrived'])
-
-  if (activeOffersError) {
-    logger.error('[TrackingPage] load active job offers', activeOffersError)
+  let activeOffers: ActiveJobOfferDriver[] = []
+  try {
+    activeOffers = await customerTrackingApi.getActiveOfferDrivers(inTransitShipmentIds)
+  } catch (error) {
+    logger.error('[TrackingPage] load active job offers', error)
     return mappedData
   }
 
@@ -115,14 +111,11 @@ const fetchActiveShipments = async (): Promise<ShipmentLocation[]> => {
     return mappedData
   }
 
-  const { data: driverLocations, error: driverLocationsError } = await supabase
-    .from('driver_locations')
-    .select('driver_id, lat, lng, updated_at, speed_kmh')
-    .in('driver_id', driverIds)
-    .order('updated_at', { ascending: false })
-
-  if (driverLocationsError) {
-    logger.error('[TrackingPage] load driver locations', driverLocationsError)
+  let driverLocations: DriverLocationRow[] = []
+  try {
+    driverLocations = await customerTrackingApi.getLatestDriverLocations(driverIds)
+  } catch (error) {
+    logger.error('[TrackingPage] load driver locations', error)
     return mappedData
   }
 
@@ -259,23 +252,9 @@ export default function TrackingPage() {
       setLoadingOTP(true)
 
       try {
-        const { data, error } = await supabase
-          .from('job_offers')
-          .select('pickup_otp, delivery_otp, status, drivers(full_name), photo_loading_url, photo_delivery_url')
-          .eq('shipment_id', selectedShipment.id)
-          .in('status', ['pending', 'accepted', 'pickup_arrived', 'in_transit', 'delivery_arrived', 'delivered'])
-          .limit(1)
-          .maybeSingle()
+        const data = await customerTrackingApi.getLatestJobOfferByShipmentId(selectedShipment.id)
 
         if (!isActive) return
-
-        if (error) {
-          logger.error('Error loading job offer details:', error)
-          setJobOffer(null)
-          setJobPhotos(null)
-          toast.error('Failed to load shipment details')
-          return
-        }
 
         setJobOffer(data as JobOffer | null)
         setJobPhotos(data

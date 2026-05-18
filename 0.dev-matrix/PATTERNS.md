@@ -130,6 +130,37 @@ with database_connection() as db:
 
 ---
 
+## 💸 PAYMENT PATTERNS
+
+### Pattern: Payment Success Owns Invoice Delivery
+```typescript
+const { error: updateError } = await supabase.from('payment_history')
+    .update({ status: 'success', invoice_id: invoiceId, metadata: updatedMetadata })
+    .eq('id', paymentRow.id)
+
+if (updateError) {
+    throw updateError
+}
+
+try {
+    await finalizePaidInvoiceDelivery(supabase, {
+        invoiceId,
+        paymentHistoryId: paymentRow.id,
+        paymentMetadata: updatedMetadata,
+        userId,
+        customerEmail,
+        customerPhone,
+        paymentProvider: 'razorpay',
+        providerPaymentId,
+    })
+} catch (deliveryError) {
+    console.error('Invoice delivery follow-up failed after payment verification:', deliveryError)
+}
+```
+**Why:** Hosted PDFs and invoice emails must hang off the server-owned payment success path, not the UI. Keep the delivery helper idempotent, call it from every success handler including duplicate-return branches, and make it best-effort so a billing-document problem never reverses a successful payment.
+
+---
+
 ### Pattern: Strategy / Base Class Interface
 ```python
 # ✅ Enforces consistent interface for pluggable strategies

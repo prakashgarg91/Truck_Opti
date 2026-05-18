@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Truck, Package, Users, ChevronRight, Settings, Database, ShieldCheck, Loader2 } from 'lucide-react'
 import { useLanguageStore } from '../stores/languageStore'
-import { supabase } from '../lib/supabase'
+import { customerDashboardApi } from '../services/supabaseApi'
 import { logger } from '../utils/logger'
 import toast from 'react-hot-toast'
 
@@ -29,17 +29,8 @@ export default function ManagementPage() {
   const fetchCounts = async () => {
     try {
       setLoading(true)
-      const [trucksResult, cartonsResult, customersResult] = await Promise.all([
-        supabase.from('trucks').select('id', { count: 'exact', head: true }),
-        supabase.from('cartons').select('id', { count: 'exact', head: true }),
-        supabase.from('customers').select('id', { count: 'exact', head: true })
-      ])
-
-      setCounts({
-        trucks: trucksResult.count || 0,
-        cartons: cartonsResult.count || 0,
-        customers: customersResult.count || 0
-      })
+      const managementCounts = await customerDashboardApi.getManagementCounts()
+      setCounts(managementCounts)
     } catch (error) {
       logger.error('Failed to fetch counts:', error)
       toast.error('Failed to load management data')

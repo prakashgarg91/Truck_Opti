@@ -1,17 +1,17 @@
 # Last Closeout
 
-- Time: 2026-05-17 19:46:59
+- Time: 2026-05-17 20:19:47
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M .github/instructions/context-engineering.instructions.md |  M .github/instructions/tool-selection.instructions.md |  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/AI-TASKS.json |  M 0.dev-matrix/FRAMEWORK.md |  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/LAUNCH_CHECKLIST.md |  M 0.dev-matrix/NEXT-2-TASKS.md |  M 0.dev-matrix/PATTERNS.md |  M 0.dev-matrix/SPEC.json
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-17_194658.log
+- Git status:  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/LAST-CLOSEOUT.md |  M 0.dev-matrix/STATE.md
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-17_201946.log
 
 ## AI Handoff
 - Latest handoff date: 2026-05-17
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: the live host now has green public-route smoke, a versioned no-cache service-worker path, a no-cache root document, and a real authenticated payment session that reached `/subscription` with the active renewal plus invoice row, so stale-client recovery is no longer an open blocker for the current launch slice.
-- Continue from: pick the next non-launch AI-owned gap from `0.dev-matrix/DESIGN-GAP-MAP-2026-05-16.md` (`GAP-01` service-layer completion or `GAP-02` agency portal edge functions), or resume parked billing-email work through `T-155` only when AWS SES setup is worth doing.
-- Next step: keep the launch-proof evidence frozen, close the day from the current tree truthfully, and do not reopen payment/stale-client work unless a new live regression is reproduced.
-- Blockers: close-day cannot finish fully green on this worktree until the large unrelated in-progress frontend/service-layer and agency-function changes already present in `git status` are either validated and committed or explicitly parked; AWS SES sender/domain setup remains intentionally deferred.
+- Operational proof: the validated launch slice is now committed on `main`, the live host still has green public-route smoke plus the no-cache service-worker/root headers, and the hosted invoice flow is preserved locally with the shared delivery helper, backfill function, and payment verification wiring.
+- Continue from: start the next non-launch AI-owned gap from `0.dev-matrix/DESIGN-GAP-MAP-2026-05-16.md`, and restore stash `stash@{0}` only when resuming the parked service-layer and agency-portal refactor slice.
+- Next step: keep the current launch-proof and billing slices stable, and treat the parked refactor stash plus deferred AWS SES sender setup as explicit follow-up work rather than active dirt on `main`.
+- Blockers: none for close-day on `main`; AWS SES sender/domain setup remains intentionally deferred, and the broad service-layer plus agency-portal refactor is intentionally parked in stash `stash@{0}` until resumed.
 
 ## Project Progress
 - Date: 2026-05-17
@@ -30,26 +30,22 @@
 - Next earning step: use the captured proof to onboard the first paying logistics customers, keep hosted invoice PDFs live, and reopen billing-email automation only when AWS SES setup is worth doing.
 
 ## Launch Verification
-- State: failed
-- Summary: launch-check failed; see log
-- Log: 0.dev-matrix/test-reports/launch-check-20260517_162037.log
-
-## Regression Warning
-
-- REGRESSION: pass count dropped from 9 to 8; fail count rose from 1 to 2
+- State: passed
+- Summary: launch-check passed
+- Log: 0.dev-matrix/test-reports/launch-check-20260517_201705.log
 
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
-- [FAIL] background launch-check - latest background launch-check failed - launch-check failed; see log
+- [PASS] background launch-check - launch-check passed
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
 - [PASS] status update discipline - runtime status files have real content changes
-- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: .github/instructions/context-engineering.instructions.md, .github/instructions/tool-selection.instructions.md, 0.dev-matrix/AI-TASKS.json, 0.dev-matrix/FRAMEWORK.md, 0.dev-matrix/LAUNCH_CHECKLIST.md
-- [PASS] documentation placement - new docs are in approved zones
+- [PASS] working tree cleanliness - only runtime handoff/evidence files are dirty before report write
+- [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
 - [PASS] handoff continuity - latest entry is dated today and contains changed/verified/operational-proof/continue/next/blockers fields
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 8
-- Fail: 2
+- Pass: 10
+- Fail: 0

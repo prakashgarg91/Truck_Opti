@@ -12,6 +12,7 @@ name: "Tool Selection And Validation"
   - use diagnostics tools for compile or lint errors
   - use patch-based file edits for manual changes
   - use terminal commands for builds, tests, audits, and git operations
+- When semantic workspace search is unavailable, unregistered, or clearly not returning usable workspace results, use the Roo code index / Roo bridge retrieval surface before falling back to grep, regex, or broad raw-file reads.
 - Before changing architecture, launch flow, or governance behavior, read the relevant `0.dev-matrix` docs instead of inferring intent from filenames alone.
 - After edits that affect public APIs, module boundaries, repo workflow, or validation scripts, run the strongest relevant repo checks and record exact evidence.
 - If the task mentions imports, exports, modules, hooks, plugins, skills, agents, or registration drift, also load the module reconciliation instruction or use the `System Reconciler` agent.

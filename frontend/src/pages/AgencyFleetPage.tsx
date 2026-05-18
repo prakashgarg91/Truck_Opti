@@ -4,10 +4,9 @@ import {
   Truck, Plus, AlertTriangle, RefreshCw,
   FileCheck, Clock, XCircle, ChevronRight
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
-import { useAuthStore } from '../stores/authStore'
-import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import toast from 'react-hot-toast'
+import { agencyFleetApi } from '../services/agencyPortalApi'
 
 interface FleetTruck {
   id: string
@@ -19,11 +18,6 @@ interface FleetTruck {
   is_available: boolean
   driver_id: string | null
   agency_id: string
-}
-
-interface AgencyRecord {
-  id: string
-  fleet_size: number | null
 }
 
 const VEHICLE_LABELS: Record<string, string> = {
@@ -44,9 +38,7 @@ function expiryStatus(dateStr: string | null): 'ok' | 'soon' | 'expired' {
 }
 
 export default function AgencyFleetPage() {
-  const { user } = useAuthStore()
   const navigate = useNavigate()
-  const [agency, setAgency] = useState<AgencyRecord | null>(null)
   const [trucks, setTrucks] = useState<FleetTruck[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -60,83 +52,45 @@ export default function AgencyFleetPage() {
   const [saving, setSaving] = useState(false)
 
   const fetchData = useCallback(async () => {
-    if (!user?.id) return
     try {
-      const { data: agencyData, error: agencyErr } = await supabase
-        .from('transport_agencies')
-        .select('id, fleet_size')
-        .eq('user_id', user.id)
-        .maybeSingle()
-      if (agencyErr) throw agencyErr
-      setAgency(agencyData)
-
-      if (agencyData?.id) {
-        const { data: truckData, error: truckErr } = await supabase
-          .from('agency_trucks')
-          .select('*')
-          .eq('agency_id', agencyData.id)
-          .order('created_at', { ascending: false })
-        if (truckErr) throw truckErr
-        setTrucks((truckData ?? []) as FleetTruck[])
-      }
+      const trucks = await agencyFleetApi.list()
+      setTrucks((trucks ?? []) as FleetTruck[])
     } catch (e) {
       logger.error('[AgencyFleetPage]', e)
+      toast.error('Failed to load fleet')
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   const handleAddTruck = async () => {
-    if (!agency?.id || !addForm.rc_number.trim()) {
+    if (!addForm.rc_number.trim()) {
       toast.error('RC number is required')
       return
     }
     setSaving(true)
-    const { data: newTruck, error } = await supabase
-      .from('agency_trucks')
-      .insert({
-        agency_id: agency.id,
-        vehicle_type: addForm.vehicle_type,
-        rc_number: addForm.rc_number.trim(),
-        insurance_expiry: addForm.insurance_expiry || null,
-        fitness_expiry: addForm.fitness_expiry || null,
-        permit_expiry: addForm.permit_expiry || null,
-      })
-      .select()
-      .single()
-    if (error || !newTruck) {
-      toast.error('Failed to add truck')
-    } else {
-      const { count: fleetCount, error: countError } = await supabase
-        .from('agency_trucks')
-        .select('id', { count: 'exact', head: true })
-        .eq('agency_id', agency.id)
-
-      if (countError) {
-        logger.error('[AgencyFleetPage] fleet count refresh failed:', countError)
-      }
-
-      const nextFleetSize = fleetCount ?? (agency.fleet_size || 0) + 1
-
-      const { error: fleetSizeError } = await supabase
-        .from('transport_agencies')
-        .update({ fleet_size: nextFleetSize })
-        .eq('id', agency.id)
-        .or(`fleet_size.is.null,fleet_size.lt.${nextFleetSize}`)
-
-      if (fleetSizeError) {
-        logger.error('[AgencyFleetPage] fleet size sync failed:', fleetSizeError)
-      }
-
-      setAgency(a => a ? { ...a, fleet_size: Math.max(a.fleet_size || 0, nextFleetSize) } : a)
+    try {
+      const newTruck = await agencyFleetApi.addTruck(
+        addForm.rc_number.trim(),
+        addForm.vehicle_type,
+        {
+          insurance_expiry: addForm.insurance_expiry || undefined,
+          fitness_expiry: addForm.fitness_expiry || undefined,
+          permit_expiry: addForm.permit_expiry || undefined,
+        }
+      )
       setTrucks(prev => [...prev, newTruck as FleetTruck])
       setShowAdd(false)
       setAddForm({ vehicle_type: 'eicher_14ft', rc_number: '', insurance_expiry: '', fitness_expiry: '', permit_expiry: '' })
       toast.success('Truck added to fleet')
+    } catch (e) {
+      logger.error('[AgencyFleetPage] handleAddTruck failed:', e)
+      toast.error('Failed to add truck')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   if (loading) {
@@ -154,7 +108,7 @@ export default function AgencyFleetPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Fleet Management</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {agency?.fleet_size ?? 0} vehicles registered
+            {trucks.length} vehicles registered
           </p>
         </div>
         <button

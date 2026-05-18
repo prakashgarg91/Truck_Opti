@@ -4,25 +4,11 @@ import {
   DollarSign, CheckCircle2, XCircle, Clock, Search,
   RefreshCw, AlertTriangle, ChevronLeft
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { adminPayoutsApi, type DriverPayout } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
-
-interface DriverPayout {
-  id: string
-  driver_id: string
-  amount: number
-  status: 'pending' | 'approved' | 'paid' | 'rejected'
-  requested_at: string
-  processed_at: string | null
-  note: string | null
-  drivers: {
-    full_name: string
-    phone: string
-  } | null
-}
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'paid' | 'rejected'
 
@@ -59,20 +45,11 @@ export default function AdminPayoutsPage() {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('driver_payouts')
-        .select('*, drivers(full_name, phone)')
-        .order('requested_at', { ascending: false })
-
-      if (error) {
-        logger.error('[AdminPayouts] Fetch error:', error)
-        toast.error('Failed to load payouts')
-        return
-      }
-      setPayouts(data || [])
-    } catch (err) {
-      logger.error('[AdminPayouts] Exception:', err)
-      toast.error('Something went wrong')
+      const payouts = await adminPayoutsApi.getAll()
+      setPayouts(payouts)
+    } catch (error) {
+      logger.error('[AdminPayouts] Fetch error:', error)
+      toast.error('Failed to load payouts')
     } finally {
       setLoading(false)
     }
@@ -109,18 +86,12 @@ export default function AdminPayoutsPage() {
   const handleApprove = async (payoutId: string) => {
     setProcessingId(payoutId)
     try {
-      const { error } = await supabase
-        .from('driver_payouts')
-        .update({ status: 'approved' })
-        .eq('id', payoutId)
-
-      if (error) {
-        logger.error('[AdminPayouts] Approve error:', error)
-        toast.error('Failed to approve payout')
-        return
-      }
+      await adminPayoutsApi.approve(payoutId)
       toast.success('Payout approved')
       fetchPayouts()
+    } catch (error) {
+      logger.error('[AdminPayouts] Approve error:', error)
+      toast.error('Failed to approve payout')
     } finally {
       setProcessingId(null)
     }
@@ -131,23 +102,14 @@ export default function AdminPayoutsPage() {
 
     setProcessingId(rejectModal.payoutId)
     try {
-      const { error } = await supabase
-        .from('driver_payouts')
-        .update({
-          status: 'rejected',
-          note: rejectReason.trim()
-        })
-        .eq('id', rejectModal.payoutId)
-
-      if (error) {
-        logger.error('[AdminPayouts] Reject error:', error)
-        toast.error('Failed to reject payout')
-        return
-      }
+      await adminPayoutsApi.reject(rejectModal.payoutId, rejectReason.trim())
       toast.success('Payout rejected')
       setRejectModal(null)
       setRejectReason('')
       fetchPayouts()
+    } catch (error) {
+      logger.error('[AdminPayouts] Reject error:', error)
+      toast.error('Failed to reject payout')
     } finally {
       setProcessingId(null)
     }
@@ -156,19 +118,7 @@ export default function AdminPayoutsPage() {
   const handleMarkPaid = async (payoutId: string) => {
     setProcessingId(payoutId)
     try {
-      const { error } = await supabase
-        .from('driver_payouts')
-        .update({
-          status: 'paid',
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', payoutId)
-
-      if (error) {
-        logger.error('[AdminPayouts] Mark paid error:', error)
-        toast.error('Failed to mark as paid')
-        return
-      }
+      await adminPayoutsApi.markAsPaid(payoutId)
       toast.success('Marked as paid')
       fetchPayouts()
     } finally {

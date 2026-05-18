@@ -2,20 +2,9 @@
 import { useNavigate } from 'react-router-dom'
 import { MessageSquare, ChevronLeft, RefreshCw, CheckCircle2, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { supabase } from '../lib/supabase'
+import { adminSupabaseApi, type ContactInquiry as Inquiry } from '../services/supabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
-
-interface Inquiry {
-  id: string
-  name: string
-  email: string
-  phone: string | null
-  subject: string
-  message: string
-  status: 'open' | 'resolved'
-  created_at: string
-}
 
 export default function AdminContactPage() {
   const navigate = useNavigate()
@@ -32,16 +21,8 @@ export default function AdminContactPage() {
   const fetchInquiries = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('contact_inquiries')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        throw error
-      }
-
-      setInquiries(data || [])
+      const inquiryData = await adminSupabaseApi.getContactInquiries()
+      setInquiries(inquiryData)
     } catch (error) {
       logger.error('[AdminContactPage] fetchInquiries', error)
       toast.error('Failed to load contact inquiries.')
@@ -57,14 +38,7 @@ export default function AdminContactPage() {
   const handleResolve = async (id: string) => {
     setUpdatingId(id)
     try {
-      const { error } = await supabase
-        .from('contact_inquiries')
-        .update({ status: 'resolved' })
-        .eq('id', id)
-
-      if (error) {
-        throw error
-      }
+      await adminSupabaseApi.resolveContactInquiry(id)
 
       setInquiries(prev => prev.map(i => i.id === id ? { ...i, status: 'resolved' } : i))
       toast.success('Marked as resolved')

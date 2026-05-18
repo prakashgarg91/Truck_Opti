@@ -3,8 +3,7 @@ import {
   Users, CheckCircle2, XCircle, Clock, Search,
   Phone, Truck, Calendar, AlertTriangle, RefreshCw, ShieldCheck, Download
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
-import { driverSupabaseApi } from '../services/supabaseApi'
+import { adminSupabaseApi, driverSupabaseApi } from '../services/supabaseApi'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useLanguageStore } from '../stores/languageStore'
@@ -77,13 +76,8 @@ export default function AdminDriversPage() {
   const fetchDrivers = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('drivers')
-        .select('*')
-        .eq('status', tab)
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      setDrivers(data ?? [])
+      const driverData = await adminSupabaseApi.getDriversByStatus(tab)
+      setDrivers(driverData as Driver[])
     } catch (err: unknown) {
       logger.error('[AdminDriversPage]', err)
       toast.error('Failed to load drivers.')

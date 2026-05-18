@@ -309,6 +309,29 @@ export const trucksSupabaseApi = {
       .delete()
       .eq('id', id)
     if (error) throw error
+  },
+
+  async getExistingNames(names: string[]): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('trucks')
+      .select('name')
+      .in('name', names)
+
+    if (error) {
+      throw new UserFacingError('Unable to load truck catalog right now. Please try again.')
+    }
+
+    return ((data as Array<{ name: string }>) || []).map((row) => row.name)
+  },
+
+  async createMany(trucks: Array<Record<string, unknown>>): Promise<void> {
+    const { error } = await supabase
+      .from('trucks')
+      .insert(trucks)
+
+    if (error) {
+      throw new UserFacingError('Unable to add default trucks right now. Please try again.')
+    }
   }
 }
 
@@ -438,6 +461,40 @@ export const driverSupabaseApi = {
     }
 
     return data as DriverProfile | null
+  },
+
+  async getByUserId(userId: string): Promise<DriverProfile | null> {
+    const { data, error } = await supabase
+      .from('drivers')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (error) {
+      throw new UserFacingError('Unable to load driver profile right now. Please try again.')
+    }
+
+    return data as DriverProfile | null
+  },
+
+  async register(payload: Record<string, unknown>): Promise<void> {
+    const { error } = await supabase
+      .from('drivers')
+      .insert(payload)
+
+    if (error) {
+      throw new UserFacingError('Unable to submit your driver application right now. Please try again.')
+    }
+  },
+
+  async upsertLocation(payload: Record<string, unknown>): Promise<void> {
+    const { error } = await supabase
+      .from('driver_locations')
+      .upsert(payload)
+
+    if (error) {
+      throw new UserFacingError('Unable to share driver location right now. Please try again.')
+    }
   },
 
   async approve(id: string, approvedBy: string | null): Promise<DriverProfile> {
@@ -1343,3 +1400,9 @@ export const realtimeSupabase = {
     supabase.removeChannel(channel)
   }
 }
+
+// ============= DOMAIN-SPECIFIC SERVICE EXPORTS =============
+// Re-export from specialized service files for convenience
+export * from './adminSupabaseApi'
+export * from './agencySupabaseApi'
+export * from './customerSupabaseApi'

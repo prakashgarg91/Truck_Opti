@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { FileText, TrendingUp, Download, Clock, RefreshCw } from 'lucide-react'
-import { supabase } from '../lib/supabase'
-import { useAuthStore } from '../stores/authStore'
 import { formatCurrency } from '../utils/formatters'
 import { downloadCsv, downloadJson, downloadXlsx, type ExportColumn } from '../utils/dataExport'
 import { logger } from '../utils/logger'
 import toast from 'react-hot-toast'
+import { agencyBillingApi } from '../services/agencyPortalApi'
 
 interface BillingSummary {
   thisMonth: number
@@ -37,7 +36,6 @@ interface AgencyExportRow {
 const GST_RATE = 0.05
 
 export default function AgencyBillingPage() {
-  const { user } = useAuthStore()
   const [summary, setSummary] = useState<BillingSummary>({ thisMonth: 0, pending: 0, totalPaid: 0, gstDue: 0 })
   const [loading, setLoading] = useState(true)
   const [deliveredJobs, setDeliveredJobs] = useState<DeliveredJob[]>([])
@@ -53,54 +51,17 @@ export default function AgencyBillingPage() {
   })
 
   const fetchBilling = useCallback(async () => {
-    if (!user?.id) return
     try {
-      const { data: agency, error: agencyErr } = await supabase
-        .from('transport_agencies').select('id').eq('user_id', user.id).maybeSingle()
-      if (agencyErr) throw agencyErr
-      if (!agency?.id) return
-
-      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-      const [monthRes, pendingRes, paidRes, deliveredRes] = await Promise.all([
-        supabase.from('agency_jobs').select('fare').eq('agency_id', agency.id)
-          .eq('status', 'delivered').gte('updated_at', monthStart),
-        supabase.from('agency_jobs').select('fare').eq('agency_id', agency.id)
-          .in('status', ['accepted', 'in_transit']),
-        supabase.from('agency_jobs').select('fare').eq('agency_id', agency.id).eq('status', 'delivered'),
-        supabase.from('agency_jobs').select('id, fare, updated_at, shipments(origin, destination, shipment_id)')
-          .eq('agency_id', agency.id).eq('status', 'delivered')
-          .order('updated_at', { ascending: false }),
-      ])
-      const billingError = monthRes.error || pendingRes.error || paidRes.error || deliveredRes.error
-      if (billingError) throw billingError
-
-      const sum = (rows: { fare: number | null }[]) =>
-        rows.reduce((a, r) => a + (r.fare ?? 0), 0)
-      const thisMonth = sum(monthRes.data ?? [])
-      const pending = sum(pendingRes.data ?? [])
-      const totalPaid = sum(paidRes.data ?? [])
-
-      // Map delivered jobs
-      const jobs: DeliveredJob[] = (deliveredRes.data ?? []).map((j: Record<string, unknown>) => {
-        const s = (Array.isArray(j.shipments) ? j.shipments[0] : j.shipments) as Record<string, unknown> | null
-        return {
-          id: j.id as string,
-          fare: Number(j.fare ?? 0),
-          origin: s?.origin as string ?? '—',
-          destination: s?.destination as string ?? '—',
-          updated_at: j.updated_at as string,
-          shipment_id: (s?.shipment_id as string) ?? '',
-        }
-      })
-
+      const { summary, jobs } = await agencyBillingApi.list()
       setDeliveredJobs(jobs)
-      setSummary({ thisMonth, pending, totalPaid, gstDue: Math.round(thisMonth * GST_RATE) })
+      setSummary(summary)
     } catch (e) {
       logger.error('[AgencyBillingPage] fetchBilling failed:', e)
+      toast.error('Failed to load billing data')
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [])
 
   useEffect(() => { fetchBilling() }, [fetchBilling])
 

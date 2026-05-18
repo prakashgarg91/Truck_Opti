@@ -5,6 +5,7 @@ import {
   Package, Flag
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { driverSupabaseApi, driverTripsApi } from '../services/supabaseApi'
 import {
   buildJobProgressStatePatch,
   persistDriverJobProgressRpc,
@@ -94,31 +95,16 @@ export default function DriverTripPage() {
 
   const fetchTrip = useCallback(async () => {
     if (!jobId || !user?.id) return
-    const { data: driverData } = await supabase
-      .from('drivers')
-      .select('id, full_name, active_job_id, total_trips')
-      .eq('user_id', user.id)
-      .maybeSingle()
-    setDriver(driverData)
+    const driverData = await driverSupabaseApi.getByUserId(user.id)
     if (!driverData) return // no driver profile yet
+    setDriver({
+      id: driverData.id,
+      full_name: driverData.full_name,
+      active_job_id: null,
+      total_trips: driverData.total_trips,
+    })
 
-    const { data: jobData, error } = await supabase
-      .from('job_offers')
-      .select(`
-        id, shipment_id, status, pickup_otp, delivery_otp,
-        photo_loading_url, photo_delivery_url,
-        pickup_arrived_at, journey_started_at, delivery_arrived_at, delivered_at,
-        shipments(shipment_id, origin, destination, total_weight, estimated_cost, customer_id)
-      `)
-      .eq('id', jobId)
-      .eq('driver_id', driverData.id) // ownership check: prevent IDOR
-      .maybeSingle()
-
-    if (error) {
-      toast.error('Failed to load trip details')
-      setLoading(false)
-      return
-    }
+    const jobData = await driverTripsApi.getTripByIdForDriver(jobId, driverData.id)
     if (jobData) {
       const safeJob = {
         ...jobData,
@@ -127,7 +113,7 @@ export default function DriverTripPage() {
           : (jobData.shipments as unknown as ShipmentInfo) || null,
       }
       setJob(safeJob as TripJob)
-      setStep(statusToStep(jobData.status))
+      setStep(statusToStep(String((jobData as Record<string, unknown>).status ?? 'accepted')))
     }
     setLoading(false)
   }, [jobId, user?.id])
@@ -151,9 +137,9 @@ export default function DriverTripPage() {
       updated_at: new Date().toISOString(),
     }
 
-    const { error } = await supabase.from('driver_locations').upsert(payload)
-
-    if (error) {
+    try {
+      await driverSupabaseApi.upsertLocation(payload)
+    } catch (error) {
       logger.error('[DriverTripPage] driver location upsert failed', error)
       setGpsStatus('error')
       setGpsMessage('Location sharing could not be saved. Please retry with GPS enabled.')
