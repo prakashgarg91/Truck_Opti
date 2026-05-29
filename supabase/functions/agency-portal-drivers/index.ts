@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import {
+  assertDriverLinkedToAgency,
   corsHeaders,
   handleRequestError,
   isRecord,
@@ -145,6 +146,8 @@ serve(async (req) => {
 
       return jsonResponse({ message: 'Driver unassigned.' })
     }
+
+    await assertDriverLinkedToAgency(serviceClient, agencyId, body.driverId)
 
     const { error } = await serviceClient
       .from('driver_payouts')
