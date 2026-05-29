@@ -125,6 +125,40 @@ export async function requireAdminContext(authorization: string | null) {
   return { caller, serviceClient }
 }
 
+export async function assertDriverLinkedToAgency(
+  serviceClient: SupabaseClient,
+  agencyId: string,
+  driverId: string,
+) {
+  const [truckLink, jobLink] = await Promise.all([
+    serviceClient
+      .from('agency_trucks')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('driver_id', driverId)
+      .limit(1)
+      .maybeSingle(),
+    serviceClient
+      .from('agency_jobs')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('driver_id', driverId)
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  const linkError = truckLink.error || jobLink.error
+
+  if (linkError) {
+    console.error('Failed to verify agency driver link', linkError)
+    throw new RequestError('Unable to verify driver assignment.', 500, false)
+  }
+
+  if (!truckLink.data && !jobLink.data) {
+    throw new RequestError('Driver is not assigned to this agency.', 403)
+  }
+}
+
 export async function requireAgencyContext(authorization: string | null) {
   const accessToken = getBearerToken(authorization)
   const normalizedAuthorization = authorization ?? `Bearer ${accessToken}`
