@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from 'https://deno.land/std@0.224.0/assert/mod.ts'
-import { assertDriverLinkedToAgency } from './portal-auth.ts'
+import { assertAgencyApprovedForPortal, assertDriverLinkedToAgency } from './portal-auth.ts'
 
 type QueryResult = { data: { id: string } | null; error: null }
 
@@ -33,6 +33,18 @@ function createMockServiceClient(responses: {
     },
   }
 }
+
+Deno.test('assertAgencyApprovedForPortal accepts approved agencies', () => {
+  assertAgencyApprovedForPortal('approved')
+})
+
+Deno.test('assertAgencyApprovedForPortal rejects non-approved agencies', () => {
+  assertRejects(
+    () => assertAgencyApprovedForPortal('pending'),
+    Error,
+    'Agency approval is required.',
+  )
+})
 
 Deno.test('assertDriverLinkedToAgency allows drivers linked via agency trucks', async () => {
   await assertDriverLinkedToAgency(

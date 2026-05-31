@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { assertAgencyApprovedForPortal } from '../_shared/portal-auth.ts'
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -113,9 +114,9 @@ async function getAgencyId(
 ) {
     const { data, error } = await client
         .from('transport_agencies')
-        .select('id')
+        .select('id, status')
         .eq('user_id', userId)
-        .maybeSingle<{ id: string }>()
+        .maybeSingle<{ id: string; status: string | null }>()
 
     if (error) {
         console.error('Failed to resolve agency', error)
@@ -125,6 +126,8 @@ async function getAgencyId(
     if (!data) {
         throw new RequestError('Agency not found.', 404)
     }
+
+    assertAgencyApprovedForPortal(data.status)
 
     return data.id
 }

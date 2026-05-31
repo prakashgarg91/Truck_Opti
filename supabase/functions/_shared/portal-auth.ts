@@ -125,6 +125,12 @@ export async function requireAdminContext(authorization: string | null) {
   return { caller, serviceClient }
 }
 
+export function assertAgencyApprovedForPortal(status: string | null) {
+  if (status !== 'approved') {
+    throw new RequestError('Agency approval is required.', 403)
+  }
+}
+
 export async function assertDriverLinkedToAgency(
   serviceClient: SupabaseClient,
   agencyId: string,
@@ -173,9 +179,9 @@ export async function requireAgencyContext(authorization: string | null) {
 
   const { data: agency, error: agencyError } = await serviceClient
     .from('transport_agencies')
-    .select('id')
+    .select('id, status')
     .eq('user_id', caller.id)
-    .maybeSingle<{ id: string }>()
+    .maybeSingle<{ id: string; status: string | null }>()
 
   if (agencyError) {
     console.error('Failed to resolve agency', agencyError)
@@ -185,6 +191,8 @@ export async function requireAgencyContext(authorization: string | null) {
   if (!agency?.id) {
     throw new RequestError('Agency access is required.', 403)
   }
+
+  assertAgencyApprovedForPortal(agency.status)
 
   return { caller, serviceClient, agencyId: agency.id }
 }

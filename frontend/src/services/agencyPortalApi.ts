@@ -554,9 +554,11 @@ export const agencyDriversApi = {
 
 export const agencyRegistrationApi = {
     async register(payload: Record<string, unknown>): Promise<void> {
+        const { status: _status, ...registrationPayload } = payload
+
         const { error } = await supabase
             .from('transport_agencies')
-            .insert(payload)
+            .insert(registrationPayload)
 
         if (error) {
             throw new UserFacingError('Unable to submit agency registration right now. Please try again.')
