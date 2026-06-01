@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import {
-  assertDriverLinkedToAgency,
+  assertDriverAffiliatedWithAgency,
+  assertDriverOnAgencyFleet,
   corsHeaders,
   handleRequestError,
   isRecord,
@@ -118,6 +119,8 @@ serve(async (req) => {
     }
 
     if (body.action === 'assign-truck') {
+      await assertDriverAffiliatedWithAgency(serviceClient, agencyId, body.driverId)
+
       const { error } = await serviceClient
         .from('agency_trucks')
         .update({ driver_id: body.driverId })
@@ -147,7 +150,7 @@ serve(async (req) => {
       return jsonResponse({ message: 'Driver unassigned.' })
     }
 
-    await assertDriverLinkedToAgency(serviceClient, agencyId, body.driverId)
+    await assertDriverOnAgencyFleet(serviceClient, agencyId, body.driverId)
 
     const { error } = await serviceClient
       .from('driver_payouts')
