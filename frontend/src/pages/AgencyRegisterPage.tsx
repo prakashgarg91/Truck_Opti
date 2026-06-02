@@ -125,7 +125,6 @@ export default function AgencyRegisterPage() {
         operating_routes: form.operating_routes.trim() || null,
         bank_account: form.bank_account.trim(),
         ifsc_code: form.ifsc_code.toUpperCase().trim(),
-        status: 'pending',
       })
       updateUser({ role: 'agency' })
       setStep(4)

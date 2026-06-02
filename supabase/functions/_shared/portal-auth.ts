@@ -125,6 +125,35 @@ export async function requireAdminContext(authorization: string | null) {
   return { caller, serviceClient }
 }
 
+export function assertAgencyApprovedForPortal(status: string | null) {
+  if (status !== 'approved') {
+    throw new RequestError('Agency approval is required.', 403)
+  }
+}
+
+export async function assertDriverOnAgencyFleet(
+  serviceClient: SupabaseClient,
+  agencyId: string,
+  driverId: string,
+) {
+  const { data, error } = await serviceClient
+    .from('agency_trucks')
+    .select('id')
+    .eq('agency_id', agencyId)
+    .eq('driver_id', driverId)
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Failed to verify agency fleet driver', error)
+    throw new RequestError('Unable to verify driver assignment.', 500, false)
+  }
+
+  if (!data) {
+    throw new RequestError('Driver is not assigned to this agency fleet.', 403)
+  }
+}
+
 export async function assertDriverLinkedToAgency(
   serviceClient: SupabaseClient,
   agencyId: string,
@@ -159,6 +188,103 @@ export async function assertDriverLinkedToAgency(
   }
 }
 
+async function hasAcceptedOfferForAgency(
+  serviceClient: SupabaseClient,
+  agencyId: string,
+  driverId: string,
+  shipmentId?: string,
+) {
+  if (shipmentId) {
+    const { data: agencyJob, error: agencyJobError } = await serviceClient
+      .from('agency_jobs')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('shipment_id', shipmentId)
+      .limit(1)
+      .maybeSingle()
+
+    if (agencyJobError) {
+      return { data: null, error: agencyJobError }
+    }
+
+    if (!agencyJob) {
+      return { data: null, error: null }
+    }
+
+    return serviceClient
+      .from('job_offers')
+      .select('id')
+      .eq('driver_id', driverId)
+      .eq('shipment_id', shipmentId)
+      .eq('status', 'accepted')
+      .limit(1)
+      .maybeSingle()
+  }
+
+  const { data: agencyShipments, error: agencyShipmentsError } = await serviceClient
+    .from('agency_jobs')
+    .select('shipment_id')
+    .eq('agency_id', agencyId)
+
+  if (agencyShipmentsError) {
+    return { data: null, error: agencyShipmentsError }
+  }
+
+  const shipmentIds = (agencyShipments ?? [])
+    .map((row) => row.shipment_id)
+    .filter((value): value is string => typeof value === 'string')
+
+  if (shipmentIds.length === 0) {
+    return { data: null, error: null }
+  }
+
+  return serviceClient
+    .from('job_offers')
+    .select('id')
+    .eq('driver_id', driverId)
+    .eq('status', 'accepted')
+    .in('shipment_id', shipmentIds)
+    .limit(1)
+    .maybeSingle()
+}
+
+export async function assertDriverAffiliatedWithAgency(
+  serviceClient: SupabaseClient,
+  agencyId: string,
+  driverId: string,
+  options?: { shipmentId?: string },
+) {
+  const [truckLink, jobLink, offerLink] = await Promise.all([
+    serviceClient
+      .from('agency_trucks')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('driver_id', driverId)
+      .limit(1)
+      .maybeSingle(),
+    serviceClient
+      .from('agency_jobs')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('driver_id', driverId)
+      .neq('status', 'cancelled')
+      .limit(1)
+      .maybeSingle(),
+    hasAcceptedOfferForAgency(serviceClient, agencyId, driverId, options?.shipmentId),
+  ])
+
+  const linkError = truckLink.error || jobLink.error || offerLink.error
+
+  if (linkError) {
+    console.error('Failed to verify agency driver affiliation', linkError)
+    throw new RequestError('Unable to verify driver affiliation.', 500, false)
+  }
+
+  if (!truckLink.data && !jobLink.data && !offerLink.data) {
+    throw new RequestError('Driver is not affiliated with this agency.', 403)
+  }
+}
+
 export async function requireAgencyContext(authorization: string | null) {
   const accessToken = getBearerToken(authorization)
   const normalizedAuthorization = authorization ?? `Bearer ${accessToken}`
@@ -173,9 +299,9 @@ export async function requireAgencyContext(authorization: string | null) {
 
   const { data: agency, error: agencyError } = await serviceClient
     .from('transport_agencies')
-    .select('id')
+    .select('id, status')
     .eq('user_id', caller.id)
-    .maybeSingle<{ id: string }>()
+    .maybeSingle<{ id: string; status: string | null }>()
 
   if (agencyError) {
     console.error('Failed to resolve agency', agencyError)
@@ -185,6 +311,8 @@ export async function requireAgencyContext(authorization: string | null) {
   if (!agency?.id) {
     throw new RequestError('Agency access is required.', 403)
   }
+
+  assertAgencyApprovedForPortal(agency.status)
 
   return { caller, serviceClient, agencyId: agency.id }
 }
