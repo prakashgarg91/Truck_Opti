@@ -125,37 +125,74 @@ export async function requireAdminContext(authorization: string | null) {
   return { caller, serviceClient }
 }
 
+export async function assertDriverOnAgencyFleet(
+  serviceClient: SupabaseClient,
+  agencyId: string,
+  driverId: string,
+) {
+  const { data, error } = await serviceClient
+    .from('agency_trucks')
+    .select('id')
+    .eq('agency_id', agencyId)
+    .eq('driver_id', driverId)
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Failed to verify agency fleet driver', error)
+    throw new RequestError('Unable to verify driver assignment.', 500, false)
+  }
+
+  if (!data) {
+    throw new RequestError('Driver is not assigned to this agency fleet.', 403)
+  }
+}
+
 export async function assertDriverLinkedToAgency(
   serviceClient: SupabaseClient,
   agencyId: string,
   driverId: string,
 ) {
-  const [truckLink, jobLink] = await Promise.all([
+  await assertDriverOnAgencyFleet(serviceClient, agencyId, driverId)
+}
+
+export async function assertDriverAvailableForAgencyTruck(
+  serviceClient: SupabaseClient,
+  agencyId: string,
+  driverId: string,
+) {
+  const [driverRes, foreignTruckRes] = await Promise.all([
+    serviceClient
+      .from('drivers')
+      .select('id, status')
+      .eq('id', driverId)
+      .maybeSingle<{ id: string; status: string }>(),
     serviceClient
       .from('agency_trucks')
-      .select('id')
-      .eq('agency_id', agencyId)
+      .select('id, agency_id')
       .eq('driver_id', driverId)
-      .limit(1)
-      .maybeSingle(),
-    serviceClient
-      .from('agency_jobs')
-      .select('id')
-      .eq('agency_id', agencyId)
-      .eq('driver_id', driverId)
+      .neq('agency_id', agencyId)
       .limit(1)
       .maybeSingle(),
   ])
 
-  const linkError = truckLink.error || jobLink.error
+  const lookupError = driverRes.error || foreignTruckRes.error
 
-  if (linkError) {
-    console.error('Failed to verify agency driver link', linkError)
-    throw new RequestError('Unable to verify driver assignment.', 500, false)
+  if (lookupError) {
+    console.error('Failed to verify driver for truck assignment', lookupError)
+    throw new RequestError('Unable to verify driver.', 500, false)
   }
 
-  if (!truckLink.data && !jobLink.data) {
-    throw new RequestError('Driver is not assigned to this agency.', 403)
+  if (!driverRes.data) {
+    throw new RequestError('Driver not found.', 404)
+  }
+
+  if (driverRes.data.status !== 'approved') {
+    throw new RequestError('Driver is not approved for assignment.', 403)
+  }
+
+  if (foreignTruckRes.data) {
+    throw new RequestError('Driver is already assigned to another agency.', 403)
   }
 }
 

@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { assertDriverOnAgencyFleet } from '../_shared/portal-auth.ts'
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -215,6 +216,8 @@ serve(async (req) => {
             if (job.agency_id !== agencyId) {
                 throw new RequestError('Access denied.', 403)
             }
+
+            await assertDriverOnAgencyFleet(authClient, agencyId, body.driverId)
 
             const { error } = await authClient
                 .from('agency_jobs')
