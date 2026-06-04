@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import {
   assertApprovedAgency,
   assertApprovedDriver,
+  assertDriverOnAgencyFleet,
   corsHeaders,
   handleRequestError,
   isRecord,
@@ -123,6 +124,7 @@ serve(async (req) => {
 
     if (body.action === 'assign-driver') {
       await assertApprovedDriver(serviceClient, body.driverId)
+      await assertDriverOnAgencyFleet(serviceClient, agencyId, body.driverId)
 
       const { data: job, error: fetchError } = await serviceClient
         .from('agency_jobs')
