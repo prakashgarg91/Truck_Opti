@@ -55,7 +55,8 @@
 │   └── SECURITY.md           ← AI insecure-defaults checklist + 15-item pre-commit gate
 │
 ├── 🚀 LAUNCH
-│   └── LAUNCH_CHECKLIST.md   ← Go-live checklist (Phases 1-6)
+│   ├── LAUNCH_CHECKLIST.md   ← Go-live checklist (Phases 1-6)
+│   └── PROJECT_COMPLETION_GAPS.md ← Remaining blockers and completion tasks
 │
 ├── 🧪 QUALITY
 │   ├── TESTING_PRINCIPLES.md ← ⚠️ MANDATORY before any task is marked done
