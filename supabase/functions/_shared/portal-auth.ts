@@ -125,9 +125,33 @@ export async function requireAdminContext(authorization: string | null) {
   return { caller, serviceClient }
 }
 
-export function assertAgencyApprovedForPortal(status: string | null) {
+export function assertApprovedAgency(status: string | null | undefined) {
   if (status !== 'approved') {
     throw new RequestError('Agency approval is required.', 403)
+  }
+}
+
+export async function assertApprovedDriver(
+  serviceClient: SupabaseClient,
+  driverId: string,
+) {
+  const { data: driver, error } = await serviceClient
+    .from('drivers')
+    .select('id, status')
+    .eq('id', driverId)
+    .maybeSingle<{ id: string; status: string | null }>()
+
+  if (error) {
+    console.error('Failed to verify driver profile', error)
+    throw new RequestError('Unable to verify driver assignment.', 500, false)
+  }
+
+  if (!driver?.id) {
+    throw new RequestError('Driver not found.', 404)
+  }
+
+  if (driver.status !== 'approved') {
+    throw new RequestError('Only approved drivers can be assigned or paid.', 403)
   }
 }
 
@@ -165,7 +189,15 @@ export async function assertDriverLinkedToAgency(
   }
 }
 
-export async function requireAgencyContext(authorization: string | null) {
+type AgencyContextOptions = {
+  requireApproved?: boolean
+}
+
+export async function requireAgencyContext(
+  authorization: string | null,
+  options: AgencyContextOptions = {},
+) {
+  const requireApproved = options.requireApproved ?? true
   const accessToken = getBearerToken(authorization)
   const normalizedAuthorization = authorization ?? `Bearer ${accessToken}`
 
@@ -192,9 +224,16 @@ export async function requireAgencyContext(authorization: string | null) {
     throw new RequestError('Agency access is required.', 403)
   }
 
-  assertAgencyApprovedForPortal(agency.status)
+  if (requireApproved) {
+    assertApprovedAgency(agency.status)
+  }
 
-  return { caller, serviceClient, agencyId: agency.id }
+  return {
+    caller,
+    serviceClient,
+    agencyId: agency.id,
+    agencyStatus: agency.status,
+  }
 }
 
 export function handleRequestError(scope: string, error: unknown) {
