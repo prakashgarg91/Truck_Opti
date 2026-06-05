@@ -24,7 +24,10 @@ serve(async (req) => {
   }
 
   try {
-    const { serviceClient, agencyId } = await requireAgencyContext(req.headers.get('Authorization'))
+    const { serviceClient, agencyId } = await requireAgencyContext(
+      req.headers.get('Authorization'),
+      { requireApproved: false },
+    )
     parseRequestBody(await req.json())
 
     const today = new Date().toISOString().split('T')[0]

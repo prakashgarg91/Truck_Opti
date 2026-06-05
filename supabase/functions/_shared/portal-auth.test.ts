@@ -1,11 +1,17 @@
 import { assertEquals, assertRejects } from 'https://deno.land/std@0.224.0/assert/mod.ts'
-import { assertDriverLinkedToAgency } from './portal-auth.ts'
+import {
+  assertApprovedAgency,
+  assertApprovedDriver,
+  assertDriverLinkedToAgency,
+  RequestError,
+} from './portal-auth.ts'
 
-type QueryResult = { data: { id: string } | null; error: null }
+type QueryResult = { data: { id: string; status?: string | null } | null; error: null }
 
 function createMockServiceClient(responses: {
   truck: QueryResult
   job: QueryResult
+  driver?: QueryResult
 }) {
   const buildChain = (result: QueryResult) => ({
     select: () => ({
@@ -15,6 +21,7 @@ function createMockServiceClient(responses: {
             maybeSingle: async () => result,
           }),
         }),
+        maybeSingle: async () => result,
       }),
     }),
   })
@@ -29,10 +36,53 @@ function createMockServiceClient(responses: {
         return buildChain(responses.job)
       }
 
+      if (table === 'drivers') {
+        return buildChain(responses.driver ?? { data: null, error: null })
+      }
+
       throw new Error(`Unexpected table: ${table}`)
     },
   }
 }
+
+Deno.test('assertApprovedAgency allows approved agencies', () => {
+  assertApprovedAgency('approved')
+})
+
+Deno.test('assertApprovedAgency rejects pending agencies', () => {
+  assertRejects(
+    () => Promise.resolve().then(() => assertApprovedAgency('pending')),
+    RequestError,
+    'Agency approval is required.',
+  )
+})
+
+Deno.test('assertApprovedDriver allows approved drivers', async () => {
+  await assertApprovedDriver(
+    createMockServiceClient({
+      truck: { data: null, error: null },
+      job: { data: null, error: null },
+      driver: { data: { id: 'driver-1', status: 'approved' }, error: null },
+    }) as never,
+    'driver-1',
+  )
+})
+
+Deno.test('assertApprovedDriver rejects non-approved drivers', async () => {
+  await assertRejects(
+    () =>
+      assertApprovedDriver(
+        createMockServiceClient({
+          truck: { data: null, error: null },
+          job: { data: null, error: null },
+          driver: { data: { id: 'driver-1', status: 'pending' }, error: null },
+        }) as never,
+        'driver-1',
+      ),
+    RequestError,
+    'Only approved drivers can be assigned or paid.',
+  )
+})
 
 Deno.test('assertDriverLinkedToAgency allows drivers linked via agency trucks', async () => {
   await assertDriverLinkedToAgency(
