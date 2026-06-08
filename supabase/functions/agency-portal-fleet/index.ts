@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import {
   assertApprovedAgency,
-  assertApprovedDriver,
+  assertDriverAvailableForAgencyTruck,
   corsHeaders,
   handleRequestError,
   isRecord,
@@ -148,7 +148,7 @@ serve(async (req) => {
       const updateData = sanitizeTruckUpdate(body.data)
 
       if (typeof updateData.driver_id === 'string') {
-        await assertApprovedDriver(serviceClient, updateData.driver_id)
+        await assertDriverAvailableForAgencyTruck(serviceClient, agencyId, updateData.driver_id)
       }
 
       const { error } = await serviceClient

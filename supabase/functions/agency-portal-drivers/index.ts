@@ -39,8 +39,13 @@ function parseRequestBody(body: unknown): DriversRequest {
 
       return { action: 'unassign-truck', truckId: body.truckId }
     case 'create-payout':
-      if (typeof body.driverId !== 'string' || typeof body.amount !== 'number' || !Number.isFinite(body.amount)) {
-        throw new RequestError('driverId and amount are required.')
+      if (
+        typeof body.driverId !== 'string' ||
+        typeof body.amount !== 'number' ||
+        !Number.isFinite(body.amount) ||
+        body.amount <= 0
+      ) {
+        throw new RequestError('driverId and a positive amount are required.')
       }
 
       return {
@@ -130,15 +135,21 @@ serve(async (req) => {
     if (body.action === 'assign-truck') {
       await assertDriverAvailableForAgencyTruck(serviceClient, agencyId, body.driverId)
 
-      const { error } = await serviceClient
+      const { data: assignedTruck, error } = await serviceClient
         .from('agency_trucks')
         .update({ driver_id: body.driverId })
         .eq('id', body.truckId)
         .eq('agency_id', agencyId)
+        .select('id')
+        .maybeSingle()
 
       if (error) {
         console.error('Failed to assign truck to driver', error)
         throw new RequestError('Unable to assign truck.', 500, false)
+      }
+
+      if (!assignedTruck) {
+        throw new RequestError('Truck not found.', 404)
       }
 
       return jsonResponse({ message: 'Truck assigned.' })
