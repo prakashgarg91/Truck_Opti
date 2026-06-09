@@ -23,10 +23,12 @@ powershell -ExecutionPolicy Bypass -File D:\Github\0.dev-matrix\close-day.ps1
 Before stopping, make sure the newest `AI-HANDOFF.md` entry contains:
 
 - `Changed:`
+- `Pending:`
 - `Verified:`
 - `Operational proof:`
 - `Continue from:`
 - `Next step:`
+- `Technical debt:`
 - `Blockers:`
 
 Also make sure `LAUNCH_CHECKLIST.md` still has truthful values for:
@@ -40,7 +42,7 @@ Also make sure `LAUNCH_CHECKLIST.md` still has truthful values for:
 
 1. Run the close-day helper.
 2. Capture the real validation evidence from today's work.
-3. Update handoff and launch focus files.
+3. Update handoff and launch focus files with changed work, pending work, and any new technical debt.
 4. Check the working tree:
 
 ```powershell
@@ -63,6 +65,7 @@ git status --short
 - If `AI-HANDOFF.md` is vague, fix it before stopping.
 - If `LAUNCH_CHECKLIST.md` is placeholder text, the repo is not truthfully ready for handoff.
 - If the repo still depends on Roo fallback search, note that explicitly so the next session does not assume full Qdrant coverage.
+- If pending work or new technical debt is omitted from the handoff, the repo truth is incomplete.
 
 ## Optional GitHub Backup Push
 

@@ -1,8 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import {
-  assertApprovedAgency,
-  assertApprovedDriver,
-  assertDriverAvailableForAgencyTruck,
   assertDriverLinkedToAgency,
   corsHeaders,
   handleRequestError,
@@ -60,15 +57,8 @@ serve(async (req) => {
   }
 
   try {
-    const { serviceClient, agencyId, agencyStatus } = await requireAgencyContext(
-      req.headers.get('Authorization'),
-      { requireApproved: false },
-    )
+    const { serviceClient, agencyId } = await requireAgencyContext(req.headers.get('Authorization'))
     const body = parseRequestBody(await req.json())
-
-    if (body.action !== 'snapshot') {
-      assertApprovedAgency(agencyStatus)
-    }
 
     if (body.action === 'snapshot') {
       const [trucksRes, assignmentsRes] = await Promise.all([
@@ -128,8 +118,6 @@ serve(async (req) => {
     }
 
     if (body.action === 'assign-truck') {
-      await assertDriverAvailableForAgencyTruck(serviceClient, agencyId, body.driverId)
-
       const { error } = await serviceClient
         .from('agency_trucks')
         .update({ driver_id: body.driverId })
@@ -159,7 +147,6 @@ serve(async (req) => {
       return jsonResponse({ message: 'Driver unassigned.' })
     }
 
-    await assertApprovedDriver(serviceClient, body.driverId)
     await assertDriverLinkedToAgency(serviceClient, agencyId, body.driverId)
 
     const { error } = await serviceClient

@@ -1,0 +1,85 @@
+{
+  "base_url": "https://www.truckopti.in",
+  "steps": [
+    {
+      "step": "01-home",
+      "status": "PASS",
+      "output": "TITLE=TruckOpti - Smart Logistics\nH1=India's Smartest Truck Booking Platform\nNAV_COUNT=18\nNAV_LINKS=[{\"tag\": \"A\", \"text\": \"TruckOpti\\n\\nLOGISTICS OS\", \"href\": \"/\"}, {\"tag\": \"A\", \"text\": \"Features\", \"href\": \"#features\"}, {\"tag\": \"A\", \"text\": \"How It Works\", \"href\": \"#how-it-works\"}, {\"tag\": \"A\", \"text\": \"Drivers\", \"href\": \"/driver/register\"}, {\"tag\": \"A\", \"text\": \"Agencies\", \"href\": \"/agency/register\"}, {\"tag\": \"A\", \"text\": \"Pricing\", \"href\": \"/pricing\"}, {\"tag\": \"A\", \"text\": \"Login\", \"href\": \"/login\"}, {\"tag\": \"A\", \"text\": \"Sign Up\", \"href\": \"/signup\"}, {\"tag\": \"A\", \"text\": \"Start Free\", \"href\": \"/signup\"}, {\"tag\": \"A\", \"text\": \"View Pricing\", \"href\": \"/pricing\"}, {\"tag\": \"A\", \"text\": \"Start Free\", \"href\": \"/signup\"}, {\"tag\": \"A\", \"text\": \"Contact Us\", \"href\": \"/contact\"}, {\"tag\": \"A\", \"text\": \"View Pricing\", \"href\": \"/pricing\"}, {\"tag\": \"A\", \"text\": \"Drivers\", \"href\": \"/driver/register\"}, {\"tag\": \"A\", \"text\": \"Agencies\", \"href\": \"/agency/register\"}, {\"tag\": \"A\", \"text\": \"Contact Us\", \"href\": \"/contact\"}, {\"tag\": \"A\", \"text\": \"Terms\", \"href\": \"/terms\"}, {\"tag\": \"A\", \"text\": \"Privacy\", \"href\": \"/privacy\"}]",
+      "exception": ""
+    },
+    {
+      "step": "02-pricing",
+      "status": "PASS",
+      "output": "<string>:34: SyntaxWarning: invalid escape sequence '\\$'\nPRICING_TITLE=Pricing \u2014 TruckOpti\nPRICING_H1=Choose Your Plan\nBUTTONS=[[\"Back\", null, null], [\"Monthly\", null, null], [\"Yearly\\nSave 17%\", null, null], [\"Talk to Our Team\", null, null], [\"Start Free \\u2192\", null, null], [\"Get Started\", null, null], [\"Get Started\", null, null], [\"Get Started\", null, null], [\"Contact Sales\", null, null], [\"Get Started\", null, null], [\"Get Started\", null, null], [\"Get Started\", null, null], [\"Contact Sales\", null, null], [\"Get Started\", null, null], [\"Get Started\", null, null], [\"Get Started\", null, null], [\"Contact Sales\", null, null], [\"Talk to Our Team\", null, null]]\nCLICKED=Yearly idx=0\nPRICES_AFTER=[]\nSAVINGS_TEXT=[\"Save 17%\", \"\\ud83c\\udf89 Save 17% on yearly billing\", \"Save \\u20b91,000 vs monthly\", \"Save \\u20b93,989 vs monthly\", \"Save \\u20b99,989 vs monthly\", \"Save \\u20b929,989 vs monthly\"]",
+      "exception": ""
+    },
+    {
+      "step": "03-contact",
+      "status": "PASS",
+      "output": "CONTACT_TITLE=Contact Us - TruckOpti\nCONTACT_ERRORS_AFTER_EMPTY_SUBMIT=3",
+      "exception": ""
+    },
+    {
+      "step": "04-login",
+      "status": "PASS",
+      "output": "PATH=/login\nTITLE=404 - Page Not Found\nH1=Page not found",
+      "exception": ""
+    },
+    {
+      "step": "05-signup",
+      "status": "PASS",
+      "output": "PATH=/signup\nTITLE=404 - Page Not Found\nH1=Page not found",
+      "exception": ""
+    },
+    {
+      "step": "06-forgot-password",
+      "status": "PASS",
+      "output": "PATH=/forgot-password\nTITLE=404 - Page Not Found\nH1=Page not found",
+      "exception": ""
+    },
+    {
+      "step": "07-terms",
+      "status": "PASS",
+      "output": "PATH=/terms\nTITLE=404 - Page Not Found\nH1=Page not found",
+      "exception": ""
+    },
+    {
+      "step": "08-privacy",
+      "status": "PASS",
+      "output": "PATH=/privacy\nTITLE=404 - Page Not Found\nH1=Page not found",
+      "exception": ""
+    },
+    {
+      "step": "09a-driver-register",
+      "status": "PASS",
+      "output": "FINAL_URL=https://www.truckopti.in/driver/register\nTITLE=TruckOpti - Smart Logistics\nTITLE_IS_GENERIC=YES\nHAS_LOGIN_FORM=NO\nHAS_CREATE_ACCOUNT_LINK=NO\nHAS_DRIVER_LANDING=YES\nHAS_AGENCY_LANDING=NO",
+      "exception": ""
+    },
+    {
+      "step": "09b-agency-register",
+      "status": "PASS",
+      "output": "FINAL_URL=https://www.truckopti.in/agency/register\nTITLE=TruckOpti - Smart Logistics\nTITLE_IS_GENERIC=YES\nHAS_LOGIN_FORM=NO\nHAS_CREATE_ACCOUNT_LINK=YES\nHAS_DRIVER_LANDING=NO\nHAS_AGENCY_LANDING=YES",
+      "exception": ""
+    },
+    {
+      "step": "10-otp-6digit",
+      "status": "PASS",
+      "output": "T_URL=https://www.truckopti.in/login\nOTP_DIRECT_TITLE=Welcome Back - TruckOpti\nSEND_BTN_DISABLED=False\nPOST_SEND_URL=https://accounts.google.com/v3/signin/identifier?opparams=%253Fredirect_to%253Dhttps%25253A%25252F%25252Fwww.truckopti.in%25252Fauth%25252Fcallback&dsh=S1175513419%3A1781018086082858&client_id=87428468283-vbpi2c3guqg968no40i0k29ivjv3msgn.apps.googleusercontent.com&o2v=2&redirect_uri=https%3A%2F%2Fjbxncejtcbpcronndqlx.supabase.co%2Fauth%2Fv1%2Fcallback&response_type=code&scope=email+profile&service=lso&state=de10cfdd-4c63-4fa3-a9b5-9166b35076ce&flowName=GeneralOAuthFlow&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAOSkXQC5JRvoOLGvoIYaCe7kQBvkAfI_W26wiCZXymtvyYbMJ3Go19z7kst2V3tr37W-gbEuJtSd1JvoVh5CgFLpFGEDVM2tP57xChSX6T4HAx3hLDKdurryOHKYEGTswgHB9ZgelNM5Ubp0qF3QCyYz_7fG8qTjCD0CVmKH1CncxHFAvaUJ3uoeLE76oWHz3fc9uLQJI6QuH1G4CoAv26CuTJBXHsnXfngFckGUdZvRhhLcrKK8T7P_ZzyHi0sD9TR3GOj8C-EIxfkDwyCmTi2Zaw52Mo9-w3bniIjLebVSMxoEkvcTB2O9J53SVh60sjcEJITg5muLmdt--H3THUzmzZF9gSKxs7BQQVTdG9sBQakxjRA0-btkYj1VPoCVp9UIhpVn1TKWmW1LC6ORlzpmWEP9ChsL0fkhlKsmQPw2opT6SA52PoGfjjOLaDobl_L_rnM_9wea9Oxzoq6GQ86NjIEaSnzu0FN8ceL4HFCxEQa8aQ%26flowName%3DGeneralOAuthFlow%26as%3DS1175513419%253A1781018086082858%26client_id%3D87428468283-vbpi2c3guqg968no40i0k29ivjv3msgn.apps.googleusercontent.com%26requestPath%3D%252Fsignin%252Foauth%252Fconsent%23&app_domain=https%3A%2F%2Fjbxncejtcbpcronndqlx.supabase.co&rart=ANgoxcc0k1LvYD0MKvnRYmQYKYJiH4BU5VuLQyB3r9DeUvICbMy41k9svg6ZzEJZSzRq4qD2aZVVXx20Y04pqyecElfUdF90_rsDZ3gyedelI6xcxW77nEI\nPOST_SEND_TITLE=Sign in - Google Accounts\nOTP_INPUT_BOXES=0\nALL_INPUTS=[{\"type\": \"email\", \"name\": \"identifier\", \"maxLength\": -1, \"inputMode\": \"\", \"pattern\": \"\", \"placeholder\": \"\"}, {\"type\": \"password\", \"name\": \"hiddenPassword\", \"maxLength\": -1, \"inputMode\": \"\", \"pattern\": \"\", \"placeholder\": \"\"}, {\"type\": \"text\", \"name\": \"ca\", \"maxLength\": -1, \"inputMode\": \"\", \"pattern\": \"\", \"placeholder\": \"\"}, {\"type\": \"hidden\", \"name\": \"ct\", \"maxLength\": -1, \"inputMode\": \"\", \"pattern\": \"\", \"placeholder\": \"\"}, {\"type\": \"hidden\", \"name\": \"usi\", \"maxLength\": -1, \"inputMode\": \"\", \"pattern\": \"\", \"placeholder\": \"\"}, {\"type\": \"hidden\", \"name\": \"domain\", \"maxLength\": -1, \"inputMode\": \"\", \"pattern\": \"\", \"placeholder\": \"\"}, {\"type\": \"hidden\", \"name\": \"region\", \"maxLength\": -1, \"inputMode\": \"\", \"pattern\": \"\", \"placeholder\": \"\"}, {\"type\": \"hidden\", \"name\": \"\", \"maxLength\": -1, \"inputMode\": \"\", \"pattern\": \"\", \"placeholder\": \"\"}]",
+      "exception": ""
+    },
+    {
+      "step": "11-mobile-home",
+      "status": "PASS",
+      "output": "MENU_BUTTONS=0\nHORIZONTAL_SCROLL=NO",
+      "exception": ""
+    },
+    {
+      "step": "12-google-launch",
+      "status": "PASS",
+      "output": "GOOGLE_BUTTONS=1\nPOST_CLICK_URL=https://accounts.google.com/v3/signin/identifier?opparams=%253Fredirect_to%253Dhttps%25253A%25252F%25252Fwww.truckopti.in%25252Fauth%25252Fcallback&dsh=S-668419850%3A1781018091786238&client_id=87428468283-vbpi2c3guqg968no40i0k29ivjv3msgn.apps.googleusercontent.com&o2v=2&redirect_uri=https%3A%2F%2Fjbxncejtcbpcronndqlx.supabase.co%2Fauth%2Fv1%2Fcallback&response_type=code&scope=email+profile&service=lso&state=a7bbba29-5611-4434-abf1-11851c104d46&flowName=GeneralOAuthFlow&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAOoUdcVt-5MYZauRXBbVugcYr2Na8Gx6x3FR2B9wQWiIZ82Lj0iKRT2eVu8it6CDgH6smbr27sNteQWJ1wmknEsJg1uHB_V2y94pxm425Kz7acrl-iUX5UZPOO_s5UVjbvPY8mFe33x6XqA7PXkFMsQBwMxKJ8SiFuiE_cyxpBqDQq2ACLJg-614eDZ2FuEwkJlIb3EEKhJGJTRUy7_MHvCusBzLj2th5ZHd5qCrLy_Nzleqq9PWnCZyPoWc_CjtFQiQYnIMafqx2SNk5_i5TJ7O3p3lOOcBxc6UcNp220x522srS11hEJCRoIe9glWY8VHMStYuIGZEM71Zjq7Yhlx2_8cYFugO1yR_hNV1ARW4PcdNKtiGlJTp06XixheYWAm_DH1XcDrdhjl_orfsUY1B-HjyhzUq-lu3oDYerXSpIgdvTEmwWeoT-fjs0JgOiPIBcbXKxH6LeTGwYlzdNiy1TbQ46WLTIzHCfeFN7ifHIE42VQ%26flowName%3DGeneralOAuthFlow%26as%3DS-668419850%253A1781018091786238%26client_id%3D87428468283-vbpi2c3guqg968no40i0k29ivjv3msgn.apps.googleusercontent.com%26requestPath%3D%252Fsignin%252Foauth%252Fconsent%23&app_domain=https%3A%2F%2Fjbxncejtcbpcronndqlx.supabase.co&rart=ANgoxceR2viLhUHRxY7P1L59Ffh2IRxLjhSPWkEo2CmDSZOmrn2j4sUbXhT1cVZvmclYlxzJ3S8jqe5zD1rqrLfiQUUmk229rGZKUmzspeD-JcOJoVa5Wo4\nREDIRECTED_TO_GOOGLE=YES",
+      "exception": ""
+    }
+  ],
+  "accumulators_raw": "",
+  "generated_at": "2026-06-09T20:44:49+0530"
+}

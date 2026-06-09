@@ -58,6 +58,8 @@ app.get('/{*splat}', (req, res) => {
     return res.status(503).send('App not built. Run npm run build.');
   }
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(indexPath);
 });
 

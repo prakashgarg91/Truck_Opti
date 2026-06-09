@@ -19,6 +19,11 @@ const RAZORPAY_CONFIG = {
   allowTestModeOnProduction: import.meta.env.VITE_ALLOW_TEST_RAZORPAY_ON_PRODUCTION === 'true',
 };
 
+const RAZORPAY_ORDER_ERROR_MESSAGE = 'Unable to start Razorpay payment right now. Please try again.';
+const RAZORPAY_FAILURE_MESSAGE = 'Razorpay payment failed. Please try again.';
+const RAZORPAY_PENDING_MESSAGE = 'Payment completed, but subscription verification is still pending.';
+const RAZORPAY_OPEN_ERROR_MESSAGE = 'Unable to open Razorpay checkout. Please try again.';
+
 function isLiveTruckOptiSite(): boolean {
   if (typeof window === 'undefined') return false;
   return ['truckopti.in', 'www.truckopti.in'].includes(window.location.hostname);
@@ -109,17 +114,17 @@ async function createServerOrder(request: RazorpayPaymentRequest): Promise<{ ord
 
     if (error) {
       logger.error('Error creating server order:', error);
-      return { orderId: '', error: error.message || 'Failed to create order' };
+      return { orderId: '', error: RAZORPAY_ORDER_ERROR_MESSAGE };
     }
 
     if (!data?.id) {
-      return { orderId: '', error: 'Failed to create order' };
+      return { orderId: '', error: RAZORPAY_ORDER_ERROR_MESSAGE };
     }
 
     return { orderId: data.id };
   } catch (error) {
     logger.error('Error creating server order:', error);
-    return { orderId: '', error: 'Failed to create payment order' };
+    return { orderId: '', error: RAZORPAY_ORDER_ERROR_MESSAGE };
   }
 }
 
@@ -203,7 +208,7 @@ export async function initiateRazorpayPayment(
               paymentId: response.razorpay_payment_id,
               orderId: response.razorpay_order_id,
               signature: response.razorpay_signature,
-              error: verificationResult?.error || verifyError?.message || 'Payment completed, but subscription verification is still pending.',
+              error: RAZORPAY_PENDING_MESSAGE,
             });
             return;
           }
@@ -215,7 +220,7 @@ export async function initiateRazorpayPayment(
             paymentId: response.razorpay_payment_id,
             orderId: response.razorpay_order_id,
             signature: response.razorpay_signature,
-            error: 'Payment completed, but subscription verification is still pending.',
+            error: RAZORPAY_PENDING_MESSAGE,
           });
           return;
         }
@@ -240,15 +245,16 @@ export async function initiateRazorpayPayment(
       const razorpay = new (window as any).Razorpay(options);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Razorpay SDK event payload type
       razorpay.on('payment.failed', function (response: any) {
+        logger.warn('Razorpay payment failed:', response?.error);
         resolve({
           success: false,
           status: 'failed',
-          error: response.error?.description || 'Payment failed',
+          error: RAZORPAY_FAILURE_MESSAGE,
         });
       });
       razorpay.open();
     } catch (_error) {
-      resolve({ success: false, status: 'failed', error: 'Failed to open Razorpay checkout' });
+      resolve({ success: false, status: 'failed', error: RAZORPAY_OPEN_ERROR_MESSAGE });
     }
   });
 }

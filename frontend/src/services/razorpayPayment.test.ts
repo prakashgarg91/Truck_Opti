@@ -216,7 +216,25 @@ describe('initiateRazorpayPayment', () => {
             paymentId: 'pay_1',
             orderId: 'order_1',
             signature: 'sig_1',
-            error: 'Verification pending',
+            error: 'Payment completed, but subscription verification is still pending.',
+        })
+    })
+
+    it('sanitizes create-order failures before returning them to the UI', async () => {
+        invokeMock.mockResolvedValueOnce({
+            data: null,
+            error: { message: 'Authenticated user does not match requested payment user' },
+        })
+
+        ; (window as Window & { Razorpay?: unknown }).Razorpay = class RazorpayMock { }
+
+        const { initiateRazorpayPayment } = await importRazorpayModule('rzp_live_12345')
+        const result = await initiateRazorpayPayment(request)
+
+        expect(loggerErrorMock).toHaveBeenCalledOnce()
+        expect(result).toEqual({
+            success: false,
+            error: 'Unable to start Razorpay payment right now. Please try again.',
         })
     })
 })

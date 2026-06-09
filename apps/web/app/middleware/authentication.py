@@ -6,7 +6,9 @@ JWT-based authentication for production-ready security
 from functools import wraps, lru_cache
 from flask import request, jsonify, g
 from datetime import datetime, timedelta, timezone
-import jwt
+from joserfc import jwt
+from joserfc.errors import BadSignatureError, DecodeError, InvalidTokenError, JoseError
+from joserfc.jwk import OctKey
 import os
 import secrets
 from typing import Optional, Dict, Any
@@ -62,15 +64,16 @@ def generate_token(user_id: int, email: str, role: str = 'user') -> str:
     Returns:
         JWT token string
     """
+    issued_at = datetime.now(timezone.utc)
     payload = {
         'user_id': user_id,
         'email': email,
         'role': role,
-        'exp': datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS),
-        'iat': datetime.now(timezone.utc)
+        'exp': int((issued_at + timedelta(hours=JWT_EXPIRATION_HOURS)).timestamp()),
+        'iat': int(issued_at.timestamp())
     }
 
-    token = jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
+    token = jwt.encode({'alg': JWT_ALGORITHM}, payload, OctKey.import_key(get_jwt_secret()))
     return token
 
 
@@ -85,11 +88,20 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
         Decoded payload or None if invalid
     """
     try:
-        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        decoded = jwt.decode(token, OctKey.import_key(get_jwt_secret()))
+        payload = dict(decoded.claims)
+
+        exp = payload.get('exp')
+        if exp is not None and not isinstance(exp, (int, float)):
+            raise AuthenticationError('Invalid token')
+
+        if isinstance(exp, (int, float)) and datetime.now(timezone.utc).timestamp() >= float(exp):
+            raise AuthenticationError('Token has expired')
+
         return payload
-    except jwt.ExpiredSignatureError:
-        raise AuthenticationError('Token has expired')
-    except jwt.InvalidTokenError:
+    except AuthenticationError:
+        raise
+    except (BadSignatureError, DecodeError, InvalidTokenError, JoseError, TypeError, ValueError):
         raise AuthenticationError('Invalid token')
     except RuntimeError as exc:
         raise AuthenticationError(str(exc)) from exc

@@ -76,7 +76,6 @@ app/*.db
 app/*.db-*
 app/logs/
 apps/web/app/logs/
-apps/web/app_data/
 
 # Legacy test artifacts (moved to scripts/legacy-tests/)
 # (tracked in git; do not re-add at root)
@@ -85,3 +84,6 @@ apps/web/app_data/
 scripts/archive/
 docs/archive/
 0.dev-matrix/archive/
+
+.vercel
+.env*

@@ -16,30 +16,10 @@ import {
   UserX,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { adminSupabaseApi, type AdminUser as UserRecord } from '../services/adminSupabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
-
-interface UserRecord {
-  id: string
-  email: string
-  role: string
-  created_at: string
-  updated_at: string
-  name?: string
-  phone?: string
-  account_status: 'active' | 'disabled'
-  banned_until?: string | null
-}
-
-interface AdminUsersResponse {
-  users: UserRecord[]
-}
-
-interface AdminUserMutationResponse {
-  message?: string
-  user?: UserRecord
-}
+import { toUserFacingErrorMessage } from '../utils/userFacingError'
 
 type UserAction = 'disable' | 'enable' | 'delete'
 
@@ -59,30 +39,6 @@ const roleColors: Record<string, string> = {
   driver: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   manager: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   user: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
-}
-
-async function getFunctionErrorMessage(error: unknown, fallbackMessage: string) {
-  if (error && typeof error === 'object') {
-    const response = 'context' in error ? error.context : null
-
-    if (response instanceof Response) {
-      try {
-        const payload = (await response.clone().json()) as { error?: string }
-
-        if (typeof payload.error === 'string' && payload.error.trim()) {
-          return payload.error
-        }
-      } catch {
-        // Fall back to the generic error message below.
-      }
-    }
-
-    if ('message' in error && typeof error.message === 'string' && error.message.trim()) {
-      return error.message
-    }
-  }
-
-  return fallbackMessage
 }
 
 function getActionCopy(action: UserAction, user: UserRecord) {
@@ -135,17 +91,10 @@ export default function AdminUsersPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke<AdminUsersResponse>('admin-portal-users', {
-        body: { action: 'list' },
-      })
-
-      if (error) {
-        toast.error(await getFunctionErrorMessage(error, 'Failed to load users'))
-      } else {
-        setUsers(data?.users ?? [])
-      }
+      const nextUsers = await adminSupabaseApi.getAdminUsers()
+      setUsers(nextUsers)
     } catch (error) {
-      toast.error(await getFunctionErrorMessage(error, 'Failed to load users'))
+      toast.error(toUserFacingErrorMessage(error, 'Failed to load users'))
     } finally {
       setLoading(false)
     }
@@ -187,33 +136,18 @@ export default function AdminUsersPage() {
 
     try {
       if (action === 'delete') {
-        const { data, error } = await supabase.functions.invoke<AdminUserMutationResponse>('admin-portal-users', {
-          body: { action: 'delete', userId: user.id },
-        })
-
-        if (error) {
-          throw error
-        }
-
+        await adminSupabaseApi.deleteUser(user.id)
         setUsers(currentUsers => currentUsers.filter(currentUser => currentUser.id !== user.id))
-        toast.success(data?.message || 'User account deleted')
+        toast.success('User account deleted')
       } else {
-        const disabled = action === 'disable'
-        const { data, error } = await supabase.functions.invoke<AdminUserMutationResponse>('admin-portal-users', {
-          body: { action: 'set-disabled', userId: user.id, disabled },
-        })
-
-        if (error) {
-          throw error
-        }
-
-        if (data?.user) {
-          setUsers(currentUsers => currentUsers.map(currentUser => currentUser.id === data.user?.id ? data.user : currentUser))
+        if (action === 'disable') {
+          await adminSupabaseApi.banUser(user.id)
         } else {
-          await fetchUsers()
+          await adminSupabaseApi.unbanUser(user.id)
         }
 
-        toast.success(data?.message || (disabled ? 'User account disabled' : 'User account re-enabled'))
+        await fetchUsers()
+        toast.success(action === 'disable' ? 'User account disabled' : 'User account re-enabled')
       }
 
       setSelectedAction(null)
@@ -224,7 +158,7 @@ export default function AdminUsersPage() {
           ? 'Failed to disable the user account'
           : 'Failed to re-enable the user account'
 
-      toast.error(await getFunctionErrorMessage(error, fallbackMessage))
+      toast.error(toUserFacingErrorMessage(error, fallbackMessage))
     } finally {
       setSubmittingAction(null)
     }

@@ -203,8 +203,11 @@ const CheckoutPage: React.FC = () => {
       } else if (result.status === 'pending' && result.paymentId) {
         toast('Payment received. Subscription verification is still pending.', { icon: '⏳' });
         navigate('/payment/callback?payment_id=' + result.paymentId + '&order_id=' + result.orderId + '&status=pending');
+      } else if (result.error === 'Payment cancelled by user') {
+        toast('Payment cancelled.', { icon: 'ℹ️' });
       } else {
-        toast.error(result.error || ('Payment failed on both gateways'));
+        logger.warn('[CheckoutPage] Razorpay initiation failed', result);
+        toast.error('Unable to start payment right now. Please try again.');
       }
     } catch (error) {
       logger.error('Payment error:', error);

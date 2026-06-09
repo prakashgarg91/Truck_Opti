@@ -28,9 +28,11 @@ For daily work, the AST refresh is usually the fastest path.
 
 1. Roo bridge first for semantic shortlist when the task is intent-based.
 2. If `graphify-out/GRAPH_REPORT.md` exists, read it before raw-file search for architecture or cross-module questions.
-3. Use Graphify query/path/explain to navigate the narrowed graph.
+3. Use the current MCP tool names to navigate the narrowed graph: `graphify_query_graph`, `graphify_graph_stats`, `graphify_get_community`, `graphify_get_neighbors`, `graphify_get_node`, `graphify_god_nodes`, and `graphify_shortest_path`.
 4. Use code-review-graph for exact call graphs, blast radius, and review-risk analysis.
 5. Use grep/file search only after the graph layer points you at the right files.
+
+Use only the exact Graphify tool names listed above. Do not invent unsupported variants.
 
 ## Standard Operating Modes
 

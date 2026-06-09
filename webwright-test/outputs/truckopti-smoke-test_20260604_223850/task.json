@@ -1,0 +1,5 @@
+{
+  "task": "Perform a comprehensive smoke test of the live production app at https://truckopti.in/. Visit all public routes: homepage, /pricing (toggle monthly/yearly), /contact (test validation), /terms, /privacy, /login?mode=driver, /login?mode=agency, /signup, /forgot-password, /driver/register, /agency/register. For each page: verify it loads, check page title, take a screenshot, note any errors. Specifically verify these past findings: (1) /driver/register and /agency/register create a dead-end loop for new users who don't have accounts, (2) these pages use generic browser title instead of route-specific titles. Also test: login button disabled until valid input, Google Sign-In button launches OAuth, homepage responsive at mobile viewport 375x812. Do NOT submit real forms or complete OAuth. Save all screenshots and provide a structured PASS/FAIL report.",
+  "task_id": "truckopti-smoke-test",
+  "start_url": "https://truckopti.in/"
+}

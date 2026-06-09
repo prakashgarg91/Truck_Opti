@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
-import { emailOrLoginIdSchema, emailSchema, passwordSchema, phoneInputSchema } from '../../utils/validators'
+import { emailOrLoginIdSchema, emailSchema, loginPasswordSchema, phoneInputSchema } from '../../utils/validators'
 import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
 import { logger } from '../../utils/logger'
 import { buildAuthReturnTo, storeAuthReturnTo, type AuthRouteState } from '../../utils/authReturnTo'
@@ -258,7 +258,7 @@ export default function LoginPage() {
         return
       }
 
-      const passwordResult = passwordSchema.safeParse(password)
+      const passwordResult = loginPasswordSchema.safeParse(password)
       if (!passwordResult.success) {
         setPasswordError(passwordResult.error.issues[0]?.message || 'Invalid password')
         return
@@ -325,7 +325,7 @@ export default function LoginPage() {
     ? emailSchema.safeParse(contact).success
     : phoneInputSchema.safeParse(contact).success)
 
-  const isPasswordLoginValid = emailOrLoginIdSchema.safeParse(passwordIdentifier).success && passwordSchema.safeParse(password).success
+  const isPasswordLoginValid = emailOrLoginIdSchema.safeParse(passwordIdentifier).success && loginPasswordSchema.safeParse(password).success
 
   const handleGoogleLogin = async () => {
     try {
@@ -501,7 +501,7 @@ export default function LoginPage() {
               ) : (
                 <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
                   <KeyRound className="w-3 h-3" />
-                  Use at least 8 characters with letters and numbers.
+                  Enter the password currently tied to this TruckOpti account.
                 </p>
               )}
             </div>

@@ -151,7 +151,7 @@ class CostCalculationEngine:
         location = route_info.get('location', 'India')
         
         # Fuel cost
-        fuel_efficiency = getattr(truck_type, 'fuel_efficiency', 10)
+        fuel_efficiency = float(getattr(truck_type, 'fuel_efficiency', 10) or 10)
         fuel_cost = self.calculate_fuel_cost(distance, fuel_efficiency, "diesel", location)
         
         # Toll cost
@@ -165,7 +165,7 @@ class CostCalculationEngine:
         driver_cost = self.calculate_driver_cost(distance)
         
         # Time-based costs (vehicle depreciation, insurance per day)
-        time_cost = getattr(truck_type, 'cost_per_km', 1.0) * distance
+        time_cost = float(getattr(truck_type, 'cost_per_km', 1.0) or 1.0) * distance
         
         # Total cost
         total_cost = fuel_cost + toll_cost + maintenance_cost + driver_cost + time_cost
@@ -190,9 +190,9 @@ class CostCalculationEngine:
             cost_breakdown = self.calculate_comprehensive_cost(truck, route_info)
             
             # Calculate cost efficiency metrics
-            payload_capacity = truck.length * truck.width * truck.height / 1000000  # m³
+            payload_capacity = float(truck.length or 0) * float(truck.width or 0) * float(truck.height or 0) / 1000000
             cost_per_cubic_meter = cost_breakdown.total_cost / payload_capacity
-            cost_per_kg = cost_breakdown.total_cost / truck.max_weight if truck.max_weight > 0 else float('inf')
+            cost_per_kg = cost_breakdown.total_cost / float(truck.max_weight or 0) if truck.max_weight and float(truck.max_weight) > 0 else float('inf')
             
             cost_analysis.append({
                 'truck_name': truck.name,

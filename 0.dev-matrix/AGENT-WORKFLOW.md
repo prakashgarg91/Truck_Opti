@@ -26,12 +26,22 @@ If they disagree, `AI-TASKS.json` wins.
 
 Use the same retrieval stack in every repo:
 
-1. Roo bridge targeted search
-2. Graphify structure map
-3. code-review-graph blast radius / impact
+1. `roo-code-index-search` — cross-repo semantic discovery (pass `workspace_path` every time)
+2. Graphify `query_graph` — structural orientation for unfamiliar areas
+3. code-review-graph — `get_minimal_context_tool` then blast radius / impact (`repo_root` required in multi-repo)
 4. exact grep or file search confirmation
 
 Do not start with broad file reads when one of those layers can narrow the owning surface first.
+
+### agent-delegator
+
+Use for isolated parallel subtasks, not one-liners:
+
+- `check_agents` once per session
+- `delegate_task` with `workingDir`, owner files, and validation command in the prompt
+- `batch_tasks` when 2+ independent slices exist
+
+Workers implement; the manager reviews diff and runs validation.
 
 ## Phase Gate Rule
 
@@ -39,7 +49,7 @@ Small tasks only work when they are phase-gated.
 
 1. `analyze` — define the smallest falsifiable slice
 2. `contract` or `spec` — freeze the ownership, interface, or acceptance rule
-3. `validate` — name the exact proof command or runtime evidence
+3. `validate` — name the first failing test or cheapest falsifying check plus the proof command
 4. `realize` — make the smallest code or doc change that satisfies the slice
 5. `prove` — run the validation and record the evidence
 
@@ -79,6 +89,13 @@ Those findings should become one of three things: archive, explicit keep, or a q
 Start working responses with:
 
 ```text
+CONTEXT AUDIT:
+Slice: <smallest transaction>
+Files: <likely files or modules>
+Dependencies: <what could break>
+Test first: <failing test or cheapest falsifying check>
+Proof: <validation command>
+
 REMAINING GAPS (2):
 GAP-1: <one-line description> | owner: <file or module> | status: <state>
 GAP-2: <one-line description> | owner: <file or module> | status: <state>

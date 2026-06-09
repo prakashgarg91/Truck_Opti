@@ -12,6 +12,7 @@ const corsHeaders = {
 }
 
 const VALID_PAYMENT_METHODS = new Set(['card', 'upi', 'netbanking', 'wallet'])
+const USER_FACING_ORDER_ERROR = 'Unable to start Razorpay payment right now. Please try again.'
 
 function toRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -186,8 +187,8 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error creating Razorpay order:', error)
+    return new Response(JSON.stringify({ error: USER_FACING_ORDER_ERROR }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400
     })

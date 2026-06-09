@@ -1,0 +1,23 @@
+[
+  {
+    "index": 0,
+    "spec": "base.yaml",
+    "kind": "file",
+    "resolved_path": "C:\\Users\\Prakash\\AppData\\Local\\Temp\\webwright\\src\\webwright\\config\\base.yaml",
+    "saved_copy": "D:\\Github\\Truck_Opti\\webwright-test\\outputs\\truckopti-smoke-test_20260604_223850\\config_snapshot\\00_base.yaml"
+  },
+  {
+    "index": 1,
+    "spec": "D:\\Github\\Truck_Opti\\webwright-test\\model_minimax_m3.yaml",
+    "kind": "file",
+    "resolved_path": "D:\\Github\\Truck_Opti\\webwright-test\\model_minimax_m3.yaml",
+    "saved_copy": "D:\\Github\\Truck_Opti\\webwright-test\\outputs\\truckopti-smoke-test_20260604_223850\\config_snapshot\\01_model_minimax_m3.yaml"
+  },
+  {
+    "index": 2,
+    "spec": "D:\\Github\\Truck_Opti\\webwright-test\\windows.yaml",
+    "kind": "file",
+    "resolved_path": "D:\\Github\\Truck_Opti\\webwright-test\\windows.yaml",
+    "saved_copy": "D:\\Github\\Truck_Opti\\webwright-test\\outputs\\truckopti-smoke-test_20260604_223850\\config_snapshot\\02_windows.yaml"
+  }
+]

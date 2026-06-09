@@ -231,60 +231,54 @@ export const agencyJobsApi = {
         }
     },
 
-    async getAgencyIdByUser(userId: string): Promise<string | null> {
-        const { data, error } = await supabase
-            .from('transport_agencies')
-            .select('id')
-            .eq('user_id', userId)
-            .maybeSingle()
+    async getAssignableDrivers(): Promise<AgencyDriverAssignmentRow[]> {
+        try {
+            const { data, error } = await supabase.functions.invoke<{
+                drivers: AgencyDriverAssignmentRow[]
+            }>('agency-portal-jobs', {
+                method: 'POST',
+                body: { action: 'assignable-drivers' },
+            })
 
-        if (error) {
-            throw new UserFacingError('Failed to load agency profile')
-        }
+            if (error) {
+                logger.error('[agencyJobsApi.getAssignableDrivers]', error)
+                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to load drivers'))
+            }
 
-        return (data as { id: string } | null)?.id ?? null
-    },
+            return data?.drivers ?? []
+        } catch (e) {
+            logger.error('[agencyJobsApi.getAssignableDrivers]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
 
-    async getAvailableDrivers(agencyId: string): Promise<AgencyDriverAssignmentRow[]> {
-        const { data, error } = await supabase
-            .from('agency_trucks')
-            .select(`
-        id,
-        vehicle_type,
-        rc_number,
-        driver_id,
-        drivers!agency_trucks_driver_id_fkey (
-          id,
-          full_name,
-          phone,
-          rating
-        )
-      `)
-            .eq('agency_id', agencyId)
-            .not('driver_id', 'is', null)
-            .eq('is_available', true)
-
-        if (error) {
             throw new UserFacingError('Failed to load drivers')
         }
-
-        return (data as AgencyDriverAssignmentRow[]) || []
     },
 
-    async getDriverLatestLocation(driverId: string): Promise<{ lat: number | null; lng: number | null; updated_at: string; speed_kmh: number | null } | null> {
-        const { data, error } = await supabase
-            .from('driver_locations')
-            .select('lat, lng, updated_at, speed_kmh')
-            .eq('driver_id', driverId)
-            .order('updated_at', { ascending: false })
-            .limit(1)
-            .maybeSingle()
+    async getDriverLatestLocation(jobId: string): Promise<{ lat: number | null; lng: number | null; updated_at: string; speed_kmh: number | null } | null> {
+        try {
+            const { data, error } = await supabase.functions.invoke<{
+                location: { lat: number | null; lng: number | null; updated_at: string; speed_kmh: number | null } | null
+            }>('agency-portal-jobs', {
+                method: 'POST',
+                body: { action: 'latest-driver-location', jobId },
+            })
 
-        if (error) {
+            if (error) {
+                logger.error('[agencyJobsApi.getDriverLatestLocation]', error)
+                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to load driver location'))
+            }
+
+            return data?.location ?? null
+        } catch (e) {
+            logger.error('[agencyJobsApi.getDriverLatestLocation]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
             throw new UserFacingError('Failed to load driver location')
         }
-
-        return (data as { lat: number | null; lng: number | null; updated_at: string; speed_kmh: number | null } | null) ?? null
     },
 }
 
@@ -554,11 +548,9 @@ export const agencyDriversApi = {
 
 export const agencyRegistrationApi = {
     async register(payload: Record<string, unknown>): Promise<void> {
-        const { status: _status, ...registrationPayload } = payload
-
         const { error } = await supabase
             .from('transport_agencies')
-            .insert(registrationPayload)
+            .insert(payload)
 
         if (error) {
             throw new UserFacingError('Unable to submit agency registration right now. Please try again.')

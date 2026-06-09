@@ -1853,7 +1853,7 @@ def api_fleet_cost_optimization():
         'recommendations': {
             'best_strategy': optimization_results['recommended_strategy'],
             # Estimated 15% savings
-            'cost_savings_potential': fleet_costs['total_costs']['total_cost'] * 0.15,
+            'cost_savings_potential': float(fleet_costs['total_costs']['total_cost']) * 0.15,
             'efficiency_improvements': optimization_results['results']
         }
     })

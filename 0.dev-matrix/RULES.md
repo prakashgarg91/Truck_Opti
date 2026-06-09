@@ -119,16 +119,18 @@ git push origin main    # FIRST — source of truth
 git push heroku main    # SECOND — deploy (if applicable)
 ```
 
-### 14. Code-Review-Graph: Check Before Edit
-Before any non-trivial task, run:
-```
-get_minimal_context(task="<what you're about to do>")
-```
-This costs ~100 tokens and prevents wasted work on call graph / blast radius surprises.
+### 14. Knowledge Ledger: Graphify + code-review-graph Before Edit
+Before any non-trivial task:
+
+- use Graphify or the current `graphify-out/GRAPH_REPORT.md` to map the owning structure
+- run `code-review-graph_get_minimal_context_tool(repo_root="D:/Github/<repo>", task="<what you're about to do>")`
+- state a short context audit before editing: slice, likely files, dependencies, first failing check, proof command
+
+This prevents wasted work caused by context rot, hidden module coupling, and blast-radius surprises.
 
 ### 15. Roo Bridge Semantic Search Before grep
 When looking for code by intent or behaviour, use the Roo bridge MCP tools first.
-Start with `search_roo_index`; use `detect_roo_index_collection` when workspace mapping needs confirmation.
+Start with `roo-code-index-search`; use `roo-code-index-resolve-collection` when workspace mapping needs confirmation.
 Reserve grep/file_search for exact string matching after Roo has narrowed the candidates.
 
 ### 16. Junie Stays User-Scope By Default
@@ -139,6 +141,20 @@ powershell -ExecutionPolicy Bypass -File C:\Users\Prakash\.junie\junie-zai.ps1 -
 ```
 
 Do not create or commit repo-local `.junie/` just because Junie offers to import AGENTS, MCP, or skills on first run. Only add repo-local `.junie/` when the repo truly needs Junie-specific shared behavior that cannot be handled by root `AGENTS.md`, existing repo docs, or user-scope Junie MCP.
+
+### 17. Open-Source And Shared Capability First
+Before building new cross-repo infrastructure from scratch, AI and humans must check for an existing solution in this order:
+
+1. the current repo
+2. `D:\Github\Office_Scripts\Shared-scripts`
+3. other repos already owned in `D:\Github`
+4. vendor SDKs, official APIs, and maintained open-source projects online
+
+This rule applies especially to website monitoring, RSS/feed ingestion, dedupe, scraping, scheduler/webhook plumbing, auth wrappers, OCR helpers, and LLM-routing code.
+
+If an available solution covers the need well enough, reuse, wrap, or adapt it instead of rebuilding it. Build custom code only for domain-specific gaps, thin adapters, or missing contract glue.
+
+Keep product repos separate. Share capabilities through a stable shared folder, package, or service instead of copying business logic between repos.
 
 ---
 

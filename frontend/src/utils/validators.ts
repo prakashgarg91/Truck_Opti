@@ -29,6 +29,9 @@ export const passwordSchema = z.string()
   .regex(/[A-Za-z]/, 'Password must include at least one letter')
   .regex(/[0-9]/, 'Password must include at least one number')
 
+export const loginPasswordSchema = z.string()
+  .min(1, 'Password is required')
+
 // GSTIN: 15-char GST number (Standard Indian GST format)
 // Format: 2 digits (state) + 5 letters (PAN entity) + 4 digits + 1 letter + 1 char (Z) + 1 check digit
 export const gstinSchema = z.string().regex(
@@ -267,6 +270,7 @@ export default {
   phoneInputSchema,
   emailSchema,
   passwordSchema,
+  loginPasswordSchema,
   gstinSchema,
   pincodeSchema,
   dimensionSchema,

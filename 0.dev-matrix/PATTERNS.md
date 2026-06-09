@@ -5,6 +5,54 @@
 
 ---
 
+## 🤖 AUTONOMOUS DEVELOPMENT PATTERNS
+
+### Pattern: MCP-First Retrieval Stack (Save Tokens, Save Money)
+
+**Rule:** Before any broad file read, repo inventory, or repeated grep pass, use the MCP retrieval stack in this exact order:
+
+1. **`roo-code-index-bridge_roo-code-index-search`** — semantic ownership discovery
+2. **Graphify MCP tools** (`graphify_graph_stats`, `graphify_query_graph`) — structural map
+3. **`code-review-graph_*_tool`** — blast radius and affected flows
+4. **Only then** — direct file reads or grep for exact confirmation
+
+**Why:** Roo Index + Graphify + CRG together answer "what files matter" and "what will break" without reading 50+ files. This saves 60-80% of token spend vs. naive file-by-file exploration. In the 2026-06-07 TO-107 run, the scout used 6 MCP calls to isolate the root cause across 3 files instead of reading the entire frontend tree.
+
+**Cost evidence:** A typical scout/build/review cycle on Truck_Opti costs ~$0.15-0.30 with MiniMax M3 Free (scout + build) + one DeepSeek V4 Pro review gate. The same work done by direct Copilot Chat without MCP pre-filtering costs 3-5x more in token consumption because it reads irrelevant files.
+
+---
+
+### Pattern: Opencode as Primary Execution Engine
+
+**Rule:** Use `opencode` (free models: MiniMax M3 Free, DeepSeek V4 Pro) as the primary autonomous execution engine. Reserve paid Copilot/Claude interactions for:
+- Final review gates (DeepSeek V4 Pro completion review)
+- Human-blocked task unblocking (owner credential setup)
+- Complex multi-file refactors that need interactive reasoning
+
+**Why:** `opencode` runs the full scout/build/review triad with free models. The 2026-06-07 TO-107 run proved the pipeline: scout (MiniMax M3 Free) diagnosed Heroku bundle drift in 3 minutes, build (MiniMax M3 Free) validated the bounded slice and made the `server.js` cache-header fix, review gate (pending) will sign off with DeepSeek V4 Pro.
+
+**Execution contract:**
+```powershell
+# Start autonomous pipeline
+.\START-AUTONOMOUS-DEV.bat 12
+
+# Or directly via Frame
+powershell -NoProfile -ExecutionPolicy Bypass -File "D:\Github\Frame\run-portfolio.ps1" -ProjectName "Truck_Opti" -MaxRunsOverride 12
+```
+
+---
+
+### Pattern: Bounded-Slice Scout → Build → Review Triad
+
+**Rule:** Every task follows the triad:
+1. **Scout** — read-only diagnosis, writes `SCOUT-CONTEXT.md` artifact, no code edits
+2. **Build** — bounded-slice edits only, writes `BUILD-RESULT.md` artifact, validates immediately
+3. **Review** — sign-off or correction cycle, only lane allowed to mark task done
+
+**Why:** Prevents unbounded scope creep. The scout's artifact is the contract; build cannot widen scope. Review is the gate. In TO-107, the scout explicitly excluded `apps/web` Python, migration apply, and smoke-script edits from the bounded slice — build respected that boundary.
+
+---
+
 ## 🔐 SECURITY PATTERNS
 
 ### Pattern: Parameterized DB Queries (Never Concatenate)
@@ -130,37 +178,6 @@ with database_connection() as db:
 
 ---
 
-## 💸 PAYMENT PATTERNS
-
-### Pattern: Payment Success Owns Invoice Delivery
-```typescript
-const { error: updateError } = await supabase.from('payment_history')
-    .update({ status: 'success', invoice_id: invoiceId, metadata: updatedMetadata })
-    .eq('id', paymentRow.id)
-
-if (updateError) {
-    throw updateError
-}
-
-try {
-    await finalizePaidInvoiceDelivery(supabase, {
-        invoiceId,
-        paymentHistoryId: paymentRow.id,
-        paymentMetadata: updatedMetadata,
-        userId,
-        customerEmail,
-        customerPhone,
-        paymentProvider: 'razorpay',
-        providerPaymentId,
-    })
-} catch (deliveryError) {
-    console.error('Invoice delivery follow-up failed after payment verification:', deliveryError)
-}
-```
-**Why:** Hosted PDFs and invoice emails must hang off the server-owned payment success path, not the UI. Keep the delivery helper idempotent, call it from every success handler including duplicate-return branches, and make it best-effort so a billing-document problem never reverses a successful payment.
-
----
-
 ### Pattern: Strategy / Base Class Interface
 ```python
 # ✅ Enforces consistent interface for pluggable strategies
@@ -171,6 +188,57 @@ class BaseStrategy:
         raise NotImplementedError
 ```
 **Why:** Prevents strategy implementations from diverging silently.
+
+---
+
+## 🧱 SHARED CAPABILITY PATTERNS
+
+### Pattern: Separate Product Repos, Shared Capability Contracts
+```text
+Product repo owns:
+- business rules
+- UI / endpoints
+- product-specific persistence
+- launch and failure isolation
+
+Shared capability owns:
+- generic monitoring / polling
+- RSS parsing
+- dedupe helpers
+- normalized contracts
+- provider fallbacks
+```
+**Canonical home:** `D:\Github\Office_Scripts\Shared-scripts\`
+
+**Rule:** put cross-repo generic building blocks in the shared capability layer, but keep product logic inside each product repo. Repos may consume the same capability without importing each other's business code.
+
+**Why:** This preserves blast-radius isolation while still avoiding repeated plumbing work.
+
+---
+
+### Pattern: Source Watch Capability
+```json
+{
+    "item_id": "source:abc123",
+    "source_type": "rss",
+    "source_url": "https://example.com/feed.xml",
+    "canonical_url": "https://example.com/post",
+    "title": "Example title",
+    "summary": "Short extracted summary",
+    "content_text": "Normalized body text",
+    "published_at": "2026-05-31T10:00:00Z",
+    "detected_at": "2026-05-31T10:05:00Z",
+    "content_hash": "sha256:...",
+    "tags": ["finance", "india"]
+}
+```
+**Use it for:** website monitoring, RSS/feed polling, dedupe, and normalized item output.
+
+**Consumers:** Blogger-MCP, Telegram-MCP, Opportunity Gap finder, and future content or alerting repos.
+
+**Rule:** Source Watch should live as a shared capability under `D:\Github\Office_Scripts\Shared-scripts\` or be promoted to a small shared service when runtime/state requirements outgrow a folder-only implementation.
+
+**Why:** One normalized upstream contract lets separate repos reuse the same source intelligence without becoming coupled to each other's app code.
 
 ---
 
@@ -223,7 +291,7 @@ return amount * 0.05   // BUG-020 pattern
 ### Pattern: Code-Review-Graph First Call
 ```
 # Before any non-trivial edit:
-get_minimal_context(task="<description>")   # ~100 tokens, full picture
+code-review-graph_get_minimal_context_tool(repo_root="D:/Github/<repo>", task="<description>")   # ~100 tokens, full picture
 ```
 **Why:** Prevents editing code without knowing its call graph and blast radius.
 
@@ -232,7 +300,7 @@ get_minimal_context(task="<description>")   # ~100 tokens, full picture
 ### Pattern: Roo Bridge And Graphify Before Grep
 ```
 # For intent/behaviour queries:
-search_roo_index(query="payment webhook processing", scope="code")
+roo-code-index-bridge_roo-code-index-search(query="payment webhook processing", workspace_path="D:/Github/<repo>")
 
 # For architecture and gap questions after semantic narrowing:
 read graphify-out/GRAPH_REPORT.md

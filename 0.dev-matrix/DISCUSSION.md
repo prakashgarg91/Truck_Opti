@@ -8,6 +8,27 @@
 ## 📋 CURRENT SESSION
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[2026-05-18] COPILOT-085:
+  Closed the residual portal/service drift and packaged the validated slice during close-day instead of leaving the day parked on an uncommitted worktree.
+
+  COMPLETED THIS SESSION:
+  - moved the last `AgencyJobsPage` assignable-driver and latest-location reads behind `agency-portal-jobs`
+  - reconciled `AdminUsersPage` and `AdminSubscriptionsPage` onto `adminSupabaseApi` so page-level direct function invocation is gone from that slice
+  - synced the current gap/handoff/state surfaces to the actual post-patch truth and committed the validated slice as `770f8bbb`
+  - reran the repo close-day path and reduced the remaining closeout state to runtime artifacts only
+
+  VERIFIED:
+  - `cd frontend && npm run build` -> PASS
+  - `npm run test:frontend-smoke` -> PASS (`52/52`)
+  - `npm run launch-check` -> before commit, FAIL only on Gate 8 git cleanliness (`17 passed, 1 failed`)
+
+  JUDGMENT:
+  - no verified AI-executable portal/service ownership gap remains in the current tree
+  - next session should resume from `0.dev-matrix/resume-work.ps1`, confirm the clean-tree gate, and then choose between `T-155` AWS SES follow-up or the next credentialed proof lane
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [2026-05-12] COPILOT-068:
   Continued only the remaining auth-blocked T-126/T-127 lanes and used the AI-owned slice to make the proof surface more modular and repeatable.
 

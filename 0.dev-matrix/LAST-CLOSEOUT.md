@@ -1,17 +1,17 @@
 # Last Closeout
 
-- Time: 2026-05-18 20:21:48
+- Time: 2026-05-18 20:47:32
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M frontend/src/App.tsx |  M frontend/src/pages/AdminAgenciesPage.tsx |  M frontend/src/pages/AdminContactPage.tsx |  M frontend/src/pages/AdminDashboardPage.tsx |  M frontend/src/pages/AdminDriversPage.tsx |  M frontend/src/pages/AdminPayoutsPage.tsx |  M frontend/src/pages/AgencyDashboardPage.tsx |  M frontend/src/pages/AgencyDriversPage.tsx |  M frontend/src/pages/DriverDetailPage.tsx |  M frontend/src/services/adminSupabaseApi.ts
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-18_202147.log
+- Git status:  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/DISCUSSION.md |  M 0.dev-matrix/LAST-CLOSEOUT.md
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-18_204732.log
 
 ## AI Handoff
 - Latest handoff date: 2026-05-18
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: the two parked non-human gaps from the 2026-05-16 design map are now code-closed locally, and the current remaining design work is narrowed to `GV-01` trusted-backend coverage and `GV-02` role-specific profile ownership as recorded in `0.dev-matrix/CURRENT-GAP-VISIBILITY.md`.
-- Continue from: use `0.dev-matrix/CURRENT-GAP-VISIBILITY.md` instead of the old 2026-05-16 gap map, and take the next focused slice from `GV-01` or `GV-02` after the current refactor is committed cleanly.
-- Next step: keep the restored role-service and agency-portal slice intact, commit it on a clean tree, and then extend trusted portal functions for agency/admin privileged operations before opening any new launch work.
-- Blockers: none for the restored code slice itself; AWS SES sender/domain setup remains intentionally deferred, and the new remaining gaps are structural rather than human-blocked.
+- Operational proof: the residual portal/service ownership slice is committed, the repo close-day hook is green, and the next session can resume from the recorded queue instead of reopening the agency/admin boundary work.
+- Continue from: start with `powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\resume-work.ps1`, keep the portal ownership slice closed, and choose the next product lane from `T-124`, `T-125`, `T-126`, or deferred `T-155` billing email work.
+- Next step: if external billing email is worth doing, resume `T-155` AWS SES setup; otherwise take the next AI-owned product slice (`T-124`/`T-125`/`T-126`) with fresh validation rather than more gap discovery.
+- Blockers: no repo-code blocker remains in the agency/admin portal slice; AWS SES setup and any credentialed live-proof work remain external.
 
 ## Project Progress
 - Date: 2026-05-18
@@ -34,16 +34,12 @@
 - Summary: launch-check passed
 - Log: 0.dev-matrix/test-reports/launch-check-20260517_201705.log
 
-## Regression Warning
-
-- REGRESSION: pass count dropped from 10 to 8; fail count rose from 0 to 2
-
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
 - [PASS] background launch-check - launch-check passed
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [FAIL] status update discipline - repo changed without state/task/discussion update
-- [FAIL] working tree cleanliness - dirty working tree outside runtime handoff: frontend/src/App.tsx, frontend/src/pages/AdminAgenciesPage.tsx, frontend/src/pages/AdminContactPage.tsx, frontend/src/pages/AdminDashboardPage.tsx, frontend/src/pages/AdminDriversPage.tsx
+- [PASS] status update discipline - runtime status files have real content changes
+- [PASS] working tree cleanliness - only runtime handoff/evidence files are dirty before report write
 - [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
 - [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
@@ -51,5 +47,5 @@
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 8
-- Fail: 2
+- Pass: 10
+- Fail: 0

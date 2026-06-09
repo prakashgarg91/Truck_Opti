@@ -175,6 +175,106 @@
                                          "Run 0.dev-matrix/sync-two-task-loop.ps1 -Mode manual after the proof files are updated."
                                      ],
                       "businessValue":  "Locks launch readiness into durable proof that sales and delivery work can trust."
+                  },
+                  {
+                      "id":  "TO-107",
+                      "title":  "Restore five production SPA routes on truckopti.in",
+                      "status":  "human-blocked",
+                      "priority":  "P1",
+                      "phase":  "validate",
+                      "order":  7,
+                      "ownerFiles":  [
+                                         "frontend/src/App.tsx",
+                                         "frontend/src/main.tsx",
+                                         "server.js",
+                                         "0.dev-matrix/LAST-REVIEW.md",
+                                         "0.dev-matrix/AI-HANDOFF.md"
+                                     ],
+                      "dependsOn":  [
+
+                                    ],
+                      "why":  "Webwright full-app smoke 2026-06-01 caught five public routes (/login, /signup, /forgot-password, /terms, /privacy) returning 404 on the live host, even though all five are declared in frontend/src/App.tsx and the Heroku server.js SPA fallback is in place. The most likely cause is Heroku frontend/dist drift from a snapshot SHA rather than from a normal reviewed commit, and the npm test regression lane does not cover React routes so the regression slipped past CI.",
+                      "definitionOfDone":  "All five public routes resolve on https://www.truckopti.in to their owned React pages (no 404 title, no Page not found H1), the Webwright full-app smoke step 04-08 evidence is updated, and the result is captured in STATE.md, AI-HANDOFF.md, and LAST-REVIEW.md.",
+                      "validation":  [
+                                         "d:/Github/Truck_Opti/.venv/Scripts/python.exe scripts/webwright/full_app_smoke.py",
+                                         "cd frontend \u0026\u0026 npx vite preview --port 4173 --host 127.0.0.1",
+                                         "node scripts/public_frontend_smoke.mjs"
+                                     ],
+                      "businessValue":  "Restores the live user-journey entry points for login, signup, password recovery, and legal pages so the launch slice matches the public marketing surface."
+                  },
+                  {
+                      "id":  "TO-108",
+                      "title":  "Reconcile deployed login surface with the launch checklist",
+                      "status":  "human-blocked",
+                      "priority":  "P1",
+                      "phase":  "validate",
+                      "order":  8,
+                      "ownerFiles":  [
+                                         "frontend/src/pages/auth/LoginPage.tsx",
+                                         "frontend/src/pages/auth/SignupPage.tsx",
+                                         "frontend/src/pages/auth/OTPPage.tsx",
+                                         "0.dev-matrix/LAUNCH_CHECKLIST.md",
+                                         "0.dev-matrix/AI-HANDOFF.md"
+                                     ],
+                      "dependsOn":  [
+
+                                    ],
+                      "why":  "Webwright 2026-06-01 step 10 and step 12 show that the only actionable button on the deployed /login page routes through Supabase-hosted Google OAuth. The email+6-digit OTP UI documented in OTPPage.tsx, otp_service.py, and supabase/config.toml is not reachable on the live host, which contradicts LAUNCH_CHECKLIST.md row 2.1 (Email live; phone deferred) and the 2026-05-13 Copilot-073 launch audit. The cause is either VITE_AUTH_EMAIL_OTP_ENABLED=false in Heroku build env, or a deployed bundle that predates the email OTP code; pick one and reconcile the launch surfaces.",
+                      "definitionOfDone":  "Either the email+6-digit OTP UI is reachable on the deployed /login page and a real email-OTP sign-in completes, or the launch checklist, OTPPage.tsx, and docs are explicitly retired as dead code and the public marketing surface is updated to advertise Google-only sign-in. The chosen path is recorded in STATE.md and AI-HANDOFF.md.",
+                      "validation":  [
+                                         "d:/Github/Truck_Opti/.venv/Scripts/python.exe scripts/webwright/full_app_smoke.py",
+                                         "Read heroku config --app truck-opti-app-efabf95bd306 | grep VITE_AUTH_EMAIL_OTP_ENABLED"
+                                     ],
+                      "businessValue":  "Aligns the public launch checklist with the actual deployed login surface and removes a documented user-journey contradiction."
+                  },
+                  {
+                      "id":  "TO-109",
+                      "title":  "Apply and exercise the 4-digit job_offer OTP migration",
+                      "status":  "completed",
+                      "priority":  "P1",
+                      "phase":  "prove",
+                      "order":  9,
+                      "ownerFiles":  [
+                                         "supabase/migrations/20260601223849_fix_job_offer_otp_length_4digit.sql",
+                                         "frontend/src/pages/DriverTripPage.tsx",
+                                         "0.dev-matrix/AI-HANDOFF.md"
+                                     ],
+                      "dependsOn":  [
+
+                                    ],
+                      "why":  "The new 4-digit OTP migration is committed in c01d3fc1 and covered by frontend/src/services/jobOfferOtpContract.test.ts (6 vitest cases), but the 2026-06-01 AI-HANDOFF explicitly states it has not been applied to any Supabase project. Until it is applied and exercised against a real public.job_offers row, the trigger and CHECK constraints are file-only and the contract is not actually enforced in production.",
+                      "definitionOfDone":  "Migration 20260601223849 is applied to a non-prod Supabase project, a public.job_offers row with NULL pickup_otp and delivery_otp is inserted and shows 4-digit OTP values after the trigger fires, and an INSERT of malformed (non-^[0-9]{4}$) OTPs is rejected by the CHECK constraints. The applied migration record and the proof artefacts are captured in STATE.md and AI-HANDOFF.md.",
+                      "validation":  [
+                                         "npx supabase db push --project-ref \u003cnon-prod-ref\u003e",
+                                         "psql -h \u003chost\u003e -U postgres -d postgres -f scripts/otp-contract/probe-4digit.sql"
+                                     ],
+                      "businessValue":  "Promotes the 4-digit driver pickup/delivery OTP contract from a test-only assertion to a database-enforced invariant."
+                  },
+                  {
+                      "id":  "TO-110",
+                      "title":  "Validate uncommitted apps/web Python changes",
+                      "status":  "completed",
+                      "priority":  "P1",
+                      "phase":  "validate",
+                      "order":  10,
+                      "ownerFiles":  [
+                                         "apps/web/app/cost_engine.py",
+                                         "apps/web/app/packer.py",
+                                         "apps/web/app/routes.py",
+                                         "apps/web/tests/test_drill_down_api.py",
+                                         "apps/web/tests/test_enhanced_features.py",
+                                         "0.dev-matrix/AI-HANDOFF.md"
+                                     ],
+                      "dependsOn":  [
+
+                                    ],
+                      "why":  "git status --short against c01d3fc1 shows five modified apps/web files that are uncommitted and unvalidated: cost_engine.py (+8/-8), packer.py (+33/-33), routes.py (+1/-1), tests/test_drill_down_api.py (+5/-3), and tests/test_enhanced_features.py (+91/-121). The most recent apps/web pytest lane ran on 2026-05-01 against a different tree, and the 2026-05-29 launch-check was already 2/17 FAIL on a different dirty tree. Carrying unvalidated apps/web changes forward into the launch slice breaks the clean-tree launch proof.",
+                      "definitionOfDone":  "Either the five uncommitted apps/web files are committed after a focused pytest rerun that shows the change is safe, or they are explicitly reverted/parked so the working tree can be clean. The result is captured in STATE.md and AI-HANDOFF.md.",
+                      "validation":  [
+                                         "cd apps/web \u0026\u0026 d:/Github/Truck_Opti/.venv/Scripts/python.exe -m pytest tests/ -q -o addopts=",
+                                         "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1"
+                                     ],
+                      "businessValue":  "Restores clean-tree launch proof and prevents unvalidated Python drift from compounding into the next launch slice."
                   }
               ]
 }

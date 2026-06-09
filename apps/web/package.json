@@ -33,5 +33,8 @@
   "bugs": {
     "url": "https://github.com/prakashgarg91/Truck_Opti/issues"
   },
-  "homepage": "https://github.com/prakashgarg91/Truck_Opti#readme"
+  "homepage": "https://github.com/prakashgarg91/Truck_Opti#readme",
+  "overrides": {
+    "ws": "8.20.1"
+  }
 }

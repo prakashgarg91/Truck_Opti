@@ -3,7 +3,6 @@ import {
   Briefcase, CheckCircle2, XCircle,
   RefreshCw, MapPin, Truck, UserPlus, X, UserCheck
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import MapViewWrapper, { MapMarker, MapRoute } from '../components/MapViewWrapper'
@@ -60,7 +59,6 @@ export default function AgencyJobsPage() {
   const [filter, setFilter] = useState<JobFilter>('all')
   const [loading, setLoading] = useState(true)
   const [processingJobId, setProcessingJobId] = useState<string | null>(null)
-  const [agencyId, setAgencyId] = useState<string | null>(null)
 
   // Assign Driver Modal State
   const [showAssignModal, setShowAssignModal] = useState(false)
@@ -98,10 +96,6 @@ export default function AgencyJobsPage() {
         }
       })
       setJobs(mapped)
-
-      // Fetch agency ID for driver assignment modal
-      const agencyDataId = await agencyJobsApi.getAgencyIdByUser(user.id)
-      setAgencyId(agencyDataId || null)
     } catch (e) {
       logger.error('[AgencyJobsPage] fetchAgency failed:', e)
       toast.error('Failed to load jobs')
@@ -115,7 +109,7 @@ export default function AgencyJobsPage() {
   // Fetch available drivers when modal opens
   const fetchAvailableDrivers = async () => {
     try {
-      const trucksData = await agencyJobsApi.getAvailableDrivers(agencyId!)
+      const trucksData = await agencyJobsApi.getAssignableDrivers()
 
       const drivers: AvailableDriver[] = (trucksData ?? []).map(t => {
         const driver = Array.isArray(t.drivers) ? t.drivers[0] : t.drivers as { id?: string; full_name?: string; phone?: string; rating?: number } | null
@@ -211,33 +205,39 @@ export default function AgencyJobsPage() {
 
     // Fetch initial location
     if (job.driver_id) {
-      const loc = await agencyJobsApi.getDriverLatestLocation(job.driver_id)
+      const loc = await agencyJobsApi.getDriverLatestLocation(job.id)
       setDriverLocation(loc)
     }
   }
 
-  // Subscribe to real-time location updates
+  // Poll trusted backend for driver location updates while the modal is open.
   useEffect(() => {
-    if (!showTrackModal || !trackingJob?.driver_id) return
+    if (!showTrackModal || !trackingJob?.id) return
 
-    const channel = supabase.channel(`driver-loc-${trackingJob.driver_id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'driver_locations',
-        filter: `driver_id=eq.${trackingJob.driver_id}`
-      }, (payload) => {
-        if (payload.new) {
-          const newLoc = payload.new as DriverLocation
-          setDriverLocation(newLoc)
+    let isActive = true
+
+    const loadLatestLocation = async () => {
+      try {
+        const nextLocation = await agencyJobsApi.getDriverLatestLocation(trackingJob.id)
+
+        if (isActive) {
+          setDriverLocation(nextLocation as DriverLocation | null)
         }
-      })
-      .subscribe()
+      } catch (error) {
+        logger.error('[AgencyJobsPage] loadLatestLocation', error)
+      }
+    }
+
+    void loadLatestLocation()
+    const intervalId = window.setInterval(() => {
+      void loadLatestLocation()
+    }, 15000)
 
     return () => {
-      supabase.removeChannel(channel)
+      isActive = false
+      window.clearInterval(intervalId)
     }
-  }, [showTrackModal, trackingJob?.driver_id])
+  }, [showTrackModal, trackingJob?.id])
 
   const filteredJobs = filter === 'all'
     ? jobs

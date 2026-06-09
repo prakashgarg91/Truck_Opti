@@ -13,8 +13,21 @@ This file is auto-generated from 0.dev-matrix/AI-TASKS.json.
 
 ## Explicitly Blocked Tasks
 
-1.  - 
-- Priority:  | Phase:  | Status: 
+1. TO-107 - Restore five production SPA routes on truckopti.in
+- Priority: P1 | Phase: validate | Status: human-blocked
+- Owner files: frontend/src/App.tsx, frontend/src/main.tsx, server.js, 0.dev-matrix/LAST-REVIEW.md, 0.dev-matrix/AI-HANDOFF.md
+- Why: Webwright full-app smoke 2026-06-01 caught five public routes (/login, /signup, /forgot-password, /terms, /privacy) returning 404 on the live host, even though all five are declared in frontend/src/App.tsx and the Heroku server.js SPA fallback is in place. The most likely cause is Heroku frontend/dist drift from a snapshot SHA rather than from a normal reviewed commit, and the npm test regression lane does not cover React routes so the regression slipped past CI.
+- Done when: All five public routes resolve on https://www.truckopti.in to their owned React pages (no 404 title, no Page not found H1), the Webwright full-app smoke step 04-08 evidence is updated, and the result is captured in STATE.md, AI-HANDOFF.md, and LAST-REVIEW.md.
+- Validate: d:/Github/Truck_Opti/.venv/Scripts/python.exe scripts/webwright/full_app_smoke.py ; cd frontend && npx vite preview --port 4173 --host 127.0.0.1 ; node scripts/public_frontend_smoke.mjs
+- Business value: Restores the live user-journey entry points for login, signup, password recovery, and legal pages so the launch slice matches the public marketing surface.
+
+2. TO-108 - Reconcile deployed login surface with the launch checklist
+- Priority: P1 | Phase: validate | Status: human-blocked
+- Owner files: frontend/src/pages/auth/LoginPage.tsx, frontend/src/pages/auth/SignupPage.tsx, frontend/src/pages/auth/OTPPage.tsx, 0.dev-matrix/LAUNCH_CHECKLIST.md, 0.dev-matrix/AI-HANDOFF.md
+- Why: Webwright 2026-06-01 step 10 and step 12 show that the only actionable button on the deployed /login page routes through Supabase-hosted Google OAuth. The email+6-digit OTP UI documented in OTPPage.tsx, otp_service.py, and supabase/config.toml is not reachable on the live host, which contradicts LAUNCH_CHECKLIST.md row 2.1 (Email live; phone deferred) and the 2026-05-13 Copilot-073 launch audit. The cause is either VITE_AUTH_EMAIL_OTP_ENABLED=false in Heroku build env, or a deployed bundle that predates the email OTP code; pick one and reconcile the launch surfaces.
+- Done when: Either the email+6-digit OTP UI is reachable on the deployed /login page and a real email-OTP sign-in completes, or the launch checklist, OTPPage.tsx, and docs are explicitly retired as dead code and the public marketing surface is updated to advertise Google-only sign-in. The chosen path is recorded in STATE.md and AI-HANDOFF.md.
+- Validate: d:/Github/Truck_Opti/.venv/Scripts/python.exe scripts/webwright/full_app_smoke.py ; Read heroku config --app truck-opti-app-efabf95bd306 | grep VITE_AUTH_EMAIL_OTP_ENABLED
+- Business value: Aligns the public launch checklist with the actual deployed login surface and removes a documented user-journey contradiction.
 
 ## Rule
 

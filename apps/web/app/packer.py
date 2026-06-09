@@ -278,7 +278,7 @@ def pack_cartons_optimized(truck_types_with_quantities, carton_types_with_quanti
     
     # Sort trucks by volume (largest first) for better space optimization
     if optimization_goal in ['space', 'min_trucks']:
-        truck_list.sort(key=lambda x: x[0].length * x[0].width * x[0].height, reverse=True)
+        truck_list.sort(key=lambda x: float(x[0].length or 0) * float(x[0].width or 0) * float(x[0].height or 0), reverse=True)
     elif optimization_goal == 'cost':
         truck_list.sort(key=lambda x: getattr(x[0], 'cost_per_km', 0))
     elif optimization_goal == 'weight':
@@ -364,8 +364,8 @@ def _pack_single_truck(truck_bin, items_to_pack):
     rejected_by_constraints = []
     
     # Calculate realistic constraints
-    truck_volume = truck_bin.width * truck_bin.height * truck_bin.depth
-    truck_max_weight = truck_bin.max_weight
+    truck_volume = float(truck_bin.width or 0) * float(truck_bin.height or 0) * float(truck_bin.depth or 0)
+    truck_max_weight = float(truck_bin.max_weight or 0)
     
     # Pre-validation: Check physical constraints for each item type
     item_type_validation = {}
@@ -375,7 +375,7 @@ def _pack_single_truck(truck_bin, items_to_pack):
         if item_key not in item_type_validation:
             # Physical dimension check with rotation possibilities
             can_fit_physically = False
-            item_volume = item.width * item.height * item.depth
+            item_volume = float(item.width or 0) * float(item.height or 0) * float(item.depth or 0)
             
             # ENHANCED DIMENSIONAL VALIDATION: Check all possible rotations with better logic
             rotations = []
@@ -466,7 +466,7 @@ def _pack_single_truck(truck_bin, items_to_pack):
                 logging.warning(f"WEIGHT WARNING: No weight limit for truck {truck_bin.name}")
                 max_by_weight = float('inf')
             else:
-                item_weight = item.weight
+                item_weight = float(item.weight)
                 max_by_weight = int(truck_max_weight // item_weight)
                 
                 # Validate weight distribution
@@ -557,9 +557,9 @@ def _pack_single_truck(truck_bin, items_to_pack):
     actual_weight_used = 0
     
     for item in truck_bin.items:
-        item_volume = item.width * item.height * item.depth
+        item_volume = float(item.width or 0) * float(item.height or 0) * float(item.depth or 0)
         actual_volume_used += item_volume
-        actual_weight_used += item.weight
+        actual_weight_used += float(item.weight or 0)
         
         packed_items_details.append({
             'name': item.name,
@@ -574,7 +574,7 @@ def _pack_single_truck(truck_bin, items_to_pack):
         })
     
     # AGENT 1 FIX: Enhanced calculation with validation checks
-    total_truck_volume = truck_bin.width * truck_bin.height * truck_bin.depth
+    total_truck_volume = float(truck_bin.width or 0) * float(truck_bin.height or 0) * float(truck_bin.depth or 0)
     
     # ENHANCED POST-PACKING DIMENSIONAL VALIDATION
     validation_errors = []
@@ -598,7 +598,7 @@ def _pack_single_truck(truck_bin, items_to_pack):
     space_utilization = actual_volume_used / total_truck_volume if total_truck_volume > 0 else 0
     
     # ENHANCED WEIGHT VALIDATION with safety checks
-    weight_utilization = actual_weight_used / truck_bin.max_weight if truck_bin.max_weight > 0 else 0
+    weight_utilization = actual_weight_used / float(truck_bin.max_weight or 0) if truck_bin.max_weight and float(truck_bin.max_weight) > 0 else 0
     if actual_weight_used > truck_bin.max_weight:
         error_msg = f"Weight limit exceeded for {truck_bin.name}: Used({actual_weight_used:.1f}kg) > Max({truck_bin.max_weight}kg)"
         logging.warning(f"WEIGHT WARNING: {error_msg}")
@@ -646,11 +646,11 @@ def _pack_single_truck(truck_bin, items_to_pack):
     if len(truck_bin.items) > 0:
         # Calculate the bounding box of all packed items
         min_x = min(item.position[0] for item in truck_bin.items if hasattr(item, 'position') and item.position)
-        max_x = max(item.position[0] + item.width for item in truck_bin.items if hasattr(item, 'position') and item.position)
-        min_y = min(item.position[1] for item in truck_bin.items if hasattr(item, 'position') and item.position)
-        max_y = max(item.position[1] + item.height for item in truck_bin.items if hasattr(item, 'position') and item.position)
-        min_z = min(item.position[2] for item in truck_bin.items if hasattr(item, 'position') and item.position)
-        max_z = max(item.position[2] + item.depth for item in truck_bin.items if hasattr(item, 'position') and item.position)
+        max_x = max(float(item.position[0]) + float(item.width or 0) for item in truck_bin.items if hasattr(item, 'position') and item.position)
+        min_y = min(float(item.position[1]) for item in truck_bin.items if hasattr(item, 'position') and item.position)
+        max_y = max(float(item.position[1]) + float(item.height or 0) for item in truck_bin.items if hasattr(item, 'position') and item.position)
+        min_z = min(float(item.position[2]) for item in truck_bin.items if hasattr(item, 'position') and item.position)
+        max_z = max(float(item.position[2]) + float(item.depth or 0) for item in truck_bin.items if hasattr(item, 'position') and item.position)
         
         used_bounding_box = (max_x - min_x) * (max_y - min_y) * (max_z - min_z)
         bounding_box_efficiency = actual_volume_used / used_bounding_box if used_bounding_box > 0 else 0
@@ -820,13 +820,13 @@ def pack_cartons(truck_types_with_quantities, carton_types_with_quantities, opti
             })
         
         # Calculate space utilization (volume-based)
-        total_volume_used = sum(item.width * item.height * item.depth for item in truck_bin.items)
-        total_truck_volume = truck_bin.width * truck_bin.height * truck_bin.depth
+        total_volume_used = sum(float(item.width or 0) * float(item.height or 0) * float(item.depth or 0) for item in truck_bin.items)
+        total_truck_volume = float(truck_bin.width or 0) * float(truck_bin.height or 0) * float(truck_bin.depth or 0)
         space_utilization = total_volume_used / total_truck_volume if total_truck_volume > 0 else 0
         
         # Calculate weight utilization separately
-        total_weight = sum(item.weight for item in truck_bin.items)
-        weight_utilization = total_weight / truck_bin.max_weight if truck_bin.max_weight > 0 else 0
+        total_weight = sum(float(item.weight or 0) for item in truck_bin.items)
+        weight_utilization = total_weight / float(truck_bin.max_weight or 0) if truck_bin.max_weight and float(truck_bin.max_weight) > 0 else 0
         
         unfitted_items_details = [{'name': item.name} for item in truck_bin.unfitted_items]
 
@@ -891,19 +891,19 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
     
     # Quick pre-filter: Calculate total carton volume and weight
     total_volume = sum(
-        (carton.length * carton.width * carton.height) * qty 
+        float(carton.length or 0) * float(carton.width or 0) * float(carton.height or 0) * qty 
         for carton, qty in carton_types_with_quantities.items()
     )
     total_weight = sum(
-        (carton.weight if carton.weight else 5) * qty 
+        (float(carton.weight or 5)) * qty 
         for carton, qty in carton_types_with_quantities.items()
     )
     
     # Pre-filter trucks that are obviously too small
     viable_trucks = []
     for truck in available_truck_types:
-        truck_volume = truck.length * truck.width * truck.height
-        truck_capacity = truck.max_weight if truck.max_weight else 10000
+        truck_volume = float(truck.length or 0) * float(truck.width or 0) * float(truck.height or 0)
+        truck_capacity = float(truck.max_weight or 10000)
         
         # Skip trucks that are clearly too small (less than 20% of total requirements)
         if truck_volume < total_volume * 0.2 and truck_capacity < total_weight * 0.2:
@@ -913,7 +913,7 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
     # Sort trucks based on optimization strategy
     if optimization_strategy == 'space_utilization':
         # Smallest viable truck first for maximum space utilization
-        sorted_trucks = sorted(viable_trucks, key=lambda t: t.length * t.width * t.height)
+        sorted_trucks = sorted(viable_trucks, key=lambda t: float(t.length or 0) * float(t.width or 0) * float(t.height or 0))
     elif optimization_strategy == 'cost_saving':
         # Sort by cost efficiency (if cost data available)
         sorted_trucks = sorted(viable_trucks, key=lambda t: getattr(t, 'cost_per_km', 999999))
@@ -926,8 +926,8 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
         
         # Sort by value-to-cost ratio (prefer trucks that provide best value protection per cost)
         def value_efficiency(truck):
-            truck_cost = getattr(truck, 'cost_per_km', 50) * 100  # Assume 100km default
-            truck_volume = truck.length * truck.width * truck.height
+            truck_cost = getattr(truck, 'cost_per_km', 50) * 100
+            truck_volume = float(truck.length or 0) * float(truck.width or 0) * float(truck.height or 0)
             cargo_value_density = (total_carton_value / max(total_volume, 1)) if total_volume else 0
             value_efficiency_score = (
                 (truck_volume / 1_000_000) * (cargo_value_density + 1)
@@ -938,15 +938,15 @@ def calculate_optimal_truck_combination(carton_types_with_quantities, available_
     else:  # balanced
         # Balance between size and efficiency
         sorted_trucks = sorted(viable_trucks, 
-                              key=lambda t: (t.length * t.width * t.height, getattr(t, 'cost_per_km', 999999)))
+                              key=lambda t: (float(t.length or 0) * float(t.width or 0) * float(t.height or 0), float(getattr(t, 'cost_per_km', 999999))))
     
     # Limit testing to top 5 most promising trucks for speed
     top_trucks = sorted_trucks[:5]
     
     # Try different truck combinations with smarter logic and early termination
     for truck_type in top_trucks:
-        truck_volume = truck_type.length * truck_type.width * truck_type.height
-        truck_capacity = truck_type.max_weight if truck_type.max_weight else 10000
+        truck_volume = float(truck_type.length or 0) * float(truck_type.width or 0) * float(truck_type.height or 0)
+        truck_capacity = float(truck_type.max_weight or 10000)
         
         # Estimate reasonable quantity range based on cargo size
         min_trucks_needed = max(1, min(
@@ -1064,9 +1064,9 @@ class SpaceOptimizer:
     
     def calculate_remaining_volume(self, truck, packed_cartons):
         """Calculate remaining volume after packing"""
-        total_truck_volume = truck.width * truck.height * truck.depth
+        total_truck_volume = float(truck.width or 0) * float(truck.height or 0) * float(truck.depth or 0)
         total_packed_volume = sum(
-            carton.width * carton.height * carton.depth 
+            float(carton.width or 0) * float(carton.height or 0) * float(carton.depth or 0)
             for carton in packed_cartons
         )
         return max(0, total_truck_volume - total_packed_volume)
@@ -1350,11 +1350,11 @@ def build_compatibility_matrix(trucks, cartons):
                     break
             
             # Calculate theoretical maximums
-            truck_volume = truck.length * truck.width * truck.height
-            carton_volume = carton.length * carton.width * carton.height
+            truck_volume = float(truck.length or 0) * float(truck.width or 0) * float(truck.height or 0)
+            carton_volume = float(carton.length or 0) * float(carton.width or 0) * float(carton.height or 0)
             
             max_by_volume = int(truck_volume // carton_volume) if carton_volume > 0 else 0
-            max_by_weight = int(truck.max_weight // carton.weight) if carton.weight > 0 and truck.max_weight > 0 else float('inf')
+            max_by_weight = int(float(truck.max_weight or 0) // float(carton.weight or 0)) if float(carton.weight or 0) > 0 and float(truck.max_weight or 0) > 0 else float('inf')
             
             realistic_max = min(max_by_volume, max_by_weight) if max_by_weight != float('inf') else max_by_volume
             realistic_max = int(realistic_max * 0.7)  # 70% efficiency

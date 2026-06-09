@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "humanNotes": {
+    "src/example-file.js": ""
+  },
+  "annotations": {
+    "scripts/generate-code-index.js": {
+      "domain": "repo-intelligence",
+      "owner": "developer-tooling",
+      "featureGroup": "index-of-code-core",
+      "tags": [
+        "generator",
+        "index-of-code"
+      ]
+    }
+  },
+  "semanticBackbone": {
+    "provider": "user-roo-code-index-bridge",
+    "mode": "roo-backed-local-overlays",
+    "workspacePath": "D:/Github/ExampleRepo",
+    "collectionName": "",
+    "resolutionMode": "",
+    "status": "configured",
+    "notes": "Optional semantic backbone metadata. Keep local JSON/CSV/overrides as the deterministic source-controlled layer."
+  },
+  "plannedEntries": [
+    {
+      "path": "0.dev-matrix/test-reports/runtime-error-catalog-latest.json",
+      "category": "planned-diagnostic-report",
+      "aiRemarks": "Reserved latest structured error catalog for future repair automation.",
+      "humanRemarks": "",
+      "heat": 8,
+      "testSignal": "planned hidden-error/runtime verification"
+    }
+  ]
+}

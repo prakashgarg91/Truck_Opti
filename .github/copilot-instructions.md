@@ -49,27 +49,53 @@ node D:\Github\tools\roo-index-smoke.mjs --workspace D:\Github\Truck_Opti
 - Input validation: all form values trimmed/validated before DB insert
 
 \
-## Roo Bridge MCP
-Use the workspace MCP server `roo-index-bridge` as the default semantic retrieval surface before falling back to grep or regex.
+## Roo Code Index Bridge MCP
+Use the global MCP server `roo-code-index-bridge` as the default semantic retrieval surface before falling back to grep or regex.
+Do not register legacy `roo-index-bridge` alongside it.
 
-- `search_roo_index`: primary code-first semantic search for this repo and sibling repos under `D:\Github`
-- `detect_roo_index_collection`: verify workspace mapping when results look suspicious or the repo is newly onboarded
-- `list_roo_index_collections`: backend sanity check only
+Before planning or coding in this repo, read `0.dev-matrix/INDEX.md` and the newest `0.dev-matrix/AI-HANDOFF.md`.
+
+- `roo-code-index-search`: primary semantic search - pass `workspace_path="D:/Github/Truck_Opti"`
+- `roo-code-index-resolve-collection`: verify workspace mapping when results look suspicious
+- `roo-code-index-health`: check index health on unfamiliar repos
 
 Preferred retrieval stack for code work:
 
-1. Roo bridge targeted search
-2. Graphify structure map
-3. code-review-graph exact blast radius
-4. grep or regex for exact confirmation and registry cleanup
+1. `roo-code-index-bridge_roo-code-index-search` for broad discovery
+2. Graphify `graphify_query_graph`, `graphify_graph_stats`, `graphify_get_community`, `graphify_god_nodes`, or `graphify_shortest_path` for structural orientation
+3. code-review-graph `code-review-graph_get_minimal_context_tool`, `code-review-graph_get_impact_radius_tool`, `code-review-graph_get_affected_flows_tool`, or `code-review-graph_query_graph_tool` (always pass `repo_root`)
+4. grep or regex for exact confirmation
+
+Use only the exact MCP tool names listed above, including the required prefixes and suffixes.
+
+### Knowledge Ledger Gate
+Before non-trivial edits:
+
+1. use Graphify or `graphify-out/GRAPH_REPORT.md` to map the owning structure
+2. use code-review-graph to assess blast radius and impacted flows
+3. return a short `CONTEXT AUDIT` before implementation with:
+    - `Slice:`
+    - `Files:`
+    - `Dependencies:`
+    - `Test first:`
+    - `Proof:`
+
+### Test-First Gate
+For behavior changes, bug fixes, or refactors that change behavior:
+
+1. write or update the narrow automated test first
+2. run it and confirm it fails for the expected reason
+3. implement the minimum change required
+4. rerun the same test until it passes
+5. only then widen to the next narrow validation
+
+For parallel isolated subtasks, use `agent-delegator` (`delegate_task` / `batch_tasks`) - not one-liners.
 
 Validation:
 ```powershell
 node D:\Github\tools\roo-index-smoke.mjs --workspace D:\Github\Truck_Opti
 node D:\Github\tools\roo-index-sync-mcp.mjs --all --apply
 ```
-
-> Docs-mode can still rely partly on the shared local markdown fallback when vector recall misses the best chunk, so confirm hits against real files before editing.
 
 ## Close-Day
 

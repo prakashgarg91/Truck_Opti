@@ -13,6 +13,14 @@ import json
 import time
 import sys
 import os
+from decimal import Decimal
+
+
+class _DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            return float(o)
+        return super().default(o)
 
 # Add the app directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -34,34 +42,36 @@ class TestOptimizedPackingAlgorithms:
         self.app.config['TESTING'] = True
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         
-        with self.app.app_context():
-            db.create_all()
-            
-            # Create test truck types
-            self.truck = TruckType(
-                name="Test Truck 3000",
-                length=600, width=250, height=250,
-                max_weight=15000,
-                cost_per_km=5.0,
-                fuel_efficiency=12.0,
-                driver_cost_per_day=2000.0,
-                maintenance_cost_per_km=2.5
-            )
-            
-            # Create test carton types
-            self.carton_small = CartonType(
-                name="Small Box", length=30, width=20, height=15,
-                weight=2, can_rotate=True, fragile=False
-            )
-            self.carton_large = CartonType(
-                name="Large Box", length=80, width=60, height=40,
-                weight=10, can_rotate=True, fragile=True
-            )
-            
-            db.session.add(self.truck)
-            db.session.add(self.carton_small)
-            db.session.add(self.carton_large)
-            db.session.commit()
+        self._ctx = self.app.app_context()
+        self._ctx.push()
+        db.create_all()
+        
+        self.truck = TruckType(
+            name="Test Truck 3000",
+            length=600, width=250, height=250,
+            max_weight=15000,
+            cost_per_km=5.0,
+            fuel_efficiency=12.0,
+            driver_cost_per_day=2000.0,
+            maintenance_cost_per_km=2.5
+        )
+        
+        self.carton_small = CartonType(
+            name="Small Box", length=30, width=20, height=15,
+            weight=2, can_rotate=True, fragile=False
+        )
+        self.carton_large = CartonType(
+            name="Large Box", length=80, width=60, height=40,
+            weight=10, can_rotate=True, fragile=True
+        )
+        
+        db.session.add_all([self.truck, self.carton_small, self.carton_large])
+        db.session.commit()
+    
+    def teardown_method(self):
+        db.session.remove()
+        db.drop_all()
+        self._ctx.pop()
     
     def test_optimized_packing_performance(self):
         """Test that optimized algorithm handles large datasets efficiently"""
@@ -111,26 +121,31 @@ class TestCostCalculationEngine:
     """Test enhanced cost calculation features"""
     
     def setup_method(self):
-        """Set up cost engine"""
         self.cost_engine = CostCalculationEngine()
         self.app = create_app()
         self.app.config['TESTING'] = True
         
-        with self.app.app_context():
-            db.create_all()
-            
-            self.truck = TruckType(
-                name="Cost Test Truck",
-                length=500, width=200, height=200,
-                max_weight=10000,
-                cost_per_km=4.0,
-                fuel_efficiency=10.0,
-                driver_cost_per_day=1500.0,
-                maintenance_cost_per_km=2.0,
-                truck_category="medium"
-            )
-            db.session.add(self.truck)
-            db.session.commit()
+        self._ctx = self.app.app_context()
+        self._ctx.push()
+        db.create_all()
+        
+        self.truck = TruckType(
+            name="Cost Test Truck",
+            length=500, width=200, height=200,
+            max_weight=10000,
+            cost_per_km=4.0,
+            fuel_efficiency=10.0,
+            driver_cost_per_day=1500.0,
+            maintenance_cost_per_km=2.0,
+            truck_category="medium"
+        )
+        db.session.add(self.truck)
+        db.session.commit()
+    
+    def teardown_method(self):
+        db.session.remove()
+        db.drop_all()
+        self._ctx.pop()
     
     def test_fuel_price_fetching(self):
         """Test fuel price API integration"""
@@ -179,35 +194,39 @@ class TestAIPackingIntelligence:
     """Test AI-powered packing features"""
     
     def setup_method(self):
-        """Set up AI testing environment"""
         self.ai = PackingAI()
         self.app = create_app()
         self.app.config['TESTING'] = True
         
-        with self.app.app_context():
-            db.create_all()
-            
-            # Create test data
-            self.truck1 = TruckType(
-                name="AI Test Truck 1", length=400, width=200, height=180,
-                max_weight=8000, cost_per_km=3.5
-            )
-            self.truck2 = TruckType(
-                name="AI Test Truck 2", length=600, width=250, height=220,
-                max_weight=12000, cost_per_km=5.0
-            )
-            
-            self.carton1 = CartonType(
-                name="AI Carton 1", length=40, width=30, height=20,
-                weight=5, fragile=False, priority=3
-            )
-            self.carton2 = CartonType(
-                name="AI Carton 2", length=60, width=40, height=30,
-                weight=8, fragile=True, priority=5
-            )
-            
-            db.session.add_all([self.truck1, self.truck2, self.carton1, self.carton2])
-            db.session.commit()
+        self._ctx = self.app.app_context()
+        self._ctx.push()
+        db.create_all()
+        
+        self.truck1 = TruckType(
+            name="AI Test Truck 1", length=400, width=200, height=180,
+            max_weight=8000, cost_per_km=3.5
+        )
+        self.truck2 = TruckType(
+            name="AI Test Truck 2", length=600, width=250, height=220,
+            max_weight=12000, cost_per_km=5.0
+        )
+        
+        self.carton1 = CartonType(
+            name="AI Carton 1", length=40, width=30, height=20,
+            weight=5, fragile=False, priority=3
+        )
+        self.carton2 = CartonType(
+            name="AI Carton 2", length=60, width=40, height=30,
+            weight=8, fragile=True, priority=5
+        )
+        
+        db.session.add_all([self.truck1, self.truck2, self.carton1, self.carton2])
+        db.session.commit()
+    
+    def teardown_method(self):
+        db.session.remove()
+        db.drop_all()
+        self._ctx.pop()
     
     def test_truck_type_prediction(self):
         """Test AI truck type recommendation"""
@@ -373,31 +392,35 @@ class TestAPIEndpoints:
     """Test all API endpoints"""
     
     def setup_method(self):
-        """Set up Flask test client"""
         self.app = create_app()
         self.app.config['TESTING'] = True
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         
-        with self.app.app_context():
-            db.create_all()
-            
-            # Create test data
-            truck = TruckType(
-                name="API Test Truck", length=500, width=200, height=200,
-                max_weight=10000, cost_per_km=4.0
-            )
-            carton = CartonType(
-                name="API Test Carton", length=40, width=30, height=20, weight=5
-            )
-            
-            db.session.add(truck)
-            db.session.add(carton)
-            db.session.commit()
-            
-            self.truck_id = truck.id
-            self.carton_id = carton.id
+        self._ctx = self.app.app_context()
+        self._ctx.push()
+        db.create_all()
+        
+        truck = TruckType(
+            name="API Test Truck", length=500, width=200, height=200,
+            max_weight=10000, cost_per_km=4.0
+        )
+        carton = CartonType(
+            name="API Test Carton", length=40, width=30, height=20, weight=5
+        )
+        
+        db.session.add(truck)
+        db.session.add(carton)
+        db.session.commit()
+        
+        self.truck_id = truck.id
+        self.carton_id = carton.id
         
         self.client = self.app.test_client()
+    
+    def teardown_method(self):
+        db.session.remove()
+        db.drop_all()
+        self._ctx.pop()
     
     def test_cost_analysis_api(self):
         """Test cost analysis API endpoint"""
@@ -524,13 +547,18 @@ class TestIntegrationScenarios:
     """Test complete integration scenarios"""
     
     def setup_method(self):
-        """Set up integration test environment"""
         self.app = create_app()
         self.app.config['TESTING'] = True
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         
-        with self.app.app_context():
-            db.create_all()
+        self._ctx = self.app.app_context()
+        self._ctx.push()
+        db.create_all()
+    
+    def teardown_method(self):
+        db.session.remove()
+        db.drop_all()
+        self._ctx.pop()
     
     def test_complete_packing_workflow(self):
         """Test complete packing workflow from creation to optimization"""
@@ -574,7 +602,7 @@ class TestIntegrationScenarios:
                     truck_count=1,
                     space_utilization=result.get('utilization', 0),
                     total_cost=result.get('total_cost', 0),
-                    result_data=json.dumps(result)
+                    result_data=json.dumps(result, cls=_DecimalEncoder)
                 )
                 db.session.add(packing_result)
             

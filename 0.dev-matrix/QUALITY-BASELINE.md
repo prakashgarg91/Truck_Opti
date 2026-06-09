@@ -90,13 +90,13 @@ Moving to the next phase with open failures is not allowed.
 
 Before any refactor or multi-file change, run:
 ```
-get_minimal_context(task="<what you're changing>")
+code-review-graph_get_minimal_context_tool(repo_root="D:/Github/<repo>", task="<what you're changing>")
 ```
 Then check blast radius:
 ```
-detect_changes(repo_root="<path>")
+code-review-graph_detect_changes_tool(repo_root="D:/Github/<repo>")
 ```
-This prevents silent breakage of call sites found only at runtime.
+This prevents silent breakage of call sites found only at runtime. Use the exact current MCP names; do not drop the `code-review-graph_` prefix or `_tool` suffix.
 
 ---
 

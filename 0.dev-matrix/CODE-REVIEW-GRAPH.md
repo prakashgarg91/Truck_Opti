@@ -57,11 +57,15 @@ In this `D:\Github` multi-repo workspace, always pass the target repo explicitly
 Preferred pattern:
 
 ```text
-detect_changes_tool(repo_root="D:/Github/<repo>")
-get_review_context_tool(repo_root="D:/Github/<repo>")
-get_impact_radius_tool(repo_root="D:/Github/<repo>")
-get_affected_flows_tool(repo_root="D:/Github/<repo>")
+code-review-graph_detect_changes_tool(repo_root="D:/Github/<repo>")
+code-review-graph_get_review_context_tool(repo_root="D:/Github/<repo>")
+code-review-graph_get_impact_radius_tool(repo_root="D:/Github/<repo>")
+code-review-graph_get_affected_flows_tool(repo_root="D:/Github/<repo>")
+code-review-graph_get_minimal_context_tool(repo_root="D:/Github/<repo>", task="<description>")
+code-review-graph_query_graph_tool(repo_root="D:/Github/<repo>", query="<symbol or question>")
 ```
+
+Do not drop the `code-review-graph_` prefix or the `_tool` suffix. Use only the exact tool names shown above.
 
 Do not rely on implicit workspace detection when multiple repos are open or when the active terminal is in a different repo.
 

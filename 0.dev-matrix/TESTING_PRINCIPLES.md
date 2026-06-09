@@ -22,6 +22,20 @@ The pattern is universal: **AI code that compiles is NOT done.**
 
 ---
 
+## RED-GREEN PROMPT ORDER
+
+For any behavior change, use this prompt order:
+
+1. Ask for the narrowest automated test first.
+2. Run it and confirm it fails for the expected reason.
+3. Ask for the minimum implementation needed to make it pass.
+4. Re-run the same test.
+5. Only then widen to the next narrow build, lint, typecheck, or impact check.
+
+If an automated test is not practical, explicitly name the narrowest executable substitute before implementation starts.
+
+---
+
 ## ✅ MANDATORY PRE-COMPLETE CHECKLIST
 
 Before moving any task to COMPLETED status, confirm ALL applicable items:

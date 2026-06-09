@@ -1,59 +1,11 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RefreshCw, CreditCard, User, Calendar, CheckCircle2, XCircle, Clock, ChevronLeft } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { adminSupabaseApi, type AdminSubscription as Subscription } from '../services/adminSupabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
-
-interface Subscription {
-  id: string
-  user_id: string
-  status: 'active' | 'trial' | 'expired' | 'cancelled'
-  billing_cycle: 'monthly' | 'yearly'
-  current_period_start: string
-  current_period_end: string
-  trial_end: string | null
-  cancel_at_period_end: boolean
-  created_at: string
-  user: {
-    name: string
-    email: string
-  } | null
-  plan: {
-    id: string
-    name: string
-    tier: string
-  } | null
-}
-
-interface AdminSubscriptionsResponse {
-  subscriptions: Subscription[]
-}
-
-async function getFunctionErrorMessage(error: unknown, fallbackMessage: string) {
-  if (error && typeof error === 'object') {
-    const response = 'context' in error ? error.context : null
-
-    if (response instanceof Response) {
-      try {
-        const payload = (await response.clone().json()) as { error?: string }
-
-        if (typeof payload.error === 'string' && payload.error.trim()) {
-          return payload.error
-        }
-      } catch {
-        // Fall back to the generic error message below.
-      }
-    }
-
-    if ('message' in error && typeof error.message === 'string' && error.message.trim()) {
-      return error.message
-    }
-  }
-
-  return fallbackMessage
-}
+import { toUserFacingErrorMessage } from '../utils/userFacingError'
 
 function getPlanLabel(subscription: Subscription) {
   if (subscription.plan?.name) {
@@ -72,21 +24,11 @@ export default function AdminSubscriptionsPage() {
   const fetchSubscriptions = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke<AdminSubscriptionsResponse>('admin-portal-subscriptions', {
-        body: { action: 'list' },
-      })
-
-      if (error) {
-        logger.error('[AdminSubscriptions] fetch:', error)
-        toast.error(await getFunctionErrorMessage(error, 'Failed to load subscriptions'))
-        setSubscriptions([])
-        return
-      }
-
-      setSubscriptions(data?.subscriptions ?? [])
+      const nextSubscriptions = await adminSupabaseApi.getAdminSubscriptions()
+      setSubscriptions(nextSubscriptions)
     } catch (error) {
       logger.error('[AdminSubscriptions] fetch:', error)
-      toast.error(await getFunctionErrorMessage(error, 'Failed to load subscriptions'))
+      toast.error(toUserFacingErrorMessage(error, 'Failed to load subscriptions'))
       setSubscriptions([])
     } finally {
       setLoading(false)

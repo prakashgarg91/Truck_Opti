@@ -6,7 +6,7 @@
 
 ## WORKING RULES
 
-1. **Structure first.** Before editing anything, identify affected modules, contracts, registries, and the validation command. Run `get_minimal_context()` via code-review-graph.
+1. **Structure first.** Before editing anything, identify affected modules, contracts, registries, and the validation command. Run `code-review-graph_get_minimal_context_tool(repo_root="D:/Github/<repo>", task="<description>")` via code-review-graph.
 2. **RPI loop for all non-trivial tasks:**
    - **Research**: inspect code and canonical docs as truth — never guess
    - **Plan**: compress intent into a short ordered sequence (3–7 steps max)
@@ -22,11 +22,11 @@
 Before any non-trivial edit:
 
 ```
-Step 1 → get_minimal_context(task="<description>")       ~100 tokens — full picture
-Step 2 → query_graph(target="<file or symbol>")          minimal detail — locate code
-Step 3 → get_call_graph(name="<function>")               see what calls what
-Step 4 → detect_changes(repo_root="<path>")              blast radius of your change
-Step 5 → review_changes(repo_root="<path>")              final diff review
+Step 1 → code-review-graph_get_minimal_context_tool(repo_root="D:/Github/<repo>", task="<description>")        ~100 tokens — full picture
+Step 2 → code-review-graph_query_graph_tool(repo_root="D:/Github/<repo>", query="<file or symbol>")           minimal detail — locate code
+Step 3 → code-review-graph_get_impact_radius_tool(repo_root="D:/Github/<repo>", changed_files=[...])          see what else moves with the slice
+Step 4 → code-review-graph_detect_changes_tool(repo_root="D:/Github/<repo>")                                  blast radius of your change
+Step 5 → code-review-graph_get_review_context_tool(repo_root="D:/Github/<repo>")                              final diff review context
 ```
 
 **Target: ≤5 tool calls, ≤800 total tokens of graph context per task.**
@@ -38,12 +38,12 @@ Step 5 → review_changes(repo_root="<path>")              final diff review
 When searching for code by **intent or behaviour** (not exact string):
 
 1. Use the Roo bridge MCP tools FIRST
-2. Start with `search_roo_index`; use `detect_roo_index_collection` when workspace mapping needs confirmation
+2. Start with `roo-code-index-search`; use `roo-code-index-resolve-collection` when workspace mapping needs confirmation
 3. Treat results as hints — confirm every hit against real files before editing
 4. Store only curated, durable context after validation
 
 **Search priority order:**
-1. Roo bridge semantic search (`search_roo_index`, `detect_roo_index_collection`)
+1. Roo bridge semantic search (`roo-code-index-search`, `roo-code-index-resolve-collection`, `roo-code-index-health`)
 2. `grep_search` / regex (exact string matches)
 3. `file_search` (filename patterns)
 4. `read_file` (after search has narrowed candidates)

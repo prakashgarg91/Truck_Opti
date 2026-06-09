@@ -1,0 +1,11 @@
+# Model modifier — MiniMax M3 via OpenRouter
+#
+# Stack on top of base.yaml:
+#   python -m webwright.run.cli -c base.yaml -c model_minimax_m3.yaml ...
+#
+# Required env: OPENROUTER_API_KEY
+
+model:
+  model_class: openrouter
+  model_name: minimax/minimax-m3
+  openrouter_endpoint: https://openrouter.ai/api/v1/chat/completions

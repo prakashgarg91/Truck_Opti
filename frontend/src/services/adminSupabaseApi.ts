@@ -73,11 +73,35 @@ export interface ContactInquiry {
 
 export interface AdminUser {
     id: string
-    full_name: string | null
-    email: string | null
-    role: string | null
-    status: string | null
-    created_at: string | null
+    email: string
+    role: string
+    created_at: string
+    updated_at: string
+    name?: string
+    phone?: string
+    account_status: 'active' | 'disabled'
+    banned_until?: string | null
+}
+
+export interface AdminSubscription {
+    id: string
+    user_id: string
+    status: 'active' | 'trial' | 'expired' | 'cancelled'
+    billing_cycle: 'monthly' | 'yearly'
+    current_period_start: string
+    current_period_end: string
+    trial_end: string | null
+    cancel_at_period_end: boolean
+    created_at: string
+    user: {
+        name: string
+        email: string
+    } | null
+    plan: {
+        id: string
+        name: string
+        tier: string
+    } | null
 }
 
 export interface AdminDriverProfile {
@@ -231,7 +255,8 @@ export const adminSupabaseApi = {
     },
 
     async getAdminUsers(): Promise<AdminUser[]> {
-        return []
+        const data = await invokeAdminFunction<{ users: AdminUser[] }>('admin-portal-users', { action: 'list' }, 'Unable to load users right now. Please try again.')
+        return data?.users ?? []
     },
 
     async getAdminAgencies(status: 'pending' | 'approved' | 'rejected' | 'suspended'): Promise<Agency[]> {
@@ -243,16 +268,21 @@ export const adminSupabaseApi = {
         return adminPayoutsApi.getAll()
     },
 
-    async deleteUser(_userId: string): Promise<void> {
-        throw new UserFacingError('User deletion is not available in this client module.')
+    async getAdminSubscriptions(): Promise<AdminSubscription[]> {
+        const data = await invokeAdminFunction<{ subscriptions: AdminSubscription[] }>('admin-portal-subscriptions', { action: 'list' }, 'Unable to load subscriptions right now. Please try again.')
+        return data?.subscriptions ?? []
     },
 
-    async banUser(_userId: string): Promise<void> {
-        throw new UserFacingError('User banning is not available in this client module.')
+    async deleteUser(userId: string): Promise<void> {
+        await invokeAdminFunction('admin-portal-users', { action: 'delete', userId }, 'Failed to delete the user account')
     },
 
-    async unbanUser(_userId: string): Promise<void> {
-        throw new UserFacingError('User unban is not available in this client module.')
+    async banUser(userId: string): Promise<void> {
+        await invokeAdminFunction('admin-portal-users', { action: 'set-disabled', userId, disabled: true }, 'Failed to disable the user account')
+    },
+
+    async unbanUser(userId: string): Promise<void> {
+        await invokeAdminFunction('admin-portal-users', { action: 'set-disabled', userId, disabled: false }, 'Failed to re-enable the user account')
     },
 
     async getContactInquiries(): Promise<ContactInquiry[]> {

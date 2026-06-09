@@ -1,7 +1,7 @@
 import unittest
 import json
 from app import create_app, db
-from app.models import TruckType, CartonType, PackingJob, Shipment
+from app.models import TruckType, CartonType, PackingJob, Shipment, Customer
 
 class DrillDownAPITestCase(unittest.TestCase):
     def setUp(self):
@@ -12,13 +12,13 @@ class DrillDownAPITestCase(unittest.TestCase):
         with self.app.app_context():
             db.create_all()
             
-            # Seed test data
+            customer = Customer(name='Test Customer', email='test@example.com')
             truck = TruckType(name='Test Truck', length=600, width=250, height=300, max_weight=10000)
             carton = CartonType(name='Test Carton', length=50, width=40, height=30, weight=10)
             job = PackingJob(name='Test Job', optimization_goal='space')
-            shipment = Shipment(total_weight=1000, total_volume=50)
+            shipment = Shipment(total_weight=1000, total_volume=50, customer=customer)
             
-            db.session.add_all([truck, carton, job, shipment])
+            db.session.add_all([customer, truck, carton, job, shipment])
             db.session.commit()
     
     def tearDown(self):

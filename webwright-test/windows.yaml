@@ -1,0 +1,8 @@
+# Windows overrides for webwright
+# Stack after base.yaml and model config
+#
+# Usage:
+#   python -m webwright.run.cli -c base.yaml -c model_minimax_m3.yaml -c windows.yaml ...
+
+environment:
+  shell: "C:\\Users\\Prakash\\AppData\\Local\\Programs\\Git\\bin\\bash.exe"
