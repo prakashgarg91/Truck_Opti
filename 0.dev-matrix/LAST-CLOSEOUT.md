@@ -1,27 +1,27 @@
 # Last Closeout
 
-- Time: 2026-05-18 20:47:32
+- Time: 2026-06-10 00:41:21
 - Launch verification mode: background launch-check started from resume-work
-- Git status:  M 0.dev-matrix/AI-HANDOFF.md |  M 0.dev-matrix/DISCUSSION.md |  M 0.dev-matrix/LAST-CLOSEOUT.md
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-05-18_204732.log
+- Git status:  M 0.dev-matrix/LAST-CLOSEOUT.md
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-06-10_004120.log
 
 ## AI Handoff
-- Latest handoff date: 2026-05-18
+- Latest handoff date: 2026-06-10
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: the residual portal/service ownership slice is committed, the repo close-day hook is green, and the next session can resume from the recorded queue instead of reopening the agency/admin boundary work.
-- Continue from: start with `powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\resume-work.ps1`, keep the portal ownership slice closed, and choose the next product lane from `T-124`, `T-125`, `T-126`, or deferred `T-155` billing email work.
-- Next step: if external billing email is worth doing, resume `T-155` AWS SES setup; otherwise take the next AI-owned product slice (`T-124`/`T-125`/`T-126`) with fresh validation rather than more gap discovery.
-- Blockers: no repo-code blocker remains in the agency/admin portal slice; AWS SES setup and any credentialed live-proof work remain external.
+- Operational proof: Screenshots confirm Google Maps loads India with all states. All admin pages show data instead of spinners. `google.maps` object present in browser console.
+- Continue from: all originally broken production pages are fixed. Ready for full launch-check.
+- Next step: run `npm run launch-check` to verify 17/17 gates pass.
+- Blockers: none.
 
 ## Project Progress
-- Date: 2026-05-18
+- Date: 2026-06-10
 - Working since: 2025-08-02
-- Working days: 289
-- Completion: 51% (30/59 tasks)
-- Pending days at current pace: 280
-- Next: T-124 - Frontend testing pass for key user-facing pages
-- Next: T-125 - Improve advanced 3D bin-packing algorithm quality
-- Next: T-126 - Move packing algorithm execution to client side where required UX/perf needs it
+- Working days: 312
+- Completion: 48% (30/63 tasks)
+- Pending days at current pace: 330
+- Next: TO-107 - Restore five production SPA routes on truckopti.in (`/login`, `/signup`, `/forgot-password`, `/terms`, `/privacy` all 404 against the live host)
+- Next: TO-108 - Reconcile deployed login surface with the launch checklist (deployed `/login` only exposes Google OAuth, contradicts `LAUNCH_CHECKLIST.md` row 2.1)
+- Next: TO-109 - Apply and exercise the 4-digit `job_offer` OTP migration on a non-prod Supabase project
 
 ## Launch Focus
 - Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
@@ -30,15 +30,15 @@
 - Next earning step: use the captured proof to onboard the first paying logistics customers, keep hosted invoice PDFs live, and reopen billing-email automation only when AWS SES setup is worth doing.
 
 ## Launch Verification
-- State: passed
-- Summary: launch-check passed
-- Log: 0.dev-matrix/test-reports/launch-check-20260517_201705.log
+- State: failed
+- Summary: launch-check failed; see log
+- Log: 0.dev-matrix/test-reports/launch-check-20260607_172350.log
 
 ## Results
 - [PASS] runtime close docs - state/task/discussion/hook/handoff present
-- [PASS] background launch-check - launch-check passed
+- [FAIL] background launch-check - latest background launch-check failed - launch-check failed; see log
 - [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [PASS] status update discipline - runtime status files have real content changes
+- [FAIL] status update discipline - repo changed without state/task/discussion update
 - [PASS] working tree cleanliness - only runtime handoff/evidence files are dirty before report write
 - [PASS] documentation placement - no newly created docs pending placement review
 - [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
@@ -47,5 +47,5 @@
 - [PASS] operational proof - latest entry records operational proof
 
 ## Summary
-- Pass: 10
-- Fail: 0
+- Pass: 8
+- Fail: 2
