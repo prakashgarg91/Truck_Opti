@@ -28,6 +28,29 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-06-09 (Copilot — HEROKU v94: ADMIN PAGES FIXED, BROWSER VERIFIED, MAPS NEEDS GOOGLE CLOUD CONFIG)
+
+- Changed: Heroku rebuilt to **v94** with new `VITE_GOOGLE_MAPS_API_KEY=AIzaSyARhStXWCivLpgw4K0jBt7B5SQIpQlr-yw`. All 8 Supabase edge functions deployed and verified. 5 demo accounts seeded.
+- **Browser verification on production** (https://www.truckopti.in, logged in as demo.admin@truckopti.in / TruckOpti2026!Demo):
+  - `/admin` → ✅ **Admin Dashboard loads** — "Platform Analytics" with revenue cards (no more spinner)
+  - `/admin/users` → ✅ **User Management loads** — 8 total users visible with demo accounts
+  - `/admin/payouts` → ✅ **Driver Payouts loads** — tabs: All (0), Pending (0), Approved (0), Paid (0)
+  - `/admin/drivers` → ✅ **Driver Approvals loads** — no pending drivers
+  - `/admin/agencies` → ✅ **Agency Approvals loads** — 1 approved agency
+  - `/routes` → ✅ **Routes page loads** — "Mumbai to Delhi Express" route visible (1,148 km, 28h 42m, ₹15,499)
+  - `/tracking` → ❌ **Google Maps still broken** — "Oops! Something went wrong" (API key needs Google Cloud Console config)
+- **API verification** (curl with demo.admin JWT):
+  - `admin-portal-dashboard` (action:snapshot) → 200 ✅
+  - `admin-portal-payouts` → 200 ✅
+  - `admin-portal-agencies` → 200 ✅
+  - `admin-portal-contact` → 200 ✅
+  - `admin-portal-drivers` → 200 ✅
+  - `admin-portal-users` → 200 ✅ (8 users returned)
+- Operational proof: Screenshots confirm all admin pages load data instead of spinners. Edge functions all return 200. Heroku v94 deployed successfully.
+- Continue from: Google Maps is the only remaining production issue. All other reported broken areas (/admin, /admin/users, /admin/payouts, /routes, /tracking auth) are resolved.
+- Next step: (1) Owner fixes Google Maps API key in Google Cloud Console (enable Maps JavaScript API + add referrer whitelist), (2) Re-verify /tracking after Maps fix, (3) Run full launch-check 17/17.
+- Blockers: **Google Maps API key `AIzaSyARhStXWCivLpgw4K0jBt7B5SQIpQlr-yw` needs configuration in Google Cloud Console** — enable "Maps JavaScript API" and add HTTP referrer `https://www.truckopti.in/*` (or set to no restrictions for testing). This is an owner action (T-110 area).
+
 ### 2026-06-09 (Copilot — EDGE FUNCTIONS DEPLOYED + DEMO ACCOUNTS SEEDED + ALL APIS VERIFIED)
 
 - Changed: logged into Supabase CLI (`npx supabase login`) and deployed 7 missing edge functions to project `jbxncejtcbpcronndqlx`:
