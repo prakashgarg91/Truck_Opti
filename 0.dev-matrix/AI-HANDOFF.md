@@ -28,6 +28,31 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-06-09 (Copilot — HEROKU DEPLOYED v92: TO-107 + TO-108 VERIFIED ON PRODUCTION)
+
+- Changed: deployed to Heroku as `v92` from commit `7609dc84` (force push to sync diverged history). Fixed npm audit (qs DoS GHSA-q8mj-m7cp-5q26). Created clean branch `copilot/to109-demo-accounts-v2` pushed to origin (no secrets). All AI-executable tasks TO-101 through TO-110 now completed.
+- Verified on production (https://www.truckopti.in):
+  - **TO-107 FIX**: All 5 previously-404 routes now return 200 and serve the React SPA:
+    - `/login` → 200, title "Welcome Back - TruckOpti" ✅
+    - `/signup` → 200 ✅
+    - `/forgot-password` → 200 ✅
+    - `/terms` → 200, full 9-section Terms of Service ✅
+    - `/privacy` → 200 ✅
+  - **TO-108 FIX**: Login page now shows Email OTP UI (not just Google OAuth):
+    - OTP tab active by default
+    - "Send Email OTP" button present and rendered
+    - Email input field active
+    - "Continue with Google" button present
+    - Terms/Privacy/Create Account links working
+  - `/pricing` → 200 ✅, `/contact` → 200 ✅, `/` → 200 ✅
+  - **Launch-check**: 18/18 PASS (0 vulnerabilities, clean tree)
+  - **Vitest**: 22/22 PASS
+  - **Heroku build**: 0 vulnerabilities, built in 12.64s, PWA precache 79 entries (1633.38 KiB)
+- Operational proof: `https://www.truckopti.in/login` browser snapshot confirms Email OTP + Google OAuth dual login. `https://www.truckopti.in/terms` shows full Terms of Service. All routes HTTP 200.
+- Continue from: production is now live with all AI-executable tasks closed. Next is authenticated E2E testing with the seeded demo accounts and Razorpay payment verification.
+- Next step: run `node scripts/live-auth-proof.cjs` and `node scripts/live-admin-proof.cjs` against `https://www.truckopti.in` with demo accounts.
+- Blockers: none remaining from AI side. Live Razorpay payment E2E needs owner verification.
+
 ### 2026-06-09 (Copilot — FULL APP TESTED: Demo accounts seeded, all functions verified locally)
 
 - Changed: seeded 5 demo accounts in Supabase auth using service_role key: `demo.driver@truckopti.in` (driver, approved), `demo.agency@truckopti.in` (user, transport_agencies approved), `demo.customer@truckopti.in` (user), `demo.razorpay@truckopti.in` (user), `demo.admin@truckopti.in` (admin). All passwords: `TruckOpti2026!Demo` (Razorpay reviewer: `TruckOpti2026!Review`). Ran comprehensive browser verification against local preview (`http://127.0.0.1:4174`).
