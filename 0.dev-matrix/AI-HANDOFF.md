@@ -28,10 +28,10 @@ Update protocol:
 
 ## Handoff Log
 
-### 2026-06-09 (Copilot — ALL PAGES FIXED: Heroku v94, Google Maps working, full browser verification complete)
+### 2026-06-10 (Copilot — ALL PAGES FIXED: Heroku v94, Google Maps working, full browser verification complete)
 
 - Changed: Heroku **v94** deployed with new `VITE_GOOGLE_MAPS_API_KEY`. Owner configured Google Cloud Console referrers (`localhost:5173/*`, `truck-opti-app-*.herokuapp.com/*`, `www.truckopti.in/*`).
-- **Browser verification on production** (https://www.truckopti.in, demo.admin@truckopti.in / TruckOpti2026!Demo):
+- Verified:
   - `/admin` → ✅ Admin Dashboard — "Platform Analytics" with revenue cards
   - `/admin/users` → ✅ User Management — 8 users visible
   - `/admin/payouts` → ✅ Driver Payouts — All/Pending/Approved/Paid tabs
@@ -39,7 +39,7 @@ Update protocol:
   - `/admin/agencies` → ✅ Agency Approvals — 1 approved agency
   - `/routes` → ✅ Routes — "Mumbai to Delhi Express" (1,148 km, ₹15,499)
   - `/tracking` → ✅ **Google Maps renders India map** with zoom controls, fullscreen button
-- **API verification** (curl with demo.admin JWT): all 6 admin edge functions return 200 ✅
+  - API verification (curl with demo.admin JWT): all 6 admin edge functions return 200 ✅
 - Operational proof: Screenshots confirm Google Maps loads India with all states. All admin pages show data instead of spinners. `google.maps` object present in browser console.
 - Continue from: all originally broken production pages are fixed. Ready for full launch-check.
 - Next step: run `npm run launch-check` to verify 17/17 gates pass.
