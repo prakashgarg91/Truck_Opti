@@ -26,11 +26,11 @@ To survive and thrive in India's $380B logistics market, TruckOpti must evolve f
 | **FASTag Gold** | Premium tier avoiding blacklisting | ❌ Missing | P2 |
 | **GPS Tracking Hardware** | 356K+ monthly active GPS devices | ❌ Missing (we use phone GPS) | **P0** |
 | **Truck Theft Protection** | "BlackBuck Relay" — anti-theft system | ❌ Missing | P1 |
-| **Fuel Cards** | Accepted at 85% fuel pumps; 2X benefits on special plans | ❌ Missing | **P0** |
+| **Fuel Cards** | Accepted at 85% fuel pumps; 2X benefits on special plans | ❌ Missing | **P3** (Future) |
 | **Driver Insurance** | Free driver + helper insurance with fuel card | ❌ Missing | P1 |
 | **Roadside Assistance** | Breakdown support bundled with fuel card | ❌ Missing | P1 |
 | **Loads Marketplace** | 2.1Mn loads posted; shippers grow income 30-100% | ❌ Missing | **P0** |
-| **Vehicle Loans** | RBI-regulated, paperless, API-driven lending | ❌ Missing | P1 |
+| **Vehicle Loans** | RBI-regulated, paperless, API-driven lending | ❌ Missing | **P3** (Future) |
 | **Chargeback Resolution** | Fastest industry resolution for toll disputes | ❌ Missing | P2 |
 | **Dedicated Dispute Team** | Payment dispute resolution team | ❌ Missing | P2 |
 
@@ -114,8 +114,8 @@ To survive and thrive in India's $380B logistics market, TruckOpti must evolve f
 | ID | Feature | Why It Matters | Implementation |
 |----|---------|----------------|----------------|
 | **F-01** | **FASTag Integration** | 33% of commercial tolling; truckers can't operate without it | Partner with NPCI / ICICI Bank |
-| **F-02** | **Fuel Card Program** | 85% of fuel pumps accept branded cards; 2X loyalty benefits | Partner with HPCL / BPCL / IOCL |
-| **F-03** | **Vehicle Loans** | Truckers need financing for new trucks; RBI-regulated lending | Partner with NBFC (Cholamandalam, Shriram) |
+| **F-02** | **Fuel Card Program** | 85% of fuel pumps accept branded cards; 2X loyalty benefits | Partner with HPCL / BPCL / IOCL (Phase 3) |
+| **F-03** | **Vehicle Loans** | Truckers need financing for new trucks; RBI-regulated lending | Partner with NBFC (Cholamandalam, Shriram) (Phase 3) |
 | **F-04** | **Driver Insurance** | Free accidental cover builds loyalty; mandatory for fleet owners | Group policy with Digit / ICICI Lombard |
 | **F-05** | **Working Capital Loans** | Shippers need credit to pay for transport; unlock cash flow | Invoice discounting partner |
 | **F-06** | **Toll Chargeback Resolution** | Disputes are major pain point; fast resolution = retention | Automated dispute API with NHAI |
@@ -179,7 +179,7 @@ To survive and thrive in India's $380B logistics market, TruckOpti must evolve f
 | **D-05** | **Driver Ratings & Incentives** | Gamified performance → better behavior | Points system + leaderboard |
 | **D-06** | **Helper Insurance** | Cover co-driver/helper — builds trust | Group personal accident |
 | **D-07** | **Roadside Assistance** | 24/7 breakdown support — mechanic + towing | Network of service stations |
-| **D-08** | **Fuel Efficiency Tracking** | MPG per driver → coaching opportunity | GPS + fuel card data |
+| **D-08** | **Fuel Efficiency Tracking** | MPG per driver → coaching opportunity | GPS + fuel data (no fuel card needed) |
 | **D-09** | **Digital Document Wallet** | RC, fitness, insurance, pollution — all in app | OCR + expiry alerts |
 | **D-10** | **SOS / Panic Button** | Emergency alert to admin + family | One-tap SMS + location |
 
@@ -244,7 +244,6 @@ Must-have to compete with WheelsEye/BlackBuck basic offering:
 | Feature | Effort | Impact |
 |---------|--------|--------|
 | FASTag Integration | Medium | **Critical** |
-| Fuel Card Partnership | Medium | **Critical** |
 | Load Marketplace | High | **Critical** |
 | Driver GPS Hardware (optional) | High | High |
 | Digital Bilty / e-POD | Medium | High |
@@ -258,7 +257,7 @@ Features that lock in both sides of the marketplace:
 
 | Feature | Effort | Impact |
 |---------|--------|--------|
-| Vehicle Loans | High | **Critical** |
+| Vehicle Loans | High | **Critical** (Phase 3) |
 | Driver Insurance | Medium | High |
 | Working Capital for Shippers | High | High |
 | Packers & Movers | Medium | Medium |
@@ -291,9 +290,9 @@ Features that competitors don't have:
 |----------------|---------|-------------------|
 | Platform Fee (5-10%) | ₹0 | Primary |
 | Subscription (SaaS) | ₹0 | ₹5K-₹50K/month per enterprise |
-| Fuel Card Commission | ₹0 | 1-3% of fuel spend |
+| Fuel Card Commission | ₹0 | 1-3% of fuel spend (Phase 3) |
 | FASTag Commission | ₹0 | 0.5% of toll spend |
-| Loan Commission | ₹0 | 2-5% of loan value |
+| Loan Commission | ₹0 | 2-5% of loan value (Phase 3) |
 | Insurance Commission | ₹0 | 10-15% of premium |
 | API Charges | ₹0 | ₹0.50-₹2 per call |
 | Marketplace Commission | ₹0 | 5-10% per load |
@@ -313,9 +312,9 @@ Features that competitors don't have:
 | 3D Packing | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ **UNIQUE** |
 | Route Optimization | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
 | FASTag | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ (Phase 1) |
-| Fuel Cards | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ (Phase 1) |
+| Fuel Cards | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ (Phase 3 - Future) |
 | Load Marketplace | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ (Phase 1) |
-| Vehicle Loans | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ (Phase 2) |
+| Vehicle Loans | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ (Phase 3 - Future) |
 | Enterprise API | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ (Phase 1) |
 | Two-Wheeler | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ (Phase 2) |
 | Packers & Movers | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ (Phase 2) |
@@ -333,7 +332,7 @@ Features that competitors don't have:
 
 | Risk Without Feature | Mitigation Feature |
 |----------------------|-------------------|
-| Truckers leave for BlackBuck (fuel + tolls) | FASTag + Fuel Card + Load Marketplace |
+| Truckers leave for BlackBuck (fuel + tolls) | FASTag + Load Marketplace + Driver Incentives |
 | Shippers leave for Porter (API + enterprise) | Enterprise API + ERP Integration + SLA |
 | Drivers don't adopt app (no value) | Loans + Insurance + Community + Training |
 | Can't compete on price | Dynamic Pricing + Load Consolidation + PTL |
@@ -349,7 +348,7 @@ Features that competitors don't have:
 | # | Action | Owner | Deadline |
 |---|--------|-------|----------|
 | 1 | Contact NPCI for FASTag API partnership | Business | Week 1 |
-| 2 | Contact HPCL/BPCL for fuel card partnership | Business | Week 1 |
+| 2 | ~~Contact HPCL/BPCL for fuel card partnership~~ | Business | **Phase 3** |
 | 3 | Design Load Marketplace UI/UX | Product | Week 2 |
 | 4 | Build Enterprise API v1 (booking + tracking) | Engineering | Week 3 |
 | 5 | Integrate e-Way Bill (GSTN) for digital bilty | Engineering | Week 4 |
