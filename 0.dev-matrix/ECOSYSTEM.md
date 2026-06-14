@@ -1,5 +1,5 @@
 # 🌐 ECOSYSTEM MAP — Prakash Gupta's AI-First Earning Empire
-> **Last updated: GitHub Copilot | 2026-04-12**
+> **Last updated: GitHub Copilot | 2026-06-09**
 >
 > **For any AI reading any repo in D:\Github:**
 > Every repo is a node in a larger system. Read this before making cross-repo decisions.
@@ -59,6 +59,7 @@ D:\Github\ (the empire)
 │
 └── code-review-graph   ← CODE INTELLIGENCE — AST + call graph + blast radius
     └── MCP server: 22 tools for code review, impact analysis, refactoring
+    └── coding-helper (npm: @z_ai/coding-helper) manages GLM Plan for OpenCode & Claude Code
 ```
 
 ---
@@ -78,6 +79,7 @@ D:\Github\ (the empire)
 | **razorpay-mcp-server** | Payment MCP server | 🟢 Operational | Internal layer |
 | **code-review-graph** | Code intelligence MCP | 🟢 v2.3.1 installed | Infrastructure |
 | **0.dev-matrix** | Dev operating system | 🟢 Active | Governance layer |
+| **coding-helper** | GLM Coding Plan manager (`@z_ai/coding-helper@0.0.7`) | 🟢 Configured | Model provider for OpenCode/Claude |
 
 ---
 
@@ -90,6 +92,7 @@ D:\Github\ (the empire)
 | Truck_Opti | razorpay-mcp-server | Payment processing |
 | All repos | code-review-graph | Code intelligence (call graph, blast radius) |
 | All repos | 0.dev-matrix | Standards, hooks, session governance |
+| All coding tools | coding-helper | GLM Coding Plan model config (glm-4.6, glm-4.5-air) |
 
 ---
 

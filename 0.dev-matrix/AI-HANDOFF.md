@@ -28,6 +28,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-06-15 (Claude — close-day: TO-111 market survival + dev-matrix sync committed and pushed)
+
+- Changed: TO-111 competitor analysis complete (50+ market survival features, Android architecture roadmap, Fuel Cards/Vehicle Loans deprioritized to Phase 3). Dev-matrix sync: WATCH.md updated, PATTERNS.md trimmed, AI-TASKS.json restructured, mcp.json reformatted, ECOSYSTEM.md/INDEX.md patched.
+- Verified: `cd frontend && npm run build` PASS (✓ built in 7.41s, sw-v2.js generated, 79 precache entries). All files committed and pushed to GitHub main.
+- Operational proof: frontend build clean with no errors. Git status clean after push.
+- Continue from: TO-111 fully closed. All originally broken production pages fixed (Heroku v94). Ready for next task selection.
+- Next step: run `0.dev-matrix/sync-two-task-loop.ps1` to promote next 2 tasks from AI-TASKS.json, then pick highest-priority AI-executable slice.
+- Blockers: owner-side only — live Razorpay prod keys, Google OAuth smoke test, Twilio SMS, Supabase PITR, TO-109 (4-digit OTP migration on non-prod), TO-110 (uncommitted apps/web Python validation).
+
 ### 2026-06-10 (Copilot — ALL PAGES FIXED: Heroku v94, Google Maps working, full browser verification complete)
 
 - Changed: Heroku **v94** deployed with new `VITE_GOOGLE_MAPS_API_KEY`. Owner configured Google Cloud Console referrers (`localhost:5173/*`, `truck-opti-app-*.herokuapp.com/*`, `www.truckopti.in/*`).

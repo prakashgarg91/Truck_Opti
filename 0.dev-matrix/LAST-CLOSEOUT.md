@@ -1,27 +1,25 @@
 # Last Closeout
 
-- Time: 2026-06-10 00:42:07
-- Launch verification mode: background launch-check started from resume-work
-- Git status: clean
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-06-10_004206.log
+- Time: 2026-06-15 (close-day via Claude Code)
+- Launch verification mode: frontend build verified (`npm run build` PASS)
+- Git status: clean after commit + push
+- Log: manual close-day 2026-06-15
 
 ## AI Handoff
-- Latest handoff date: 2026-06-10
+- Latest handoff date: 2026-06-15
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: Screenshots confirm Google Maps loads India with all states. All admin pages show data instead of spinners. `google.maps` object present in browser console.
-- Continue from: all originally broken production pages are fixed. Ready for full launch-check.
-- Next step: run `npm run launch-check` to verify 17/17 gates pass.
-- Blockers: none.
+- Operational proof: `cd frontend && npm run build` PASS (7.41s, sw-v2.js generated). All TO-111 competitor analysis docs committed and pushed to GitHub main.
+- Continue from: TO-111 complete. All production pages fixed (Heroku v94). Dev-matrix synced.
+- Next step: run `sync-two-task-loop.ps1` to promote next 2 tasks, then pick highest-priority AI-executable slice.
+- Blockers: owner-side only (Razorpay prod keys, Google OAuth, Twilio, Supabase PITR).
 
 ## Project Progress
-- Date: 2026-06-10
+- Date: 2026-06-15
 - Working since: 2025-08-02
-- Working days: 312
-- Completion: 48% (30/63 tasks)
-- Pending days at current pace: 330
-- Next: TO-107 - Restore five production SPA routes on truckopti.in (`/login`, `/signup`, `/forgot-password`, `/terms`, `/privacy` all 404 against the live host)
-- Next: TO-108 - Reconcile deployed login surface with the launch checklist (deployed `/login` only exposes Google OAuth, contradicts `LAUNCH_CHECKLIST.md` row 2.1)
-- Next: TO-109 - Apply and exercise the 4-digit `job_offer` OTP migration on a non-prod Supabase project
+- Working days: 317
+- Completion: TO-111 complete (competitor analysis, market survival features, product expansion docs)
+- Next: TO-109 - Apply and exercise the 4-digit `job_offer` OTP migration on a non-prod Supabase project (owner action required)
+- Next: TO-110 - Validate uncommitted apps/web Python changes (commit or park)
 
 ## Launch Focus
 - Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.

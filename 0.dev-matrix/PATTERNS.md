@@ -5,54 +5,6 @@
 
 ---
 
-## 🤖 AUTONOMOUS DEVELOPMENT PATTERNS
-
-### Pattern: MCP-First Retrieval Stack (Save Tokens, Save Money)
-
-**Rule:** Before any broad file read, repo inventory, or repeated grep pass, use the MCP retrieval stack in this exact order:
-
-1. **`roo-code-index-bridge_roo-code-index-search`** — semantic ownership discovery
-2. **Graphify MCP tools** (`graphify_graph_stats`, `graphify_query_graph`) — structural map
-3. **`code-review-graph_*_tool`** — blast radius and affected flows
-4. **Only then** — direct file reads or grep for exact confirmation
-
-**Why:** Roo Index + Graphify + CRG together answer "what files matter" and "what will break" without reading 50+ files. This saves 60-80% of token spend vs. naive file-by-file exploration. In the 2026-06-07 TO-107 run, the scout used 6 MCP calls to isolate the root cause across 3 files instead of reading the entire frontend tree.
-
-**Cost evidence:** A typical scout/build/review cycle on Truck_Opti costs ~$0.15-0.30 with MiniMax M3 Free (scout + build) + one DeepSeek V4 Pro review gate. The same work done by direct Copilot Chat without MCP pre-filtering costs 3-5x more in token consumption because it reads irrelevant files.
-
----
-
-### Pattern: Opencode as Primary Execution Engine
-
-**Rule:** Use `opencode` (free models: MiniMax M3 Free, DeepSeek V4 Pro) as the primary autonomous execution engine. Reserve paid Copilot/Claude interactions for:
-- Final review gates (DeepSeek V4 Pro completion review)
-- Human-blocked task unblocking (owner credential setup)
-- Complex multi-file refactors that need interactive reasoning
-
-**Why:** `opencode` runs the full scout/build/review triad with free models. The 2026-06-07 TO-107 run proved the pipeline: scout (MiniMax M3 Free) diagnosed Heroku bundle drift in 3 minutes, build (MiniMax M3 Free) validated the bounded slice and made the `server.js` cache-header fix, review gate (pending) will sign off with DeepSeek V4 Pro.
-
-**Execution contract:**
-```powershell
-# Start autonomous pipeline
-.\START-AUTONOMOUS-DEV.bat 12
-
-# Or directly via Frame
-powershell -NoProfile -ExecutionPolicy Bypass -File "D:\Github\Frame\run-portfolio.ps1" -ProjectName "Truck_Opti" -MaxRunsOverride 12
-```
-
----
-
-### Pattern: Bounded-Slice Scout → Build → Review Triad
-
-**Rule:** Every task follows the triad:
-1. **Scout** — read-only diagnosis, writes `SCOUT-CONTEXT.md` artifact, no code edits
-2. **Build** — bounded-slice edits only, writes `BUILD-RESULT.md` artifact, validates immediately
-3. **Review** — sign-off or correction cycle, only lane allowed to mark task done
-
-**Why:** Prevents unbounded scope creep. The scout's artifact is the contract; build cannot widen scope. Review is the gate. In TO-107, the scout explicitly excluded `apps/web` Python, migration apply, and smoke-script edits from the bounded slice — build respected that boundary.
-
----
-
 ## 🔐 SECURITY PATTERNS
 
 ### Pattern: Parameterized DB Queries (Never Concatenate)

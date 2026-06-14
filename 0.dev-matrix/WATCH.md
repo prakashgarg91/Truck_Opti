@@ -22,6 +22,8 @@ It binds every repo's VS Code session to the sprint state, Roo bridge retrieval,
 | **Delivery Intelligence** | `.github/hooks/delivery-intelligence.json` | Session-start/stop reminders tied to the cross-repo delivery hub |
 | **OpenHarness Entry** | `0.dev-matrix/openharness.ps1` + `.openharness/skills/launch-revenue/SKILL.md` | Repo-local OpenHarness launcher with Copilot auth, `gpt-5.4`, `effort=max`, and earning-focused execution rules |
 | **Optional Terminal Agent** | User-scope `C:\Users\Prakash\.junie\junie-zai.ps1` + `~/.junie/mcp/mcp.json` | Hardened Junie entry using `glm-5.1` for second-opinion reviews, terminal summaries, and optional headless tasks |
+| **Browser Control (Optional)** | Per-repo `.<agent>/skills/kimi-webbridge/` skill + local daemon at `http://127.0.0.1:10086` paired with the user's Chrome/Edge extension | Real browser automation through the user's existing logged-in browser — interactive browsing, scraping, login-gated flows that Playwright cannot reach (see `KIMI-WEBBRIDGE.md`) |
+| **Web Testing (Optional)** | Per-repo `.<agent>/skills/webwright/` skill + local clone at `D:\Github\Webwright` | Microsoft Research terminal-native web-agent framework — LLM writes Playwright code, replays are deterministic scripts, SOTA on long-horizon web tasks (see `WEBWRIGHT.md`) |
 | **Shared Capabilities** | `D:\Github\Office_Scripts\Shared-scripts` | Cross-repo reusable building blocks such as Source Watch, provider fallbacks, and helper adapters without merging product repos |
 | **Close-Day Gate** | `0.dev-matrix/CLOSING-DAY-HOOK.md` | Enforces handoff discipline before each stop |
 | **Sprint Truth** | `SPRINT-APRIL-2026.md` + this STATE.md | Single source of what is active, blocked, done |
@@ -193,6 +195,51 @@ Policy:
 - root `AGENTS.md` remains the primary repo guidance source unless a repo explicitly needs `.junie/AGENTS.md`
 - user-scope Junie MCP remains the default MCP layer for Junie on this machine
 - repo-local `.junie/` is optional and should only be added when a repo genuinely needs Junie-specific shared behavior
+
+## Kimi WebBridge Optional Entry
+
+See `KIMI-WEBBRIDGE.md` for setup, health check, daemon usage, and per-repo rollout.
+
+Kimi WebBridge is supported in this dev-matrix as an **optional browser-control layer** that lets AI agents drive the user's real Chrome or Edge through Chrome DevTools Protocol — including login sessions that cloud-based browser agents cannot see.
+
+Standard entry:
+
+```powershell
+# Per-repo rollout (24 git repos x 3 agent runtimes)
+powershell -ExecutionPolicy Bypass -File D:\Github\0.dev-matrix\install-kimi-webbridge.ps1 -All
+
+# Health check (must show extension_connected: true)
+~/.kimi-webbridge/bin/kimi-webbridge status
+```
+
+Policy:
+- WebBridge is for interactive browser work with login sessions; use Playwright/Webwright for headless testing
+- Each repo can opt out by deleting its `.<agent>/skills/kimi-webbridge/` folder — re-run with `-Force` to restore
+- The user-scope install (`~/.claude/skills/kimi-webbridge/`) is the source of truth; per-repo copies are read-only mirrors for repo-local AI awareness
+- When pairing WebBridge with Webwright, prefer Webwright for replayable tests and WebBridge for one-off interactive runs
+
+## Microsoft Webwright Optional Entry
+
+See `WEBWRIGHT.md` for setup, backend configuration, trajectory dashboard, and Webwright vs Kimi WebBridge guidance.
+
+Webwright is supported in this dev-matrix as an **optional web-testing layer** that gives the AI in any repo a terminal-native browser-agent framework: the LLM writes Playwright code, the script is the artifact, and re-runs are deterministic.
+
+Standard entry:
+
+```powershell
+# Per-repo rollout (24 git repos x 3 agent runtimes)
+powershell -ExecutionPolicy Bypass -File D:\Github\0.dev-matrix\install-webwright.ps1 -All
+
+# One-time runtime deps
+pip install -e D:\Github\Webwright
+playwright install chromium
+```
+
+Policy:
+- Webwright is for replayable headless tests; use Kimi WebBridge for interactive real-browser flows
+- The source of truth is `D:\Github\Webwright\skills\webwright`; per-repo copies are read-only mirrors. Re-run with `-Force` after pulling upstream
+- API keys (OpenAI / Anthropic / OpenRouter) live in the env, not in the skill — never commit them
+- Webwright's vendor install path is the Claude Code plugin marketplace (`/plugin install webwright@webwright`); the per-repo skill copy is a fallback for hosts that don't read marketplaces
 
 ## code-review-graph Daily Workflow
 

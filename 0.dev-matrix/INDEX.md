@@ -40,6 +40,9 @@ Proof: <command or executable validation>
 
 ## Canonical Documents
 
+- `FACTORY-HIERARCHY.md` -- tiered model factory manual (haiku/sonnet/opus/Fable 5 + opencode workers)
+- `FACTORY-FLOW.md` -- per-repo flow digest stamped into every onboarded repo (`update-repo-flow-docs.ps1` re-stamps)
+- `OPENCODE-MANAGER.md` -- opencode lanes, default models, leases
 - `AGENTS.md` -- repo-level AI contract
 - `AGENT-WORKFLOW.md` -- manager mode and two-task discipline
 - `START-DAY.md` -- session boot sequence
