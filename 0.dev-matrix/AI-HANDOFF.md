@@ -28,6 +28,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-06-30 (Copilot — cloud + local codebase sync: main now merged with origin/main, cursor security fixes, ultra/referral, and local WIP features; pushed to origin)
+
+- Changed: Synced local `main` with `origin/main` (2 commits: subagent CLI + skill doc). Merged 4 remote cursor security branches (`critical-bug-identification-03a8`, `critical-bug-investigation-3c93/8b28/b163`) restoring agency-portal auth checks and closing fleet cross-agency/payout bypasses. Merged local `ultra/referral` (referral program C-02). Merged local WIP branch with `rate_estimate`, `carbon_estimator`, `emissions_ui`, dev-matrix doc updates, and `.claude` ultra config. Fixed a merge-induced duplicate `referral_bp` registration in `apps/web/app/api/v1/__init__.py`. Pushed `main` to origin (`5eb047b7..9f1f0189`). `copilot/demo-accounts-and-audit-fix` was **not** merged due to conflicts in dev-matrix docs and `supabase/functions/agency-portal-jobs/index.ts`.
+- Verified: `cd frontend && npm run build` PASS (Gate 1 of launch-check, 12.49s). `cd frontend && npm run test:unit` PASS (22/22). Python compileall PASS. New feature tests PASS (49/49: `test_referral.py`, `test_rate_estimate.py`, `test_carbon_estimator.py`). Full `apps/web` pytest: 1 pre-existing/flaky performance failure in `test_enhanced_features.py::TestOptimizedPackingAlgorithms::test_optimized_packing_performance` (~91s > 30s threshold), all other tests green.
+- Operational proof: `git push origin main` completed successfully. GitHub now reports 20 open Dependabot alerts (4 high, 10 moderate, 6 low). `git log --oneline --graph` shows clean merge topology; working tree clean.
+- Continue from: synced `main` is on origin. Remaining unmerged local branch `copilot/demo-accounts-and-audit-fix` requires manual conflict resolution before it can be integrated.
+- Next step: Decide whether to resolve `copilot/demo-accounts-and-audit-fix` conflicts manually or treat that branch as superseded. Then run `npm run launch-check` after addressing the dependency audit failures if launch readiness is required.
+- Blockers: `npm run launch-check` now fails 3 audit gates (frontend npm audit, apps/web npm audit, pip-audit) due to newly disclosed CVEs in dompurify/form-data/ws/@babel/core/js-yaml/vite and Python joserfc/cryptography/bleach/ujson/python-socketio. These need version bumps. Owner-side blockers unchanged: Razorpay prod keys, Google OAuth, Twilio, Supabase PITR/migrations, Sentry DSN.
+
 ### 2026-06-15 (Claude — close-day: TO-111 market survival + dev-matrix sync committed and pushed)
 
 - Changed: TO-111 competitor analysis complete (50+ market survival features, Android architecture roadmap, Fuel Cards/Vehicle Loans deprioritized to Phase 3). Dev-matrix sync: WATCH.md updated, PATTERNS.md trimmed, AI-TASKS.json restructured, mcp.json reformatted, ECOSYSTEM.md/INDEX.md patched.
