@@ -63,7 +63,7 @@ Practical examples:
 - "Find the files that control auth/session refresh and summarize the call path."
 - "Summarize what blocks launch in this repo in 5 bullets."
 - "Compare two implementation options and recommend the lower-risk one."
-- "Read AI-HANDOFF.md, LAUNCH_CHECKLIST.md, LAST-CLOSEOUT.md, and tell me which delivery guardrails are still blocked."
+- "Read AI-HANDOFF.md, docs/business/LAUNCH_CHECKLIST.md, LAST-CLOSEOUT.md, and tell me which delivery guardrails are still blocked."
 
 ---
 
@@ -77,7 +77,7 @@ Avoid Junie as the primary surface when:
 
 Default rule: if root `AGENTS.md` and user-scope MCP are enough, do **not** add repo-local `.junie`.
 
-Before asking Junie whether work is ready to stop or ship, use the same repo truth sources as the main flow: `AI-HANDOFF.md`, `LAUNCH_CHECKLIST.md`, `LAST-CLOSEOUT.md`, and the output of `0.dev-matrix/delivery-guardrails.shared.ps1` when available.
+Before asking Junie whether work is ready to stop or ship, use the same repo truth sources as the main flow: `AI-HANDOFF.md`, `docs/business/LAUNCH_CHECKLIST.md`, `LAST-CLOSEOUT.md`, and the output of `0.dev-matrix/delivery-guardrails.shared.ps1` when available.
 
 ---
 

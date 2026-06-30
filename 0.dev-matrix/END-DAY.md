@@ -31,7 +31,7 @@ Before stopping, make sure the newest `AI-HANDOFF.md` entry contains:
 - `Technical debt:`
 - `Blockers:`
 
-Also make sure `LAUNCH_CHECKLIST.md` still has truthful values for:
+Also make sure `docs/business/LAUNCH_CHECKLIST.md` still has truthful values for:
 
 - `Product outcome:`
 - `Current launch slice:`
@@ -63,7 +63,7 @@ git status --short
 
 - If heavy testing starts only at shutdown, move that validation into the next active slice.
 - If `AI-HANDOFF.md` is vague, fix it before stopping.
-- If `LAUNCH_CHECKLIST.md` is placeholder text, the repo is not truthfully ready for handoff.
+- If `docs/business/LAUNCH_CHECKLIST.md` is placeholder text, the repo is not truthfully ready for handoff.
 - If the repo still depends on Roo fallback search, note that explicitly so the next session does not assume full Qdrant coverage.
 - If pending work or new technical debt is omitted from the handoff, the repo truth is incomplete.
 

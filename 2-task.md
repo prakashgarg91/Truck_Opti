@@ -4,8 +4,12 @@ This file is auto-generated from 0.dev-matrix/AI-TASKS.json.
 
 ## Current 2 Active Tasks
 
-1.  - 
-- Priority:  | Phase:  | Status: 
+1. VIBE-QUALITY-1 - Raise codebase quality to a green gate
+- Priority: P2 | Phase: build | Status: active
+- Owner files: app
+- Why: Unmanaged quality pass: fix lint/type/test failures and obvious defects so the project's own gate is green and shippable.
+- Done when: Build, lint and tests all pass; no new warnings introduced.
+- Validate: npm run test
 
 ## Next 2 Queued Tasks
 

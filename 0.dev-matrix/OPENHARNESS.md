@@ -43,7 +43,7 @@ The repo-local launcher forwards into the shared harness runtime under `D:\Githu
 ## Useful Prompts
 
 - `What is the smallest validated slice that moves this repo toward launch or revenue?`
-- `Read AI-HANDOFF.md, STATE.md, TASK.md, and LAUNCH_CHECKLIST.md and tell me the next concrete task.`
+- `Read AI-HANDOFF.md, STATE.md, TASK.md, and docs/business/LAUNCH_CHECKLIST.md and tell me the next concrete task.`
 - `Review the current changes and list bugs, risks, and missing tests.`
 - `Map the owning files for auth, webhook verification, and payment capture in this repo.`
 - `Repair delivery guardrails before feature work.`
@@ -72,4 +72,4 @@ powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\openharness.ps1 -Prompt 
 
 ## Operational Rule
 
-Do not treat OpenHarness as a permission to skip repo truth. If `AI-HANDOFF.md`, `LAUNCH_CHECKLIST.md`, spec gate, or validation evidence is stale, repair those first or ask OpenHarness to repair them first.
+Do not treat OpenHarness as a permission to skip repo truth. If `AI-HANDOFF.md`, `docs/business/LAUNCH_CHECKLIST.md`, spec gate, or validation evidence is stale, repair those first or ask OpenHarness to repair them first.

@@ -1,25 +1,76 @@
-# INDEX -- 0.dev-matrix Operating Index
+# INDEX — 0.dev-matrix Operating Index (Master Router)
 
-Purpose: provide one canonical entrypoint for session start, knowledge-ledger checks, test-first delivery, and closeout reconciliation.
+One canonical entrypoint for EVERY agent — Claude Code, opencode, VS Code /
+Copilot, Codex, JetBrains Junie, local LLMs. If you are an AI reading this:
+follow the read order, then use the routing table. Do not explore beyond it.
 
-## Required Read Order
+## Folder Map (stable contract)
 
-1. `STATE.md` -- current blockers, alerts, and active systems
-2. `AI-HANDOFF.md` -- newest truthful restart point
-3. `TASK.md` -- active queue and owner/slice alignment
-4. `INDEX.md` -- working protocol and document map
+```
+D:\Github\0.dev-matrix\
+├── INDEX.md, STATE.md, TASK.md, AI-HANDOFF.md,      <- truth docs (root, never move)
+│   MORNING-QUEUE.md, LAST-CLOSEOUT.md, AGENTS.md
+├── *.ps1 *.py *.bat *.json                          <- operational scripts + configs (root, never move;
+│                                                       scheduled tasks & 23 repos point here by absolute path)
+├── docs\factory\    <- how AI work reaches repos (flow, hierarchy, opencode, AutoBE)
+├── docs\tools\      <- per-tool manuals (MCP stack, graphify, CRG, roo-bridge, markitdown, browsers)
+├── docs\process\    <- discipline (start/end day, testing, rules, quality, security)
+├── docs\business\   <- ecosystem map, launch focus, earning prompts
+├── prompts\         <- lane prompts (scout/build/review, unattended)
+├── scripts\         <- shared PowerShell libraries
+├── leases\ artifacts\ logs\ closeout-logs\          <- runtime state (never hand-edit)
+└── archive\         <- dated/stale docs (do not read for current truth)
+```
+
+## Required Read Order (every session, any tool)
+
+1. `STATE.md` — current blockers, alerts, active systems
+2. `AI-HANDOFF.md` — newest truthful restart point
+3. `TASK.md` — active queue and owner/slice alignment
+4. `INDEX.md` — this router
+
+Claude Code sessions get 1–3 injected automatically by the SessionStart
+brief (`docs/process/DAY-AUTOMATION.md`). Other tools: read them yourself.
+
+## Routing Table — "I need to..." → read this
+
+| Need | Read |
+|------|------|
+| Understand how AI work flows into any repo | `docs/factory/FACTORY-FLOW.md` (canonical; stamped into every repo) |
+| Run the tiered Claude factory | `docs/factory/FACTORY-HIERARCHY.md` |
+| Run opencode lanes / free models | `docs/factory/OPENCODE-MANAGER.md` |
+| Run the single-repo unattended pipeline | `docs/factory/MASTER-REPO-RUNNER.md` + `prompts/UNATTENDED-*.md` |
+| Generate a NEW backend from requirements | `docs/factory/AUTOBE.md` (tool) + `docs/factory/AUTOBE-AGENT-PROMPT.md` (principles) |
+| Get top-quality output from free/local models | `docs/factory/FREE-MODEL-EXCELLENCE.md` |
+| Bootstrap ANY LLM (no tool integration) into the system | `prompts/ANY-AGENT-BOOTSTRAP.md` (paste as system prompt) |
+| Know which MCP server to call, in what order | `docs/tools/MCP-STACK.md` |
+| Semantic code search | `docs/tools/ROO-INDEX-BRIDGE.md` |
+| Architecture/structure questions | `docs/tools/GRAPHIFY.md` |
+| Blast radius before an edit | `docs/tools/CODE-REVIEW-GRAPH.md` |
+| Convert PDF/Office/images to Markdown | `docs/tools/MARKITDOWN.md` |
+| Browser testing (scripted) / browsing (interactive) | `docs/tools/WEBWRIGHT.md` / `docs/tools/KIMI-WEBBRIDGE.md` |
+| Long-term memory across agent sessions | `docs/tools/AI-MEMORY.md` |
+| Session boot / closeout ceremony | `docs/process/START-DAY.md` / `docs/process/END-DAY.md` |
+| Scheduled zero-token shifts | `docs/process/DAY-AUTOMATION.md` |
+| Testing & proof standard | `docs/process/TESTING_PRINCIPLES.md` |
+| Baseline rules / quality bar / security | `docs/process/RULES.md`, `docs/process/QUALITY-BASELINE.md`, `docs/process/SECURITY.md` |
+| Runtime error handling loop | `docs/process/RUNTIME-ERROR-LOOP.md` |
+| What this portfolio IS (repos, revenue paths) | `docs/business/ECOSYSTEM.md` |
+| Current launch focus | `docs/business/LAUNCH_CHECKLIST.md` |
+| Repo-level AI contract (all tools) | `AGENTS.md` |
 
 ## Non-Negotiable Gates
 
-- Zero-guessing: no non-trivial code change before Graphify and code-review-graph are used to map structure and blast radius.
-- Context audit first: every requested change starts with a short report of likely files, dependency risk, first failing check, and proof command.
-- Test-driven prompting: ask for the failing test first, confirm red, then implement the minimum code required for green.
+- Zero-guessing: no non-trivial code change before Graphify and
+  code-review-graph map structure and blast radius.
+- Context audit first: every change starts with a short report of likely
+  files, dependency risk, first failing check, and proof command.
+- Test-driven: failing test first, confirm red, minimum code to green.
 - Micro-scoping: one bounded transaction, one owner, one proof command.
-- Reconciliation: every session ends with changed work, pending work, proof, blockers, and new technical debt captured in `AI-HANDOFF.md`.
+- Reconciliation: every session ends with changed/pending/proof/blockers/debt
+  captured in `AI-HANDOFF.md`.
 
 ## Context Audit Template
-
-Use this before implementation:
 
 ```text
 CONTEXT AUDIT
@@ -38,20 +89,10 @@ Proof: <command or executable validation>
 4. Re-run the same test.
 5. Run the next narrow build, lint, typecheck, or impact check.
 
-## Canonical Documents
+## Maintenance
 
-- `FACTORY-HIERARCHY.md` -- tiered model factory manual (haiku/sonnet/opus/Fable 5 + opencode workers)
-- `FACTORY-FLOW.md` -- per-repo flow digest stamped into every onboarded repo (`update-repo-flow-docs.ps1` re-stamps)
-- `OPENCODE-MANAGER.md` -- opencode lanes, default models, leases
-- `AGENTS.md` -- repo-level AI contract
-- `AGENT-WORKFLOW.md` -- manager mode and two-task discipline
-- `START-DAY.md` -- session boot sequence
-- `END-DAY.md` -- closeout sequence
-- `WATCH.md` -- automation and retrieval layer
-- `GRAPHIFY.md` -- structural map usage
-- `CODE-REVIEW-GRAPH.md` -- impact and blast-radius usage
-- `TESTING_PRINCIPLES.md` -- validation and proof standard
-- `RULES.md` -- baseline process rules
-- `LAUNCH_CHECKLIST.md` -- current launch focus
-- `REPO-LAYOUT-INDEX.md` -- structural document and helper map
-- `INDEX-OF-CODE.md` -- generated code index artifacts
+- Canonical flow doc changed? Re-stamp all repos:
+  `powershell -ExecutionPolicy Bypass -File D:\Github\0.dev-matrix\update-repo-flow-docs.ps1`
+- New MCP server portfolio-wide? Extend `update-mcp-configs.ps1` only.
+- New doc? Put it in the right `docs\` category and add ONE routing row here.
+- Stale/dated report? Move to `archive\`. Root stays clean.

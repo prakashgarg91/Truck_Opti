@@ -232,6 +232,6 @@ Before writing code that touches **auth, DB, payments, file uploads, redirects, 
 
 ## 📎 SEE ALSO
 
-- `RULES.md` — General coding rules
-- `TESTING_PRINCIPLES.md` — Mandatory testing before marking done
-- Per-repo `SECURITY.md` — Repo-specific known vulnerabilities and history
+- `docs/process/RULES.md` — General coding rules
+- `docs/process/TESTING_PRINCIPLES.md` — Mandatory testing before marking done
+- Per-repo `docs/process/SECURITY.md` — Repo-specific known vulnerabilities and history

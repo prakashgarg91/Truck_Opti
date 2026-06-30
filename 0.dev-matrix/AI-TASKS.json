@@ -275,6 +275,26 @@
                                          "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1"
                                      ],
                       "businessValue":  "Restores clean-tree launch proof and prevents unvalidated Python drift from compounding into the next launch slice."
+                  },
+                  {
+                      "id":  "VIBE-QUALITY-1",
+                      "title":  "Raise codebase quality to a green gate",
+                      "status":  "active",
+                      "priority":  "P2",
+                      "phase":  "build",
+                      "order":  11,
+                      "ownerFiles":  [
+                                         "app"
+                                     ],
+                      "dependsOn":  [
+
+                                    ],
+                      "why":  "Unmanaged quality pass: fix lint/type/test failures and obvious defects so the project\u0027s own gate is green and shippable.",
+                      "definitionOfDone":  "Build, lint and tests all pass; no new warnings introduced.",
+                      "validation":  [
+                                         "npm run test"
+                                     ],
+                      "businessValue":  ""
                   }
               ]
 }

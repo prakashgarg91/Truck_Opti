@@ -1,4 +1,4 @@
-{
+﻿{
     "servers":  {
                     "supabase":  {
                                      "type":  "http",
@@ -59,7 +59,11 @@
                                                   "env":  {
                                                               "ROO_INDEX_BRIDGE_CONFIG_PATH":  "C:/Users/Prakash/AppData/Roaming/Code/User/mcp-tools/roo_code_index_bridge_config.json"
                                                           }
-                                              }
+                                              },
+                    "ai-memory":  {
+                                      "type":  "http",
+                                      "url":  "http://127.0.0.1:49374/mcp"
+                                  }
                 },
     "inputs":  [
                    {

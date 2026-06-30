@@ -28,8 +28,8 @@ Every repo should have at minimum:
 │   ├── AI-HANDOFF.md              ← Session continuation checkpoint
 │   ├── TASK.md                    ← Active tasks
 │   ├── STATE.md                   ← Agent messages + sprint state
-│   ├── RULES.md                   ← Coding rules (per-repo or ref to global)
-│   └── SECURITY.md                ← Known vulns + per-repo security
+│   ├── docs/process/RULES.md                   ← Coding rules (per-repo or ref to global)
+│   └── docs/process/SECURITY.md                ← Known vulns + per-repo security
 └── README.md
 ```
 
@@ -52,7 +52,7 @@ Run a cleanup sweep before:
 
 ## KNOWN LEGACY AREAS (per repo)
 
-Each repo's `TREE-HYGIENE.md` lists its own known legacy areas.
+Each repo's `docs/process/TREE-HYGIENE.md` lists its own known legacy areas.
 
 **Common cross-repo patterns:**
 - Batch prompt history in `0.dev-matrix/` — prune when no longer operationally useful
@@ -82,5 +82,5 @@ Each repo's `TREE-HYGIENE.md` lists its own known legacy areas.
 
 ## 📎 SEE ALSO
 
-- `QUALITY-BASELINE.md` — Documentation discipline section
-- `CONTEXT-ENGINEERING.md` — Good candidates for curated context
+- `docs/process/QUALITY-BASELINE.md` — Documentation discipline section
+- `docs/tools/CONTEXT-ENGINEERING.md` — Good candidates for curated context

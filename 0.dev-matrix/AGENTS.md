@@ -2,6 +2,20 @@
 
 Purpose: make every AI session behave like a disciplined engineering transaction instead of a freeform edit stream.
 
+## Any Tool, Same Contract (entry map)
+
+| Your tool | Reads this automatically | Then follow |
+|-----------|--------------------------|-------------|
+| Claude Code / Cowork | `.claude/CLAUDE.md` + SessionStart brief | this file + `INDEX.md` |
+| opencode | `AGENTS.md` (this file) | `INDEX.md` |
+| Codex CLI | `AGENTS.md` (this file) | `INDEX.md` |
+| VS Code / Copilot | `.github/copilot-instructions.md` | this file + `INDEX.md` |
+| JetBrains Junie | `docs/tools/JUNIE.md` setup | this file + `INDEX.md` |
+| ANY other LLM (chat UI, local model, new agent) | nothing automatic | paste `prompts/ANY-AGENT-BOOTSTRAP.md` as the system/first prompt |
+
+Quality is model-independent by design: `docs/factory/FREE-MODEL-EXCELLENCE.md`.
+MCP servers per client: `docs/tools/MCP-STACK.md` (config snippets for all four formats).
+
 ## Mandatory Boot Sequence
 
 Before planning or coding, read these files in order:
@@ -13,9 +27,9 @@ Before planning or coding, read these files in order:
 
 If the task touches code or architecture, also consult the current structural ledger before editing:
 
-- `graphify-out/GRAPH_REPORT.md` when it exists, otherwise `GRAPHIFY.md`
-- `CODE-REVIEW-GRAPH.md`
-- `TESTING_PRINCIPLES.md` for any behavior change
+- `graphify-out/GRAPH_REPORT.md` when it exists, otherwise `docs/tools/GRAPHIFY.md`
+- `docs/tools/CODE-REVIEW-GRAPH.md`
+- `docs/process/TESTING_PRINCIPLES.md` for any behavior change
 
 ## Zero-Guessing Gate
 
@@ -80,8 +94,8 @@ Do not leave undocumented drift between code, task state, and handoff.
 ## Canonical References
 
 - `INDEX.md` -- operating entrypoint and audit template
-- `AGENT-WORKFLOW.md` -- two-task manager mode
-- `OPENCODE-MANAGER.md` -- scout/build/review lane orchestration and lease rules
-- `START-DAY.md` -- session initialization
-- `END-DAY.md` -- session reconciliation
-- `WATCH.md` -- automation layer and tool routing
+- `docs/factory/AGENT-WORKFLOW.md` -- two-task manager mode
+- `docs/factory/OPENCODE-MANAGER.md` -- scout/build/review lane orchestration and lease rules
+- `docs/process/START-DAY.md` -- session initialization
+- `docs/process/END-DAY.md` -- session reconciliation
+- `docs/tools/WATCH.md` -- automation layer and tool routing
