@@ -1,25 +1,27 @@
 # Last Closeout
 
-- Time: 2026-06-15 (close-day via Claude Code)
-- Launch verification mode: frontend build verified (`npm run build` PASS)
-- Git status: clean after commit + push
-- Log: manual close-day 2026-06-15
+- Time: 2026-06-30 08:41:24
+- Launch verification mode: background launch-check started from resume-work
+- Git status: clean
+- Log: 0.dev-matrix/closeout-logs/closeout-2026-06-30_084123.log
 
 ## AI Handoff
-- Latest handoff date: 2026-06-15
+- Latest handoff date: 2026-06-30
 - Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: `cd frontend && npm run build` PASS (7.41s, sw-v2.js generated). All TO-111 competitor analysis docs committed and pushed to GitHub main.
-- Continue from: TO-111 complete. All production pages fixed (Heroku v94). Dev-matrix synced.
-- Next step: run `sync-two-task-loop.ps1` to promote next 2 tasks, then pick highest-priority AI-executable slice.
-- Blockers: owner-side only (Razorpay prod keys, Google OAuth, Twilio, Supabase PITR).
+- Operational proof: `git push origin main` completed successfully. GitHub now reports 20 open Dependabot alerts (4 high, 10 moderate, 6 low). `git log --oneline --graph` shows clean merge topology; working tree clean.
+- Continue from: synced `main` is on origin. Remaining unmerged local branch `copilot/demo-accounts-and-audit-fix` requires manual conflict resolution before it can be integrated.
+- Next step: Decide whether to resolve `copilot/demo-accounts-and-audit-fix` conflicts manually or treat that branch as superseded. Then run `npm run launch-check` after addressing the dependency audit failures if launch readiness is required.
+- Blockers: `npm run launch-check` now fails 3 audit gates (frontend npm audit, apps/web npm audit, pip-audit) due to newly disclosed CVEs in dompurify/form-data/ws/@babel/core/js-yaml/vite and Python joserfc/cryptography/bleach/ujson/python-socketio. These need version bumps. Owner-side blockers unchanged: Razorpay prod keys, Google OAuth, Twilio, Supabase PITR/migrations, Sentry DSN.
 
 ## Project Progress
-- Date: 2026-06-15
+- Date: 2026-06-30
 - Working since: 2025-08-02
-- Working days: 317
-- Completion: TO-111 complete (competitor analysis, market survival features, product expansion docs)
-- Next: TO-109 - Apply and exercise the 4-digit `job_offer` OTP migration on a non-prod Supabase project (owner action required)
-- Next: TO-110 - Validate uncommitted apps/web Python changes (commit or park)
+- Working days: 332
+- Completion: 48% (30/63 tasks)
+- Pending days at current pace: 330
+- Next: TO-107 - Restore five production SPA routes on truckopti.in (`/login`, `/signup`, `/forgot-password`, `/terms`, `/privacy` all 404 against the live host)
+- Next: TO-108 - Reconcile deployed login surface with the launch checklist (deployed `/login` only exposes Google OAuth, contradicts `LAUNCH_CHECKLIST.md` row 2.1)
+- Next: TO-109 - Apply and exercise the 4-digit `job_offer` OTP migration on a non-prod Supabase project
 
 ## Launch Focus
 - Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
