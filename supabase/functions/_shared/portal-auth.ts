@@ -125,41 +125,116 @@ export async function requireAdminContext(authorization: string | null) {
   return { caller, serviceClient }
 }
 
+export function assertApprovedAgency(status: string | null | undefined) {
+  if (status !== 'approved') {
+    throw new RequestError('Agency approval is required.', 403)
+  }
+}
+
+export async function assertApprovedDriver(
+  serviceClient: SupabaseClient,
+  driverId: string,
+) {
+  const { data: driver, error } = await serviceClient
+    .from('drivers')
+    .select('id, status')
+    .eq('id', driverId)
+    .maybeSingle<{ id: string; status: string | null }>()
+
+  if (error) {
+    console.error('Failed to verify driver profile', error)
+    throw new RequestError('Unable to verify driver assignment.', 500, false)
+  }
+
+  if (!driver?.id) {
+    throw new RequestError('Driver not found.', 404)
+  }
+
+  if (driver.status !== 'approved') {
+    throw new RequestError('Only approved drivers can be assigned or paid.', 403)
+  }
+}
+
+export async function assertDriverOnAgencyFleet(
+  serviceClient: SupabaseClient,
+  agencyId: string,
+  driverId: string,
+) {
+  const { data, error } = await serviceClient
+    .from('agency_trucks')
+    .select('id')
+    .eq('agency_id', agencyId)
+    .eq('driver_id', driverId)
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Failed to verify agency fleet driver', error)
+    throw new RequestError('Unable to verify driver assignment.', 500, false)
+  }
+
+  if (!data) {
+    throw new RequestError('Driver is not assigned to this agency fleet.', 403)
+  }
+}
+
 export async function assertDriverLinkedToAgency(
   serviceClient: SupabaseClient,
   agencyId: string,
   driverId: string,
 ) {
-  const [truckLink, jobLink] = await Promise.all([
+  await assertDriverOnAgencyFleet(serviceClient, agencyId, driverId)
+}
+
+export async function assertDriverAvailableForAgencyTruck(
+  serviceClient: SupabaseClient,
+  agencyId: string,
+  driverId: string,
+) {
+  const [driverRes, foreignTruckRes] = await Promise.all([
+    serviceClient
+      .from('drivers')
+      .select('id, status')
+      .eq('id', driverId)
+      .maybeSingle<{ id: string; status: string }>(),
     serviceClient
       .from('agency_trucks')
-      .select('id')
-      .eq('agency_id', agencyId)
+      .select('id, agency_id')
       .eq('driver_id', driverId)
-      .limit(1)
-      .maybeSingle(),
-    serviceClient
-      .from('agency_jobs')
-      .select('id')
-      .eq('agency_id', agencyId)
-      .eq('driver_id', driverId)
+      .neq('agency_id', agencyId)
       .limit(1)
       .maybeSingle(),
   ])
 
-  const linkError = truckLink.error || jobLink.error
+  const lookupError = driverRes.error || foreignTruckRes.error
 
-  if (linkError) {
-    console.error('Failed to verify agency driver link', linkError)
-    throw new RequestError('Unable to verify driver assignment.', 500, false)
+  if (lookupError) {
+    console.error('Failed to verify driver for truck assignment', lookupError)
+    throw new RequestError('Unable to verify driver.', 500, false)
   }
 
-  if (!truckLink.data && !jobLink.data) {
-    throw new RequestError('Driver is not assigned to this agency.', 403)
+  if (!driverRes.data) {
+    throw new RequestError('Driver not found.', 404)
+  }
+
+  if (driverRes.data.status !== 'approved') {
+    throw new RequestError('Driver is not approved for assignment.', 403)
+  }
+
+  if (foreignTruckRes.data) {
+    throw new RequestError('Driver is already assigned to another agency.', 403)
   }
 }
 
-export async function requireAgencyContext(authorization: string | null) {
+type AgencyContextOptions = {
+  requireApproved?: boolean
+}
+
+export async function requireAgencyContext(
+  authorization: string | null,
+  options: AgencyContextOptions = {},
+) {
+  const requireApproved = options.requireApproved ?? true
   const accessToken = getBearerToken(authorization)
   const normalizedAuthorization = authorization ?? `Bearer ${accessToken}`
 
@@ -173,9 +248,9 @@ export async function requireAgencyContext(authorization: string | null) {
 
   const { data: agency, error: agencyError } = await serviceClient
     .from('transport_agencies')
-    .select('id')
+    .select('id, status')
     .eq('user_id', caller.id)
-    .maybeSingle<{ id: string }>()
+    .maybeSingle<{ id: string; status: string | null }>()
 
   if (agencyError) {
     console.error('Failed to resolve agency', agencyError)
@@ -186,7 +261,16 @@ export async function requireAgencyContext(authorization: string | null) {
     throw new RequestError('Agency access is required.', 403)
   }
 
-  return { caller, serviceClient, agencyId: agency.id }
+  if (requireApproved) {
+    assertApprovedAgency(agency.status)
+  }
+
+  return {
+    caller,
+    serviceClient,
+    agencyId: agency.id,
+    agencyStatus: agency.status,
+  }
 }
 
 export function handleRequestError(scope: string, error: unknown) {
