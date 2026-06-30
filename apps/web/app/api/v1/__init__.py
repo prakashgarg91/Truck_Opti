@@ -17,7 +17,6 @@ from .referral import referral_bp
 from .shipments import shipments_bp
 from .trucks import trucks_bp
 from .location import location_bp
-from .referral import referral_bp
 
 # Create main API v1 blueprint
 api_v1 = Blueprint('api_v1', __name__, url_prefix='/api/v1')
@@ -33,7 +32,6 @@ api_v1.register_blueprint(analytics_bp)
 api_v1.register_blueprint(shipments_bp)
 api_v1.register_blueprint(health_bp)
 api_v1.register_blueprint(location_bp)
-api_v1.register_blueprint(referral_bp)
 
 
 # API v1 root endpoint
