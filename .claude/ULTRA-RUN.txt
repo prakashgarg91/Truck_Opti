@@ -1,0 +1,32 @@
+CASCADE VALIDATION RUN — build ONE feature: Referral Program (backlog C-02).
+
+Surface: the Flask app in apps/web (same pattern as app/carbon_estimator.py + app/api/v1/).
+Goal: a customer gets a unique referral code; when a NEW user redeems it, both the
+referrer and the referee receive a one-time reward credit.
+
+Build (stay strictly in these files for a clean worktree):
+1. app/referral_service.py — pure logic, no Flask:
+   - generate_referral_code(user_id) -> 8-char uppercase alphanumeric code, stable per user.
+   - validate_code_format(code) -> bool.
+   - redeem(referrer_user_id, referee_user_id, code, already_redeemed_referee_ids) ->
+     dict {ok, referrer_reward, referee_reward, reason}. REWARD = referrer 100, referee 50 (INR).
+   - Reject: self-referral (referrer == referee), bad format, and a referee that has
+     already redeemed ANY code (idempotency). Return ok=False + a clear reason for each.
+2. app/api/v1/referral.py — Blueprint under /api/v1:
+   - POST /api/v1/referral/code   body {user_id} -> {user_id, code}
+   - POST /api/v1/referral/redeem body {referrer_user_id, referee_user_id, code} ->
+     200 {ok, referrer_reward, referee_reward} on success; 400 {ok:false, reason} on
+     self/duplicate/invalid. A simple in-memory redeemed-set is fine (no DB migration).
+   - Register the blueprint in app/api/v1/__init__.py (mirror the existing pattern; do
+     NOT touch app/web/ or app/routes.py).
+3. tests/test_referral.py — pytest covering: code format + stability, self-referral
+   rejected (400/ok:false), duplicate referee rejected, valid redeem awards 100/50,
+   invalid/missing input -> 400. Use create_app("testing") test client for the API tests.
+
+Acceptance gates (the cascade tiers must enforce these):
+- L2 supervisor: app imports + lint/build clean.
+- L3 reviewer: `apps/web` -> .venv python -m pytest tests/test_referral.py -q -o addopts=  is GREEN.
+- L4 coordinator: merge the worktree branch, then run the broader apps/web test lane to
+  confirm no regression, before declaring done.
+
+Keep it self-contained and idempotent. Report the final merged diff + the exact pytest output.

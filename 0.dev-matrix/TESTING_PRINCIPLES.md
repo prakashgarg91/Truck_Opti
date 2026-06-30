@@ -171,6 +171,6 @@ Incomplete evidence = task is not done.
 
 ## 📎 SEE ALSO
 
-- `QUALITY-BASELINE.md` — Definition of Done + gate commands
-- `RULES.md` — Rule 2 (never mark done without testing)
-- `SECURITY.md` — Pre-commit security checklist
+- `docs/process/QUALITY-BASELINE.md` — Definition of Done + gate commands
+- `docs/process/RULES.md` — Rule 2 (never mark done without testing)
+- `docs/process/SECURITY.md` — Pre-commit security checklist

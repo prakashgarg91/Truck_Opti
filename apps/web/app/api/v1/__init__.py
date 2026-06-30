@@ -12,6 +12,8 @@ from .auth import auth_bp
 from .cartons import cartons_bp
 from .health import health_bp
 from .optimization import optimization_bp
+from .rate_estimate import rate_estimate_bp
+from .referral import referral_bp
 from .shipments import shipments_bp
 from .trucks import trucks_bp
 from .location import location_bp
@@ -25,6 +27,8 @@ api_v1.register_blueprint(auth_bp)
 api_v1.register_blueprint(trucks_bp)
 api_v1.register_blueprint(cartons_bp)
 api_v1.register_blueprint(optimization_bp)
+api_v1.register_blueprint(rate_estimate_bp)
+api_v1.register_blueprint(referral_bp)
 api_v1.register_blueprint(analytics_bp)
 api_v1.register_blueprint(shipments_bp)
 api_v1.register_blueprint(health_bp)
@@ -47,6 +51,7 @@ def api_root():
             'trucks': '/api/v1/trucks',
             'cartons': '/api/v1/cartons',
             'optimization': '/api/v1/optimization',
+            'rate_estimate': '/api/v1/rate-estimate',
             'analytics': '/api/v1/analytics',
             'shipments': '/api/v1/shipments',
             'health': '/api/v1/health',

@@ -11,6 +11,7 @@ from .truck_management import truck_mgmt_bp
 from .carton_management import carton_mgmt_bp
 from .optimization_ui import optimization_ui_bp
 from .analytics_ui import analytics_ui_bp
+from .emissions_ui import emissions_bp
 
 # Create main web blueprint
 web_bp = Blueprint('web', __name__, url_prefix='/web')
@@ -21,5 +22,6 @@ web_bp.register_blueprint(truck_mgmt_bp)
 web_bp.register_blueprint(carton_mgmt_bp)
 web_bp.register_blueprint(optimization_ui_bp)
 web_bp.register_blueprint(analytics_ui_bp)
+web_bp.register_blueprint(emissions_bp)
 
 __all__ = ['web_bp']

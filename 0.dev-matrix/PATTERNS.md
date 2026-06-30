@@ -1,6 +1,6 @@
 # 🧩 PATTERNS — Universal Implementation Patterns
 > **Universal patterns that apply across all repos.**
-> Per-repo PATTERNS.md adds stack-specific patterns on top of this baseline.
+> Per-repo docs/process/PATTERNS.md adds stack-specific patterns on top of this baseline.
 > Consolidated from Truck_Opti (TypeScript/Supabase) and trading-rex-ai (Python/SQLAlchemy).
 
 ---
@@ -267,6 +267,6 @@ grep_search(query="verifyWebhookSignature")
 
 ## 📎 SEE ALSO
 
-- `SECURITY.md` — Security patterns and pre-commit checks
-- `RULES.md` — Coding rules (many cross-reference these patterns)
-- Per-repo `PATTERNS.md` — Stack-specific patterns (TypeScript, Python, etc.)
+- `docs/process/SECURITY.md` — Security patterns and pre-commit checks
+- `docs/process/RULES.md` — Coding rules (many cross-reference these patterns)
+- Per-repo `docs/process/PATTERNS.md` — Stack-specific patterns (TypeScript, Python, etc.)

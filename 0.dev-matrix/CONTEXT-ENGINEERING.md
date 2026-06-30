@@ -102,6 +102,6 @@ Without this, the next session restarts from scratch. That is wasted tokens and 
 
 ## 📎 SEE ALSO
 
-- `QUALITY-BASELINE.md` — Definition of Done
-- `RULES.md` — Rule 14–15 (CRG and Roo bridge usage rules)
-- `WATCH.md` — Session start protocol and CRG daily workflow
+- `docs/process/QUALITY-BASELINE.md` — Definition of Done
+- `docs/process/RULES.md` — Rule 14–15 (CRG and Roo bridge usage rules)
+- `docs/tools/WATCH.md` — Session start protocol and CRG daily workflow

@@ -1,6 +1,6 @@
 # ✅ QUALITY BASELINE — Universal Definition of Done
 > **Applies to every repo in D:\Github.**
-> Per-repo QUALITY-BASELINE.md adds stack-specific gate commands on top of this baseline.
+> Per-repo docs/process/QUALITY-BASELINE.md adds stack-specific gate commands on top of this baseline.
 
 ---
 
@@ -9,7 +9,7 @@
 A task is **not done** until ALL of the following are true:
 
 - [ ] Implementation is complete and the relevant validation command passes
-- [ ] Security-sensitive work checked against `SECURITY.md §CHECKLIST`
+- [ ] Security-sensitive work checked against `docs/process/SECURITY.md §CHECKLIST`
 - [ ] Dependency vulnerability status checked for affected package surfaces
 - [ ] No duplicate docs spawned — new content consolidated into canonical files
 - [ ] Task and state records updated (TASK.md / STATE.md / AI-HANDOFF.md)
@@ -47,7 +47,7 @@ These are the floor. A task claiming "done" below these thresholds is **not done
 | Security (Python) | `pip-audit` or `uv run pip-audit` | 0 high/critical CVEs |
 
 ### Stack-Specific Gates (per repo)
-Each repo's `QUALITY-BASELINE.md` defines the exact commands.
+Each repo's `docs/process/QUALITY-BASELINE.md` defines the exact commands.
 Common patterns:
 
 | Stack | Gate command | Pass condition |
@@ -102,8 +102,8 @@ This prevents silent breakage of call sites found only at runtime. Use the exact
 
 ## 📎 SEE ALSO
 
-- `RULES.md` — Coding rules and anti-patterns
-- `SECURITY.md` — Security safeguards
-- `TESTING_PRINCIPLES.md` — Testing checklist
-- `CONTEXT-ENGINEERING.md` — AI context efficiency
-- Per-repo `QUALITY-BASELINE.md` — Stack-specific gate commands
+- `docs/process/RULES.md` — Coding rules and anti-patterns
+- `docs/process/SECURITY.md` — Security safeguards
+- `docs/process/TESTING_PRINCIPLES.md` — Testing checklist
+- `docs/tools/CONTEXT-ENGINEERING.md` — AI context efficiency
+- Per-repo `docs/process/QUALITY-BASELINE.md` — Stack-specific gate commands

@@ -71,7 +71,7 @@ powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\openharness.ps1 -Prompt 
 
 - If `AI-HANDOFF.md` is stale, fix it before broad implementation.
 - If `INDEX.md` is missing, restore it before treating the repo as fully governed.
-- If `LAUNCH_CHECKLIST.md` still contains placeholders, repair launch focus first.
+- If `docs/business/LAUNCH_CHECKLIST.md` still contains placeholders, repair launch focus first.
 - If Graphify or code-review-graph is stale, refresh before architecture-heavy work.
 - If Roo bridge has no matching Qdrant collection, note whether the repo is on true Qdrant search or fallback mode before relying on semantic search.
 - If the slice has no validation command, the slice is not defined well enough yet.

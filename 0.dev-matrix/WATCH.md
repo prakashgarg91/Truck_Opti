@@ -22,9 +22,8 @@ It binds every repo's VS Code session to the sprint state, Roo bridge retrieval,
 | **Delivery Intelligence** | `.github/hooks/delivery-intelligence.json` | Session-start/stop reminders tied to the cross-repo delivery hub |
 | **OpenHarness Entry** | `0.dev-matrix/openharness.ps1` + `.openharness/skills/launch-revenue/SKILL.md` | Repo-local OpenHarness launcher with Copilot auth, `gpt-5.4`, `effort=max`, and earning-focused execution rules |
 | **Optional Terminal Agent** | User-scope `C:\Users\Prakash\.junie\junie-zai.ps1` + `~/.junie/mcp/mcp.json` | Hardened Junie entry using `glm-5.1` for second-opinion reviews, terminal summaries, and optional headless tasks |
-| **Browser Control (Optional)** | Per-repo `.<agent>/skills/kimi-webbridge/` skill + local daemon at `http://127.0.0.1:10086` paired with the user's Chrome/Edge extension | Real browser automation through the user's existing logged-in browser — interactive browsing, scraping, login-gated flows that Playwright cannot reach (see `KIMI-WEBBRIDGE.md`) |
-| **Web Testing (Optional)** | Per-repo `.<agent>/skills/webwright/` skill + local clone at `D:\Github\Webwright` | Microsoft Research terminal-native web-agent framework — LLM writes Playwright code, replays are deterministic scripts, SOTA on long-horizon web tasks (see `WEBWRIGHT.md`) |
-| **Shared Capabilities** | `D:\Github\Office_Scripts\Shared-scripts` | Cross-repo reusable building blocks such as Source Watch, provider fallbacks, and helper adapters without merging product repos |
+| **Browser Control (Optional)** | Per-repo `.<agent>/skills/kimi-webbridge/` skill + local daemon at `http://127.0.0.1:10086` paired with the user's Chrome/Edge extension | Real browser automation through the user's existing logged-in browser — interactive browsing, scraping, login-gated flows that Playwright cannot reach (see `docs/tools/KIMI-WEBBRIDGE.md`) |
+| **Web Testing (Optional)** | Per-repo `.<agent>/skills/webwright/` skill + local clone at `D:\Github\Webwright` | Microsoft Research terminal-native web-agent framework — LLM writes Playwright code, replays are deterministic scripts, SOTA on long-horizon web tasks (see `docs/tools/WEBWRIGHT.md`) || **Long-Term Memory (Optional)** | ai-memory Docker container on `http://127.0.0.1:49374/mcp` + per-repo `.vscode/mcp.json` entry | Cross-session memory shared across agent CLIs; auto-capture where lifecycle hooks exist. Call `memory_query`, `memory_briefing`, or `memory_explore` when resuming or searching past work (see `docs/tools/AI-MEMORY.md`) || **Shared Capabilities** | `D:\Github\Office_Scripts\Shared-scripts` | Cross-repo reusable building blocks such as Source Watch, provider fallbacks, and helper adapters without merging product repos |
 | **Close-Day Gate** | `0.dev-matrix/CLOSING-DAY-HOOK.md` | Enforces handoff discipline before each stop |
 | **Sprint Truth** | `SPRINT-APRIL-2026.md` + this STATE.md | Single source of what is active, blocked, done |
 | **Bridge Validation** | `tools/roo-index-smoke.mjs` | Verifies local MCP registration, collection detection, and search routing |
@@ -45,14 +44,14 @@ D:\Github\
 |   `-- mcp.json                     <- Root-level Roo bridge + Graphify + CRG MCP
 |
 +-- 0.dev-matrix\
-|   +-- WATCH.md                     <- (this file) System definition
-|   +-- START-DAY.md                 <- Canonical repo start-day workflow
-|   +-- END-DAY.md                   <- Canonical repo end-day workflow
-|   +-- ROO-INDEX-BRIDGE.md          <- Semantic code search usage guide
-|   +-- CODE-REVIEW-GRAPH.md         <- Impact-analysis usage guide
-|   +-- GRAPHIFY.md                  <- Structural graph usage guide
-|   +-- OPENHARNESS.md               <- Repo-local OpenHarness usage guide
-|   +-- JUNIE.md                     <- Optional Junie usage guide
+|   +-- docs/tools/WATCH.md                     <- (this file) System definition
+|   +-- docs/process/START-DAY.md                 <- Canonical repo start-day workflow
+|   +-- docs/process/END-DAY.md                   <- Canonical repo end-day workflow
+|   +-- docs/tools/ROO-INDEX-BRIDGE.md          <- Semantic code search usage guide
+|   +-- docs/tools/CODE-REVIEW-GRAPH.md         <- Impact-analysis usage guide
+|   +-- docs/tools/GRAPHIFY.md                  <- Structural graph usage guide
+|   +-- docs/factory/OPENHARNESS.md               <- Repo-local OpenHarness usage guide
+|   +-- docs/tools/JUNIE.md                     <- Optional Junie usage guide
 |   +-- run-openharness.ps1          <- Shared OpenHarness launcher (Copilot + GPT-5.4 + max effort)
 |   +-- install-openharness-project-template.ps1 <- Rolls repo-local OpenHarness launcher + skill
 |   +-- update-mcp-configs.ps1       <- Rolls canonical Roo + Graphify + CRG MCP defaults
@@ -60,12 +59,12 @@ D:\Github\
 |   +-- AI-HANDOFF.md                <- Sprint-level handoff for cross-session continuity
 |   +-- TASK.md                      <- Active sprint tasks across all repos
 |   +-- DISCUSSION.md                <- Sprint decisions log
-|   +-- LAUNCH_CHECKLIST.md          <- Cross-repo launch focus
-|   +-- CLOSING-DAY-HOOK.md          <- Meta close-day instructions
+|   +-- docs/business/LAUNCH_CHECKLIST.md          <- Cross-repo launch focus
+|   +-- docs/process/CLOSING-DAY-HOOK.md          <- Meta close-day instructions
 |   +-- watch-session-start.ps1      <- Script run at session start (surfaces context)
 |   +-- install-delivery-intelligence-hook.ps1 <- Repo-local bridge installer
-|   +-- DELIVERY-INTELLIGENCE.md     <- Hub integration and usage guide
-|   +-- AUTOBE-AGENT-PROMPT.md       <- AutoBE integration prompt
+|   +-- docs/tools/DELIVERY-INTELLIGENCE.md     <- Hub integration and usage guide
+|   +-- docs/factory/AUTOBE-AGENT-PROMPT.md       <- AutoBE integration prompt
 |   `-- SPRINT-APRIL-2026.md         <- April 2026 sprint plan
 |
 +-- Office_Scripts\
@@ -94,7 +93,7 @@ D:\Github\
 		+-- STATE.md                 <- Repo state
 		+-- AI-HANDOFF.md            <- Repo handoff
 		+-- openharness.ps1          <- Repo-local OpenHarness entrypoint
-		`-- CLOSING-DAY-HOOK.md      <- Repo close-day trigger
+		`-- docs/process/CLOSING-DAY-HOOK.md      <- Repo close-day trigger
 ```
 
 ## Shared Capability Home
@@ -134,13 +133,13 @@ The first canonical shared capability is `Source Watch`. Its job is to emit norm
 
 ## Session Start Protocol
 
-See `START-DAY.md` for the repo-local operating version of this checklist.
+See `docs/process/START-DAY.md` for the repo-local operating version of this checklist.
 
 Every AI session in any D:\Github repo should:
 
 1. **Read this repo's `AI-HANDOFF.md`** - find the latest entry, know the exact resume point
 2. **Read `STATE.md`** - check for CRITICAL ALERTS and active blockers
-3. **Read repo-local portfolio rules when they exist** - for example `FRAME-PORTFOLIO-RULES.md`; understand priority without leaving the repo sandbox
+3. **Read repo-local portfolio rules when they exist** - for example `FRAME-PORTFOLIO-docs/process/RULES.md`; understand priority without leaving the repo sandbox
 4. **Check git status** - confirm clean tree before major work
 5. **`code-review-graph update`** - incremental graph refresh (auto-runs in `watch-session-start.ps1`)
 6. **If `resume-work.ps1` exists** - run it: `powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\resume-work.ps1`
@@ -151,7 +150,7 @@ For multi-repo work inside opencode, stay on repo-local truth files unless the u
 
 ## OpenHarness Standard Entry
 
-See `OPENHARNESS.md` for the focused launcher and prompt guide.
+See `docs/factory/OPENHARNESS.md` for the focused launcher and prompt guide.
 
 Use OpenHarness as the default repo harness when you want agentic execution with the same portfolio rules:
 
@@ -172,7 +171,7 @@ The launcher runs `watch-session-start.ps1` first, then starts OpenHarness with 
 
 ## Junie Optional Entry
 
-See `JUNIE.md` for setup details, use cases, and repo-local policy.
+See `docs/tools/JUNIE.md` for setup details, use cases, and repo-local policy.
 
 Junie is supported in this dev-matrix as an **optional secondary terminal agent**. It is useful for second-opinion reviews, prompt-driven repo triage, and optional headless tasks, but it is not the default editing surface.
 
@@ -198,7 +197,7 @@ Policy:
 
 ## Kimi WebBridge Optional Entry
 
-See `KIMI-WEBBRIDGE.md` for setup, health check, daemon usage, and per-repo rollout.
+See `docs/tools/KIMI-WEBBRIDGE.md` for setup, health check, daemon usage, and per-repo rollout.
 
 Kimi WebBridge is supported in this dev-matrix as an **optional browser-control layer** that lets AI agents drive the user's real Chrome or Edge through Chrome DevTools Protocol — including login sessions that cloud-based browser agents cannot see.
 
@@ -220,7 +219,7 @@ Policy:
 
 ## Microsoft Webwright Optional Entry
 
-See `WEBWRIGHT.md` for setup, backend configuration, trajectory dashboard, and Webwright vs Kimi WebBridge guidance.
+See `docs/tools/WEBWRIGHT.md` for setup, backend configuration, trajectory dashboard, and Webwright vs Kimi WebBridge guidance.
 
 Webwright is supported in this dev-matrix as an **optional web-testing layer** that gives the AI in any repo a terminal-native browser-agent framework: the LLM writes Playwright code, the script is the artifact, and re-runs are deterministic.
 
@@ -243,7 +242,7 @@ Policy:
 
 ## code-review-graph Daily Workflow
 
-See `CODE-REVIEW-GRAPH.md` for the focused daily workflow and MCP usage pattern.
+See `docs/tools/CODE-REVIEW-GRAPH.md` for the focused daily workflow and MCP usage pattern.
 
 ```powershell
 # One-time: build graph for a repo (already done for all repos)
@@ -308,7 +307,7 @@ See `0.dev-matrix/DELIVERY-INTELLIGENCE.md` for the central hub workflow.
 
 ## Roo Bridge Integration
 
-See `ROO-INDEX-BRIDGE.md` for the focused MCP usage and health-check guide.
+See `docs/tools/ROO-INDEX-BRIDGE.md` for the focused MCP usage and health-check guide.
 
 Direct Qdrant MCP is retired from the default WATCH retrieval path. Use `roo-code-index-bridge` for semantic discovery in every repo.
 
@@ -346,11 +345,11 @@ Use only the exact MCP tool names listed above. Do not invent shortened, legacy,
 
 ## Close-Day Protocol (every session ending)
 
-See `END-DAY.md` for the repo-local close-day operating guide.
+See `docs/process/END-DAY.md` for the repo-local close-day operating guide.
 
 1. Run `npm run close-day` (or `powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\close-day.ps1`)
 2. Update `AI-HANDOFF.md` with: Changed, Verified, Operational proof, Continue from, Next step, Blockers
-3. Verify `LAUNCH_CHECKLIST.md` has current focus fields filled
+3. Verify `docs/business/LAUNCH_CHECKLIST.md` has current focus fields filled
 4. Check `git status` is clean before stopping
 
 ---

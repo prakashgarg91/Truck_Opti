@@ -1,7 +1,7 @@
 # 📜 RULES — Universal Dev Standards
 > **Applies to every repo in D:\Github without exception.**
-> Per-repo RULES.md adds stack-specific rules on top of this baseline.
-> Security rules are in SECURITY.md. Testing rules are in TESTING_PRINCIPLES.md.
+> Per-repo docs/process/RULES.md adds stack-specific rules on top of this baseline.
+> Security rules are in docs/process/SECURITY.md. Testing rules are in docs/process/TESTING_PRINCIPLES.md.
 
 ---
 
@@ -18,7 +18,7 @@ If no `launch-check` script exists, at minimum run lint + type-check + tests.
 ### 2. Never Mark a Task Done Without Testing the User Flow
 Code that compiles is NOT done.
 The button/endpoint/function must work end-to-end and produce the correct outcome.
-See `TESTING_PRINCIPLES.md` for the full mandatory checklist.
+See `docs/process/TESTING_PRINCIPLES.md` for the full mandatory checklist.
 
 ### 3. Register in STATE.md and Post a Summary Message
 - Before starting: add yourself to `## 🤖 ACTIVE AGENTS` in the repo's STATE.md or TASK.md.
@@ -26,7 +26,7 @@ See `TESTING_PRINCIPLES.md` for the full mandatory checklist.
 - After a session: update `AI-HANDOFF.md` so the next session resumes from an exact checkpoint.
 
 ### 4. Security Checklist Before Any Code Generation
-Run through `SECURITY.md §CHECKLIST` before writing code that touches:
+Run through `docs/process/SECURITY.md §CHECKLIST` before writing code that touches:
 auth, DB access, payments, file uploads, HTTP redirects, env vars, or secrets.
 
 ### 5. No TODO Comments in Shipped Code
@@ -162,10 +162,10 @@ Keep product repos separate. Share capabilities through a stable shared folder, 
 
 | File | Purpose |
 |------|---------|
-| `SECURITY.md` | Security safeguards & pre-commit checks |
-| `TESTING_PRINCIPLES.md` | Mandatory DoD checklist for every feature |
-| `QUALITY-BASELINE.md` | Definition of Done + evidence requirements |
-| `CONTEXT-ENGINEERING.md` | How to keep AI context accurate and efficient |
-| `PATTERNS.md` | Approved implementation patterns |
-| `TREE-HYGIENE.md` | Repo cleanliness standard |
-| `JUNIE.md` | Junie role, use cases, setup, and repo-local `.junie` policy |
+| `docs/process/SECURITY.md` | Security safeguards & pre-commit checks |
+| `docs/process/TESTING_PRINCIPLES.md` | Mandatory DoD checklist for every feature |
+| `docs/process/QUALITY-BASELINE.md` | Definition of Done + evidence requirements |
+| `docs/tools/CONTEXT-ENGINEERING.md` | How to keep AI context accurate and efficient |
+| `docs/process/PATTERNS.md` | Approved implementation patterns |
+| `docs/process/TREE-HYGIENE.md` | Repo cleanliness standard |
+| `docs/tools/JUNIE.md` | Junie role, use cases, setup, and repo-local `.junie` policy |

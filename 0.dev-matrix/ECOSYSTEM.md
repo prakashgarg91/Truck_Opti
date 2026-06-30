@@ -121,6 +121,6 @@ D:\Github\ (the empire)
 
 ## 📎 SEE ALSO
 
-- `D:\Github\0.dev-matrix\WATCH.md` — Session start protocol + full system architecture
+- `D:\Github\0.dev-matrix\docs\tools\WATCH.md` — Session start protocol + full system architecture
 - `D:\Github\0.dev-matrix\STATE.md` — Current sprint state + all repo statuses
-- Per-repo `ECOSYSTEM.md` — Deep context for individual repos
+- Per-repo `docs/business/ECOSYSTEM.md` — Deep context for individual repos
