@@ -28,6 +28,15 @@ Update protocol:
 
 ## Handoff Log
 
+### 2026-07-03 (Copilot — dependency CVE cleanup: launch-check restored 18/18 PASS)
+
+- Changed: Cleared all 5 dependency audit gates that were failing since the 2026-06-30 sync. Frontend `package.json` overrides bumped to `dompurify>=3.4.11`, `ws>=8.20.2`, added `form-data>=4.0.6`. `apps/web/package.json` overrides bumped to `ws>=8.20.2`, `js-yaml>=4.1.2`, `@babel/core>=7.29.1`. `apps/web/requirements.txt` direct bumps: `joserfc 1.6.5->1.6.8` (cleared CVE-2026-48990 + CVE-2026-49852), `cryptography 46.0.7->48.0.1` (GHSA-537c-gmf6-5ccf), `bleach 6.1.0->6.4.0` (GHSA-gj48-438w-jh9v + GHSA-8rfp-98v4-mmr6), `ujson 5.12.1->5.13.0` (CVE-2026-54911), `python-socketio 5.14.0->5.16.2` (CVE-2026-48804), `flask-socketio 5.3.5->5.5.1`. STATE.md updated with today's evidence.
+- Verified: `npm run launch-check` 18/18 PASS (frontend build 7.84s, root+frontend+apps/web audits 0 vulns, pip-audit 0 known vulns, glue check, error scan, tree hygiene all green). `cd frontend && npm run test:unit` PASS 22/22. Key `apps/web` pytest PASS 73 (test_referral + test_rate_estimate + test_carbon_estimator + test_authentication_middleware + test_api_v1_auth_guards + test_drill_down_api). Working tree clean, commit `b8659af7`.
+- Operational proof: All audit commands now return "No known vulnerabilities found" / "0 vulnerabilities". Launch-check exit code 0 with printed `RESULT: ALL GATES PASSED (18/18)`.
+- Continue from: launch readiness restored on `main`. Next blockers are owner-side only (no AI-executable launch items left).
+- Next step: push `b8659af7` to origin (done after handoff), then decide whether to resolve `copilot/demo-accounts-and-audit-fix` conflicts or close out the launch slice and pivot to Android roadmap / next product slice. Live Heroku deploy is NOT yet redeployed with these security bumps — owner should `git push heroku main` to land the bumps in production.
+- Blockers: Heroku redeploy with new deps is owner action (`git push heroku main`). Original owner-side launch blockers unchanged: live Razorpay prod keys, Google OAuth smoke test, Twilio SMS, Supabase PITR/migrations, Sentry DSN, 4-digit OTP migration apply on non-prod Supabase first.
+
 ### 2026-06-30 (Copilot — cloud + local codebase sync: main now merged with origin/main, cursor security fixes, ultra/referral, and local WIP features; pushed to origin)
 
 - Changed: Synced local `main` with `origin/main` (2 commits: subagent CLI + skill doc). Merged 4 remote cursor security branches (`critical-bug-identification-03a8`, `critical-bug-investigation-3c93/8b28/b163`) restoring agency-portal auth checks and closing fleet cross-agency/payout bypasses. Merged local `ultra/referral` (referral program C-02). Merged local WIP branch with `rate_estimate`, `carbon_estimator`, `emissions_ui`, dev-matrix doc updates, and `.claude` ultra config. Fixed a merge-induced duplicate `referral_bp` registration in `apps/web/app/api/v1/__init__.py`. Pushed `main` to origin (`5eb047b7..9f1f0189`). `copilot/demo-accounts-and-audit-fix` was **not** merged due to conflicts in dev-matrix docs and `supabase/functions/agency-portal-jobs/index.ts`.
