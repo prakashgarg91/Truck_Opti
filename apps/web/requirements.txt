@@ -13,13 +13,13 @@ psycopg2-binary==2.9.9; python_version < "3.13"
 pymysql==1.1.1  # MySQL adapter (optional)
 
 # Authentication & Security
-joserfc==1.6.5
+joserfc==1.6.8
 bcrypt==4.1.2
-cryptography==46.0.7
+cryptography==48.0.1
 python-dotenv==1.2.2
 
 # Input Validation & Sanitization
-bleach==6.1.0
+bleach==6.4.0
 email-validator==2.1.0
 
 # Caching
@@ -94,14 +94,14 @@ faker==21.0.0  # For testing/seeding
 py3dbp==1.1.2
 
 # Performance
-ujson==5.12.1  # Faster JSON
+ujson==5.13.0  # Faster JSON
 
 # Monitoring
 prometheus-flask-exporter==0.23.0
 
 # WebSockets (if needed)
-flask-socketio==5.3.5
-python-socketio==5.14.0
+flask-socketio==5.5.1
+python-socketio==5.16.2
 
 # Task Scheduling
 APScheduler==3.10.4
