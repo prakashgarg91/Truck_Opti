@@ -158,7 +158,7 @@ export default function SignupPage() {
           Create Your Account
         </h2>
         <p className="text-slate-500 dark:text-slate-400">
-          Join India's smartest logistics platform 🇮🇳
+          Plan, dispatch, and track logistics workflows in one place 🇮🇳
         </p>
       </div>
 

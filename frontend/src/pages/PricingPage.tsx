@@ -465,9 +465,13 @@ export default function PricingPage() {
 
             {/* Mobile dots */}
             <div className="lg:hidden flex justify-center gap-2 mt-2 mb-6">
-              {tiers.map((_, i) => (
+              {tiers.map((tier, i) => (
                 <button
-                  key={i} onClick={() => scrollToCard(i)}
+                  key={tier.id}
+                  type="button"
+                  aria-label={`View ${tier.name} plan`}
+                  aria-current={i === activeIdx ? 'true' : undefined}
+                  onClick={() => scrollToCard(i)}
                   className={`rounded-full transition-all duration-200 ${i === activeIdx ? 'w-6 h-2.5 bg-blue-500' : 'w-2.5 h-2.5 bg-slate-300 dark:bg-slate-600'}`}
                 />
               ))}

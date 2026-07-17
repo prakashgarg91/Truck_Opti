@@ -187,6 +187,8 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 pt-4">
           <button
+            type="button"
+            aria-label="Go back"
             onClick={() => navigate(-1)}
             className="p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700"
           >
@@ -260,10 +262,11 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="contact-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               {'Full Name'} *
             </label>
             <input
+              id="contact-name"
               type="text"
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -275,10 +278,11 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="contact-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               {'Email'} *
             </label>
             <input
+              id="contact-email"
               type="email"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
@@ -290,10 +294,11 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
 
           {/* Phone */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="contact-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               {'Phone (optional)'}
             </label>
             <input
+              id="contact-phone"
               type="tel"
               value={form.phone}
               onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
@@ -304,10 +309,11 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
 
           {/* Subject */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="contact-subject" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               {'Subject'}
             </label>
             <select
+              id="contact-subject"
               value={form.subject}
               onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -320,10 +326,11 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
 
           {/* Message */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="contact-message" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               {'Message'} *
             </label>
             <textarea
+              id="contact-message"
               rows={4}
               value={form.message}
               onChange={e => setForm(f => ({ ...f, message: e.target.value }))}

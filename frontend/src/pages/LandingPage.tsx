@@ -32,7 +32,7 @@ export default function LandingPage() {
 
   const t = {
     heroBadge: 'Built for high-volume Indian logistics teams',
-    heroTitle: "India's Smartest Truck Booking Platform",
+    heroTitle: 'Smart Logistics Control for Indian Fleets',
     heroSubtitle: 'AI-powered 3D packing, route optimization, live GPS tracking, and agency dispatch for India logistics.',
     heroPanelEyebrow: 'Operator Snapshot',
     heroPanelTitle: 'Plan loads, dispatch trucks, and track movement without hopping between tools.',
@@ -43,7 +43,7 @@ export default function LandingPage() {
     featuresEyebrow: 'Platform',
     featuresIntro: 'From pre-dispatch planning to live execution, every step is designed to reduce dead space, idle time, and manual follow-up.',
     ctaTitle: 'Ready to Transform Your Logistics?',
-    ctaSubtitle: 'Join thousands of businesses already using TruckOpti.',
+    ctaSubtitle: 'Bring packing, dispatch, and trip visibility into one operating workflow.',
     ctaEyebrow: 'Launch Faster',
     contact: 'Contact Us',
     whyChoose: 'Why Choose TruckOpti',
@@ -53,16 +53,16 @@ export default function LandingPage() {
 
   const heroStats = [
     {
-      value: '30%',
-      label: 'Fuel spend down',
+      value: 'Toll-aware',
+      label: 'Route planning',
     },
     {
-      value: '50%',
-      label: 'Faster bay planning',
+      value: '3D',
+      label: 'Load planning',
     },
     {
-      value: '24/7',
-      label: 'Ops visibility',
+      value: 'Live',
+      label: 'Trip visibility',
     },
   ]
 
@@ -98,16 +98,16 @@ export default function LandingPage() {
 
   const outcomeStats = [
     {
-      value: '30%',
-      label: 'Fuel Cost Savings',
+      value: 'Plan',
+      label: 'Before Loading',
     },
     {
-      value: '50%',
-      label: 'Faster Packing',
+      value: 'Dispatch',
+      label: 'In One Flow',
     },
     {
-      value: '100%',
-      label: 'Real-time Tracking',
+      value: 'Track',
+      label: 'During Trips',
     },
   ]
 

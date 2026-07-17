@@ -724,7 +724,7 @@ export default function LoginPage() {
           </div>
           <div className="flex items-center gap-1 text-xs">
             <Truck className="w-4 h-4" />
-            <span>1000+ Trucks</span>
+            <span>Fleet Workflows</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <span>🇮🇳</span>
