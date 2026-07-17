@@ -65,7 +65,13 @@ const normalizeInquiry = (payload: ContactInquiryPayload): ContactInquiryPayload
 
 export const getStoredContactDraft = (): ContactInquiryPayload | null => {
   const draft = readStoredInquiry<ContactInquiryPayload>(CONTACT_DRAFT_KEY)
-  return draft ? normalizeInquiry(draft) : null
+  if (!draft) {
+    return null
+  }
+
+  const normalized = normalizeInquiry(draft)
+  const hasContent = Object.values(normalized).some((value) => value.trim().length > 0)
+  return hasContent ? normalized : null
 }
 
 export const getPendingContactInquiry = (): StoredContactInquiry | null => {
