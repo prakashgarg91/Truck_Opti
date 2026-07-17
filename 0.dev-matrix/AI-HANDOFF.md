@@ -28,7 +28,25 @@ Update protocol:
 
 ## Handoff Log
 
-### 2026-07-03 (Copilot — branch gap audit + Heroku v96 redeploy with security bumps)
+### 2026-07-17 (Codex + AI Work Factory - local hardening closeout)
+
+- Changed: Used GLM 4.5 Air for discovery and isolated GLM 4.7 builders for implementation/reconciliation; committed packing, public-smoke, subscription, PhonePe, contact-workflow, and public UI/accessibility improvements through `f71b9a9b`. Hardened `D:\Github\ai-work-factory` with review-handoff and bounded dirty-file seeding commits `fdd7da4` and `0e7e1d6`.
+- Verified: frontend production build PASS (3014 modules); focused subscription/PhonePe tests PASS 71/71; contact tests PASS 32/32; packing regression PASS 18/18; Chrome local mobile/public route review passed `/`, `/login`, `/signup`, `/pricing`, `/contact`, driver/agency registration gates, and real 404 handling. Full pending service suite is not green: 235 passed, 65 failed across four unintegrated Supabase suites.
+- Operational proof: no paid AI workers or local preview servers remain running. Agency portal worker produced a 56/56 passing isolated candidate; admin worker reached its 40-turn cap with an unreviewed candidate. Both remain preserved in AI Work Factory evidence/worktrees, not merged.
+- Continue from: independently review and integrate `builder-20260717032527-81c044`, then reconcile `builder-20260717032521-564665`; run GLM 4.7 workers for `agencySupabaseApi.test.ts` and `customerSupabaseApi.test.ts` until the full 300-test suite is green.
+- Next step: make AI Work Factory novice-ready with one command/status screen for choose-project, run-cheap-workers, review, resume, and stop; add installer/health checks for Codex, Claude Code, Zcode, and OpenCode while retaining worktree isolation and human-controlled merge/deploy.
+- Blockers: configured Supabase host `jbxncejtcbpcronndqlx.supabase.co` is DNS NXDOMAIN, so live auth/data/payment cannot be claimed; local certificate-chain errors block Heroku production-config and npm-audit proof; automated Playwright binaries are absent. Existing local MCP/governance/tool files and four broad service tests remain intentionally uncommitted.
+
+### 2026-07-13 (Codex - launch audit and Serdroid backend research)
+
+- Changed: Saved backend-option research at `D:\Github\Serdroid\docs\BACKEND-OPTIONS.md`; PocketBase remains the Serdroid default and is not suitable for migrating TruckOpti. Recorded the verified production blocker: deployed TruckOpti bundle points to `jbxncejtcbpcronndqlx.supabase.co`.
+- Verified: Frontend build PASS (6.82s); unit tests PASS (22/22); all three npm audits PASS with `NODE_OPTIONS=--use-system-ca`; direct HTTPS lookup plus Google and Cloudflare DNS-over-HTTPS return NXDOMAIN for the configured Supabase host. Public SPA routes return HTTP 200 only because they are static. `npm run close-day` ran on 2026-07-13 and recorded 2 pass / 1 fail before its Git-dependent status gate aborted because `git` is unavailable on PATH.
+- Operational proof: auth, database-backed workflows, and payment verification cannot be regarded as live while the deployed Supabase hostname is NXDOMAIN.
+- Continue from: recover or replace the production Supabase project/endpoint, update deployed environment/build configuration, then prove login, protected data, and controlled payment/webhook/subscription activation.
+- Next step: inspect the Supabase dashboard for project ref `jbxncejtcbpcronndqlx`; if unrecoverable, create a replacement project and perform a deliberate migration/secret/deploy cutover.
+- Blockers: production Supabase endpoint is unavailable; current workstation also lacks Playwright browser binaries, Git on PATH, and a noninteractive Heroku login for full live proof.
+
+### 2026-07-03 (Copilot - branch gap audit + Heroku v96 redeploy with security bumps)
 
 - Changed: Audited `copilot/demo-accounts-and-audit-fix` against current `main`. Verdict: **branch fully superseded — no merge needed**. Every meaningful code artifact on the branch is already on `main` (and improved): the 4-digit OTP contract + webwright smoke + Razorpay sanitization came in via the 2026-06-09/10 Heroku v92 + TO-107/TO-108 merges; the agency-portal security refactors (portal-auth.ts 237 lines vs branch 166, agency-portal-fleet/jobs/rates/billing/dashboard/drivers) came in via the 2026-06-30 cursor security branch merges, which refactored inline checks into shared `assertApprovedAgency` / `assertDriverAvailableForAgencyTruck` helpers; both `supabase/migrations/20260531110000_enforce_agency_status_writes.sql` and `20260606110000_fix_agency_driver_security_guards.sql` are present on main. The only branch-unique deltas are stale `0.dev-matrix/*.md` doc edits and `outputs/default/script.py` scratch content — not worth merging. Then pushed `main` to Heroku: **v96 released** from `87e0bad8`, slug 145.5M, frontend build 12.14s, PWA precache 79 entries (1638.50 KiB), `found 0 vulnerabilities` in the Heroku build, `sw-v2.js` regenerated.
 - Verified: `git push heroku main` → `Released v96` + `Verifying deploy... done`. Live site smoke: `https://www.truckopti.in/` → 200, `/login` → 200, `/tracking` → 200. `heroku/main` now at `87e0bad8` (was `2ae23f58`, 28 commits behind). Heroku CLI authed as `reach.prakashgarg@gmail.com`.

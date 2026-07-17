@@ -1,51 +1,41 @@
 # Last Closeout
 
-- Time: 2026-06-30 08:41:24
-- Launch verification mode: background launch-check started from resume-work
-- Git status: clean
-- Log: 0.dev-matrix/closeout-logs/closeout-2026-06-30_084123.log
+- Time: 2026-07-17 09:05:40 IST
+- Mode: AI Work Factory local hardening and evidence closeout
+- Current product HEAD: `f71b9a9b fix(ui): improve public trust and accessibility`
+- AI Work Factory HEAD: `0e7e1d6 feat: seed bounded dirty work into builders`
+- Resume command: `powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\resume-work.ps1`
 
-## AI Handoff
-- Latest handoff date: 2026-06-30
-- Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1
-- Operational proof: `git push origin main` completed successfully. GitHub now reports 20 open Dependabot alerts (4 high, 10 moderate, 6 low). `git log --oneline --graph` shows clean merge topology; working tree clean.
-- Continue from: synced `main` is on origin. Remaining unmerged local branch `copilot/demo-accounts-and-audit-fix` requires manual conflict resolution before it can be integrated.
-- Next step: Decide whether to resolve `copilot/demo-accounts-and-audit-fix` conflicts manually or treat that branch as superseded. Then run `npm run launch-check` after addressing the dependency audit failures if launch readiness is required.
-- Blockers: `npm run launch-check` now fails 3 audit gates (frontend npm audit, apps/web npm audit, pip-audit) due to newly disclosed CVEs in dompurify/form-data/ws/@babel/core/js-yaml/vite and Python joserfc/cryptography/bleach/ujson/python-socketio. These need version bumps. Owner-side blockers unchanged: Razorpay prod keys, Google OAuth, Twilio, Supabase PITR/migrations, Sentry DSN.
+## Verified Today
 
-## Project Progress
-- Date: 2026-06-30
-- Working since: 2025-08-02
-- Working days: 332
-- Completion: 48% (30/63 tasks)
-- Pending days at current pace: 330
-- Next: TO-107 - Restore five production SPA routes on truckopti.in (`/login`, `/signup`, `/forgot-password`, `/terms`, `/privacy` all 404 against the live host)
-- Next: TO-108 - Reconcile deployed login surface with the launch checklist (deployed `/login` only exposes Google OAuth, contradicts `LAUNCH_CHECKLIST.md` row 2.1)
-- Next: TO-109 - Apply and exercise the 4-digit `job_offer` OTP migration on a non-prod Supabase project
+- Frontend production build: PASS, 3014 modules transformed.
+- Packing regression: PASS, 18/18.
+- Subscription and PhonePe focused tests: PASS, 71/71.
+- Contact workflow tests: PASS, 32/32.
+- Local Chrome public/mobile smoke: PASS for landing, login, signup, pricing, contact, driver and agency registration gates, plus the real 404 page.
+- Full pending frontend service suite: NOT GREEN, 235 passed / 65 failed / 300 total.
+- AI Work Factory unit tests: PASS, 13/13 after bounded seed-path support.
 
-## Launch Focus
-- Product outcome: launch TruckOpti as a sellable truck-loading optimization platform for dealer distributors and logistics teams.
-- Current launch slice: hold the live payment proof and stale-client recovery proof as the validated sellable launch slice, then shift AI work back to post-launch hardening instead of more launch-proof discovery.
-- Current blocker: no open blocker remains inside the current payment/stale-client launch-proof lane. Production Razorpay is live, `npm run test:prod-config` passes `6/6`, the chairman completed a real payment, fresh `npm run test:public-smoke` passes `12/12`, and both `sw-v2.js` plus the root document serve `Cache-Control: no-cache, no-store, must-revalidate`. Deferred follow-up remains AWS SES invoice email setup, the accepted temporary backup/PITR posture, and broader non-launch engineering gaps (`GAP-01` and `GAP-02`).
-- Next earning step: use the captured proof to onboard the first paying logistics customers, keep hosted invoice PDFs live, and reopen billing-email automation only when AWS SES setup is worth doing.
+## Factory Queue
 
-## Launch Verification
-- State: failed
-- Summary: launch-check failed; see log
-- Log: 0.dev-matrix/test-reports/launch-check-20260607_172350.log
+- Ready for independent review: `builder-20260717032527-81c044` (agency portal candidate, worker reports 56/56 focused tests).
+- Needs independent review after max-turn exit: `builder-20260717032521-564665` (admin candidate).
+- Next isolated GLM 4.7 tasks: `agencySupabaseApi.test.ts`, then `customerSupabaseApi.test.ts`.
+- No workers or preview servers were left running.
 
-## Results
-- [PASS] runtime close docs - state/task/discussion/hook/handoff present
-- [FAIL] background launch-check - latest background launch-check failed - launch-check failed; see log
-- [PASS] close-day handoff mode - close-day reuses background launch-check state and skips heavy reruns so handoff stays fast
-- [PASS] status update discipline - repo clean
-- [PASS] working tree cleanliness - repo clean before closeout report
-- [PASS] documentation placement - no newly created docs pending placement review
-- [PASS] documentation naming hygiene - no active docs use unstable duplicate-style names
-- [PASS] launch focus - launch checklist names product outcome/current launch slice/current blocker/next earning step
-- [PASS] handoff continuity - latest entry is dated today and contains changed/verified/operational-proof/continue/next/blockers fields
-- [PASS] operational proof - latest entry records operational proof
+## External Blockers
 
-## Summary
-- Pass: 9
-- Fail: 1
+- `jbxncejtcbpcronndqlx.supabase.co` returns DNS NXDOMAIN; live authentication, data, and payment flows are therefore unproven.
+- Local certificate-chain errors (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`) block Heroku production-config and npm-audit proof; TLS verification was not disabled.
+- Automated Playwright browser binaries are absent. Chrome local inspection worked, but it is not a substitute for the automated release suite.
+
+## Next Session
+
+1. Independently review and integrate the two preserved GLM 4.7 candidates.
+2. Reconcile the remaining two broad Supabase suites until all 300 tests pass.
+3. Continue AI Work Factory productization for a non-coder: one command/status screen for project selection, cheap-worker execution, review, resume, and stop; cross-tool installer and health checks for Codex, Claude Code, Zcode, and OpenCode.
+4. Do not deploy or claim TruckOpti complete until the Supabase endpoint is recovered/replaced and live authenticated/payment proof passes.
+
+## Working Tree Note
+
+Local MCP/governance/tool configuration and four broad service test files remain intentionally uncommitted. They predate or extend beyond the verified commits and must be reconciled, not discarded blindly.
