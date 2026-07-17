@@ -11,9 +11,11 @@ Hard rules:
 - DO NOT mutate the live database.
 - Every step writes a screenshot under OUTPUT_DIR.
 - Every console.error and HTTP 4xx/5xx is recorded via Playwright listeners.
+- Pages with 404 in title or "page not found" in H1 are treated as hard failures.
 
 Usage:
     d:/Github/Truck_Opti/.venv/Scripts/python.exe scripts/webwright/full_app_smoke.py
+    SMOKE_BASE_URL=http://127.0.0.1:4173 d:/Github/Truck_Opti/.venv/Scripts/python.exe scripts/webwright/full_app_smoke.py
 """
 
 from __future__ import annotations
@@ -29,12 +31,15 @@ sys.path.insert(0, r"C:\Users\Prakash\AppData\Local\Temp\webwright\src")
 
 from webwright.environments import get_environment_class  # noqa: E402
 
-BASE_URL = "https://www.truckopti.in"
+BASE_URL = os.getenv("SMOKE_BASE_URL", "https://www.truckopti.in")
 OUTPUT_DIR = REPO_ROOT / "0.dev-matrix" / "test-reports" / "webwright-full-app-2026-06-01"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Listeners attached to the page once.
 _LISTENERS_INSTALLED = False
+
+# Module-level flag for hard 404 failures.
+had_hard_fail = False
 
 
 def _snippet(body: str) -> str:
@@ -215,6 +220,31 @@ def _google_body() -> str:
 """
 
 
+def _check_for_404_page(output: str):
+    """
+    Check if page output indicates a 404 error.
+    Returns (is_404, reason) where reason explains the failure.
+    """
+    title = ""
+    h1 = ""
+
+    for line in output.split('\n'):
+        if line.startswith('TITLE='):
+            title = line[6:].strip()
+        elif line.startswith('H1='):
+            h1 = line[3:].strip()
+
+    title_lower = title.lower()
+    h1_lower = h1.lower()
+
+    if "404" in title_lower or "not found" in title_lower:
+        return True, f"title='{title}'"
+    if "page not found" in h1_lower:
+        return True, f"h1 contains 'page not found'"
+
+    return False, ""
+
+
 def main() -> int:
     env_class = get_environment_class("local_browser")
     env = env_class(
@@ -253,6 +283,8 @@ _console_errors = []
 _network_errors = []
 """
     env.execute({"python_code": init_code})
+    global had_hard_fail
+    had_hard_fail = False
 
     for name, body in steps:
         # Substitute the report dir placeholder.
@@ -260,14 +292,31 @@ _network_errors = []
         result = env.execute({"python_code": resolved})
         output = (result.get("output") or "").strip()
         exc = (result.get("exception_info") or "").strip()
+
+        # Primary check: Playwright returncode/exception.
         status = "PASS" if result.get("returncode") == 0 and not exc else "FAIL"
-        results.append({
-            "step": name,
-            "status": status,
-            "output": output[-2500:],
-            "exception": exc[-1000:],
-        })
-        print(f"{name}: {status} (output_len={len(output)}, exc_len={len(exc)})")
+
+        # Secondary check: 404 page detection from title/H1.
+        is_404, reason = _check_for_404_page(output)
+        if is_404:
+            status = "FAIL"
+            had_hard_fail = True
+            results.append({
+                "step": name,
+                "status": status,
+                "output": output[-2500:],
+                "exception": exc[-1000:],
+                "hard_fail_reason": f"route 404: {reason}",
+            })
+            print(f"{name}: FAIL (route 404: {reason})")
+        else:
+            results.append({
+                "step": name,
+                "status": status,
+                "output": output[-2500:],
+                "exception": exc[-1000:],
+            })
+            print(f"{name}: {status} (output_len={len(output)}, exc_len={len(exc)})")
 
     # Read listener accumulators.
     accumulators = env.execute({"python_code": """
@@ -294,7 +343,7 @@ print("NETWORK_ERRORS=" + str(_network_errors))
     for s in results:
         print(f"{s['step']}: {s['status']}")
     print(accum_out)
-    return 0
+    return 1 if had_hard_fail else 0
 
 
 if __name__ == "__main__":
