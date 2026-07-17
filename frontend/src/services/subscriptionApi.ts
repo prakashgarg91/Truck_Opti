@@ -346,6 +346,7 @@ export const subscriptionHelpers = {
   // Get usage percentage
   getUsagePercentage(used: number, limit: number): number {
     if (limit === -1) return 0; // Unlimited
+    if (limit <= 0) return 0; // Zero or non-positive finite limits
     return Math.min(100, Math.round((used / limit) * 100));
   }
 };
