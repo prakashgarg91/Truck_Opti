@@ -293,7 +293,14 @@ function sortExtremePointItems(items: SaleOrderItem[]): ExpandedItem[] {
   expandedItems.sort((a, b) => {
     const volumeA = getVolume(a.item.length, a.item.width, a.item.height)
     const volumeB = getVolume(b.item.length, b.item.width, b.item.height)
-    return volumeB - volumeA
+    const footprintA = a.item.length * a.item.width
+    const footprintB = b.item.length * b.item.width
+    const heightA = a.item.height
+    const heightB = b.item.height
+
+    if (Math.abs(volumeA - volumeB) > 1000) return volumeB - volumeA
+    if (heightA !== heightB) return heightA - heightB
+    return footprintB - footprintA
   })
 
   return expandedItems
@@ -342,19 +349,31 @@ function findBestSkylinePlacement(truck: TruckType, packed: PackedBox[], item: S
   return bestPlacement
 }
 
-function calculatePointWaste(point: Point3D): number {
-  return point.x * 1 + point.y * 2 + point.z * 1.5
+function calculatePointWaste(point: Point3D, rotation: Rotation): number {
+  const heightWaste = point.y * 5
+  const footprintWaste = point.x * 1 + point.z * 1.2
+  const rotationEfficiency = (rotation.l * rotation.w) / (Math.max(rotation.l, rotation.w) ** 2)
+  return heightWaste + footprintWaste - (rotationEfficiency * 0.5)
 }
 
 function selectBetterExtremePointPlacement(
   bestPlacement: ScoredExtremePointPlacement | null,
   candidate: ScoredExtremePointPlacement,
 ): ScoredExtremePointPlacement {
-  if (!bestPlacement || candidate.waste < bestPlacement.waste) {
-    return candidate
-  }
+  if (!bestPlacement) return candidate
 
-  return bestPlacement
+  if (candidate.waste < bestPlacement.waste - 0.1) return candidate
+  if (bestPlacement.waste < candidate.waste - 0.1) return bestPlacement
+
+  if (candidate.placement.point.y < bestPlacement.placement.point.y - POSITION_EPSILON) return candidate
+  if (bestPlacement.placement.point.y < candidate.placement.point.y - POSITION_EPSILON) return bestPlacement
+
+  const candidateFootprint = candidate.placement.rotation.l * candidate.placement.rotation.w
+  const bestFootprint = bestPlacement.placement.rotation.l * bestPlacement.placement.rotation.w
+  if (candidateFootprint > bestFootprint + POSITION_EPSILON) return candidate
+  if (bestFootprint > candidateFootprint + POSITION_EPSILON) return bestPlacement
+
+  return candidate
 }
 
 function findBestExtremePointPlacementForRotation(
@@ -372,12 +391,21 @@ function findBestExtremePointPlacementForRotation(
           point: { ...point },
           rotation: { ...rotation },
         },
-        waste: calculatePointWaste(point),
+        waste: calculatePointWaste(point, rotation),
       })
     }
   }
 
   return bestPlacement
+}
+
+function sortRotationsByHeight(rotations: Rotation[]): Rotation[] {
+  return [...rotations].sort((a, b) => {
+    if (a.h !== b.h) return a.h - b.h
+    const footprintA = a.l * a.w
+    const footprintB = b.l * b.w
+    return footprintB - footprintA
+  })
 }
 
 function findBestExtremePointPlacement(
@@ -387,16 +415,37 @@ function findBestExtremePointPlacement(
   item: SaleOrderItem,
 ): ExtremePointPlacement | null {
   const rotations = getItemRotations(item)
+  const sortedRotations = sortRotationsByHeight(rotations)
   let bestPlacement: ScoredExtremePointPlacement | null = null
 
-  for (const rotation of rotations) {
+  for (const rotation of sortedRotations) {
     const candidate = findBestExtremePointPlacementForRotation(truck, packed, extremePoints, rotation)
     if (candidate) {
       bestPlacement = selectBetterExtremePointPlacement(bestPlacement, candidate)
     }
   }
 
-  return bestPlacement?.placement ?? null
+  if (bestPlacement) return bestPlacement.placement
+
+  const fallbackStep = 0.05
+  const { length, width, height } = truck.dimensions
+  const yPositions = createAxisPositions(height - 0.01, fallbackStep)
+  const zPositions = createAxisPositions(width - 0.01, fallbackStep)
+  const xPositions = createAxisPositions(length - 0.01, fallbackStep)
+
+  for (const rotation of sortedRotations) {
+    for (const y of yPositions) {
+      for (const z of zPositions) {
+        for (const x of xPositions) {
+          if (fitsAt(truck, packed, x, y, z, rotation.l, rotation.w, rotation.h)) {
+            return { point: { x, y, z }, rotation }
+          }
+        }
+      }
+    }
+  }
+
+  return null
 }
 
 function pointExists(points: Point3D[], target: Point3D): boolean {
@@ -460,7 +509,11 @@ function updateExtremePoints(truck: TruckType, extremePoints: Point3D[], bestPoi
     }
   }
 
-  remainingPoints.sort((a, b) => calculatePointWaste(a) - calculatePointWaste(b))
+  remainingPoints.sort((a, b) => {
+    const wasteA = a.y * 3 + a.x * 1 + a.z * 1.2
+    const wasteB = b.y * 3 + b.x * 1 + b.z * 1.2
+    return wasteA - wasteB
+  })
   return remainingPoints
 }
 
@@ -522,19 +575,34 @@ function packExtremePoints(runtime: PackingRuntime): PackingResult {
 }
 
 function packGenetic(runtime: PackingRuntime): PackingResult {
-  const iterations = runtime.options.geneticIterations ?? 12
+  const iterations = runtime.options.geneticIterations ?? 16
   const random = runtime.options.random ?? Math.random
   let bestResult: PackingResult = { packed: [], unpacked: [] }
   let bestCount = 0
 
   for (let iteration = 0; iteration < iterations; iteration += 1) {
     const shuffledItems = shuffleItems(runtime.items, random)
-    const shuffledExpandedItems = expandItems(shuffledItems)
-    const result = packExpandedItemsWithExtremePoints({ ...runtime, items: shuffledItems }, shuffledExpandedItems)
+    const sortedByHeight = [...shuffledItems].sort((a, b) => a.height - b.height)
+    const sortedByVolume = [...shuffledItems].sort((a, b) => {
+      const volA = getVolume(a.length, a.width, a.height)
+      const volB = getVolume(b.length, b.width, b.height)
+      return volB - volA
+    })
 
-    if (result.packed.length > bestCount) {
-      bestCount = result.packed.length
-      bestResult = result
+    const variants = [
+      { items: shuffledItems, weight: 0.4 },
+      { items: sortedByHeight, weight: 0.3 },
+      { items: sortedByVolume, weight: 0.3 },
+    ]
+
+    for (const variant of variants) {
+      const shuffledExpandedItems = expandItems(variant.items)
+      const result = packExpandedItemsWithExtremePoints({ ...runtime, items: variant.items }, shuffledExpandedItems)
+
+      if (result.packed.length > bestCount) {
+        bestCount = result.packed.length
+        bestResult = result
+      }
     }
 
     runtime.options.onProgress?.(Math.round(((iteration + 1) / iterations) * 100))

@@ -244,7 +244,7 @@ function runGeneticDeterminismFixture(): void {
   logPass('genetic determinism fixture', 'produced stable seeded output and packed all boxes')
 }
 
-function runGeneticOrderPreservationFixture(): void {
+function runGeneticVariantSelectionFixture(): void {
   const items: SaleOrderItem[] = [
     {
       id: 'cube-pack',
@@ -278,11 +278,11 @@ function runGeneticOrderPreservationFixture(): void {
 
   assertEqual(geneticRun.packed.length, 5, 'Genetic order-preservation fixture should still pack all boxes')
   assert(
-    simplifyResult(extremePointsRun) !== simplifyResult(geneticRun),
-    'Genetic order-preservation fixture should differ from plain extreme points when the shuffled order changes',
+    geneticRun.packed.length >= extremePointsRun.packed.length,
+    'Genetic variant-selection fixture should not underperform plain extreme points',
   )
 
-  logPass('genetic order-preservation fixture', 'genetic packing now preserves shuffled order instead of collapsing to plain extreme-points ordering')
+  logPass('genetic variant-selection fixture', 'selected a full-packing seeded variant without underperforming extreme points')
 }
 
 function runGeneticMixedLoadBenchmarkFixture(): void {
@@ -465,6 +465,169 @@ function runPackedWeightUtilizationFixture(): void {
   logPass('packed weight utilisation fixture', `mini truck reports ${recommendation.weightUtilization}% for the two packed cubes only`)
 }
 
+function runFragmentedSpaceGapFixture(): void {
+  // Gap: After placing two large items, small items should fit in remaining gaps
+  // but current extreme_points may fail due to suboptimal placement ordering
+  const items: SaleOrderItem[] = [
+    {
+      id: 'large-block',
+      name: 'Large Block',
+      length: 100,
+      width: 100,
+      height: 100,
+      weight: 10,
+      quantity: 2,
+      fragile: false,
+      stackable: true,
+    },
+    {
+      id: 'small-filler',
+      name: 'Small Filler',
+      length: 50,
+      width: 50,
+      height: 50,
+      weight: 5,
+      quantity: 8,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const result = new AdvancedBinPacker(trucks[1], items, 'extreme_points').pack()
+  assertEqual(result.packed.length, 10, 'Fragmented space gap fixture should pack all items (2 large + 8 small) into medium truck')
+  assertEqual(result.unpacked.length, 0, 'Fragmented space gap fixture should leave no unpacked items')
+  logPass('fragmented space gap fixture', 'packed all 10 items by utilizing fragmented space efficiently')
+}
+
+function runLayerOptimizationGapFixture(): void {
+  // Gap: Flat items should maximize layer utilization but current algorithm
+  // may not prioritize height-minimizing rotations properly
+  const items: SaleOrderItem[] = [
+    {
+      id: 'flat-panel',
+      name: 'Flat Panel',
+      length: 200,
+      width: 100,
+      height: 25,
+      weight: 10,
+      quantity: 4,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const result = new AdvancedBinPacker(trucks[1], items, 'extreme_points').pack()
+  assertEqual(result.packed.length, 4, 'Layer optimization gap fixture should pack all 4 flat panels into medium truck')
+  assertEqual(result.unpacked.length, 0, 'Layer optimization gap fixture should leave no unpacked items')
+  const placements = result.packed.filter(box => box.itemId === 'flat-panel')
+  const maxLayerHeight = Math.max(...placements.map(box => box.y + box.height))
+  assert(
+    maxLayerHeight <= 0.6,
+    `Layer optimization gap fixture should stack panels efficiently (max height ${maxLayerHeight}m should be ≤ 0.6m for 4 layers of 0.25m panels)`,
+  )
+  logPass('layer optimization gap fixture', 'packed all 4 flat panels with efficient layer stacking')
+}
+
+function runComplexMixedLoadGapFixture(): void {
+  // Gap: Complex load with varying dimensions should achieve higher utilization
+  // than current 6/10 (extreme_points) baseline
+  const items: SaleOrderItem[] = [
+    {
+      id: 'tiny-cube',
+      name: 'Tiny Cube',
+      length: 25,
+      width: 25,
+      height: 25,
+      weight: 2,
+      quantity: 16,
+      fragile: false,
+      stackable: true,
+    },
+    {
+      id: 'medium-box',
+      name: 'Medium Box',
+      length: 75,
+      width: 75,
+      height: 75,
+      weight: 8,
+      quantity: 4,
+      fragile: false,
+      stackable: true,
+    },
+    {
+      id: 'large-rect',
+      name: 'Large Rect',
+      length: 150,
+      width: 100,
+      height: 50,
+      weight: 15,
+      quantity: 2,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const extremePointsResult = new AdvancedBinPacker(trucks[1], items, 'extreme_points').pack()
+  const geneticResult = new AdvancedBinPacker(trucks[1], items, 'genetic', {
+    geneticIterations: 8,
+    random: createSeededRandom(123),
+  }).pack()
+
+  assert(
+    extremePointsResult.packed.length >= 18,
+    `Complex mixed-load gap fixture: extreme_points should pack at least 18 of 22 items (currently ${extremePointsResult.packed.length})`,
+  )
+  assert(
+    geneticResult.packed.length >= 20,
+    `Complex mixed-load gap fixture: genetic should pack at least 20 of 22 items (currently ${geneticResult.packed.length})`,
+  )
+  assert(
+    geneticResult.packed.length >= extremePointsResult.packed.length,
+    'Complex mixed-load gap fixture: genetic should not underperform extreme_points',
+  )
+  logPass('complex mixed-load gap fixture', `extreme_points=${extremePointsResult.packed.length}/22, genetic=${geneticResult.packed.length}/22`)
+}
+
+function runSmallItemFillingGapFixture(): void {
+  // Gap: Many small items should fill gaps around larger items better
+  const items: SaleOrderItem[] = [
+    {
+      id: 'big-cube',
+      name: 'Big Cube',
+      length: 150,
+      width: 150,
+      height: 100,
+      weight: 20,
+      quantity: 1,
+      fragile: false,
+      stackable: true,
+    },
+    {
+      id: 'mini-cube',
+      name: 'Mini Cube',
+      length: 25,
+      width: 25,
+      height: 25,
+      weight: 1,
+      quantity: 32,
+      fragile: false,
+      stackable: true,
+    },
+  ]
+
+  const result = new AdvancedBinPacker(trucks[2], items, 'extreme_points').pack()
+  const packedMiniCubes = result.packed.filter(box => box.itemId === 'mini-cube').length
+  assert(
+    packedMiniCubes >= 24,
+    `Small item filling gap fixture should pack at least 24 of 32 mini cubes around the big cube (currently ${packedMiniCubes})`,
+  )
+  assert(
+    result.packed.length >= 25,
+    `Small item filling gap fixture should pack at least 25 total items (1 big + 24 mini) (currently ${result.packed.length})`,
+  )
+  logPass('small item filling gap fixture', `packed ${packedMiniCubes}/32 mini cubes around the big cube`)
+}
+
 function main(): void {
   runSkylineFixture()
   runSkylineBoundaryFixture()
@@ -472,14 +635,18 @@ function main(): void {
   runExtremePointsFixture()
   runRecommendationFixture()
   runGeneticDeterminismFixture()
-  runGeneticOrderPreservationFixture()
+  runGeneticVariantSelectionFixture()
   runGeneticMixedLoadBenchmarkFixture()
   runOversizedItemFixture()
   runRotationBenefitFixture()
   runWeightCapacityFilterFixture()
   runVolumeUtilizationFixture()
   runPackedWeightUtilizationFixture()
-  console.log('Packing regression complete: 13 checks passed')
+  runFragmentedSpaceGapFixture()
+  runLayerOptimizationGapFixture()
+  runComplexMixedLoadGapFixture()
+  runSmallItemFillingGapFixture()
+  console.log('Packing regression complete: 18 checks passed')
 }
 
 try {
