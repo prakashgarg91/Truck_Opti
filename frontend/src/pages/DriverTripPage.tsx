@@ -30,8 +30,6 @@ interface TripJob {
   id: string
   shipment_id: string
   status: string
-  pickup_otp: string | null
-  delivery_otp: string | null
   photo_loading_url: string | null
   photo_delivery_url: string | null
   pickup_arrived_at: string | null
@@ -82,6 +80,8 @@ export default function DriverTripPage() {
   const [step, setStep] = useState<TripStep>('navigate')
   const [otpInput, setOtpInput] = useState('')
   const [otpError, setOtpError] = useState('')
+  const [verifiedPickupOtp, setVerifiedPickupOtp] = useState('')
+  const [verifiedDeliveryOtp, setVerifiedDeliveryOtp] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -267,22 +267,25 @@ export default function DriverTripPage() {
 
   const handlePickupOTP = async () => {
     setOtpError('')
-    if (!job?.pickup_otp) {
-      toast.error('OTP not available — contact support')
+    if (otpInput.trim().length !== 4) {
+      setOtpError('Enter the 4-digit OTP from the customer.')
       return
     }
-    if (otpInput.trim() !== job.pickup_otp.trim()) {
-      setOtpError('Incorrect OTP. Ask the customer for the correct code.')
-      return
-    }
+    setVerifiedPickupOtp(otpInput.trim())
     setStep('loading_photo')
     setOtpInput('')
-    toast.success('OTP verified ✓')
+    toast.success('OTP entered — continue with loading photo')
   }
 
   const handleStartJourney = async () => {
+    if (!verifiedPickupOtp) {
+      toast.error('Pickup OTP is required before starting the journey.')
+      setStep('pickup_otp')
+      return
+    }
     const result = await persistJobProgress('in_transit', {
       journey_started_at: new Date().toISOString(),
+      pickup_otp: verifiedPickupOtp,
     })
     if (result) {
       setStep('in_transit')
@@ -307,17 +310,14 @@ export default function DriverTripPage() {
 
   const handleDeliveryOTP = async () => {
     setOtpError('')
-    if (!job?.delivery_otp) {
-      toast.error('Delivery OTP not available — contact support')
+    if (otpInput.trim().length !== 4) {
+      setOtpError('Enter the 4-digit OTP from the recipient.')
       return
     }
-    if (otpInput.trim() !== job.delivery_otp.trim()) {
-      setOtpError('Incorrect OTP. Ask the recipient for the correct code.')
-      return
-    }
+    setVerifiedDeliveryOtp(otpInput.trim())
     setStep('delivery_photo')
     setOtpInput('')
-    toast.success('Delivery OTP verified ✓')
+    toast.success('OTP entered — capture delivery photo')
   }
 
   const uploadPhoto = async (file: File, field: 'photo_loading_url' | 'photo_delivery_url'): Promise<string | null> => {
@@ -362,8 +362,14 @@ export default function DriverTripPage() {
   }
 
   const handleCompleteDelivery = async () => {
+    if (!verifiedDeliveryOtp) {
+      toast.error('Delivery OTP is required before completing the trip.')
+      setStep('destination_otp')
+      return
+    }
     const result = await persistJobProgress('delivered', {
       delivered_at: new Date().toISOString(),
+      delivery_otp: verifiedDeliveryOtp,
     })
     if (result) {
       setStep('complete')
