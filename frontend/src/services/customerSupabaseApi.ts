@@ -315,19 +315,16 @@ export const customerTrackingApi = {
     },
 
     async getLatestJobOfferByShipmentId(shipmentId: string): Promise<Record<string, any> | null> {
-        const { data, error } = await supabase
-            .from('job_offers')
-            .select('pickup_otp, delivery_otp, status, drivers(full_name), photo_loading_url, photo_delivery_url')
-            .eq('shipment_id', shipmentId)
-            .in('status', ['pending', 'accepted', 'pickup_arrived', 'in_transit', 'delivery_arrived', 'delivered'])
-            .limit(1)
-            .maybeSingle()
+        const { data, error } = await supabase.rpc('get_shipment_job_offer_tracking', {
+            p_shipment_id: shipmentId,
+        })
 
         if (error) {
             throw new UserFacingError('Failed to load shipment details')
         }
 
-        return (data as Record<string, any>) || null
+        const row = Array.isArray(data) ? data[0] : data
+        return (row as Record<string, any>) || null
     }
 }
 
@@ -573,7 +570,7 @@ export const driverTripsApi = {
         const { data, error } = await supabase
             .from('job_offers')
             .select(`
-        id, shipment_id, status, pickup_otp, delivery_otp,
+        id, shipment_id, status,
         photo_loading_url, photo_delivery_url,
         pickup_arrived_at, journey_started_at, delivery_arrived_at, delivered_at,
         shipments(shipment_id, origin, destination, total_weight, estimated_cost, customer_id)
