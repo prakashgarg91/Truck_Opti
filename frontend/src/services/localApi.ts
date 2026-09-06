@@ -190,6 +190,8 @@ export interface LocalAgencyProfile {
   company_name: string
   contact_name: string | null
   contact_phone: string | null
+  google_sub?: string | null
+  email?: string | null
   created_at?: string
 }
 
@@ -205,16 +207,40 @@ export const agencyProfileLocalApi = {
     const existing = await this.current()
     if (existing) {
       const r = await db.query(
-        `UPDATE agency_profiles SET role=$2, company_name=$3, contact_name=$4, contact_phone=$5 WHERE id=$1 RETURNING *`,
-        [existing.id, profile.role, profile.company_name, profile.contact_name, profile.contact_phone]
+        `UPDATE agency_profiles SET role=$2, company_name=$3, contact_name=$4, contact_phone=$5,
+          google_sub=COALESCE($6, google_sub), email=COALESCE($7, email) WHERE id=$1 RETURNING *`,
+        [existing.id, profile.role, profile.company_name, profile.contact_name, profile.contact_phone,
+          (profile as Record<string, unknown>).google_sub ?? null, (profile as Record<string, unknown>).email ?? null]
       )
       return r.rows[0] as LocalAgencyProfile
     }
     const r = await db.query(
-      `INSERT INTO agency_profiles(id, role, company_name, contact_name, contact_phone)
-       VALUES($1,$2,$3,$4,$5) RETURNING *`,
-      [crypto.randomUUID(), profile.role, profile.company_name, profile.contact_name, profile.contact_phone]
+      `INSERT INTO agency_profiles(id, role, company_name, contact_name, contact_phone, google_sub, email)
+       VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [crypto.randomUUID(), profile.role, profile.company_name, profile.contact_name, profile.contact_phone,
+        (profile as Record<string, unknown>).google_sub ?? null, (profile as Record<string, unknown>).email ?? null]
     )
     return r.rows[0] as LocalAgencyProfile
+  },
+
+  async findByGoogleSub(sub: string): Promise<LocalAgencyProfile | null> {
+    const db = await getLocalDb()
+    const r = await db.query('SELECT * FROM agency_profiles WHERE google_sub = $1', [sub])
+    return (r.rows[0] as LocalAgencyProfile | undefined) ?? null
+  },
+
+  /** First Google sign-in: link the Google identity to a device profile,
+   * creating one when none exists yet. */
+  async linkGoogle(google: { sub: string; email: string; name: string }): Promise<LocalAgencyProfile> {
+    const found = await this.findByGoogleSub(google.sub)
+    if (found) return found
+    return this.save({
+      role: 'agency',
+      company_name: google.name || google.email,
+      contact_name: google.name || null,
+      contact_phone: null,
+      google_sub: google.sub,
+      email: google.email || null,
+    })
   },
 }

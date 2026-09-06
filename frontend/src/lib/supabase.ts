@@ -1,25 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Supabase configuration - Environment variables REQUIRED
-// No hardcoded fallback values for security
+// Supabase configuration - Environment variables REQUIRED for server features.
+// When unset (local-first mode), the client points at an unroutable placeholder
+// so the app boots and every Supabase call fails fast as an ordinary network
+// error (already handled everywhere with friendly messages). Nothing throws.
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Validate environment variables are set
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing Supabase environment variables. ' +
-    'Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your .env file.'
-  )
-}
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(
+  supabaseUrl || 'https://localhost.invalid',
+  supabaseAnonKey || 'local-mode-no-key'
+)
 
 // Backend reachability probe for offline-first UX. Cached per session; never
 // throws. SupabaseUrl NXDOMAIN / timeout => false (drives "Continue offline").
 let reachabilityCache: boolean | null = null
 
 export async function isSupabaseReachable(timeoutMs = 8000): Promise<boolean> {
+  if (!isSupabaseConfigured) return false
   if (reachabilityCache !== null) return reachabilityCache
   try {
     const ctrl = new AbortController()

@@ -6,7 +6,12 @@ import type { PGlite as PGliteType } from '@electric-sql/pglite'
 const DB_NAME = 'idb://truckopti-v1'
 // Vitest runs without IndexedDB: same Postgres engine, memory-backed.
 const DB_URL = import.meta.env.MODE === 'test' ? 'memory://' : DB_NAME
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
+
+const MIGRATION_V2 = `
+ALTER TABLE agency_profiles ADD COLUMN IF NOT EXISTS google_sub TEXT UNIQUE;
+ALTER TABLE agency_profiles ADD COLUMN IF NOT EXISTS email TEXT;
+`
 
 let dbPromise: Promise<PGliteType> | null = null
 
@@ -85,9 +90,15 @@ export function getLocalDb(): Promise<PGliteType> {
       const db = new PGlite(DB_URL)
       await db.exec(SCHEMA)
       const v = await db.query<{ version: number }>('SELECT version FROM local_schema_version ORDER BY version DESC LIMIT 1').catch(() => ({ rows: [] as { version: number }[] }))
-      if (!v.rows.length) {
+      const current = v.rows.length ? v.rows[0].version : 0
+      if (current < 1) {
         await seedDefaults(db)
-        await db.exec(`INSERT INTO local_schema_version(version) VALUES(${SCHEMA_VERSION})`)
+        await db.exec(`INSERT INTO local_schema_version(version) VALUES(1)`)
+      }
+      if (current < 2) {
+        await db.exec(MIGRATION_V2)
+        await db.exec(`INSERT INTO local_schema_version(version) VALUES(${SCHEMA_VERSION})
+          ON CONFLICT(version) DO NOTHING`)
       }
       return db as PGliteType
     })()

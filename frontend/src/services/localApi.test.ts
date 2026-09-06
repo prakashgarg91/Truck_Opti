@@ -68,8 +68,7 @@ describe('localApi (PGlite, memory-backed under test)', () => {
         })
     })
 
-    describe('agency profile (local identity)', () => {
-        it('saves once, updates after', async () => {
+    describe('agency profile (local identity)', () => {        it('saves once, updates after', async () => {
             await expect(agencyProfileLocalApi.current()).resolves.toBeNull()
             const p1 = await agencyProfileLocalApi.save({
                 role: 'agency', company_name: 'Sharma Transport', contact_name: 'Ravi', contact_phone: '9876500000',
@@ -80,6 +79,15 @@ describe('localApi (PGlite, memory-backed under test)', () => {
             })
             expect(p2.id).toBe(p1.id)
             expect(p2.company_name).toBe('Sharma Transport Ltd')
+        })
+
+        it('links Google identity: creates once, finds on repeat', async () => {
+            const g1 = await agencyProfileLocalApi.linkGoogle({ sub: 'g-1', email: 'a@b.c', name: 'A B' })
+            expect(g1.google_sub).toBe('g-1')
+            expect(g1.email).toBe('a@b.c')
+            const g2 = await agencyProfileLocalApi.linkGoogle({ sub: 'g-1', email: 'a@b.c', name: 'A B' })
+            expect(g2.id).toBe(g1.id)
+            await expect(agencyProfileLocalApi.findByGoogleSub('nope')).resolves.toBeNull()
         })
     })
 })
