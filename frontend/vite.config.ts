@@ -51,6 +51,7 @@ export default defineConfig({
           '**/excel-vendor-*.js',
           '**/pdf-vendor-*.js',
           '**/map-vendor-*.js',
+          '**/pglite-vendor-*.js',
         ],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB cap
         navigateFallback: '/index.html',
@@ -62,7 +63,7 @@ export default defineConfig({
         runtimeCaching: [
           // Large vendor chunks excluded from precache — cache on first use
           {
-            urlPattern: /\/assets\/(three-vendor|excel-vendor|pdf-vendor|map-vendor)-[^/]+\.js$/i,
+            urlPattern: /\/assets\/(three-vendor|excel-vendor|pdf-vendor|map-vendor|pglite-vendor)-[^/]+\.js$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'large-vendor-chunks',
@@ -179,6 +180,7 @@ export default defineConfig({
           'excel-vendor': ['xlsx-js-style', 'papaparse'],
           'query-vendor': ['@tanstack/react-query'],
           'ui-vendor': ['lucide-react', 'react-hot-toast'],
+          'pglite-vendor': ['@electric-sql/pglite'],
         }
       }
     }

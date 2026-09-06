@@ -3,6 +3,19 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.1 | All AIs MUST register here and update regularly.
 >
+> **2026-09-06 full local QA + deploy attempt (opencode):** fresh prod build
+> (0 TS errors) served via real `server.js` fully crawled: 53/53 routes HTTP 200,
+> 0 JS page errors, 0 non-backend console/request failures, 36/36 protected
+> routes redirect to /login, 404 page renders, 72 interactive actions (clicks,
+> fills, submits) with 0 errors, mobile 390px clean. Evidence:
+> `D:/Github/localfirst-spike/qa/` (report.json, buttons-report.json, 56 shots,
+> LOCAL-QA-REPORT.md). Authenticated-render testing remains impossible (backend
+> dead). DEPLOY BLOCKED: Heroku app `truck-opti-app` returns not_found and the
+> authed account holds only chatgpt-blog, taxqueries-itr-leads,
+> telegram-mcp-unified — the production origin behind the Cloudflare 530 is
+> gone. Needs owner: locate/recreate the Heroku app (or pick Vercel) + restore
+> Supabase (`jbxncejtcbpcronndqlx` NXDOMAIN) before any deploy matters.
+>
 > **2026-09-06 security+quality sweep (opencode):** fixed the 65 failing service tests without touching production code (admin `{ body }` invoke contract + surfaced error messages; thenable/chainable Supabase builder mocks; 5 not-found tests corrected to the throw behavior the impls have). Suite now 312/312 (incl. new `authReturnTo` open-redirect tests). Closed audit gates: root npm 0 vulns, frontend axios/dompurify/fflate fixed (2 moderate react-router advisories remain, v7 upgrade deferred as breaking), apps/web npm 0 vulns (puppeteer 24.43.1->25.10.0, launch-smoked), pip-audit 0 (cryptography 50.0.1, click 8.3.3, bounded auth test 6/6 in isolated venv). Fixed `advanced_3d_packer_v2.py` multiline f-strings (compiles py3.11+3.12). Fixed 8 unused-catch lint errors via repo logger pattern (lint 0 errors). Hardened `isSafeAuthReturnTo` against backslash open-redirect (CVE-2025-68470 class) after finding `?returnTo=` reaches `navigate()`. LIVE STATUS re-verified 2026-09-06: Supabase hostname `jbxncejtcbpcronndqlx.supabase.co` still NXDOMAIN and `https://www.truckopti.in/` returns Cloudflare 530 (origin DNS) — P0 infra block from July is unchanged, so no user can use the app regardless of code gates.
 > 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
 >

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 import type { Session, Subscription } from '@supabase/supabase-js'
 import { logger } from '../utils/logger'
+import type { LocalAgencyProfile } from '../services/localApi'
 
 // Store the auth subscription for potential cleanup
 let authSubscription: Subscription | null = null
@@ -47,6 +48,8 @@ interface AuthState {
   isLoading: boolean
   isAuthenticated: boolean
   pendingPhone: string | null
+  /** 'local' = device-held agency profile (offline-first, no backend). Supabase flows untouched. */
+  authMode: 'supabase' | 'local'
 
   // Actions
   initialize: () => Promise<void>
@@ -54,6 +57,7 @@ interface AuthState {
   setSession: (session: Session | null) => void
   setPendingPhone: (phone: string | null) => void
   login: (user: AppUser, session: Session) => void
+  loginLocal: (profile: LocalAgencyProfile) => void
   logout: () => Promise<void>
   updateUser: (updates: Partial<AppUser>) => void
   setIsLoading: (loading: boolean) => void
@@ -172,12 +176,13 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       session: null,
       isLoading: true,
       isAuthenticated: false,
       pendingPhone: null,
+      authMode: 'supabase',
 
       initialize: async () => {
         try {
@@ -207,7 +212,14 @@ export const useAuthStore = create<AuthState>()(
               set({ isLoading: false })
             }
           } else {
-            set({ isLoading: false, isAuthenticated: false })
+            // No Supabase session: resume a persisted local (offline-first)
+            // session if one was established on this device.
+            const { authMode, user } = get()
+            if (authMode === 'local' && user) {
+              set({ isAuthenticated: true, isLoading: false })
+            } else {
+              set({ isLoading: false, isAuthenticated: false })
+            }
           }
 
           // Subscribe to auth state changes (only once)
@@ -256,27 +268,53 @@ export const useAuthStore = create<AuthState>()(
       login: (user, session) => set({
         user,
         session,
+        authMode: 'supabase',
+        isAuthenticated: true,
+        pendingPhone: null,
+        isLoading: false
+      }),
+
+      loginLocal: (profile) => set({
+        user: {
+          id: `local:${profile.id}`,
+          email: '',
+          name: profile.contact_name || profile.company_name,
+          phone: profile.contact_phone,
+          phone_verified: false,
+          google_linked: false,
+          profile_picture: null,
+          role: profile.role,
+          user_metadata: { company: { name: profile.company_name } },
+        },
+        session: null,
+        authMode: 'local',
         isAuthenticated: true,
         pendingPhone: null,
         isLoading: false
       }),
 
       logout: async () => {
+        const clear = () => set({
+          user: null,
+          session: null,
+          authMode: 'supabase',
+          isAuthenticated: false,
+          isLoading: false,
+          pendingPhone: null
+        })
+        // Local sessions never touch the network.
+        if (get().authMode === 'local' || !get().session) {
+          clear()
+          return
+        }
         try {
           const { error } = await supabase.auth.signOut()
           if (error) throw error
-
-          set({
-            user: null,
-            session: null,
-            isAuthenticated: false,
-            isLoading: false,
-            pendingPhone: null
-          })
         } catch (err) {
+          // Offline logout must still work: clear local state regardless.
           logger.error('Error signing out:', err)
-          throw err
         }
+        clear()
       },
 
       updateUser: (updates) => set((state) => ({
@@ -290,6 +328,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         session: state.session,
+        authMode: state.authMode,
         // isAuthenticated intentionally excluded: hydrated as false on cold boot, set only after initialize() validates session
         pendingPhone: state.pendingPhone
       })

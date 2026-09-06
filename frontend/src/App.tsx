@@ -71,6 +71,7 @@ const AdminContactPage = React.lazy(() => import('./pages/AdminContactPage'))
 const AdminUsersPage = React.lazy(() => import('./pages/AdminUsersPage'))
 const AdminSubscriptionsPage = React.lazy(() => import('./pages/AdminSubscriptionsPage'))
 const LandingPage = React.lazy(() => import('./pages/LandingPage'))
+const LocalSetupPage = React.lazy(() => import('./pages/LocalSetupPage'))
 
 // Role-based home: shows the landing page to guests and sends authenticated users to their portal.
 function RoleHome() {
@@ -106,6 +107,7 @@ function AppContent() {
           <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
           <Route path="/driver/register" element={<DriverRegisterPage />} />
           <Route path="/agency/register" element={<AgencyRegisterPage />} />
+          <Route path="/local-start" element={<LocalSetupPage />} />
           {import.meta.env.DEV && (
             <Route path="/test-payment" element={<TestPaymentPage />} />
           )}

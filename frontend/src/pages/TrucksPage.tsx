@@ -1,9 +1,9 @@
-ï»¿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Truck, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, Database } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { trucksSupabaseApi } from '../services/supabaseApi'
+import { trucksLocalApi } from '../services/localApi'
 import { truckTypeSchema, validateWithZod } from '../utils/validators'
 import toast from 'react-hot-toast'
 import { queryClient } from '../lib/queryClient'
@@ -126,12 +126,12 @@ export default function TrucksPage() {
     isError: loadError
   } = useQuery({
     queryKey: ['trucks'],
-    queryFn: trucksSupabaseApi.getAll,
+    queryFn: trucksLocalApi.getAll,
   })
 
   // React Query: Create truck mutation
   const createMutation = useMutation({
-    mutationFn: trucksSupabaseApi.create,
+    mutationFn: trucksLocalApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trucks'] })
       toast.success('Truck added successfully')
@@ -147,7 +147,7 @@ export default function TrucksPage() {
   // React Query: Update truck mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<TruckType> }) =>
-      trucksSupabaseApi.update(id, data),
+      trucksLocalApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trucks'] })
       toast.success('Truck updated successfully')
@@ -162,7 +162,7 @@ export default function TrucksPage() {
 
   // React Query: Delete truck mutation
   const deleteMutation = useMutation({
-    mutationFn: trucksSupabaseApi.delete,
+    mutationFn: trucksLocalApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trucks'] })
       toast.success('Truck deleted successfully')
@@ -181,7 +181,7 @@ export default function TrucksPage() {
       }
 
       // Check if trucks already exist
-      const existingNamesList = await trucksSupabaseApi.getExistingNames(DEFAULT_INDIAN_TRUCKS.map(t => t.name))
+      const existingNamesList = await trucksLocalApi.getExistingNames(DEFAULT_INDIAN_TRUCKS.map(t => t.name))
       const existingNames = new Set(existingNamesList)
       const trucksToAdd = DEFAULT_INDIAN_TRUCKS.filter(t => !existingNames.has(t.name))
 
@@ -190,7 +190,7 @@ export default function TrucksPage() {
       }
 
       // Insert trucks
-      await trucksSupabaseApi.createMany(trucksToAdd as Array<Record<string, unknown>>)
+      await trucksLocalApi.createMany(trucksToAdd as Array<Record<string, unknown>>)
       return trucksToAdd.length
     },
     onSuccess: (count) => {
@@ -444,7 +444,7 @@ export default function TrucksPage() {
               <div className="mt-4 grid grid-cols-4 gap-2">
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Dimensions</p>
-                  <p className="text-xs font-medium">{formatDimension(truck.length)} Ã— {formatDimension(truck.width)} Ã— {formatDimension(truck.height)}</p>
+                  <p className="text-xs font-medium">{formatDimension(truck.length)} × {formatDimension(truck.width)} × {formatDimension(truck.height)}</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Capacity</p>
@@ -452,7 +452,7 @@ export default function TrucksPage() {
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center min-w-0">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Volume</p>
-                  <p className="text-xs font-medium truncate">{(truck.length * truck.width * truck.height / 1000000).toFixed(1)}mÂ³</p>
+                  <p className="text-xs font-medium truncate">{(truck.length * truck.width * truck.height / 1000000).toFixed(1)}m³</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center min-w-0">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Cost/km</p>
@@ -500,7 +500,7 @@ export default function TrucksPage() {
                   {formErrors.capacity && <p className="text-red-500 text-xs mt-1">{formErrors.capacity}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cost per km (â‚¹)</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cost per km (?)</label>
                   <input
                     type="number"
                     defaultValue={formData.cost_per_km}

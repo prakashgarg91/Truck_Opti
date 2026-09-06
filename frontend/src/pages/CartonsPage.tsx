@@ -1,8 +1,8 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Package, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, AlertTriangle, Layers } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { cartonsSupabaseApi } from '../services/supabaseApi'
+import { cartonsLocalApi } from '../services/localApi'
 import { useLanguageStore } from '../stores/languageStore'
 import { itemSchema, validateWithZod } from '../utils/validators'
 import { queryClient } from '../lib/queryClient'
@@ -48,12 +48,12 @@ export default function CartonsPage() {
     isError: loadError
   } = useQuery({
     queryKey: ['cartons'],
-    queryFn: cartonsSupabaseApi.getAll,
+    queryFn: cartonsLocalApi.getAll,
   })
 
   // React Query: Create carton mutation
   const createMutation = useMutation({
-    mutationFn: cartonsSupabaseApi.create,
+    mutationFn: cartonsLocalApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartons'] })
       toast.success('Carton type added')
@@ -69,7 +69,7 @@ export default function CartonsPage() {
   // React Query: Update carton mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CartonType> }) =>
-      cartonsSupabaseApi.update(id, data),
+      cartonsLocalApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartons'] })
       toast.success('Carton type updated')
@@ -84,7 +84,7 @@ export default function CartonsPage() {
 
   // React Query: Delete carton mutation
   const deleteMutation = useMutation({
-    mutationFn: cartonsSupabaseApi.delete,
+    mutationFn: cartonsLocalApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cartons'] })
       toast.success('Carton type deleted')
@@ -293,7 +293,7 @@ export default function CartonsPage() {
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg text-center">
                   <p className="text-[10px] uppercase text-slate-400 font-bold">Volume</p>
-                  <p className="text-sm font-medium">{((carton.length * carton.width * carton.height) / 1000000).toFixed(3)} m³</p>
+                  <p className="text-sm font-medium">{((carton.length * carton.width * carton.height) / 1000000).toFixed(3)} m�</p>
                 </div>
               </div>
             </div>

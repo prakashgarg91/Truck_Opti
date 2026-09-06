@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
+import BackupSection from '../components/BackupSection'
 
 interface CompanyData {
   name: string
@@ -272,9 +273,11 @@ export default function CompanyProfilePage() {
         </div>
       )}
 
+      {/* Device backup (offline-first) */}
+      <BackupSection />
+
       {/* Save Bottom Button */}
-      <button onClick={handleSave} disabled={saving}
-        className="w-full py-4 bg-primary-600 text-white rounded-2xl font-semibold hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+      <button onClick={handleSave} disabled={saving}        className="w-full py-4 bg-primary-600 text-white rounded-2xl font-semibold hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
         {saving ? (
           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
         ) : (

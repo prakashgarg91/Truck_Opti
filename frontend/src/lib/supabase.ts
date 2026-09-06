@@ -14,3 +14,24 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// Backend reachability probe for offline-first UX. Cached per session; never
+// throws. SupabaseUrl NXDOMAIN / timeout => false (drives "Continue offline").
+let reachabilityCache: boolean | null = null
+
+export async function isSupabaseReachable(timeoutMs = 8000): Promise<boolean> {
+  if (reachabilityCache !== null) return reachabilityCache
+  try {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+    try {
+      const res = await fetch(`${supabaseUrl}/auth/v1/health`, { signal: ctrl.signal })
+      reachabilityCache = res.ok
+    } finally {
+      clearTimeout(timer)
+    }
+  } catch {
+    reachabilityCache = false
+  }
+  return reachabilityCache
+}

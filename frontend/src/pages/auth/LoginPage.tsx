@@ -9,6 +9,7 @@ import { emailOrLoginIdSchema, emailSchema, loginPasswordSchema, phoneInputSchem
 import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
 import { logger } from '../../utils/logger'
 import { buildAuthReturnTo, storeAuthReturnTo, type AuthRouteState } from '../../utils/authReturnTo'
+import { isSupabaseReachable } from '../../lib/supabase'
 
 const features = [
   { icon: '📦', text: '3D Smart Packing' },
@@ -144,6 +145,13 @@ export default function LoginPage() {
   const [currentFeature, setCurrentFeature] = useState(0)
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  // Offline-first: offer device setup when the backend cannot be reached.
+  const [backendDown, setBackendDown] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    isSupabaseReachable().then((ok) => { if (!cancelled && !ok) setBackendDown(true) })
+    return () => { cancelled = true }
+  }, [])
   const availableOtpChannelCount = (isEmailOtpEnabled ? 1 : 0) + (isPhoneOtpEnabled ? 2 : 0)
 
   // Rotate features
@@ -715,6 +723,16 @@ export default function LoginPage() {
           </>
         )}
       </button>
+
+      {/* Offline-first entry: shown only when the backend is unreachable */}
+      {backendDown && (
+        <button
+          onClick={() => navigate('/local-start')}
+          className="btn w-full mt-4 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 transition-all duration-300"
+        >
+          <span>Continue offline on this device — no internet needed</span>
+        </button>
+      )}
 
       {surface.showTrustBadges ? (
         <div className="mt-8 flex items-center justify-center gap-6 text-slate-400 animate-fade-in" style={{ animationDelay: '600ms' }}>

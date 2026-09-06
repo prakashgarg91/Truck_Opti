@@ -9,6 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_AUTH_PHONE_OTP_ENABLED?: string
   readonly VITE_AUTH_PASSWORD_ENABLED?: string
   readonly VITE_ALLOW_TEST_RAZORPAY_ON_PRODUCTION?: string
+  readonly VITE_SYNC_URL?: string
 }
 
 interface ImportMeta {
