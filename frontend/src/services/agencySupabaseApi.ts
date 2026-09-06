@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { UserFacingError } from '../utils/userFacingError'
+import { logger } from '../utils/logger'
 
 // ============= TYPES =============
 export interface AgencyRecord {
@@ -128,6 +129,7 @@ export const agencyDashboardApi = {
                 thirtyDayJobs,
             }
         } catch (error) {
+            logger.error('[agencyDashboardApi.getJobSummary]', error)
             throw new UserFacingError('Failed to load job summary')
         }
     }

@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { UserFacingError } from '../utils/userFacingError'
+import { logger } from '../utils/logger'
 
 // ============= TYPES =============
 export interface DashboardStats {
@@ -79,6 +80,7 @@ export const customerDashboardApi = {
                 deliveriesDone
             }
         } catch (error) {
+            logger.error('[customerDashboardApi.getDashboardStats]', error)
             throw new UserFacingError('Failed to load dashboard statistics')
         }
     },
@@ -100,6 +102,7 @@ export const customerDashboardApi = {
                 customers: customersResult.count || 0,
             }
         } catch (error) {
+            logger.error('[customerDashboardApi.getManagementCounts]', error)
             throw new UserFacingError('Failed to load management data')
         }
     },
@@ -367,6 +370,7 @@ export const driverEarningsApi = {
                 last_thirty_days: thirtyDayEarnings,
             }
         } catch (error) {
+            logger.error('[driverEarningsApi.getEarnings]', error)
             throw new UserFacingError('Failed to load earnings data')
         }
     },

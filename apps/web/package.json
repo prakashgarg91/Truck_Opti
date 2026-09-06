@@ -9,12 +9,11 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --runInBand --detectOpenHandles --forceExit"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "chai": "^5.2.1",
     "jest": "^30.0.5",
-    "puppeteer": "^24.16.1",
+    "puppeteer": "^25.10.0",
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"
   },

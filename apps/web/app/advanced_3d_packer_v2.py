@@ -140,9 +140,7 @@ class Advanced3DPackerV2:
                 else:
                     unpacked_cartons.append(carton)
                     warnings.append(
-                        f"Could not fit carton: {
-                            carton.get(
-                                'name', 'Unknown')}")
+                        f"Could not fit carton: {carton.get('name', 'Unknown')}")
 
             # Calculate comprehensive metrics
             result = self._calculate_advanced_metrics(
@@ -153,8 +151,7 @@ class Advanced3DPackerV2:
 
             processing_time = time.time() - start_time
             logger.info(
-                f"Advanced packing completed in {
-                    processing_time:.3f}s")
+                f"Advanced packing completed in {processing_time:.3f}s")
 
             return result
 
@@ -657,16 +654,13 @@ class Advanced3DPackerV2:
         # Check if stability meets threshold
         if result.stability_score < self.stability_threshold:
             result.warnings.append(
-                f"Stability score {
-                    result.stability_score:.2f} below threshold {
-                    self.stability_threshold}")
+                f"Stability score {result.stability_score:.2f} below threshold {self.stability_threshold}")
 
         # Check weight distribution
         if result.weight_distribution_score < (
                 1.0 - self.weight_distribution_tolerance):
             result.warnings.append(
-                f"Weight distribution may be unbalanced (score: {
-                    result.weight_distribution_score:.2f})")
+                f"Weight distribution may be unbalanced (score: {result.weight_distribution_score:.2f})")
 
         # Check fragile item placement
         fragile_items_high = sum(1 for p in result.packed_cartons
@@ -679,9 +673,7 @@ class Advanced3DPackerV2:
         # Performance check
         if result.processing_time > self.performance_target_seconds:
             result.warnings.append(
-                f"Processing time {
-                    result.processing_time:.2f}s exceeded target {
-                    self.performance_target_seconds}s")
+                f"Processing time {result.processing_time:.2f}s exceeded target {self.performance_target_seconds}s")
 
     def _create_fallback_result_v2(self, truck_spec: Dict, cartons: List[Dict],
                                    error: str) -> PackingResult:
@@ -782,10 +774,7 @@ def create_enterprise_packing_recommendation(truck_types: List[Dict],
 
         except Exception as e:
             logger.error(
-                f"Packing failed for truck {
-                    truck_type.get(
-                        'name',
-                        'Unknown')}: {e}")
+                f"Packing failed for truck {truck_type.get('name', 'Unknown')}: {e}")
             continue
 
     # Sort by recommendation score (best first)

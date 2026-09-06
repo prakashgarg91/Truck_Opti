@@ -8,6 +8,7 @@ import {
 import { adminAgenciesApi, type Agency } from '../services/adminSupabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
+import { logger } from '../utils/logger'
 
 type Tab = 'pending' | 'approved' | 'rejected' | 'suspended'
 
@@ -48,6 +49,7 @@ export default function AdminAgenciesPage() {
       setAgencies(snapshot.agencies)
       setCounts(snapshot.counts)
     } catch (error) {
+      logger.error('[AdminAgencies] Load error:', error)
       toast.error('Failed to load agencies')
     } finally {
       setLoading(false)
@@ -67,6 +69,7 @@ export default function AdminAgenciesPage() {
       toast.success('Agency approved successfully')
       fetchSnapshot()
     } catch (error) {
+      logger.error('[AdminAgencies] Approve error:', error)
       toast.error('Failed to approve agency')
     } finally {
       setActionLoading(null)
@@ -84,6 +87,7 @@ export default function AdminAgenciesPage() {
       setRejectReason('')
       fetchSnapshot()
     } catch (error) {
+      logger.error('[AdminAgencies] Reject error:', error)
       toast.error('Failed to reject agency')
     } finally {
       setActionLoading(null)
@@ -97,6 +101,7 @@ export default function AdminAgenciesPage() {
       toast.success('Agency suspended')
       fetchSnapshot()
     } catch (error) {
+      logger.error('[AdminAgencies] Suspend error:', error)
       toast.error('Failed to suspend agency')
     } finally {
       setActionLoading(null)
