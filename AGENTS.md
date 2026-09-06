@@ -27,6 +27,10 @@ npm run close-day               # root; end-of-day handoff
 Python (legacy, from `apps/web/`): `python -m pytest tests/unit/test_authentication_middleware.py -q -o addopts=`
 (`pytest.ini` addopts enforce `--cov-fail-under=80` + `--cov=app`; the `-o addopts=` override is how CI runs the single bounded test.)
 Pre-commit is flake8 scoped to `apps/web/app` + `apps/web/tests` only.
+Dependency discipline (both bitten before): install each package in its own
+directory (`cd frontend` first — root hoisting masks a missing manifest entry
+until CI `npm ci` breaks); never `npm audit fix --omit=dev` (it prunes
+devDependencies — plain `npm audit fix`, then reinstall if needed).
 
 CI (`frontend-ci.yml`, runs on `frontend/**`, `scripts/**`, `apps/web/**` changes): job 1 = `npm ci` (root + frontend) → frontend build → preview on `127.0.0.1:4173` → public + frontend smoke; job 2 = the bounded Python auth test above.
 

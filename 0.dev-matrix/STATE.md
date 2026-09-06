@@ -3,6 +3,19 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.1 | All AIs MUST register here and update regularly.
 >
+> **2026-09-06 local-first build-out + full offline E2E (opencode):** PGlite
+> packing slice live in `frontend/` (lazy vendor chunk, PWA runtime-cached):
+> Trucks/Cartons pages on `localApi`, device agency profiles, `/local-start`
+> setup, offline login with session resume, Drive backup engine + settings UI,
+> dormant sync client. Proven in headless Chrome: setup -> agency home ->
+> 7 default trucks -> create truck -> survives reload, zero errors. Suite
+> 324/324, tsc clean, lint 0, build clean. react-router v6 advisories (2 mod)
+> deliberately deferred: only fix is breaking v7 migration across ~40 files;
+> reachable sinks hardened + tested instead. Install discipline: frontend deps
+> must be installed in `frontend/` (root hoisting masks missing manifest
+> entries and breaks CI `npm ci`); never `npm audit fix --omit=dev` (prunes
+> devDependencies — reinstall required).
+>
 > **2026-09-06 full local QA + deploy attempt (opencode):** fresh prod build
 > (0 TS errors) served via real `server.js` fully crawled: 53/53 routes HTTP 200,
 > 0 JS page errors, 0 non-backend console/request failures, 36/36 protected
