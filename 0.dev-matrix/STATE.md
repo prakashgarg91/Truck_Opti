@@ -3,6 +3,21 @@
 > **Live System State + AI Agent Registry + Quality Metrics**
 > Version: 3.1 | All AIs MUST register here and update regularly.
 >
+> **2026-09-11 production restore (ZCode):** PUBLIC SITE RESTORED. Root cause
+> confirmed: Cloudflare `@`/`www` CNAMEs pointed at the deleted app's
+> herokudns targets (CF 530/1016) while replacement app `truck-opti-app` had
+> never been deployed (slug 0 B, no dynos). Fixed `server.js` canonical-host
+> 301 routing (+8 routing tests), deployed `3d330d2e` → **Heroku v5**,
+> `web=1:eco`, domains reattached, ACM **Cert issued** ×2, Cloudflare repaired
+> to current targets (DNS-only verify → **Full (strict)** → proxy on). HTTPS
+> route matrix 10/10 200; apex 301s once to www; public-smoke 12/12; unit
+> 329/329; packing 18/18. App runs Supabase-optional local-first until owner
+> restores project `jbxncejtcbpcronndqlx` (still NXDOMAIN; dashboard lists it,
+> status needs owner login) and supplies `VITE_SUPABASE_URL`/`ANON_KEY` +
+> `VITE_GOOGLE_CLIENT_ID`, then rebuilds (VITE_* are build-time). Auth/data/
+> payments remain UNVERIFIED — do not claim them live. Evidence:
+> `closeout-logs/incident-2026-09-11/`.
+>
 > **2026-09-06 local-first build-out + full offline E2E (opencode):** PGlite
 > packing slice live in `frontend/` (lazy vendor chunk, PWA runtime-cached):
 > Trucks/Cartons pages on `localApi`, device agency profiles, `/local-start`
