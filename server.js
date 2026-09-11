@@ -1,5 +1,6 @@
-// server.js — Production static server with Heroku→custom-domain redirect
-// Redirects all traffic arriving at the Heroku URL to https://www.truckopti.in
+// server.js — Production static server with canonical-domain redirect
+// The Heroku default hostname and the bare apex truckopti.in 301 to
+// https://www.truckopti.in; only the canonical www host serves the app.
 
 const express = require('express');
 const path = require('path');
@@ -8,9 +9,24 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const HEROKU_HOST = 'truck-opti-app-efabf95bd306.herokuapp.com';
-const CANONICAL = 'https://www.truckopti.in';
+// HEROKU_ORIGIN_HOST overrides the default when the app is ever recreated;
+// the default must track the hostname returned by `heroku domains`.
+const HEROKU_HOST = (process.env.HEROKU_ORIGIN_HOST || 'truck-opti-app-0de4b9bc1ac2.herokuapp.com').toLowerCase();
+const APEX_HOST = 'truckopti.in';
+const CANONICAL_HOST = 'www.truckopti.in';
+const CANONICAL = `https://${CANONICAL_HOST}`;
 const DIST_DIR = path.join(__dirname, 'frontend', 'dist');
+
+// x-forwarded-host can be a comma list and may carry a port or trailing dots;
+// canonicalize to a bare lowercase hostname so comparisons ignore those.
+function normalizeHost(rawHost) {
+  const first = String(rawHost || '').split(',')[0].trim();
+  return first.toLowerCase().replace(/\.+$/, '').replace(/:\d+$/, '');
+}
+
+function isRedirectHost(host) {
+  return host === HEROKU_HOST || host === APEX_HOST;
+}
 
 function setStaticCacheHeaders(res, filePath) {
   const relativePath = path.relative(DIST_DIR, filePath).replace(/\\/g, '/');
@@ -36,8 +52,8 @@ function setStaticCacheHeaders(res, filePath) {
 
 // ── 1. Force canonical domain ─────────────────────────────────────────────────
 app.use((req, res, next) => {
-  const host = (req.headers['x-forwarded-host'] || req.headers.host || '').toLowerCase();
-  if (host === HEROKU_HOST) {
+  const host = normalizeHost(req.headers['x-forwarded-host'] || req.headers.host);
+  if (isRedirectHost(host)) {
     return res.redirect(301, CANONICAL + req.originalUrl);
   }
   next();
@@ -63,7 +79,11 @@ app.get('/{*splat}', (req, res) => {
   res.sendFile(indexPath);
 });
 
-app.listen(PORT, () => {
-  console.log(`TruckOpti server running on port ${PORT}`);
-  console.log(`Heroku URL (${HEROKU_HOST}) → 301 redirect to ${CANONICAL}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`TruckOpti server running on port ${PORT}`);
+    console.log(`Non-canonical hosts (${HEROKU_HOST}, ${APEX_HOST}) → 301 redirect to ${CANONICAL}`);
+  });
+}
+
+module.exports = { app, normalizeHost, isRedirectHost };

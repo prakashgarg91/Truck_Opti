@@ -15,6 +15,7 @@
     "test:live-buttons": "node scripts/public_frontend_smoke.mjs",
     "test:public-smoke": "node scripts/public_frontend_smoke.mjs",
     "test:frontend-smoke": "node scripts/frontend_launch_smoke.mjs",
+    "test:server-routing": "node --test scripts/test-server-routing.mjs",
     "test:live-auth": "node scripts/live-auth-proof.cjs",
     "test:live-admin": "node scripts/live-admin-proof.cjs",
     "test:prod-config": "node scripts/production_config_audit.mjs",
