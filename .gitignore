@@ -87,3 +87,6 @@ docs/archive/
 
 .vercel
 .env*
+
+# stitch-mcp adapter local state (mappings, journal, artifacts)
+.stitch-mcp/
