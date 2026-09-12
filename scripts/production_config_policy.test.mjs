@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { shouldRunEmailOtpFallback, summarizeAuthProviders } from './production_config_policy.mjs'
+import { shouldRunEmailOtpFallback, shouldRunSupabaseHealthCheck, summarizeAuthProviders } from './production_config_policy.mjs'
 
 test('accepts intended Google-only production auth', () => {
   const result = summarizeAuthProviders({
@@ -46,4 +46,10 @@ test('does not count placeholder Google client IDs as configured', () => {
 test('runs the Email OTP fallback smoke only when the Email channel exists', () => {
   assert.equal(shouldRunEmailOtpFallback({ emailChannelCount: 1 }), true)
   assert.equal(shouldRunEmailOtpFallback({ emailChannelCount: 0 }), false)
+})
+
+test('runs Supabase health only when an explicit backend URL is supplied', () => {
+  assert.equal(shouldRunSupabaseHealthCheck('https://project.supabase.co'), true)
+  assert.equal(shouldRunSupabaseHealthCheck(''), false)
+  assert.equal(shouldRunSupabaseHealthCheck(undefined), false)
 })
