@@ -29,9 +29,6 @@ on:
 
 env:
   PUBLIC_APP_URL: http://127.0.0.1:4173
-  SUPABASE_PUBLIC_URL: https://jbxncejtcbpcronndqlx.supabase.co
-  VITE_SUPABASE_URL: https://jbxncejtcbpcronndqlx.supabase.co
-  VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpieG5jZWp0Y2JwY3Jvbm5kcWx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4MDk2MjIsImV4cCI6MjA4MzM4NTYyMn0.8GHh-LAeBx9RyQVjcJFbBiZrumfiqtUhe-NUedY3vqo'
 
 jobs:
   frontend-build-and-smoke:
@@ -60,8 +57,14 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Build frontend
+      - name: Build frontend in supported local-first mode
         run: npm --prefix frontend run build
+
+      - name: Run frontend unit tests
+        run: npm test
+
+      - name: Run packing regression
+        run: npm run test:packing
 
       - name: Start preview server
         run: |
@@ -75,11 +78,8 @@ jobs:
           cat /tmp/truckopti-preview.log
           exit 1
 
-      - name: Public smoke
+      - name: Public local-first browser smoke
         run: npm run test:public-smoke
-
-      - name: Frontend smoke
-        run: npm run test:frontend-smoke
 
       - name: Upload frontend smoke artifacts
         if: always()
@@ -88,7 +88,6 @@ jobs:
           name: frontend-smoke-artifacts
           path: |
             logs/public_frontend_smoke_report.json
-            logs/frontend_launch_smoke_report.json
             /tmp/truckopti-preview.log
           if-no-files-found: warn
 
