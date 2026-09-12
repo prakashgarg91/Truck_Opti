@@ -1,0 +1,24 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+
+const deployScript = fs.readFileSync('deploy-heroku.sh', 'utf8')
+const herokuYaml = fs.readFileSync('heroku.yml', 'utf8')
+const dockerfile = fs.readFileSync('Dockerfile', 'utf8')
+
+test('manual Heroku deploy never writes placeholder or embedded Supabase credentials', () => {
+  assert.doesNotMatch(deployScript, /YOUR_PROJECT_ID|YOUR_PROJECT_REF/)
+  assert.doesNotMatch(deployScript, /VITE_SUPABASE_ANON_KEY=eyJ/)
+})
+
+test('manual Heroku deploy requires explicit app and Supabase configuration', () => {
+  assert.match(deployScript, /HEROKU_APP_NAME/)
+  assert.match(deployScript, /VITE_SUPABASE_URL/)
+  assert.match(deployScript, /VITE_SUPABASE_ANON_KEY/)
+  assert.match(deployScript, /exit 1/)
+})
+
+test('container deployment uses the canonical Node production server', () => {
+  assert.match(herokuYaml, /web:\s*node server\.js/)
+  assert.match(dockerfile, /CMD\s+\["node",\s*"server\.js"\]/)
+})
