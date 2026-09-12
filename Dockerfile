@@ -1,28 +1,18 @@
 # TruckOpti Production Dockerfile
 FROM node:20-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
-COPY frontend/package.json ./frontend/
+# Install root and frontend dependencies needed for the production build/runtime.
+COPY package.json package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+RUN npm ci
+RUN npm ci --prefix frontend
 
-# Install dependencies
-RUN npm install
-RUN cd frontend && npm install
-
-# Copy source code
 COPY . .
+RUN npm --prefix frontend run build
 
-# Build frontend
-RUN cd frontend && npm run build
-
-# Install serve for production
-RUN npm install -g serve
-
-# Expose port
+ENV NODE_ENV=production
 EXPOSE $PORT
 
-# Start command
-CMD cd frontend/dist && serve -s -l $PORT
+CMD ["node", "server.js"]
