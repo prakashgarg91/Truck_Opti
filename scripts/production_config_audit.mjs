@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import dns from 'node:dns/promises';
 import { execFileSync, execSync } from 'node:child_process';
+import { isPlaceholder, summarizeAuthProviders } from './production_config_policy.mjs';
 
 const appName = process.env.HEROKU_APP_NAME || 'truck-opti-app';
 const outputPath = path.join('logs', 'production_config_audit.json');
@@ -22,16 +23,6 @@ function runHerokuConfig() {
   });
 
   return JSON.parse(raw);
-}
-
-function isPlaceholder(value) {
-  if (!value) return true;
-  const lowered = value.toLowerCase();
-  return (
-    lowered.includes('replace_me') ||
-    lowered.includes('your_') ||
-    lowered.includes('placeholder')
-  );
 }
 
 function summarizeRazorpay(keyId, clientExposedSecret) {
@@ -101,6 +92,7 @@ async function main() {
 
   const config = runHerokuConfig();
   const supabase = await summarizeSupabase(config.VITE_SUPABASE_URL);
+  const authProviders = summarizeAuthProviders(config);
   const razorpay = summarizeRazorpay(config.VITE_RAZORPAY_KEY_ID, config.VITE_RAZORPAY_KEY_SECRET);
   const sentry = summarizeSentry(config.VITE_SENTRY_DSN);
 
@@ -116,9 +108,9 @@ async function main() {
       detail: supabase.detail,
     },
     {
-      name: 'email_otp_flag',
-      status: config.VITE_AUTH_EMAIL_OTP_ENABLED === 'true' ? 'pass' : 'fail',
-      detail: `VITE_AUTH_EMAIL_OTP_ENABLED=${config.VITE_AUTH_EMAIL_OTP_ENABLED ?? 'missing'}`,
+      name: 'auth_provider_configuration',
+      status: authProviders.status,
+      detail: authProviders.detail,
     },
     {
       name: 'razorpay_launch_readiness',
