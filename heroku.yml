@@ -3,4 +3,4 @@ build:
   docker:
     web: Dockerfile
 run:
-  web: cd frontend/dist && npx serve -s -l $PORT
+  web: node server.js
