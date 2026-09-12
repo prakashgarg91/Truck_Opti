@@ -406,7 +406,7 @@ serve(async (req) => {
     console.error('Verification error:', error)
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: 'Unable to verify Razorpay payment right now.'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400
