@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { summarizeAuthProviders } from './production_config_policy.mjs'
+import { shouldRunEmailOtpFallback, summarizeAuthProviders } from './production_config_policy.mjs'
 
 test('accepts intended Google-only production auth', () => {
   const result = summarizeAuthProviders({
@@ -41,4 +41,9 @@ test('does not count placeholder Google client IDs as configured', () => {
   })
 
   assert.equal(result.status, 'fail')
+})
+
+test('runs the Email OTP fallback smoke only when the Email channel exists', () => {
+  assert.equal(shouldRunEmailOtpFallback({ emailChannelCount: 1 }), true)
+  assert.equal(shouldRunEmailOtpFallback({ emailChannelCount: 0 }), false)
 })

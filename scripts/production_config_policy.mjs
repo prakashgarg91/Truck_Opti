@@ -9,6 +9,10 @@ export function isPlaceholder(value) {
   )
 }
 
+export function shouldRunEmailOtpFallback({ emailChannelCount = 0 } = {}) {
+  return Number(emailChannelCount) > 0
+}
+
 export function summarizeAuthProviders(config = {}) {
   const enabled = []
 
