@@ -84,6 +84,9 @@ jobs:
       - name: Public local-first browser smoke
         run: npm run test:public-smoke
 
+      - name: Core local-first launch smoke
+        run: npm run test:frontend-smoke
+
       - name: Upload frontend smoke artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -91,6 +94,7 @@ jobs:
           name: frontend-smoke-artifacts
           path: |
             logs/public_frontend_smoke_report.json
+            logs/frontend_launch_smoke_report.json
             /tmp/truckopti-preview.log
           if-no-files-found: warn
 
