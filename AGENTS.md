@@ -8,7 +8,7 @@ Canonical entry point for every coding agent in Truck_Opti.
 3. `TASKS.md`
 4. The single assigned file in `agent-tasks/`
 
-`0.dev-matrix/` is legacy/reference material during migration. Do not use it as the operating router unless a current task explicitly links to a specific historical artifact.
+Do not create or revive competing agent routers, generated handoff systems, alternate task boards, provider-specific skill copies, or parallel architecture/status documents. Tool-specific adapters may exist only when required and should point back to the canonical files above.
 
 ## Roles
 - **GPT-6 / Codex supervisor:** architecture, task decomposition, difficult debugging, integration, review, final verification, repository consolidation, and `TASKS.md` ownership.

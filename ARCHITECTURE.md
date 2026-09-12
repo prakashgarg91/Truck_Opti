@@ -13,13 +13,15 @@ Verified active boundaries include:
 
 ## Architectural rules
 - Production authorization must come from trusted server/Supabase auth, not client-decoded identity claims.
+- Privileged agency/admin data access belongs behind trusted service/edge-function boundaries rather than direct browser table access.
 - Packing logic must remain deterministic/testable where promised; performance work requires regression evidence.
 - External providers are adapters, not sources of core business truth.
 - Production database/payment/deploy changes are owner-gated.
 - Keep local-first validation before production verification.
+- Treat old launch counts/status snapshots as historical evidence, not current truth; rerun the repository gates before making readiness claims.
 
 ## Agent architecture
 `GPT-6 supervisor -> bounded task briefs -> GLM-5.3 Flash workers -> result files -> GPT-6 review/integration`.
 
-## Legacy documentation
-Existing `docs/` and `0.dev-matrix/` files may contain useful deep history. Root `AGENTS.md`, `ARCHITECTURE.md`, and `TASKS.md` control current agent execution.
+## Historical material
+Superseded agent frameworks, generated handoffs, old gap snapshots, and retired planning artifacts are recoverable from Git history and do not belong on the active read path. Current deep implementation documentation belongs in `docs/` or subsystem-local READMEs.
