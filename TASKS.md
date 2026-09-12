@@ -10,9 +10,9 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-114 | Production auth and Supabase authority | CODE_DONE_OWNER_BLOCKED_LIVE | GLM worker + GPT-6 review | `agent-tasks/003-auth-supabase.md` | `agent-results/003-result.md` |
 | TO-115 | Provider configuration and audit policy | DONE | GLM worker + GPT-6 review | `agent-tasks/004-provider-config.md` | `agent-results/004-result.md` |
 | TO-116 | Core workflow verification and repair | DONE | GLM worker + GPT-6 review | `agent-tasks/005-core-workflows.md` | `agent-results/005-result.md` |
-| TO-117 | Payment readiness without real-money execution | READY_WITH_OWNER_GATES | GLM worker + GPT-6 review | `agent-tasks/006-payment-readiness.md` | — |
+| TO-117 | Payment readiness without real-money execution | CODE_DONE_OWNER_BLOCKED_PROVIDER_TEST | GLM worker + GPT-6 review | `agent-tasks/006-payment-readiness.md` | `agent-results/006-result.md` |
 | TO-118 | Observability and security hardening | READY | GLM worker + GPT-6 review | `agent-tasks/007-observability-security.md` | — |
-| TO-119 | Final production gates and launch handoff | BLOCKED_BY_TO117_TO118_AND_LIVE_OWNER_GATES | GPT-6 | `agent-tasks/008-final-production-gates.md` | — |
+| TO-119 | Final production gates and launch handoff | BLOCKED_BY_TO118_AND_LIVE_OWNER_GATES | GPT-6 | `agent-tasks/008-final-production-gates.md` | — |
 | TO-HYG-009 | Audit/retire obsolete embedded G2G development tooling without breaking product runtime | PARKED_AFTER_TO112 | GLM worker + GPT-6 review | `agent-tasks/009-g2g-retirement-audit.md` | — |
 
 ## Known owner gates
@@ -22,6 +22,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 - `VITE_*` production changes require redeploy coordination.
 - Production OAuth/payment/provider secrets remain owner-controlled.
 - Live Supabase/auth/admin proof remains blocked until a production project and approved test credentials are available.
+- Razorpay webhook rollout requires the same dedicated `RAZORPAY_WEBHOOK_SECRET` to be configured in Razorpay and production Supabase before deploying the reviewed webhook function.
 
 ## Day-close log
 2026-09-12 — canonical control plane retained; stale matrix gap/status snapshots retired from the active branch.
@@ -31,3 +32,5 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 2026-09-12 — TO-114 authority review found privileged admin/agency operations already behind Supabase Edge Function/server authority boundaries; live production auth remains owner-blocked.
 2026-09-12 — TO-115 repaired stale provider policy and feature-aware auth/cloud smoke assumptions using TDD; Google-only production auth is valid when genuinely configured and provider absence no longer creates false failures.
 2026-09-12 — TO-116 added the broader launch smoke to CI; PR #43 verified 329/329 unit, 18/18 packing, 12/12 public routes and 52/52 core launch checks before merge. TO-117 and TO-118 are now executable within their no-secret/no-real-money gates.
+2026-09-12 — deployment safety hardened: manual Heroku deploy now fails closed on missing app/provider config and container paths use the canonical Node server; post-merge main CI for `5b4449cd` passed.
+2026-09-12 — TO-117 hardened Razorpay webhook authenticity with a dedicated fail-closed webhook secret and added a provider handoff. Code-side payment readiness is complete; live Razorpay/PhonePe sandbox/provider proof remains owner/provider-blocked.
