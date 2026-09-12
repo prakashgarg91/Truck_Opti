@@ -228,7 +228,6 @@ serve(async (req) => {
       throw new Error('razorpay_order_id is required')
     }
 
-    // Update payment status in Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -450,7 +449,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error)
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
+    return new Response(JSON.stringify({ success: false, error: 'Unable to verify payment right now.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400
     })

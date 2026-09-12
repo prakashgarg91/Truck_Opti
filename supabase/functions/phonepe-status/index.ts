@@ -218,7 +218,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Unable to check PhonePe payment status right now.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400
     })
