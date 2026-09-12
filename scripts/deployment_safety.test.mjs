@@ -18,6 +18,15 @@ test('manual Heroku deploy requires explicit app and Supabase configuration', ()
   assert.match(deployScript, /exit 1/)
 })
 
+test('manual Heroku deploy binds the git remote to the explicitly approved app before push', () => {
+  assert.match(deployScript, /heroku git:remote --app "\$APP_NAME"/)
+  assert.match(deployScript, /git push heroku main/)
+  assert.ok(
+    deployScript.indexOf('heroku git:remote --app "$APP_NAME"') < deployScript.indexOf('git push heroku main'),
+    'Heroku remote binding must occur before deployment push',
+  )
+})
+
 test('container deployment uses the canonical Node production server', () => {
   assert.match(herokuYaml, /web:\s*node server\.js/)
   assert.match(dockerfile, /CMD\s+\["node",\s*"server\.js"\]/)
