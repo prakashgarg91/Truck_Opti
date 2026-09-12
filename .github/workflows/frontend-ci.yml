@@ -88,6 +88,9 @@ jobs:
       - name: Test production server routing and readiness
         run: npm run test:server-routing
 
+      - name: Lint frontend
+        run: npm --prefix frontend run lint
+
       - name: Build frontend in supported local-first mode
         run: npm --prefix frontend run build
 
