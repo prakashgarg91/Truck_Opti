@@ -1,8 +1,8 @@
-// Focused routing tests for server.js canonical-host redirects.
+// Focused routing/readiness tests for server.js.
 // Run: npm run test:server-routing
 // Covers: apex/Heroku-host 301 to www (path+query preserved), case/port/
-// trailing-dot/comma-list host tolerance, www serving without a loop, and
-// unknown hosts not being redirected.
+// trailing-dot/comma-list host tolerance, www serving without a loop,
+// health/readiness probes, and unknown hosts not being redirected.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -48,6 +48,22 @@ test.before(async () => {
 test.after(() => {
   server?.close();
   if (createdStubIndex && fs.existsSync(indexPath)) fs.unlinkSync(indexPath);
+});
+
+test('healthz is host-independent, uncached, and returns stable JSON', async () => {
+  const res = await request('/healthz', { host: 'truck-opti-app-0de4b9bc1ac2.herokuapp.com' });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.location, undefined);
+  assert.match(res.headers['cache-control'] || '', /no-store/);
+  assert.deepEqual(JSON.parse(res.body), { status: 'ok' });
+});
+
+test('readyz reports ready when the production frontend artifact exists', async () => {
+  const res = await request('/readyz', { host: 'truck-opti-app-0de4b9bc1ac2.herokuapp.com' });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.location, undefined);
+  assert.match(res.headers['cache-control'] || '', /no-store/);
+  assert.deepEqual(JSON.parse(res.body), { status: 'ready' });
 });
 
 test('current Heroku default hostname 301s to canonical www', async () => {

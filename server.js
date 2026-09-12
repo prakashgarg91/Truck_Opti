@@ -16,6 +16,7 @@ const APEX_HOST = 'truckopti.in';
 const CANONICAL_HOST = 'www.truckopti.in';
 const CANONICAL = `https://${CANONICAL_HOST}`;
 const DIST_DIR = path.join(__dirname, 'frontend', 'dist');
+const INDEX_PATH = path.join(DIST_DIR, 'index.html');
 
 // x-forwarded-host can be a comma list and may carry a port or trailing dots;
 // canonicalize to a bare lowercase hostname so comparisons ignore those.
@@ -26,6 +27,11 @@ function normalizeHost(rawHost) {
 
 function isRedirectHost(host) {
   return host === HEROKU_HOST || host === APEX_HOST;
+}
+
+function setProbeHeaders(res) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
 }
 
 function setStaticCacheHeaders(res, filePath) {
@@ -50,7 +56,23 @@ function setStaticCacheHeaders(res, filePath) {
   res.setHeader('Cache-Control', 'public, max-age=3600');
 }
 
-// ── 1. Force canonical domain ─────────────────────────────────────────────────
+// ── 1. Host-independent platform probes ───────────────────────────────────────
+// These must remain before canonical-host redirects so Heroku/load balancer
+// health checks get an unambiguous status rather than a 301 response.
+app.get('/healthz', (_req, res) => {
+  setProbeHeaders(res);
+  res.status(200).send(JSON.stringify({ status: 'ok' }));
+});
+
+app.get('/readyz', (_req, res) => {
+  setProbeHeaders(res);
+  if (!fs.existsSync(INDEX_PATH)) {
+    return res.status(503).send(JSON.stringify({ status: 'not_ready' }));
+  }
+  return res.status(200).send(JSON.stringify({ status: 'ready' }));
+});
+
+// ── 2. Force canonical domain ─────────────────────────────────────────────────
 app.use((req, res, next) => {
   const host = normalizeHost(req.headers['x-forwarded-host'] || req.headers.host);
   if (isRedirectHost(host)) {
@@ -59,24 +81,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── 2. Serve static assets ────────────────────────────────────────────────────
+// ── 3. Serve static assets ────────────────────────────────────────────────────
 app.use(express.static(DIST_DIR, {
   etag: true,
   index: false,          // we handle index.html manually below (SPA fallback)
   setHeaders: setStaticCacheHeaders,
 }));
 
-// ── 3. SPA fallback — serve index.html for all unmatched routes ───────────────
+// ── 4. SPA fallback — serve index.html for all unmatched routes ───────────────
 // Express 5 requires a named wildcard instead of the legacy "*" token.
 app.get('/{*splat}', (req, res) => {
-  const indexPath = path.join(DIST_DIR, 'index.html');
-  if (!fs.existsSync(indexPath)) {
+  if (!fs.existsSync(INDEX_PATH)) {
     return res.status(503).send('App not built. Run npm run build.');
   }
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  res.sendFile(indexPath);
+  res.sendFile(INDEX_PATH);
 });
 
 if (require.main === module) {
