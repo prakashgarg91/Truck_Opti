@@ -183,7 +183,8 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4">
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-5xl mx-auto lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6 lg:items-start">
+        <div className="max-w-lg mx-auto lg:max-w-none">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 pt-4">
           <button
@@ -355,6 +356,56 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
             )}
           </button>
         </form>
+        </div>
+
+        {/* Support expectations rail — adapted from the Stitch contact design
+            (projects/817968552986251880/screens/0b4d18c8069842bfa29da8bd07ee907b). */}
+        <aside aria-label="Support expectations" className="mt-6 lg:mt-0 space-y-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {'Service level agreements'}
+            </p>
+            <ul className="mt-3 space-y-3">
+              <li className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <Mail className="w-4 h-4 text-green-600 dark:text-green-400" />
+                </span>
+                <span className="text-sm">
+                  <span className="block font-medium text-slate-800 dark:text-slate-200">{'Email'}</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">{'Reply within 2–4 hours'}</span>
+                </span>
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                </span>
+                <span className="text-sm">
+                  <span className="block font-medium text-slate-800 dark:text-slate-200">{'Phone'}</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">{SUPPORT_PHONE}</span>
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {'Operational hours'}
+            </p>
+            <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
+              {'Monday – Saturday'}
+            </p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">{'9:00 – 19:00 IST'}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void handleCopySupportEmail()}
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+          >
+            <Mail className="h-4 w-4" />
+            {'Copy support email'}
+          </button>
+        </aside>
       </div>
     </div>
   )
