@@ -176,9 +176,9 @@ serve(async (req) => {
   try {
     const body = await req.text()
     const signature = req.headers.get('x-razorpay-signature') ?? ''
-    const secret = Deno.env.get('RAZORPAY_KEY_SECRET') ?? ''
+    const secret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET') ?? ''
     if (!secret) {
-      console.error('[razorpay-webhook] RAZORPAY_KEY_SECRET not configured')
+      console.error('[razorpay-webhook] RAZORPAY_WEBHOOK_SECRET not configured')
       return new Response('Webhook not configured', { status: 500 })
     }
 
