@@ -1,45 +1,55 @@
 #!/bin/bash
+set -euo pipefail
 
-# TruckOpti Heroku Deployment Script
-# Usage: ./deploy-heroku.sh [app-name]
+# TruckOpti Heroku deployment helper.
+# This script intentionally fails closed: it never invents app names or provider credentials.
+# Usage:
+#   HEROKU_APP_NAME=... \
+#   VITE_SUPABASE_URL=... \
+#   VITE_SUPABASE_ANON_KEY=... \
+#   VITE_APP_URL=https://www.truckopti.in \
+#   ./deploy-heroku.sh
 
-APP_NAME=${1:-truckopti}
+APP_NAME=${1:-${HEROKU_APP_NAME:-}}
 
-echo "🚀 Deploying TruckOpti to Heroku..."
-echo ""
+require_env() {
+  local name="$1"
+  local value="${!name:-}"
+  if [ -z "$value" ]; then
+    echo "Missing required environment variable: $name" >&2
+    exit 1
+  fi
+}
 
-# Check if Heroku CLI is installed
-if ! command -v heroku &> /dev/null; then
-    echo "❌ Heroku CLI not found. Installing..."
-    npm install -g heroku
+if [ -z "$APP_NAME" ]; then
+  echo "Missing Heroku app name. Pass it as the first argument or set HEROKU_APP_NAME." >&2
+  exit 1
 fi
 
-# Login to Heroku
-echo "🔑 Logging in to Heroku..."
-heroku login
+require_env VITE_SUPABASE_URL
+require_env VITE_SUPABASE_ANON_KEY
+require_env VITE_APP_URL
 
-# Create Heroku app if it doesn't exist
-echo "📦 Creating Heroku app: $APP_NAME"
-heroku create $APP_NAME 2>/dev/null || echo "App already exists, continuing..."
+if ! command -v heroku >/dev/null 2>&1; then
+  echo "Heroku CLI is required. Install and authenticate it before deployment." >&2
+  exit 1
+fi
 
-# Set environment variables
-echo "⚙️  Setting environment variables..."
-heroku config:set VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co --app $APP_NAME
-heroku config:set VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpieG5jZWp0Y2JwY3Jvbm5kcWx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4MDk2MjIsImV4cCI6MjA4MzM4NTYyMn0.8GHh-LAeBx9RyQVjcJFbBiZrumfiqtUhe-NUedY3vqo --app $APP_NAME
-heroku config:set VITE_APP_URL=https://$APP_NAME.herokuapp.com --app $APP_NAME
+# Refuse to create or guess a production app. The target must already exist and be accessible.
+heroku apps:info --app "$APP_NAME" >/dev/null
 
-# Deploy
-echo "📤 Deploying to Heroku..."
-git add .
-git commit -m "Heroku deployment $(date)" --allow-empty
+# Ensure the deployment remote targets the same explicitly approved app.
+heroku git:remote --app "$APP_NAME"
+
+echo "Applying approved build-time configuration to Heroku app: $APP_NAME"
+heroku config:set \
+  "VITE_SUPABASE_URL=$VITE_SUPABASE_URL" \
+  "VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY" \
+  "VITE_APP_URL=$VITE_APP_URL" \
+  --app "$APP_NAME"
+
+echo "Deploying current main branch to existing Heroku app: $APP_NAME"
 git push heroku main
 
-echo ""
-echo "✅ Deployment complete!"
-echo "🌐 Your app: https://$APP_NAME.herokuapp.com"
-echo ""
-echo "⚠️  IMPORTANT: Update Supabase Auth redirect URL:"
-echo "https://supabase.com/dashboard/project/YOUR_PROJECT_REF/auth/url-configuration"
-echo ""
-echo "Add this URL:"
-echo "https://$APP_NAME.herokuapp.com/auth/callback"
+echo "Deployment push completed for $APP_NAME."
+echo "Verify the canonical site, auth redirect configuration, and production smoke checks before launch sign-off."
