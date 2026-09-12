@@ -38,6 +38,9 @@ fi
 # Refuse to create or guess a production app. The target must already exist and be accessible.
 heroku apps:info --app "$APP_NAME" >/dev/null
 
+# Ensure the deployment remote targets the same explicitly approved app.
+heroku git:remote --app "$APP_NAME"
+
 echo "Applying approved build-time configuration to Heroku app: $APP_NAME"
 heroku config:set \
   "VITE_SUPABASE_URL=$VITE_SUPABASE_URL" \
