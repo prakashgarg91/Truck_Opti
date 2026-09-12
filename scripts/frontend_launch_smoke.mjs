@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import dns from 'node:dns/promises';
 import { chromium } from 'playwright';
+import { shouldRunEmailOtpFallback } from './production_config_policy.mjs';
 
 const BASE_URL = process.env.PUBLIC_APP_URL || 'https://www.truckopti.in';
 const SUPABASE_URL = process.env.SUPABASE_PUBLIC_URL || 'https://jbxncejtcbpcronndqlx.supabase.co';
@@ -273,10 +274,24 @@ async function collectAuthFallbackResult(browser) {
     await page.goto(`${BASE_URL}/login?fresh=${Date.now()}`, { waitUntil: 'networkidle', timeout: 45000 });
 
     const emailTab = page.getByRole('button', { name: /^Email/ }).first();
-    if (await emailTab.count()) {
-      await emailTab.click();
+    const emailChannelCount = await emailTab.count();
+
+    if (!shouldRunEmailOtpFallback({ emailChannelCount })) {
+      return {
+        kind: 'auth-fallback',
+        path: '/login',
+        finalUrl: page.url(),
+        title: await page.title(),
+        skipped: true,
+        skipReason: 'Email OTP is disabled in this environment.',
+        passed: signals.pageErrors.length === 0,
+        consoleErrors: signals.consoleErrors,
+        pageErrors: signals.pageErrors,
+        failedResponses: signals.failedResponses,
+      };
     }
 
+    await emailTab.click();
     await page.getByPlaceholder('your@email.com').fill('launch-smoke@example.com');
     const submitButton = page.getByRole('button', { name: /Send Email OTP|Get OTP/ });
     await submitButton.click();
