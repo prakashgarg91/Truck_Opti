@@ -2,10 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import dns from 'node:dns/promises';
 import { chromium } from 'playwright';
-import { shouldRunEmailOtpFallback } from './production_config_policy.mjs';
+import { shouldRunEmailOtpFallback, shouldRunSupabaseHealthCheck } from './production_config_policy.mjs';
 
 const BASE_URL = process.env.PUBLIC_APP_URL || 'https://www.truckopti.in';
-const SUPABASE_URL = process.env.SUPABASE_PUBLIC_URL || 'https://jbxncejtcbpcronndqlx.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_PUBLIC_URL || '';
 const OUTPUT_PATH = path.join('logs', 'frontend_launch_smoke_report.json');
 
 const PUBLIC_ROUTES = [
@@ -400,6 +400,17 @@ async function collectAgencyRegisterWizardResult(browser) {
 }
 
 async function collectAuthServiceHealth() {
+  if (!shouldRunSupabaseHealthCheck(SUPABASE_URL)) {
+    return {
+      kind: 'auth-service',
+      supabaseUrl: null,
+      hostname: null,
+      skipped: true,
+      skipReason: 'SUPABASE_PUBLIC_URL is not configured for this local-first smoke run.',
+      passed: true,
+    };
+  }
+
   const hostname = getSupabaseHostname();
   const result = {
     kind: 'auth-service',
@@ -467,7 +478,7 @@ async function main() {
     const passedChecks = results.filter((result) => result.passed).length;
     const report = {
       baseUrl: BASE_URL,
-      supabaseUrl: SUPABASE_URL,
+      supabaseUrl: SUPABASE_URL || null,
       timestamp: new Date().toISOString(),
       summary: {
         checks: results.length,
