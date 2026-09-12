@@ -10,6 +10,7 @@ on:
       - 'frontend/**'
       - 'scripts/**'
       - 'apps/web/**'
+      - 'supabase/functions/**'
       - 'deploy-heroku.sh'
       - 'heroku.yml'
       - 'Dockerfile'
@@ -24,6 +25,7 @@ on:
       - 'frontend/**'
       - 'scripts/**'
       - 'apps/web/**'
+      - 'supabase/functions/**'
       - 'deploy-heroku.sh'
       - 'heroku.yml'
       - 'Dockerfile'
@@ -68,6 +70,9 @@ jobs:
 
       - name: Test deployment safety policy
         run: node --test scripts/deployment_safety.test.mjs
+
+      - name: Test payment readiness policy
+        run: node --test scripts/payment_readiness_policy.test.mjs
 
       - name: Build frontend in supported local-first mode
         run: npm --prefix frontend run build
