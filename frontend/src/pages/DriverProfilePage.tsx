@@ -301,7 +301,19 @@ export default function DriverProfilePage() {
                   Refresh Settings <RefreshCw className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mt-5 space-y-3">
+                <button
+                  onClick={() => navigate('/driver/kyc')}
+                  className="mt-5 flex w-full items-center justify-between gap-3 rounded-2xl border border-primary-200 bg-primary-50/60 px-4 py-4 text-left transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-primary-500/30 dark:bg-primary-900/20 dark:hover:border-primary-500/50"
+                >
+                  <span>
+                    <span className="block font-semibold text-primary-700 dark:text-primary-300">Documents &amp; KYC</span>
+                    <span className="mt-0.5 block text-sm text-slate-500 dark:text-slate-400">
+                      Upload RC, licence, Aadhaar and truck photo for verification
+                    </span>
+                  </span>
+                  <ChevronRight className="h-5 w-5 shrink-0 text-primary-600 dark:text-primary-300" />
+                </button>
+                <div className="mt-5 space-y-3">
                 <DocumentLink label="Driving License" url={profile.dl_url} />
                 <DocumentLink label="RC Book" url={profile.rc_url} />
                 <DocumentLink label="Insurance" url={profile.insurance_url} />
