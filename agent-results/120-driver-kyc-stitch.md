@@ -1,6 +1,6 @@
 # TO-120 — Driver "Documents & KYC Upload" screen from Stitch design
 
-Date: 2026-09-19 · Branch: `stitch/driver-docs-upload-20260919` · Status: CODE_DONE_ON_BRANCH_PENDING_MERGE
+Date: 2026-09-19 · Branch: `stitch/driver-docs-upload-20260919` · Status: DONE (merged to main as `0f91bfe5`, owner merge review 2026-09-19; post-merge gates re-run green)
 
 ## Source design
 - Stitch screen `e72905bab5794849b0fcb495b7c474bc` "Driver: Documents & KYC Upload" (project 817968552986251880, MOBILE, design system `assets/039d7f7b6b7747e8a76dedad4464c9cb`), generated after two failed attempts (attempt 1: lowercase `deviceType` PROVIDER invalid-argument; attempt 2: 30 s client timeout, screen never landed). Attempt 3 succeeded in-call under adapter 0.2.0.

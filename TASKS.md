@@ -14,7 +14,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-118 | Observability and security hardening | READY | GLM worker + GPT-6 review | `agent-tasks/007-observability-security.md` | — |
 | TO-119 | Final production gates and launch handoff | BLOCKED_BY_TO118_AND_LIVE_OWNER_GATES | GPT-6 | `agent-tasks/008-final-production-gates.md` | — |
 | TO-HYG-009 | Audit/retire obsolete embedded G2G development tooling without breaking product runtime | PARKED_AFTER_TO112 | GLM worker + GPT-6 review | `agent-tasks/009-g2g-retirement-audit.md` | — |
-| TO-120 | Driver "Documents & KYC Upload" screen integrated from Stitch design | CODE_DONE_ON_BRANCH_PENDING_MERGE | GLM worker + GPT-6 review | — (owner-directed Stitch mission) | `agent-results/120-driver-kyc-stitch.md` |
+| TO-120 | Driver "Documents & KYC Upload" screen integrated from Stitch design | DONE | GLM worker + GPT-6 review | — (owner-directed Stitch mission) | `agent-results/120-driver-kyc-stitch.md` |
 
 ## Known owner gates
 - No `supabase db push` without explicit approval.
@@ -36,3 +36,4 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 2026-09-12 — deployment safety hardened: manual Heroku deploy now fails closed on missing app/provider config and container paths use the canonical Node server; post-merge main CI for `5b4449cd` passed.
 2026-09-12 — TO-117 hardened Razorpay webhook authenticity with a dedicated fail-closed webhook secret and added a provider handoff. Code-side payment readiness is complete; live Razorpay/PhonePe sandbox/provider proof remains owner/provider-blocked.
 2026-09-19 — TO-120: driver "Documents & KYC Upload" screen integrated on `stitch/driver-docs-upload-20260919` from Stitch screen `e72905bab5794849b0fcb495b7c474bc` (attempt 3 succeeded under adapter 0.2.0; attempts 1-2 root-caused earlier). tsc 0 errors, vitest 347/347 (18 new), eslint clean, browser journey verified at mobile+desktop incl. upload-error and locked-after-acceptance states. Uploads are client-simulated pending backend wiring. Next: review + merge branch; rerun gates post-merge.
+2026-09-19 — TO-120 merged to main via `0f91bfe5` (owner merge review; no conflicts; diff = exactly the 7 expected files). Post-merge gates re-run: tsc 0 errors, vitest 347/347, eslint clean; mobile journey re-verified on merged main (upload → submit → locked "KYC Verified"). Local main is now ahead of origin/main (not pushed — owner-gated). `stitch/driver-docs-upload-20260919` is fully merged (local-only, no remote) and safe to delete.
