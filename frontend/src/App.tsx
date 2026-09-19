@@ -57,6 +57,7 @@ const DriverEarningsPage = React.lazy(() => import('./pages/DriverEarningsPage')
 const DriverHistoryPage = React.lazy(() => import('./pages/DriverHistoryPage'))
 const DriverDetailPage = React.lazy(() => import('./pages/DriverDetailPage'))
 const DriverProfilePage = React.lazy(() => import('./pages/DriverProfilePage'))
+const DriverKycPage = React.lazy(() => import('./pages/DriverKycPage'))
 const AgencyDashboardPage = React.lazy(() => import('./pages/AgencyDashboardPage'))
 const AgencyFleetPage = React.lazy(() => import('./pages/AgencyFleetPage'))
 const AgencyJobsPage = React.lazy(() => import('./pages/AgencyJobsPage'))
@@ -169,6 +170,7 @@ function AppContent() {
             <Route path="/driver/earnings" element={<DriverEarningsPage />} />
             <Route path="/driver/history" element={<DriverHistoryPage />} />
             <Route path="/driver/profile" element={<DriverProfilePage />} />
+            <Route path="/driver/kyc" element={<DriverKycPage />} />
           </Route>
 
           {/* Agency Portal — separate layout with agency bottom nav */}
