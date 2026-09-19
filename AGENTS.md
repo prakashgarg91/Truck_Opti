@@ -67,3 +67,7 @@ Before stopping:
 7. Check git status and identify pre-existing vs session changes.
 
 The next session must be resumable from the four-item read order alone.
+## Stitch design work — standing instruction
+- stitch_* tools are approved for this repository. Any session doing UI work calls the stitch_guide tool first and follows it as the workflow of record.
+- Audit-first (automatic): keep docs/design-audit.md current. If it is missing or older than the latest route changes, run the stitch_guide app audit UNPROMPTED before any design task, then propose the prioritized backlog. After every integrated screen, update the audit/backlog and propose the next item with one line of evidence.
+- Standing approval to execute: work the backlog one item at a time — generate -> checkpoint -> integrate -> verify (typecheck, tests, browser at mobile AND desktop widths) -> update audit -> report after each item. P0 items (journey-breaking gaps) proceed without asking; P1/P2 wait for owner selection. Mutation rules from stitch_guide never relax: one attempt per screen, never auto-retried, journal/poll recovery on ambiguity.
