@@ -1,0 +1,8 @@
+[mcp_servers.repowise]
+command = "repowise"
+args = [
+    "mcp",
+    "D:/Github/Truck_Opti",
+    "--transport",
+    "stdio",
+]
