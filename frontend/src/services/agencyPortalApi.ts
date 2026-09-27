@@ -17,10 +17,6 @@ async function getFunctionErrorMessage(error: unknown, fallbackMessage: string) 
                 // Fall through to fallback handling.
             }
         }
-
-        if ('message' in error && typeof error.message === 'string' && error.message.trim()) {
-            return error.message
-        }
     }
 
     return fallbackMessage
