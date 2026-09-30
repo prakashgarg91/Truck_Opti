@@ -16,7 +16,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-HYG-009 | Audit/retire obsolete embedded G2G development tooling without breaking product runtime | PARKED_AFTER_TO112 | GLM worker + GPT-6 review | `agent-tasks/009-g2g-retirement-audit.md` | — |
 | TO-120 | Driver "Documents & KYC Upload" screen integrated from Stitch design (UI simulation only) | DONE_UI_ONLY | GLM worker + GPT-6 review | — (owner-directed Stitch mission); backend follow-ups TO-126/127/128 | `agent-results/120-driver-kyc-stitch.md` |
 | TO-ASSESS-010 | Current completion assessment and bounded worker briefs | DONE | GPT-6 | Owner-requested assessment | `agent-results/010-result.md` |
-| TO-121 | Repair canonical launch and closure gates | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/011-canonical-readiness-gates.md` | — |
+| TO-121 | Repair canonical launch and closure gates | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/011-canonical-readiness-gates.md` | `agent-results/011-result.md` |
 | TO-122 | Connect Google login to trusted Supabase sessions | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/012-trusted-cloud-auth.md` | — |
 | TO-123 | Make every login surface usable and consistent | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/013-usable-auth-surfaces.md` | — |
 | TO-124 | Audit real provider capability and fail closed | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/014-provider-capability-audits.md` | — |

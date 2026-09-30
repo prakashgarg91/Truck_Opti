@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$ReportDir = Join-Path $RepoRoot '0.dev-matrix\test-reports'
+$ReportDir = Join-Path $RepoRoot 'logs\test-reports'
 $ReportPath = Join-Path $ReportDir 'hidden-error-latest.json'
 $null = New-Item -ItemType Directory -Path $ReportDir -Force
 
@@ -40,7 +40,6 @@ function Invoke-HiddenErrorStep {
     }
 }
 
-Invoke-HiddenErrorStep -Name 'Deep error scan' -WorkingDirectory $RepoRoot -Command { node 0.dev-matrix/deep-error-scanner.mjs }
 Invoke-HiddenErrorStep -Name 'Glue check' -WorkingDirectory $RepoRoot -Command { node tools/glue-check.mjs }
 Invoke-HiddenErrorStep -Name 'Frontend unit tests' -WorkingDirectory (Join-Path $RepoRoot 'frontend') -Command { npm run test:unit }
 

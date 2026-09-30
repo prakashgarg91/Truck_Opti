@@ -147,7 +147,7 @@ if (hardGaps.length === 0 && coupling.length === 0 && stubs.length === 0) {
   console.log(`\n${BOLD}GAPS: ${RED}${hardGaps.length}${RESET}  |  ${BOLD}WARNINGS: ${YELLOW}${allGaps.length - hardGaps.length + coupling.length}${RESET}`);
 }
 
-const reportDir = path.join(ROOT, '0.dev-matrix/test-reports');
+const reportDir = path.join(ROOT, 'logs');
 const reportPath = path.join(reportDir, 'glue-check-report.json');
 if (!fs.existsSync(reportDir)) fs.mkdirSync(reportDir, { recursive: true });
 

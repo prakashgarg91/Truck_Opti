@@ -1,20 +1,29 @@
 # ============================================================
-# TruckOpti — Local Launch-Readiness Verification
+# TruckOpti - Canonical Launch-Readiness Verification (TO-121)
 # ============================================================
-# Repeatable gate-check script for Windows/PowerShell.
 # Run from repo root:  .\scripts\launch-readiness.ps1
 # Or via npm:          npm run launch-check
 #
-# Gates checked (all must PASS for a green launch):
-#   1. Frontend TypeScript build (tsc + vite build)
-#   2. Root npm audit --omit=dev
-#   3. Frontend npm audit --omit=dev
-#   4. apps/web npm audit
-#   5. pip-audit on apps/web/requirements.txt
-#   6. Python compileall on apps/web/app and apps/web/run.py
-#   7. Runtime error loop (required doc plus real local capture/resolve path)
-#   8. Git working tree cleanliness (no uncommitted/unignored changes)
-#   9. Tree hygiene (required doc, no junk artifacts, no merge markers in active code/config files)
+# Gates are reported in four separate categories:
+#   1. Environment prerequisites - tool and packaging availability.
+#   2. Local engineering         - build, dependency audits, Python
+#                                   checks, glue check, runtime error
+#                                   loop wiring.
+#   3. Workspace hygiene         - canonical control plane (AGENTS.md,
+#                                   ARCHITECTURE.md, TASKS.md, assigned
+#                                   briefs and result records), npm
+#                                   script targets, git cleanliness,
+#                                   junk artifacts, merge markers.
+#   4. Owner-gated production    - checks that need owner-controlled
+#                                   access (Heroku config, live
+#                                   credentials). A BLOCKED gate here
+#                                   always prevents a production-ready
+#                                   verdict.
+#
+# Status vocabulary: PASS / FAIL / SKIP (not applicable) / BLOCKED
+# (mandatory but not runnable). Exit codes: 0 = no FAIL, 1 = any FAIL.
+# Machine report: logs/launch-check/launch-check-status.json
+# Transcript log: logs/launch-check/launch-check-<stamp>.log
 # ============================================================
 
 param(
@@ -23,615 +32,412 @@ param(
 
 $ErrorActionPreference = 'Continue'
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$AllowedRuntimeDirtyFiles = @(
-    '0.dev-matrix/STATE.md',
-    '0.dev-matrix/TASK.md',
-    '0.dev-matrix/DISCUSSION.md',
-    '0.dev-matrix/AI-HANDOFF.md',
-    '0.dev-matrix/LAST-CLOSEOUT.md'
-)
-$AllowedRuntimeDirtyPrefixes = @(
-    '0.dev-matrix/closeout-logs/',
-    '0.dev-matrix/test-reports/'
-)
+. (Join-Path $PSScriptRoot 'launch-gates.core.ps1')
 
-# ---------- helpers ----------
-
+$StatusDir = Join-Path $RepoRoot 'logs\launch-check'
+$null = New-Item -ItemType Directory -Path $StatusDir -Force
+$dateStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
+$LogPath = Join-Path $StatusDir "launch-check-$dateStamp.log"
+$transcript = New-Object System.Collections.Generic.List[string]
+$gates = New-Object System.Collections.Generic.List[object]
 $script:PassCount = 0
 $script:FailCount = 0
+$script:BlockedCount = 0
 $script:SkipCount = 0
 
 function Write-Gate {
     param(
+        [string]$Category,
         [string]$Label,
         [string]$Status,
         [string]$Detail
     )
-    $icon = 'OK'
-    $color = 'Green'
-    if ($Status -eq 'FAIL') { $icon = 'FAIL'; $color = 'Red' }
-    if ($Status -eq 'SKIP') { $icon = 'SKIP'; $color = 'Yellow' }
-
-    $padded = $Label.PadRight(48)
-    $line = "  [$icon] $padded  $Detail"
-    Write-Host $line -ForegroundColor $color
-
-    if ($Status -eq 'PASS') { $script:PassCount++ }
-    elseif ($Status -eq 'FAIL') { $script:FailCount++ }
-    else { $script:SkipCount++ }
-}
-
-function ConvertTo-RepoRelativePath {
-    param([string]$Path)
-    if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
-    return ($Path -replace '\\', '/').Trim()
-}
-
-function Get-StatusPath {
-    param([string]$StatusLine)
-    if ([string]::IsNullOrWhiteSpace($StatusLine) -or $StatusLine.Length -lt 4) { return $null }
-    $path = $StatusLine.Substring(3).Trim()
-    if ($path -match ' -> ') {
-        $path = ($path -split ' -> ')[-1].Trim()
-    }
-    return ConvertTo-RepoRelativePath $path
-}
-
-function Test-IsAllowedRuntimeDirtyPath {
-    param([string]$RelativePath)
-    if ([string]::IsNullOrWhiteSpace($RelativePath)) { return $false }
-    if ($AllowedRuntimeDirtyFiles -contains $RelativePath) { return $true }
-    foreach ($prefix in $AllowedRuntimeDirtyPrefixes) {
-        if ($RelativePath -like "$prefix*") { return $true }
-    }
-    return $false
-}
-
-function Get-ChecklistFieldValue {
-    param([string]$Content, [string]$Label)
-    if ([string]::IsNullOrWhiteSpace($Content) -or [string]::IsNullOrWhiteSpace($Label)) { return $null }
-    $pattern = '(?mi)^-\s*' + [regex]::Escape($Label) + '\s*(?<value>.+)$'
-    $match = [regex]::Match($Content, $pattern)
-    if ($match.Success) {
-        return $match.Groups['value'].Value.Trim()
-    }
-    return $null
-}
-
-function Test-IsMeaningfulLaunchFocus {
-    param([string]$Value)
-    if ([string]::IsNullOrWhiteSpace($Value)) { return $false }
-    return $Value.Trim() -notmatch '^(?i:todo|tbd|unknown)$'
-}
-
-$script:RootPackageScripts = $null
-
-function Get-RootPackageScripts {
-    if ($null -ne $script:RootPackageScripts) {
-        return $script:RootPackageScripts
-    }
-
-    $script:RootPackageScripts = @{}
-    $packageJsonPath = Join-Path $RepoRoot 'package.json'
-    if (-not (Test-Path $packageJsonPath)) {
-        return $script:RootPackageScripts
-    }
-
-    try {
-        $packageJson = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
-        if ($packageJson.scripts) {
-            foreach ($property in $packageJson.scripts.PSObject.Properties) {
-                $script:RootPackageScripts[$property.Name] = [string]$property.Value
-            }
+    $padded = $Label.PadRight(44)
+    $line = "  [$Status] $padded  $Detail"
+    Write-Host $line -ForegroundColor $(
+        switch ($Status) {
+            'FAIL' { 'Red' }
+            'BLOCKED' { 'Yellow' }
+            'SKIP' { 'DarkYellow' }
+            default { 'Green' }
         }
-    }
-    catch {
-        $script:RootPackageScripts = @{}
-    }
+    )
+    $transcript.Add($line)
 
-    return $script:RootPackageScripts
+    $gate = [PSCustomObject]@{
+        category = $Category
+        name     = $Label
+        status   = $Status
+        detail   = $Detail
+    }
+    $gates.Add($gate)
+
+    switch ($Status) {
+        'PASS' { $script:PassCount++ }
+        'FAIL' { $script:FailCount++ }
+        'BLOCKED' { $script:BlockedCount++ }
+        default { $script:SkipCount++ }
+    }
 }
 
-function Test-RootNpmScript {
-    param([string]$Name)
-
-    $scripts = Get-RootPackageScripts
-    return $scripts.ContainsKey($Name)
-}
-
-function Get-RepoPythonCommandPrefix {
-    $venvPython = Join-Path $RepoRoot '.venv\Scripts\python.exe'
-    if (Test-Path $venvPython) {
-        return '.\\.venv\\Scripts\\python.exe'
-    }
-
-    if (Get-Command python -ErrorAction SilentlyContinue) {
-        return 'python'
-    }
-
-    return $null
-}
-
-function Get-RuntimeLoopDetection {
-    $captureCommand = $null
-    $resolveCommand = $null
-
-    if (Test-RootNpmScript 'track-errors') {
-        $captureCommand = 'npm run track-errors'
-    }
-    elseif (Test-RootNpmScript 'start') {
-        $captureCommand = 'npm run start'
-    }
-    elseif (Test-RootNpmScript 'dev') {
-        $captureCommand = 'npm run dev'
-    }
-    else {
-        $pythonPrefix = Get-RepoPythonCommandPrefix
-        if ($pythonPrefix) {
-            foreach ($entryPoint in @('launcher.py', 'main.py', 'app.py', 'manage.py')) {
-                if (Test-Path (Join-Path $RepoRoot $entryPoint)) {
-                    $captureCommand = "$pythonPrefix $entryPoint"
-                    break
-                }
-            }
-        }
-    }
-
-    if (Test-RootNpmScript 'test:hidden-errors') {
-        $resolveCommand = 'npm run test:hidden-errors'
-    }
-    elseif (Test-Path (Join-Path $RepoRoot '0.dev-matrix\launch-check.ps1')) {
-        $resolveCommand = 'powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\launch-check.ps1'
-    }
-    elseif (Test-RootNpmScript 'test') {
-        $resolveCommand = 'npm test'
-    }
-    else {
-        $pythonPrefix = Get-RepoPythonCommandPrefix
-        if ($pythonPrefix -and (Test-Path (Join-Path $RepoRoot 'pytest.ini'))) {
-            $resolveCommand = "$pythonPrefix -m pytest"
-        }
-    }
-
-    return [PSCustomObject]@{
-        CaptureCommand = $captureCommand
-        ResolveCommand = $resolveCommand
-    }
+function Write-Section {
+    param([string]$Title)
+    $line = "  [$Title]"
+    Write-Host ''
+    Write-Host $line -ForegroundColor Cyan
+    $transcript.Add('')
+    $transcript.Add($line)
 }
 
 # ---------- banner ----------
 
-Write-Host ''
-Write-Host '============================================================' -ForegroundColor Cyan
-Write-Host '  TruckOpti Launch-Readiness Check' -ForegroundColor Cyan
-$dateStamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-Write-Host "  $dateStamp" -ForegroundColor DarkGray
-Write-Host '============================================================' -ForegroundColor Cyan
-Write-Host ''
+$banner = @(
+    '',
+    '============================================================',
+    '  TruckOpti Launch-Readiness Check',
+    "  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
+    '============================================================',
+    ''
+)
+foreach ($line in $banner) {
+    Write-Host $line -ForegroundColor Cyan
+    $transcript.Add($line)
+}
 
-# ---------- Gate 1: Frontend build ----------
+# ---------- 1. Environment prerequisites ----------
 
-Write-Host '  Gate 1: Frontend build (tsc + vite)' -ForegroundColor Cyan
+Write-Section 'Environment prerequisites'
+
+$nodeAvailable = Test-GateCommandAvailable 'node'
+$npmAvailable = Test-GateCommandAvailable 'npm'
+$gitAvailable = Test-GateCommandAvailable 'git'
+$pythonAvailable = Test-GateCommandAvailable 'python'
+
+$nodeVersion = ''
+if ($nodeAvailable) { $nodeVersion = ((& node --version 2>&1 | Out-String).Trim()) }
+$nodeDetail = if ($nodeAvailable -and $npmAvailable) { "node $nodeVersion; npm on PATH" } else { 'node/npm not on PATH; engineering gates will be blocked' }
+Write-Gate 'Environment prerequisites' 'Node and npm' $(if ($nodeAvailable -and $npmAvailable) { 'PASS' } else { 'BLOCKED' }) $nodeDetail
+
+Write-Gate 'Environment prerequisites' 'Git' $(if ($gitAvailable) { 'PASS' } else { 'BLOCKED' }) $(if ($gitAvailable) { ((& git --version 2>&1 | Out-String).Trim()) } else { 'git not on PATH; hygiene gates will be blocked' })
+
+$pythonVersion = ''
+if ($pythonAvailable) { $pythonVersion = ((& python --version 2>&1 | Out-String).Trim()) }
+Write-Gate 'Environment prerequisites' 'Python tooling' $(if ($pythonAvailable) { 'PASS' } else { 'SKIP' }) $(if ($pythonAvailable) { $pythonVersion } else { 'python not on PATH; pip-audit and compileall will be skipped or blocked' })
+
+$playwrightPackaged = $false
+if ($nodeAvailable) {
+    $playwrightPackaged = (Invoke-GateCommand -Label 'playwright probe' -WorkingDirectory $RepoRoot -Command { node -e "process.exit(require.resolve('playwright/package.json') ? 0 : 1)" }).ExitCode -eq 0
+}
+Write-Gate 'Environment prerequisites' 'Playwright packaging' $(if ($playwrightPackaged) { 'PASS' } else { 'SKIP' }) $(if ($playwrightPackaged) { 'playwright package resolvable from repo root' } else { 'playwright not installed; browser smokes must be run separately' })
+
+# ---------- 2. Local engineering ----------
+
+Write-Section 'Local engineering'
+
+# Gate: Frontend build (tsc + vite)
 $frontendDir = Join-Path $RepoRoot 'frontend'
-Push-Location $frontendDir
-try {
-    $buildOutput = npm run build 2>&1
-    $buildExit = $LASTEXITCODE
-    if ($buildExit -ne 0) {
-        $tail = ($buildOutput | Select-Object -Last 3) -join ' | '
-        Write-Gate 'Frontend build (tsc + vite)' 'FAIL' "exit $buildExit - $tail"
-    }
-    else {
-        $builtLine = ''
-        foreach ($line in $buildOutput) {
-            if ($line -match 'built in') { $builtLine = $line; break }
-        }
-        if ($VerboseOutput) {
-            foreach ($item in $buildOutput) {
-                Write-Host "    $item" -ForegroundColor DarkGray
-            }
-        }
-        Write-Gate 'Frontend build (tsc + vite)' 'PASS' $builtLine
-    }
+if (-not (Test-Path (Join-Path $frontendDir 'package.json'))) {
+    Write-Gate 'Local engineering' 'Frontend build (tsc + vite)' 'SKIP' 'no frontend/package.json'
 }
-finally {
-    Pop-Location
-}
-
-# ---------- Gate 2: Root npm audit ----------
-
-Write-Host '  Gate 2: Root npm audit --omit=dev' -ForegroundColor Cyan
-Push-Location $RepoRoot
-try {
-    $auditOutput = npm audit --omit=dev 2>&1
-    $auditExit = $LASTEXITCODE
-    if ($auditExit -ne 0) {
-        $vulnLine = ''
-        foreach ($line in $auditOutput) {
-            if ($line -match 'vulnerabilit') { $vulnLine = $line; break }
-        }
-        Write-Gate 'Root npm audit --omit=dev' 'FAIL' $vulnLine
-    }
-    else {
-        Write-Gate 'Root npm audit --omit=dev' 'PASS' '0 vulnerabilities'
-    }
-}
-finally {
-    Pop-Location
-}
-
-# ---------- Gate 3: Frontend npm audit ----------
-
-Write-Host '  Gate 3: Frontend npm audit --omit=dev' -ForegroundColor Cyan
-Push-Location (Join-Path $RepoRoot 'frontend')
-try {
-    $auditOutput = npm audit --omit=dev 2>&1
-    $auditExit = $LASTEXITCODE
-    if ($auditExit -ne 0) {
-        $vulnLine = ''
-        foreach ($line in $auditOutput) {
-            if ($line -match 'vulnerabilit') { $vulnLine = $line; break }
-        }
-        Write-Gate 'Frontend npm audit --omit=dev' 'FAIL' $vulnLine
-    }
-    else {
-        Write-Gate 'Frontend npm audit --omit=dev' 'PASS' '0 vulnerabilities'
-    }
-}
-finally {
-    Pop-Location
-}
-
-# ---------- Gate 4: apps/web npm audit ----------
-
-Write-Host '  Gate 4: apps/web npm audit' -ForegroundColor Cyan
-$webPkg = Join-Path $RepoRoot 'apps\web'
-$webPkgJson = Join-Path $webPkg 'package.json'
-if (-not (Test-Path $webPkgJson)) {
-    Write-Gate 'apps/web npm audit' 'SKIP' 'no package.json'
+elseif (-not $npmAvailable) {
+    Write-Gate 'Local engineering' 'Frontend build (tsc + vite)' 'BLOCKED' 'npm not available'
 }
 else {
-    Push-Location $webPkg
-    try {
-        $auditOutput = npm audit 2>&1
-        $auditExit = $LASTEXITCODE
-        if ($auditExit -ne 0) {
-            $vulnLine = ''
-            foreach ($line in $auditOutput) {
-                if ($line -match 'vulnerabilit') { $vulnLine = $line; break }
-            }
-            Write-Gate 'apps/web npm audit' 'FAIL' $vulnLine
+    $build = Invoke-GateCommand -Label 'Frontend build' -WorkingDirectory $frontendDir -Command { npm run build }
+    if ($build.ExitCode -ne 0) {
+        Write-Gate 'Local engineering' 'Frontend build (tsc + vite)' 'FAIL' "exit $($build.ExitCode) - $($build.Tail)"
+    }
+    else {
+        $builtLine = 'build completed'
+        foreach ($line in ($build.Tail -split ' \| ')) {
+            if ($line -match 'built in') { $builtLine = $line.Trim(); break }
+        }
+        Write-Gate 'Local engineering' 'Frontend build (tsc + vite)' 'PASS' $builtLine
+    }
+}
+
+# Gate helper: npm audit in a package directory
+function Test-NpmAuditGate {
+    param([string]$Label, [string]$PackageDir)
+    $packageJson = Join-Path $PackageDir 'package.json'
+    $packageLock = Join-Path $PackageDir 'package-lock.json'
+    if (-not (Test-Path $packageJson)) {
+        Write-Gate 'Local engineering' $Label 'SKIP' 'no package.json'
+        return
+    }
+    if (-not (Test-Path $packageLock)) {
+        Write-Gate 'Local engineering' $Label 'BLOCKED' 'package-lock.json missing; run npm install --package-lock-only'
+        return
+    }
+    if (-not $npmAvailable) {
+        Write-Gate 'Local engineering' $Label 'BLOCKED' 'npm not available'
+        return
+    }
+    $audit = Invoke-GateCommand -Label $Label -WorkingDirectory $PackageDir -Command { npm audit --omit=dev }
+    if ($audit.ExitCode -ne 0) {
+        $vulnLine = 'vulnerabilities detected'
+        foreach ($line in ($audit.Tail -split ' \| ')) {
+            if ($line -match 'vulnerabilit') { $vulnLine = $line.Trim(); break }
+        }
+        Write-Gate 'Local engineering' $Label 'FAIL' $vulnLine
+    }
+    else {
+        Write-Gate 'Local engineering' $Label 'PASS' '0 vulnerabilities'
+    }
+}
+
+Test-NpmAuditGate -Label 'Root npm audit --omit=dev' -PackageDir $RepoRoot
+Test-NpmAuditGate -Label 'Frontend npm audit --omit=dev' -PackageDir $frontendDir
+Test-NpmAuditGate -Label 'apps/web npm audit' -PackageDir (Join-Path $RepoRoot 'apps\web')
+
+# Gate: pip-audit
+$requirementsFile = Join-Path $RepoRoot 'apps\web\requirements.txt'
+if (-not (Test-Path $requirementsFile)) {
+    Write-Gate 'Local engineering' 'pip-audit (requirements.txt)' 'SKIP' 'no apps/web/requirements.txt'
+}
+elseif (-not $pythonAvailable) {
+    Write-Gate 'Local engineering' 'pip-audit (requirements.txt)' 'BLOCKED' 'python not available'
+}
+else {
+    $pipAudit = Invoke-GateCommand -Label 'pip-audit' -WorkingDirectory $RepoRoot -Command { python -m pip_audit -r apps\web\requirements.txt }
+    if ($pipAudit.ExitCode -ne 0) {
+        if ($pipAudit.Tail -match 'No module named') {
+            Write-Gate 'Local engineering' 'pip-audit (requirements.txt)' 'BLOCKED' 'pip-audit module not installed (python -m pip install pip-audit)'
         }
         else {
-            Write-Gate 'apps/web npm audit' 'PASS' '0 vulnerabilities'
-        }
-    }
-    finally {
-        Pop-Location
-    }
-}
-
-# ---------- Gate 5: pip-audit ----------
-
-Write-Host '  Gate 5: pip-audit (apps/web/requirements.txt)' -ForegroundColor Cyan
-$reqFile = Join-Path $RepoRoot 'apps\web\requirements.txt'
-if (-not (Test-Path $reqFile)) {
-    Write-Gate 'pip-audit (requirements.txt)' 'SKIP' 'requirements.txt not found'
-}
-else {
-    $pipOutput = python -m pip_audit -r $reqFile 2>&1
-    $pipExit = $LASTEXITCODE
-    if ($pipExit -ne 0) {
-        $vulnLine = ''
-        foreach ($line in $pipOutput) {
-            if ($line -match 'vulnerabilit') { $vulnLine = $line; break }
-        }
-        if ($VerboseOutput) {
-            foreach ($item in $pipOutput) {
-                Write-Host "    $item" -ForegroundColor DarkGray
+            $vulnLine = 'vulnerabilities detected (run with -VerboseOutput for details)'
+            foreach ($line in ($pipAudit.Tail -split ' \| ')) {
+                if ($line -match 'vulnerabilit') { $vulnLine = $line.Trim(); break }
             }
+            Write-Gate 'Local engineering' 'pip-audit (requirements.txt)' 'FAIL' $vulnLine
         }
-        if ($vulnLine -eq '') { $vulnLine = 'vulnerabilities detected (run with -VerboseOutput for details)' }
-        Write-Gate 'pip-audit (requirements.txt)' 'FAIL' $vulnLine
     }
     else {
-        Write-Gate 'pip-audit (requirements.txt)' 'PASS' '0 known vulnerabilities'
+        Write-Gate 'Local engineering' 'pip-audit (requirements.txt)' 'PASS' '0 known vulnerabilities'
     }
 }
 
-# ---------- Gate 6: Python compileall ----------
-
-Write-Host '  Gate 6: Python compileall (apps/web)' -ForegroundColor Cyan
+# Gate: Python compileall
 $webAppDir = Join-Path $RepoRoot 'apps\web\app'
 $runPy = Join-Path $RepoRoot 'apps\web\run.py'
 $compileTargets = @()
 if (Test-Path $webAppDir) { $compileTargets += $webAppDir }
 if (Test-Path $runPy) { $compileTargets += $runPy }
 if ($compileTargets.Count -eq 0) {
-    Write-Gate 'Python compileall (apps/web)' 'SKIP' 'no Python sources'
+    Write-Gate 'Local engineering' 'Python compileall (apps/web)' 'SKIP' 'no Python sources'
+}
+elseif (-not $pythonAvailable) {
+    Write-Gate 'Local engineering' 'Python compileall (apps/web)' 'BLOCKED' 'python not available'
 }
 else {
-    $compOutput = python -m compileall $compileTargets -q 2>&1
-    $compExit = $LASTEXITCODE
-    $errors = @()
-    foreach ($line in $compOutput) {
-        if ($line -match 'SyntaxError|Error') { $errors += $line }
-    }
-    if ($compExit -ne 0 -or $errors.Count -gt 0) {
-        $errDetail = ''
-        if ($errors.Count -gt 0) {
-            $errDetail = ($errors | Select-Object -First 3) -join '; '
-        }
-        else {
-            $errDetail = "exit $compExit"
-        }
-        Write-Gate 'Python compileall (apps/web)' 'FAIL' $errDetail
+    $compile = Invoke-GateCommand -Label 'compileall' -WorkingDirectory $RepoRoot -Command { python -m compileall apps\web\app apps\web\run.py -q }
+    if ($compile.ExitCode -ne 0) {
+        Write-Gate 'Local engineering' 'Python compileall (apps/web)' 'FAIL' "exit $($compile.ExitCode) - $($compile.Tail)"
     }
     else {
-        $targetCount = $compileTargets.Count
-        Write-Gate 'Python compileall (apps/web)' 'PASS' "$targetCount target(s) compiled clean"
+        Write-Gate 'Local engineering' 'Python compileall (apps/web)' 'PASS' "$($compileTargets.Count) target(s) compiled clean"
     }
 }
 
-# ---------- Gate 7a: Deep-scan ----------
-
-Write-Host '  Gate 7a: Deep error scan' -ForegroundColor Cyan
-Push-Location $RepoRoot
-try {
-    node 0.dev-matrix/deep-error-scanner.mjs *> $null
-    $scanExit = $LASTEXITCODE
-    if ($scanExit -ne 0) {
-        Write-Gate 'Deep error scan' 'FAIL' "deep-error-scanner exited $scanExit"
-    }
-    else {
-        Write-Gate 'Deep error scan' 'PASS' '0 errors found'
-    }
+# Gate: Glue check
+$glueScript = Join-Path $RepoRoot 'tools\glue-check.mjs'
+if (-not (Test-Path $glueScript)) {
+    Write-Gate 'Local engineering' 'Glue check' 'FAIL' 'tools/glue-check.mjs missing'
 }
-finally {
-    Pop-Location
+elseif (-not $nodeAvailable) {
+    Write-Gate 'Local engineering' 'Glue check' 'BLOCKED' 'node not available'
 }
-
-# ---------- Gate 7b: Glue check ----------
-
-Write-Host '  Gate 7b: Glue check' -ForegroundColor Cyan
-Push-Location $RepoRoot
-try {
-    node tools/glue-check.mjs *> $null
-    $glueExit = $LASTEXITCODE
-    if ($glueExit -ne 0) {
-        Write-Gate 'Glue check' 'FAIL' "glue-check exited $glueExit"
+else {
+    $glue = Invoke-GateCommand -Label 'Glue check' -WorkingDirectory $RepoRoot -Command { node tools/glue-check.mjs }
+    if ($glue.ExitCode -ne 0) {
+        Write-Gate 'Local engineering' 'Glue check' 'FAIL' "exit $($glue.ExitCode) - $($glue.Tail)"
     }
     else {
-        Write-Gate 'Glue check' 'PASS' '0 integration gaps'
+        Write-Gate 'Local engineering' 'Glue check' 'PASS' '0 integration gaps'
     }
 }
-finally {
-    Pop-Location
-}
 
-# ---------- Gate 7: Runtime error loop ----------
-
-Write-Host '  Gate 7: Runtime error loop' -ForegroundColor Cyan
-$runtimeLoopWrapper = Join-Path $RepoRoot 'runtime-error-loop.ps1'
-$runtimeLoopDoc = Join-Path $RepoRoot '0.dev-matrix\RUNTIME-ERROR-LOOP.md'
-$runtimeLoopDetection = Get-RuntimeLoopDetection
+# Gate: Runtime error loop wiring
+$rootScripts = Get-GateRootPackageScripts -RepoRoot $RepoRoot
 $runtimeLoopMissing = @()
-if (-not (Test-Path $runtimeLoopWrapper)) { $runtimeLoopMissing += 'runtime-error-loop.ps1' }
-if (-not (Test-Path $runtimeLoopDoc)) { $runtimeLoopMissing += '0.dev-matrix/RUNTIME-ERROR-LOOP.md' }
-if ([string]::IsNullOrWhiteSpace($runtimeLoopDetection.CaptureCommand)) { $runtimeLoopMissing += 'capture command' }
-if ([string]::IsNullOrWhiteSpace($runtimeLoopDetection.ResolveCommand)) { $runtimeLoopMissing += 'resolve command' }
+foreach ($scriptName in @('track-errors', 'test:hidden-errors')) {
+    if (-not $rootScripts.ContainsKey($scriptName)) {
+        $runtimeLoopMissing += "npm script $scriptName"
+        continue
+    }
+    foreach ($target in (Get-GateNpmScriptPathTargets -ScriptValue $rootScripts[$scriptName])) {
+        if (-not (Test-Path (Join-Path $RepoRoot $target))) { $runtimeLoopMissing += "$scriptName target $target" }
+    }
+}
+Write-Gate 'Local engineering' 'Runtime error loop wiring' $(if ($runtimeLoopMissing.Count -eq 0) { 'PASS' } else { 'FAIL' }) $(if ($runtimeLoopMissing.Count -eq 0) { 'capture: npm run track-errors | resolve: npm run test:hidden-errors' } else { 'missing: ' + ($runtimeLoopMissing -join ', ') })
 
-if ($runtimeLoopMissing.Count -eq 0) {
-    $runtimeLoopDetail = "capture: $($runtimeLoopDetection.CaptureCommand) | resolve: $($runtimeLoopDetection.ResolveCommand)"
-    Write-Gate 'Runtime error loop' 'PASS' $runtimeLoopDetail
+# ---------- 3. Workspace hygiene ----------
+
+Write-Section 'Workspace hygiene'
+
+# Gate: Canonical control plane
+$canonicalGaps = Get-GateCanonicalControlPlaneGaps -RepoRoot $RepoRoot
+Write-Gate 'Workspace hygiene' 'Canonical control plane' $(if ($canonicalGaps.Count -eq 0) { 'PASS' } else { 'FAIL' }) $(if ($canonicalGaps.Count -eq 0) { 'AGENTS.md, ARCHITECTURE.md, TASKS.md, agent-tasks/README.md present' } else { 'missing: ' + ($canonicalGaps -join ', ') })
+
+# Gate: Task board integrity
+$board = Get-GateTaskBoardReport -RepoRoot $RepoRoot
+$boardIssues = @()
+foreach ($issue in ($board.ParseErrors + $board.MissingBriefs + $board.MissingResults + $board.TerminalRowsWithoutResult)) { $boardIssues += $issue }
+$boardDetail = if ($boardIssues.Count -eq 0) {
+    "$($board.RowsFound) task rows; next recommended: $(if ($board.NextRecommended) { "$($board.NextRecommended.Id) [$($board.NextRecommended.Status)]" } else { 'none' })"
+} else {
+    ($boardIssues | Select-Object -First 5) -join '; '
+}
+Write-Gate 'Workspace hygiene' 'Task board integrity' $(if ($boardIssues.Count -eq 0) { 'PASS' } else { 'FAIL' }) $boardDetail
+if ($VerboseOutput) {
+    foreach ($statusEntry in $board.StatusCounts.PSObject.Properties) {
+        $line = "    $($statusEntry.Name): $($statusEntry.Value)"
+        Write-Host $line -ForegroundColor DarkGray
+        $transcript.Add($line)
+    }
+}
+
+# Gate: npm script file targets
+$npmTargetGaps = Get-GateNpmScriptTargetGaps -RepoRoot $RepoRoot
+Write-Gate 'Workspace hygiene' 'npm script file targets' $(if ($npmTargetGaps.Count -eq 0) { 'PASS' } else { 'FAIL' }) $(if ($npmTargetGaps.Count -eq 0) { 'every root npm script file target exists' } else { 'broken: ' + (($npmTargetGaps | Select-Object -First 5) -join '; ') })
+
+# Gate: Git working tree cleanliness
+$gitCleanDetail = 'git not available'
+$gitCleanStatus = 'BLOCKED'
+if ($gitAvailable) {
+    $null = & git update-index --refresh 2>&1
+    $porcelain = @(& git status --porcelain 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        $gitCleanStatus = 'FAIL'
+        $gitCleanDetail = "git status exited $LASTEXITCODE"
+    }
+    else {
+        $blockingDirty = Get-GateBlockingDirtyPaths -StatusLines $porcelain
+        if ($blockingDirty.Count -gt 0) {
+            $gitCleanStatus = 'FAIL'
+            $gitCleanDetail = "$($blockingDirty.Count) uncommitted/untracked path(s): " + (($blockingDirty | Select-Object -First 5) -join ' | ')
+        }
+        else {
+            $gitCleanStatus = 'PASS'
+            $gitCleanDetail = 'working tree clean'
+        }
+    }
+}
+Write-Gate 'Workspace hygiene' 'Git working tree cleanliness' $gitCleanStatus $gitCleanDetail
+
+# Gate: Junk artifacts and merge markers
+$hygieneFindings = Get-GateHygieneFindings -RepoRoot $RepoRoot
+if ($hygieneFindings.Junk.Count -gt 0) {
+    Write-Gate 'Workspace hygiene' 'Junk artifacts' 'FAIL' ("junk artifact: " + (($hygieneFindings.Junk | Select-Object -First 3) -join ' | '))
 }
 else {
-    $runtimeLoopDetail = 'missing: ' + ($runtimeLoopMissing -join ', ')
-    if (-not [string]::IsNullOrWhiteSpace($runtimeLoopDetection.CaptureCommand)) {
-        $runtimeLoopDetail += " | capture: $($runtimeLoopDetection.CaptureCommand)"
-    }
-    if (-not [string]::IsNullOrWhiteSpace($runtimeLoopDetection.ResolveCommand)) {
-        $runtimeLoopDetail += " | resolve: $($runtimeLoopDetection.ResolveCommand)"
-    }
-    Write-Gate 'Runtime error loop' 'FAIL' $runtimeLoopDetail
+    Write-Gate 'Workspace hygiene' 'Junk artifacts' 'PASS' 'no junk artifacts'
+}
+if ($hygieneFindings.MergeMarkers.Count -gt 0) {
+    Write-Gate 'Workspace hygiene' 'Merge conflict markers' 'FAIL' ("marker: " + (($hygieneFindings.MergeMarkers | Select-Object -First 3) -join ' | '))
+}
+else {
+    Write-Gate 'Workspace hygiene' 'Merge conflict markers' 'PASS' 'no merge markers in active code'
 }
 
-# ---------- Gate 8: Git cleanliness ----------
+# ---------- 4. Owner-gated production ----------
 
-Write-Host '  Gate 8: Git working tree cleanliness' -ForegroundColor Cyan
-Push-Location $RepoRoot
-try {
-    # Refresh the git index so .gitignore changes take effect for status
-    $null = git update-index --refresh 2>&1
+Write-Section 'Owner-gated production'
 
-    # Collect porcelain status (short format)
-    $gitStatusOutput = git status --porcelain 2>&1
-    $gitStatusExit = $LASTEXITCODE
-
-    if ($gitStatusExit -ne 0) {
-        Write-Gate 'Git working tree cleanliness' 'FAIL' "git status exited $gitStatusExit"
-    }
-    else {
-        $dirtyPaths = @()
-        foreach ($line in $gitStatusOutput) {
-            if ($line -match '^\s*$') { continue }
-            if ($line -match '^!!') { continue }
-            $path = Get-StatusPath $line
-            if ($path) { $dirtyPaths += $path }
-        }
-
-        $blockingDirty = @($dirtyPaths | Where-Object { -not (Test-IsAllowedRuntimeDirtyPath $_) } | Select-Object -Unique)
-        if ($blockingDirty.Count -gt 0) {
-            $sample = ($blockingDirty | Select-Object -First 5) -join ' | '
-            $count = $blockingDirty.Count
-            Write-Gate 'Git working tree cleanliness' 'FAIL' "$count dirty path(s): $sample"
-        }
-        elseif ($dirtyPaths.Count -gt 0) {
-            Write-Gate 'Git working tree cleanliness' 'PASS' 'only runtime handoff/evidence files are dirty'
-        }
-        else {
-            Write-Gate 'Git working tree cleanliness' 'PASS' 'working tree clean'
-        }
-    }
+$herokuAvailable = Test-GateCommandAvailable 'heroku'
+$herokuAuthed = $false
+if ($herokuAvailable) {
+    $whoami = Invoke-GateCommand -Label 'heroku whoami' -WorkingDirectory $RepoRoot -Command { heroku whoami }
+    $herokuAuthed = ($whoami.ExitCode -eq 0)
 }
-finally {
-    Pop-Location
+if (-not $herokuAvailable) {
+    Write-Gate 'Owner-gated production' 'Heroku CLI authentication' 'BLOCKED' 'heroku CLI not installed (owner-gated)'
+}
+elseif (-not $herokuAuthed) {
+    Write-Gate 'Owner-gated production' 'Heroku CLI authentication' 'BLOCKED' 'heroku CLI not authenticated (owner-gated)'
+}
+else {
+    Write-Gate 'Owner-gated production' 'Heroku CLI authentication' 'PASS' 'authenticated'
 }
 
-# ---------- Gate 9: Tree hygiene ----------
-
-Write-Host '  Gate 9: Tree hygiene' -ForegroundColor Cyan
-Push-Location $RepoRoot
-try {
-    $requiredDocs = @('0.dev-matrix\TREE-HYGIENE.md', '0.dev-matrix\DOCUMENTATION-GOVERNANCE.md', '0.dev-matrix\LAUNCH_CHECKLIST.md', '0.dev-matrix\CLOSING-DAY-HOOK.md', '0.dev-matrix\AI-HANDOFF.md', '0.dev-matrix\RUNTIME-ERROR-LOOP.md')
-    $missingDocs = $requiredDocs | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
-    $requiredStandards = @(
-        '0.dev-matrix\standards\CLOSING-DAY-STANDARD.md',
-        '0.dev-matrix\standards\DEFINITION-OF-DONE.md',
-        '0.dev-matrix\standards\DOCUMENTATION-GOVERNANCE-STANDARD.md',
-        '0.dev-matrix\standards\DEEP-VERIFICATION-STANDARD.md',
-        '0.dev-matrix\standards\OPERATIONAL-PROOF-STANDARD.md',
-        '0.dev-matrix\standards\RESUME-LED-DELIVERY-STANDARD.md',
-        '0.dev-matrix\standards\ROLLOUT-RULES.md',
-        '0.dev-matrix\standards\TREE-HYGIENE-STANDARD.md',
-        '0.dev-matrix\standards\VULNERABILITY-RESPONSE-STANDARD.md'
-    )
-    $missingStandards = $requiredStandards | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
-    $junkNames = @('nul', '.DS_Store', 'Thumbs.db', 'Desktop.ini')
-    $junkPaths = @(
-        Get-ChildItem -Path $RepoRoot -Recurse -Force -File -ErrorAction SilentlyContinue |
-        Where-Object { $junkNames -contains $_.Name } |
-        Select-Object -ExpandProperty FullName
-    )
-    $scanFiles = Get-ChildItem -Path $RepoRoot -Recurse -File -ErrorAction SilentlyContinue |
-    Where-Object {
-        $_.FullName -notmatch '\\(node_modules|dist|coverage|logs|playwright-report|test-results|venv|\.venv|docs\\archive|0\.dev-matrix\\(test-reports|archive|backup|closeout-logs|error-logs)|\.git)\\' -and
-        $_.Extension -in @('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.json', '.yml', '.yaml', '.toml', '.ini', '.env', '.ps1', '.sh', '.bat', '.md', '.html', '.css', '.sql', '.dockerfile')
-    }
-    $conflictHit = $scanFiles | Select-String -Pattern '^(<{7}|={7}|>{7})( .*)?$' | Select-Object -First 1
-    $treeClean = ($junkPaths.Count -eq 0) -and ($null -eq $conflictHit)
-
-    if ($missingStandards.Count -eq 0) {
-        Write-Gate 'Standards presence' 'PASS' 'required standards present'
+$prodConfigScript = Join-Path $RepoRoot 'scripts\production_config_audit.mjs'
+if (-not $herokuAuthed) {
+    Write-Gate 'Owner-gated production' 'Production config audit' 'BLOCKED' 'requires authenticated heroku CLI (owner-gated)'
+}
+elseif (-not (Test-Path $prodConfigScript)) {
+    Write-Gate 'Owner-gated production' 'Production config audit' 'BLOCKED' 'scripts/production_config_audit.mjs not present in this checkout'
+}
+else {
+    $audit = Invoke-GateCommand -Label 'Production config audit' -WorkingDirectory $RepoRoot -Command { node scripts/production_config_audit.mjs }
+    if ($audit.ExitCode -ne 0) {
+        Write-Gate 'Owner-gated production' 'Production config audit' 'FAIL' "exit $($audit.ExitCode) - $($audit.Tail)"
     }
     else {
-        Write-Gate 'Standards presence' 'FAIL' ('missing: ' + ($missingStandards -join ', '))
-    }
-
-    if ($missingDocs.Count -eq 0) {
-        Write-Gate 'Runtime docs' 'PASS' 'tree hygiene, launch checklist, closing-day hook, documentation governance, and handoff present'
-    }
-    else {
-        Write-Gate 'Runtime docs' 'FAIL' ('missing: ' + ($missingDocs -join ', '))
-    }
-
-    $resumeScript = Join-Path $RepoRoot '0.dev-matrix\resume-work.ps1'
-    $pauseScript = Join-Path $RepoRoot '0.dev-matrix\pause-work.ps1'
-    $fastWorkflowMissing = @()
-    if (-not (Test-Path $resumeScript)) { $fastWorkflowMissing += 'resume-work.ps1' }
-    if (-not (Test-Path $pauseScript)) { $fastWorkflowMissing += 'pause-work.ps1' }
-    if ($fastWorkflowMissing.Count -eq 0) {
-        Write-Gate 'Fast handoff workflow' 'PASS' 'resume-work.ps1 and pause-work.ps1 present for fast session restart/stop'
-    }
-    else {
-        Write-Gate 'Fast handoff workflow' 'FAIL' ('missing: ' + ($fastWorkflowMissing -join ', '))
-    }
-
-    $handoffFile = Join-Path $RepoRoot '0.dev-matrix\AI-HANDOFF.md'
-    if (Test-Path $handoffFile) {
-        $handoffContent = Get-Content $handoffFile -Raw
-        if ($handoffContent -match 'Operational proof:') {
-            Write-Gate 'Operational proof contract' 'PASS' 'AI-HANDOFF includes the Operational proof handoff label'
-        }
-        else {
-            Write-Gate 'Operational proof contract' 'FAIL' 'AI-HANDOFF missing Operational proof label in the handoff contract'
-        }
-    }
-    else {
-        Write-Gate 'Operational proof contract' 'FAIL' 'AI-HANDOFF.md not found'
-    }
-
-    $launchChecklistFile = Join-Path $RepoRoot '0.dev-matrix\LAUNCH_CHECKLIST.md'
-    if (Test-Path $launchChecklistFile) {
-        $launchChecklistContent = Get-Content $launchChecklistFile -Raw
-        $launchProductOutcome = Get-ChecklistFieldValue $launchChecklistContent 'Product outcome:'
-        $launchCurrentSlice = Get-ChecklistFieldValue $launchChecklistContent 'Current launch slice:'
-        $launchCurrentBlocker = Get-ChecklistFieldValue $launchChecklistContent 'Current blocker:'
-        $launchNextEarningStep = Get-ChecklistFieldValue $launchChecklistContent 'Next earning step:'
-        $launchFocusMissing = @()
-        if (-not (Test-IsMeaningfulLaunchFocus $launchProductOutcome)) { $launchFocusMissing += 'Product outcome' }
-        if (-not (Test-IsMeaningfulLaunchFocus $launchCurrentSlice)) { $launchFocusMissing += 'Current launch slice' }
-        if (-not (Test-IsMeaningfulLaunchFocus $launchCurrentBlocker)) { $launchFocusMissing += 'Current blocker' }
-        if (-not (Test-IsMeaningfulLaunchFocus $launchNextEarningStep)) { $launchFocusMissing += 'Next earning step' }
-        if ($launchFocusMissing.Count -eq 0) {
-            Write-Gate 'Launch focus contract' 'PASS' 'launch checklist includes product outcome/current launch slice/current blocker/next earning step'
-        }
-        else {
-            Write-Gate 'Launch focus contract' 'FAIL' ('launch checklist missing focus lines: ' + ($launchFocusMissing -join ', '))
-        }
-    }
-    else {
-        Write-Gate 'Launch focus contract' 'FAIL' 'LAUNCH_CHECKLIST.md not found'
-    }
-
-    $docGovFile = Join-Path $RepoRoot '0.dev-matrix\DOCUMENTATION-GOVERNANCE.md'
-    if (Test-Path $docGovFile) {
-        $docGovContent = Get-Content $docGovFile -Raw
-        $docGovOk = ($docGovContent -match 'Approved Documentation Zones') -and ($docGovContent -match 'AI Rules')
-        $docGovDetail = if ($docGovOk) { 'approved zones and AI rules recorded' } else { 'missing required sections in DOCUMENTATION-GOVERNANCE.md' }
-        Write-Gate 'Documentation governance' ($(if ($docGovOk) { 'PASS' } else { 'FAIL' })) $docGovDetail
-    }
-    else {
-        Write-Gate 'Documentation governance' 'FAIL' 'DOCUMENTATION-GOVERNANCE.md not found'
-    }
-
-    if ($treeClean) {
-        Write-Gate 'Tree hygiene' 'PASS' 'active code tree is clean'
-    }
-    elseif ($junkPaths.Count -gt 0) {
-        Write-Gate 'Tree hygiene' 'FAIL' ("junk artifact: " + $junkPaths[0])
-    }
-    else {
-        Write-Gate 'Tree hygiene' 'FAIL' ("merge marker: " + $conflictHit.Path + ':' + $conflictHit.LineNumber)
-    }
-
-    # Anti-hallucination: STATE.md freshness
-    $stateFile = Join-Path $RepoRoot '0.dev-matrix\STATE.md'
-    if (Test-Path $stateFile) {
-        $stateLastWrite = (Get-Item $stateFile).LastWriteTime
-        $staleDays = ((Get-Date) - $stateLastWrite).Days
-        if ($staleDays -gt 7) {
-            Write-Gate 'State freshness' 'FAIL' "STATE.md last modified $staleDays days ago (stale >7 days)"
-        }
-        else {
-            Write-Gate 'State freshness' 'PASS' "STATE.md modified $staleDays day(s) ago"
-        }
-    }
-    else {
-        Write-Gate 'State freshness' 'FAIL' 'STATE.md not found'
+        Write-Gate 'Owner-gated production' 'Production config audit' 'PASS' 'report at logs/production_config_audit.json'
     }
 }
-finally {
-    Pop-Location
+
+$credentialState = Get-GateSupabaseCredentialState -RepoRoot $RepoRoot
+if ($credentialState -eq 'present') {
+    Write-Gate 'Owner-gated production' 'Live Supabase credentials' 'PASS' 'non-placeholder VITE_SUPABASE_URL present (presence-only; live proof remains owner-executed)'
+}
+else {
+    Write-Gate 'Owner-gated production' 'Live Supabase credentials' 'BLOCKED' 'no non-placeholder VITE_SUPABASE_URL in local env files (owner-gated)'
 }
 
 # ---------- summary ----------
 
-Write-Host ''
-Write-Host '============================================================' -ForegroundColor Cyan
-$total = $script:PassCount + $script:FailCount + $script:SkipCount
-if ($script:FailCount -eq 0) {
-    $p = $script:PassCount
-    Write-Host "  RESULT: ALL GATES PASSED ($p/$total)" -ForegroundColor Green
-}
-else {
-    $f = $script:FailCount
-    $p = $script:PassCount
-    $s = $script:SkipCount
-    Write-Host "  RESULT: $f GATE(S) FAILED ($p passed, $s skipped)" -ForegroundColor Red
-}
-Write-Host '============================================================' -ForegroundColor Cyan
-Write-Host ''
+$verdict = Get-GateVerdict -PassCount $script:PassCount -FailCount $script:FailCount -BlockedCount $script:BlockedCount -SkipCount $script:SkipCount
+$total = $script:PassCount + $script:FailCount + $script:BlockedCount + $script:SkipCount
 
-# Exit code for CI/CD consumption
-exit $script:FailCount
+$summaryLines = @(
+    '',
+    '============================================================',
+    "  Categories: environment | local engineering | workspace hygiene | owner-gated production",
+    "  RESULT: $total GATE(S) EVALUATED - $($script:PassCount) passed, $($script:FailCount) failed, $($script:BlockedCount) blocked, $($script:SkipCount) skipped"
+)
+
+switch ($verdict.Label) {
+    'FAILED' {
+        $summaryLines += "  VERDICT: $($script:FailCount) GATE(S) FAILED - resolve the failed gates above"
+        $verdictColor = 'Red'
+    }
+    'PRODUCTION_READY' {
+        $summaryLines += '  VERDICT: ALL GATES PASSED - PRODUCTION-READY'
+        $verdictColor = 'Green'
+    }
+    default {
+        $summaryLines += '  VERDICT: LOCAL GATES PASSED - PRODUCTION NOT PROVEN (blocked/skipped gates above are environment or owner-gated)'
+        $verdictColor = 'Yellow'
+    }
+}
+$summaryLines += '============================================================'
+$summaryLines += ''
+foreach ($line in $summaryLines) {
+    $color = if ($line -like '  VERDICT*') { $verdictColor } else { 'Cyan' }
+    Write-Host $line -ForegroundColor $color
+    $transcript.Add($line)
+}
+
+# Retain only the newest 10 transcript logs.
+Get-ChildItem -Path $StatusDir -Filter 'launch-check-*.log' -File -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -Skip 10 |
+    ForEach-Object { Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }
+
+$statusReport = [PSCustomObject]@{
+    generatedAt     = (Get-Date).ToString('o')
+    state           = $(if ($script:FailCount -gt 0) { 'failed' } else { 'passed' })
+    verdict         = $verdict.Label
+    productionReady = $verdict.ProductionReady
+    pass            = $script:PassCount
+    fail            = $script:FailCount
+    blocked         = $script:BlockedCount
+    skip            = $script:SkipCount
+    log             = ('logs/launch-check/launch-check-' + $dateStamp + '.log')
+    gates           = $gates
+}
+$statusPath = Join-Path $StatusDir 'launch-check-status.json'
+[System.IO.File]::WriteAllText($statusPath, ($statusReport | ConvertTo-Json -Depth 5))
+
+exit $verdict.ExitCode

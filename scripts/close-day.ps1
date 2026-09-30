@@ -1,481 +1,200 @@
+# ============================================================
+# TruckOpti - Canonical Day-Close Verification (TO-121)
+# ============================================================
+# Run from repo root:  npm run close-day
+#
+# close-day consumes the canonical control plane (TASKS.md plus
+# agent-results/) instead of generating a competing task/handoff
+# system. It validates:
+#   1. Canonical control plane present (AGENTS.md, ARCHITECTURE.md,
+#      TASKS.md, agent-tasks/README.md)
+#   2. Task board integrity - every brief/result reference resolves
+#      on disk and every DONE/BLOCKED row carries a result record
+#   3. Working tree cleanliness
+#   4. Documentation placement and naming hygiene
+#   5. Latest launch-check evidence (logs/launch-check/launch-check-status.json)
+#
+# Report: logs/closeout/last-closeout.md (previous report archived
+# under logs/closeout/archive/). Exit 1 on any FAIL.
+# ============================================================
+
 param()
 
 $ErrorActionPreference = 'Continue'
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$ReportPath = Join-Path $RepoRoot '0.dev-matrix\LAST-CLOSEOUT.md'
-$LogDir = Join-Path $RepoRoot '0.dev-matrix\closeout-logs'
-$LaunchCommand = 'npm run launch-check'
-$NodeAuditDirs = @('.', 'frontend', 'apps\web')
-$PythonRequirementFiles = @('apps\web\requirements.txt')
-$DeepVerificationTasks = @(
-  @{ Label = 'deep verification: live button audit'; Dir = '.'; Command = 'npm run test:live-buttons' },
-  @{ Label = 'deep verification: app coverage'; Dir = 'apps\web'; Command = 'npm run test:coverage' }
-)
-$AllowedRuntimeDirtyFiles = @(
-  '0.dev-matrix/STATE.md',
-  '0.dev-matrix/TASK.md',
-  '0.dev-matrix/DISCUSSION.md',
-  '0.dev-matrix/AI-HANDOFF.md',
-  '0.dev-matrix/LAST-CLOSEOUT.md'
-)
-$AllowedRuntimeDirtyPrefixes = @(
-  '0.dev-matrix/closeout-logs/',
-  '0.dev-matrix/test-reports/'
-)
-$ApprovedDocPrefixes = @(
-  '0.dev-matrix/',
-  'docs/',
-  'adr/',
-  'design/',
-  'specs/'
-)
-$CanonicalRootDocPatterns = @(
-  'README*.md',
-  'AGENTS*.md',
-  'CHANGELOG*.md',
-  'CONTRIBUTING*.md',
-  'SECURITY*.md',
-  'LICENSE*',
-  'API*.md',
-  'ARCHITECTURE*.md',
-  'DEPLOYMENT*.md',
-  'OPERATIONS*.md'
-)
-$SuspiciousDocNamePattern = '(?i)(^|[-_. ])(copy|backup|old|new|tmp|temp|draft|final|v[2-9]\d*)([-_. ]|$)'
-$RequiredHandoffLabels = @('Changed:', 'Verified:', 'Operational proof:', 'Continue from:', 'Next step:', 'Blockers:')
-$pass = 0
-$fail = 0
+. (Join-Path $PSScriptRoot 'launch-gates.core.ps1')
+
+$CloseoutDir = Join-Path $RepoRoot 'logs\closeout'
+$ArchiveDir = Join-Path $CloseoutDir 'archive'
+$ReportPath = Join-Path $CloseoutDir 'last-closeout.md'
+$LaunchStatusPath = Join-Path $RepoRoot 'logs\launch-check\launch-check-status.json'
+$null = New-Item -ItemType Directory -Path $ArchiveDir -Force | Out-Null
+$dateStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
+$todayStamp = Get-Date -Format 'yyyy-MM-dd'
+$LogFile = Join-Path $CloseoutDir "close-day-$dateStamp.log"
+
 $reportLines = @()
 $outputLog = @()
-$todayStamp = Get-Date -Format 'yyyy-MM-dd'
-$latestHandoffDate = 'missing'
-$latestHandoffOperationalProof = 'missing'
-$latestHandoffContinue = 'missing'
-$latestHandoffNext = 'missing'
-$latestHandoffBlockers = 'missing'
-$launchProductOutcome = 'missing'
-$launchCurrentSlice = 'missing'
-$launchCurrentBlocker = 'missing'
-$launchNextEarningStep = 'missing'
-$launchStatusState = 'missing'
-$launchStatusSummary = 'missing'
-$launchStatusLog = 'missing'
-
-if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
-$dateStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
-$LogFile = Join-Path $LogDir "closeout-$dateStamp.log"
+$pass = 0
+$fail = 0
 
 function Log($text) {
-  $script:outputLog += $text
-  Add-Content -Path $script:LogFile -Value $text -ErrorAction SilentlyContinue
+    $script:outputLog += $text
+    Add-Content -Path $script:LogFile -Value $text -ErrorAction SilentlyContinue
 }
 
 function Gate($name, $ok, $detail) {
-  if ($ok) { $script:pass++ } else { $script:fail++ }
-  $status = if ($ok) { 'PASS' } else { 'FAIL' }
-  Write-Host "[$status] $name - $detail"
-  $script:reportLines += "- [$status] $name - $detail"
-  Log "[$status] $name - $detail"
+    if ($ok) { $script:pass++ } else { $script:fail++ }
+    $status = if ($ok) { 'PASS' } else { 'FAIL' }
+    Write-Host "[$status] $name - $detail"
+    $script:reportLines += "- [$status] $name - $detail"
+    Log "[$status] $name - $detail"
 }
 
-function ConvertTo-RepoRelativePath($path) {
-  if ([string]::IsNullOrWhiteSpace($path)) { return $null }
-  return ($path -replace '\\', '/').Trim()
+function Skip($name, $detail) {
+    Write-Host "[SKIP] $name - $detail"
+    $script:reportLines += "- [SKIP] $name - $detail"
+    Log "[SKIP] $name - $detail"
 }
 
-function Get-StatusPath($statusLine) {
-  if ([string]::IsNullOrWhiteSpace($statusLine) -or $statusLine.Length -lt 4) { return $null }
-  $path = $statusLine.Substring(3).Trim()
-  if ($path -match ' -> ') { $path = ($path -split ' -> ')[-1].Trim() }
-  return ConvertTo-RepoRelativePath $path
+Write-Host 'TruckOpti day-close check' -ForegroundColor Cyan
+Log "day-close $dateStamp"
+
+# ---------- 1. Canonical control plane ----------
+$canonicalGaps = Get-GateCanonicalControlPlaneGaps -RepoRoot $RepoRoot
+Gate 'canonical control plane' ($canonicalGaps.Count -eq 0) $(if ($canonicalGaps.Count -eq 0) { 'AGENTS.md, ARCHITECTURE.md, TASKS.md, agent-tasks/README.md present' } else { 'missing: ' + ($canonicalGaps -join ', ') })
+
+# ---------- 2. Task board integrity ----------
+$board = Get-GateTaskBoardReport -RepoRoot $RepoRoot
+$boardIssues = @()
+foreach ($issue in ($board.ParseErrors + $board.MissingBriefs + $board.MissingResults + $board.TerminalRowsWithoutResult)) { $boardIssues += $issue }
+Gate 'task board integrity' ($boardIssues.Count -eq 0) $(if ($boardIssues.Count -eq 0) {
+    "$($board.RowsFound) task rows resolve; next recommended: $(if ($board.NextRecommended) { "$($board.NextRecommended.Id) [$($board.NextRecommended.Status)]" } else { 'none' })"
+  } else {
+    ($boardIssues | Select-Object -First 5) -join '; '
+  })
+
+$statusSummary = @()
+foreach ($statusEntry in $board.StatusCounts.PSObject.Properties) {
+    $statusSummary += "$($statusEntry.Name): $($statusEntry.Value)"
 }
 
-function Test-IsAllowedRuntimeDirtyPath($relativePath) {
-  if ([string]::IsNullOrWhiteSpace($relativePath)) { return $false }
-  if ($AllowedRuntimeDirtyFiles -contains $relativePath) { return $true }
-  foreach ($prefix in $AllowedRuntimeDirtyPrefixes) {
-    if ($relativePath -like "$prefix*") { return $true }
-  }
-  return $false
-}
-
-function Test-IsCanonicalRootDoc($relativePath) {
-  if ([string]::IsNullOrWhiteSpace($relativePath) -or $relativePath.Contains('/')) { return $false }
-  foreach ($pattern in $CanonicalRootDocPatterns) {
-    if ($relativePath -like $pattern) { return $true }
-  }
-  return $false
-}
-
-function Test-IsApprovedDocPath($relativePath) {
-  if ([string]::IsNullOrWhiteSpace($relativePath)) { return $false }
-  if (Test-IsCanonicalRootDoc $relativePath) { return $true }
-  foreach ($prefix in $ApprovedDocPrefixes) {
-    if ($relativePath -like "$prefix*") { return $true }
-  }
-  return $false
-}
-
-function Get-HandoffFieldValue($body, $label) {
-  if ([string]::IsNullOrWhiteSpace($body) -or [string]::IsNullOrWhiteSpace($label)) { return $null }
-  $pattern = '(?mi)^-\s*' + [regex]::Escape($label) + '\s*(?<value>.+)$'
-  $match = [regex]::Match($body, $pattern)
-  if ($match.Success) {
-    return $match.Groups['value'].Value.Trim()
-  }
-  return $null
-}
-
-function Get-ChecklistFieldValue($content, $label) {
-  if ([string]::IsNullOrWhiteSpace($content) -or [string]::IsNullOrWhiteSpace($label)) { return $null }
-  $pattern = '(?mi)^-\s*' + [regex]::Escape($label) + '\s*(?<value>.+)$'
-  $match = [regex]::Match($content, $pattern)
-  if ($match.Success) {
-    return $match.Groups['value'].Value.Trim()
-  }
-  return $null
-}
-
-function Get-LatestHandoffEntry($content) {
-  if ([string]::IsNullOrWhiteSpace($content)) { return $null }
-  $match = [regex]::Match($content, '(?ms)^###\s*(?<date>\d{4}-\d{2}-\d{2})(?<suffix>[^\r\n]*)\r?\n(?<body>.*?)(?=^###\s|\z)')
-  if (-not $match.Success) { return $null }
-  return @{
-    Date = $match.Groups['date'].Value
-    Body = $match.Groups['body'].Value.Trim()
-  }
-}
-
-function Test-IsMeaningfulOperationalProof($value) {
-  if ([string]::IsNullOrWhiteSpace($value)) { return $false }
-  return $value.Trim().ToLowerInvariant() -ne 'none'
-}
-
-function Test-IsMeaningfulLaunchFocus($value) {
-  if ([string]::IsNullOrWhiteSpace($value)) { return $false }
-  return $value.Trim() -notmatch '^(?i:todo|tbd|unknown)$'
-}
-
-function Get-LaunchCheckStatus() {
-  $statusFile = Join-Path $RepoRoot '0.dev-matrix\test-reports\launch-check-status.json'
-  if (-not (Test-Path $statusFile)) { return $null }
-  try {
-    return Get-Content $statusFile -Raw | ConvertFrom-Json
-  }
-  catch {
-    return $null
-  }
-}
-
-function Invoke-InDir($relativeDir, $command) {
-  $target = if ($relativeDir -eq '.') { $RepoRoot } else { Join-Path $RepoRoot $relativeDir }
-  if (-not (Test-Path $target)) { Log "[SKIP] dir not found: $target"; return $false }
-  Push-Location $target
-  try {
-    $cmdOutput = Invoke-Expression $command 2>&1 | Out-String
-    Log "--- output: $command ---"
-    Log $cmdOutput.Trim()
-    Log "--- exit: $LASTEXITCODE ---"
-    return ($LASTEXITCODE -eq 0)
-  }
-  finally {
-    Pop-Location
-  }
-}
-
-# ── 1. Runtime docs ──
-$required = @('0.dev-matrix\STATE.md', '0.dev-matrix\TASK.md', '0.dev-matrix\DISCUSSION.md', '0.dev-matrix\CLOSING-DAY-HOOK.md', '0.dev-matrix\AI-HANDOFF.md')
-$missing = $required | Where-Object { -not (Test-Path (Join-Path $RepoRoot $_)) }
-Gate 'runtime close docs' ($missing.Count -eq 0) ($(if ($missing.Count -eq 0) { 'state/task/discussion/hook/handoff present' } else { 'missing: ' + ($missing -join ', ') }))
-
-# ── 2. Launch-check ──
-$launchStatus = Get-LaunchCheckStatus
-if ($null -eq $launchStatus) {
-  Gate 'background launch-check' $false 'status missing; start the session with resume-work.ps1 so launch-check runs in background'
-}
-else {
-  $launchStatusState = "$($launchStatus.State)"
-  $launchStatusSummary = if ($launchStatus.Summary) { "$($launchStatus.Summary)" } else { $launchStatusState }
-  $launchStatusLog = if ($launchStatus.Log) { "$($launchStatus.Log)" } else { 'missing' }
-
-  $launchStatusOk = $launchStatusState -in @('starting', 'running', 'passed')
-  $launchStatusDetail = if ($launchStatusState -eq 'failed') {
-    "latest background launch-check failed - $launchStatusSummary"
-  }
-  elseif ($launchStatusState -eq 'starting' -or $launchStatusState -eq 'running') {
-    "background launch-check still running - $launchStatusSummary"
-  }
-  else {
-    $launchStatusSummary
-  }
-
-  Gate 'background launch-check' $launchStatusOk $launchStatusDetail
-}
-
-# ── 3. Close-day handoff mode ──
-Gate 'close-day handoff mode' $true 'close-day reuses background launch-check state and skips heavy reruns so handoff stays fast'
-
-# ── 4. Status update discipline (content check, not just touch) ──
+# ---------- 3. Git state ----------
 Push-Location $RepoRoot
 try {
-  $gitStatus = @(git status --porcelain 2>$null)
-  $statusTouch = @(git status --porcelain -- '0.dev-matrix/STATE.md' '0.dev-matrix/TASK.md' '0.dev-matrix/DISCUSSION.md' 2>$null)
-
-  if ($gitStatus.Count -eq 0) {
-    $statusOk = $true
-    $statusDetail = 'repo clean'
-  }
-  elseif ($statusTouch.Count -gt 0) {
-    # verify the touch is real content, not just whitespace
-    $diffBytes = git diff --stat -- '0.dev-matrix/STATE.md' '0.dev-matrix/TASK.md' '0.dev-matrix/DISCUSSION.md' 2>$null | Out-String
-    if ($diffBytes.Trim().Length -gt 0) {
-      $statusOk = $true
-      $statusDetail = 'runtime status files have real content changes'
-      Log "--- status diff ---"; Log $diffBytes.Trim()
+    $porcelain = @(& git status --porcelain 2>&1)
+    $gitOk = ($LASTEXITCODE -eq 0)
+    $gitSummary = 'clean'
+    if (-not $gitOk) {
+        Gate 'working tree cleanliness' $false "git status exited $LASTEXITCODE"
     }
     else {
-      $statusOk = $false
-      $statusDetail = 'status files touched but no real content change detected (whitespace-only edits do not count)'
+        # logs/ is the intentional report path close-day itself writes to;
+        # its own output must not block the cleanliness gate.
+        $blockingDirty = Get-GateBlockingDirtyPaths -StatusLines $porcelain -AllowedPaths @('logs/')
+        $gitSummary = if ($blockingDirty.Count -gt 0) { ($blockingDirty | Select-Object -First 5) -join ', ' } else { 'clean' }
+        Gate 'working tree cleanliness' ($blockingDirty.Count -eq 0) $(if ($blockingDirty.Count -eq 0) { 'working tree clean' } else { "$($blockingDirty.Count) uncommitted/untracked path(s): " + (($blockingDirty | Select-Object -First 5) -join ', ') })
+
+        $misplacedDocs = Get-GateMisplacedDocs -StatusLines $porcelain
+        Gate 'documentation placement' ($misplacedDocs.Count -eq 0) $(if ($misplacedDocs.Count -eq 0) { 'new docs are in approved zones or canonical root paths' } else { 'new docs in nonstandard locations: ' + (($misplacedDocs | Select-Object -First 5) -join ', ') })
+
+        $suspiciousDocs = Get-GateSuspiciousDocPaths -StatusLines $porcelain
+        Gate 'documentation naming hygiene' ($suspiciousDocs.Count -eq 0) $(if ($suspiciousDocs.Count -eq 0) { 'no active docs use unstable duplicate-style names' } else { 'unstable doc names: ' + (($suspiciousDocs | Select-Object -First 5) -join ', ') })
     }
-  }
-  else {
-    $statusOk = $false
-    $statusDetail = 'repo changed without state/task/discussion update'
-  }
-  Gate 'status update discipline' $statusOk $statusDetail
-  $gitSummary = if ($gitStatus.Count -gt 0) { ($gitStatus | Select-Object -First 10) -join ' | ' } else { 'clean' }
-
-  $dirtyPaths = @($gitStatus | ForEach-Object { Get-StatusPath $_ } | Where-Object { $_ })
-  $blockingDirty = @($dirtyPaths | Where-Object { -not (Test-IsAllowedRuntimeDirtyPath $_) } | Select-Object -Unique)
-  $workingTreeOk = $blockingDirty.Count -eq 0
-  $workingTreeDetail = if ($workingTreeOk) {
-    if ($dirtyPaths.Count -eq 0) { 'repo clean before closeout report' } else { 'only runtime handoff/evidence files are dirty before report write' }
-  }
-  else {
-    'dirty working tree outside runtime handoff: ' + (($blockingDirty | Select-Object -First 5) -join ', ')
-  }
-  Gate 'working tree cleanliness' $workingTreeOk $workingTreeDetail
-
-  $newDocPaths = @(
-    $gitStatus |
-    Where-Object { $_ -match '^(A.|.A|\?\?)\s' } |
-    ForEach-Object { Get-StatusPath $_ } |
-    Where-Object { $_ -and $_ -match '\.(md|txt|rst)$' } |
-    Select-Object -Unique
-  )
-  $misplacedDocs = @($newDocPaths | Where-Object { -not (Test-IsApprovedDocPath $_) })
-  $docPlacementOk = $misplacedDocs.Count -eq 0
-  $docPlacementDetail = if ($docPlacementOk) {
-    if ($newDocPaths.Count -eq 0) { 'no newly created docs pending placement review' } else { 'new docs are in approved zones' }
-  }
-  else {
-    'new docs in nonstandard locations: ' + (($misplacedDocs | Select-Object -First 5) -join ', ')
-  }
-  Gate 'documentation placement' $docPlacementOk $docPlacementDetail
-
-  $activeDocChanges = @(
-    $dirtyPaths |
-    Where-Object { $_ -match '\.(md|txt|rst)$' -and $_ -notlike '0.dev-matrix/closeout-logs/*' } |
-    Select-Object -Unique
-  )
-  $suspiciousDocPaths = @(
-    $activeDocChanges |
-    Where-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) -match $SuspiciousDocNamePattern } |
-    Select-Object -Unique
-  )
-  $docNamingOk = $suspiciousDocPaths.Count -eq 0
-  $docNamingDetail = if ($docNamingOk) { 'no active docs use unstable duplicate-style names' } else { 'unstable doc names: ' + (($suspiciousDocPaths | Select-Object -First 5) -join ', ') }
-  Gate 'documentation naming hygiene' $docNamingOk $docNamingDetail
-
-  $launchChecklistFile = Join-Path $RepoRoot '0.dev-matrix\LAUNCH_CHECKLIST.md'
-  if (Test-Path $launchChecklistFile) {
-    $launchChecklistContent = Get-Content $launchChecklistFile -Raw
-    $launchProductOutcome = Get-ChecklistFieldValue $launchChecklistContent 'Product outcome:'
-    $launchCurrentSlice = Get-ChecklistFieldValue $launchChecklistContent 'Current launch slice:'
-    $launchCurrentBlocker = Get-ChecklistFieldValue $launchChecklistContent 'Current blocker:'
-    $launchNextEarningStep = Get-ChecklistFieldValue $launchChecklistContent 'Next earning step:'
-    $launchFocusMissing = @()
-    if (-not (Test-IsMeaningfulLaunchFocus $launchProductOutcome)) { $launchFocusMissing += 'Product outcome' }
-    if (-not (Test-IsMeaningfulLaunchFocus $launchCurrentSlice)) { $launchFocusMissing += 'Current launch slice' }
-    if (-not (Test-IsMeaningfulLaunchFocus $launchCurrentBlocker)) { $launchFocusMissing += 'Current blocker' }
-    if (-not (Test-IsMeaningfulLaunchFocus $launchNextEarningStep)) { $launchFocusMissing += 'Next earning step' }
-    $launchFocusOk = $launchFocusMissing.Count -eq 0
-    $launchFocusDetail = if ($launchFocusOk) {
-      'launch checklist names product outcome/current launch slice/current blocker/next earning step'
-    }
-    else {
-      'launch checklist missing focus lines: ' + ($launchFocusMissing -join ', ')
-    }
-    Gate 'launch focus' $launchFocusOk $launchFocusDetail
-  }
-  else {
-    Gate 'launch focus' $false 'LAUNCH_CHECKLIST.md not found'
-  }
-
-  $handoffFile = Join-Path $RepoRoot '0.dev-matrix\AI-HANDOFF.md'
-  if (Test-Path $handoffFile) {
-    $latestHandoff = Get-LatestHandoffEntry (Get-Content $handoffFile -Raw)
-    if ($null -eq $latestHandoff) {
-      Gate 'handoff continuity' $false 'AI-HANDOFF.md has no parseable top entry'
-      Gate 'operational proof' $false 'AI-HANDOFF.md has no parseable top entry'
-    }
-    else {
-      $latestHandoffDate = $latestHandoff.Date
-      $latestHandoffOperationalProof = Get-HandoffFieldValue $latestHandoff.Body 'Operational proof:'
-      $latestHandoffContinue = Get-HandoffFieldValue $latestHandoff.Body 'Continue from:'
-      $latestHandoffNext = Get-HandoffFieldValue $latestHandoff.Body 'Next step:'
-      $latestHandoffBlockers = Get-HandoffFieldValue $latestHandoff.Body 'Blockers:'
-      $missingHandoffLabels = @(
-        $RequiredHandoffLabels |
-        Where-Object { -not [regex]::IsMatch($latestHandoff.Body, '(?mi)^-\s*' + [regex]::Escape($_) + '\s*.+$') }
-      )
-      $handoffDateOk = $latestHandoff.Date -eq $todayStamp
-      $handoffOk = $handoffDateOk -and $missingHandoffLabels.Count -eq 0
-      $handoffDetail = if ($handoffOk) {
-        'latest entry is dated today and contains changed/verified/operational-proof/continue/next/blockers fields'
-      }
-      elseif (-not $handoffDateOk) {
-        "latest entry dated $($latestHandoff.Date); expected $todayStamp"
-      }
-      else {
-        'latest entry missing fields: ' + (($missingHandoffLabels | ForEach-Object { $_.TrimEnd(':') }) -join ', ')
-      }
-      Gate 'handoff continuity' $handoffOk $handoffDetail
-
-      $operationalProofOk = Test-IsMeaningfulOperationalProof $latestHandoffOperationalProof
-      $operationalProofDetail = if ($operationalProofOk) {
-        'latest entry records operational proof'
-      }
-      elseif ($missingHandoffLabels -contains 'Operational proof:') {
-        'latest entry missing field: Operational proof'
-      }
-      else {
-        'Operational proof cannot be none; record concrete proof or not run - reason'
-      }
-      Gate 'operational proof' $operationalProofOk $operationalProofDetail
-    }
-  }
-  else {
-    Gate 'handoff continuity' $false 'AI-HANDOFF.md not found'
-    Gate 'operational proof' $false 'AI-HANDOFF.md not found'
-  }
 }
 finally {
-  Pop-Location
+    Pop-Location
 }
 
-# ── 6. Regression detection ──
-$prevReport = if (Test-Path $ReportPath) { Get-Content $ReportPath -Raw } else { $null }
-$prevPassMatch = if ($prevReport) { [regex]::Match($prevReport, 'Pass:\s*(\d+)') } else { $null }
-$prevFailMatch = if ($prevReport) { [regex]::Match($prevReport, 'Fail:\s*(\d+)') } else { $null }
-$prevPass = if ($prevPassMatch -and $prevPassMatch.Success) { [int]$prevPassMatch.Groups[1].Value } else { -1 }
-$prevFail = if ($prevFailMatch -and $prevFailMatch.Success) { [int]$prevFailMatch.Groups[1].Value } else { -1 }
-
-$regressionNote = ''
-if ($prevPass -ge 0) {
-  if ($pass -lt $prevPass) {
-    $regressionNote = "REGRESSION: pass count dropped from $prevPass to $pass"
-    Write-Host "[WARN] $regressionNote" -ForegroundColor Yellow
-  }
-  if ($fail -gt $prevFail -and $prevFail -ge 0) {
-    $regressionNote += "; fail count rose from $prevFail to $fail"
-    Write-Host "[WARN] fail count rose from $prevFail to $fail" -ForegroundColor Yellow
-  }
-}
-
-# ── 7. Archive previous closeout before overwriting ──
-if (Test-Path $ReportPath) {
-  $archiveDir = Join-Path $RepoRoot '0.dev-matrix\closeout-logs'
-  if (-not (Test-Path $archiveDir)) { New-Item -ItemType Directory -Path $archiveDir -Force | Out-Null }
-  $archiveName = "closeout-prev-$dateStamp.md"
-  Copy-Item $ReportPath (Join-Path $archiveDir $archiveName) -Force
-}
-
-# ── 8. Write report ──
-$projectProgress = $null
-$projectProgressScript = Join-Path $RepoRoot '0.dev-matrix\project-progress.ps1'
-if (Test-Path $projectProgressScript) {
-  $projectProgress = & $projectProgressScript -AsObject
-}
-
-$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-$report = @(
-  "# Last Closeout",
-  "",
-  "- Time: $timestamp",
-  "- Launch verification mode: background launch-check started from resume-work",
-  "- Git status: $gitSummary",
-  "- Log: 0.dev-matrix/closeout-logs/closeout-$dateStamp.log",
-  ""
-)
-$report += "## AI Handoff"
-$report += "- Latest handoff date: $latestHandoffDate"
-$report += "- Resume command: powershell -ExecutionPolicy Bypass -File .\\0.dev-matrix\\resume-work.ps1"
-$report += "- Operational proof: $latestHandoffOperationalProof"
-$report += "- Continue from: $latestHandoffContinue"
-$report += "- Next step: $latestHandoffNext"
-$report += "- Blockers: $latestHandoffBlockers"
-$report += ""
-$report += "## Project Progress"
-if ($projectProgress) {
-  $report += "- Date: $($projectProgress.Date)"
-  $report += "- Working since: $($projectProgress.WorkingSince)"
-  $report += "- Working days: $($projectProgress.WorkingDays)"
-  if ($null -ne $projectProgress.CompletionPercent) {
-    $report += "- Completion: $($projectProgress.CompletionPercent)% ($($projectProgress.CompletedTasks)/$($projectProgress.TotalTasks) tasks)"
-    $report += "- Pending days at current pace: $($projectProgress.PendingDays)"
-  }
-  else {
-    $report += '- Completion: unavailable'
-  }
-  foreach ($task in @($projectProgress.NextTasks | Select-Object -First 3)) {
-    $report += "- Next: $task"
-  }
+# ---------- 4. Launch verification evidence ----------
+$launchVerdict = 'no launch-check evidence recorded'
+$launchState = 'missing'
+$launchProductionReady = $false
+if (Test-Path $LaunchStatusPath) {
+    try {
+        $launchStatus = Get-Content $LaunchStatusPath -Raw | ConvertFrom-Json
+        $launchState = "$($launchStatus.state)"
+        $launchVerdict = "$($launchStatus.verdict)"
+        $launchProductionReady = [bool]$launchStatus.productionReady
+        if ($launchState -eq 'failed') {
+            Gate 'launch verification evidence' $false "latest npm run launch-check failed - $launchVerdict"
+        }
+        else {
+            Gate 'launch verification evidence' $true "latest npm run launch-check: $launchVerdict"
+        }
+    }
+    catch {
+        Skip 'launch verification evidence' 'launch-check status unreadable; run npm run launch-check'
+    }
 }
 else {
-  $report += '- Completion: unavailable'
+    Skip 'launch verification evidence' 'launch-check has not been run; run npm run launch-check for gate evidence'
 }
-$report += ""
-$report += "## Launch Focus"
-$report += "- Product outcome: $launchProductOutcome"
-$report += "- Current launch slice: $launchCurrentSlice"
-$report += "- Current blocker: $launchCurrentBlocker"
-$report += "- Next earning step: $launchNextEarningStep"
-$report += ""
-$report += "## Launch Verification"
-$report += "- State: $launchStatusState"
-$report += "- Summary: $launchStatusSummary"
-$report += "- Log: $launchStatusLog"
-$report += ""
-if ($regressionNote) { $report += "## Regression Warning"; $report += ""; $report += "- $regressionNote"; $report += "" }
-$report += "## Results"
+
+# ---------- 5. Regression note ----------
+$previousReport = if (Test-Path $ReportPath) { Get-Content $ReportPath -Raw } else { $null }
+$regressionNote = ''
+if ($previousReport) {
+    $prevPass = [regex]::Match($previousReport, 'Pass:\s*(\d+)')
+    $prevFail = [regex]::Match($previousReport, 'Fail:\s*(\d+)')
+    if ($prevPass.Success -and ([int]$prevPass.Groups[1].Value) -gt $pass) {
+        $regressionNote = "pass count dropped from $($prevPass.Groups[1].Value) to $pass"
+    }
+    if ($prevFail.Success -and ([int]$prevFail.Groups[1].Value) -lt $fail) {
+        if ($regressionNote) { $regressionNote += '; ' }
+        $regressionNote += "fail count rose from $($prevFail.Groups[1].Value) to $fail"
+    }
+}
+
+# ---------- 6. Write report (previous archived first) ----------
+$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+if (Test-Path $ReportPath) {
+    Copy-Item $ReportPath (Join-Path $ArchiveDir "closeout-prev-$dateStamp.md") -Force
+}
+
+$nextRecommendedLine = 'none identified'
+if ($board.NextRecommended) {
+    $nextRecommendedLine = "$($board.NextRecommended.Id) [$($board.NextRecommended.Status)] $(if ($board.NextRecommended.Brief) { "brief: $($board.NextRecommended.Brief)" })"
+}
+
+$productionReadyLine = '- Production-ready: ' + $(if ($launchProductionReady) { 'yes' } else { 'no (blocked/skipped owner-gated gates or failed run)' })
+$terminalWithoutResultLine = if ($board.TerminalRowsWithoutResult.Count -gt 0) { $board.TerminalRowsWithoutResult -join ', ' } else { 'none' }
+$report = @(
+    '# Day Closeout',
+    '',
+    "- Time: $timestamp",
+    "- Git status: $gitSummary",
+    "- Log: logs/closeout/close-day-$dateStamp.log",
+    '',
+    '## Task Board',
+    "- Rows: $($board.RowsFound)",
+    "- Statuses: $($statusSummary -join '; ')",
+    "- Next recommended task: $nextRecommendedLine",
+    "- Terminal rows without result records: $terminalWithoutResultLine",
+    '',
+    '## Launch Verification',
+    "- State: $launchState",
+    "- Verdict: $launchVerdict",
+    $productionReadyLine,
+    '',
+    '## Results'
+)
 $report += $reportLines
-$report += ""
-$report += "## Summary"
-$report += "- Pass: $pass"
-$report += "- Fail: $fail"
+$report += @(
+    '',
+    '## Summary',
+    "- Pass: $pass",
+    "- Fail: $fail",
+    "- Evidence date: $todayStamp"
+)
+if ($regressionNote) {
+    $report += "- Regression warning: $regressionNote"
+}
 Set-Content -Path $ReportPath -Value $report
 
-Write-Host ""
-Write-Host "Summary: $pass pass, $fail fail"
 Write-Host ''
-Write-Host 'AI handoff for next session' -ForegroundColor Yellow
-Write-Host "- Continue from: $latestHandoffContinue"
-Write-Host "- Next step: $latestHandoffNext"
-Write-Host "- Blockers: $latestHandoffBlockers"
-Write-Host '- Resume command: powershell -ExecutionPolicy Bypass -File .\0.dev-matrix\resume-work.ps1'
-if ($projectProgress) {
-  Write-Host ''
-  Write-Host 'Project progress snapshot' -ForegroundColor Yellow
-  Write-Host "- Date: $($projectProgress.Date)"
-  Write-Host "- Working since: $($projectProgress.WorkingSince)"
-  if ($null -ne $projectProgress.CompletionPercent) {
-    Write-Host "- Completion: $($projectProgress.CompletionPercent)% ($($projectProgress.CompletedTasks)/$($projectProgress.TotalTasks) tasks)"
-    Write-Host "- Pending days at current pace: $($projectProgress.PendingDays)"
-  }
-  foreach ($task in @($projectProgress.NextTasks | Select-Object -First 3)) {
-    Write-Host "- Next: $task"
-  }
-}
+Write-Host "Summary: $pass pass, $fail fail"
+Write-Host "Report: logs/closeout/last-closeout.md"
 if ($regressionNote) { Write-Host "WARNING: $regressionNote" -ForegroundColor Yellow }
 if ($fail -gt 0) { exit 1 }
+exit 0
