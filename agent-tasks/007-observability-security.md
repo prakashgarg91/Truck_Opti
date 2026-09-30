@@ -3,6 +3,9 @@
 ## Objective
 Make failures visible and production risk reviewable before launch.
 
+## 2026-09-30 execution update
+This is an umbrella, not a single GLM implementation assignment. Execute the bounded briefs for TO-131 (021 safe errors), TO-132 (022 monitoring), TO-136 (026 final-schema/admin authorization proof), and TO-138 (028 supported runtime/quality). See TASKS.md and agent-results/010-result.md. GPT-6 consolidates accepted results into agent-results/007-result.md. Do not mark this umbrella DONE from source-regex or mocked tests alone.
+
 ## Depends on
 TO-113 baseline plus accepted auth/provider/core fixes.
 

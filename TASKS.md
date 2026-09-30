@@ -7,16 +7,42 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | OPS-000 | Replace active legacy agent routing with simple root control plane | DONE | GPT-6 | — | `agent-results/000-migration.md` |
 | TO-112 | Production-readiness mission umbrella | IN_PROGRESS | GPT-6 supervisor | `agent-tasks/001-production-readiness.md` | — |
 | TO-113 | Baseline and product inventory | DONE | GLM worker + GPT-6 review | `agent-tasks/002-baseline-inventory.md` | `agent-results/002-result.md` |
-| TO-114 | Production auth and Supabase authority | CODE_DONE_OWNER_BLOCKED_LIVE | GLM worker + GPT-6 review | `agent-tasks/003-auth-supabase.md` | `agent-results/003-result.md` |
+| TO-114 | Production auth and Supabase authority | REOPENED_CODE_AND_LIVE_GAPS | GPT-6; TO-122/123/124/125/136 workers | `agent-tasks/003-auth-supabase.md` | `agent-results/003-result.md` (historical); `agent-results/010-result.md` |
 | TO-115 | Provider configuration and audit policy | DONE | GLM worker + GPT-6 review | `agent-tasks/004-provider-config.md` | `agent-results/004-result.md` |
 | TO-116 | Core workflow verification and repair | DONE | GLM worker + GPT-6 review | `agent-tasks/005-core-workflows.md` | `agent-results/005-result.md` |
 | TO-117 | Payment readiness without real-money execution | CODE_DONE_OWNER_BLOCKED_PROVIDER_TEST | GLM worker + GPT-6 review | `agent-tasks/006-payment-readiness.md` | `agent-results/006-result.md` |
-| TO-118 | Observability and security hardening | READY | GLM worker + GPT-6 review | `agent-tasks/007-observability-security.md` | — |
-| TO-119 | Final production gates and launch handoff | BLOCKED_BY_TO118_AND_LIVE_OWNER_GATES | GPT-6 | `agent-tasks/008-final-production-gates.md` | — |
+| TO-118 | Observability and security hardening | WAITING_CHILD_TASKS | GPT-6; TO-131/132/136/138 workers | `agent-tasks/007-observability-security.md` | — |
+| TO-119 | Final production gates and launch handoff | BLOCKED_BY_ENGINEERING_AND_LIVE_OWNER_GATES | GPT-6 | `agent-tasks/008-final-production-gates.md` | `agent-results/008-result.md` |
 | TO-HYG-009 | Audit/retire obsolete embedded G2G development tooling without breaking product runtime | PARKED_AFTER_TO112 | GLM worker + GPT-6 review | `agent-tasks/009-g2g-retirement-audit.md` | — |
-| TO-120 | Driver "Documents & KYC Upload" screen integrated from Stitch design | DONE | GLM worker + GPT-6 review | — (owner-directed Stitch mission) | `agent-results/120-driver-kyc-stitch.md` |
+| TO-120 | Driver "Documents & KYC Upload" screen integrated from Stitch design (UI simulation only) | DONE_UI_ONLY | GLM worker + GPT-6 review | — (owner-directed Stitch mission); backend follow-ups TO-126/127/128 | `agent-results/120-driver-kyc-stitch.md` |
+| TO-ASSESS-010 | Current completion assessment and bounded worker briefs | DONE | GPT-6 | Owner-requested assessment | `agent-results/010-result.md` |
+| TO-121 | Repair canonical launch and closure gates | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/011-canonical-readiness-gates.md` | — |
+| TO-122 | Connect Google login to trusted Supabase sessions | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/012-trusted-cloud-auth.md` | — |
+| TO-123 | Make every login surface usable and consistent | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/013-usable-auth-surfaces.md` | — |
+| TO-124 | Audit real provider capability and fail closed | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/014-provider-capability-audits.md` | — |
+| TO-125 | Prepare a reproducible Supabase recovery and staging backend | READY_LOCAL_OWNER_BLOCKED_HOSTED | GLM-5.3 Flash + GPT-6 review | `agent-tasks/015-supabase-recovery-rehearsal.md` | — |
+| TO-126 | Implement private KYC storage and authoritative state | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/016-private-kyc-backend.md` | — |
+| TO-127 | Replace simulated driver KYC with real uploads | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/017-real-driver-kyc.md` | — |
+| TO-128 | Complete the admin KYC review loop | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/018-admin-kyc-review.md` | — |
+| TO-129 | Make driver offer acceptance atomic and reachable | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/019-atomic-job-offer-response.md` | — |
+| TO-130 | Verify and repair trip transitions and OTP enforcement | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/020-trip-transition-integrity.md` | — |
+| TO-131 | Restore safe admin and agency error boundaries | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/021-safe-service-errors.md` | — |
+| TO-132 | Complete safe error reporting and health proof | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/022-sanitized-observability.md` | — |
+| TO-133 | Make local backup restoration safe and complete | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/023-atomic-backup-restore.md` | — |
+| TO-134 | Prove the customer cloud business journey | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/024-customer-journey-proof.md` | — |
+| TO-135 | Prove the dispatch-to-delivery business loop | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/025-driver-agency-journey-proof.md` | — |
+| TO-136 | Verify admin authority and final database policies | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/026-admin-and-rls-proof.md` | — |
+| TO-137 | Prove payment state convergence in sandbox | READY_HARNESS_OWNER_BLOCKED_PROVIDER | GLM-5.3 Flash + GPT-6 review | `agent-tasks/027-payment-provider-proof.md` | — |
+| TO-138 | Align supported Node runtime and close quality warnings | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/028-supported-runtime-and-quality.md` | — |
+| TO-139 | Audit implemented journeys for UX and accessibility gaps | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/029-actual-ui-completeness.md` | — |
+| TO-140 | Consolidate repository state and resolve obsolete tooling | READY_AUDIT_ONLY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/030-repository-consolidation.md` | — |
 
 ## Known owner gates
+- 2026-09-30 assessment: new brief sequence 011-030 supersedes the old all-in-one execution prompt; details/evidence are in `agent-results/010-result.md`. Historical DONE rows retain only their originally verified local/code scope.
+- Start with TO-121 (brief 011). Then work TO-122, TO-124, TO-123; execute other READY tasks serially while hosted recovery is blocked. Dependency statuses are updated by GPT-6 after acceptance.
+- The September 11 Heroku missing-config/release snapshots are historical. Heroku CLI currently requires login; production release/config must be rechecked after owner authentication. Do not assume old secrets are still missing.
+- The historical Supabase host remains NXDOMAIN, but no conclusion about a replacement project can be drawn without owner dashboard/config access.
+- Hosted restore/replacement, OAuth/SMTP provisioning, temporary test accounts, payment sandbox secrets, monitoring DSN/access, migration/function rollout, production deploy and any real-money proof require the corresponding owner access/authorization.
 - No `supabase db push` without explicit approval.
 - No real-money payment execution without explicit approval.
 - No credential rotation without explicit approval.
@@ -26,6 +52,14 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 - Razorpay webhook rollout requires the same dedicated `RAZORPAY_WEBHOOK_SECRET` to be configured in Razorpay and production Supabase before deploying the reviewed webhook function.
 
 ## Day-close log
+2026-09-30 — GPT-6 assessed main `b76c4cc3`, prepared briefs 011-030 and reopened production auth scope from current source evidence. Fresh build PASS; frontend unit 358/358, packing 18/18, server 10/10, policy 12/12, Python auth 6/6; lint 0 errors/26 warnings; root/frontend production npm audits 0 vulnerabilities. Current-local-env browser smoke FAIL: public 1/12, launch 40/52, with confirmed request to dead Supabase health hostname. Live www 200/apex one redirect; live health URLs return SPA HTML. See result 010 for limitations and owner gates. This session created documentation only; no product implementation, Git push or production change.
+
+## Repository state parked for TO-140
+
+- After `git fetch origin`, main is 14 commits ahead / 0 behind origin/main (`486cb681`). No push occurred during assessment.
+- Pre-existing untracked items: `.vscode/mcp.json.bak-qdrant-cleanup` and `closeout-logs/`. Preserve until their contents/purpose are reviewed.
+- Local legacy refs: `backup/cloud-sanitized-20260601-110912/Truck_Opti`, `copilot/demo-accounts-and-audit-fix`, `copilot/to109-demo-accounts-v2`, `stitch/driver-docs-upload-20260919`, `stitch/pilot-20260911`, `sync-safety/pre-sync-20260912`, `ultra/referral`, `wip/local-20260630`. Merged/dirty/content disposition needs TO-140 verification before deletion.
+- Thirteen old AI Work Factory worktrees remain under `D:/Github/0.dev-matrix/data/ai-work-factory/worktrees/`. Exact refs/paths/commits are recorded in result 010. Purpose: historical bounded worker candidates; status PARKED, not active completion writers. Next action: inspect unique commits plus tracked/untracked/ignored files, reconcile intended work, remove only after reviewed proof.
 2026-09-12 — canonical control plane retained; stale matrix gap/status snapshots retired from the active branch.
 2026-09-12 — recovered unique TruckOpti marketplace UX research into `docs/ux/`; parked code-coupled G2G retirement behind production readiness.
 2026-09-12 — decomposed TO-112 into bounded dependency-ordered tasks TO-113 through TO-119; next executable task is TO-113 baseline evidence, not implementation guessing.
