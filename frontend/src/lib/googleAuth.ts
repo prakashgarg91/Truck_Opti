@@ -1,9 +1,9 @@
-// Google Identity Services sign-in (no Supabase, no OTP).
-// Active only when VITE_GOOGLE_CLIENT_ID is set; otherwise callers render a
-// clear "needs setup" state instead of a broken button.
-// Security note: the ID token is decoded client-side for profile display.
-// Server-side signature verification arrives with the micro-backend; until
-// then this identity is trusted for device-local data only (never money).
+// Google Identity Services helpers. NOT part of production sign-in: the
+// production Google entry starts a Supabase OAuth round trip instead, because
+// a client-decoded ID token cannot be verified in the browser. These helpers
+// remain for device-local (offline) tooling only; any identity decoded here is
+// device-local data and must never confer cloud, admin, reviewer or driver
+// authority, or enable payments.
 const GIS_SCRIPT = 'https://accounts.google.com/gsi/client'
 
 export const googleClientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim() || ''

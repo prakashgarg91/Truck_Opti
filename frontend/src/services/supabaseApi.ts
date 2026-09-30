@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { UserFacingError } from '../utils/userFacingError'
+import { isSafeAuthReturnTo } from '../utils/authReturnTo'
 
 const getAuthErrorMessage = (
   error: { code?: string; message?: string } | null | undefined,
@@ -956,12 +957,24 @@ export const authSupabaseApi = {
     }
   },
 
-  async signInWithGoogle() {
+  /**
+   * Starts the trusted Google OAuth round trip. This SPA client uses the
+   * implicit flow (supabase-js default), so Supabase returns the session in
+   * the redirect URL fragment handled by AuthCallbackPage. An optional safe
+   * return-to path rides along in the redirect target so the callback can
+   * restore where the user was heading; unsafe values are dropped here and
+   * re-validated again on receipt.
+   */
+  async signInWithGoogle(returnTo?: string) {
     try {
+      const callbackUrl = new URL('/auth/callback', window.location.origin)
+      if (isSafeAuthReturnTo(returnTo)) {
+        callbackUrl.searchParams.set('returnTo', returnTo)
+      }
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: callbackUrl.toString()
         }
       })
       if (error) throw error

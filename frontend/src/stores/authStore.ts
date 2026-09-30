@@ -8,6 +8,27 @@ import type { LocalAgencyProfile } from '../services/localApi'
 // Store the auth subscription for potential cleanup
 let authSubscription: Subscription | null = null
 
+/**
+ * Remove the Supabase client's persisted session from browser storage.
+ *
+ * supabase-js only removes its stored session in signOut() when the server
+ * revoke succeeds (or fails with 401/403/404); on an unreachable backend it
+ * returns an error and keeps the session, which would resurrect the login on
+ * the next boot. This mirrors the client's own storage keys (sb-*-auth-token,
+ * sb-*-code-verifier) so offline logout still ends the session on this device.
+ */
+function clearPersistedSupabaseSession(): void {
+  try {
+    for (const key of Object.keys(window.localStorage)) {
+      if (key.startsWith('sb-') && (key.endsWith('-auth-token') || key.endsWith('-code-verifier'))) {
+        window.localStorage.removeItem(key)
+      }
+    }
+  } catch (err) {
+    logger.error('Error clearing persisted Supabase session:', err)
+  }
+}
+
 interface AppUser {
   id: string
   email: string
@@ -188,13 +209,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true })
 
-          // Get current session
+          // Get current session (may fail when the backend is unreachable)
           const { data: { session }, error } = await supabase.auth.getSession()
 
           if (error) {
+            // No verified cloud session: an unreachable or failing backend is
+            // treated like "no session" so device-local access still works.
             logger.error('Error getting session:', error)
-            set({ isLoading: false, isAuthenticated: false })
-            return
           }
 
           if (session) {
@@ -235,19 +256,28 @@ export const useAuthStore = create<AuthState>()(
                       set({
                         user: appUser,
                         session,
+                        authMode: 'supabase',
                         isAuthenticated: true,
                         isLoading: false
                       })
                     }
                   }
                 } else if (event === 'SIGNED_OUT') {
-                  set({
-                    user: null,
-                    session: null,
-                    isAuthenticated: false,
-                    isLoading: false,
-                    pendingPhone: null
-                  })
+                  const { authMode, user } = get()
+                  if (authMode === 'local' && user) {
+                    // A Supabase sign-out (e.g. a revoked cloud token at boot)
+                    // must not evict an active device-local session.
+                    set({ session: null, isLoading: false })
+                  } else {
+                    set({
+                      user: null,
+                      session: null,
+                      authMode: 'supabase',
+                      isAuthenticated: false,
+                      isLoading: false,
+                      pendingPhone: null
+                    })
+                  }
                 }
               }
             )
@@ -302,8 +332,8 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
           pendingPhone: null
         })
-        // Local sessions never touch the network.
-        if (get().authMode === 'local' || !get().session) {
+        // Device-local sessions hold no Supabase session: logout is purely local.
+        if (!get().session) {
           clear()
           return
         }
@@ -311,8 +341,10 @@ export const useAuthStore = create<AuthState>()(
           const { error } = await supabase.auth.signOut()
           if (error) throw error
         } catch (err) {
-          // Offline logout must still work: clear local state regardless.
+          // Offline logout must still work: supabase-js keeps its stored
+          // session when the revoke call fails, so clear it here too.
           logger.error('Error signing out:', err)
+          clearPersistedSupabaseSession()
         }
         clear()
       },

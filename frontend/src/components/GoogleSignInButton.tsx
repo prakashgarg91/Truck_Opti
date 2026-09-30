@@ -1,46 +1,26 @@
-import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
-import { isGoogleAuthConfigured, renderGoogleButton } from '../lib/googleAuth'
-import { agencyProfileLocalApi } from '../services/localApi'
-import { useAuthStore } from '../stores/authStore'
-import { getDefaultHomePathForRole } from './ProtectedRoute'
+import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import { isSupabaseConfigured, isSupabaseReachable } from '../lib/supabase'
+import { authSupabaseApi } from '../services/supabaseApi'
+import { buildAuthReturnTo, type AuthRouteState } from '../utils/authReturnTo'
 import { logger } from '../utils/logger'
 
-// Google sign-in via GIS (no Supabase, no OTP). Without VITE_GOOGLE_CLIENT_ID
-// it renders an honest disabled state instead of a broken redirect.
+// Google sign-in starts a trusted Supabase OAuth round trip (implicit flow on
+// this SPA client). Identity and app role are resolved from the verified
+// Supabase user plus protected server data once the /auth/callback redirect
+// returns. GIS ID tokens are deliberately NOT decoded here: a client-decoded
+// identity is device-local data and can never grant cloud, admin, reviewer or
+// driver authority, or enable payments. Device-local workspaces live behind
+// /local-start, not behind a Google button.
 export default function GoogleSignInButton({ label }: { label: string }) {
-  const btnRef = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate()
-  const loginLocal = useAuthStore((s) => s.loginLocal)
+  const location = useLocation()
+  const returnTo = buildAuthReturnTo(location.state as AuthRouteState)
   const [error, setError] = useState<string | null>(null)
-  const configured = isGoogleAuthConfigured()
+  const [starting, setStarting] = useState(false)
 
-  useEffect(() => {
-    if (!configured || !btnRef.current) return
-    let cancelled = false
-    renderGoogleButton(
-      btnRef.current,
-      async (profile) => {
-        if (cancelled) return
-        try {
-          const linked = await agencyProfileLocalApi.linkGoogle(profile)
-          loginLocal(linked)
-          toast.success(`Welcome${profile.name ? `, ${profile.name.split(' ')[0]}` : ''}!`)
-          navigate(getDefaultHomePathForRole(linked.role), { replace: true })
-        } catch (e) {
-          logger.error('[GoogleSignIn] link error:', e)
-          setError('Could not sign you in on this device.')
-        }
-      },
-      (message) => { if (!cancelled) setError(message) }
-    )
-    return () => { cancelled = true }
-  }, [configured, loginLocal, navigate])
-
-  if (!configured) {
+  if (!isSupabaseConfigured) {
     return (
-      <div title="Set VITE_GOOGLE_CLIENT_ID to enable Google sign-in">
+      <div title="Connect the Supabase sign-in backend (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) to enable Google sign-in">
         <button
           disabled
           className="btn btn-secondary w-full opacity-60 cursor-not-allowed"
@@ -48,15 +28,41 @@ export default function GoogleSignInButton({ label }: { label: string }) {
           <span>{label} (needs setup)</span>
         </button>
         <p className="mt-2 text-xs text-slate-500">
-          Google sign-in activates once the owner adds a client ID. Meanwhile, use device setup below.
+          Google sign-in activates once the owner connects the sign-in backend. Meanwhile, use device setup below.
         </p>
       </div>
     )
   }
 
+  const startGoogleSignIn = async () => {
+    if (starting) return
+    setError(null)
+    setStarting(true)
+    try {
+      if (!(await isSupabaseReachable())) {
+        throw new Error(
+          'Google sign-in is unavailable right now because the sign-in backend cannot be reached. You can continue offline on this device.'
+        )
+      }
+      await authSupabaseApi.signInWithGoogle(returnTo ?? undefined)
+      // On success supabase-js redirects the browser to Google; the page is
+      // replaced shortly after, so the button stays in its "starting" state.
+    } catch (e) {
+      logger.error('[GoogleSignIn] failed to start OAuth:', e)
+      setError(e instanceof Error ? e.message : 'Could not start Google sign-in. Please try again.')
+      setStarting(false)
+    }
+  }
+
   return (
     <div>
-      <div ref={btnRef} className="flex justify-center" />
+      <button
+        onClick={startGoogleSignIn}
+        disabled={starting}
+        className="btn btn-secondary w-full"
+      >
+        <span>{starting ? 'Redirecting to Google…' : label}</span>
+      </button>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </div>
   )

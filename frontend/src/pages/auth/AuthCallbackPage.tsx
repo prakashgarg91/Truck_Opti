@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { logger } from '../../utils/logger'
 import { consumeAuthReturnTo, storeAuthReturnTo } from '../../utils/authReturnTo'
 import { getAuthCallbackErrorMessage } from '../../utils/authCallbackError'
+import { useAuthStore } from '../../stores/authStore'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -90,6 +91,13 @@ export default function AuthCallbackPage() {
             icon: '✅',
             duration: 2000
           })
+
+          // The auth store resolves the verified user and their server-side
+          // role asynchronously; give it a short window so the landing route
+          // renders as authenticated instead of bouncing back to /login.
+          for (let i = 0; i < 20 && !useAuthStore.getState().isAuthenticated; i++) {
+            await new Promise(resolve => setTimeout(resolve, 100))
+          }
 
           window.clearTimeout(timeoutId)
           navigate(consumeAuthReturnTo() || '/', { replace: true })

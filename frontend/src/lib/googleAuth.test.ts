@@ -23,6 +23,23 @@ describe('googleAuth', () => {
     expect(() => decodeIdToken(jwt({ email: 'a@b.c' }))).toThrow(/subject/)
   })
 
+  it('drops authorization-bearing claims from a spoofed payload', () => {
+    const p = decodeIdToken(
+      jwt({
+        sub: 'g9',
+        email: 'x@y.z',
+        name: 'Spoofed Admin',
+        role: 'admin',
+        app_metadata: { provider: 'google', role: 'admin' },
+        user_metadata: { role: 'admin' },
+      })
+    )
+    // Only display-profile fields survive; nothing authorization-shaped leaks.
+    expect(p).toEqual({ sub: 'g9', email: 'x@y.z', name: 'Spoofed Admin', picture: undefined })
+    expect((p as unknown as Record<string, unknown>).role).toBeUndefined()
+    expect((p as unknown as Record<string, unknown>).app_metadata).toBeUndefined()
+  })
+
   it('is unconfigured without a client ID', () => {
     expect(isGoogleAuthConfigured()).toBe(false)
   })
