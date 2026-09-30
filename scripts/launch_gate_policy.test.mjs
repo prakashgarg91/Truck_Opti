@@ -284,6 +284,14 @@ test('launch-check on a clean fixture passes locally but refuses a production-re
   assert.equal(status.productionReady, false)
   assert.equal(status.fail, 0)
   assert.ok(status.blocked >= 1, 'production gates must be recorded as blocked without credentials')
+
+  // Evidence trail: the status log pointer must resolve to a flushed transcript.
+  assert.equal(typeof status.log, 'string', 'status must name its transcript log')
+  const transcriptPath = path.join(root, ...status.log.split('/'))
+  assert.equal(fs.existsSync(transcriptPath), true, `transcript log must exist at ${status.log}`)
+  const transcript = fs.readFileSync(transcriptPath, 'utf8')
+  assert.match(transcript, /TruckOpti Launch-Readiness Check/)
+  assert.match(transcript, /RESULT:/)
 })
 
 test('launch-check fails the run when a gate command fails', { skip: psSkipMessage, timeout: 300000 }, () => {

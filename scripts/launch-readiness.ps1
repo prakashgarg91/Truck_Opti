@@ -419,6 +419,10 @@ foreach ($line in $summaryLines) {
     $transcript.Add($line)
 }
 
+# Flush the transcript before recording the status that points at it, so the
+# status JSON's log reference always resolves.
+[System.IO.File]::WriteAllLines($LogPath, $transcript)
+
 # Retain only the newest 10 transcript logs.
 Get-ChildItem -Path $StatusDir -Filter 'launch-check-*.log' -File -ErrorAction SilentlyContinue |
     Sort-Object LastWriteTime -Descending |
