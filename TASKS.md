@@ -26,7 +26,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-128 | Complete the admin KYC review loop | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/018-admin-kyc-review.md` | — |
 | TO-129 | Make driver offer acceptance atomic and reachable | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/019-atomic-job-offer-response.md` | — |
 | TO-130 | Verify and repair trip transitions and OTP enforcement | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/020-trip-transition-integrity.md` | — |
-| TO-131 | Restore safe admin and agency error boundaries | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/021-safe-service-errors.md` | — |
+| TO-131 | Restore safe admin and agency error boundaries | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/021-safe-service-errors.md` | `agent-results/021-result.md` |
 | TO-132 | Complete safe error reporting and health proof | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/022-sanitized-observability.md` | — |
 | TO-133 | Make local backup restoration safe and complete | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/023-atomic-backup-restore.md` | — |
 | TO-134 | Prove the customer cloud business journey | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/024-customer-journey-proof.md` | — |

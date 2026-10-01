@@ -134,7 +134,7 @@ describe('agencyPortalApi', () => {
             })
             
             await expect(agencyDashboardApi.getSnapshot())
-                .rejects.toThrow('Function error')
+                .rejects.toThrow('Failed to load dashboard summary')
         })
     })
 
@@ -311,7 +311,7 @@ describe('agencyPortalApi', () => {
             })
             
             await expect(agencyJobsApi.getAssignableDrivers())
-                .rejects.toThrow('Function error')
+                .rejects.toThrow('Failed to load drivers')
         })
     })
 
@@ -363,7 +363,7 @@ describe('agencyPortalApi', () => {
             })
             
             await expect(agencyJobsApi.getDriverLatestLocation('job_1'))
-                .rejects.toThrow('Function error')
+                .rejects.toThrow('Failed to load driver location')
         })
     })
 
@@ -869,7 +869,7 @@ describe('agencyPortalApi', () => {
             })
             
             await expect(agencyDriversApi.getSnapshot())
-                .rejects.toThrow('Function error')
+                .rejects.toThrow('Failed to load drivers')
         })
     })
 
@@ -899,7 +899,7 @@ describe('agencyPortalApi', () => {
             })
             
             await expect(agencyDriversApi.assignTruckToDriver('truck_1', 'driver_1'))
-                .rejects.toThrow('Assignment failed')
+                .rejects.toThrow('Failed to assign truck')
         })
     })
 
@@ -928,7 +928,7 @@ describe('agencyPortalApi', () => {
             })
             
             await expect(agencyDriversApi.unassignTruck('truck_1'))
-                .rejects.toThrow('Unassignment failed')
+                .rejects.toThrow('Failed to unassign driver')
         })
     })
 
@@ -977,7 +977,131 @@ describe('agencyPortalApi', () => {
             })
             
             await expect(agencyDriversApi.createPayout('driver_1', 1000))
-                .rejects.toThrow('Create failed')
+                .rejects.toThrow('Failed to submit payment request')
+        })
+    })
+
+    // TO-131: safe agency error boundaries. Raw provider/edge-function error
+    // strings must never reach the user; only approved typed status codes may
+    // influence the user-facing message.
+    describe('safe error boundary (TO-131)', () => {
+        const FALLBACK = 'Failed to submit payment request'
+        const SQL_DETAIL = 'SQLSTATE 42703: relation "public.agency_jobs" does not exist, column "otp_hash"'
+        const JWT_LIKE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZ2VuY3kiLCJyb2xlIjoic2VydmljZSJ9.f4k3s1gn4tur3'
+
+        function functionHttpError(status: number, body: string, contentType = 'application/json') {
+            return {
+                name: 'FunctionsHttpError',
+                message: 'Edge Function returned a non-2xx status code',
+                context: new Response(body, { status, headers: { 'Content-Type': contentType } }),
+            }
+        }
+
+        it('does not surface SQL table/column details', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(500, JSON.stringify({ error: SQL_DETAIL })),
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface JWT-like response payloads', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(502, JSON.stringify({ error: `upstream auth failed: ${JWT_LIKE}` })),
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface stack traces from raw error messages', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: new Error(`TypeError: x is not a function\n    at handler (file:///srv/index.ts:42:15)\n    at ${JWT_LIKE}`),
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface HTML provider responses', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(502, '<html><body><h1>502 Bad Gateway</h1><p>nginx/1.24.0</p></body></html>', 'text/html'),
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface malformed JSON responses', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(500, '{not valid json'),
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface network failure internals', async () => {
+            invokeMock.mockRejectedValue(new Error('Failed to send a request to the Edge Function: getaddrinfo ENOTFOUND'))
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface unknown error shapes', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: { code: 'PGRST116', details: SQL_DETAIL, hint: null },
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+        })
+
+        it('maps an approved 401 code to a sign-in message', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(401, JSON.stringify({ error: 'Authentication is required.' })),
+            })
+
+            await expect(agencyDashboardApi.getSnapshot())
+                .rejects.toThrow('Your session has expired. Please sign in again.')
+        })
+
+        it('maps an approved 403 code to a permission message', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(403, JSON.stringify({ error: 'Access denied.' })),
+            })
+
+            await expect(agencyDashboardApi.getSnapshot())
+                .rejects.toThrow('You do not have permission to perform this action.')
+        })
+
+        it('maps an approved 409 code to an account-guard message', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(409, JSON.stringify({ error: 'You cannot modify your own account from this screen.' })),
+            })
+
+            await expect(agencyDriversApi.unassignTruck('truck_1'))
+                .rejects.toThrow('This account cannot be modified from this screen.')
+        })
+
+        it('logs bounded diagnostics without internal details', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(500, JSON.stringify({ error: SQL_DETAIL })),
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+
+            expect(loggerErrorMock).toHaveBeenCalledTimes(1)
+            const logged = loggerErrorMock.mock.calls.map((call) => call.join(' ')).join(' ')
+            expect(logged).toContain('agency-portal-drivers')
+            expect(logged).toContain('500')
+            expect(logged).not.toContain(SQL_DETAIL)
+            expect(logged).not.toContain('otp_hash')
+            expect(logged).not.toContain('Edge Function returned a non-2xx status code')
         })
     })
 

@@ -18,3 +18,31 @@ test('payment Edge Functions do not expose raw caught error messages to clients'
     )
   }
 })
+
+// TO-131: the portal service helpers were reverted once (04cf579c) to raw
+// message passthrough. This source-level gate keeps the safe boundary in place.
+const PORTAL_SERVICE_FILES = [
+  'frontend/src/services/adminSupabaseApi.ts',
+  'frontend/src/services/agencyPortalApi.ts',
+]
+
+test('portal service helpers do not surface raw provider error strings to users', () => {
+  for (const path of PORTAL_SERVICE_FILES) {
+    const source = fs.readFileSync(path, 'utf8')
+    assert.doesNotMatch(
+      source,
+      /return\s+payload\.error/,
+      `${path} must not pass arbitrary JSON payload.error strings to users`,
+    )
+    assert.doesNotMatch(
+      source,
+      /return\s+error\.message/,
+      `${path} must not pass raw error.message strings to users`,
+    )
+    assert.match(
+      source,
+      /resolveFunctionUserMessage/,
+      `${path} must resolve user messages through the approved typed-code mapping`,
+    )
+  }
+})

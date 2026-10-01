@@ -104,7 +104,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminAgenciesApi.getSnapshot('pending'))
-                .rejects.toThrow('Function error')
+                .rejects.toThrow('Failed to load agencies')
         })
     })
 
@@ -151,7 +151,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminAgenciesApi.approve('agency_1'))
-                .rejects.toThrow('Approval failed')
+                .rejects.toThrow('Failed to approve agency. Please try again.')
         })
     })
 
@@ -199,7 +199,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminAgenciesApi.reject('agency_1', 'Reason'))
-                .rejects.toThrow('Rejection failed')
+                .rejects.toThrow('Failed to reject agency. Please try again.')
         })
     })
 
@@ -246,7 +246,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminAgenciesApi.suspend('agency_1'))
-                .rejects.toThrow('Suspension failed')
+                .rejects.toThrow('Failed to suspend agency. Please try again.')
         })
     })
 
@@ -307,7 +307,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminPayoutsApi.getAll())
-                .rejects.toThrow('Function error')
+                .rejects.toThrow('Failed to load payouts')
         })
     })
 
@@ -345,7 +345,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminPayoutsApi.approve('payout_1'))
-                .rejects.toThrow('Approval failed')
+                .rejects.toThrow('Failed to approve payout. Please try again.')
         })
     })
 
@@ -384,7 +384,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminPayoutsApi.reject('payout_1', 'Reason'))
-                .rejects.toThrow('Rejection failed')
+                .rejects.toThrow('Failed to reject payout. Please try again.')
         })
     })
 
@@ -422,7 +422,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminPayoutsApi.markAsPaid('payout_1'))
-                .rejects.toThrow('Mark as paid failed')
+                .rejects.toThrow('Failed to mark payout as paid. Please try again.')
         })
     })
 
@@ -479,7 +479,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminDashboardApi.getSnapshot())
-                .rejects.toThrow('Function error')
+                .rejects.toThrow('Failed to load dashboard analytics. Please try again.')
         })
     })
 
@@ -564,7 +564,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminSupabaseApi.getAdminUsers())
-                .rejects.toThrow('Function error')
+                .rejects.toThrow('Unable to load users right now. Please try again.')
         })
     })
 
@@ -591,7 +591,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminSupabaseApi.deleteUser('user_1'))
-                .rejects.toThrow('Deletion failed')
+                .rejects.toThrow('Failed to delete the user account')
         })
     })
 
@@ -619,7 +619,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminSupabaseApi.banUser('user_1'))
-                .rejects.toThrow('Ban failed')
+                .rejects.toThrow('Failed to disable the user account')
         })
     })
 
@@ -647,7 +647,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminSupabaseApi.unbanUser('user_1'))
-                .rejects.toThrow('Unban failed')
+                .rejects.toThrow('Failed to re-enable the user account')
         })
     })
 
@@ -705,7 +705,131 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminSupabaseApi.getContactInquiries())
-                .rejects.toThrow('Function error')
+                .rejects.toThrow('Unable to load contact inquiries right now. Please try again.')
+        })
+    })
+
+    // TO-131: safe admin error boundaries. Raw provider/edge-function error
+    // strings must never reach the user; only approved typed status codes may
+    // influence the user-facing message.
+    describe('safe error boundary (TO-131)', () => {
+        const FALLBACK = 'Unable to load users right now. Please try again.'
+        const SQL_DETAIL = 'SQLSTATE 42703: relation "public.profiles" does not exist, column "otp_hash"'
+        const JWT_LIKE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJzZXJ2aWNlIn0.f4k3s1gn4tur3'
+
+        function functionHttpError(status: number, body: string, contentType = 'application/json') {
+            return {
+                name: 'FunctionsHttpError',
+                message: 'Edge Function returned a non-2xx status code',
+                context: new Response(body, { status, headers: { 'Content-Type': contentType } }),
+            }
+        }
+
+        it('does not surface SQL table/column details', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(500, JSON.stringify({ error: SQL_DETAIL })),
+            })
+
+            await expect(adminSupabaseApi.getAdminUsers()).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface JWT-like response payloads', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(502, JSON.stringify({ error: `upstream auth failed: ${JWT_LIKE}` })),
+            })
+
+            await expect(adminSupabaseApi.getAdminUsers()).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface stack traces from raw error messages', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: new Error(`TypeError: x is not a function\n    at handler (file:///srv/index.ts:42:15)\n    at ${JWT_LIKE}`),
+            })
+
+            await expect(adminSupabaseApi.getAdminUsers()).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface HTML provider responses', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(502, '<html><body><h1>502 Bad Gateway</h1><p>nginx/1.24.0</p></body></html>', 'text/html'),
+            })
+
+            await expect(adminSupabaseApi.getAdminUsers()).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface malformed JSON responses', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(500, '{not valid json'),
+            })
+
+            await expect(adminSupabaseApi.getAdminUsers()).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface network failure internals', async () => {
+            invokeMock.mockRejectedValue(new Error('Failed to send a request to the Edge Function: getaddrinfo ENOTFOUND'))
+
+            await expect(adminSupabaseApi.getAdminUsers()).rejects.toThrow(FALLBACK)
+        })
+
+        it('does not surface unknown error shapes', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: { code: 'PGRST116', details: SQL_DETAIL, hint: null },
+            })
+
+            await expect(adminSupabaseApi.getAdminUsers()).rejects.toThrow(FALLBACK)
+        })
+
+        it('maps an approved 401 code to a sign-in message', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(401, JSON.stringify({ error: 'Authentication is required.' })),
+            })
+
+            await expect(adminSupabaseApi.getAdminUsers())
+                .rejects.toThrow('Your session has expired. Please sign in again.')
+        })
+
+        it('maps an approved 403 code to a permission message', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(403, JSON.stringify({ error: 'Admin access is required.' })),
+            })
+
+            await expect(adminSupabaseApi.getAdminUsers())
+                .rejects.toThrow('You do not have permission to perform this action.')
+        })
+
+        it('maps an approved 409 code to an account-guard message', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(409, JSON.stringify({ error: 'Portal admins cannot be disabled or deleted from this screen.' })),
+            })
+
+            await expect(adminSupabaseApi.banUser('user_1'))
+                .rejects.toThrow('This account cannot be modified from this screen.')
+        })
+
+        it('logs bounded diagnostics without internal details', async () => {
+            invokeMock.mockResolvedValue({
+                data: null,
+                error: functionHttpError(500, JSON.stringify({ error: SQL_DETAIL })),
+            })
+
+            await expect(adminSupabaseApi.getAdminUsers()).rejects.toThrow(FALLBACK)
+
+            expect(loggerErrorMock).toHaveBeenCalledTimes(1)
+            const logged = loggerErrorMock.mock.calls.map((call) => call.join(' ')).join(' ')
+            expect(logged).toContain('admin-portal-users')
+            expect(logged).toContain('500')
+            expect(logged).not.toContain(SQL_DETAIL)
+            expect(logged).not.toContain('otp_hash')
+            expect(logged).not.toContain('Edge Function returned a non-2xx status code')
         })
     })
 
@@ -732,7 +856,7 @@ describe('adminSupabaseApi', () => {
             })
             
             await expect(adminSupabaseApi.resolveContactInquiry('inquiry_1'))
-                .rejects.toThrow('Resolve failed')
+                .rejects.toThrow('Unable to update this inquiry right now. Please try again.')
         })
     })
 })

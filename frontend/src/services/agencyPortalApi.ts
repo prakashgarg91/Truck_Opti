@@ -1,30 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { UserFacingError } from '../utils/userFacingError'
-import { logger } from '../utils/logger'
-
-async function getFunctionErrorMessage(error: unknown, fallbackMessage: string) {
-    if (error && typeof error === 'object') {
-        const response = 'context' in error ? error.context : null
-
-        if (response instanceof Response) {
-            try {
-                const payload = (await response.clone().json()) as { error?: string }
-
-                if (typeof payload.error === 'string' && payload.error.trim()) {
-                    return payload.error
-                }
-            } catch {
-                // Fall through to fallback handling.
-            }
-        }
-
-        if ('message' in error && typeof error.message === 'string' && error.message.trim()) {
-            return error.message
-        }
-    }
-
-    return fallbackMessage
-}
+import { UserFacingError, reportFunctionFailure, resolveFunctionUserMessage } from '../utils/userFacingError'
 
 // ============= TYPES =============
 export interface AgencyJob {
@@ -152,8 +127,8 @@ export const agencyDashboardApi = {
             })
 
             if (error) {
-                logger.error('[agencyDashboardApi.getSnapshot]', error)
-                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to load dashboard summary'))
+                reportFunctionFailure('agency-portal-dashboard', error)
+                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to load dashboard summary'))
             }
 
             return {
@@ -167,11 +142,11 @@ export const agencyDashboardApi = {
                 },
             }
         } catch (e) {
-            logger.error('[agencyDashboardApi.getSnapshot]', e)
             if (e instanceof UserFacingError) {
                 throw e
             }
 
+            reportFunctionFailure('agency-portal-dashboard', e)
             throw new UserFacingError('Failed to load dashboard summary')
         }
     },
@@ -186,13 +161,17 @@ export const agencyJobsApi = {
             })
 
             if (error) {
-                logger.error('[agencyJobsApi.list]', error)
+                reportFunctionFailure('agency-portal-jobs', error)
                 throw new UserFacingError('Failed to load jobs')
             }
 
             return data?.jobs || []
         } catch (e) {
-            logger.error('[agencyJobsApi.list]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-jobs', e)
             throw new UserFacingError('Failed to load jobs')
         }
     },
@@ -205,11 +184,15 @@ export const agencyJobsApi = {
             })
 
             if (error) {
-                logger.error('[agencyJobsApi.updateStatus]', error)
+                reportFunctionFailure('agency-portal-jobs', error)
                 throw new UserFacingError('Failed to update job status')
             }
         } catch (e) {
-            logger.error('[agencyJobsApi.updateStatus]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-jobs', e)
             throw new UserFacingError('Failed to update job status')
         }
     },
@@ -222,11 +205,15 @@ export const agencyJobsApi = {
             })
 
             if (error) {
-                logger.error('[agencyJobsApi.assignDriver]', error)
+                reportFunctionFailure('agency-portal-jobs', error)
                 throw new UserFacingError('Failed to assign driver')
             }
         } catch (e) {
-            logger.error('[agencyJobsApi.assignDriver]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-jobs', e)
             throw new UserFacingError('Failed to assign driver')
         }
     },
@@ -241,17 +228,17 @@ export const agencyJobsApi = {
             })
 
             if (error) {
-                logger.error('[agencyJobsApi.getAssignableDrivers]', error)
-                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to load drivers'))
+                reportFunctionFailure('agency-portal-jobs', error)
+                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to load drivers'))
             }
 
             return data?.drivers ?? []
         } catch (e) {
-            logger.error('[agencyJobsApi.getAssignableDrivers]', e)
             if (e instanceof UserFacingError) {
                 throw e
             }
 
+            reportFunctionFailure('agency-portal-jobs', e)
             throw new UserFacingError('Failed to load drivers')
         }
     },
@@ -266,17 +253,17 @@ export const agencyJobsApi = {
             })
 
             if (error) {
-                logger.error('[agencyJobsApi.getDriverLatestLocation]', error)
-                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to load driver location'))
+                reportFunctionFailure('agency-portal-jobs', error)
+                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to load driver location'))
             }
 
             return data?.location ?? null
         } catch (e) {
-            logger.error('[agencyJobsApi.getDriverLatestLocation]', e)
             if (e instanceof UserFacingError) {
                 throw e
             }
 
+            reportFunctionFailure('agency-portal-jobs', e)
             throw new UserFacingError('Failed to load driver location')
         }
     },
@@ -291,13 +278,17 @@ export const agencyFleetApi = {
             })
 
             if (error) {
-                logger.error('[agencyFleetApi.list]', error)
+                reportFunctionFailure('agency-portal-fleet', error)
                 throw new UserFacingError('Failed to load trucks')
             }
 
             return data?.trucks || []
         } catch (e) {
-            logger.error('[agencyFleetApi.list]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-fleet', e)
             throw new UserFacingError('Failed to load trucks')
         }
     },
@@ -319,13 +310,17 @@ export const agencyFleetApi = {
             })
 
             if (error) {
-                logger.error('[agencyFleetApi.addTruck]', error)
+                reportFunctionFailure('agency-portal-fleet', error)
                 throw new UserFacingError('Failed to add truck')
             }
 
             return data?.truck
         } catch (e) {
-            logger.error('[agencyFleetApi.addTruck]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-fleet', e)
             throw new UserFacingError('Failed to add truck')
         }
     },
@@ -338,11 +333,15 @@ export const agencyFleetApi = {
             })
 
             if (error) {
-                logger.error('[agencyFleetApi.updateTruck]', error)
+                reportFunctionFailure('agency-portal-fleet', error)
                 throw new UserFacingError('Failed to update truck')
             }
         } catch (e) {
-            logger.error('[agencyFleetApi.updateTruck]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-fleet', e)
             throw new UserFacingError('Failed to update truck')
         }
     },
@@ -357,7 +356,7 @@ export const agencyBillingApi = {
             })
 
             if (error) {
-                logger.error('[agencyBillingApi.list]', error)
+                reportFunctionFailure('agency-portal-billing', error)
                 throw new UserFacingError('Failed to load billing data')
             }
 
@@ -366,7 +365,11 @@ export const agencyBillingApi = {
                 jobs: data?.jobs || [],
             }
         } catch (e) {
-            logger.error('[agencyBillingApi.list]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-billing', e)
             throw new UserFacingError('Failed to load billing data')
         }
     },
@@ -381,13 +384,17 @@ export const agencyRatesApi = {
             })
 
             if (error) {
-                logger.error('[agencyRatesApi.list]', error)
+                reportFunctionFailure('agency-portal-rates', error)
                 throw new UserFacingError('Failed to load rate cards')
             }
 
             return data?.rates || []
         } catch (e) {
-            logger.error('[agencyRatesApi.list]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-rates', e)
             throw new UserFacingError('Failed to load rate cards')
         }
     },
@@ -410,13 +417,17 @@ export const agencyRatesApi = {
             })
 
             if (error) {
-                logger.error('[agencyRatesApi.addRate]', error)
+                reportFunctionFailure('agency-portal-rates', error)
                 throw new UserFacingError('Failed to add rate card')
             }
 
             return data?.rate
         } catch (e) {
-            logger.error('[agencyRatesApi.addRate]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-rates', e)
             throw new UserFacingError('Failed to add rate card')
         }
     },
@@ -429,11 +440,15 @@ export const agencyRatesApi = {
             })
 
             if (error) {
-                logger.error('[agencyRatesApi.updateRate]', error)
+                reportFunctionFailure('agency-portal-rates', error)
                 throw new UserFacingError('Failed to update rate card')
             }
         } catch (e) {
-            logger.error('[agencyRatesApi.updateRate]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-rates', e)
             throw new UserFacingError('Failed to update rate card')
         }
     },
@@ -446,11 +461,15 @@ export const agencyRatesApi = {
             })
 
             if (error) {
-                logger.error('[agencyRatesApi.deleteRate]', error)
+                reportFunctionFailure('agency-portal-rates', error)
                 throw new UserFacingError('Failed to delete rate card')
             }
         } catch (e) {
-            logger.error('[agencyRatesApi.deleteRate]', e)
+            if (e instanceof UserFacingError) {
+                throw e
+            }
+
+            reportFunctionFailure('agency-portal-rates', e)
             throw new UserFacingError('Failed to delete rate card')
         }
     },
@@ -467,8 +486,8 @@ export const agencyDriversApi = {
             })
 
             if (error) {
-                logger.error('[agencyDriversApi.getSnapshot]', error)
-                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to load drivers'))
+                reportFunctionFailure('agency-portal-drivers', error)
+                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to load drivers'))
             }
 
             return {
@@ -476,11 +495,11 @@ export const agencyDriversApi = {
                 drivers: data?.drivers ?? [],
             }
         } catch (e) {
-            logger.error('[agencyDriversApi.getSnapshot]', e)
             if (e instanceof UserFacingError) {
                 throw e
             }
 
+            reportFunctionFailure('agency-portal-drivers', e)
             throw new UserFacingError('Failed to load drivers')
         }
     },
@@ -492,15 +511,15 @@ export const agencyDriversApi = {
             })
 
             if (error) {
-                logger.error('[agencyDriversApi.assignTruckToDriver]', error)
-                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to assign truck'))
+                reportFunctionFailure('agency-portal-drivers', error)
+                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to assign truck'))
             }
         } catch (e) {
-            logger.error('[agencyDriversApi.assignTruckToDriver]', e)
             if (e instanceof UserFacingError) {
                 throw e
             }
 
+            reportFunctionFailure('agency-portal-drivers', e)
             throw new UserFacingError('Failed to assign truck')
         }
     },
@@ -512,15 +531,15 @@ export const agencyDriversApi = {
             })
 
             if (error) {
-                logger.error('[agencyDriversApi.unassignTruck]', error)
-                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to unassign driver'))
+                reportFunctionFailure('agency-portal-drivers', error)
+                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to unassign driver'))
             }
         } catch (e) {
-            logger.error('[agencyDriversApi.unassignTruck]', e)
             if (e instanceof UserFacingError) {
                 throw e
             }
 
+            reportFunctionFailure('agency-portal-drivers', e)
             throw new UserFacingError('Failed to unassign driver')
         }
     },
@@ -532,15 +551,15 @@ export const agencyDriversApi = {
             })
 
             if (error) {
-                logger.error('[agencyDriversApi.createPayout]', error)
-                throw new UserFacingError(await getFunctionErrorMessage(error, 'Failed to submit payment request'))
+                reportFunctionFailure('agency-portal-drivers', error)
+                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to submit payment request'))
             }
         } catch (e) {
-            logger.error('[agencyDriversApi.createPayout]', e)
             if (e instanceof UserFacingError) {
                 throw e
             }
 
+            reportFunctionFailure('agency-portal-drivers', e)
             throw new UserFacingError('Failed to submit payment request')
         }
     },

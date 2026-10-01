@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { UserFacingError } from '../utils/userFacingError'
-import { logger } from '../utils/logger'
+import { UserFacingError, reportFunctionFailure, resolveFunctionUserMessage } from '../utils/userFacingError'
 
 // ============= TYPES =============
 export interface Agency {
@@ -135,46 +134,25 @@ export interface AdminDriverProfile {
     updated_at: string
 }
 
-async function getFunctionErrorMessage(error: unknown, fallbackMessage: string) {
-    if (error && typeof error === 'object') {
-        const response = 'context' in error ? error.context : null
-
-        if (response instanceof Response) {
-            try {
-                const payload = (await response.clone().json()) as { error?: string }
-
-                if (typeof payload.error === 'string' && payload.error.trim()) {
-                    return payload.error
-                }
-            } catch {
-                // Fall through to generic handling.
-            }
-        }
-
-        if ('message' in error && typeof error.message === 'string' && error.message.trim()) {
-            return error.message
-        }
-    }
-
-    return fallbackMessage
-}
-
+// TO-131: user-facing messages are resolved only from approved typed status
+// codes; raw provider messages and payload strings are reported as bounded
+// diagnostics instead of being surfaced.
 async function invokeAdminFunction<T>(functionName: string, body: Record<string, unknown>, fallbackMessage: string): Promise<T> {
     try {
         const { data, error } = await supabase.functions.invoke<T>(functionName, { body })
 
         if (error) {
-            logger.error(`[${functionName}]`, error)
-            throw new UserFacingError(await getFunctionErrorMessage(error, fallbackMessage))
+            reportFunctionFailure(functionName, error)
+            throw new UserFacingError(resolveFunctionUserMessage(error, fallbackMessage))
         }
 
         return data as T
     } catch (error) {
-        logger.error(`[${functionName}]`, error)
         if (error instanceof UserFacingError) {
             throw error
         }
 
+        reportFunctionFailure(functionName, error)
         throw new UserFacingError(fallbackMessage)
     }
 }

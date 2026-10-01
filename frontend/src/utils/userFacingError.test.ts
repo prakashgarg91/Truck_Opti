@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { UserFacingError, toUserFacingErrorMessage } from './userFacingError'
+import { APPROVED_FUNCTION_STATUS_MESSAGES, resolveFunctionUserMessage, UserFacingError, toUserFacingErrorMessage } from './userFacingError'
 
 describe('UserFacingError', () => {
   it('preserves its message and has name UserFacingError', () => {
@@ -39,5 +39,44 @@ describe('toUserFacingErrorMessage', () => {
     expect(toUserFacingErrorMessage(error, 'Safe fallback')).toBe('Safe fallback')
     expect(toUserFacingErrorMessage(error, 'Safe fallback')).not.toContain('Secret')
     expect(toUserFacingErrorMessage(error, 'Safe fallback')).not.toContain('implementation')
+  })
+})
+
+// TO-131: approved typed-code mapping for portal Edge Function failures.
+describe('resolveFunctionUserMessage', () => {
+  function functionHttpError(status: number, body: string) {
+    return {
+      name: 'FunctionsHttpError',
+      message: 'Edge Function returned a non-2xx status code',
+      context: new Response(body, { status }),
+    }
+  }
+
+  it('maps every approved status code', () => {
+    for (const [status, message] of Object.entries(APPROVED_FUNCTION_STATUS_MESSAGES)) {
+      expect(resolveFunctionUserMessage(functionHttpError(Number(status), '{"error":"anything"}'), 'Fallback message')).toBe(message)
+    }
+  })
+
+  it('falls back for unapproved statuses carrying arbitrary payload strings', () => {
+    expect(resolveFunctionUserMessage(
+      functionHttpError(500, JSON.stringify({ error: 'relation "public.profiles" does not exist' })),
+      'Fallback message',
+    )).toBe('Fallback message')
+    expect(resolveFunctionUserMessage(
+      functionHttpError(400, JSON.stringify({ error: 'eyJhbGciOiJIUzI1NiJ9.payload.sig' })),
+      'Fallback message',
+    )).toBe('Fallback message')
+  })
+
+  it('falls back for raw messages and unknown shapes', () => {
+    expect(resolveFunctionUserMessage(new Error('stack trace detail'), 'Fallback message')).toBe('Fallback message')
+    expect(resolveFunctionUserMessage({ message: 'raw message' }, 'Fallback message')).toBe('Fallback message')
+    expect(resolveFunctionUserMessage(null, 'Fallback message')).toBe('Fallback message')
+    expect(resolveFunctionUserMessage(undefined, 'Fallback message')).toBe('Fallback message')
+  })
+
+  it('falls back when the response context is not a Response', () => {
+    expect(resolveFunctionUserMessage({ context: { status: 401 } }, 'Fallback message')).toBe('Fallback message')
   })
 })
