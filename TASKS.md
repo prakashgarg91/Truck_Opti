@@ -71,3 +71,19 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 2026-09-12 — TO-117 hardened Razorpay webhook authenticity with a dedicated fail-closed webhook secret and added a provider handoff. Code-side payment readiness is complete; live Razorpay/PhonePe sandbox/provider proof remains owner/provider-blocked.
 2026-09-19 — TO-120: driver "Documents & KYC Upload" screen integrated on `stitch/driver-docs-upload-20260919` from Stitch screen `e72905bab5794849b0fcb495b7c474bc` (attempt 3 succeeded under adapter 0.2.0; attempts 1-2 root-caused earlier). tsc 0 errors, vitest 347/347 (18 new), eslint clean, browser journey verified at mobile+desktop incl. upload-error and locked-after-acceptance states. Uploads are client-simulated pending backend wiring. Next: review + merge branch; rerun gates post-merge.
 2026-09-19 — TO-120 merged to main via `0f91bfe5` (owner merge review; no conflicts; diff = exactly the 7 expected files). Post-merge gates re-run: tsc 0 errors, vitest 347/347, eslint clean; mobile journey re-verified on merged main (upload → submit → locked "KYC Verified"). Local main is now ahead of origin/main (not pushed — owner-gated). `stitch/driver-docs-upload-20260919` is fully merged (local-only, no remote) and safe to delete.
+
+## 2026-09-30 completion wave
+
+Bookkeeping close-out of the independent-brief completion wave (run on `main`, single writer, no push). Board check at close: no task failed or was reverted — all seven independent briefs reached AWAITING_REVIEW with worker-verdict PASS result files, and the other non-dependent rows are READY or owner-blocked as listed below. Integrated commits: TO-121 `cb01ff98`, TO-122 `9cd28fad`, TO-124 `43dd72f5`, TO-125 `8163bbc0`, TO-131 `55b82790`, TO-133 `015088f4`, TO-138 `6f15554f`.
+
+- TO-121 — AWAITING_REVIEW — launch/closure gates rebuilt to validate the canonical control plane instead of retired `0.dev-matrix` artifacts; policy tests 14/14 (`agent-results/011-result.md`).
+- TO-122 — AWAITING_REVIEW — production Google sign-in routed through trusted Supabase OAuth sessions; client-decoded identity and local-role linking removed; unit 385/385 (`agent-results/012-result.md`).
+- TO-124 — AWAITING_REVIEW — shared auth-capability model plus fail-closed production config audit; placeholder/dead-backend/GIS-only states no longer pass (`agent-results/014-result.md`).
+- TO-125 — AWAITING_REVIEW — Supabase migration chain made replayable on a disposable local stack; OTP column exposure closed; generated types refreshed; hosted proof owner-blocked (`agent-results/015-result.md`).
+- TO-131 — AWAITING_REVIEW — safe admin/agency error boundaries restored via approved typed codes after the earlier revert reopened raw-error passthrough (`agent-results/021-result.md`).
+- TO-133 — AWAITING_REVIEW — local backup restore made safe and complete via a self-contained encrypted envelope and transactional import (`agent-results/023-result.md`).
+- TO-138 — AWAITING_REVIEW — Node 24 LTS aligned across package/Docker/CI with a runtime policy gate; all 26 lint warnings closed (`agent-results/028-result.md`).
+- TO-137 — owner-blocked (`READY_HARNESS_OWNER_BLOCKED_PROVIDER`) — sandbox payment-state proof requires owner-supplied provider sandbox credentials; not executed, no result file (`agent-tasks/027-payment-provider-proof.md`).
+- TO-140 — READY (`READY_AUDIT_ONLY`) — read-only branch/worktree/doc consolidation audit may proceed; any deletion/cleanup is supervisor/owner-gated (`agent-tasks/030-repository-consolidation.md`).
+
+Remaining briefs TO-123, TO-126–TO-130, TO-132, TO-134–TO-136, TO-139 stay WAITING_DEPENDENCY and are unblocked by GPT-6 only after the AWAITING_REVIEW rows above are accepted.
