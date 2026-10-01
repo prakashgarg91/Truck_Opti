@@ -33,7 +33,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-135 | Prove the dispatch-to-delivery business loop | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/025-driver-agency-journey-proof.md` | — |
 | TO-136 | Verify admin authority and final database policies | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/026-admin-and-rls-proof.md` | — |
 | TO-137 | Prove payment state convergence in sandbox | READY_HARNESS_OWNER_BLOCKED_PROVIDER | GLM-5.3 Flash + GPT-6 review | `agent-tasks/027-payment-provider-proof.md` | — |
-| TO-138 | Align supported Node runtime and close quality warnings | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/028-supported-runtime-and-quality.md` | — |
+| TO-138 | Align supported Node runtime and close quality warnings | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/028-supported-runtime-and-quality.md` | `agent-results/028-result.md` |
 | TO-139 | Audit implemented journeys for UX and accessibility gaps | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/029-actual-ui-completeness.md` | — |
 | TO-140 | Consolidate repository state and resolve obsolete tooling | READY_AUDIT_ONLY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/030-repository-consolidation.md` | — |
 

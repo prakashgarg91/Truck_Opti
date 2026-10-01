@@ -5,7 +5,6 @@ import {
   RefreshCw, AlertTriangle, ChevronLeft
 } from 'lucide-react'
 import { adminPayoutsApi, type DriverPayout } from '../services/adminSupabaseApi'
-import { useLanguageStore } from '../stores/languageStore'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
@@ -25,7 +24,6 @@ function formatDate(iso: string) {
 
 export default function AdminPayoutsPage() {
   const navigate = useNavigate()
-  const { language } = useLanguageStore()
   const { user, isLoading: authLoading } = useAuthStore()
   const [payouts, setPayouts] = useState<DriverPayout[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,7 +51,7 @@ export default function AdminPayoutsPage() {
     } finally {
       setLoading(false)
     }
-  }, [authLoading, language, user?.role])
+  }, [authLoading, user?.role])
 
   useEffect(() => {
     if (!authLoading) {

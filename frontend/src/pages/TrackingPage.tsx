@@ -258,7 +258,7 @@ export default function TrackingPage() {
 
         setJobOffer(data as JobOffer | null)
         setJobPhotos(data
-          ? { loading_url: data.photo_loading_url, delivery_url: data.photo_delivery_url }
+          ? { loading_url: data.photo_loading_url ?? undefined, delivery_url: data.photo_delivery_url ?? undefined }
           : null)
       } catch (error) {
         if (!isActive) return

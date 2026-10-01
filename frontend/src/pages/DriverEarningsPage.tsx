@@ -2,7 +2,6 @@
 import { Wallet, TrendingUp, Calendar, CheckCircle2, RefreshCw, DollarSign, X, AlertCircle, Download } from 'lucide-react'
 import { driverEarningsApi, driverTripsApi } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
-import { useLanguageStore } from '../stores/languageStore'
 import { formatCurrency } from '../utils/formatters'
 import { downloadCsv, downloadJson, downloadXlsx, type ExportColumn } from '../utils/dataExport'
 import toast from 'react-hot-toast'
@@ -45,7 +44,6 @@ function calculateAvailableBalance(totalEarned: number, payouts: { amount: numbe
 
 export default function DriverEarningsPage() {
   const { user } = useAuthStore()
-  const { language } = useLanguageStore()
   const [driverId, setDriverId] = useState<string | null>(null)
   const [availableBalance, setAvailableBalance] = useState<number>(0)
   const [payoutPaid, setPayoutPaid] = useState<number>(0)
@@ -77,7 +75,7 @@ export default function DriverEarningsPage() {
       logger.error('[DriverEarnings] balance:', error)
       toast.error('Failed to load balance')
     }
-  }, [language])
+  }, [])
 
   const fetchJobs = useCallback(async (drId: string) => {
     setLoading(true)

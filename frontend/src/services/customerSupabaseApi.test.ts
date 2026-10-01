@@ -27,6 +27,7 @@ import {
     driverDashboardApi,
     trucksApi,
 } from './customerSupabaseApi'
+import type { ShipmentDetail } from './customerSupabaseApi'
 
 describe('customerSupabaseApi', () => {
     beforeEach(() => {
@@ -304,12 +305,24 @@ describe('customerSupabaseApi', () => {
     })
 
     describe('customerShipmentsApi.create', () => {
+        const newShipment: Omit<ShipmentDetail, 'id' | 'created_at' | 'updated_at'> = {
+            shipment_id: 'SHIP-NEW-1',
+            customer_id: 'cust_1',
+            truck_id: null,
+            origin: 'Mumbai',
+            destination: 'Delhi',
+            status: 'pending',
+            total_weight: 1200,
+            total_volume: 8.5,
+            estimated_cost: 5400,
+            driver_name: null,
+            driver_phone: null,
+            vehicle_number: null,
+            latitude: null,
+            longitude: null,
+        }
+
         it('creates shipment successfully', async () => {
-            const newShipment = {
-                origin: 'Mumbai',
-                destination: 'Delhi',
-                status: 'pending' as const,
-            }
             const createdShipment = {
                 id: 'ship_1',
                 ...newShipment,
@@ -326,8 +339,8 @@ describe('customerSupabaseApi', () => {
                 }),
             })
             
-            const result = await customerShipmentsApi.create(newShipment as any)
-            
+            const result = await customerShipmentsApi.create(newShipment)
+
             expect(result).toEqual(createdShipment)
         })
 
@@ -340,8 +353,8 @@ describe('customerSupabaseApi', () => {
                     }),
                 }),
             })
-            
-            await expect(customerShipmentsApi.create({} as any))
+
+            await expect(customerShipmentsApi.create({ ...newShipment, origin: '' }))
                 .rejects.toThrow('Failed to create shipment')
         })
     })
@@ -506,6 +519,32 @@ describe('customerSupabaseApi', () => {
             expect(result.total_earnings).toBe(3000)
             expect(result.completed_trips).toBe(2)
             expect(result.average_per_trip).toBe(1500)
+        })
+
+        it('selects created_at and computes last_thirty_days from it (regression TO138)', async () => {
+            const now = new Date().toISOString()
+            limitMock.mockResolvedValue({
+                data: [
+                    { created_at: now, shipments: { estimated_cost: 100 } },
+                    { created_at: '2020-01-01T00:00:00.000Z', shipments: { estimated_cost: 200 } },
+                ],
+                error: null,
+            })
+            singleMock.mockResolvedValue({
+                data: { rating: 4.5 },
+                error: null,
+            })
+
+            const result = await driverEarningsApi.getEarnings('driver_1')
+
+            // The 30-day window can only be computed when created_at is part of
+            // the job_offers select; without it last_thirty_days is silently 0.
+            const earningsSelect = selectMock.mock.calls
+                .map((call) => String(call[0]))
+                .find((columns) => columns.includes('shipments'))
+            expect(earningsSelect).toContain('created_at')
+            expect(result.total_earnings).toBe(300)
+            expect(result.last_thirty_days).toBe(100)
         })
 
         it('handles array shipments structure', async () => {

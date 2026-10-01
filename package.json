@@ -25,7 +25,7 @@
     "close-day": "powershell -ExecutionPolicy Bypass -File scripts/close-day.ps1"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "dependencies": {
     "express": "^5.2.1"

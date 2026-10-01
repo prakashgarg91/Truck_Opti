@@ -45,6 +45,26 @@ interface DriverLocation {
   speed_kmh: number | null
 }
 
+// Raw row returned by the agency-portal-jobs edge function (GET list action).
+// agencyJobsApi.list() currently declares AgencyJob[], but the payload it
+// forwards is this un-mapped job_offers join — hence the cast below.
+interface AgencyPortalJobRow {
+  id: string
+  shipment_id: string | null
+  status: string
+  fare: number | string | null
+  driver_id: string | null
+  created_at: string
+  updated_at: string
+  shipments: {
+    shipment_id: string | null
+    origin: string | null
+    destination: string | null
+    total_weight: number | string | null
+    estimated_cost: number | string | null
+  } | null
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending: { label: 'Pending', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   accepted: { label: 'Accepted', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
@@ -76,21 +96,22 @@ export default function AgencyJobsPage() {
     try {
       const jobs = await agencyJobsApi.list()
 
-      const mapped: AgencyJob[] = (jobs ?? []).map((j: any) => {
-        const s = (Array.isArray(j.shipments) ? j.shipments[0] : j.shipments) as Record<string, unknown> | null
+      const rows = (jobs ?? []) as unknown as AgencyPortalJobRow[]
+      const mapped: AgencyJob[] = rows.map((j) => {
+        const s = (Array.isArray(j.shipments) ? j.shipments[0] : j.shipments) as AgencyPortalJobRow['shipments']
         return {
-          id: j.id as string,
-          shipment_id: j.shipment_id as string,
-          shipment_ref: s?.shipment_id as string ?? '',
-          status: j.status as string,
-          origin: s?.origin as string ?? '—',
-          destination: s?.destination as string ?? '—',
-          vehicle_type: (s?.vehicle_type as string) ?? '—',
-          offered_at: j.created_at as string,
-          completed_at: j.status === 'delivered' ? (j.updated_at as string) : null,
+          id: j.id,
+          shipment_id: j.shipment_id ?? '',
+          shipment_ref: s?.shipment_id ?? '',
+          status: j.status,
+          origin: s?.origin ?? '—',
+          destination: s?.destination ?? '—',
+          vehicle_type: '—',
+          offered_at: j.created_at,
+          completed_at: j.status === 'delivered' ? j.updated_at : null,
           weight_kg: Number(s?.total_weight ?? 0),
           estimated_fare: Number(j.fare ?? s?.estimated_cost ?? 0),
-          driver_id: j.driver_id as string | undefined,
+          driver_id: j.driver_id ?? undefined,
           driver_name: undefined,
           driver_phone: undefined,
         }

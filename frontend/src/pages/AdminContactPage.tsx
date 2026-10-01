@@ -29,7 +29,7 @@ export default function AdminContactPage() {
     } finally {
       setLoading(false)
     }
-  }, [language])
+  }, [])
 
   useEffect(() => {
     fetchInquiries()

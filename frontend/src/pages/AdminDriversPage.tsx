@@ -5,7 +5,6 @@ import {
 } from 'lucide-react'
 import { adminSupabaseApi } from '../services/adminSupabaseApi'
 import { useNavigate } from 'react-router-dom'
-import { useLanguageStore } from '../stores/languageStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
@@ -62,7 +61,6 @@ function vehicleLabel(type: string) {
 
 export default function AdminDriversPage() {
   const navigate = useNavigate()
-  const { language } = useLanguageStore()
   const [tab, setTab] = useState<Tab>('pending')
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [loading, setLoading] = useState(true)
@@ -82,7 +80,7 @@ export default function AdminDriversPage() {
     } finally {
       setLoading(false)
     }
-  }, [tab, language])
+  }, [tab])
 
   useEffect(() => { fetchDrivers() }, [fetchDrivers])
 

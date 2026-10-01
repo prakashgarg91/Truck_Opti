@@ -1,8 +1,45 @@
 import { supabase } from '../lib/supabase'
+import type { Database } from '../types/database.types'
 import { UserFacingError } from '../utils/userFacingError'
 import { logger } from '../utils/logger'
 
 // ============= TYPES =============
+
+/** Canonical `trucks` table row (database.types.ts is the schema source of truth). */
+export type TruckRow = Database['public']['Tables']['trucks']['Row']
+
+/** Row returned by the `get_shipment_job_offer_tracking` RPC (supabase/migrations/20260730110000). */
+export interface ShipmentJobOfferTrackingRow {
+    id: string
+    shipment_id: string
+    status: string
+    pickup_otp: string | null
+    delivery_otp: string | null
+    photo_loading_url: string | null
+    photo_delivery_url: string | null
+    /** JSONB column: object or array depending on PostgREST serialisation. */
+    drivers: unknown
+}
+
+/** `job_offers` row joined with its shipment columns, as selected by driverTripsApi.
+ * PostgREST returns many-to-one embeds as an object; supabase-js without Database
+ * generics infers an array — both shapes are accepted and normalised. */
+interface DriverTripRow {
+    id: string
+    shipment_id: string | null
+    driver_id: string | null
+    status: string
+    shipments: { origin: string | null; destination: string | null; estimated_cost: number | string | null } | { origin: string | null; destination: string | null; estimated_cost: number | string | null }[] | null
+    created_at: string
+    delivered_at: string | null
+}
+
+/** `job_offers` row joined with `shipments(estimated_cost)`, as selected by driverEarningsApi. */
+interface DriverEarningsJobRow {
+    created_at?: string | null
+    shipments: { estimated_cost: number | string | null } | { estimated_cost: number | string | null }[] | null
+}
+
 export interface DashboardStats {
     activeShipments: number
     trucksCount: number
@@ -70,8 +107,9 @@ export const customerDashboardApi = {
             const firstError = trucksRes.error || shipmentsRes.error || routesRes.error || pendingJobsRes.error
             if (firstError) throw firstError
 
-            const activeShipments = shipmentsRes.data?.filter((s: any) => s.status === 'in_transit').length || 0
-            const deliveriesDone = shipmentsRes.data?.filter((s: any) => s.status === 'delivered').length || 0
+            const shipmentRows = (shipmentsRes.data ?? []) as Array<{ id: string; status: string }>
+            const activeShipments = shipmentRows.filter((s) => s.status === 'in_transit').length
+            const deliveriesDone = shipmentRows.filter((s) => s.status === 'delivered').length
 
             return {
                 activeShipments,
@@ -317,7 +355,7 @@ export const customerTrackingApi = {
         return (data as Array<{ driver_id: string; lat: number | null; lng: number | null; updated_at: string; speed_kmh: number | null }>) || []
     },
 
-    async getLatestJobOfferByShipmentId(shipmentId: string): Promise<Record<string, any> | null> {
+    async getLatestJobOfferByShipmentId(shipmentId: string): Promise<ShipmentJobOfferTrackingRow | null> {
         const { data, error } = await supabase.rpc('get_shipment_job_offer_tracking', {
             p_shipment_id: shipmentId,
         })
@@ -327,7 +365,7 @@ export const customerTrackingApi = {
         }
 
         const row = Array.isArray(data) ? data[0] : data
-        return (row as Record<string, any>) || null
+        return (row as ShipmentJobOfferTrackingRow | null) || null
     }
 }
 
@@ -338,7 +376,7 @@ export const driverEarningsApi = {
             const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
             const [earningsRes, tripsRes] = await Promise.all([
-                supabase.from('job_offers').select('shipments(estimated_cost)').eq('driver_id', driverId).eq('status', 'delivered'),
+                supabase.from('job_offers').select('created_at, shipments(estimated_cost)').eq('driver_id', driverId).eq('status', 'delivered'),
                 supabase.from('drivers').select('rating').eq('id', driverId).single(),
             ])
 
@@ -346,18 +384,16 @@ export const driverEarningsApi = {
                 throw earningsRes.error || tripsRes.error
             }
 
-            const trips = earningsRes.data ?? []
-            const totalEarnings = trips.reduce((sum: number, trip: any) => {
+            const trips = (earningsRes.data ?? []) as DriverEarningsJobRow[]
+            const tripCost = (trip: DriverEarningsJobRow) => {
                 const shipment = Array.isArray(trip.shipments) ? trip.shipments[0] : trip.shipments
-                return sum + Number(shipment?.estimated_cost ?? 0)
-            }, 0)
+                return Number(shipment?.estimated_cost ?? 0)
+            }
+            const totalEarnings = trips.reduce((sum: number, trip) => sum + tripCost(trip), 0)
 
             const thirtyDayEarnings = trips
-                .filter((trip: any) => trip.created_at >= thirtyDaysAgo)
-                .reduce((sum: number, trip: any) => {
-                    const shipment = Array.isArray(trip.shipments) ? trip.shipments[0] : trip.shipments
-                    return sum + Number(shipment?.estimated_cost ?? 0)
-                }, 0)
+                .filter((trip) => typeof trip.created_at === 'string' && trip.created_at >= thirtyDaysAgo)
+                .reduce((sum: number, trip) => sum + tripCost(trip), 0)
 
             return {
                 total_earnings: totalEarnings,
@@ -399,9 +435,9 @@ export const driverEarningsApi = {
         const paid = payouts.filter(p => p.status === 'paid').reduce((s, p) => s + (p.amount ?? 0), 0)
         const approved = payouts.filter(p => p.status === 'approved').reduce((s, p) => s + (p.amount ?? 0), 0)
         const pending = payouts.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount ?? 0), 0)
-        const totalDelivered = ((deliveredRes.data ?? []) as any[]).reduce((sum, job) => {
+        const totalDelivered = ((deliveredRes.data ?? []) as DriverEarningsJobRow[]).reduce((sum, job) => {
             const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
-            return sum + Number((shipment as Record<string, unknown> | null | undefined)?.estimated_cost ?? 0)
+            return sum + Number(shipment?.estimated_cost ?? 0)
         }, 0)
 
         return { paid, approved, pending, totalDelivered, payouts }
@@ -424,6 +460,22 @@ export const driverEarningsApi = {
 }
 
 // ============= DRIVER TRIPS API =============
+/** Normalises a raw job_offers row (object or array shipment embed) into DriverTrip. */
+function toDriverTrip(trip: DriverTripRow): DriverTrip {
+    const shipment = Array.isArray(trip.shipments) ? trip.shipments[0] : trip.shipments
+    return {
+        id: trip.id,
+        shipment_id: trip.shipment_id,
+        driver_id: trip.driver_id,
+        status: trip.status,
+        origin: shipment?.origin ?? '',
+        destination: shipment?.destination ?? '',
+        estimated_cost: Number(shipment?.estimated_cost ?? 0),
+        created_at: trip.created_at,
+        delivered_at: trip.delivered_at,
+    }
+}
+
 export const driverTripsApi = {
     async getAll(driverId: string, filters?: { status?: string }): Promise<DriverTrip[]> {
         let query = supabase
@@ -442,17 +494,7 @@ export const driverTripsApi = {
             throw new UserFacingError('Failed to load trips')
         }
 
-        return (data as any[])?.map((trip: any) => ({
-            id: trip.id,
-            shipment_id: trip.shipment_id,
-            driver_id: trip.driver_id,
-            status: trip.status,
-            origin: trip.shipments?.origin ?? '',
-            destination: trip.shipments?.destination ?? '',
-            estimated_cost: trip.shipments?.estimated_cost ?? 0,
-            created_at: trip.created_at,
-            delivered_at: trip.delivered_at,
-        })) || []
+        return ((data ?? []) as DriverTripRow[]).map(toDriverTrip)
     },
 
     async getById(tripId: string): Promise<DriverTrip | null> {
@@ -466,22 +508,12 @@ export const driverTripsApi = {
             throw new UserFacingError('Failed to load trip details')
         }
 
-        const trip = data as any
-        return {
-            id: trip.id,
-            shipment_id: trip.shipment_id,
-            driver_id: trip.driver_id,
-            status: trip.status,
-            origin: trip.shipments?.origin ?? '',
-            destination: trip.shipments?.destination ?? '',
-            estimated_cost: trip.shipments?.estimated_cost ?? 0,
-            created_at: trip.created_at,
-            delivered_at: trip.delivered_at,
-        }
+        const trip = data as DriverTripRow
+        return toDriverTrip(trip)
     },
 
     async updateStatus(tripId: string, status: string): Promise<DriverTrip> {
-        const updateData: any = { status }
+        const updateData: { status: string; delivered_at?: string } = { status }
         if (status === 'delivered') {
             updateData.delivered_at = new Date().toISOString()
         }
@@ -497,18 +529,8 @@ export const driverTripsApi = {
             throw new UserFacingError('Failed to update trip status')
         }
 
-        const trip = data as any
-        return {
-            id: trip.id,
-            shipment_id: trip.shipment_id,
-            driver_id: trip.driver_id,
-            status: trip.status,
-            origin: trip.shipments?.origin ?? '',
-            destination: trip.shipments?.destination ?? '',
-            estimated_cost: trip.shipments?.estimated_cost ?? 0,
-            created_at: trip.created_at,
-            delivered_at: trip.delivered_at,
-        }
+        const trip = data as DriverTripRow
+        return toDriverTrip(trip)
     },
 
     async getDriverIdByUserId(userId: string): Promise<string | null> {
@@ -694,7 +716,7 @@ export const driverDashboardApi = {
 
 // ============= TRUCKS API =============
 export const trucksApi = {
-    async getAll(): Promise<any[]> {
+    async getAll(): Promise<TruckRow[]> {
         const { data, error } = await supabase
             .from('trucks')
             .select('*')
@@ -704,10 +726,10 @@ export const trucksApi = {
             throw new UserFacingError('Failed to load trucks')
         }
 
-        return (data as any[]) || []
+        return ((data ?? []) as TruckRow[])
     },
 
-    async getById(truckId: string): Promise<any | null> {
+    async getById(truckId: string): Promise<TruckRow | null> {
         const { data, error } = await supabase
             .from('trucks')
             .select('*')

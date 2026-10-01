@@ -129,7 +129,7 @@ describe('contactInquiry', () => {
                 subject: 'Test Subject',
                 message: 'Test message',
                 clientSubmissionId: '',
-            } as any
+            }
             mockLocalStorage['truckopti:contact-pending'] = JSON.stringify(pending)
 
             const result = getPendingContactInquiry()

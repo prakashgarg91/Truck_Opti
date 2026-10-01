@@ -116,7 +116,7 @@ export default function DriverDashboardPage() {
     }
 
     const shipment = Array.isArray(data.shipments) ? data.shipments[0] : data.shipments
-    const row = data as Record<string, any>
+    const row = data
 
     return {
       id: String(row.id || ''),
@@ -135,7 +135,7 @@ export default function DriverDashboardPage() {
     }
 
     const shipment = Array.isArray(data.shipments) ? data.shipments[0] : data.shipments
-    const row = data as Record<string, any>
+    const row = data
 
     return {
       id: String(row.id || ''),
