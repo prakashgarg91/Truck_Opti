@@ -28,7 +28,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-130 | Verify and repair trip transitions and OTP enforcement | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/020-trip-transition-integrity.md` | — |
 | TO-131 | Restore safe admin and agency error boundaries | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/021-safe-service-errors.md` | `agent-results/021-result.md` |
 | TO-132 | Complete safe error reporting and health proof | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/022-sanitized-observability.md` | — |
-| TO-133 | Make local backup restoration safe and complete | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/023-atomic-backup-restore.md` | — |
+| TO-133 | Make local backup restoration safe and complete | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/023-atomic-backup-restore.md` | `agent-results/023-result.md` |
 | TO-134 | Prove the customer cloud business journey | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/024-customer-journey-proof.md` | — |
 | TO-135 | Prove the dispatch-to-delivery business loop | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/025-driver-agency-journey-proof.md` | — |
 | TO-136 | Verify admin authority and final database policies | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/026-admin-and-rls-proof.md` | — |

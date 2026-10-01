@@ -64,3 +64,13 @@ export async function downloadSnapshot(transport: DriveTransport, fileId: string
   if (!r.ok) throw new Error(`drive download ${r.status}`)
   return new Uint8Array(await r.arrayBuffer())
 }
+
+// Restore after loss of local metadata: find the well-known backup file by
+// name via files.list. Returns null when Drive has no such file.
+export async function findBackupFile(transport: DriveTransport, name: string): Promise<string | null> {
+  const q = `name = '${name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}' and trashed = false`
+  const r = await transport(abs(`files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=10`), { method: 'GET' })
+  if (!r.ok) throw new Error(`drive findFile ${r.status}`)
+  const out = (await r.json()) as { files?: { id: string }[] }
+  return out.files?.[0]?.id ?? null
+}
