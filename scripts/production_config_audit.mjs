@@ -2,10 +2,21 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import dns from 'node:dns/promises';
 import { execFileSync, execSync } from 'node:child_process';
-import { isPlaceholder, summarizeAuthProviders } from './production_config_policy.mjs';
+import {
+  isPlaceholder,
+  summarizeAppUrl,
+  summarizeAuthProviders,
+  summarizeOfficePassword,
+  summarizePhonePe,
+  summarizeRazorpay,
+  summarizeSupabaseBackendUrl,
+  summarizeSupabaseClientKey,
+  summarizeViteSecretExposure,
+} from './production_config_policy.mjs';
 
 const appName = process.env.HEROKU_APP_NAME || 'truck-opti-app';
 const outputPath = path.join('logs', 'production_config_audit.json');
+const healthTimeoutMs = Number(process.env.AUDIT_HEALTH_TIMEOUT_MS || 10000);
 
 function runHerokuConfig() {
   if (process.platform === 'win32') {
@@ -25,134 +36,183 @@ function runHerokuConfig() {
   return JSON.parse(raw);
 }
 
-function summarizeRazorpay(keyId, clientExposedSecret) {
-  if (!keyId) {
-    return { status: 'fail', detail: 'missing VITE_RAZORPAY_KEY_ID' };
-  }
-  if (clientExposedSecret && !isPlaceholder(clientExposedSecret)) {
-    return {
-      status: 'fail',
-      detail: 'client-exposed VITE_RAZORPAY_KEY_SECRET must be removed; keep RAZORPAY_KEY_SECRET server-side only',
-    };
-  }
-  if (keyId.startsWith('rzp_live_')) {
-    return {
-      status: 'pass',
-      detail: 'live Razorpay public key present; verify server-side RAZORPAY_KEY_SECRET via real payment flow',
-    };
-  }
-  if (keyId.startsWith('rzp_test_')) {
-    return { status: 'fail', detail: 'test Razorpay key is still configured' };
-  }
-  return { status: 'fail', detail: 'Razorpay public key is not launch-ready' };
-}
-
 function summarizeSentry(dsn) {
   if (!dsn) {
-    return { status: 'fail', detail: 'missing VITE_SENTRY_DSN' };
+    return { status: 'fail', level: 'missing', detail: 'missing VITE_SENTRY_DSN' };
   }
-  return { status: 'pass', detail: 'Sentry DSN present' };
+  return { status: 'pass', level: 'configured', detail: 'Sentry DSN present' };
 }
 
-function isPhonePeNonProduction(url) {
-  const lowered = (url || '').toLowerCase();
-  return lowered.includes('sandbox') || lowered.includes('preprod');
+async function defaultDnsLookup(hostname) {
+  return dns.lookup(hostname, { all: true });
 }
 
-async function summarizeSupabase(url) {
-  if (!url) {
-    return { status: 'fail', detail: 'missing VITE_SUPABASE_URL' };
-  }
+async function defaultFetchHealth(url) {
+  return fetch(url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(healthTimeoutMs) });
+}
 
-  let hostname;
-  try {
-    hostname = new URL(url).hostname;
-  } catch {
-    return { status: 'fail', detail: `invalid Supabase URL: ${url}` };
-  }
+/**
+ * Run the static production configuration audit against a raw config record.
+ * Deps are injectable so tests can simulate NXDOMAIN / health failures without
+ * touching a real backend. The report carries capability levels and proof
+ * requirements: a passing static audit is 'config_ready' at best — never
+ * production-ready, because live operational verification (auth + payment
+ * round trips) is always still required. A local-first configuration is
+ * reported as 'local_only' and can never be mistaken for a cloud-ready
+ * deployment.
+ */
+export async function runAudit(config = {}, deps = {}) {
+  const dnsLookup = deps.dnsLookup || defaultDnsLookup;
+  const fetchHealth = deps.fetchHealth || defaultFetchHealth;
 
-  try {
-    const addresses = await dns.lookup(hostname, { all: true });
-    return {
-      status: 'pass',
-      detail: `DNS resolves (${addresses.map((entry) => entry.address).join(', ')})`,
-      hostname,
-    };
-  } catch (error) {
-    return {
-      status: 'fail',
-      detail: `DNS lookup failed for ${hostname}: ${error instanceof Error ? error.message : String(error)}`,
-      hostname,
-    };
+  const supabaseKey = summarizeSupabaseClientKey(config.VITE_SUPABASE_ANON_KEY);
+  const supabaseBackend = await summarizeSupabaseBackendUrl(config.VITE_SUPABASE_URL, {
+    dnsLookup,
+    fetchHealth,
+  });
+  const authProviders = summarizeAuthProviders(config);
+  const officePassword = summarizeOfficePassword(config);
+  const razorpay = summarizeRazorpay(config.VITE_RAZORPAY_KEY_ID, config.VITE_RAZORPAY_KEY_SECRET);
+  const phonePe = summarizePhonePe({
+    merchantId: config.VITE_PHONEPE_MERCHANT_ID,
+    apiUrl: config.VITE_PHONEPE_API_URL,
+  });
+  const sentry = summarizeSentry(config.VITE_SENTRY_DSN);
+  const secretExposure = summarizeViteSecretExposure(config);
+  const appUrl = summarizeAppUrl(config.VITE_APP_URL);
+
+  const checks = [
+    { name: 'app_url', status: appUrl.status, level: appUrl.level, detail: appUrl.detail },
+    {
+      name: 'supabase_client_key',
+      status: supabaseKey.status,
+      level: supabaseKey.level,
+      detail: supabaseKey.detail,
+    },
+    {
+      name: 'supabase_auth_backend',
+      status: supabaseBackend.status,
+      level: supabaseBackend.level,
+      detail: supabaseBackend.detail,
+    },
+    {
+      name: 'auth_provider_configuration',
+      status: authProviders.status,
+      level: authProviders.level,
+      detail: authProviders.detail,
+      liveProofRequired: authProviders.liveProofRequired === true,
+    },
+    {
+      name: 'office_password_policy',
+      status: officePassword.status,
+      level: officePassword.level,
+      detail: officePassword.detail,
+      liveProofRequired: officePassword.liveProofRequired === true,
+    },
+    {
+      name: 'razorpay_launch_readiness',
+      status: razorpay.status,
+      level: razorpay.level,
+      detail: razorpay.detail,
+      liveProofRequired: razorpay.liveProofRequired === true,
+    },
+    {
+      name: 'phonepe_mode',
+      status: phonePe.status,
+      level: phonePe.level,
+      detail: phonePe.detail,
+      liveProofRequired: phonePe.liveProofRequired === true,
+    },
+    { name: 'sentry_dsn', status: sentry.status, level: sentry.level, detail: sentry.detail },
+    {
+      name: 'vite_secret_exposure',
+      status: secretExposure.status,
+      level: secretExposure.level,
+      detail: secretExposure.detail,
+    },
+  ];
+
+  const failedChecks = checks.filter((check) => check.status === 'fail');
+  const localFirst = ['missing', 'placeholder', 'invalid'].includes(supabaseBackend.level);
+  const verdict = localFirst
+    ? 'local_only'
+    : failedChecks.length > 0
+      ? 'not_ready'
+      : 'config_ready';
+
+  const productionReadyBlockers = [];
+  if (localFirst) {
+    productionReadyBlockers.push(
+      'local-first configuration: no cloud auth backend is configured, so this deployment is not cloud-ready'
+    );
   }
+  for (const check of failedChecks) {
+    productionReadyBlockers.push(`${check.name}: ${check.detail}`);
+  }
+  productionReadyBlockers.push(
+    'live operational verification (cloud sign-in and payment round trips) is required before production readiness; this static audit proves configuration only'
+  );
+
+  return {
+    appName,
+    timestamp: new Date().toISOString(),
+    auditKind: 'static_configuration',
+    verdict,
+    productionReady: false,
+    productionReadyBlockers,
+    summary: {
+      passed: checks.filter((check) => check.status === 'pass').length,
+      failed: failedChecks.length,
+      notApplicable: checks.filter((check) => check.status === 'not_applicable').length,
+    },
+    checks,
+  };
 }
 
 async function main() {
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
-  const config = runHerokuConfig();
-  const supabase = await summarizeSupabase(config.VITE_SUPABASE_URL);
-  const authProviders = summarizeAuthProviders(config);
-  const razorpay = summarizeRazorpay(config.VITE_RAZORPAY_KEY_ID, config.VITE_RAZORPAY_KEY_SECRET);
-  const sentry = summarizeSentry(config.VITE_SENTRY_DSN);
+  // AUDIT_CONFIG_JSON (JSON record of VITE_* vars) allows a local dry run
+  // without Heroku access; evidence from such a run is configuration-fixture
+  // evidence, not live production configuration. Secrets may be present in the
+  // input record but are never echoed into the report.
+  const config = process.env.AUDIT_CONFIG_JSON
+    ? JSON.parse(process.env.AUDIT_CONFIG_JSON)
+    : runHerokuConfig();
 
-  const checks = [
-    {
-      name: 'app_url',
-      status: config.VITE_APP_URL ? 'pass' : 'fail',
-      detail: config.VITE_APP_URL || 'missing VITE_APP_URL',
-    },
-    {
-      name: 'supabase_auth_backend',
-      status: supabase.status,
-      detail: supabase.detail,
-    },
-    {
-      name: 'auth_provider_configuration',
-      status: authProviders.status,
-      detail: authProviders.detail,
-    },
-    {
-      name: 'razorpay_launch_readiness',
-      status: razorpay.status,
-      detail: razorpay.detail,
-    },
-    {
-      name: 'sentry_dsn',
-      status: sentry.status,
-      detail: sentry.detail,
-    },
-    {
-      name: 'phonepe_mode',
-      status: isPhonePeNonProduction(config.VITE_PHONEPE_API_URL) ? 'fail' : 'pass',
-      detail: config.VITE_PHONEPE_API_URL || 'missing VITE_PHONEPE_API_URL',
-    },
-  ];
-
-  const report = {
-    appName,
-    timestamp: new Date().toISOString(),
-    summary: {
-      passed: checks.filter((check) => check.status === 'pass').length,
-      failed: checks.filter((check) => check.status === 'fail').length,
-    },
-    checks,
-  };
+  const report = await runAudit(config);
 
   await fs.writeFile(outputPath, JSON.stringify(report, null, 2), 'utf8');
 
   console.log(`Production config audit complete: ${outputPath}`);
-  for (const check of checks) {
-    const marker = check.status === 'pass' ? 'PASS' : 'FAIL';
-    console.log(`[${marker}] ${check.name}: ${check.detail}`);
+  console.log(`Verdict: ${report.verdict} (productionReady=${report.productionReady})`);
+  for (const check of report.checks) {
+    const marker =
+      check.status === 'pass' ? 'PASS' : check.status === 'not_applicable' ? 'N/A ' : 'FAIL';
+    console.log(`[${marker}] ${check.name} (${check.level}): ${check.detail}`);
   }
 
-  if (checks.some((check) => check.status === 'fail')) {
+  if (report.summary.failed > 0) {
     process.exitCode = 1;
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+import { pathToFileURL } from 'node:url';
+
+function isDirectRun() {
+  if (!process.argv[1]) return false;
+  try {
+    if (import.meta.url === pathToFileURL(process.argv[1]).href) return true;
+  } catch {
+    // fall through to suffix check
+  }
+  // Windows path-casing tolerance
+  return process.argv[1].toLowerCase().endsWith('production_config_audit.mjs');
+}
+
+if (isDirectRun()) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

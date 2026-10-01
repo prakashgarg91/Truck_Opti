@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import dns from 'node:dns/promises';
 import { chromium } from 'playwright';
-import { shouldRunEmailOtpFallback, shouldRunSupabaseHealthCheck } from './production_config_policy.mjs';
+import { isPlaceholder, shouldRunEmailOtpFallback, shouldRunSupabaseHealthCheck } from './production_config_policy.mjs';
 
 const BASE_URL = process.env.PUBLIC_APP_URL || 'https://www.truckopti.in';
 const SUPABASE_URL = process.env.SUPABASE_PUBLIC_URL || '';
@@ -406,7 +406,11 @@ async function collectAuthServiceHealth() {
       supabaseUrl: null,
       hostname: null,
       skipped: true,
-      skipReason: 'SUPABASE_PUBLIC_URL is not configured for this local-first smoke run.',
+      skipReason: !SUPABASE_URL
+        ? 'SUPABASE_PUBLIC_URL is not configured for this local-first smoke run.'
+        : isPlaceholder(SUPABASE_URL)
+          ? 'SUPABASE_PUBLIC_URL is a placeholder value; treated as local-first (no backend configured).'
+          : 'SUPABASE_PUBLIC_URL is not a valid https backend URL; treated as local-first.',
       passed: true,
     };
   }
@@ -434,6 +438,7 @@ async function collectAuthServiceHealth() {
   }
 
   try {
+    // The health response body is never logged; only its shape as a boolean.
     const response = await fetch(`${SUPABASE_URL}/auth/v1/health`, { method: 'GET', redirect: 'follow' });
     const body = await response.text();
     const reachableWithoutApiKey =
@@ -443,7 +448,7 @@ async function collectAuthServiceHealth() {
     return {
       ...result,
       status: response.status,
-      bodySnippet: body.slice(0, 200),
+      bodyIndicatesMissingApiKey: reachableWithoutApiKey,
       passed: response.ok || reachableWithoutApiKey,
     };
   } catch (error) {
@@ -476,9 +481,27 @@ async function main() {
     results.push(await collectAuthServiceHealth());
 
     const passedChecks = results.filter((result) => result.passed).length;
+    const failed = results.filter((result) => !result.passed);
+    // Capability framing (TO-124): a smoke run without a configured backend is
+    // a LOCAL-FIRST run. Its passing result is never a cloud-ready or
+    // production-ready verdict; a configured backend whose health check fails
+    // stays a failure so genuine cloud outages are never suppressed.
+    const backendMode = shouldRunSupabaseHealthCheck(SUPABASE_URL) ? 'cloud' : 'local_first';
+    const allPassed = failed.length === 0;
+    const verdict = backendMode === 'local_first'
+      ? 'local_first_smoke'
+      : allPassed
+        ? 'cloud_config_smoke_ok_pending_live_proof'
+        : 'failed';
     const report = {
       baseUrl: BASE_URL,
       supabaseUrl: SUPABASE_URL || null,
+      backendMode,
+      verdict,
+      note:
+        backendMode === 'local_first'
+          ? 'local-first smoke: a passing run is NOT a cloud-ready or production-ready verdict'
+          : 'cloud smoke: passing proves browser + configured backend health only; live sign-in/payment proof is still required',
       timestamp: new Date().toISOString(),
       summary: {
         checks: results.length,
@@ -491,10 +514,10 @@ async function main() {
     await fs.writeFile(OUTPUT_PATH, JSON.stringify(report, null, 2), 'utf8');
 
     console.log(`Frontend launch smoke complete: ${OUTPUT_PATH}`);
+    console.log(`Backend mode: ${backendMode} (verdict: ${verdict})`);
     console.log(`Checks run: ${results.length}`);
     console.log(`Passed checks: ${passedChecks}`);
 
-    const failed = results.filter((result) => !result.passed);
     if (failed.length > 0) {
       for (const check of failed) {
         console.error(`[FAIL] ${check.kind} ${check.path || check.hostname || ''}`.trim());

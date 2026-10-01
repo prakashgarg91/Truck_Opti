@@ -19,7 +19,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-121 | Repair canonical launch and closure gates | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/011-canonical-readiness-gates.md` | `agent-results/011-result.md` |
 | TO-122 | Connect Google login to trusted Supabase sessions | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/012-trusted-cloud-auth.md` | `agent-results/012-result.md` |
 | TO-123 | Make every login surface usable and consistent | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/013-usable-auth-surfaces.md` | — |
-| TO-124 | Audit real provider capability and fail closed | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/014-provider-capability-audits.md` | — |
+| TO-124 | Audit real provider capability and fail closed | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/014-provider-capability-audits.md` | `agent-results/014-result.md` |
 | TO-125 | Prepare a reproducible Supabase recovery and staging backend | READY_LOCAL_OWNER_BLOCKED_HOSTED | GLM-5.3 Flash + GPT-6 review | `agent-tasks/015-supabase-recovery-rehearsal.md` | — |
 | TO-126 | Implement private KYC storage and authoritative state | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/016-private-kyc-backend.md` | — |
 | TO-127 | Replace simulated driver KYC with real uploads | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/017-real-driver-kyc.md` | — |
