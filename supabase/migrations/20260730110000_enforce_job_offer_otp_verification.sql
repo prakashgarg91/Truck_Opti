@@ -78,8 +78,19 @@ $$;
 REVOKE ALL ON FUNCTION public.get_shipment_job_offer_tracking(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_shipment_job_offer_tracking(UUID) TO authenticated;
 
--- Drivers must not read OTP columns directly.
-REVOKE SELECT (pickup_otp, delivery_otp) ON public.job_offers FROM authenticated;
+-- Drivers/clients must not read OTP columns directly. A column-only REVOKE is a
+-- silent no-op while the role still holds table-level SELECT (platform default
+-- grants cover every column), so the table-level grant is revoked and every
+-- non-OTP column is granted back. Customers read OTPs only through
+-- get_shipment_job_offer_tracking(); drivers submit them through
+-- persist_driver_job_offer_progress().
+REVOKE SELECT ON public.job_offers FROM authenticated;
+GRANT SELECT (
+  id, shipment_id, driver_id, offered_at, expires_at, responded_at, status,
+  decline_reason, photo_loading_url, photo_delivery_url, pickup_arrived_at,
+  journey_started_at, delivery_arrived_at, delivered_at,
+  pickup_otp_verified_at, delivery_otp_verified_at
+) ON public.job_offers TO authenticated;
 
 -- Drivers must progress trips only through the RPC (not direct UPDATE).
 DROP POLICY IF EXISTS "Job offers: driver updates own" ON public.job_offers;

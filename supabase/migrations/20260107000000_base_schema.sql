@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============= TRUCKS TABLE =============
 CREATE TABLE IF NOT EXISTS trucks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE, -- catalog is re-seeded idempotently by 20260212000000_production_setup.sql
   name_hi TEXT NOT NULL,
   length DECIMAL(10,2) NOT NULL, -- meters
   width DECIMAL(10,2) NOT NULL,  -- meters

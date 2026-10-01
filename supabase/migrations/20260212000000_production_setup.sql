@@ -351,89 +351,139 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
 
 -- TRUCKS: Public read, Authenticated write
-CREATE POLICY IF NOT EXISTS "Public read access for trucks" ON public.trucks FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can insert trucks" ON public.trucks FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can update trucks" ON public.trucks FOR UPDATE TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can delete trucks" ON public.trucks FOR DELETE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Public read access for trucks" ON public.trucks;
+CREATE POLICY "Public read access for trucks" ON public.trucks FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Authenticated users can insert trucks" ON public.trucks;
+CREATE POLICY "Authenticated users can insert trucks" ON public.trucks FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can update trucks" ON public.trucks;
+CREATE POLICY "Authenticated users can update trucks" ON public.trucks FOR UPDATE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can delete trucks" ON public.trucks;
+CREATE POLICY "Authenticated users can delete trucks" ON public.trucks FOR DELETE TO authenticated USING (true);
 
 -- CARTONS: Public read, Authenticated write
-CREATE POLICY IF NOT EXISTS "Public read access for cartons" ON public.cartons FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can insert cartons" ON public.cartons FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can update cartons" ON public.cartons FOR UPDATE TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can delete cartons" ON public.cartons FOR DELETE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Public read access for cartons" ON public.cartons;
+CREATE POLICY "Public read access for cartons" ON public.cartons FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Authenticated users can insert cartons" ON public.cartons;
+CREATE POLICY "Authenticated users can insert cartons" ON public.cartons FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can update cartons" ON public.cartons;
+CREATE POLICY "Authenticated users can update cartons" ON public.cartons FOR UPDATE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can delete cartons" ON public.cartons;
+CREATE POLICY "Authenticated users can delete cartons" ON public.cartons FOR DELETE TO authenticated USING (true);
 
 -- CUSTOMERS: Authenticated CRUD
-CREATE POLICY IF NOT EXISTS "Authenticated users can read customers" ON public.customers FOR SELECT TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can insert customers" ON public.customers FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can update customers" ON public.customers FOR UPDATE TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can delete customers" ON public.customers FOR DELETE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can read customers" ON public.customers;
+CREATE POLICY "Authenticated users can read customers" ON public.customers FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can insert customers" ON public.customers;
+CREATE POLICY "Authenticated users can insert customers" ON public.customers FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can update customers" ON public.customers;
+CREATE POLICY "Authenticated users can update customers" ON public.customers FOR UPDATE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can delete customers" ON public.customers;
+CREATE POLICY "Authenticated users can delete customers" ON public.customers FOR DELETE TO authenticated USING (true);
 
 -- SHIPMENTS: Authenticated CRU
-CREATE POLICY IF NOT EXISTS "Authenticated users can read shipments" ON public.shipments FOR SELECT TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can insert shipments" ON public.shipments FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can update shipments" ON public.shipments FOR UPDATE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can read shipments" ON public.shipments;
+CREATE POLICY "Authenticated users can read shipments" ON public.shipments FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can insert shipments" ON public.shipments;
+CREATE POLICY "Authenticated users can insert shipments" ON public.shipments FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can update shipments" ON public.shipments;
+CREATE POLICY "Authenticated users can update shipments" ON public.shipments FOR UPDATE TO authenticated USING (true);
 
 -- ROUTES: Authenticated CRUD
-CREATE POLICY IF NOT EXISTS "Authenticated users can read routes" ON public.routes FOR SELECT TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can insert routes" ON public.routes FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can update routes" ON public.routes FOR UPDATE TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can delete routes" ON public.routes FOR DELETE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can read routes" ON public.routes;
+CREATE POLICY "Authenticated users can read routes" ON public.routes FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can insert routes" ON public.routes;
+CREATE POLICY "Authenticated users can insert routes" ON public.routes FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can update routes" ON public.routes;
+CREATE POLICY "Authenticated users can update routes" ON public.routes FOR UPDATE TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can delete routes" ON public.routes;
+CREATE POLICY "Authenticated users can delete routes" ON public.routes FOR DELETE TO authenticated USING (true);
 
 -- PACKING RESULTS: Authenticated CR
-CREATE POLICY IF NOT EXISTS "Authenticated users can read packing_results" ON public.packing_results FOR SELECT TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can insert packing_results" ON public.packing_results FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated users can read packing_results" ON public.packing_results;
+CREATE POLICY "Authenticated users can read packing_results" ON public.packing_results FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Authenticated users can insert packing_results" ON public.packing_results;
+CREATE POLICY "Authenticated users can insert packing_results" ON public.packing_results FOR INSERT TO authenticated WITH CHECK (true);
 
 -- USERS: Own profile only
-CREATE POLICY IF NOT EXISTS "Users can view own profile" ON public.users FOR SELECT TO authenticated USING (auth.uid() = id);
-CREATE POLICY IF NOT EXISTS "Users can update own profile" ON public.users FOR UPDATE TO authenticated USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+CREATE POLICY "Users can view own profile" ON public.users FOR SELECT TO authenticated USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE TO authenticated USING (auth.uid() = id);
 CREATE POLICY users_insert_own ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 
 -- SUBSCRIPTION PLANS: Public read
-CREATE POLICY IF NOT EXISTS "Anyone can read plans" ON public.subscription_plans FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anyone can read plans" ON public.subscription_plans;
+CREATE POLICY "Anyone can read plans" ON public.subscription_plans FOR SELECT USING (true);
 
 -- SUBSCRIPTIONS: Own only
-CREATE POLICY IF NOT EXISTS "Users can view own subscription" ON public.subscriptions FOR SELECT TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can create own subscription" ON public.subscriptions FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own subscription" ON public.subscriptions FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own subscription" ON public.subscriptions;
+CREATE POLICY "Users can view own subscription" ON public.subscriptions FOR SELECT TO authenticated USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can create own subscription" ON public.subscriptions;
+CREATE POLICY "Users can create own subscription" ON public.subscriptions FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own subscription" ON public.subscriptions;
+CREATE POLICY "Users can update own subscription" ON public.subscriptions FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 
 -- USAGE TRACKING: Own subscription only
-CREATE POLICY IF NOT EXISTS "Users can view own usage" ON public.usage_tracking FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.subscriptions WHERE subscriptions.id = usage_tracking.subscription_id AND subscriptions.user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS "Users can insert own usage" ON public.usage_tracking FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM public.subscriptions WHERE subscriptions.id = usage_tracking.subscription_id AND subscriptions.user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS "Users can update own usage" ON public.usage_tracking FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM public.subscriptions WHERE subscriptions.id = usage_tracking.subscription_id AND subscriptions.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Users can view own usage" ON public.usage_tracking;
+CREATE POLICY "Users can view own usage" ON public.usage_tracking FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.subscriptions WHERE subscriptions.id = usage_tracking.subscription_id AND subscriptions.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Users can insert own usage" ON public.usage_tracking;
+CREATE POLICY "Users can insert own usage" ON public.usage_tracking FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM public.subscriptions WHERE subscriptions.id = usage_tracking.subscription_id AND subscriptions.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Users can update own usage" ON public.usage_tracking;
+CREATE POLICY "Users can update own usage" ON public.usage_tracking FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM public.subscriptions WHERE subscriptions.id = usage_tracking.subscription_id AND subscriptions.user_id = auth.uid()));
 
 -- INVOICES: Own only
-CREATE POLICY IF NOT EXISTS "Users can view own invoices" ON public.invoices FOR SELECT TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can create own invoices" ON public.invoices FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own invoices" ON public.invoices;
+CREATE POLICY "Users can view own invoices" ON public.invoices FOR SELECT TO authenticated USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can create own invoices" ON public.invoices;
+CREATE POLICY "Users can create own invoices" ON public.invoices FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
 -- PACKING JOBS: Own only
-CREATE POLICY IF NOT EXISTS "Users can view own packing jobs" ON public.packing_jobs FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can create own packing jobs" ON public.packing_jobs FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own packing jobs" ON public.packing_jobs FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete own packing jobs" ON public.packing_jobs FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own packing jobs" ON public.packing_jobs;
+CREATE POLICY "Users can view own packing jobs" ON public.packing_jobs FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can create own packing jobs" ON public.packing_jobs;
+CREATE POLICY "Users can create own packing jobs" ON public.packing_jobs FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own packing jobs" ON public.packing_jobs;
+CREATE POLICY "Users can update own packing jobs" ON public.packing_jobs FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own packing jobs" ON public.packing_jobs;
+CREATE POLICY "Users can delete own packing jobs" ON public.packing_jobs FOR DELETE USING (auth.uid() = user_id);
 
 -- PACKING ITEMS: Through packing_jobs
-CREATE POLICY IF NOT EXISTS "Users can view packing items for their jobs" ON public.packing_items FOR SELECT USING (EXISTS (SELECT 1 FROM public.packing_jobs WHERE packing_jobs.id = packing_items.job_id AND packing_jobs.user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS "Users can create packing items for their jobs" ON public.packing_items FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.packing_jobs WHERE packing_jobs.id = packing_items.job_id AND packing_jobs.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Users can view packing items for their jobs" ON public.packing_items;
+CREATE POLICY "Users can view packing items for their jobs" ON public.packing_items FOR SELECT USING (EXISTS (SELECT 1 FROM public.packing_jobs WHERE packing_jobs.id = packing_items.job_id AND packing_jobs.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Users can create packing items for their jobs" ON public.packing_items;
+CREATE POLICY "Users can create packing items for their jobs" ON public.packing_items FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.packing_jobs WHERE packing_jobs.id = packing_items.job_id AND packing_jobs.user_id = auth.uid()));
 
 -- SALE ORDERS: Own only
-CREATE POLICY IF NOT EXISTS "Users can view own sale orders" ON public.sale_orders FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can create own sale orders" ON public.sale_orders FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own sale orders" ON public.sale_orders FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete own sale orders" ON public.sale_orders FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own sale orders" ON public.sale_orders;
+CREATE POLICY "Users can view own sale orders" ON public.sale_orders FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can create own sale orders" ON public.sale_orders;
+CREATE POLICY "Users can create own sale orders" ON public.sale_orders FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own sale orders" ON public.sale_orders;
+CREATE POLICY "Users can update own sale orders" ON public.sale_orders FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own sale orders" ON public.sale_orders;
+CREATE POLICY "Users can delete own sale orders" ON public.sale_orders FOR DELETE USING (auth.uid() = user_id);
 
 -- SALE ORDER ITEMS: Through sale_orders
-CREATE POLICY IF NOT EXISTS "Users can view sale order items for their orders" ON public.sale_order_items FOR SELECT USING (EXISTS (SELECT 1 FROM public.sale_orders WHERE sale_orders.id = sale_order_items.order_id AND sale_orders.user_id = auth.uid()));
-CREATE POLICY IF NOT EXISTS "Users can create sale order items for their orders" ON public.sale_order_items FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.sale_orders WHERE sale_orders.id = sale_order_items.order_id AND sale_orders.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Users can view sale order items for their orders" ON public.sale_order_items;
+CREATE POLICY "Users can view sale order items for their orders" ON public.sale_order_items FOR SELECT USING (EXISTS (SELECT 1 FROM public.sale_orders WHERE sale_orders.id = sale_order_items.order_id AND sale_orders.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Users can create sale order items for their orders" ON public.sale_order_items;
+CREATE POLICY "Users can create sale order items for their orders" ON public.sale_order_items FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.sale_orders WHERE sale_orders.id = sale_order_items.order_id AND sale_orders.user_id = auth.uid()));
 
 -- NOTIFICATIONS: Own only
-CREATE POLICY IF NOT EXISTS "Users can view own notifications" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can create own notifications" ON public.notifications FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own notifications" ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can delete own notifications" ON public.notifications FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
+CREATE POLICY "Users can view own notifications" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can create own notifications" ON public.notifications;
+CREATE POLICY "Users can create own notifications" ON public.notifications FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
+CREATE POLICY "Users can update own notifications" ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own notifications" ON public.notifications;
+CREATE POLICY "Users can delete own notifications" ON public.notifications FOR DELETE USING (auth.uid() = user_id);
 
 -- ANALYTICS EVENTS: Own only
-CREATE POLICY IF NOT EXISTS "Users can view own analytics events" ON public.analytics_events FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can create own analytics events" ON public.analytics_events FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own analytics events" ON public.analytics_events;
+CREATE POLICY "Users can view own analytics events" ON public.analytics_events FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can create own analytics events" ON public.analytics_events;
+CREATE POLICY "Users can create own analytics events" ON public.analytics_events FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- ============================================
 -- 5. INDEXES FOR PERFORMANCE
@@ -456,11 +506,53 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_user_id ON public.analytics_even
 -- 6. REALTIME SUBSCRIPTIONS
 -- ============================================
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.shipments;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.trucks;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.packing_jobs;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.sale_orders;
+-- shipments and trucks are already added by 20260107000000_base_schema.sql;
+-- pg_publication_tables guards keep every add re-run safe (Postgres has no
+-- ADD TABLE IF NOT EXISTS).
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'shipments'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.shipments;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'trucks'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.trucks;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'notifications'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'packing_jobs'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.packing_jobs;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'sale_orders'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.sale_orders;
+  END IF;
+END $$;
 
 -- ============================================
 -- 7. VERIFICATION VIEW
