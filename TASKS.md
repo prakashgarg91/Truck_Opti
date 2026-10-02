@@ -16,25 +16,25 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-HYG-009 | Audit/retire obsolete embedded G2G development tooling without breaking product runtime | PARKED_AFTER_TO112 | GLM worker + GPT-6 review | `agent-tasks/009-g2g-retirement-audit.md` | — |
 | TO-120 | Driver "Documents & KYC Upload" screen integrated from Stitch design (UI simulation only) | DONE_UI_ONLY | GLM worker + GPT-6 review | — (owner-directed Stitch mission); backend follow-ups TO-126/127/128 | `agent-results/120-driver-kyc-stitch.md` |
 | TO-ASSESS-010 | Current completion assessment and bounded worker briefs | DONE | GPT-6 | Owner-requested assessment | `agent-results/010-result.md` |
-| TO-121 | Repair canonical launch and closure gates | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/011-canonical-readiness-gates.md` | `agent-results/011-result.md` |
-| TO-122 | Connect Google login to trusted Supabase sessions | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/012-trusted-cloud-auth.md` | `agent-results/012-result.md` |
-| TO-123 | Make every login surface usable and consistent | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/013-usable-auth-surfaces.md` | — |
-| TO-124 | Audit real provider capability and fail closed | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/014-provider-capability-audits.md` | `agent-results/014-result.md` |
-| TO-125 | Prepare a reproducible Supabase recovery and staging backend | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/015-supabase-recovery-rehearsal.md` | `agent-results/015-result.md` |
-| TO-126 | Implement private KYC storage and authoritative state | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/016-private-kyc-backend.md` | — |
-| TO-127 | Replace simulated driver KYC with real uploads | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/017-real-driver-kyc.md` | — |
-| TO-128 | Complete the admin KYC review loop | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/018-admin-kyc-review.md` | — |
-| TO-129 | Make driver offer acceptance atomic and reachable | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/019-atomic-job-offer-response.md` | — |
-| TO-130 | Verify and repair trip transitions and OTP enforcement | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/020-trip-transition-integrity.md` | — |
-| TO-131 | Restore safe admin and agency error boundaries | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/021-safe-service-errors.md` | `agent-results/021-result.md` |
-| TO-132 | Complete safe error reporting and health proof | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/022-sanitized-observability.md` | — |
-| TO-133 | Make local backup restoration safe and complete | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/023-atomic-backup-restore.md` | `agent-results/023-result.md` |
-| TO-134 | Prove the customer cloud business journey | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/024-customer-journey-proof.md` | — |
-| TO-135 | Prove the dispatch-to-delivery business loop | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/025-driver-agency-journey-proof.md` | — |
-| TO-136 | Verify admin authority and final database policies | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/026-admin-and-rls-proof.md` | — |
+| TO-121 | Repair canonical launch and closure gates | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/011-canonical-readiness-gates.md` | `agent-results/011-result.md`; accepted 2026-10-02 (cb01ff98) — `agent-results/completion-wave-review-20261002.md` |
+| TO-122 | Connect Google login to trusted Supabase sessions | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/012-trusted-cloud-auth.md` | `agent-results/012-result.md`; accepted 2026-10-02 (9cd28fad) — `agent-results/completion-wave-review-20261002.md` |
+| TO-123 | Make every login surface usable and consistent | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/013-usable-auth-surfaces.md` | — |
+| TO-124 | Audit real provider capability and fail closed | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/014-provider-capability-audits.md` | `agent-results/014-result.md`; accepted 2026-10-02 (43dd72f5) — `agent-results/completion-wave-review-20261002.md` |
+| TO-125 | Prepare a reproducible Supabase recovery and staging backend | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/015-supabase-recovery-rehearsal.md` | `agent-results/015-result.md`; accepted 2026-10-02 (8163bbc0) — `agent-results/completion-wave-review-20261002.md` |
+| TO-126 | Implement private KYC storage and authoritative state | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/016-private-kyc-backend.md` | — |
+| TO-127 | Replace simulated driver KYC with real uploads | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/017-real-driver-kyc.md` | — |
+| TO-128 | Complete the admin KYC review loop | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/018-admin-kyc-review.md` | — |
+| TO-129 | Make driver offer acceptance atomic and reachable | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/019-atomic-job-offer-response.md` | — |
+| TO-130 | Verify and repair trip transitions and OTP enforcement | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/020-trip-transition-integrity.md` | — |
+| TO-131 | Restore safe admin and agency error boundaries | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/021-safe-service-errors.md` | `agent-results/021-result.md`; accepted 2026-10-02 (55b82790) — `agent-results/completion-wave-review-20261002.md` |
+| TO-132 | Complete safe error reporting and health proof | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/022-sanitized-observability.md` | — |
+| TO-133 | Make local backup restoration safe and complete | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/023-atomic-backup-restore.md` | `agent-results/023-result.md`; accepted 2026-10-02 (015088f4) — `agent-results/completion-wave-review-20261002.md` |
+| TO-134 | Prove the customer cloud business journey | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/024-customer-journey-proof.md` | — |
+| TO-135 | Prove the dispatch-to-delivery business loop | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/025-driver-agency-journey-proof.md` | — |
+| TO-136 | Verify admin authority and final database policies | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/026-admin-and-rls-proof.md` | — |
 | TO-137 | Prove payment state convergence in sandbox | READY_HARNESS_OWNER_BLOCKED_PROVIDER | GLM-5.3 Flash + GPT-6 review | `agent-tasks/027-payment-provider-proof.md` | — |
-| TO-138 | Align supported Node runtime and close quality warnings | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/028-supported-runtime-and-quality.md` | `agent-results/028-result.md` |
-| TO-139 | Audit implemented journeys for UX and accessibility gaps | WAITING_DEPENDENCY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/029-actual-ui-completeness.md` | — |
+| TO-138 | Align supported Node runtime and close quality warnings | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/028-supported-runtime-and-quality.md` | `agent-results/028-result.md`; accepted 2026-10-02 (6f15554f) — `agent-results/completion-wave-review-20261002.md` |
+| TO-139 | Audit implemented journeys for UX and accessibility gaps | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/029-actual-ui-completeness.md` | — |
 | TO-140 | Consolidate repository state and resolve obsolete tooling | READY_AUDIT_ONLY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/030-repository-consolidation.md` | — |
 
 ## Known owner gates
@@ -53,6 +53,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 
 ## Day-close log
 2026-09-30 — GPT-6 assessed main `b76c4cc3`, prepared briefs 011-030 and reopened production auth scope from current source evidence. Fresh build PASS; frontend unit 358/358, packing 18/18, server 10/10, policy 12/12, Python auth 6/6; lint 0 errors/26 warnings; root/frontend production npm audits 0 vulnerabilities. Current-local-env browser smoke FAIL: public 1/12, launch 40/52, with confirmed request to dead Supabase health hostname. Live www 200/apex one redirect; live health URLs return SPA HTML. See result 010 for limitations and owner gates. This session created documentation only; no product implementation, Git push or production change.
+2026-10-02 — GPT-6 supervisor review ACCEPTED all seven AWAITING_REVIEW wave rows (TO-121 `cb01ff98`, TO-122 `9cd28fad`, TO-124 `43dd72f5`, TO-125 `8163bbc0`, TO-131 `55b82790`, TO-133 `015088f4`, TO-138 `6f15554f`); maintained-check gate run passed 8/8 (node --test policy suite, test:server-routing, frontend lint, frontend build, frontend unit test, test:packing, tools/glue-check.mjs, Python auth middleware tests); dependents TO-123, TO-126–TO-130, TO-132, TO-134–TO-136, TO-139 marked READY; TO-137 stays READY_HARNESS_OWNER_BLOCKED_PROVIDER; TO-140 stays READY_AUDIT_ONLY with the owner extending its scope to proven-safe cleanup. Verdicts/evidence: `agent-results/completion-wave-review-20261002.md`. Board bookkeeping only — no product code, no push, no production change.
 
 ## Repository state parked for TO-140
 
@@ -86,4 +87,13 @@ Bookkeeping close-out of the independent-brief completion wave (run on `main`, s
 - TO-137 — owner-blocked (`READY_HARNESS_OWNER_BLOCKED_PROVIDER`) — sandbox payment-state proof requires owner-supplied provider sandbox credentials; not executed, no result file (`agent-tasks/027-payment-provider-proof.md`).
 - TO-140 — READY (`READY_AUDIT_ONLY`) — read-only branch/worktree/doc consolidation audit may proceed; any deletion/cleanup is supervisor/owner-gated (`agent-tasks/030-repository-consolidation.md`).
 
-Remaining briefs TO-123, TO-126–TO-130, TO-132, TO-134–TO-136, TO-139 stay WAITING_DEPENDENCY and are unblocked by GPT-6 only after the AWAITING_REVIEW rows above are accepted.
+Remaining briefs TO-123, TO-126–TO-130, TO-132, TO-134–TO-136, TO-139 were unblocked on 2026-10-02 after all seven AWAITING_REVIEW rows above were accepted; see the 2026-10-02 review section below for the dependency-first completion queue.
+
+## 2026-10-02 review verdicts and completion queue
+
+GPT-6 supervisor review accepted all seven 2026-09-30 wave rows — TO-121 `cb01ff98`, TO-122 `9cd28fad`, TO-124 `43dd72f5`, TO-125 `8163bbc0`, TO-131 `55b82790`, TO-133 `015088f4`, TO-138 `6f15554f` — with per-task verdict evidence, gate table and the queue in `agent-results/completion-wave-review-20261002.md`. Maintained-check gate run passed 8/8 (node --test policy suite; test:server-routing; frontend lint; frontend build; frontend unit test; test:packing; tools/glue-check.mjs; Python auth middleware tests). No wave task was reopened, so no reopen-fix slice is queued.
+
+- TO-137 stays `READY_HARNESS_OWNER_BLOCKED_PROVIDER` — sandbox payment-state proof still requires owner-supplied provider sandbox credentials; excluded from the queue.
+- TO-140 stays `READY_AUDIT_ONLY`; the owner extended its scope to proven-safe cleanup — delete only reviewed/merged or explicitly parked items with recorded proof; destructive actions remain owner-gated. Excluded from this completion queue as a separate phase.
+
+Completion queue (dependency-first): TO-123 (brief 013, auth) → TO-126 (016, kyc) → TO-127 (017, kyc) → TO-128 (018, kyc) → TO-129 (019, offers) → TO-130 (020, offers) → TO-132 (022, ops) → TO-134 (024, customer) → TO-135 (025, agency) → TO-136 (026, admin) → TO-139 (029, ux).
