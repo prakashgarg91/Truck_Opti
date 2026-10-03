@@ -21,7 +21,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-123 | Make every login surface usable and consistent | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/013-usable-auth-surfaces.md` | `agent-results/013-result.md` |
 | TO-124 | Audit real provider capability and fail closed | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/014-provider-capability-audits.md` | `agent-results/014-result.md`; accepted 2026-10-02 (43dd72f5) — `agent-results/completion-wave-review-20261002.md` |
 | TO-125 | Prepare a reproducible Supabase recovery and staging backend | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/015-supabase-recovery-rehearsal.md` | `agent-results/015-result.md`; accepted 2026-10-02 (8163bbc0) — `agent-results/completion-wave-review-20261002.md` |
-| TO-126 | Implement private KYC storage and authoritative state | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/016-private-kyc-backend.md` | — |
+| TO-126 | Implement private KYC storage and authoritative state | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/016-private-kyc-backend.md` | `agent-results/016-result.md` |
 | TO-127 | Replace simulated driver KYC with real uploads | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/017-real-driver-kyc.md` | — |
 | TO-128 | Complete the admin KYC review loop | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/018-admin-kyc-review.md` | — |
 | TO-129 | Make driver offer acceptance atomic and reachable | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/019-atomic-job-offer-response.md` | — |

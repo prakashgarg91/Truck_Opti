@@ -1,8 +1,9 @@
 // Auto-generated Supabase types - DO NOT EDIT manually
 // Regenerated with: npx supabase gen types typescript --local
 // Source schema: supabase/migrations/* applied to a clean local database
-// (TO-125 recovery rehearsal, 2026-10-01). Replaces stale types last
-// generated from the historical hosted project jbxncejtcbpcronndqlx.
+// (TO-126 private KYC backend, 2026-10-03; chain replay verified after
+// 20261003000000_private_kyc_documents.sql). Replaces the TO-125
+// regeneration of 2026-10-01.
 
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
@@ -161,6 +162,25 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"driver_kyc_documents": {
+                  Row: {
+                    "created_at": string,"driver_id": string,"id": string,"kind": string,"mime_type": string,"original_name": string | null,"rejection_reason": string | null,"reviewed_at": string | null,"reviewed_by": string | null,"size_bytes": number,"status": string,"storage_path": string,"uploaded_at": string,"user_id": string,"version": number
+                  }
+                  Insert: {
+                    "created_at"?: string,"driver_id": string,"id"?: string,"kind": string,"mime_type": string,"original_name"?: string | null,"rejection_reason"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"size_bytes": number,"status": string,"storage_path": string,"uploaded_at"?: string,"user_id": string,"version": number
+                  }
+                  Update: {
+                    "created_at"?: string,"driver_id"?: string,"id"?: string,"kind"?: string,"mime_type"?: string,"original_name"?: string | null,"rejection_reason"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"size_bytes"?: number,"status"?: string,"storage_path"?: string,"uploaded_at"?: string,"user_id"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "driver_kyc_documents_driver_id_fkey"
+      columns: ["driver_id"]
+isOneToOne: false
+      referencedRelation: "drivers"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"driver_locations": {
                   Row: {

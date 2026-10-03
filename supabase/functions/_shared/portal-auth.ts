@@ -273,6 +273,47 @@ export async function requireAgencyContext(
   }
 }
 
+/**
+ * Resolves the caller as an authenticated driver (any KYC/approval
+ * status — KYC happens before approval). Authority comes from the
+ * trusted Supabase session plus the drivers table, never from
+ * client-controlled metadata.
+ */
+export async function requireDriverContext(authorization: string | null) {
+  const accessToken = getBearerToken(authorization)
+  const normalizedAuthorization = authorization ?? `Bearer ${accessToken}`
+
+  const supabaseUrl = getRequiredEnv('SUPABASE_URL')
+  const supabaseAnonKey = getRequiredEnv('SUPABASE_ANON_KEY')
+  const supabaseServiceRoleKey = getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+
+  const authClient = createAuthClient(supabaseUrl, supabaseAnonKey, normalizedAuthorization)
+  const serviceClient = createServiceClient(supabaseUrl, supabaseServiceRoleKey)
+  const caller = await getCaller(authClient, accessToken)
+
+  const { data: driver, error: driverError } = await serviceClient
+    .from('drivers')
+    .select('id, user_id, status')
+    .eq('user_id', caller.id)
+    .maybeSingle<{ id: string; user_id: string | null; status: string | null }>()
+
+  if (driverError) {
+    console.error('Failed to resolve driver profile', driverError)
+    throw new RequestError('Unable to verify driver access.', 500, false)
+  }
+
+  if (!driver?.id) {
+    throw new RequestError('A driver profile is required.', 403)
+  }
+
+  return {
+    caller,
+    serviceClient,
+    driverId: driver.id,
+    driverStatus: driver.status,
+  }
+}
+
 export function handleRequestError(scope: string, error: unknown) {
   const requestError = error instanceof RequestError ? error : null
 
