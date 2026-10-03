@@ -1,10 +1,9 @@
 // Auto-generated Supabase types - DO NOT EDIT manually
 // Regenerated with: npx supabase gen types typescript --local
 // Source schema: supabase/migrations/* applied to a clean local database
-// (TO-126 private KYC backend, 2026-10-03; chain replay verified after
-// 20261003000000_private_kyc_documents.sql). Replaces the TO-125
-// regeneration of 2026-10-01.
-
+// (TO-129 atomic job-offer response + driver offer read visibility, 2026-10-03;
+// chain replay verified after 20261003020000_driver_offer_read_visibility.sql).
+// Replaces the TO-126 regeneration of 2026-10-03.
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -611,6 +610,9 @@ isOneToOne: false
 "is_admin_user":
 { Args: { "p_user_id"?: string }; Returns: boolean
                            },
+"is_shipment_driver":
+{ Args: { "p_shipment_id": string }; Returns: boolean
+                           },
 "persist_driver_job_offer_progress":
 { Args: { "p_extra"?: Json,"p_job_offer_id": string,"p_status"?: string }; Returns: {
               "delivered_at": string,"delivery_arrived_at": string,"job_offer_id": string,"journey_started_at": string,"photo_delivery_url": string,"photo_loading_url": string,"pickup_arrived_at": string,"status": string,"total_trips": number
@@ -618,6 +620,11 @@ isOneToOne: false
                            },
 "resolve_login_identifier":
 { Args: { "p_identifier": string }; Returns: string
+                           },
+"respond_to_job_offer":
+{ Args: { "p_accept": boolean,"p_decline_reason"?: string,"p_job_offer_id": string }; Returns: {
+              "active_job_id": string,"offer_id": string,"offer_status": string,"responded_at": string
+            }[]
                            }
           }
           Enums: {

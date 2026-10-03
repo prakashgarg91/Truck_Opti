@@ -11,10 +11,12 @@ const maybeSingleMock = vi.hoisted(() => vi.fn())
 const gtMock = vi.hoisted(() => vi.fn())
 const updateMock = vi.hoisted(() => vi.fn())
 const insertMock = vi.hoisted(() => vi.fn())
+const rpcMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../lib/supabase', () => ({
     supabase: {
         from: fromMock,
+        rpc: rpcMock,
     },
 }))
 
@@ -784,45 +786,103 @@ describe('customerSupabaseApi', () => {
     })
 
     describe('driverDashboardApi.respondToJobOffer', () => {
-        it('accepts job offer successfully', async () => {
-            updateMock.mockReturnValue({
-                eq: vi.fn().mockResolvedValue({
-                    error: null,
-                }),
+        // TO-129: response goes through the single trusted RPC transaction;
+        // no direct table writes are performed from the browser anymore.
+        it('accepts through the atomic RPC and returns the authoritative state', async () => {
+            rpcMock.mockResolvedValue({
+                data: [{
+                    offer_id: 'offer_1',
+                    offer_status: 'accepted',
+                    responded_at: '2026-10-03T10:00:00Z',
+                    active_job_id: 'offer_1',
+                }],
+                error: null,
             })
-            
+
+            const result = await driverDashboardApi.respondToJobOffer('offer_1', true)
+
+            expect(rpcMock).toHaveBeenCalledWith('respond_to_job_offer', {
+                p_job_offer_id: 'offer_1',
+                p_accept: true,
+                p_decline_reason: null,
+            })
+            expect(result).toEqual({
+                offerId: 'offer_1',
+                offerStatus: 'accepted',
+                respondedAt: '2026-10-03T10:00:00Z',
+                activeJobId: 'offer_1',
+            })
+            expect(fromMock).not.toHaveBeenCalled()
+        })
+
+        it('declines through the RPC without a reason', async () => {
+            rpcMock.mockResolvedValue({
+                data: [{
+                    offer_id: 'offer_1',
+                    offer_status: 'declined',
+                    responded_at: '2026-10-03T10:00:00Z',
+                    active_job_id: null,
+                }],
+                error: null,
+            })
+
+            const result = await driverDashboardApi.respondToJobOffer('offer_1', false)
+
+            expect(rpcMock).toHaveBeenCalledWith('respond_to_job_offer', {
+                p_job_offer_id: 'offer_1',
+                p_accept: false,
+                p_decline_reason: null,
+            })
+            expect(result.offerStatus).toBe('declined')
+            expect(result.activeJobId).toBeNull()
+        })
+
+        it('passes an optional decline reason to the RPC', async () => {
+            rpcMock.mockResolvedValue({
+                data: [{
+                    offer_id: 'offer_1',
+                    offer_status: 'declined',
+                    responded_at: '2026-10-03T10:00:00Z',
+                    active_job_id: null,
+                }],
+                error: null,
+            })
+
+            await driverDashboardApi.respondToJobOffer('offer_1', false, 'Too far away')
+
+            expect(rpcMock).toHaveBeenCalledWith('respond_to_job_offer', {
+                p_job_offer_id: 'offer_1',
+                p_accept: false,
+                p_decline_reason: 'Too far away',
+            })
+        })
+
+        it('maps controlled server rejections to approved user-facing messages', async () => {
+            rpcMock.mockResolvedValue({
+                data: null,
+                error: { message: 'Job offer has expired' },
+            })
+
             await expect(driverDashboardApi.respondToJobOffer('offer_1', true))
-                .resolves.not.toThrow()
-            
-            expect(updateMock).toHaveBeenCalledWith({
-                status: 'accepted',
-                responded_at: expect.any(String),
-            })
+                .rejects.toThrow('This job offer has expired.')
         })
 
-        it('declines job offer successfully', async () => {
-            updateMock.mockReturnValue({
-                eq: vi.fn().mockResolvedValue({
-                    error: null,
-                }),
+        it('never surfaces unmapped provider error internals', async () => {
+            rpcMock.mockResolvedValue({
+                data: null,
+                error: { message: 'internal SQLSTATE XX000 detail payload' },
             })
-            
-            await expect(driverDashboardApi.respondToJobOffer('offer_1', false))
-                .resolves.not.toThrow()
-            
-            expect(updateMock).toHaveBeenCalledWith({
-                status: 'declined',
-                responded_at: expect.any(String),
-            })
+
+            await expect(driverDashboardApi.respondToJobOffer('offer_1', true))
+                .rejects.toThrow('Failed to respond to job')
         })
 
-        it('throws UserFacingError on response failure', async () => {
-            updateMock.mockReturnValue({
-                eq: vi.fn().mockResolvedValue({
-                    error: { message: 'Update failed' },
-                }),
+        it('treats a zero-row RPC result as failure, never as success', async () => {
+            rpcMock.mockResolvedValue({
+                data: [],
+                error: null,
             })
-            
+
             await expect(driverDashboardApi.respondToJobOffer('offer_1', true))
                 .rejects.toThrow('Failed to respond to job')
         })

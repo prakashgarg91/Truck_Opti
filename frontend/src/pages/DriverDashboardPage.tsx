@@ -9,6 +9,7 @@ import { driverDashboardApi, driverEarningsApi, driverSupabaseApi } from '../ser
 import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
+import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import toast from 'react-hot-toast'
 
 interface DriverRecord {
@@ -359,19 +360,28 @@ export default function DriverDashboardPage() {
   const respondToJob = async (accept: boolean) => {
     if (!incomingJob || !driver?.id) return
     setRespondingJob(true)
+    let acceptedJobId: string | null = null
     try {
-      await driverDashboardApi.respondToJobOffer(incomingJob.id, accept)
+      // One authorized, atomic server transaction (TO-129): the RPC verifies
+      // ownership, pending state, expiry, approval and active-trip conflicts,
+      // then writes the offer status and active job together and returns the
+      // authoritative state.
+      const result = await driverDashboardApi.respondToJobOffer(incomingJob.id, accept)
       toast.success(accept ? '✅ Job Accepted! Navigate to pickup.' : 'Job declined.')
       if (accept) {
-        await driverDashboardApi.setActiveJob(driver.id, incomingJob.id)
+        acceptedJobId = result.activeJobId ?? incomingJob.id
       }
-    } catch (_error) {
-      toast.error('Failed to respond to job')
+    } catch (error) {
+      toast.error(toUserFacingErrorMessage(error, 'Failed to respond to job'))
     }
     setIncomingJob(null)
     setRespondingJob(false)
     fetchDriver()
     if (driver.id) fetchHistory(driver.id)
+    // Reachability of the existing trip route straight from acceptance.
+    if (acceptedJobId) {
+      navigate(`/driver/trip/${acceptedJobId}`)
+    }
   }
 
   if (loading) {

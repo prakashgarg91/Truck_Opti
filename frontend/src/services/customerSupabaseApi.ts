@@ -613,6 +613,48 @@ export const driverTripsApi = {
     }
 }
 
+// ============= DRIVER DASHBOARD API =============
+
+/** Authoritative offer + active-job state returned by respond_to_job_offer (TO-129). */
+export interface JobOfferResponse {
+    offerId: string
+    offerStatus: string
+    respondedAt: string | null
+    activeJobId: string | null
+}
+
+interface JobOfferResponseRow {
+    offer_id?: unknown
+    offer_status?: unknown
+    responded_at?: unknown
+    active_job_id?: unknown
+}
+
+/**
+ * Bounded mapping from the controlled respond_to_job_offer exceptions
+ * (supabase/migrations/20261003010000) to approved user-facing messages.
+ * Unmapped provider internals never reach the UI (TO-131 contract).
+ */
+const JOB_OFFER_RESPONSE_ERROR_MESSAGES: Readonly<Record<string, string>> = Object.freeze({
+    'A response decision is required': 'Failed to respond to job',
+    'Driver profile not found for the signed-in user': 'Your driver profile could not be found. Please sign in again.',
+    'Job offer not found or access denied': 'This job offer is no longer available.',
+    'Driver account is not approved to respond to offers': 'Your driver account is not approved to accept jobs yet.',
+    'Job offer has expired': 'This job offer has expired.',
+    'Job offer has already been accepted': 'This job offer was already accepted.',
+    'Job offer has already been declined': 'This job offer was already declined.',
+    'Job offer is no longer available': 'This job offer is no longer available.',
+    'Driver already has an active trip': 'You already have an active trip. Complete it before accepting a new one.',
+})
+
+function resolveJobOfferResponseMessage(error: unknown): string {
+    const message = (error as { message?: unknown } | null)?.message
+    if (typeof message === 'string') {
+        return JOB_OFFER_RESPONSE_ERROR_MESSAGES[message] ?? 'Failed to respond to job'
+    }
+    return 'Failed to respond to job'
+}
+
 export const driverDashboardApi = {
     async getIncomingJobById(jobOfferId: string): Promise<Record<string, unknown> | null> {
         const { data, error } = await supabase
@@ -688,28 +730,37 @@ export const driverDashboardApi = {
         }
     },
 
-    async respondToJobOffer(jobId: string, accept: boolean): Promise<void> {
-        const { error } = await supabase
-            .from('job_offers')
-            .update({
-                status: accept ? 'accepted' : 'declined',
-                responded_at: new Date().toISOString(),
-            })
-            .eq('id', jobId)
+    /**
+     * Responds to a pending job offer through the trusted server transaction
+     * (TO-129): the server verifies the signed-in driver, offer ownership,
+     * pending state, expiry, driver approval and conflicting active trip, then
+     * writes the offer status and — on acceptance — the driver's active job in
+     * one atomic, idempotent transaction. Duplicate accept/reject replays
+     * return the authoritative state instead of writing again; every rejected
+     * path raises, so an empty (zero-row) result is never reported as success.
+     */
+    async respondToJobOffer(jobId: string, accept: boolean, declineReason?: string): Promise<JobOfferResponse> {
+        const { data, error } = await supabase.rpc('respond_to_job_offer', {
+            p_job_offer_id: jobId,
+            p_accept: accept,
+            p_decline_reason: declineReason ?? null,
+        })
 
         if (error) {
+            throw new UserFacingError(resolveJobOfferResponseMessage(error))
+        }
+
+        const row = (Array.isArray(data) ? data[0] : data) as JobOfferResponseRow | undefined
+        if (!row || typeof row.offer_id !== 'string' || typeof row.offer_status !== 'string') {
+            // A zero-row response means nothing was authorized or written.
             throw new UserFacingError('Failed to respond to job')
         }
-    },
 
-    async setActiveJob(driverId: string, jobId: string): Promise<void> {
-        const { error } = await supabase
-            .from('drivers')
-            .update({ active_job_id: jobId })
-            .eq('id', driverId)
-
-        if (error) {
-            throw new UserFacingError('Failed to activate job')
+        return {
+            offerId: row.offer_id,
+            offerStatus: row.offer_status,
+            respondedAt: typeof row.responded_at === 'string' ? row.responded_at : null,
+            activeJobId: typeof row.active_job_id === 'string' ? row.active_job_id : null,
         }
     },
 }

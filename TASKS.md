@@ -24,7 +24,7 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-126 | Implement private KYC storage and authoritative state | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/016-private-kyc-backend.md` | `agent-results/016-result.md` |
 | TO-127 | Replace simulated driver KYC with real uploads | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/017-real-driver-kyc.md` | `agent-results/017-result.md` |
 | TO-128 | Complete the admin KYC review loop | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/018-admin-kyc-review.md` | `agent-results/018-result.md` |
-| TO-129 | Make driver offer acceptance atomic and reachable | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/019-atomic-job-offer-response.md` | — |
+| TO-129 | Make driver offer acceptance atomic and reachable | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/019-atomic-job-offer-response.md` | `agent-results/019-result.md` |
 | TO-130 | Verify and repair trip transitions and OTP enforcement | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/020-trip-transition-integrity.md` | — |
 | TO-131 | Restore safe admin and agency error boundaries | DONE | GLM-5.3 Flash + GPT-6 review | `agent-tasks/021-safe-service-errors.md` | `agent-results/021-result.md`; accepted 2026-10-02 (55b82790) — `agent-results/completion-wave-review-20261002.md` |
 | TO-132 | Complete safe error reporting and health proof | READY | GLM-5.3 Flash + GPT-6 review | `agent-tasks/022-sanitized-observability.md` | — |
