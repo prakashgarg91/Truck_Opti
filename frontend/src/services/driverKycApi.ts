@@ -41,6 +41,8 @@ export interface KycApiDocumentPayload {
   rejectionReason: string | null
   errorMessage: string | null
   updatedAt: string | null
+  /** Server-recorded review time (null until an admin accepts/rejects). */
+  reviewedAt?: string | null
 }
 
 export interface KycApiStatePayload {
@@ -165,6 +167,22 @@ export async function getState(): Promise<KycSubmissionState> {
 }
 
 /**
+ * Server-computed KYC state for one driver (admin review surface, TO-128).
+ * The backend only serves a foreign driverId to an authorized admin —
+ * every other caller gets a 403, so nothing here can widen access.
+ */
+export async function getDriverKycState(driverId: string): Promise<KycApiSubmissionState> {
+  if (!driverId) {
+    throw new UserFacingError('A driver is required to load KYC documents.')
+  }
+  const data = await invokeKycFunction<{ state: KycApiStatePayload }>(
+    { action: 'state', driverId },
+    'Could not load the driver’s KYC status. Please try again.',
+  )
+  return normalizeKycState(data?.state)
+}
+
+/**
  * Uploads one KYC document (validating locally first), then has the
  * trusted function validate the stored bytes and register the next
  * version. Returns the fresh server-computed state.
@@ -213,7 +231,8 @@ export async function submit(): Promise<KycSubmissionState> {
 /**
  * Admin review of one document version. Conflicts (already reviewed or
  * replaced versions) fail with a refresh-and-retry message instead of
- * silently overwriting.
+ * silently overwriting. Returns the full KycApiSubmissionState (with the
+ * server's current versions) — the admin review UI re-renders from it.
  */
 export async function reviewDocument(
   driverId: string,
@@ -221,7 +240,7 @@ export async function reviewDocument(
   version: number,
   decision: KycReviewDecision,
   reason?: string,
-): Promise<KycSubmissionState> {
+): Promise<KycApiSubmissionState> {
   if (!driverId) {
     throw new UserFacingError('A driver is required to review a document.')
   }

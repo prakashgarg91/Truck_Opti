@@ -27,6 +27,7 @@ vi.mock('../utils/logger', () => ({
 
 import {
     getDocumentAccessUrl,
+    getDriverKycState,
     getState,
     normalizeKycState,
     reviewDocument,
@@ -131,6 +132,34 @@ describe('driverKycApi', () => {
             invokeMock.mockRejectedValueOnce(new Error('network down'))
 
             await expect(getState()).rejects.toThrow('Could not load your KYC status')
+            expect(loggerErrorMock).toHaveBeenCalled()
+        })
+    })
+
+    describe('getDriverKycState (admin review surface, TO-128)', () => {
+        it('passes the driver id through and normalizes the payload with review times', async () => {
+            const payload = serverStatePatch()
+            const rcBook = payload.docs.rc_book
+            if (!rcBook) throw new Error('fixture must include rc_book')
+            rcBook.reviewedAt = '2026-10-03T09:30:00Z'
+            invokeMock.mockResolvedValueOnce({ data: { state: payload } })
+
+            const state = await getDriverKycState(driverId)
+
+            expect(invokeMock).toHaveBeenCalledWith('driver-kyc', { body: { action: 'state', driverId } })
+            expect(state.docs.rc_book.status).toBe('pending_review')
+            expect(state.docs.rc_book.reviewedAt).toBe('2026-10-03T09:30:00Z')
+        })
+
+        it('refuses an empty driver id before any call', async () => {
+            await expect(getDriverKycState('')).rejects.toThrow('A driver is required')
+            expect(invokeMock).not.toHaveBeenCalled()
+        })
+
+        it('throws a user-facing fallback when the function fails', async () => {
+            invokeMock.mockRejectedValueOnce(new Error('network down'))
+
+            await expect(getDriverKycState(driverId)).rejects.toThrow('Could not load the driver’s KYC status')
             expect(loggerErrorMock).toHaveBeenCalled()
         })
     })

@@ -51,6 +51,8 @@ export interface KycDocument {
   rejectionReason: string | null
   errorMessage: string | null
   updatedAt: string | null
+  /** Server-recorded admin review time (absent/null until reviewed). */
+  reviewedAt?: string | null
 }
 
 export interface KycSubmissionState {

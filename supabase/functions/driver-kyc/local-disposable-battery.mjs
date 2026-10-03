@@ -438,6 +438,29 @@ let state
   )
 }
 {
+  // TO-128 — admin state read: the admin review UI's only source of
+  // authoritative document versions for another driver.
+  const asAdmin = await callFunction({ action: 'state', driverId: driverAId }, tokenAdmin)
+  const adminState = asAdmin.json?.state
+  const asDriverB = await callFunction({ action: 'state', driverId: driverAId }, tokenB)
+  const ownByDriverId = await callFunction({ action: 'state', driverId: driverAId }, tokenA)
+  const adminNoDriverId = await callFunction({ action: 'state' }, tokenAdmin)
+  check(
+    'fn: admin state read returns the driver’s server-computed state with versions + review times',
+    asAdmin.status === 200
+      && adminState?.locked === true
+      && adminState?.versions?.rc_book === 3
+      && Boolean(adminState?.docs?.rc_book?.reviewedAt)
+      && adminState?.docs?.aadhaar?.status === 'accepted',
+    `status=${asAdmin.status} locked=${adminState?.locked} rcV=${adminState?.versions?.rc_book} reviewedAt=${Boolean(adminState?.docs?.rc_book?.reviewedAt)}`,
+  )
+  check(
+    'fn: cross-driver state read denied (403); driver own driverId allowed; admin without driverId refused (400)',
+    asDriverB.status === 403 && ownByDriverId.status === 200 && adminNoDriverId.status === 400,
+    `otherDriver=${asDriverB.status} ownId=${ownByDriverId.status} adminNoId=${adminNoDriverId.status}`,
+  )
+}
+{
   const asOther = await callFunction({ action: 'access', kind: 'rc_book', driverId: driverAId }, tokenB)
   const asOwner = await callFunction({ action: 'access', kind: 'rc_book' }, tokenA)
   let signedFetchStatus = 0

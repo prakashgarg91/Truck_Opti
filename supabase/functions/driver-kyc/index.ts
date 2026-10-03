@@ -57,7 +57,7 @@ function isKycKind(value: unknown): value is KycKind {
 }
 
 type KycRequest =
-  | { action: 'state' }
+  | { action: 'state'; driverId?: string }
   | { action: 'upload'; kind: KycKind; path: string; fileName?: string }
   | { action: 'submit' }
   | {
@@ -76,8 +76,12 @@ function parseRequestBody(body: unknown): KycRequest {
   }
 
   switch (body.action) {
-    case 'state':
-      return { action: 'state' }
+    case 'state': {
+      if (body.driverId !== undefined && typeof body.driverId !== 'string') {
+        throw new RequestError('driverId must be a string.')
+      }
+      return { action: 'state', driverId: body.driverId }
+    }
     case 'submit':
       return { action: 'submit' }
     case 'upload': {
@@ -202,6 +206,7 @@ function buildKycState(current: Map<KycKind, KycDocumentRow>) {
         rejectionReason: null,
         errorMessage: null,
         updatedAt: null,
+        reviewedAt: null,
       }
       continue
     }
@@ -220,6 +225,7 @@ function buildKycState(current: Map<KycKind, KycDocumentRow>) {
       rejectionReason: row.status === 'rejected' ? row.rejection_reason : null,
       errorMessage: null,
       updatedAt: row.uploaded_at,
+      reviewedAt: row.reviewed_at,
     }
   }
 
@@ -330,7 +336,9 @@ serve(async (req) => {
     const authorization = req.headers.get('Authorization')
 
     if (body.action === 'state') {
-      const { serviceClient, driverId } = await requireDriverContext(authorization)
+      // Owner reads own state; an authorized admin may pass driverId to
+      // review another driver's authoritative versions (TO-128).
+      const { serviceClient, driverId } = await resolveAccessContext(authorization, body.driverId)
       return jsonResponse({ state: buildKycState(await loadCurrentDocuments(serviceClient, driverId)) })
     }
 

@@ -1,11 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import {
   ArrowLeft, User, Truck, CreditCard, CheckCircle2,
   XCircle, AlertTriangle, Phone, MapPin, Calendar,
-  FileText, RefreshCw, ShieldCheck
+  FileText, RefreshCw, ShieldCheck, Eye, FileWarning
 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { adminSupabaseApi, type AdminDriverProfile as DriverProfile } from '../services/adminSupabaseApi'
+import {
+  getDocumentAccessUrl,
+  getDriverKycState,
+  reviewDocument,
+  type KycApiSubmissionState,
+  type KycReviewDecision,
+} from '../services/driverKycApi'
+import { KYC_DOC_KINDS, KYC_DOC_META, type KycDocKind } from '../services/driverKycDocuments'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import toast from 'react-hot-toast'
 
@@ -23,6 +31,26 @@ const STATUS_COLORS: Record<string, string> = {
   approved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
   rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   suspended: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
+}
+
+/** Per-document review states, exactly as the server reports them (TO-128). */
+const KYC_STATUS_META: Record<string, { label: string; badge: string }> = {
+  pending: { label: 'Not uploaded', badge: 'bg-slate-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400' },
+  pending_review: { label: 'Pending review', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' },
+  accepted: { label: 'Accepted', badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  rejected: { label: 'Review Needed', badge: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
+}
+
+function formatKycBytes(bytes: number | null): string {
+  if (!bytes || bytes <= 0) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function formatKycTime(value: string | null | undefined): string {
+  if (!value) return '—'
+  return new Date(value).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -63,6 +91,144 @@ export default function DriverDetailPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectForm, setShowRejectForm] = useState(false)
 
+  // TO-128 — server-authoritative KYC review state. Never fabricated
+  // locally: every displayed status/version came from the driver-kyc
+  // function for this driver.
+  const [kycState, setKycState] = useState<KycApiSubmissionState | null>(null)
+  const [kycLoading, setKycLoading] = useState(true)
+  const [kycError, setKycError] = useState<string | null>(null)
+  const [reviewBusy, setReviewBusy] = useState<KycDocKind | null>(null)
+  const [kycRejectKind, setKycRejectKind] = useState<KycDocKind | null>(null)
+  const [kycRejectReason, setKycRejectReason] = useState('')
+  const [previews, setPreviews] = useState<Partial<Record<KycDocKind, string>>>({})
+  const [previewFailed, setPreviewFailed] = useState<Partial<Record<KycDocKind, boolean>>>({})
+  const [previewBusy, setPreviewBusy] = useState<KycDocKind | null>(null)
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
+
+  const loadKyc = useCallback(async () => {
+    if (!id) return
+    setKycLoading(true)
+    setKycError(null)
+    try {
+      setKycState(await getDriverKycState(id))
+    } catch (error) {
+      setKycError(toUserFacingErrorMessage(error, 'Could not load KYC documents. Please try again.'))
+    } finally {
+      setKycLoading(false)
+    }
+  }, [id])
+
+  useEffect(() => {
+    void loadKyc()
+  }, [loadKyc])
+
+  const kycAcceptedCount = kycState
+    ? KYC_DOC_KINDS.filter((kind) => kycState.docs[kind].status === 'accepted').length
+    : 0
+
+  const handleKycReview = async (kind: KycDocKind, decision: KycReviewDecision) => {
+    if (!id || !kycState) return
+    const version = kycState.versions[kind]
+    if (!Number.isInteger(version) || version < 1) return
+
+    const reason = decision === 'reject' ? kycRejectReason.trim() : undefined
+    if (decision === 'reject' && !reason) {
+      toast.error('Please enter a rejection reason')
+      return
+    }
+
+    setReviewBusy(kind)
+    try {
+      // Only the trusted function can move a review; its response is the
+      // fresh server-computed state (includes reviewer-recorded outcomes).
+      setKycState(await reviewDocument(id, kind, version, decision, reason))
+      toast.success(decision === 'accept' ? 'Document accepted' : 'Document rejected')
+      setKycRejectKind(null)
+      setKycRejectReason('')
+    } catch (error) {
+      // Stale-version conflicts (409) and other failures leave our view
+      // suspect — reload the authoritative state either way.
+      toast.error(
+        toUserFacingErrorMessage(
+          error,
+          decision === 'accept'
+            ? 'Failed to accept the document. Please try again.'
+            : 'Failed to reject the document. Please try again.',
+        ),
+      )
+      void loadKyc()
+    } finally {
+      setReviewBusy(null)
+    }
+  }
+
+  const mintKycAccess = async (kind: KycDocKind): Promise<string | null> => {
+    if (!id) return null
+    setPreviewBusy(kind)
+    try {
+      // Short-lived signed URL minted fresh on every use — a rendered link
+      // can never outlive its 60-second validity by being reused later.
+      const access = await getDocumentAccessUrl(kind, { driverId: id })
+      return access.url
+    } catch (error) {
+      toast.error(toUserFacingErrorMessage(error, 'The document could not be opened. It may be unavailable.'))
+      return null
+    } finally {
+      setPreviewBusy(null)
+    }
+  }
+
+  const handleKycPreview = async (kind: KycDocKind) => {
+    if (previews[kind]) {
+      setPreviews((prev) => {
+        const { [kind]: _drop, ...rest } = prev
+        return rest
+      })
+      setPreviewFailed((prev) => {
+        const { [kind]: _drop, ...rest } = prev
+        return rest
+      })
+      return
+    }
+    const url = await mintKycAccess(kind)
+    if (url) {
+      setPreviews((prev) => ({ ...prev, [kind]: url }))
+      setPreviewFailed((prev) => ({ ...prev, [kind]: false }))
+    }
+  }
+
+  const handleKycOpenPdf = async (kind: KycDocKind) => {
+    const url = await mintKycAccess(kind)
+    if (url) window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleApprove = async () => {
+    if (!driver) return
+    setActionLoading(true)
+    try {
+      const updatedDriver = await adminSupabaseApi.approveDriver(driver.id)
+      toast.success('Driver approved!')
+      setDriver(updatedDriver)
+      setApproveConfirmOpen(false)
+    } catch (error) {
+      toast.error(toUserFacingErrorMessage(error, 'Failed to approve driver. Please try again.'))
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  // Approving a driver is an operational decision beyond document review.
+  // When KYC is not fully accepted (or could not be verified), the admin
+  // must confirm the shortfall explicitly — never approve silently.
+  const handleApproveClick = () => {
+    if (!driver) return
+    if (kycState?.locked) {
+      void handleApprove()
+      return
+    }
+    setApproveConfirmOpen(true)
+  }
+
   useEffect(() => {
     if (!id) return
     const driverId = id
@@ -87,20 +253,6 @@ export default function DriverDetailPage() {
     }
     fetch()
   }, [id, navigate])
-
-  const handleApprove = async () => {
-    if (!driver) return
-    setActionLoading(true)
-    try {
-      const updatedDriver = await adminSupabaseApi.approveDriver(driver.id)
-      toast.success('Driver approved!')
-      setDriver(updatedDriver)
-    } catch (error) {
-      toast.error(toUserFacingErrorMessage(error, 'Failed to approve driver. Please try again.'))
-    } finally {
-      setActionLoading(false)
-    }
-  }
 
   const handleReject = async () => {
     const trimmedReason = rejectReason.trim()
@@ -210,17 +362,274 @@ export default function DriverDetailPage() {
           </div>
         </div>
 
+        {/* KYC Verification — server-authoritative per-document review (TO-128) */}
+        <section id="kyc-review-section" aria-label="KYC Verification" className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h3 className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <ShieldCheck size={16} className="text-purple-500" />
+              KYC Verification
+            </h3>
+            <div className="flex items-center gap-2">
+              {kycState && (
+                <span
+                  className={`text-xs px-2.5 py-1 rounded-full font-semibold ${kycState.locked
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}
+                >
+                  {kycState.locked ? 'KYC Verified' : `${kycAcceptedCount} of 4 accepted`}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => void loadKyc()}
+                aria-label="Refresh KYC status"
+                disabled={kycLoading}
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={kycLoading ? 'animate-spin' : ''} />
+              </button>
+            </div>
+          </div>
+
+          {kycLoading && !kycState && (
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-400">
+              <RefreshCw size={16} className="animate-spin" />
+              Loading KYC documents…
+            </div>
+          )}
+
+          {kycError && (
+            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 p-3 space-y-2 mb-3">
+              <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                <AlertTriangle size={12} />
+                {kycError}
+              </p>
+              <button
+                type="button"
+                onClick={() => void loadKyc()}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600 text-white"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {kycState && (
+            <div className="space-y-3">
+              {KYC_DOC_KINDS.map((kind) => {
+                const doc = kycState.docs[kind]
+                const version = kycState.versions[kind]
+                const statusMeta = KYC_STATUS_META[doc.status] ?? KYC_STATUS_META.pending
+                const isPdf = doc.fileType === 'application/pdf'
+                const previewUrl = previews[kind]
+                const previewBroken = previewFailed[kind] === true
+                const rejectOpen = kycRejectKind === kind
+                const busy = reviewBusy === kind || previewBusy === kind
+
+                return (
+                  <article
+                    key={kind}
+                    id={`kyc-admin-doc-${kind}`}
+                    aria-label={KYC_DOC_META[kind].title}
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
+                          {KYC_DOC_META[kind].title}
+                        </p>
+                        {version > 0 && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                            v{version}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusMeta.badge}`}>
+                        {statusMeta.label}
+                      </span>
+                    </div>
+
+                    {version > 0 ? (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        {doc.fileName ?? 'Uploaded file'} · {formatKycBytes(doc.fileSizeBytes)} · Uploaded {formatKycTime(doc.updatedAt)}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400 dark:text-slate-500">No document uploaded yet.</p>
+                    )}
+
+                    {doc.reviewedAt && (
+                      <p className="text-xs text-slate-400 dark:text-slate-500">Reviewed {formatKycTime(doc.reviewedAt)}</p>
+                    )}
+
+                    {doc.status === 'rejected' && doc.rejectionReason && (
+                      <p className="text-xs text-red-600 dark:text-red-400 flex items-start gap-1.5">
+                        <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
+                        Rejection reason: {doc.rejectionReason}
+                      </p>
+                    )}
+
+                    {previewUrl && !isPdf && !previewBroken && (
+                      <img
+                        src={previewUrl}
+                        alt={`${KYC_DOC_META[kind].title} preview`}
+                        onError={() => setPreviewFailed((prev) => ({ ...prev, [kind]: true }))}
+                        className="rounded-lg max-h-48 w-full object-contain bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700"
+                      />
+                    )}
+                    {previewUrl && !isPdf && previewBroken && (
+                      <div className="rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 p-3 space-y-2">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <FileWarning size={12} />
+                          Preview link expired or the file is unavailable.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void handleKycPreview(kind)}
+                          disabled={busy}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300"
+                        >
+                          Refresh preview
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {version > 0 && (
+                        isPdf ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleKycOpenPdf(kind)}
+                            disabled={busy}
+                            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 disabled:opacity-50"
+                          >
+                            <Eye size={12} />
+                            Open PDF
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleKycPreview(kind)}
+                            disabled={busy}
+                            aria-expanded={Boolean(previewUrl)}
+                            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 disabled:opacity-50"
+                          >
+                            <Eye size={12} />
+                            {previewUrl ? 'Hide preview' : 'Preview'}
+                          </button>
+                        )
+                      )}
+                      {doc.status === 'pending_review' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => void handleKycReview(kind, 'accept')}
+                            disabled={busy}
+                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50"
+                          >
+                            <CheckCircle2 size={12} />
+                            Accept
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKycRejectKind(rejectOpen ? null : kind)
+                              setKycRejectReason('')
+                            }}
+                            aria-expanded={rejectOpen}
+                            disabled={busy}
+                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 disabled:opacity-50"
+                          >
+                            <XCircle size={12} />
+                            Reject
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {rejectOpen && doc.status === 'pending_review' && (
+                      <div className="space-y-2 pt-1">
+                        <label htmlFor={`kyc-admin-reject-reason-${kind}`} className="text-xs font-medium text-slate-600 dark:text-slate-300 block">
+                          Rejection reason (required)
+                        </label>
+                        <textarea
+                          id={`kyc-admin-reject-reason-${kind}`}
+                          value={kycRejectReason}
+                          onChange={(e) => setKycRejectReason(e.target.value)}
+                          rows={2}
+                          placeholder="e.g. License number is not readable..."
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-800 dark:text-slate-100 resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKycRejectKind(null)
+                              setKycRejectReason('')
+                            }}
+                            className="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleKycReview(kind, 'reject')}
+                            disabled={busy || !kycRejectReason.trim()}
+                            className="flex-1 py-2 rounded-xl bg-red-600 text-white text-xs font-semibold disabled:opacity-50"
+                          >
+                            Confirm Reject
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                )
+              })}
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Document versions and review outcomes come from the server. Approving the driver is a separate decision below.
+              </p>
+            </div>
+          )}
+        </section>
+
         {/* Action buttons */}
         {driver.status === 'pending' && (
           <div className="space-y-2">
             <button
-              onClick={handleApprove}
+              onClick={handleApproveClick}
               disabled={actionLoading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-600 text-white font-semibold disabled:opacity-60"
             >
               <CheckCircle2 size={18} />
               Approve Driver
             </button>
+            {approveConfirmOpen && !kycState?.locked && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-4 space-y-3">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <AlertTriangle size={14} />
+                  KYC not fully verified
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400" id="kyc-approve-shortfall">
+                  {kycError
+                    ? 'KYC status could not be verified right now. Approving makes this driver operational without document verification.'
+                    : `Only ${kycAcceptedCount} of 4 KYC documents are accepted. Approving now makes this driver operational without full document verification.`}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setApproveConfirmOpen(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 text-sm"
+                  >
+                    Keep Reviewing
+                  </button>
+                  <button
+                    onClick={handleApprove}
+                    disabled={actionLoading}
+                    className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold disabled:opacity-60"
+                  >
+                    Approve Anyway
+                  </button>
+                </div>
+              </div>
+            )}
             {!showRejectForm ? (
               <button
                 onClick={() => setShowRejectForm(true)}
