@@ -12,6 +12,12 @@ import { logger } from '../utils/logger'
 // identity is device-local data and can never grant cloud, admin, reviewer or
 // driver authority, or enable payments. Device-local workspaces live behind
 // /local-start, not behind a Google button.
+//
+// TO-123: when the Supabase backend is not configured, Google sign-in is not
+// an available method — the button renders nothing rather than a disabled
+// "(needs setup)" control, so no login surface ever suggests an unavailable
+// method. The auth pages additionally hide the button via the canonical
+// capability model (lib/authSurfaceMethods).
 export default function GoogleSignInButton({ label }: { label: string }) {
   const location = useLocation()
   const returnTo = buildAuthReturnTo(location.state as AuthRouteState)
@@ -19,19 +25,7 @@ export default function GoogleSignInButton({ label }: { label: string }) {
   const [starting, setStarting] = useState(false)
 
   if (!isSupabaseConfigured) {
-    return (
-      <div title="Connect the Supabase sign-in backend (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) to enable Google sign-in">
-        <button
-          disabled
-          className="btn btn-secondary w-full opacity-60 cursor-not-allowed"
-        >
-          <span>{label} (needs setup)</span>
-        </button>
-        <p className="mt-2 text-xs text-slate-500">
-          Google sign-in activates once the owner connects the sign-in backend. Meanwhile, use device setup below.
-        </p>
-      </div>
-    )
+    return null
   }
 
   const startGoogleSignIn = async () => {

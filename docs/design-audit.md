@@ -341,3 +341,32 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 ---
 
 *Audit artifacts kept for re-runs: `.stitch-mcp/scratch/audit/` (inventory.json, signals.json, rubric.json, 58 HTMLs, scripts). Stitch calls used: `stitch_status` ×1, `stitch_list_screens` ×1, `stitch_get_screen` ×1 — all read-only.*
+
+---
+
+## 2026-10-03 addendum — TO-123 auth-surface usability pass (no Stitch mutations)
+
+Scope: the five auth routes (`/login` + `?mode=driver|agency|office|partner`, `/signup`, `/forgot-password`) were repaired in code, not regenerated — P0 journey fix (login surfaces could render unusable/dead methods). No new screens; coverage table above is unchanged. Zero Stitch mutations this session (read-only `stitch_status` + `stitch_guide` only).
+
+### What changed on each surface (actual route evidence)
+
+| Route | Before | After (verified in browser, see evidence below) |
+|---|---|---|
+| `/login` (any surface mode) | OTP form rendered even with zero OTP channels; Google rendered "(needs setup)" with env-var copy; office blocked state leaked `VITE_AUTH_PASSWORD_ENABLED=true` | Method availability now comes from the canonical capability model (`frontend/src/lib/authSurfaceMethods.ts`): only enabled+configured methods render; no-method state shows honest maintenance copy plus a clearly separate device-local workspace entry |
+| `/login?mode=office|partner` | Dead end when password flag off (env-name notice, no usable path) | Working password path when provisioned; honest administrator-notice blocked state otherwise; keyboard focus lands on the identifier field |
+| `/signup` | "Email Signup Disabled" button rendered when flags off | Honest notice + Google path when available, or maintenance card with device-local entry; chooser only when both email-OTP and password exist |
+| `/forgot-password` | Reset form reachable even with password auth disabled | Honest "resets unavailable" notice; form only renders when password sign-in is enabled |
+
+Accessibility added: `aria-pressed` on the sign-in/signup method toggles and OTP channel buttons, `role="alert"` + `aria-describedby` on inline errors, `autoComplete` on identifier/password/email/tel/name inputs, pending/disabled submit states preserved, keyboard flow to the local workspace verified by script.
+
+### Route evidence (executed 2026-10-03)
+
+- Command: `PUBLIC_APP_URL=http://localhost:4173 npm run test:frontend-smoke` (local-first build) → exit 0, **63/63 checks** (`logs/frontend_launch_smoke_report.json`). New checks this pass: 5 login surfaces × 2 viewports (390×844, 1280×900) asserting surface titles, zero console/page errors and forbidden copy (`VITE_`, `needs setup`, `in this environment`), plus a keyboard-driven check (Tab → Enter) from `/login` to `/local-start`.
+- Screenshots: `logs/auth-surface-smoke/login-{default,driver,agency,office,partner}-{mobile-390x844,desktop-1280x900}.png` (10 files; gitignored artifact folder).
+- Method-combination matrix (no-provider / Google-only / password-only / email-only / phone combos) is proven by unit tests on the real page components because env flags are baked at build time: `frontend/src/pages/auth/LoginPage.test.ts` (16 tests), `SignupPage.test.ts` (5), `lib/authSurfaceMethods.test.ts` (5); full suite 481/481.
+
+### Backlog update
+
+- Resolved from §2/§3: `/login`, `/signup`, `/forgot-password` honest-state gaps and the §5 accessibility systemic finding **for the auth surfaces only** (auth pages now carry labels, error semantics and focus behavior the generated screens lacked).
+- Still open (P1, unchanged): §6 item 7's non-auth POOR screens (`d8615375` OTP, `c7700d0d` auth-callback, `1e1497ab` payment success/failure states) and the §2 MISSING designs (`/subscription`, `/agency/profile`, `/management/cartons`, `/driver/profile`).
+- Next proposed item (one-line evidence): OTP screen `d8615375` remains the only auth-adjacent POOR screen with no error-state design — fold its error/loading states into TO-139 (UX audit) rather than a new generation.

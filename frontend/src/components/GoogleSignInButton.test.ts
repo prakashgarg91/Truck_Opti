@@ -100,19 +100,16 @@ describe('GoogleSignInButton', () => {
         root.unmount()
     })
 
-    it('renders an honest disabled state when the sign-in backend is not configured', async () => {
+    it('renders nothing when the sign-in backend is not configured, so no surface suggests an unavailable method', async () => {
         h.isSupabaseConfigured = false
         const Button = await freshButton()
         const { container, root } = renderButton(Button)
 
-        expect(container.querySelector('button[disabled]')).toBeTruthy()
-        expect(container.textContent).toContain('needs setup')
-
-        const button = container.querySelector('button')!
-        await act(async () => {
-            button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
-            await Promise.resolve()
-        })
+        // TO-123: an unconfigured Google provider renders nothing at all —
+        // never a disabled "(needs setup)" button or developer setup copy.
+        expect(container.querySelector('button')).toBeNull()
+        expect(container.textContent).not.toContain('needs setup')
+        expect(container.textContent).not.toContain('VITE_')
         expect(h.signInWithGoogle).not.toHaveBeenCalled()
         root.unmount()
     })

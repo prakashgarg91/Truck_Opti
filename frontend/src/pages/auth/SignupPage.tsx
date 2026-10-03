@@ -7,6 +7,7 @@ import { authSupabaseApi } from '../../services/supabaseApi'
 import { useAuthStore } from '../../stores/authStore'
 import { emailSchema, passwordSchema } from '../../utils/validators'
 import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacingError'
+import { authSurfaceMethods } from '../../lib/authSurfaceMethods'
 import GoogleSignInButton from '../../components/GoogleSignInButton'
 
 const features = [
@@ -15,14 +16,18 @@ const features = [
   { icon: '📍', text: 'Live GPS Tracking' },
 ]
 
-const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED !== 'false'
-const isPasswordEnabled = import.meta.env.VITE_AUTH_PASSWORD_ENABLED === 'true'
-
 type SignupMode = 'otp' | 'password'
 
 export default function SignupPage() {
   const navigate = useNavigate()
   const { setPendingPhone } = useAuthStore()
+  // Canonical method availability (TO-123): the signup surface renders only
+  // the methods the capability model calls enabled.
+  const isEmailOtpEnabled = authSurfaceMethods.emailOtp.enabled
+  const isPasswordEnabled = authSurfaceMethods.officePassword.enabled
+  const isGoogleEnabled = authSurfaceMethods.google.enabled
+  const hasSignupMethod = isEmailOtpEnabled || isPasswordEnabled
+  const hasNoUsableMethod = !hasSignupMethod && !isGoogleEnabled
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -48,13 +53,8 @@ export default function SignupPage() {
   useEffect(() => {
     if (!isEmailOtpEnabled && isPasswordEnabled) {
       setSignupMode('password')
-      return
     }
-
-    if (!isEmailOtpEnabled && !isPasswordEnabled) {
-      setSignupMode('otp')
-    }
-  }, [])
+  }, [isEmailOtpEnabled, isPasswordEnabled])
 
   useEffect(() => {
     setEmailError('')
@@ -152,7 +152,7 @@ export default function SignupPage() {
         </p>
       </div>
 
-      {isPasswordEnabled && (
+      {isPasswordEnabled && isEmailOtpEnabled && (
         <div className="animate-slide-up mb-6" style={{ animationDelay: '75ms' }}>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Choose signup method
@@ -161,10 +161,10 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={() => setSignupMode('otp')}
-              disabled={!isEmailOtpEnabled}
+              aria-pressed={signupMode === 'otp'}
               className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 transition-all duration-300 ${signupMode === 'otp'
                 ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20'
-                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
             >
               <Send className="w-4 h-4" />
               <span className="font-medium text-sm">Email OTP</span>
@@ -172,6 +172,7 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={() => setSignupMode('password')}
+              aria-pressed={signupMode === 'password'}
               className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 transition-all duration-300 ${signupMode === 'password'
                 ? 'border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:border-slate-200 dark:bg-slate-100 dark:text-slate-900'
                 : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
@@ -183,12 +184,39 @@ export default function SignupPage() {
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             {signupMode === 'password'
               ? 'Password signup assigns a login ID automatically and shows it in your profile after sign-in.'
-              : 'Email OTP remains the default public signup path.'}
+              : 'We send a one-time code to your email to confirm your account.'}
           </p>
         </div>
       )}
 
+      {/* Honest state when no email/password signup method is enabled */}
+      {!hasSignupMethod && (
+        <div
+          className="animate-slide-up mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl"
+          role="status"
+        >
+          {hasNoUsableMethod ? (
+            <>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200 text-center">
+                Sign-up is being set up and is not available right now.
+              </p>
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-300 text-center">
+                You can still use TruckOpti on this device in the meantime.
+              </p>
+              <button onClick={() => navigate('/local-start')} className="btn btn-primary w-full mt-3">
+                Start using TruckOpti on this device
+              </button>
+            </>
+          ) : (
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200 text-center">
+              Email signup is not available right now — you can sign up with Google below.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Signup Form */}
+      {hasSignupMethod && (
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Name Input */}
         <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
@@ -198,6 +226,7 @@ export default function SignupPage() {
           <div className={`relative transition-all duration-300 ${isFocused === 'name' ? 'scale-[1.02]' : ''}`}>
             <input
               type="text"
+              autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onFocus={() => setIsFocused('name')}
@@ -222,6 +251,7 @@ export default function SignupPage() {
             <input
               type="email"
               inputMode="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
@@ -233,6 +263,7 @@ export default function SignupPage() {
               className={`input text-lg font-medium ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
               aria-label="Enter your email address"
               aria-invalid={!!emailError}
+              aria-describedby={emailError ? 'signup-email-error' : undefined}
             />
             {isEmailValid && (
               <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 animate-scale-in">
@@ -241,7 +272,7 @@ export default function SignupPage() {
             )}
           </div>
           {emailError ? (
-            <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+            <p id="signup-email-error" role="alert" className="mt-2 text-sm text-red-500 flex items-center gap-1">
               <span>⚠️</span> {emailError}
             </p>
           ) : (
@@ -263,6 +294,7 @@ export default function SignupPage() {
               </div>
               <input
                 type={isPasswordVisible ? 'text' : 'password'}
+                autoComplete="new-password"
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value)
@@ -273,6 +305,7 @@ export default function SignupPage() {
                 placeholder="Use at least 8 characters"
                 className={`input pl-12 pr-12 text-lg font-medium ${passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
                 aria-invalid={!!passwordError}
+                aria-describedby={passwordError ? 'signup-password-error' : undefined}
               />
               <button
                 type="button"
@@ -283,7 +316,7 @@ export default function SignupPage() {
               </button>
             </div>
             {passwordError ? (
-              <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+              <p id="signup-password-error" role="alert" className="mt-2 text-sm text-red-500 flex items-center gap-1">
                 <span>⚠️</span> {passwordError}
               </p>
             ) : (
@@ -309,32 +342,30 @@ export default function SignupPage() {
             </>
           ) : (
             <>
-              <span>{signupMode === 'password' ? 'Create Password Account' : (isEmailOtpEnabled ? 'Create Account' : 'Email Signup Disabled')}</span>
+              <span>{signupMode === 'password' ? 'Create Password Account' : 'Create Account'}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </>
           )}
         </button>
-        {!isEmailOtpEnabled && signupMode === 'otp' && (
-          <p className="mt-2 text-xs text-slate-500">
-            Email OTP signup is disabled in this environment. Use Google signup below.
-          </p>
-        )}
       </form>
+      )}
 
-      {/* Divider */}
-      <div className="relative my-8 animate-fade-in" style={{ animationDelay: '400ms' }}>
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-4 bg-white dark:bg-slate-800 text-slate-500">
-            Or sign up with
-          </span>
-        </div>
-      </div>
-
-      {/* Google Signup (GIS, no Supabase, no OTP) */}
-      <GoogleSignInButton label="Sign up with Google" />
+      {/* Google signup (trusted Supabase OAuth) — shown only when enabled */}
+      {isGoogleEnabled && (
+        <>
+          <div className="relative my-8 animate-fade-in" style={{ animationDelay: '400ms' }}>
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white dark:bg-slate-800 text-slate-500">
+                Or sign up with
+              </span>
+            </div>
+          </div>
+          <GoogleSignInButton label="Sign up with Google" />
+        </>
+      )}
 
       {/* Login Link */}
       <div className="mt-6 text-center animate-fade-in" style={{ animationDelay: '600ms' }}>

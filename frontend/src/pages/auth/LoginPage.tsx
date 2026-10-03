@@ -10,6 +10,7 @@ import { UserFacingError, toUserFacingErrorMessage } from '../../utils/userFacin
 import { logger } from '../../utils/logger'
 import { buildAuthReturnTo, storeAuthReturnTo, type AuthRouteState } from '../../utils/authReturnTo'
 import { isSupabaseReachable } from '../../lib/supabase'
+import { authSurfaceMethods } from '../../lib/authSurfaceMethods'
 import GoogleSignInButton from '../../components/GoogleSignInButton'
 
 const features = [
@@ -17,10 +18,6 @@ const features = [
   { icon: '🚛', text: 'Route Optimization' },
   { icon: '📍', text: 'Live GPS Tracking' },
 ]
-
-const isEmailOtpEnabled = import.meta.env.VITE_AUTH_EMAIL_OTP_ENABLED !== 'false'
-const isPhoneOtpEnabled = import.meta.env.VITE_AUTH_PHONE_OTP_ENABLED === 'true'
-const isPasswordEnabled = import.meta.env.VITE_AUTH_PASSWORD_ENABLED === 'true'
 
 type AuthMode = 'otp' | 'password'
 type LoginSurfaceMode = 'default' | 'driver' | 'agency' | 'office' | 'partner'
@@ -130,8 +127,20 @@ export default function LoginPage() {
   const surface = SURFACE_CONFIG[surfaceMode]
   const SurfaceIcon = surface.icon
   const modeParam = surfaceMode === 'default' ? '' : `?mode=${surfaceMode === 'office' ? 'admin' : surfaceMode}`
+  // Canonical method availability (TO-123): every surface renders only the
+  // methods the capability model calls enabled, so an unconfigured or
+  // intentionally disabled method is never suggested to users.
+  const isEmailOtpEnabled = authSurfaceMethods.emailOtp.enabled
+  const isPhoneOtpEnabled = authSurfaceMethods.phoneOtp.enabled
+  const isPasswordEnabled = authSurfaceMethods.officePassword.enabled
+  const isGoogleEnabled = authSurfaceMethods.google.enabled
+  const hasCloudMethod = authSurfaceMethods.hasCloudMethod
+  const hasOtpChannel = isEmailOtpEnabled || isPhoneOtpEnabled
+  // No cloud method and no office password: an honest maintenance state with a
+  // clearly separate device-local workspace is the only usable path.
+  const hasNoUsableMethod = !hasCloudMethod && !isPasswordEnabled
   const [authMode, setAuthMode] = useState<AuthMode>(
-    isPasswordEnabled && (surfaceMode === 'office' || surfaceMode === 'partner') ? 'password' : 'otp'
+    isPasswordEnabled && (!hasOtpChannel || surfaceMode === 'office' || surfaceMode === 'partner') ? 'password' : 'otp'
   )
   const [contact, setContact] = useState('')
   const [contactError, setContactError] = useState('')
@@ -173,6 +182,11 @@ export default function LoginPage() {
   }, [returnTo])
 
   useEffect(() => {
+    if (!hasOtpChannel && isPasswordEnabled) {
+      setAuthMode('password')
+      return
+    }
+
     if (!isPasswordEnabled) {
       setAuthMode('otp')
       return
@@ -181,7 +195,7 @@ export default function LoginPage() {
     if (surfaceMode === 'office' || surfaceMode === 'partner') {
       setAuthMode('password')
     }
-  }, [surfaceMode])
+  }, [surfaceMode, hasOtpChannel, isPasswordEnabled])
 
   useEffect(() => {
     if (!isPhoneOtpEnabled && channel !== 'email') {
@@ -192,7 +206,7 @@ export default function LoginPage() {
     if (!isEmailOtpEnabled && channel === 'email' && isPhoneOtpEnabled) {
       setChannel('sms')
     }
-  }, [channel])
+  }, [channel, isEmailOtpEnabled, isPhoneOtpEnabled])
 
   // Clear input when channel changes
   useEffect(() => {
@@ -347,7 +361,9 @@ export default function LoginPage() {
     : surface.badge
 
   const modeNotice = !isPasswordEnabled && (surfaceMode === 'office' || surfaceMode === 'partner')
-    ? 'Password login is hidden in this environment until VITE_AUTH_PASSWORD_ENABLED=true.'
+    ? surfaceMode === 'office'
+      ? 'Password sign-in is not available for office accounts yet. Ask your TruckOpti administrator for access.'
+      : 'Password sign-in is not available for partner accounts yet. Ask your TruckOpti contact for access.'
     : null
 
   return (
@@ -380,7 +396,7 @@ export default function LoginPage() {
         )}
       </div>
 
-      {isPasswordEnabled && (
+      {isPasswordEnabled && hasOtpChannel && (
         <div className="animate-slide-up mb-6" style={{ animationDelay: '75ms' }}>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Choose sign-in method
@@ -389,6 +405,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setAuthMode('otp')}
+              aria-pressed={authMode === 'otp'}
               className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 transition-all duration-300 ${authMode === 'otp'
                 ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-600 shadow-lg shadow-primary-500/20'
                 : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -400,6 +417,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setAuthMode('password')}
+              aria-pressed={authMode === 'password'}
               className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl border-2 transition-all duration-300 ${authMode === 'password'
                 ? 'border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:border-slate-200 dark:bg-slate-100 dark:text-slate-900'
                 : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -412,12 +430,28 @@ export default function LoginPage() {
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             {authMode === 'password'
               ? surface.passwordHint
-              : 'Email OTP + Google remain the default public launch sign-in paths.'}
+              : 'We send a one-time code to your email or phone.'}
           </p>
         </div>
       )}
 
-      {/* Auth Form */}
+      {/* No usable method: honest maintenance state with a separate local workspace */}
+      {hasNoUsableMethod ? (
+        <div
+          className="animate-slide-up mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl"
+          role="status"
+        >
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-200 text-center">
+            Sign-in is being set up and is not available right now.
+          </p>
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300 text-center">
+            You can still use TruckOpti on this device in the meantime.
+          </p>
+          <button onClick={() => navigate('/local-start')} className="btn btn-primary w-full mt-3">
+            Start using TruckOpti on this device
+          </button>
+        </div>
+      ) : authMode === 'password' || hasOtpChannel ? (
       <form onSubmit={handleSubmit} className="space-y-6">
         {authMode === 'password' ? (
           <>
@@ -429,6 +463,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   inputMode="email"
+                  autoComplete="username"
                   value={passwordIdentifier}
                   onChange={(event) => {
                     setPasswordIdentifier(event.target.value)
@@ -440,10 +475,11 @@ export default function LoginPage() {
                   className={`input text-lg tracking-wide font-medium ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
                   autoFocus
                   aria-invalid={!!emailError}
+                  aria-describedby={emailError ? 'login-identifier-error' : undefined}
                 />
               </div>
               {emailError ? (
-                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                <p id="login-identifier-error" role="alert" className="mt-2 text-sm text-red-500 flex items-center gap-1">
                   <span>⚠️</span>
                   {emailError}
                 </p>
@@ -470,6 +506,7 @@ export default function LoginPage() {
                 </div>
                 <input
                   type={isPasswordVisible ? 'text' : 'password'}
+                  autoComplete="current-password"
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value)
@@ -480,6 +517,7 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   className={`input pl-12 pr-12 text-lg tracking-wide font-medium ${passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
                   aria-invalid={!!passwordError}
+                  aria-describedby={passwordError ? 'login-password-error' : undefined}
                 />
                 <button
                   type="button"
@@ -490,7 +528,7 @@ export default function LoginPage() {
                 </button>
               </div>
               {passwordError ? (
-                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                <p id="login-password-error" role="alert" className="mt-2 text-sm text-red-500 flex items-center gap-1">
                   <span>⚠️</span>
                   {passwordError}
                 </p>
@@ -502,7 +540,7 @@ export default function LoginPage() {
               )}
             </div>
           </>
-        ) : (
+        ) : hasOtpChannel ? (
           <>
             <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -519,6 +557,7 @@ export default function LoginPage() {
                 <input
                   type={channel === 'email' ? 'email' : 'tel'}
                   inputMode={channel === 'email' ? 'email' : 'numeric'}
+                  autoComplete={channel === 'email' ? 'email' : 'tel'}
                   value={channel === 'email' ? contact : formatPhone(contact)}
                   onChange={(event) => handleContactChange(event.target.value)}
                   onFocus={() => setFocusedField('contact')}
@@ -528,6 +567,7 @@ export default function LoginPage() {
                   autoFocus
                   aria-label={channel === 'email' ? 'Enter your email address' : 'Enter your 10-digit mobile number'}
                   aria-invalid={!!contactError}
+                  aria-describedby={contactError ? 'login-contact-error' : undefined}
                 />
                 {contact.length === 10 && !contactError && channel !== 'email' && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 animate-scale-in">
@@ -536,7 +576,7 @@ export default function LoginPage() {
                 )}
               </div>
               {contactError ? (
-                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                <p id="login-contact-error" role="alert" className="mt-2 text-sm text-red-500 flex items-center gap-1">
                   <span>⚠️</span>
                   {contactError}
                 </p>
@@ -613,22 +653,17 @@ export default function LoginPage() {
               </div>
               {!isPhoneOtpEnabled && isEmailOtpEnabled && (
                 <p className="mt-2 text-xs text-slate-500">
-                  Phone OTP is disabled in this environment. Use Email OTP or Google login.
+                  Phone sign-in is not available yet — we will email your code.
                 </p>
               )}
               {!isEmailOtpEnabled && isPhoneOtpEnabled && (
                 <p className="mt-2 text-xs text-slate-500">
-                  Email OTP is disabled in this environment. Use SMS, WhatsApp, or Google login.
-                </p>
-              )}
-              {!isEmailOtpEnabled && !isPhoneOtpEnabled && (
-                <p className="mt-2 text-xs text-slate-500">
-                  OTP login is disabled in this environment. Use Google login.
+                  Email sign-in is not available yet — we will text your code.
                 </p>
               )}
             </div>
           </>
-        )}
+        ) : null}
 
         {/* Submit Button */}
         <button
@@ -662,24 +697,29 @@ export default function LoginPage() {
           )}
         </button>
       </form>
+      ) : null}
 
-      {/* Divider */}
-      <div className="relative my-8 animate-fade-in" style={{ animationDelay: '400ms' }}>
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-4 bg-white dark:bg-slate-800 text-slate-500">
-            Or continue with
-          </span>
-        </div>
-      </div>
+      {/* Google sign-in (trusted Supabase OAuth) — shown only when enabled */}
+      {isGoogleEnabled && (
+        <>
+          <div className="relative my-8 animate-fade-in" style={{ animationDelay: '400ms' }}>
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white dark:bg-slate-800 text-slate-500">
+                Or continue with
+              </span>
+            </div>
+          </div>
+          <GoogleSignInButton label="Continue with Google" />
+        </>
+      )}
 
-      {/* Google Login (GIS, no Supabase, no OTP) */}
-      <GoogleSignInButton label="Continue with Google" />
-
-      {/* Offline-first entry: shown only when the backend is unreachable */}
-      {backendDown && (
+      {/* Offline-first entry: shown only when the backend is unreachable and
+          another sign-in method is offered (the no-method state carries its
+          own device-local workspace entry) */}
+      {backendDown && !hasNoUsableMethod && (
         <button
           onClick={() => navigate('/local-start')}
           className="btn w-full mt-4 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 transition-all duration-300"

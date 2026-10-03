@@ -4,6 +4,7 @@ import { ArrowLeft, KeyRound, Send, Shield } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { authSupabaseApi } from '../../services/supabaseApi'
+import { authSurfaceMethods } from '../../lib/authSurfaceMethods'
 import { emailOrLoginIdSchema } from '../../utils/validators'
 import { toUserFacingErrorMessage } from '../../utils/userFacingError'
 
@@ -11,6 +12,8 @@ export default function ForgotPasswordPage() {
     const navigate = useNavigate()
     const location = useLocation()
     const modeParam = location.search
+    // TO-123: password reset only exists when password sign-in is enabled.
+    const isPasswordAuthEnabled = authSurfaceMethods.officePassword.enabled
     const [identifier, setIdentifier] = useState('')
     const [identifierError, setIdentifierError] = useState('')
     const [isSent, setIsSent] = useState(false)
@@ -69,6 +72,21 @@ export default function ForgotPasswordPage() {
                 </p>
             </div>
 
+            {!isPasswordAuthEnabled && (
+                <div
+                    className="animate-slide-up mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl"
+                    role="status"
+                >
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200 text-center">
+                        Password sign-in is not available right now, so password resets are unavailable.
+                    </p>
+                    <p className="mt-1 text-xs text-amber-700 dark:text-amber-300 text-center">
+                        If you need help reaching your account, contact your TruckOpti administrator.
+                    </p>
+                </div>
+            )}
+
+            {isPasswordAuthEnabled && (
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -119,6 +137,7 @@ export default function ForgotPasswordPage() {
                     )}
                 </button>
             </form>
+            )}
 
             {isSent && (
                 <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl animate-fade-in">

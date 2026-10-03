@@ -23,6 +23,26 @@ const PUBLIC_ROUTES = [
   { path: '/subscription', expectedTitle: 'Welcome Back', expectedFinalUrlIncludes: '/login' },
 ];
 
+// TO-123: every login surface must render its own honest state. The method
+// combination matrix itself is covered by unit tests (env flags are baked at
+// build time); the browser sweep proves each surface at both required
+// viewports on the actually-built configuration.
+const LOGIN_SURFACES = [
+  { path: '/login', label: 'default', expectedTitle: 'Welcome Back' },
+  { path: '/login?mode=driver', label: 'driver', expectedTitle: 'Driver Login' },
+  { path: '/login?mode=agency', label: 'agency', expectedTitle: 'Agency Login' },
+  { path: '/login?mode=office', label: 'office', expectedTitle: 'Office Login' },
+  { path: '/login?mode=partner', label: 'partner', expectedTitle: 'Partner Login' },
+];
+
+const SURFACE_VIEWPORTS = [
+  { label: 'mobile-390x844', width: 390, height: 844 },
+  { label: 'desktop-1280x900', width: 1280, height: 900 },
+];
+
+// No login surface may suggest an unavailable method or leak developer copy.
+const LOGIN_FORBIDDEN_TEXTS = ['VITE_', 'needs setup', 'in this environment', 'Application Error'];
+
 const PROTECTED_ROUTES = [
   '/dashboard',
   '/packing',
@@ -175,6 +195,114 @@ async function collectPublicRouteResult(browser, route) {
         signals.pageErrors.length === 0 &&
         signals.failedResponses.length === 0,
       appErrorCount,
+      consoleErrors: signals.consoleErrors,
+      pageErrors: signals.pageErrors,
+      failedResponses: signals.failedResponses,
+    };
+  } finally {
+    await closeContextSafely(context);
+  }
+}
+
+async function collectLoginSurfaceResult(browser, surface, viewport) {
+  const context = await browser.newContext({
+    ignoreHTTPSErrors: true,
+    viewport: { width: viewport.width, height: viewport.height },
+  });
+  const page = await context.newPage();
+  const signals = attachSignals(page);
+
+  try {
+    await resetSession(page, context);
+    await page.goto(`${BASE_URL}${surface.path}${surface.path.includes('?') ? '&' : '?'}fresh=${Date.now()}`, {
+      waitUntil: 'networkidle',
+      timeout: 45000,
+    });
+
+    const title = await page.title();
+    const bodyText = await page.locator('body').innerText().catch(() => '');
+    const forbiddenText = LOGIN_FORBIDDEN_TEXTS.find((text) => bodyText.includes(text)) ?? null;
+
+    const screenshotPath = path.join('logs', 'auth-surface-smoke', `login-${surface.label}-${viewport.label}.png`);
+    await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+
+    return {
+      kind: 'login-surface',
+      path: surface.path,
+      viewport: viewport.label,
+      screenshot: screenshotPath,
+      finalUrl: page.url(),
+      title,
+      forbiddenText,
+      passed:
+        title.includes(surface.expectedTitle) &&
+        forbiddenText === null &&
+        signals.consoleErrors.length === 0 &&
+        signals.pageErrors.length === 0 &&
+        signals.failedResponses.length === 0,
+      consoleErrors: signals.consoleErrors,
+      pageErrors: signals.pageErrors,
+      failedResponses: signals.failedResponses,
+    };
+  } finally {
+    await closeContextSafely(context);
+  }
+}
+
+async function collectLocalWorkspaceEntryResult(browser, viewport) {
+  const context = await browser.newContext({
+    ignoreHTTPSErrors: true,
+    viewport: { width: viewport.width, height: viewport.height },
+  });
+  const page = await context.newPage();
+  const signals = attachSignals(page);
+
+  try {
+    await resetSession(page, context);
+    await page.goto(`${BASE_URL}/login?fresh=${Date.now()}`, { waitUntil: 'networkidle', timeout: 45000 });
+
+    const workspaceButton = page.getByRole('button', { name: 'Start using TruckOpti on this device' });
+    const buttonCount = await workspaceButton.count();
+
+    if (buttonCount === 0) {
+      return {
+        kind: 'login-local-workspace',
+        path: '/login',
+        viewport: viewport.label,
+        skipped: true,
+        skipReason: 'No local-workspace entry rendered (a cloud sign-in method is offered).',
+        passed: signals.pageErrors.length === 0,
+        consoleErrors: signals.consoleErrors,
+        pageErrors: signals.pageErrors,
+        failedResponses: signals.failedResponses,
+      };
+    }
+
+    // Keyboard flow: Tab to the workspace entry and activate it with Enter.
+    let focusedViaKeyboard = false;
+    for (let tab = 0; tab < 25; tab += 1) {
+      await page.keyboard.press('Tab');
+      const activeText = await page.evaluate(() => document.activeElement?.textContent ?? '');
+      if (activeText.includes('Start using TruckOpti on this device')) {
+        focusedViaKeyboard = true;
+        break;
+      }
+    }
+
+    await page.keyboard.press('Enter');
+    await page.waitForURL(/\/local-start/, { timeout: 15000 });
+
+    return {
+      kind: 'login-local-workspace',
+      path: '/login',
+      viewport: viewport.label,
+      finalUrl: page.url(),
+      focusedViaKeyboard,
+      passed:
+        focusedViaKeyboard &&
+        page.url().includes('/local-start') &&
+        signals.pageErrors.length === 0,
       consoleErrors: signals.consoleErrors,
       pageErrors: signals.pageErrors,
       failedResponses: signals.failedResponses,
@@ -470,12 +598,19 @@ async function main() {
       results.push(await collectPublicRouteResult(browser, route));
     }
 
+    for (const viewport of SURFACE_VIEWPORTS) {
+      for (const surface of LOGIN_SURFACES) {
+        results.push(await collectLoginSurfaceResult(browser, surface, viewport));
+      }
+    }
+
     for (const routePath of PROTECTED_ROUTES) {
       results.push(await collectProtectedRouteResult(browser, routePath));
     }
 
     results.push(await collectContactFallbackResult(browser));
     results.push(await collectAuthFallbackResult(browser));
+    results.push(await collectLocalWorkspaceEntryResult(browser, SURFACE_VIEWPORTS[0]));
     results.push(await collectDriverRegisterWizardResult(browser));
     results.push(await collectAgencyRegisterWizardResult(browser));
     results.push(await collectAuthServiceHealth());
