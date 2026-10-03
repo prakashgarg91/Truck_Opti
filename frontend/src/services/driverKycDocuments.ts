@@ -1,13 +1,16 @@
 /**
- * Client-side state machine for the driver "Documents & KYC Upload" screen.
+ * Client-side presentation helpers for the driver "Documents & KYC" screen.
  *
  * Terminology mirrors the admin "KYC Verification Detail" pairing screen
  * (Stitch screen d9fafd06c79345d2896c265eb12f6ea4): "Uploaded Documents",
  * "Pending review", "Review Needed", "Accepted", "Rejected".
  *
- * Uploads are simulated client-side until storage/backend wiring exists;
- * every transition is a pure function so the review pipeline can be unit
- * tested deterministically and later driven by real admin outcomes.
+ * Authority (TO-127): review outcomes (pending_review/rejected/accepted),
+ * submission and the locked "KYC Verified" state come ONLY from the
+ * server via the TO-126 contract (`driverKycApi.ts`). This module holds
+ * no ability to accept, reject, submit or complete a document — it only
+ * manages honest client-local overlay state (a transfer in flight, a
+ * validation error, retry) and merges fresh server state on top.
  */
 
 export const KYC_DOC_KINDS = ['rc_book', 'driving_license', 'aadhaar', 'truck_photo'] as const
@@ -16,11 +19,12 @@ export type KycDocKind = (typeof KYC_DOC_KINDS)[number]
 
 /**
  * pending       — not uploaded yet
- * uploading     — transfer in progress (progress 0-100)
+ * uploading     — transfer in flight (client-local, indeterminate; never
+ *                 carries a percentage)
  * pending_review— uploaded, awaiting admin verification ("Pending review")
  * rejected      — admin rejected with a reason ("Review Needed")
  * accepted      — admin approved ("Accepted")
- * error         — upload failed validation or transfer (retryable)
+ * error         — client validation or transfer failure (retryable)
  */
 export type KycDocStatus =
   | 'pending'
@@ -42,7 +46,7 @@ export interface KycDocument {
   fileName: string | null
   fileSizeBytes: number | null
   fileType: string | null
-  /** Upload progress 0-100; 0 when not uploading. */
+  /** Server-owned field; always 0 from the backend. Not rendered. */
   progress: number
   rejectionReason: string | null
   errorMessage: string | null
@@ -51,10 +55,10 @@ export interface KycDocument {
 
 export interface KycSubmissionState {
   docs: Record<KycDocKind, KycDocument>
-  /** Whole set handed to verification via the sticky CTA. */
+  /** Server-computed: every kind has an uploaded document. */
   submitted: boolean
   submittedAt: string | null
-  /** True once all four documents are accepted; the screen locks. */
+  /** Server-computed: every document accepted. The screen locks. */
   locked: boolean
   lockedAt: string | null
 }
@@ -147,6 +151,7 @@ function updateDoc(
   }
 }
 
+/** Client-local: the transfer for this document is in flight. */
 export function startUpload(
   state: KycSubmissionState,
   kind: KycDocKind,
@@ -170,44 +175,7 @@ export function startUpload(
   )
 }
 
-export function setUploadProgress(
-  state: KycSubmissionState,
-  kind: KycDocKind,
-  progress: number,
-  at: string = new Date().toISOString(),
-): KycSubmissionState {
-  const doc = state.docs[kind]
-  if (doc.status !== 'uploading') return state
-  const clamped = Math.max(0, Math.min(100, Math.round(progress)))
-  return updateDoc(state, kind, { progress: clamped }, at)
-}
-
-export function completeUpload(
-  state: KycSubmissionState,
-  kind: KycDocKind,
-  at: string = new Date().toISOString(),
-): KycSubmissionState {
-  const doc = state.docs[kind]
-  if (doc.status !== 'uploading') return state
-  return updateDoc(state, kind, { status: 'pending_review', progress: 100 }, at)
-}
-
-export function cancelUpload(
-  state: KycSubmissionState,
-  kind: KycDocKind,
-  at: string = new Date().toISOString(),
-): KycSubmissionState {
-  const doc = state.docs[kind]
-  if (doc.status !== 'uploading') return state
-  return updateDoc(
-    state,
-    kind,
-    { status: 'pending', progress: 0, fileName: null, fileSizeBytes: null, fileType: null },
-    at,
-  )
-}
-
-/** Upload-error path: validation failure or transfer failure; retryable. */
+/** Client-local failure: validation error or failed transfer; retryable. */
 export function failUpload(
   state: KycSubmissionState,
   kind: KycDocKind,
@@ -244,50 +212,42 @@ export function retryFromError(
   )
 }
 
-/** Admin review outcome: rejection with the reviewer's verbatim reason. */
-export function rejectDocument(
-  state: KycSubmissionState,
-  kind: KycDocKind,
-  reason: string,
-  at: string = new Date().toISOString(),
+/**
+ * Applies a fresh server-computed state on top of the local one. The
+ * server is authoritative for every document status, submission and the
+ * locked state — EXCEPT for documents whose transfer is still in flight
+ * locally (status 'uploading'), which would otherwise be clobbered by a
+ * concurrent refresh. `forceKinds` lists documents whose in-flight
+ * overlay should be dropped because their transfer just settled (the
+ * caller then adopts the server outcome verbatim).
+ */
+export function mergeServerState(
+  local: KycSubmissionState,
+  server: KycSubmissionState,
+  forceKinds: readonly KycDocKind[] = [],
 ): KycSubmissionState {
-  const doc = state.docs[kind]
-  if (doc.status === 'accepted' || doc.status === 'uploading' || doc.status === 'pending') {
-    return state
-  }
-  return updateDoc(state, kind, { status: 'rejected', rejectionReason: reason, progress: 0 }, at)
-}
-
-export function acceptDocument(
-  state: KycSubmissionState,
-  kind: KycDocKind,
-  at: string = new Date().toISOString(),
-): KycSubmissionState {
-  const doc = state.docs[kind]
-  if (doc.status !== 'pending_review' && doc.status !== 'rejected') return state
-  const next = updateDoc(
-    state,
-    kind,
-    { status: 'accepted', rejectionReason: null, errorMessage: null, progress: 100 },
-    at,
-  )
-  const allAccepted = KYC_DOC_KINDS.every((k) => next.docs[k].status === 'accepted')
-  if (allAccepted && !next.locked) {
-    return { ...next, locked: true, lockedAt: at }
-  }
-  return next
-}
-
-/** Mock review pipeline: approves everything currently awaiting review. */
-export function approvePendingReviews(
-  state: KycSubmissionState,
-  at: string = new Date().toISOString(),
-): KycSubmissionState {
-  let next = state
+  const docs = {} as Record<KycDocKind, KycDocument>
+  const forced = new Set(forceKinds)
   for (const kind of KYC_DOC_KINDS) {
-    next = acceptDocument(next, kind, at)
+    const inFlight = local.docs[kind].status === 'uploading' && !forced.has(kind)
+    docs[kind] = inFlight ? local.docs[kind] : server.docs[kind]
   }
-  return next
+  return {
+    docs,
+    submitted: server.submitted,
+    submittedAt: server.submittedAt,
+    locked: server.locked,
+    lockedAt: server.lockedAt,
+  }
+}
+
+/**
+ * Dev-only demo gating: the `?demo=midflow` fixture may fabricate a
+ * mid-flow snapshot in development builds and tests only. A production
+ * query string can never fabricate verification.
+ */
+export function demoQueryEnabled(dev: boolean, value: string | null): boolean {
+  return dev === true && value === 'midflow'
 }
 
 export function kycAcceptedCount(state: KycSubmissionState): number {
@@ -330,51 +290,81 @@ export function submitHelperText(state: KycSubmissionState): string | null {
   return `Upload all 4 documents to submit (${blockers.join(', ')})`
 }
 
-export function submitForVerification(
-  state: KycSubmissionState,
-  at: string = new Date().toISOString(),
-): KycSubmissionState {
-  if (!canSubmitForVerification(state)) return state
-  return { ...state, submitted: true, submittedAt: at }
+/** Authoritative one-line summary for the profile entry badge. */
+export type KycProfileSummary = {
+  tone: 'verified' | 'action' | 'progress'
+  label: string
 }
 
 /**
- * Snapshot matching the generated Stitch mock (screen
+ * Maps the server-computed state to the profile entry badge. Returns
+ * null when nothing has been uploaded yet (no claim to show) — callers
+ * must not invent a status when the backend is unreachable.
+ */
+export function kycProfileSummary(state: KycSubmissionState): KycProfileSummary | null {
+  if (state.locked) return { tone: 'verified', label: 'Verified' }
+  const rejected = KYC_DOC_KINDS.some((kind) => state.docs[kind].status === 'rejected')
+  if (rejected) return { tone: 'action', label: 'Action needed' }
+  const uploaded = KYC_DOC_KINDS.some(
+    (kind) => state.docs[kind].status === 'pending_review' || state.docs[kind].status === 'accepted',
+  )
+  if (uploaded) return { tone: 'progress', label: 'Pending review' }
+  return null
+}
+
+/**
+ * DEVELOPMENT/TEST FIXTURE ONLY (gated by demoQueryEnabled). Snapshot
+ * matching the generated Stitch mock (screen
  * e72905bab5794849b0fcb495b7c474bc): one document in each of the four
- * interactive states. Used by the `?demo=midflow` seed and tests.
+ * interactive states. Never reachable from a production query string.
  */
 export function createMidflowDemoState(now: Date = new Date()): KycSubmissionState {
   const at = (minutesAgo: number) => new Date(now.getTime() - minutesAgo * 60_000).toISOString()
   let s = createInitialKycState()
+  // Transfer in flight (client-local, indeterminate — no percentage).
   s = startUpload(
     s,
     'rc_book',
     { name: 'rc-book-original.pdf', sizeBytes: Math.round(2.4 * 1024 * 1024), type: 'application/pdf' },
     at(1),
   )
-  s = setUploadProgress(s, 'rc_book', 62, at(1))
-  s = startUpload(
+  // Rejected with the reviewer's reason (server outcome, mirrored).
+  s = updateDoc(
     s,
     'driving_license',
-    { name: 'dl_scan_front_01.jpg', sizeBytes: Math.round(1.1 * 1024 * 1024), type: 'image/jpeg' },
-    at(30),
+    {
+      status: 'rejected',
+      fileName: 'dl_scan_front_01.jpg',
+      fileSizeBytes: Math.round(1.1 * 1024 * 1024),
+      fileType: 'image/jpeg',
+      rejectionReason: 'Expiry date is cut off. Retake with the full license in frame.',
+    },
+    at(5),
   )
-  s = completeUpload(s, 'driving_license', at(29))
-  s = rejectDocument(s, 'driving_license', 'Expiry date is cut off. Retake with the full license in frame.', at(5))
-  s = startUpload(
+  // Awaiting review (server outcome, mirrored).
+  s = updateDoc(
     s,
     'aadhaar',
-    { name: 'aadhaar-combined.jpg', sizeBytes: Math.round(1.8 * 1024 * 1024), type: 'image/jpeg' },
+    {
+      status: 'pending_review',
+      fileName: 'aadhaar-combined.jpg',
+      fileSizeBytes: Math.round(1.8 * 1024 * 1024),
+      fileType: 'image/jpeg',
+    },
     at(2),
   )
-  s = completeUpload(s, 'aadhaar', at(2))
-  s = startUpload(
+  // Accepted by review (server outcome, mirrored).
+  s = updateDoc(
     s,
     'truck_photo',
-    { name: 'truck-view-mh12.jpg', sizeBytes: Math.round(3.1 * 1024 * 1024), type: 'image/jpeg' },
-    at(1440),
+    {
+      status: 'accepted',
+      fileName: 'truck-view-mh12.jpg',
+      fileSizeBytes: Math.round(3.1 * 1024 * 1024),
+      fileType: 'image/jpeg',
+      progress: 100,
+    },
+    at(120),
   )
-  s = completeUpload(s, 'truck_photo', at(1430))
-  s = acceptDocument(s, 'truck_photo', at(120))
   return s
 }

@@ -14,32 +14,30 @@ import {
   IdCard,
   Loader2,
   Lock,
+  RefreshCw,
   ScanLine,
   Send,
   ShieldCheck,
   Sun,
   Truck,
-  X,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { useAuthStore } from '../stores/authStore'
+import { getDocumentAccessUrl, getState, submit, uploadDocument } from '../services/driverKycApi'
 import {
   KYC_DOC_KINDS,
   KYC_DOC_META,
-  acceptDocument,
-  cancelUpload,
   canSubmitForVerification,
-  completeUpload,
   createInitialKycState,
   createMidflowDemoState,
+  demoQueryEnabled,
   failUpload,
   kycAcceptedCount,
   kycCompletionPercent,
+  mergeServerState,
   retryFromError,
-  setUploadProgress,
   startUpload,
-  submitForVerification,
   submitHelperText,
   validateUploadFile,
   type KycDocKind,
@@ -56,36 +54,37 @@ const KIND_ICONS: Record<KycDocKind, typeof Truck> = {
 
 const STATUS_PILL: Record<
   KycDocument['status'],
-  { label: (doc: KycDocument) => string; className: string; Icon: typeof Clock; spin?: boolean }
+  { label: string; className: string; Icon: typeof Clock; spin?: boolean }
 > = {
   pending: {
-    label: () => 'Pending',
+    label: 'Pending',
     className: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
     Icon: Clock,
   },
+  // Client-local transfer state — honest indeterminate wording, no invented percentage.
   uploading: {
-    label: (doc) => `Uploading ${doc.progress}%`,
+    label: 'Uploading…',
     className: 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300',
     Icon: Loader2,
     spin: true,
   },
   pending_review: {
-    label: () => 'Pending review',
+    label: 'Pending review',
     className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
     Icon: Clock,
   },
   rejected: {
-    label: () => 'Review Needed',
+    label: 'Review Needed',
     className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
     Icon: AlertTriangle,
   },
   accepted: {
-    label: () => 'Accepted',
+    label: 'Accepted',
     className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
     Icon: CheckCircle2,
   },
   error: {
-    label: () => 'Upload failed',
+    label: 'Upload failed',
     className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
     Icon: AlertTriangle,
   },
@@ -98,6 +97,10 @@ const KYC_TIPS = [
 ]
 
 const KYC_UPLOAD_ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf'
+
+const OFFLINE_MESSAGE = "You're offline. Documents can't be uploaded until you reconnect."
+
+type LoadPhase = 'loading' | 'ready' | 'error' | 'denied'
 
 function formatRelative(iso: string | null): string {
   if (!iso) return ''
@@ -122,7 +125,7 @@ function StatusPill({ doc }: { doc: KycDocument }) {
       className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${className}`}
     >
       <Icon className={`h-3.5 w-3.5 ${spin ? 'animate-spin' : ''}`} aria-hidden />
-      {label(doc)}
+      {label}
     </span>
   )
 }
@@ -179,21 +182,21 @@ function DocumentCard({
   doc,
   previewUrl,
   locked,
+  disabled,
   onFile,
-  onCancel,
   onRetry,
 }: {
   doc: KycDocument
   previewUrl?: string
   locked: boolean
+  disabled: boolean
   onFile: (kind: KycDocKind, file: File | undefined) => void
-  onCancel: (kind: KycDocKind) => void
   onRetry: (kind: KycDocKind) => void
 }) {
   const meta = KYC_DOC_META[doc.kind]
   const Icon = KIND_ICONS[doc.kind]
   const inputId = `kyc-upload-${doc.kind}`
-  const canModify = !locked
+  const canModify = !locked && !disabled
 
   const body = (() => {
     switch (doc.status) {
@@ -202,53 +205,39 @@ function DocumentCard({
           <div>
             <label
               htmlFor={inputId}
-              className="flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-primary-700 transition-colors hover:border-primary-400 hover:bg-primary-50/60 dark:border-slate-600 dark:bg-slate-900/40 dark:text-primary-300 dark:hover:border-primary-500/50"
+              className={`flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-primary-700 transition-colors dark:border-slate-600 dark:bg-slate-900/40 dark:text-primary-300 ${
+                canModify
+                  ? 'cursor-pointer hover:border-primary-400 hover:bg-primary-50/60 dark:hover:border-primary-500/50'
+                  : 'cursor-not-allowed opacity-60'
+              }`}
             >
               <Camera className="h-4 w-4" aria-hidden />
               Take photo or upload
             </label>
-            <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-              {meta.helper}
-            </p>
+            {disabled && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{OFFLINE_MESSAGE}</p>}
+            {!disabled && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                {meta.helper}
+              </p>
+            )}
           </div>
         )
       case 'uploading':
+        // Honest indeterminate transfer: the storage client exposes no
+        // measurable progress or abort for this request, so no percentage
+        // and no cancel button are rendered — only the real transfer state.
         return (
-          <div className="flex items-center gap-4">
-            <div className="relative h-16 w-16 shrink-0" role="img" aria-label={`Uploading ${doc.progress}%`}>
-              <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
-                <circle cx="32" cy="32" r="27" fill="none" strokeWidth="6" className="stroke-slate-200 dark:stroke-slate-700" />
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="27"
-                  fill="none"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 27}
-                  strokeDashoffset={2 * Math.PI * 27 * (1 - doc.progress / 100)}
-                  className="stroke-primary-600 transition-[stroke-dashoffset] duration-200"
-                />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-slate-200">
-                {doc.progress}%
-              </span>
+          <div className="flex items-center gap-4" aria-live="polite">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary-50 dark:bg-primary-900/40">
+              <Loader2 className="h-7 w-7 animate-spin text-primary-600 dark:text-primary-300" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                {doc.fileName} · {formatSize(doc.fileSizeBytes)}
+                {doc.fileName} {doc.fileSizeBytes ? `· ${formatSize(doc.fileSizeBytes)}` : ''}
               </p>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Upload in progress…</p>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Uploading securely…</p>
             </div>
-            <button
-              type="button"
-              onClick={() => onCancel(doc.kind)}
-              aria-label={`Cancel ${meta.title} upload`}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-300 text-slate-500 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700"
-            >
-              <X className="h-4 w-4" aria-hidden />
-            </button>
           </div>
         )
       case 'pending_review':
@@ -353,7 +342,7 @@ function DocumentCard({
         accept={KYC_UPLOAD_ACCEPT}
         className="sr-only"
         aria-label={`Upload ${meta.title}`}
-        disabled={locked}
+        disabled={locked || disabled || doc.status === 'uploading'}
         onChange={(event) => {
           onFile(doc.kind, event.target.files?.[0])
           event.target.value = ''
@@ -363,57 +352,123 @@ function DocumentCard({
   )
 }
 
+function isImageType(type: string | null): boolean {
+  return typeof type === 'string' && type.startsWith('image/')
+}
+
 export default function DriverKycPage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const isDemo = searchParams.get('demo') === 'midflow'
+  // Demo fixtures are a development/testing aid only; a production query
+  // string can never fabricate verification states.
+  const isDemo = demoQueryEnabled(import.meta.env.DEV, searchParams.get('demo'))
 
-  const [state, setState] = useState<KycSubmissionState>(() =>
-    isDemo ? createMidflowDemoState() : createInitialKycState(),
-  )
-  const stateRef = useRef(state)
-  useEffect(() => {
-    stateRef.current = state
-  }, [state])
-
-  const uploadTimers = useRef(new Map<KycDocKind, ReturnType<typeof setInterval>>())
-  const reviewTimeouts = useRef<ReturnType<typeof setTimeout>[]>([])
-  const [previews, setPreviews] = useState<Partial<Record<KycDocKind, string>>>({})
+  const [state, setState] = useState<KycSubmissionState>(createInitialKycState)
+  const [phase, setPhase] = useState<LoadPhase>('loading')
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
+  const [online, setOnline] = useState(() => navigator.onLine)
+  const [submitting, setSubmitting] = useState(false)
+  /** Short-lived signed previews for documents stored on the server. */
+  const [signedPreviews, setSignedPreviews] = useState<Partial<Record<KycDocKind, string>>>({})
+  /** Render mirror of the local object-URL previews for the transfer in flight. */
+  const [blobPreviews, setBlobPreviews] = useState<Partial<Record<KycDocKind, string>>>({})
+  /** Authoritative registry of live object URLs so they are always revoked. */
+  const blobUrlsRef = useRef<Partial<Record<KycDocKind, string>>>({})
 
   useEffect(() => {
     document.title = 'Documents & KYC - TruckOpti'
   }, [])
 
   useEffect(() => {
-    const timers = uploadTimers.current
-    const timeouts = reviewTimeouts.current
+    const goOnline = () => setOnline(true)
+    const goOffline = () => setOnline(false)
+    window.addEventListener('online', goOnline)
+    window.addEventListener('offline', goOffline)
     return () => {
-      timers.forEach((timer) => clearInterval(timer))
-      timers.clear()
-      timeouts.forEach((timeout) => clearTimeout(timeout))
+      window.removeEventListener('online', goOnline)
+      window.removeEventListener('offline', goOffline)
     }
   }, [])
 
-  // Revoke blob URLs when replaced or on unmount.
+  // Load the persisted, server-authoritative state on mount/navigation.
   useEffect(() => {
+    if (isDemo) {
+      setState(createMidflowDemoState())
+      setPhase('ready')
+      setLoadError(null)
+      return
+    }
+    if (!user) {
+      setPhase('denied')
+      return
+    }
+    let active = true
+    setPhase('loading')
+    getState()
+      .then((next) => {
+        if (!active) return
+        setState(next)
+        setPhase('ready')
+        setLoadError(null)
+      })
+      .catch((error: unknown) => {
+        if (!active) return
+        setLoadError(error instanceof Error ? error.message : 'Could not load your KYC status.')
+        setPhase('error')
+      })
     return () => {
-      for (const url of Object.values(previews)) {
+      active = false
+    }
+  }, [isDemo, user, reloadToken])
+
+  // Short-lived signed previews for documents stored in the private bucket.
+  useEffect(() => {
+    if (phase !== 'ready' || isDemo) return
+    let active = true
+    for (const kind of KYC_DOC_KINDS) {
+      const doc = state.docs[kind]
+      if (!isImageType(doc.fileType) || doc.status === 'pending' || doc.status === 'error' || doc.status === 'uploading') {
+        continue
+      }
+      getDocumentAccessUrl(kind)
+        .then((access) => {
+          if (active) setSignedPreviews((prev) => ({ ...prev, [kind]: access.url }))
+        })
+        .catch(() => {
+          // Honest fallback: keep the file icon instead of a broken image.
+          if (active) {
+            setSignedPreviews((prev) => {
+              if (!(kind in prev)) return prev
+              const next = { ...prev }
+              delete next[kind]
+              return next
+            })
+          }
+        })
+    }
+    return () => {
+      active = false
+    }
+  }, [state, phase, isDemo])
+
+  // Revoke local object URLs on unmount.
+  useEffect(() => {
+    const registry = blobUrlsRef
+    return () => {
+      for (const url of Object.values(registry.current)) {
         if (url) URL.revokeObjectURL(url)
       }
     }
-  }, [previews])
-
-  const stopUploadTimer = useCallback((kind: KycDocKind) => {
-    const timer = uploadTimers.current.get(kind)
-    if (timer) {
-      clearInterval(timer)
-      uploadTimers.current.delete(kind)
-    }
   }, [])
 
-  const clearPreview = useCallback((kind: KycDocKind) => {
-    setPreviews((prev) => {
+  const clearBlobPreview = useCallback((kind: KycDocKind) => {
+    const url = blobUrlsRef.current[kind]
+    if (!url) return
+    URL.revokeObjectURL(url)
+    delete blobUrlsRef.current[kind]
+    setBlobPreviews((prev) => {
       if (!(kind in prev)) return prev
       const next = { ...prev }
       delete next[kind]
@@ -421,17 +476,10 @@ export default function DriverKycPage() {
     })
   }, [])
 
-  useEffect(() => {
-    for (const kind of KYC_DOC_KINDS) {
-      if (state.docs[kind].status !== 'uploading') stopUploadTimer(kind)
-    }
-  }, [state, stopUploadTimer])
-
   const handleFile = useCallback(
     (kind: KycDocKind, file: File | undefined) => {
       if (!file) return
-      const current = stateRef.current
-      if (current.locked || current.submitted) return
+      if (isDemo || phase !== 'ready' || !online || state.locked || submitting) return
 
       const validationError = validateUploadFile(file)
       if (validationError) {
@@ -440,67 +488,66 @@ export default function DriverKycPage() {
         return
       }
 
-      clearPreview(kind)
+      clearBlobPreview(kind)
+      if (isImageType(file.type)) {
+        const url = URL.createObjectURL(file)
+        blobUrlsRef.current[kind] = url
+        setBlobPreviews((prev) => ({ ...prev, [kind]: url }))
+      }
       setState((s) => startUpload(s, kind, { name: file.name, sizeBytes: file.size, type: file.type }))
-      stopUploadTimer(kind)
 
-      const timer = setInterval(() => {
-        const doc = stateRef.current.docs[kind]
-        if (doc.status !== 'uploading') {
-          stopUploadTimer(kind)
-          return
-        }
-        const next = Math.min(100, doc.progress + 8 + Math.round(Math.random() * 9))
-        if (next >= 100) {
-          stopUploadTimer(kind)
-          if (file.type.startsWith('image/')) {
-            const url = URL.createObjectURL(file)
-            setPreviews((prev) => ({ ...prev, [kind]: url }))
-          }
-          setState((s) => completeUpload(s, kind))
-        } else {
-          setState((s) => setUploadProgress(s, kind, next))
-        }
-      }, 180)
-      uploadTimers.current.set(kind, timer)
+      uploadDocument(kind, file)
+        .then((next) => {
+          // Transfer settled: adopt the server outcome verbatim.
+          setState((s) => mergeServerState(s, next, [kind]))
+          toast.success(`${KYC_DOC_META[kind].title} uploaded — awaiting review`)
+        })
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'The document upload failed. Please try again.'
+          setState((s) => failUpload(s, kind, message))
+          toast.error(message)
+        })
+        .finally(() => {
+          clearBlobPreview(kind)
+        })
     },
-    [clearPreview, stopUploadTimer],
-  )
-
-  const handleCancel = useCallback(
-    (kind: KycDocKind) => {
-      stopUploadTimer(kind)
-      setState((s) => cancelUpload(s, kind))
-    },
-    [stopUploadTimer],
+    [clearBlobPreview, isDemo, online, phase, state.locked, submitting],
   )
 
   const handleRetry = useCallback((kind: KycDocKind) => {
     setState((s) => retryFromError(s, kind))
   }, [])
 
-  const handleSubmit = useCallback(() => {
-    const current = stateRef.current
-    if (!canSubmitForVerification(current)) return
-    setState((s) => submitForVerification(s))
-
-    const pendingKinds = KYC_DOC_KINDS.filter((k) => current.docs[k].status === 'pending_review')
-    pendingKinds.forEach((kind, index) => {
-      const timeout = setTimeout(() => {
-        reviewTimeouts.current = reviewTimeouts.current.filter((t) => t !== timeout)
-        setState((s) => acceptDocument(s, kind))
-        if (index === pendingKinds.length - 1) {
-          toast.success('All documents verified — KYC complete')
-        }
-      }, 900 + index * 700)
-      reviewTimeouts.current.push(timeout)
-    })
+  const handleReload = useCallback(() => {
+    setReloadToken((token) => token + 1)
   }, [])
+
+  const handleSubmit = useCallback(() => {
+    if (isDemo || !online || submitting) return
+    if (!canSubmitForVerification(state)) return
+    setSubmitting(true)
+    submit()
+      .then((next) => {
+        setState((s) => mergeServerState(s, next, KYC_DOC_KINDS))
+        toast.success('Submitted for verification')
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'The submission failed. Please try again.'
+        toast.error(message)
+      })
+      .finally(() => setSubmitting(false))
+  }, [isDemo, online, state, submitting])
 
   const accepted = kycAcceptedCount(state)
   const percent = kycCompletionPercent(state)
-  const canSubmit = canSubmitForVerification(state)
+  const canSubmit = canSubmitForVerification(state) && !submitting
   const helper = submitHelperText(state)
+  const showCta = phase === 'ready' && !isDemo && user && !state.locked
+
+  const previewFor = useCallback(
+    (kind: KycDocKind) => blobPreviews[kind] ?? signedPreviews[kind],
+    [blobPreviews, signedPreviews],
+  )
 
   const driverRef = useMemo(() => {
     const raw = (user?.id ?? '').replace(/-/g, '').slice(0, 6).toUpperCase()
@@ -510,6 +557,8 @@ export default function DriverKycPage() {
   const lockedAtLabel = state.lockedAt
     ? new Date(state.lockedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
     : null
+
+  const inputsDisabled = !online || phase !== 'ready'
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -526,6 +575,13 @@ export default function DriverKycPage() {
           </button>
           <h1 className="text-lg font-bold text-slate-900 dark:text-white">Documents &amp; KYC</h1>
         </div>
+
+        {!online && phase === 'ready' && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
+            <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+            {OFFLINE_MESSAGE}
+          </div>
+        )}
 
         {/* Header + progress summary */}
         <section aria-labelledby="kyc-header-title" className="card mt-4 p-5">
@@ -551,59 +607,92 @@ export default function DriverKycPage() {
 
           {isDemo && (
             <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-              Demo preview — mid-flow snapshot from the generated design.
+              Dev preview — fabricated mid-flow snapshot (development builds only). Actions are disabled.
             </p>
           )}
 
-          {state.locked ? (
-            <div className="mt-4 flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-900/20">
-              <ShieldCheck className="h-8 w-8 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden />
-              <div>
-                <p className="flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-300">
-                  KYC Verified <Lock className="h-3.5 w-3.5" aria-hidden />
-                </p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                  All 4 documents accepted{lockedAtLabel ? ` · ${lockedAtLabel}` : ''}
-                </p>
+          {phase === 'loading' && (
+            <div className="mt-4 flex items-center gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/60">
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-slate-400" aria-hidden />
+              <p className="text-sm text-slate-500 dark:text-slate-400">Loading your KYC status…</p>
+            </div>
+          )}
+
+          {phase === 'error' && (
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-900/20">
+              <p className="flex items-start gap-2 text-sm text-red-700 dark:text-red-300">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                {loadError ?? 'Could not load your KYC status.'}
+              </p>
+              <div className="mt-3">
+                <SecondaryButton onClick={handleReload} ariaLabel="Retry loading KYC status">
+                  <RefreshCw className="h-4 w-4" aria-hidden /> Try again
+                </SecondaryButton>
               </div>
             </div>
-          ) : (
-            <div className="mt-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/60">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-semibold text-slate-700 dark:text-slate-200">
-                  {accepted} of 4 documents accepted
-                </span>
-                <span className="shrink-0 pl-2 text-slate-500 dark:text-slate-400">{percent}% Completed</span>
-              </div>
-              <div
-                className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
-                role="progressbar"
-                aria-valuenow={percent}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label="KYC completion"
-              >
-                <div className="h-full rounded-full bg-primary-600 transition-all duration-300" style={{ width: `${percent}%` }} />
-              </div>
-              <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <Lock className="h-3.5 w-3.5" aria-hidden /> Jobs unlock once all 4 are approved.
+          )}
+
+          {phase === 'denied' && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+              <p className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                Sign in as a driver to view or upload KYC documents.
               </p>
             </div>
           )}
+
+          {phase === 'ready' &&
+            (state.locked ? (
+              <div className="mt-4 flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-900/20">
+                <ShieldCheck className="h-8 w-8 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden />
+                <div>
+                  <p className="flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-300">
+                    KYC Verified <Lock className="h-3.5 w-3.5" aria-hidden />
+                  </p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                    All 4 documents accepted{lockedAtLabel ? ` · ${lockedAtLabel}` : ''}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">
+                    {accepted} of 4 documents accepted
+                  </span>
+                  <span className="shrink-0 pl-2 text-slate-500 dark:text-slate-400">{percent}% Completed</span>
+                </div>
+                <div
+                  className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                  role="progressbar"
+                  aria-valuenow={percent}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="KYC completion"
+                >
+                  <div className="h-full rounded-full bg-primary-600 transition-all duration-300" style={{ width: `${percent}%` }} />
+                </div>
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <Lock className="h-3.5 w-3.5" aria-hidden /> Jobs unlock once all 4 are approved.
+                </p>
+              </div>
+            ))}
         </section>
 
         {/* Photo-quality guidance */}
-        <section aria-label="Photo quality tips" className="mt-4 grid grid-cols-3 gap-2">
-          {KYC_TIPS.map(({ Icon, label }) => (
-            <div
-              key={label}
-              className="flex flex-col items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2 py-3 text-center dark:border-slate-700 dark:bg-slate-800"
-            >
-              <Icon className="h-5 w-5 text-primary-600 dark:text-primary-300" aria-hidden />
-              <span className="text-[11px] font-medium leading-tight text-slate-600 dark:text-slate-300">{label}</span>
-            </div>
-          ))}
-        </section>
+        {phase === 'ready' && (
+          <section aria-label="Photo quality tips" className="mt-4 grid grid-cols-3 gap-2">
+            {KYC_TIPS.map(({ Icon, label }) => (
+              <div
+                key={label}
+                className="flex flex-col items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2 py-3 text-center dark:border-slate-700 dark:bg-slate-800"
+              >
+                <Icon className="h-5 w-5 text-primary-600 dark:text-primary-300" aria-hidden />
+                <span className="text-[11px] font-medium leading-tight text-slate-600 dark:text-slate-300">{label}</span>
+              </div>
+            ))}
+          </section>
+        )}
 
         {/* Uploaded Documents */}
         <section aria-labelledby="kyc-docs-title" className="mt-6">
@@ -614,17 +703,29 @@ export default function DriverKycPage() {
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">4 Requirements</span>
           </div>
           <div className="mt-3 space-y-3">
-            {KYC_DOC_KINDS.map((kind) => (
-              <DocumentCard
-                key={kind}
-                doc={state.docs[kind]}
-                previewUrl={previews[kind]}
-                locked={state.locked}
-                onFile={handleFile}
-                onCancel={handleCancel}
-                onRetry={handleRetry}
-              />
-            ))}
+            {phase !== 'ready' ? (
+              <>
+                {[0, 1, 2, 3].map((index) => (
+                  <div
+                    key={index}
+                    aria-hidden
+                    className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-white/60 dark:border-slate-700 dark:bg-slate-800/60"
+                  />
+                ))}
+              </>
+            ) : (
+              KYC_DOC_KINDS.map((kind) => (
+                <DocumentCard
+                  key={kind}
+                  doc={state.docs[kind]}
+                  previewUrl={previewFor(kind)}
+                  locked={state.locked || isDemo}
+                  disabled={inputsDisabled || isDemo}
+                  onFile={handleFile}
+                  onRetry={handleRetry}
+                />
+              ))
+            )}
           </div>
         </section>
 
@@ -635,12 +736,25 @@ export default function DriverKycPage() {
       </div>
 
       {/* Sticky bottom CTA */}
-      {!state.locked && (
+      {showCta && (
         <div className="sticky bottom-16 z-20 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur safe-area-inset-bottom dark:border-slate-700 dark:bg-slate-800/95 md:bottom-0 md:px-8">
           <div className="mx-auto w-full max-w-md md:max-w-2xl">
-            <button type="button" onClick={handleSubmit} disabled={!canSubmit} className="btn btn-primary w-full">
-              <Send className="h-4 w-4" aria-hidden />
-              {state.submitted ? 'Submitted — under review' : 'Submit for verification'}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!canSubmit || !online}
+              className="btn btn-primary w-full"
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Send className="h-4 w-4" aria-hidden />
+              )}
+              {submitting
+                ? 'Submitting…'
+                : state.submitted
+                  ? 'Submitted — under review'
+                  : 'Submit for verification'}
             </button>
             {helper && (
               <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400" aria-live="polite">

@@ -16,6 +16,11 @@ import {
   Wallet,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { getState } from '../services/driverKycApi'
+import {
+  kycProfileSummary,
+  type KycProfileSummary,
+} from '../services/driverKycDocuments'
 import { driverSupabaseApi, type DriverProfile } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
@@ -34,6 +39,13 @@ const STATUS_STYLES: Record<DriverProfile['status'], string> = {
   approved: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   rejected: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
   suspended: 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+}
+
+/** Server-authoritative KYC badge tones for the profile entry. */
+const KYC_SUMMARY_STYLES: Record<KycProfileSummary['tone'], string> = {
+  verified: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  action: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  progress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
 }
 
 function InfoCard({
@@ -88,10 +100,32 @@ export default function DriverProfilePage() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState<DriverProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [kycSummary, setKycSummary] = useState<KycProfileSummary | null>(null)
 
   useEffect(() => {
     document.title = 'Driver Profile - TruckOpti'
   }, [])
+
+  // Authoritative KYC status for the "Documents & KYC" entry. When the
+  // backend is unreachable (offline/local mode) no badge is shown rather
+  // than an invented one.
+  useEffect(() => {
+    if (!user?.id) {
+      setKycSummary(null)
+      return
+    }
+    let active = true
+    getState()
+      .then((state) => {
+        if (active) setKycSummary(kycProfileSummary(state))
+      })
+      .catch(() => {
+        if (active) setKycSummary(null)
+      })
+    return () => {
+      active = false
+    }
+  }, [user?.id])
 
   useEffect(() => {
     async function loadProfile() {
@@ -310,6 +344,14 @@ export default function DriverProfilePage() {
                     <span className="mt-0.5 block text-sm text-slate-500 dark:text-slate-400">
                       Upload RC, licence, Aadhaar and truck photo for verification
                     </span>
+                    {kycSummary && (
+                      <span
+                        className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${KYC_SUMMARY_STYLES[kycSummary.tone]}`}
+                      >
+                        <ShieldCheck className="h-3 w-3" aria-hidden />
+                        {kycSummary.label}
+                      </span>
+                    )}
                   </span>
                   <ChevronRight className="h-5 w-5 shrink-0 text-primary-600 dark:text-primary-300" />
                 </button>

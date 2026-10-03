@@ -3,35 +3,52 @@ import { describe, expect, it } from 'vitest'
 import {
     KYC_DOC_KINDS,
     MAX_KYC_UPLOAD_BYTES,
-    acceptDocument,
-    approvePendingReviews,
-    cancelUpload,
     canSubmitForVerification,
-    completeUpload,
     createInitialKycState,
     createMidflowDemoState,
+    demoQueryEnabled,
     failUpload,
     kycAcceptedCount,
     kycCompletionPercent,
+    kycProfileSummary,
     kycSubmitBlockers,
-    rejectDocument,
+    mergeServerState,
     retryFromError,
-    setUploadProgress,
     startUpload,
-    submitForVerification,
     submitHelperText,
     validateUploadFile,
+    type KycDocKind,
+    type KycDocument,
+    type KycSubmissionState,
 } from './driverKycDocuments'
 
 const AT = '2026-09-19T10:00:00.000Z'
 
-function uploadAll(state = createInitialKycState()) {
-    let next = state
+/** Builds a server-authoritative state (what driverKycApi.normalizeKycState returns). */
+function serverState(
+    overrides: Partial<Record<KycDocKind, Partial<KycDocument>>> = {},
+    flags: Partial<Pick<KycSubmissionState, 'submitted' | 'locked' | 'submittedAt' | 'lockedAt'>> = {},
+): KycSubmissionState {
+    const state = createInitialKycState()
     for (const kind of KYC_DOC_KINDS) {
-        next = startUpload(next, kind, { name: `${kind}.jpg`, sizeBytes: 1024, type: 'image/jpeg' }, AT)
-        next = completeUpload(next, kind, AT)
+        if (overrides[kind]) {
+            state.docs[kind] = {
+                ...state.docs[kind],
+                fileName: `${kind}.jpg`,
+                fileSizeBytes: 1024,
+                fileType: 'image/jpeg',
+                updatedAt: AT,
+                ...overrides[kind],
+            }
+        }
     }
-    return next
+    return { ...state, ...flags }
+}
+
+function uploadedAll(status: KycDocument['status'] = 'pending_review'): KycSubmissionState {
+    return serverState(
+        Object.fromEntries(KYC_DOC_KINDS.map((kind) => [kind, { status }])) as Partial<Record<KycDocKind, Partial<KycDocument>>>,
+    )
 }
 
 describe('driverKycDocuments validation', () => {
@@ -51,8 +68,8 @@ describe('driverKycDocuments validation', () => {
     })
 })
 
-describe('driverKycDocuments upload lifecycle', () => {
-    it('starts from four pending documents with no submission', () => {
+describe('driverKycDocuments client-local overlays', () => {
+    it('starts from four pending documents with nothing submitted or locked', () => {
         const state = createInitialKycState()
         expect(Object.keys(state.docs)).toHaveLength(4)
         expect(kycAcceptedCount(state)).toBe(0)
@@ -60,36 +77,16 @@ describe('driverKycDocuments upload lifecycle', () => {
         expect(state.locked).toBe(false)
     })
 
-    it('moves a document pending → uploading → pending_review', () => {
-        let state = createInitialKycState()
-        state = startUpload(state, 'rc_book', { name: 'rc.pdf', sizeBytes: 2048, type: 'application/pdf' }, AT)
+    it('marks a transfer in flight with progress 0 — never a percentage', () => {
+        const state = startUpload(
+            createInitialKycState(),
+            'rc_book',
+            { name: 'rc.pdf', sizeBytes: 2048, type: 'application/pdf' },
+            AT,
+        )
         expect(state.docs.rc_book.status).toBe('uploading')
         expect(state.docs.rc_book.progress).toBe(0)
-
-        state = setUploadProgress(state, 'rc_book', 62, AT)
-        expect(state.docs.rc_book.progress).toBe(62)
-
-        state = completeUpload(state, 'rc_book', AT)
-        expect(state.docs.rc_book.status).toBe('pending_review')
-        expect(state.docs.rc_book.progress).toBe(100)
         expect(state.docs.rc_book.fileName).toBe('rc.pdf')
-    })
-
-    it('clamps progress to 0-100 and ignores progress on non-uploading docs', () => {
-        let state = createInitialKycState()
-        state = setUploadProgress(state, 'rc_book', 250, AT)
-        expect(state.docs.rc_book.status).toBe('pending')
-        state = startUpload(state, 'rc_book', { name: 'rc.pdf', sizeBytes: 1, type: 'image/png' }, AT)
-        state = setUploadProgress(state, 'rc_book', 150, AT)
-        expect(state.docs.rc_book.progress).toBe(100)
-    })
-
-    it('cancel returns an uploading document to pending with no file', () => {
-        let state = createInitialKycState()
-        state = startUpload(state, 'aadhaar', { name: 'a.jpg', sizeBytes: 10, type: 'image/jpeg' }, AT)
-        state = cancelUpload(state, 'aadhaar', AT)
-        expect(state.docs.aadhaar.status).toBe('pending')
-        expect(state.docs.aadhaar.fileName).toBeNull()
     })
 
     it('records upload errors and clears them on retry', () => {
@@ -100,49 +97,113 @@ describe('driverKycDocuments upload lifecycle', () => {
         state = retryFromError(state, 'truck_photo', AT)
         expect(state.docs.truck_photo.status).toBe('pending')
         expect(state.docs.truck_photo.errorMessage).toBeNull()
+        expect(state.docs.truck_photo.fileName).toBeNull()
     })
 
-    it('re-uploading a rejected document clears the rejection reason', () => {
-        let state = uploadAll()
-        state = rejectDocument(state, 'driving_license', 'Blurry scan', AT)
-        expect(state.docs.driving_license.status).toBe('rejected')
-        state = startUpload(state, 'driving_license', { name: 'dl2.jpg', sizeBytes: 10, type: 'image/jpeg' }, AT)
-        expect(state.docs.driving_license.status).toBe('uploading')
-        expect(state.docs.driving_license.rejectionReason).toBeNull()
-    })
-})
-
-describe('driverKycDocuments review pipeline', () => {
-    it('keeps completion at 25% with one accepted document', () => {
-        let state = uploadAll()
-        state = acceptDocument(state, 'truck_photo', AT)
-        expect(kycAcceptedCount(state)).toBe(1)
-        expect(kycCompletionPercent(state)).toBe(25)
+    it('never lets client-local transitions accept, reject, submit or lock a document', () => {
+        // Regression for TO-127: the only paths that once fabricated
+        // acceptance (acceptDocument / approvePendingReviews / submit timers)
+        // no longer exist; everything below is client-local overlay state.
+        let state = createInitialKycState()
+        for (const kind of KYC_DOC_KINDS) {
+            state = startUpload(state, kind, { name: `${kind}.jpg`, sizeBytes: 10, type: 'image/jpeg' }, AT)
+            state = failUpload(state, kind, 'boom', AT)
+            state = retryFromError(state, kind, AT)
+        }
+        expect(KYC_DOC_KINDS.every((kind) => state.docs[kind].status === 'pending')).toBe(true)
+        expect(state.submitted).toBe(false)
         expect(state.locked).toBe(false)
     })
 
-    it('locks the submission only when all four documents are accepted', () => {
-        let state = uploadAll()
-        state = approvePendingReviews(state, AT)
-        expect(kycAcceptedCount(state)).toBe(4)
-        expect(kycCompletionPercent(state)).toBe(100)
-        expect(state.locked).toBe(true)
-        expect(state.lockedAt).toBe(AT)
+    it('is a no-op once the server locked the state', () => {
+        const locked = serverState(
+            Object.fromEntries(KYC_DOC_KINDS.map((kind) => [kind, { status: 'accepted' }])) as Partial<Record<KycDocKind, Partial<KycDocument>>>,
+            { locked: true, lockedAt: AT },
+        )
+        expect(startUpload(locked, 'rc_book', { name: 'x.jpg', sizeBytes: 1, type: 'image/jpeg' }, AT)).toBe(locked)
+        expect(failUpload(locked, 'rc_book', 'boom', AT)).toBe(locked)
     })
 
-    it('allows a rejected document to be accepted after re-upload', () => {
-        let state = uploadAll()
-        state = rejectDocument(state, 'driving_license', 'Expiry cut off', AT)
-        state = startUpload(state, 'driving_license', { name: 'dl2.jpg', sizeBytes: 10, type: 'image/jpeg' }, AT)
-        state = completeUpload(state, 'driving_license', AT)
-        state = acceptDocument(state, 'driving_license', AT)
-        expect(state.docs.driving_license.status).toBe('accepted')
+    it('does not mutate the previous state (pure transitions)', () => {
+        const before = startUpload(
+            createInitialKycState(),
+            'aadhaar',
+            { name: 'a.jpg', sizeBytes: 10, type: 'image/jpeg' },
+            AT,
+        )
+        const snapshot = JSON.stringify(before)
+        failUpload(before, 'rc_book', 'boom', AT)
+        retryFromError(before, 'aadhaar', AT)
+        expect(JSON.stringify(before)).toBe(snapshot)
+    })
+})
+
+describe('mergeServerState', () => {
+    it('adopts the server outcome for every settled document', () => {
+        const local = startUpload(
+            createInitialKycState(),
+            'rc_book',
+            { name: 'rc.pdf', sizeBytes: 10, type: 'application/pdf' },
+            AT,
+        )
+        const server = uploadedAll('pending_review')
+
+        const merged = mergeServerState(local, server, ['rc_book'])
+
+        expect(KYC_DOC_KINDS.every((kind) => merged.docs[kind].status === 'pending_review')).toBe(true)
+        expect(merged.docs.rc_book.fileName).toBe('rc_book.jpg')
     })
 
-    it('rejectDocument is a no-op for documents without an upload under review', () => {
-        let state = createInitialKycState()
-        state = rejectDocument(state, 'rc_book', 'nope', AT)
-        expect(state.docs.rc_book.status).toBe('pending')
+    it('preserves an in-flight transfer when a concurrent refresh arrives', () => {
+        const local = startUpload(
+            createInitialKycState(),
+            'aadhaar',
+            { name: 'aadhaar.jpg', sizeBytes: 10, type: 'image/jpeg' },
+            AT,
+        )
+        const server = serverState({
+            aadhaar: { status: 'pending_review' },
+        })
+
+        const merged = mergeServerState(local, server)
+
+        expect(merged.docs.aadhaar.status).toBe('uploading')
+        expect(merged.docs.aadhaar.fileName).toBe('aadhaar.jpg')
+        expect(merged.docs.rc_book.status).toBe('pending')
+        expect(merged.submitted).toBe(false)
+    })
+
+    it('propagates server-computed submission and locked flags only', () => {
+        const server = uploadedAll('accepted')
+        server.submitted = true
+        server.submittedAt = AT
+        server.locked = true
+        server.lockedAt = AT
+
+        const merged = mergeServerState(createInitialKycState(), server)
+
+        expect(merged.submitted).toBe(true)
+        expect(merged.locked).toBe(true)
+        expect(merged.lockedAt).toBe(AT)
+        expect(KYC_DOC_KINDS.every((kind) => merged.docs[kind].status === 'accepted')).toBe(true)
+    })
+
+    it('keeps the KYC Verified state strictly server-owned', () => {
+        // A locked server payload is the only way locked becomes true; a
+        // locally uploading document cannot flip it.
+        const local = startUpload(
+            createInitialKycState(),
+            'truck_photo',
+            { name: 't.jpg', sizeBytes: 10, type: 'image/jpeg' },
+            AT,
+        )
+        const server = uploadedAll('accepted')
+        server.locked = true
+        server.lockedAt = AT
+
+        const merged = mergeServerState(local, server)
+        expect(merged.locked).toBe(true)
+        expect(merged.docs.truck_photo.status).toBe('uploading')
     })
 })
 
@@ -151,50 +212,93 @@ describe('driverKycDocuments submission gate', () => {
         const state = createInitialKycState()
         expect(canSubmitForVerification(state)).toBe(false)
         expect(submitHelperText(state)).toBe('Upload all 4 documents to submit (4 not uploaded)')
-        expect(submitForVerification(state, AT)).toBe(state)
     })
 
     it('names rejected and uploading documents as blockers like the generated design', () => {
-        let state = uploadAll()
-        state = rejectDocument(state, 'driving_license', 'Expiry cut off', AT)
-        state = startUpload(state, 'rc_book', { name: 'rc.pdf', sizeBytes: 10, type: 'application/pdf' }, AT)
-        state = setUploadProgress(state, 'rc_book', 40, AT)
-        expect(kycSubmitBlockers(state)).toEqual(['1 rejected', '1 uploading'])
-        expect(submitHelperText(state)).toBe('Upload all 4 documents to submit (1 rejected, 1 uploading)')
-        expect(canSubmitForVerification(state)).toBe(false)
+        const state = serverState({
+            driving_license: { status: 'rejected', rejectionReason: 'Expiry cut off' },
+            aadhaar: { status: 'pending_review' },
+            truck_photo: { status: 'pending_review' },
+        })
+        const withInFlight = startUpload(
+            state,
+            'rc_book',
+            { name: 'rc.pdf', sizeBytes: 10, type: 'application/pdf' },
+            AT,
+        )
+        expect(kycSubmitBlockers(withInFlight)).toEqual(['1 rejected', '1 uploading'])
+        expect(submitHelperText(withInFlight)).toBe('Upload all 4 documents to submit (1 rejected, 1 uploading)')
+        expect(canSubmitForVerification(withInFlight)).toBe(false)
     })
 
-    it('submits when all four documents await review, then locks after approval', () => {
-        const uploaded = uploadAll()
+    it('stays pending after submission until the server reports a decision', () => {
+        const uploaded = uploadedAll('pending_review')
         expect(canSubmitForVerification(uploaded)).toBe(true)
         expect(submitHelperText(uploaded)).toBe('All 4 documents ready for verification')
 
-        const submitted = submitForVerification(uploaded, AT)
+        const submitted = mergeServerState(uploaded, serverState(
+            Object.fromEntries(KYC_DOC_KINDS.map((kind) => [kind, { status: 'pending_review' }])) as Partial<Record<KycDocKind, Partial<KycDocument>>>,
+            { submitted: true, submittedAt: AT },
+        ))
         expect(submitted.submitted).toBe(true)
-        expect(submitted.submittedAt).toBe(AT)
         expect(submitHelperText(submitted)).toBe('Submitted — under review')
         expect(canSubmitForVerification(submitted)).toBe(false)
-
-        const approved = approvePendingReviews(submitted, AT)
-        expect(approved.locked).toBe(true)
-        expect(submitHelperText(approved)).toBeNull()
+        expect(submitted.locked).toBe(false)
     })
 
-    it('does not mutate the previous state (pure transitions)', () => {
-        const before = uploadAll()
-        const snapshot = JSON.stringify(before)
-        rejectDocument(before, 'aadhaar', 'Blurry', AT)
-        acceptDocument(before, 'aadhaar', AT)
-        failUpload(before, 'rc_book', 'boom', AT)
-        expect(JSON.stringify(before)).toBe(snapshot)
+    it('locks only on the server payload where all four are accepted', () => {
+        const accepted = uploadedAll('accepted')
+        accepted.locked = true
+        accepted.lockedAt = AT
+        expect(kycAcceptedCount(accepted)).toBe(4)
+        expect(kycCompletionPercent(accepted)).toBe(100)
+        expect(submitHelperText(accepted)).toBeNull()
     })
 })
 
-describe('driverKycDocuments midflow demo seed', () => {
+describe('kycProfileSummary', () => {
+    it('reports Verified only for the server-computed locked state', () => {
+        const locked = uploadedAll('accepted')
+        locked.locked = true
+        locked.lockedAt = AT
+        expect(kycProfileSummary(locked)).toEqual({ tone: 'verified', label: 'Verified' })
+    })
+
+    it('reports Action needed when any document was rejected', () => {
+        const state = serverState({ aadhaar: { status: 'rejected', rejectionReason: 'Blurry' } })
+        expect(kycProfileSummary(state)).toEqual({ tone: 'action', label: 'Action needed' })
+    })
+
+    it('reports Pending review while documents await a decision', () => {
+        expect(kycProfileSummary(uploadedAll('pending_review'))).toEqual({
+            tone: 'progress',
+            label: 'Pending review',
+        })
+    })
+
+    it('claims nothing when nothing has been uploaded or the backend is empty', () => {
+        expect(kycProfileSummary(createInitialKycState())).toBeNull()
+    })
+})
+
+describe('demoQueryEnabled', () => {
+    it('allows the midflow fixture only in development', () => {
+        expect(demoQueryEnabled(true, 'midflow')).toBe(true)
+    })
+
+    it('never fabricates verification from a production query string', () => {
+        expect(demoQueryEnabled(false, 'midflow')).toBe(false)
+        expect(demoQueryEnabled(false, 'verified')).toBe(false)
+        expect(demoQueryEnabled(true, 'verified')).toBe(false)
+        expect(demoQueryEnabled(true, null)).toBe(false)
+    })
+})
+
+describe('driverKycDocuments midflow demo seed (dev fixture)', () => {
     it('mirrors the generated Stitch mock: one document in each state', () => {
         const state = createMidflowDemoState(new Date('2026-09-19T10:00:00.000Z'))
         expect(state.docs.rc_book.status).toBe('uploading')
-        expect(state.docs.rc_book.progress).toBe(62)
+        expect(state.docs.rc_book.progress).toBe(0)
         expect(state.docs.driving_license.status).toBe('rejected')
         expect(state.docs.driving_license.rejectionReason).toMatch(/Expiry date is cut off/)
         expect(state.docs.aadhaar.status).toBe('pending_review')

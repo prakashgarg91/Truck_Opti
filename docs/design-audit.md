@@ -209,8 +209,8 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | Driver Profile `/driver/profile` | doc "View" links | `dl_url`/`rc_url`/`insurance_url`/`selfie_url` or "Missing" | OK (missing docs render inert label — acceptable) |
 | Driver Profile | "Earnings", "Trip History" quick actions | `/driver/earnings`, `/driver/history` | OK |
 | Driver Profile | "Account Center", "Refresh Settings" | `/profile` (customer MobileLayout!) | **FLAG (P2)** — cross-role navigation leaves DriverLayout mid-session |
-| Driver Profile | "Documents & KYC" | `/driver/kyc` | OK (integrated) |
-| Driver KYC `/driver/kyc` | uploads, submit | **client-simulated only** | **FLAG (P0, see §4)** |
+| Driver Profile | "Documents & KYC" | `/driver/kyc` + server KYC status badge (`driver-kyc` `state`) | OK (badge added 2026-10-03, TO-127) |
+| Driver KYC `/driver/kyc` | uploads, submit | **real** since 2026-10-03 (TO-127): `driverKycApi` → `driver-docs` private bucket + `driver-kyc` edge (TO-126); server-authoritative states, dev-only demo, offline/auth denial | RESOLVED driver-side (P0 closed; admin-side loop tracked in §6 item 2 update) |
 
 **Driver dead ends: 1 P0** (job-offer acceptance), **1 P1** (hardcoded support number), **1 P2** (cross-role `/profile` links).
 
@@ -228,13 +228,13 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | driver core (`driverSupabaseApi`) | `drivers` | DriverRegister, DriverProfile, DriverDashboard, DriverTrip | — |
 | driver trips (`driverTripsApi`, `driverTripProgress`) | `job_offers`, `persist_driver_job_offer_progress` rpc, `driver_locations` | DriverTrip, DriverHistory, DriverDashboard (realtime) | **inbound job-offer acceptance has no UI** (see §3) |
 | driver earnings (`driverEarningsApi`) | `driver_payouts` | DriverEarnings | — |
-| **driver KYC (`driverKycDocuments`)** | **none — client-simulated state machine** | `/driver/kyc` uploads, review states, submit | **UNMAPPED BOTH DIRECTIONS (P0):** uploads never persist (no storage upload, no `drivers` column writes); `pending_review`/`rejected`/`accepted` are mock transitions; admin KYC screen `d9fafd06` has no API link to these documents either. Demo seed via `?demo=midflow` is client-side by design |
+| **driver KYC (`driverKycApi` + `driverKycDocuments`)** | `driver-kyc` edge (`state`/`upload`/`submit`/`review`/`access`), `driver_kyc_documents` versioned rows, private `driver-docs` bucket (signed 60 s previews) | `/driver/kyc` uploads/review states/submit (TO-127, 2026-10-03); profile entry badge | Outbound real; **inbound admin UI still missing:** `d9fafd06`/`499ab4be` have no per-document accept/reject or signed-preview wiring yet (`reviewDocument`/`getDocumentAccessUrl` consumers) — TO-128 |
 | **OTP job-offer contract (`jobOfferOtpContract`)** | contract for `job_offers` OTP acceptance | **nothing — service is dead code** | **UNMAPPED BOTH DIRECTIONS (P0):** the screen (`202377b7`), the data (`job_offers`), and the contract service exist; no page ties them together |
 | admin (`adminSupabaseApi`) | `users`, `drivers`, `agencies`, `contact_inquiries` | `/admin/*` pages | admin KYC review does not read the KYC screen's (simulated) documents |
 | agency portal (`agencyPortalApi`, `agencySupabaseApi`) | `agency-portal-{rates,jobs,fleet,drivers,billing}` edges, `agency_jobs`, `transport_agencies` | `/agency/*` pages | — |
 | local-first (`localApi`, PGlite) | local db | packing/dashboard local mode | — |
 
-**Summary of unmapped (both directions):** `driverKycDocuments` (simulated by design — needs storage + review wiring) and `jobOfferOtpContract` (dead code awaiting its page). Single-direction gaps: 4 routes without designs (`/subscription`, `/agency/profile`, `/management/cartons`, `/driver/profile`), 5 orphan screens without routes, 2 duplicate clusters needing dedupe.
+**Summary of unmapped (both directions):** `jobOfferOtpContract` (dead code awaiting its page) remains; driver KYC is now mapped driver-side (TO-126/TO-127) with only the admin-direction UI open (TO-128). Single-direction gaps: 4 routes without designs (`/subscription`, `/agency/profile`, `/management/cartons`, `/driver/profile`), 5 orphan screens without routes, 2 duplicate clusters needing dedupe.
 
 ## 5. Quality rubric
 
@@ -321,7 +321,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 ### P0 — core-journey gaps (block the driver revenue loop)
 
 1. **Driver job-offer acceptance is unreachable.** Screen `202377b7` (MOBILE) exists; `job_offers` table + realtime channel exist; `jobOfferOtpContract` service exists and is unused. Build `/driver/job-offer/:offerId` (accept → OTP verify → trip start) wiring screen ↔ service ↔ table. *Evidence: §3 dead end, §4 unmapped.*
-2. **KYC uploads are client-simulated.** `/driver/kyc` needs storage uploads + `drivers` document columns + admin review outcome feed (close the loop with admin screen `d9fafd06`). Until then driver onboarding cannot complete for real. *Evidence: §4 unmapped both directions.*
+2. **KYC driver side is real (updated 2026-10-03, TO-126+TO-127).** `/driver/kyc` now uploads real bytes to the private `driver-docs` bucket and renders server-authoritative review states via the `driver-kyc` edge; simulated progress/acceptance timers were deleted and the `?demo=midflow` fixture is dev-only. Remaining half of the loop: wire admin screens `d9fafd06`/`499ab4be` to `reviewDocument` + signed previews (`getDocumentAccessUrl`) so reviews actually happen — TO-128. *Evidence: `frontend/src/pages/DriverKycPage.tsx` consumes `driverKycApi` only; unit tests 512/512 2026-10-03.*
 3. **`stitch_list_screens` under-reports** (57 listed vs 58 fetchable; no update timestamps). Adapter/upstream consistency issue — blocks reliable audits/automation. Escalate to the adapter owner; not a repo code change.
 
 ### P1 — POOR screens on live journeys + missing designs
