@@ -523,12 +523,12 @@ describe('customerSupabaseApi', () => {
             expect(result.average_per_trip).toBe(1500)
         })
 
-        it('selects created_at and computes last_thirty_days from it (regression TO138)', async () => {
+        it('selects delivered_at and computes last_thirty_days from it (regression TO130)', async () => {
             const now = new Date().toISOString()
             limitMock.mockResolvedValue({
                 data: [
-                    { created_at: now, shipments: { estimated_cost: 100 } },
-                    { created_at: '2020-01-01T00:00:00.000Z', shipments: { estimated_cost: 200 } },
+                    { delivered_at: now, shipments: { estimated_cost: 100 } },
+                    { delivered_at: '2020-01-01T00:00:00.000Z', shipments: { estimated_cost: 200 } },
                 ],
                 error: null,
             })
@@ -539,12 +539,14 @@ describe('customerSupabaseApi', () => {
 
             const result = await driverEarningsApi.getEarnings('driver_1')
 
-            // The 30-day window can only be computed when created_at is part of
-            // the job_offers select; without it last_thirty_days is silently 0.
+            // job_offers has no created_at column; the 30-day window is computed
+            // from the real delivered_at column, otherwise last_thirty_days is
+            // silently 0 (the TO-138 fix selected a nonexistent column).
             const earningsSelect = selectMock.mock.calls
                 .map((call) => String(call[0]))
                 .find((columns) => columns.includes('shipments'))
-            expect(earningsSelect).toContain('created_at')
+            expect(earningsSelect).toContain('delivered_at')
+            expect(earningsSelect).not.toContain('created_at')
             expect(result.total_earnings).toBe(300)
             expect(result.last_thirty_days).toBe(100)
         })
@@ -683,7 +685,7 @@ describe('customerSupabaseApi', () => {
                         driver_id: 'driver_1',
                         status: 'delivered',
                         shipments: { origin: 'Mumbai', destination: 'Delhi', estimated_cost: 1000 },
-                        created_at: '2024-01-01T00:00:00Z',
+                        offered_at: '2024-01-01T00:00:00Z',
                         delivered_at: '2024-01-02T00:00:00Z',
                     },
                 ],
@@ -703,6 +705,11 @@ describe('customerSupabaseApi', () => {
                 created_at: '2024-01-01T00:00:00Z',
                 delivered_at: '2024-01-02T00:00:00Z',
             })
+            const tripsSelect = selectMock.mock.calls
+                .map((call) => String(call[0]))
+                .find((columns) => columns.includes('shipments'))
+            expect(tripsSelect).toContain('offered_at')
+            expect(tripsSelect).not.toContain('created_at')
         })
 
         it('handles missing shipments gracefully', async () => {
@@ -714,7 +721,7 @@ describe('customerSupabaseApi', () => {
                         driver_id: 'driver_1',
                         status: 'pending',
                         shipments: null,
-                        created_at: '2024-01-01T00:00:00Z',
+                        offered_at: '2024-01-01T00:00:00Z',
                         delivered_at: null,
                     },
                 ],

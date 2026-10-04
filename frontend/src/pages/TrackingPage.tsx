@@ -692,6 +692,21 @@ export default function TrackingPage() {
                   </div>
                 )}
 
+                {/* Delivery OTP - revealed once the driver reaches the destination */}
+                {jobOffer?.delivery_otp && (jobOffer.status === 'delivery_arrived' || jobOffer.status === 'delivered') && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 p-4 rounded-2xl">
+                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">
+                      {'🔑 Delivery OTP'}
+                    </p>
+                    <p className="text-3xl font-bold text-blue-700 dark:text-blue-300 tracking-widest text-center">
+                      {jobOffer.delivery_otp}
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 text-center mt-2">
+                      {'Share this OTP with the driver only after the goods reach the destination.'}
+                    </p>
+                  </div>
+                )}
+
                 {/* Route Info */}
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl">
                   <div className="flex items-center gap-4">

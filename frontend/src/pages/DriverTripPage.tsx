@@ -8,6 +8,10 @@ import { supabase } from '../lib/supabase'
 import { driverSupabaseApi, driverTripsApi } from '../services/supabaseApi'
 import {
   buildJobProgressStatePatch,
+  isJobProgressOk,
+  resolveJobProgressFailureMessage,
+  JOB_PROGRESS_RESULT_OTP_INCORRECT,
+  JOB_PROGRESS_RESULT_OTP_LOCKED,
   persistDriverJobProgressRpc,
   type JobProgressResult,
 } from '../services/driverTripProgress'
@@ -215,7 +219,7 @@ export default function DriverTripPage() {
   }, [driver?.id, handleGeolocationError, step, upsertDriverLocation])
 
   const persistJobProgress = async (newStatus?: string | null, extra: Record<string, unknown> = {}) => {
-    if (!job?.id) return false
+    if (!job?.id) return null
     setSubmitting(true)
     let result: JobProgressResult | null = null
     let error: unknown
@@ -233,11 +237,13 @@ export default function DriverTripPage() {
     if (error) {
       logger.error('[DriverTripPage]', error)
       toast.error('Failed to update trip status.')
-      return false
+      return null
     }
 
-    if (!result) {
-      return false
+    if (!result || !isJobProgressOk(result)) {
+      // The server rejected the call (e.g. wrong OTP or a locked code) and
+      // returned the unchanged authoritative row; never patch local state.
+      return result ?? null
     }
 
     const { jobPatch, driverPatch } = buildJobProgressStatePatch(result)
@@ -255,13 +261,30 @@ export default function DriverTripPage() {
     return result
   }
 
+  /** Shows the bounded server rejection and returns the user to the OTP step. */
+  const handleProgressRejection = (result: JobProgressResult | null, otpStep: TripStep) => {
+    toast.error(resolveJobProgressFailureMessage(result))
+    if (
+      result?.result_code === JOB_PROGRESS_RESULT_OTP_INCORRECT ||
+      result?.result_code === JOB_PROGRESS_RESULT_OTP_LOCKED
+    ) {
+      setStep(otpStep)
+      setOtpInput('')
+      if (otpStep === 'pickup_otp') {
+        setVerifiedPickupOtp('')
+      } else {
+        setVerifiedDeliveryOtp('')
+      }
+    }
+  }
+
   const handleArrivedAtPickup = async () => {
-    const result = await persistJobProgress('pickup_arrived', {
-      pickup_arrived_at: new Date().toISOString(),
-    })
-    if (result) {
+    const result = await persistJobProgress('pickup_arrived')
+    if (isJobProgressOk(result)) {
       setStep('pickup_otp')
       toast.success('Arrived at pickup — enter customer OTP')
+    } else {
+      handleProgressRejection(result, 'pickup_otp')
     }
   }
 
@@ -284,20 +307,19 @@ export default function DriverTripPage() {
       return
     }
     const result = await persistJobProgress('in_transit', {
-      journey_started_at: new Date().toISOString(),
       pickup_otp: verifiedPickupOtp,
     })
-    if (result) {
+    if (isJobProgressOk(result)) {
       setStep('in_transit')
       toast.success('Journey started — GPS tracking active')
+    } else {
+      handleProgressRejection(result, 'pickup_otp')
     }
   }
 
   const handleArrivedAtDestination = async () => {
-    const result = await persistJobProgress('delivery_arrived', {
-      delivery_arrived_at: new Date().toISOString(),
-    })
-    if (result) {
+    const result = await persistJobProgress('delivery_arrived')
+    if (isJobProgressOk(result)) {
       // Stop GPS
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current)
@@ -305,6 +327,8 @@ export default function DriverTripPage() {
       }
       setStep('destination_otp')
       toast.success('Arrived at destination — enter recipient OTP')
+    } else {
+      handleProgressRejection(result, 'destination_otp')
     }
   }
 
@@ -321,11 +345,13 @@ export default function DriverTripPage() {
   }
 
   const uploadPhoto = async (file: File, field: 'photo_loading_url' | 'photo_delivery_url'): Promise<string | null> => {
-    if (!job?.id || !driver?.id) return null
+    if (!job?.id || !driver?.id || !user?.id) return null
     setUploading(true)
     try {
       const ext = file.name.split('.').pop() || 'jpg'
-      const path = `${driver.id}/${job.id}/${field}.${ext}`
+      // Storage RLS authorizes <auth user>/... (20260418002000); the server
+      // additionally validates the reference against this job (TO-130).
+      const path = `${user.id}/${job.id}/${field}.${ext}`
       const { error: uploadError } = await supabase.storage
         .from('trip-photos')
         .upload(path, file, { upsert: true, contentType: file.type })
@@ -337,7 +363,8 @@ export default function DriverTripPage() {
       const publicUrl = urlData?.publicUrl || null
       if (publicUrl) {
         const saved = await persistJobProgress(null, { [field]: publicUrl })
-        if (!saved) {
+        if (!isJobProgressOk(saved)) {
+          toast.error(resolveJobProgressFailureMessage(saved))
           return null
         }
       }
@@ -368,13 +395,14 @@ export default function DriverTripPage() {
       return
     }
     const result = await persistJobProgress('delivered', {
-      delivered_at: new Date().toISOString(),
       delivery_otp: verifiedDeliveryOtp,
     })
-    if (result) {
+    if (isJobProgressOk(result)) {
       setStep('complete')
       toast.success('🎉 Delivery complete! Great job.')
       navigate('/driver/dashboard')
+    } else {
+      handleProgressRejection(result, 'destination_otp')
     }
   }
 

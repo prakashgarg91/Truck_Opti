@@ -1,5 +1,10 @@
 import { supabase } from '../lib/supabase'
 
+/** Server result codes for the trip progress RPC (TO-130). */
+export const JOB_PROGRESS_RESULT_OK = 'OK'
+export const JOB_PROGRESS_RESULT_OTP_INCORRECT = 'OTP_INCORRECT'
+export const JOB_PROGRESS_RESULT_OTP_LOCKED = 'OTP_LOCKED'
+
 export interface JobProgressResult {
     job_offer_id: string
     status: string
@@ -10,6 +15,10 @@ export interface JobProgressResult {
     photo_loading_url: string | null
     photo_delivery_url: string | null
     total_trips: number
+    /** Server-authoritative outcome: OK, OTP_INCORRECT or OTP_LOCKED. */
+    result_code: string
+    /** Remaining guesses for the code used in this call, when applicable. */
+    otp_attempts_remaining: number | null
 }
 
 interface PersistDriverJobProgressParams {
@@ -38,6 +47,33 @@ interface JobProgressStatePatch {
 export function normalizeJobProgressResult(data: unknown): JobProgressResult | null {
     const result = Array.isArray(data) ? data[0] : data
     return (result as JobProgressResult | null) ?? null
+}
+
+/**
+ * True only for the server's explicit success code. Anything else (including
+ * an empty payload) is a rejection: the OTP failure path returns the unchanged
+ * row with a non-OK code so its durable attempt counter survives.
+ */
+export function isJobProgressOk(result: JobProgressResult | null): boolean {
+    return !!result && result.result_code === JOB_PROGRESS_RESULT_OK
+}
+
+/** Bounded user-facing copy for server rejections (raw server text never shown). */
+export function resolveJobProgressFailureMessage(result: JobProgressResult | null): string {
+    if (!result) {
+        return 'Failed to update trip status.'
+    }
+
+    switch (result.result_code) {
+        case JOB_PROGRESS_RESULT_OTP_INCORRECT:
+            return typeof result.otp_attempts_remaining === 'number' && result.otp_attempts_remaining > 0
+                ? `Incorrect OTP. ${result.otp_attempts_remaining} attempt${result.otp_attempts_remaining === 1 ? '' : 's'} remaining.`
+                : 'Incorrect OTP.'
+        case JOB_PROGRESS_RESULT_OTP_LOCKED:
+            return 'Too many incorrect OTP attempts. Please try again in 15 minutes.'
+        default:
+            return 'Failed to update trip status.'
+    }
 }
 
 export async function persistDriverJobProgressRpc({

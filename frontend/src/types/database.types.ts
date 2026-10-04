@@ -3,7 +3,11 @@
 // Source schema: supabase/migrations/* applied to a clean local database
 // (TO-129 atomic job-offer response + driver offer read visibility, 2026-10-03;
 // chain replay verified after 20261003020000_driver_offer_read_visibility.sql).
-// Replaces the TO-126 regeneration of 2026-10-03.
+// TO-130 (2026-10-04): hand-applied delta for 20261004000000_trip_transition_integrity.sql
+// (job_offers OTP attempt/lock columns; persist_driver_job_offer_progress result_code +
+// otp_attempts_remaining; is_job_trip_photo_url) because no container runtime was available
+// to re-run `supabase gen types`. The delta matches the migration text exactly; regenerate
+// on a machine with Docker before any further schema change.
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -265,13 +269,13 @@ isOneToOne: false
                   ]
                 },"job_offers": {
                   Row: {
-                    "decline_reason": string | null,"delivered_at": string | null,"delivery_arrived_at": string | null,"delivery_otp": string | null,"delivery_otp_verified_at": string | null,"driver_id": string | null,"expires_at": string,"id": string,"journey_started_at": string | null,"offered_at": string | null,"photo_delivery_url": string | null,"photo_loading_url": string | null,"pickup_arrived_at": string | null,"pickup_otp": string | null,"pickup_otp_verified_at": string | null,"responded_at": string | null,"shipment_id": string | null,"status": string
+                    "decline_reason": string | null,"delivered_at": string | null,"delivery_arrived_at": string | null,"delivery_otp": string | null,"delivery_otp_attempts": number,"delivery_otp_locked_until": string | null,"delivery_otp_verified_at": string | null,"driver_id": string | null,"expires_at": string,"id": string,"journey_started_at": string | null,"offered_at": string | null,"photo_delivery_url": string | null,"photo_loading_url": string | null,"pickup_arrived_at": string | null,"pickup_otp": string | null,"pickup_otp_attempts": number,"pickup_otp_locked_until": string | null,"pickup_otp_verified_at": string | null,"responded_at": string | null,"shipment_id": string | null,"status": string
                   }
                   Insert: {
-                    "decline_reason"?: string | null,"delivered_at"?: string | null,"delivery_arrived_at"?: string | null,"delivery_otp"?: string | null,"delivery_otp_verified_at"?: string | null,"driver_id"?: string | null,"expires_at": string,"id"?: string,"journey_started_at"?: string | null,"offered_at"?: string | null,"photo_delivery_url"?: string | null,"photo_loading_url"?: string | null,"pickup_arrived_at"?: string | null,"pickup_otp"?: string | null,"pickup_otp_verified_at"?: string | null,"responded_at"?: string | null,"shipment_id"?: string | null,"status"?: string
+                    "decline_reason"?: string | null,"delivered_at"?: string | null,"delivery_arrived_at"?: string | null,"delivery_otp"?: string | null,"delivery_otp_attempts"?: number,"delivery_otp_locked_until"?: string | null,"delivery_otp_verified_at"?: string | null,"driver_id"?: string | null,"expires_at": string,"id"?: string,"journey_started_at"?: string | null,"offered_at"?: string | null,"photo_delivery_url"?: string | null,"photo_loading_url"?: string | null,"pickup_arrived_at"?: string | null,"pickup_otp"?: string | null,"pickup_otp_attempts"?: number,"pickup_otp_locked_until"?: string | null,"pickup_otp_verified_at"?: string | null,"responded_at"?: string | null,"shipment_id"?: string | null,"status"?: string
                   }
                   Update: {
-                    "decline_reason"?: string | null,"delivered_at"?: string | null,"delivery_arrived_at"?: string | null,"delivery_otp"?: string | null,"delivery_otp_verified_at"?: string | null,"driver_id"?: string | null,"expires_at"?: string,"id"?: string,"journey_started_at"?: string | null,"offered_at"?: string | null,"photo_delivery_url"?: string | null,"photo_loading_url"?: string | null,"pickup_arrived_at"?: string | null,"pickup_otp"?: string | null,"pickup_otp_verified_at"?: string | null,"responded_at"?: string | null,"shipment_id"?: string | null,"status"?: string
+                    "decline_reason"?: string | null,"delivered_at"?: string | null,"delivery_arrived_at"?: string | null,"delivery_otp"?: string | null,"delivery_otp_attempts"?: number,"delivery_otp_locked_until"?: string | null,"delivery_otp_verified_at"?: string | null,"driver_id"?: string | null,"expires_at"?: string,"id"?: string,"journey_started_at"?: string | null,"offered_at"?: string | null,"photo_delivery_url"?: string | null,"photo_loading_url"?: string | null,"pickup_arrived_at"?: string | null,"pickup_otp"?: string | null,"pickup_otp_attempts"?: number,"pickup_otp_locked_until"?: string | null,"pickup_otp_verified_at"?: string | null,"responded_at"?: string | null,"shipment_id"?: string | null,"status"?: string
                   }
                   Relationships: [
                     {
@@ -610,12 +614,15 @@ isOneToOne: false
 "is_admin_user":
 { Args: { "p_user_id"?: string }; Returns: boolean
                            },
+"is_job_trip_photo_url":
+{ Args: { "p_job_offer_id": string,"p_url": string,"p_user_id": string }; Returns: boolean
+                           },
 "is_shipment_driver":
 { Args: { "p_shipment_id": string }; Returns: boolean
                            },
 "persist_driver_job_offer_progress":
 { Args: { "p_extra"?: Json,"p_job_offer_id": string,"p_status"?: string }; Returns: {
-              "delivered_at": string,"delivery_arrived_at": string,"job_offer_id": string,"journey_started_at": string,"photo_delivery_url": string,"photo_loading_url": string,"pickup_arrived_at": string,"status": string,"total_trips": number
+              "delivered_at": string,"delivery_arrived_at": string,"job_offer_id": string,"journey_started_at": string,"otp_attempts_remaining": number,"photo_delivery_url": string,"photo_loading_url": string,"pickup_arrived_at": string,"result_code": string,"status": string,"total_trips": number
             }[]
                            },
 "resolve_login_identifier":

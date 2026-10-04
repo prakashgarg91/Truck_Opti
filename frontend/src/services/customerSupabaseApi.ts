@@ -30,13 +30,13 @@ interface DriverTripRow {
     driver_id: string | null
     status: string
     shipments: { origin: string | null; destination: string | null; estimated_cost: number | string | null } | { origin: string | null; destination: string | null; estimated_cost: number | string | null }[] | null
-    created_at: string
+    offered_at: string | null
     delivered_at: string | null
 }
 
 /** `job_offers` row joined with `shipments(estimated_cost)`, as selected by driverEarningsApi. */
 interface DriverEarningsJobRow {
-    created_at?: string | null
+    delivered_at?: string | null
     shipments: { estimated_cost: number | string | null } | { estimated_cost: number | string | null }[] | null
 }
 
@@ -376,7 +376,10 @@ export const driverEarningsApi = {
             const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
             const [earningsRes, tripsRes] = await Promise.all([
-                supabase.from('job_offers').select('created_at, shipments(estimated_cost)').eq('driver_id', driverId).eq('status', 'delivered'),
+                // job_offers has no created_at column (schema truth: offered_at /
+                // delivered_at). Earnings in the last 30 days are the trips
+                // DELIVERED in that window, so select delivered_at.
+                supabase.from('job_offers').select('delivered_at, shipments(estimated_cost)').eq('driver_id', driverId).eq('status', 'delivered'),
                 supabase.from('drivers').select('rating').eq('id', driverId).single(),
             ])
 
@@ -392,7 +395,7 @@ export const driverEarningsApi = {
             const totalEarnings = trips.reduce((sum: number, trip) => sum + tripCost(trip), 0)
 
             const thirtyDayEarnings = trips
-                .filter((trip) => typeof trip.created_at === 'string' && trip.created_at >= thirtyDaysAgo)
+                .filter((trip) => typeof trip.delivered_at === 'string' && trip.delivered_at >= thirtyDaysAgo)
                 .reduce((sum: number, trip) => sum + tripCost(trip), 0)
 
             return {
@@ -471,7 +474,7 @@ function toDriverTrip(trip: DriverTripRow): DriverTrip {
         origin: shipment?.origin ?? '',
         destination: shipment?.destination ?? '',
         estimated_cost: Number(shipment?.estimated_cost ?? 0),
-        created_at: trip.created_at,
+        created_at: trip.offered_at ?? '',
         delivered_at: trip.delivered_at,
     }
 }
@@ -480,9 +483,9 @@ export const driverTripsApi = {
     async getAll(driverId: string, filters?: { status?: string }): Promise<DriverTrip[]> {
         let query = supabase
             .from('job_offers')
-            .select('id, shipment_id, driver_id, status, shipments(origin, destination, estimated_cost), created_at, delivered_at')
+            .select('id, shipment_id, driver_id, status, shipments(origin, destination, estimated_cost), offered_at, delivered_at')
             .eq('driver_id', driverId)
-            .order('created_at', { ascending: false })
+            .order('offered_at', { ascending: false })
 
         if (filters?.status) {
             query = query.eq('status', filters.status)
@@ -500,7 +503,7 @@ export const driverTripsApi = {
     async getById(tripId: string): Promise<DriverTrip | null> {
         const { data, error } = await supabase
             .from('job_offers')
-            .select('id, shipment_id, driver_id, status, shipments(origin, destination, estimated_cost), created_at, delivered_at')
+            .select('id, shipment_id, driver_id, status, shipments(origin, destination, estimated_cost), offered_at, delivered_at')
             .eq('id', tripId)
             .single()
 
@@ -522,7 +525,7 @@ export const driverTripsApi = {
             .from('job_offers')
             .update(updateData)
             .eq('id', tripId)
-            .select('id, shipment_id, driver_id, status, shipments(origin, destination, estimated_cost), created_at, delivered_at')
+            .select('id, shipment_id, driver_id, status, shipments(origin, destination, estimated_cost), offered_at, delivered_at')
             .single()
 
         if (error) {
