@@ -5,11 +5,20 @@ import {
   ChevronRight, BarChart3
 } from 'lucide-react'
 import { agencyDashboardApi } from '../services/agencyPortalApi'
+import { agencyProfileLocalApi, cartonsLocalApi, trucksLocalApi } from '../services/localApi'
+import { isSupabaseConfigured } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+
+interface LocalWorkspaceSummary {
+  companyName: string
+  contactName: string | null
+  truckCount: number
+  cartonCount: number
+}
 
 interface AgencyRecord {
   id: string
@@ -38,11 +47,43 @@ export default function AgencyDashboardPage() {
   const [summary, setSummary] = useState<JobSummary>({
     active: 0, today: 0, pending: 0, thirtyDayRevenue: 0, thirtyDayJobs: 0
   })
+  const [localWorkspace, setLocalWorkspace] = useState<LocalWorkspaceSummary | null>(null)
 
   const fetchSnapshot = useCallback(async () => {
     if (!user?.id) return
 
     setLoading(true)
+
+    // Device-local (no cloud backend): the agency portal's edge data does not
+    // exist here. Show the workspace that DOES exist on this device instead of
+    // a failed cloud fetch ("nothing found") that contradicts the setup the
+    // user just completed on /local-start.
+    if (!isSupabaseConfigured) {
+      try {
+        const profile = await agencyProfileLocalApi.current()
+        if (profile) {
+          const [trucks, cartons] = await Promise.all([
+            trucksLocalApi.getAll(),
+            cartonsLocalApi.getAll(),
+          ])
+          setLocalWorkspace({
+            companyName: profile.company_name,
+            contactName: profile.contact_name,
+            truckCount: trucks.length,
+            cartonCount: cartons.length,
+          })
+        } else {
+          setLocalWorkspace(null)
+        }
+      } catch (error) {
+        logger.error('[AgencyDashboardPage] local workspace load', error)
+        setLocalWorkspace(null)
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
     try {
       const snapshot = await agencyDashboardApi.getSnapshot()
       setAgency(snapshot.agency as AgencyRecord | null)
@@ -71,6 +112,96 @@ export default function AgencyDashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <RefreshCw className="animate-spin text-indigo-600" size={32} />
+      </div>
+    )
+  }
+
+  // Device-local workspace dashboard (no cloud backend configured).
+  if (!isSupabaseConfigured) {
+    if (!localWorkspace) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+          <Building2 size={64} className="text-slate-300 mb-4" />
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+            Set up this device
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">
+            Create your company workspace on this device to start managing trucks and cartons offline.
+          </p>
+          <button
+            onClick={() => navigate('/local-start')}
+            className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold"
+          >
+            Set up this device
+          </button>
+        </div>
+      )
+    }
+
+    return (
+      <div className="p-4 space-y-4 max-w-2xl mx-auto md:max-w-5xl md:p-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <Building2 size={24} className="text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-bold text-slate-800 dark:text-slate-100 truncate text-lg">
+                {localWorkspace.companyName}
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                {localWorkspace.contactName || 'Device-local workspace'}
+              </p>
+            </div>
+            <span className="text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+              On this device
+            </span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20 p-4">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            Your data is stored on this device. Agency portal features that need the
+            cloud (jobs, dispatch, billing, rate cards) require a connected account.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Truck size={16} className="text-blue-500" />
+              <span className="text-xs text-slate-500 dark:text-slate-400">Trucks</span>
+            </div>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{localWorkspace.truckCount}</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 size={16} className="text-emerald-500" />
+              <span className="text-xs text-slate-500 dark:text-slate-400">Cartons</span>
+            </div>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{localWorkspace.cartonCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => navigate('/management/trucks')}
+              className="flex items-center gap-2 py-3 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium"
+            >
+              <Truck size={16} />
+              Manage Trucks
+            </button>
+            <button
+              onClick={() => navigate('/management/cartons')}
+              className="flex items-center gap-2 py-3 px-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-medium"
+            >
+              <BarChart3 size={16} />
+              Manage Cartons
+            </button>
+          </div>
+        </div>
       </div>
     )
   }

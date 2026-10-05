@@ -4,7 +4,8 @@ import {
   LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
-import { supabase } from '../lib/supabase'
+import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { toDisplayName } from '../utils/displayName'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
 
@@ -22,11 +23,21 @@ export default function AgencyLayout() {
   const navigate = useNavigate()
   const [newJobCount, setNewJobCount] = useState(0)
 
-  // Subscribe to new jobs for this agency
-  useEffect(() => {
-    async function subscribeToJobs() {
-      if (!user?.id) return
+  // `user_metadata.company` can be a string or `{ name }` (device-local
+  // profile). Normalize before rendering — rendering the object directly
+  // threw React error #31 and collapsed every agency route.
+  const companyLabel = toDisplayName(user?.user_metadata?.company) || user?.email || 'Agency'
 
+  // Subscribe to new jobs for this agency. Only meaningful against a
+  // configured cloud backend: in local-first mode the placeholder client
+  // would otherwise open a WebSocket to an unresolvable host on every page.
+  useEffect(() => {
+    if (!isSupabaseConfigured || !user?.id) return
+
+    let cancelled = false
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const subscribeToJobs = async () => {
       // Get agency ID
       const { data: agency } = await supabase
         .from('transport_agencies')
@@ -34,10 +45,10 @@ export default function AgencyLayout() {
         .eq('user_id', user.id)
         .maybeSingle()
 
-      if (!agency?.id) return
+      if (cancelled || !agency?.id) return
 
       // Subscribe to new jobs for this agency
-      const channel = supabase.channel('agency-new-jobs')
+      channel = supabase.channel('agency-new-jobs')
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
@@ -47,13 +58,16 @@ export default function AgencyLayout() {
           setNewJobCount(c => c + 1)
         })
         .subscribe()
+    }
 
-      return () => {
+    void subscribeToJobs()
+
+    return () => {
+      cancelled = true
+      if (channel) {
         supabase.removeChannel(channel)
       }
     }
-
-    subscribeToJobs()
   }, [user?.id])
 
   const handleLogout = async () => {
@@ -81,7 +95,7 @@ export default function AgencyLayout() {
             <div>
               <p className="font-bold text-slate-800 dark:text-slate-100 leading-none">Agency Portal</p>
               <p className="text-xs text-slate-400 mt-1 truncate max-w-[140px]">
-                {(user?.user_metadata as Record<string, unknown>)?.company as string || user?.email || 'Agency'}
+                {companyLabel}
               </p>
             </div>
           </div>
@@ -159,7 +173,7 @@ export default function AgencyLayout() {
               Agency Portal
             </p>
             <p className="text-xs text-slate-400 truncate max-w-[140px]">
-              {(user?.user_metadata as Record<string, unknown>)?.company as string || user?.email || 'Agency'}
+              {companyLabel}
             </p>
           </div>
         </div>

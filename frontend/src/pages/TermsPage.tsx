@@ -16,6 +16,7 @@ export default function TermsPage() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
+            aria-label="Go back"
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />

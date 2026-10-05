@@ -6,6 +6,7 @@ import { paymentSupabaseApi } from '../services/supabaseApi';
 import { logger } from '../utils/logger';
 import { useAuthStore } from '../stores/authStore';
 import { getDefaultHomePathForRole } from '../components/ProtectedRoute';
+import { SUPPORT_EMAIL } from '../config/support';
 
 const PaymentCallbackPage: React.FC = () => {
   const navigate = useNavigate();
@@ -253,7 +254,7 @@ const PaymentCallbackPage: React.FC = () => {
             onClick={() => navigate('/contact')}
             className="text-blue-600 hover:underline"
           >
-            support@truckopti.in
+            {SUPPORT_EMAIL}
           </button>
         </p>
       </div>

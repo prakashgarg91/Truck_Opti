@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { logger } from '../utils/logger'
 import { isChunkLoadLikeError, triggerRuntimeRecovery } from '../utils/runtimeRecovery'
+import { SUPPORT_EMAIL } from '../config/support'
 
 interface Props {
   children: ReactNode
@@ -137,10 +138,10 @@ export default class ErrorBoundary extends Component<Props, State> {
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   If this keeps happening, please contact{' '}
                   <a
-                    href="mailto:support@truckopti.in"
+                    href={`mailto:${SUPPORT_EMAIL}`}
                     className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
                   >
-                    support@truckopti.in
+                    {SUPPORT_EMAIL}
                   </a>
                 </p>
               </div>

@@ -16,6 +16,7 @@ import {
   type JobProgressResult,
 } from '../services/driverTripProgress'
 import { useAuthStore } from '../stores/authStore'
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../config/support'
 import { useParams, useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
@@ -456,7 +457,8 @@ export default function DriverTripPage() {
           </p>
         </div>
         <a
-          href="tel:18001234567"
+          href={`tel:${SUPPORT_PHONE_TEL}`}
+          aria-label={`Call support ${SUPPORT_PHONE_DISPLAY}`}
           className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-xl text-xs font-semibold"
         >
           <PhoneCall size={14} />

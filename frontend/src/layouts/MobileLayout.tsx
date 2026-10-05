@@ -30,6 +30,7 @@ import {
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { useAuthStore } from '../stores/authStore'
+import { isSupabaseConfigured } from '../lib/supabase'
 import { notificationsSupabaseApi } from '../services/supabaseApi'
 import { useSubscription } from '../hooks/useSubscription'
 import toast from 'react-hot-toast'
@@ -90,9 +91,11 @@ export default function MobileLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Subscribe to real-time notifications
+  // Subscribe to real-time notifications. Realtime needs a configured cloud
+  // backend; in local-first mode the placeholder client would otherwise open
+  // a WebSocket to an unresolvable host on every signed-in page.
   useEffect(() => {
-    if (!user?.id) return
+    if (!isSupabaseConfigured || !user?.id) return
 
     // Initial fetch
     fetchNotifications()

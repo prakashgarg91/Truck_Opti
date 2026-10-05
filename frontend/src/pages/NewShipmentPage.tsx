@@ -97,8 +97,9 @@ export default function NewShipmentPage() {
 
       if (dispatchError) {
         logger.error('Dispatch error:', dispatchError)
-        // Shipment created, but dispatch failed - show warning but continue
-        toast('', { icon: '✅' })
+        // Shipment created, but dispatch failed: never render an empty
+        // success toast for a failed step (TO-139 misleading-success finding).
+        toast('Booking created — driver dispatch is temporarily unavailable.', { icon: '⚠️' })
       } else {
         toast(`Booking created! Notified ${dispatchResult} drivers.`, { icon: '✅' })
       }

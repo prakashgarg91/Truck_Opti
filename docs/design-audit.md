@@ -370,3 +370,86 @@ Accessibility added: `aria-pressed` on the sign-in/signup method toggles and OTP
 - Resolved from §2/§3: `/login`, `/signup`, `/forgot-password` honest-state gaps and the §5 accessibility systemic finding **for the auth surfaces only** (auth pages now carry labels, error semantics and focus behavior the generated screens lacked).
 - Still open (P1, unchanged): §6 item 7's non-auth POOR screens (`d8615375` OTP, `c7700d0d` auth-callback, `1e1497ab` payment success/failure states) and the §2 MISSING designs (`/subscription`, `/agency/profile`, `/management/cartons`, `/driver/profile`).
 - Next proposed item (one-line evidence): OTP screen `d8615375` remains the only auth-adjacent POOR screen with no error-state design — fold its error/loading states into TO-139 (UX audit) rather than a new generation.
+
+---
+
+## 2026-10-05 addendum — TO-139 actual-app UX/accessibility audit (implemented routes, not generated screens)
+
+**Scope shift:** §1–§6 and the 2026-10-03 addendum audit *generated Stitch screens*. This addendum audits the **implemented application** — every route in `frontend/src/App.tsx`, what it renders, which API it calls, and how it behaves at both required viewports. Generated-screen scores are not evidence of app behaviour and vice versa.
+
+**Tier:** local-first fixture browser tier (`frontend/dist` built with no backend configured, served by `node server.js` on :3000). The only signed-in identity obtainable without a cloud backend is the device-local agency profile created at `/local-start`; driver/admin pages are verified through their denied-role state. Cloud-credentialed browser proof remains owner-gated (unchanged).
+
+**Evidence (all executed 2026-10-05, all exit 0):**
+
+| Check | Command | Result | Artifact |
+|---|---|---|---|
+| UX route audit (new) | `PUBLIC_APP_URL=http://127.0.0.1:3000 node scripts/ux_route_audit.mjs` | 104 checks · 0 hard failures (red baseline: 100 checks · 18 hard failures) | `logs/to139-audit-final.txt`, `logs/to139-ux-audit-report.json`, screenshots `logs/to139-ux-audit/**/`; red: `logs/to139-audit-red.baseline.txt`, `logs/to139-ux-audit-report.red.json` |
+| Launch smoke | `PUBLIC_APP_URL=http://127.0.0.1:3000 node scripts/frontend_launch_smoke.mjs` | 63/63 | `logs/frontend_launch_smoke_report.json` |
+| Device-local workspace proof (TO-134 harness, regression) | `PUBLIC_APP_URL=http://127.0.0.1:3000 node scripts/customer_local_workspace.browser-proof.mjs` | 2/2 viewports · **0 console errors, 0 page errors, 0 failed responses** (was 4 console-error findings) | `logs/to134-local-workspace-browser-proof.json` |
+| Frontend lint / typecheck / build / unit | `npm run lint`, `npx tsc --noEmit`, `npm run build`, `npm run test:unit` | exit 0 / exit 0 / exit 0 / **551/551** (545 baseline + 6 new) | — |
+| Repo gates | `node --test` policy suite, `npm run test:server-routing`, `npm run test:packing`, `node tools/glue-check.mjs` | 70/70, 15/15, 18/18, 0 gaps | — |
+
+### A. Route inventory and browser result (actual app, 48 routes)
+
+Viewport columns: **M** = 390×844, **D** = 1280×900. "Renders" = page reached without a `pageerror`/ErrorBoundary/404/redirect; deep-link checks (fresh context) plus layout-nav and link-target checks.
+
+| Route | Gate | Page → data source | Renders |
+|---|---|---|---|
+| `/` | public | `RoleHome` → LandingPage (guest) / role home (auth) | M ✔ D ✔ |
+| `/auth/callback` | public | AuthCallbackPage → `supabase.auth` | not driven (needs real OAuth params; smoke covers sign-in surfaces) |
+| `/pricing`, `/terms`, `/privacy`, `/contact` | public | static pages; contact → `contactInquiry` (device queue on failure) | M ✔ D ✔ |
+| `/login`, `/signup`, `/otp`, `/forgot-password`, `/reset-password` | public | auth pages → `supabase.auth` + capability model | M ✔ D ✔ (5 login surfaces × 2 viewports in smoke) |
+| `/checkout`, `/subscription`, `/support` | auth | CheckoutPage → `razorpayPayment`/`phonepePayment`/`subscriptionApi`; SubscriptionPage → `invoicesApi`; ContactPage | M ✔ D ✔ |
+| `/payment/callback`, `/payment/success` | public | PaymentCallbackPage → `phonepePayment`, `paymentSupabaseApi` | M ✔ D ✔ |
+| `/driver/register`, `/agency/register` | public | registration gates → login (`driverSupabaseApi`, `agencyRegistrationApi`) | M ✔ D ✔ |
+| `/local-start` | public | LocalSetupPage → `agencyProfileLocalApi` (PGlite) | M ✔ D ✔ |
+| `/test-payment` | DEV only | production build renders the 404 page | M ✔ D ✔ (404 expected) |
+| `/dashboard` | auth | Dashboard → `customerDashboardApi`/`saleOrdersSupabaseApi`/`analyticsSupabaseApi` | M ✔ D ✔ |
+| `/packing` | auth | PackingPage → `trucksSupabaseApi` + `lib/packing` | M ✔ D ✔ |
+| `/routes` | auth | RoutesPage → `routesSupabaseApi` | M ✔ D ✔ |
+| `/tracking` | auth | TrackingPage → `customerTrackingApi` + realtime (guarded) | M ✔ D ✔ |
+| `/booking/new` | auth | NewShipmentPage → `customerShipmentsApi` + `supabase.rpc('dispatch_job_to_drivers')` | M ✔ D ✔ (title not set — finding D2) |
+| `/profile` | auth | ProfilePage → `supabase` | M ✔ D ✔ |
+| `/management` | auth | ManagementPage → `customerDashboardApi` | M ✔ D ✔ |
+| `/management/trucks`, `/management/cartons` | auth | TrucksPage/CartonsPage → **`trucksLocalApi`/`cartonsLocalApi`** (device-local PGlite; 7 default trucks seeded) | M ✔ D ✔ |
+| `/management/customers` | auth | CustomersPage → `customersSupabaseApi` (cloud-only today) | M ✔ D ✔ (error state in local mode) |
+| `/sale-orders`, `/invoice/:shipmentId`, `/settings/company`, `/history` | auth | `saleOrdersSupabaseApi`, `shipmentsSupabaseApi`, `supabase`, `customerShipmentsApi` | M ✔ D ✔ (titles not set on `/settings/company`, `/history` — finding D2) |
+| `/admin`, `/admin/drivers`, `/admin/drivers/:id`, `/admin/agencies`, `/admin/payouts`, `/admin/contact`, `/admin/users`, `/admin/subscriptions` | admin | `adminSupabaseApi` (+ `driverKycApi` on detail) | denied-role ✔ M ✔ D (PermissionDenied state, working "Go to my home") |
+| `/driver/dashboard`, `/driver/trip/:jobId`, `/driver/earnings`, `/driver/history`, `/driver/profile`, `/driver/kyc` | driver | `driver*Api` + `driverJobProgress` RPC + `driverKycApi` | denied-role ✔ M ✔ D |
+| `/agency/dashboard` | agency | `agencyDashboardApi` → **device-local branch when no backend** | M ✔ D ✔ |
+| `/agency/fleet`, `/agency/jobs`, `/agency/billing`, `/agency/drivers`, `/agency/rates`, `/agency/profile` | agency | `agency*Api` (edge functions) | M ✔ D ✔ (empty/error states in local mode — finding D1) |
+| `*` | any | NotFoundPage | M ✔ D ✔ |
+
+Layout nav integrity: all `/agency/*` anchors and `/dashboard` nav anchors resolve; the five settings entries (Management, Subscription, Company Profile, Settings, Help & Support) are `onClick` buttons, present and labelled. Terms/Privacy/Contact link targets verified from `/` and `/login`.
+
+### B. Action → API map refresh (delta vs §4)
+
+`/agency/dashboard` now reads `agencyProfileLocalApi`/`trucksLocalApi`/`cartonsLocalApi` in no-backend mode (previously always `agency-portal-dashboard`); `ContactPage` now imports its support constants from `frontend/src/config/support.ts`; `DriverTripPage` support action reads the same config; `ErrorBoundary`/`PaymentCallbackPage` use the configured support email. `jobOfferOtpContract` is no longer dead code — `/driver/trip/:jobId` and `DriverDashboardPage` consume the offer flow (TO-129/TO-130, accepted); §4's "unmapped both directions" note is superseded.
+
+### C. Findings fixed in this slice (P0 / explicitly instructed)
+
+1. **Agency layout crash (P0, journey-breaking).** `AgencyLayout.tsx` rendered `user_metadata.company` directly; the device-local profile stores `{ name }` (object), so React error #31 collapsed **every** `/agency/*` route into the ErrorBoundary fallback (red audit: 7 agency routes × 2 viewports + broken nav). Fix: `toDisplayName()` (`frontend/src/utils/displayName.ts`) + unit test; browser red→green.
+2. **Device-local landing contradiction (P0 for the local-first journey).** With no backend, `/agency/dashboard` failed its edge fetch and told the user "No Agency Profile Found — Register your transport agency" immediately after `/local-start` had created their device workspace. Fix: `AgencyDashboardPage` no-backend branch renders the device workspace (company name, local truck/carton counts, quick actions to the working local screens, honest cloud-feature note); no cloud call, no failure toast. Regression tests: `AgencyDashboardPage.test.ts` (2).
+3. **Invented support number removed (brief instruction).** `DriverTripPage` "Support" called `tel:18001234567` (hardcoded, unverified). Now `tel:+919999352050` from `frontend/src/config/support.ts`, with an accessible label.
+4. **Support contact inconsistency.** `ErrorBoundary` and `PaymentCallbackPage` offered `support@truckopti.in` while the Contact page publishes the owner-configured address; both now read `SUPPORT_EMAIL` from the same config module (ContactPage unchanged in behaviour).
+5. **Local-first placeholder WebSocket.** Every signed-in page opened `wss://localhost.invalid/realtime/...` (AgencyLayout, MobileLayout notifications, TrackingPage). Fixed with `isSupabaseConfigured` guards (and a corrected effect cleanup in AgencyLayout). Console errors on the workspace proof dropped 4 → 0.
+6. **Misleading success toast.** `NewShipmentPage` showed an empty `✅` toast when the dispatch RPC failed. Now an explicit warning: "Booking created — driver dispatch is temporarily unavailable."
+7. **Unlabelled back buttons** on `/terms` and `/privacy` got `aria-label="Go back"`.
+
+### D. Open findings — owner selection (P1/P2)
+
+**D1 (P1) — local-first mode degrades cloud routes.** With no backend configured, 12 endpoint families are attempted and fail (`ERR_NAME_NOT_RESOLVED` to `https://localhost.invalid`): `/rest/v1/{trucks,shipments,routes,packing_jobs,cartons,customers}` and `/functions/v1/agency-portal-{dashboard,fleet,jobs,billing,drivers,rates}`. Pages render honest empty/error states with a failure toast (`/routes`, `/tracking`, `/history`, `/management/customers`, all agency pages except the dashboard), but there is no in-app explanation that the cloud is absent and no retry affordance on `/management/customers`. Decision needed: (a) gate cloud-only routes/pages in local mode with a clear "connect an account" state, (b) make more routes device-local, or (c) accept as documented local-mode limitation. Evidence: `logs/to139-ux-audit-report.json` (`failedRequestUrls`), screenshots `agency-jobs`, `management-customers`.
+**D2 (P1) — accessibility gaps (heuristic sweep).** 20 icon-only buttons without accessible names across 14 routes (16 of them on `/management/trucks` card actions), 4 unlabelled form fields on 2 routes (`/booking/new` 2, `/settings/company` 2), `no-h1` on 5 routes (`/driver/register`, `/agency/register`, `/agency/dashboard`, `/dashboard`, `/invoice/:shipmentId` desktop), `multiple-h1` on 12 authenticated routes, and `document.title` never set on 11 routes (both registration gates, all six `/agency/*` portal pages incl. the dashboard, `/booking/new`, `/settings/company`, `/history` — all fall back to the index title). No automated WCAG audit was run — these are DOM-inspection findings; each is a small, owner-selectable fix.
+**D3 (P2) — contrast heuristic.** 50 sampled text elements below AA thresholds (e.g. `slate-400`-on-white labels ≈2.5:1, `pricing` fine print, login hero). Sample-based and noise-prone (gradient backgrounds skipped, translucency not modelled); recommend a real contrast pass on high-traffic public pages before acting.
+**D4 (P2) — dead language state.** The app renders English-only at both viewports, including with a persisted `truckopti-language='hi'` returning context (no Devanagari found on 8 surfaces). The `languageStore` still drives a `document.title` effect and unused `labelHi` nav strings remain in `MobileLayout`. Cleanup candidate, not a live inconsistency.
+**D5 (P1, carried) — product findings from TO-134/135 that surface in UX.** The missing `dispatch_job_to_drivers` RPC (booking dispatch has no producer; toast is now honest but the feature is absent) and the cross-tenant RPC surfaces remain open in the DB/product slices, not repairable in UI files.
+
+### E. Not run / limitations
+
+- No cloud-credentialed browser journey (hosted Supabase absent; owner-gated), no driver/admin signed-in journeys, no Stitch regeneration, no staging tier.
+- `stroke-only` history/aria checks are DOM heuristics at two viewports; no screen-reader (NVDA/VoiceOver) pass and no axe-core run.
+- Screenshots and JSON reports live under `logs/` (gitignored working evidence).
+
+### F. Stitch record
+
+`stitch_status` ×1 and `stitch_guide` ×1 (read-only), project `projects/817968552986251880` reused; **0 mutations, 0 retries, 0 generations** in this slice. Screen IDs referenced from the existing inventory only.

@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapPin, Truck, RefreshCw, Navigation, Search, Shield, Phone, ChevronRight, Package, Clock, X, MessageCircle, FileText, MapPinOff, CheckCircle2, Trash2, Loader2 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { customerTrackingApi, shipmentsSupabaseApi, notificationsSupabaseApi, saleOrdersSupabaseApi } from '../services/supabaseApi'
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import MapViewWrapper from '../components/MapViewWrapper'
 import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
@@ -187,8 +187,12 @@ export default function TrackingPage() {
     }
   }, [searchParams, shipments])
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates. Realtime needs a configured cloud backend;
+  // in local-first mode the placeholder client would otherwise open a
+  // WebSocket to an unresolvable host on every visit.
   useEffect(() => {
+    if (!isSupabaseConfigured) return
+
     const subscription = supabase
       .channel('shipments-tracking')
       .on('postgres_changes',

@@ -12,10 +12,10 @@ import {
   type ContactInquiryPayload,
   type StoredContactInquiry,
 } from '../services/contactInquiry'
+import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY } from '../config/support'
 
 const SUBJECTS = ['General', 'Support', 'Sales', 'Partnership']
-const SUPPORT_EMAIL = 'prakashgarg91@gmail.com'
-const SUPPORT_PHONE = '+91 99993 52050'
+const SUPPORT_PHONE = SUPPORT_PHONE_DISPLAY
 
 interface ContactPageProps {
   variant?: 'public' | 'authenticated'
