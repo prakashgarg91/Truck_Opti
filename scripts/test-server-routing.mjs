@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import serverModule from '../server.js';
+import { checkBaseUrl, classifyProbe } from './check-deployment-health.mjs';
 const { app } = serverModule;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -55,6 +56,7 @@ test('healthz is host-independent, uncached, and returns stable JSON', async () 
   assert.equal(res.status, 200);
   assert.equal(res.headers.location, undefined);
   assert.match(res.headers['cache-control'] || '', /no-store/);
+  assert.match(res.headers['content-type'] || '', /application\/json/);
   assert.deepEqual(JSON.parse(res.body), { status: 'ok' });
 });
 
@@ -63,6 +65,7 @@ test('readyz reports ready when the production frontend artifact exists', async 
   assert.equal(res.status, 200);
   assert.equal(res.headers.location, undefined);
   assert.match(res.headers['cache-control'] || '', /no-store/);
+  assert.match(res.headers['content-type'] || '', /application\/json/);
   assert.deepEqual(JSON.parse(res.body), { status: 'ready' });
 });
 
@@ -112,4 +115,73 @@ test('unknown hosts are served, never redirected', async () => {
   const res = await request('/', { host: 'example.com' });
   assert.equal(res.status, 200);
   assert.equal(res.headers.location, undefined);
+});
+
+test('readyz reports not_ready as JSON when the frontend artifact is absent', async () => {
+  const backupPath = `${indexPath}.routing-absent-test-${process.pid}`;
+  const hadIndex = fs.existsSync(indexPath);
+  if (hadIndex) fs.renameSync(indexPath, backupPath);
+
+  try {
+    const res = await request('/readyz', { host: 'www.truckopti.in' });
+    assert.equal(res.status, 503);
+    assert.match(res.headers['content-type'] || '', /application\/json/);
+    assert.equal(res.headers.location, undefined);
+    assert.deepEqual(JSON.parse(res.body), { status: 'not_ready' });
+  } finally {
+    if (hadIndex && !fs.existsSync(indexPath)) fs.renameSync(backupPath, indexPath);
+  }
+});
+
+test('deployment drift check passes against this server', async () => {
+  const result = await checkBaseUrl(baseUrl, { timeoutMs: 5000 });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.probes.map((probe) => probe.path), ['/healthz', '/readyz']);
+  assert.deepEqual(result.probes.map((probe) => probe.verdict), ['healthy', 'healthy']);
+});
+
+test('deployment drift check fails readiness JSON that reports not_ready', () => {
+  const probe = classifyProbe({
+    path: '/readyz',
+    status: 503,
+    contentType: 'application/json; charset=utf-8',
+    body: '{"status":"not_ready"}',
+  });
+
+  assert.equal(probe.ok, false);
+  assert.equal(probe.verdict, 'not-ready');
+});
+
+test('deployment drift check fails a 200 payload that is not the expected health status', () => {
+  const probe = classifyProbe({
+    path: '/healthz',
+    status: 200,
+    contentType: 'application/json',
+    body: '{"status":"degraded"}',
+  });
+
+  assert.equal(probe.ok, false);
+  assert.equal(probe.verdict, 'payload-value');
+});
+
+test('deployment drift check detects SPA fallback HTML pretending to be a health endpoint', async () => {
+  const spaServer = http.createServer((_req, res) => {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.end('<!doctype html><html><head><title>TruckOpti</title></head><body><div id="root"></div></body></html>');
+  });
+
+  await new Promise((resolve) => spaServer.listen(0, '127.0.0.1', resolve));
+  const spaBaseUrl = `http://127.0.0.1:${spaServer.address().port}`;
+
+  try {
+    const result = await checkBaseUrl(spaBaseUrl, { timeoutMs: 5000 });
+
+    assert.equal(result.ok, false);
+    assert.deepEqual(result.probes.map((probe) => probe.verdict), ['spa-fallback', 'spa-fallback']);
+    assert.match(result.probes[0].message, /SPA fallback HTML served instead of \/healthz JSON/);
+  } finally {
+    await new Promise((resolve) => spaServer.close(resolve));
+  }
 });

@@ -59,6 +59,10 @@ function setStaticCacheHeaders(res, filePath) {
 // ── 1. Host-independent platform probes ───────────────────────────────────────
 // These must remain before canonical-host redirects so Heroku/load balancer
 // health checks get an unambiguous status rather than a 301 response.
+// /healthz is process liveness and /readyz is frontend-artifact readiness only;
+// neither probe proves Supabase/auth/payment provider availability.
+// Deployments are verified externally with scripts/check-deployment-health.mjs,
+// which validates the JSON content type and body, not just HTTP 200.
 app.get('/healthz', (_req, res) => {
   setProbeHeaders(res);
   res.status(200).send(JSON.stringify({ status: 'ok' }));

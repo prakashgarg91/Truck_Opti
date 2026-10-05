@@ -7,17 +7,24 @@ import * as Sentry from '@sentry/react'
 import { registerSW } from 'virtual:pwa-register'
 import { queryClient } from './lib/queryClient'
 import { installChunkRecovery } from './utils/runtimeRecovery'
+import { initMonitoring, sendStagingMonitoringProbe } from './utils/monitoring'
 import App from './App'
 import './index.css'
 
-// Initialize Sentry for error tracking
-if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
-    environment: import.meta.env.MODE,
-    tracesSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-  })
+// Initialize sanitized error reporting. Without VITE_SENTRY_DSN this is a
+// no-op (Sentry absent mode); with a DSN, events are redacted, PII is off,
+// replay is disabled and uncaught errors/rejections are captured.
+initMonitoring()
+
+// Controlled staging probe (owner-run, see docs/payment-production-handoff.md):
+// build with VITE_SENTRY_STAGING_PROBE=1 and a staging DSN to send exactly one
+// obviously-fake, sanitized event per page load; the event id is exposed for
+// tooling. The flag must not be set for normal builds.
+if (import.meta.env.VITE_SENTRY_STAGING_PROBE === '1') {
+  const probeEventId = sendStagingMonitoringProbe()
+  if (probeEventId) {
+    window.__truckoptiMonitoringProbe = probeEventId
+  }
 }
 
 const canonicalAppUrl = import.meta.env.VITE_APP_URL?.trim()

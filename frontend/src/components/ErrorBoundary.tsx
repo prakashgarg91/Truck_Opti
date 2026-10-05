@@ -41,13 +41,11 @@ export default class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     })
 
-    // Log error to console in all environments
+    // Development console output plus sanitized production reporting: the
+    // logger funnels the caught error and the component stack into monitoring
+    // (a no-op when no reporting DSN is configured). The user-facing fallback
+    // below is unchanged.
     logger.error('ErrorBoundary caught an error:', error, errorInfo)
-
-    // Here you could also send error to an error reporting service like Sentry
-    // if (import.meta.env.PROD) {
-    //   errorReportingService.captureException(error, { extra: errorInfo })
-    // }
   }
 
   handleReload = (): void => {
