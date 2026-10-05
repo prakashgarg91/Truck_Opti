@@ -363,7 +363,9 @@ async function main() {
   const applied = await applyMigrations()
   record(
     '0. migration chain replays cleanly (full supabase/migrations, newest last)',
-    applied.length >= 35 && applied[applied.length - 1] === '20261005000000_trip_photo_url_correction.sql',
+    // Newest-migration assertion is monotonic (TO-136 appended a forward
+    // migration after the TO-135 baseline) so this stays valid as the chain grows.
+    applied.length >= 35 && applied[applied.length - 1] >= '20261005000000_trip_photo_url_correction.sql',
     `${applied.length} files, last=${applied[applied.length - 1]}`
   )
 
