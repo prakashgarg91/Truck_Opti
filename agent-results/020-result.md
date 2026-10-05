@@ -1,57 +1,133 @@
 # TO-130 — Verify and repair trip transitions and OTP enforcement — result
 
-**Status:** AWAITING_REVIEW (implementation complete on the working tree and committed; browser-journey re-verification deferred — see limitations)
-**Date:** 2026-10-04 · **Writer:** GLM-5.3 Flash worker (interrupted mid-task by run stop; closeout completed by session supervisor) · **Brief:** `agent-tasks/020-trip-transition-integrity.md`
+**Status:** AWAITING_REVIEW (implementation + repair complete on the working tree and committed)
+**Date:** 2026-10-05 (repair run) · 2026-10-04 (initial implementation) · **Writer:** GLM-5.3 Flash worker · **Brief:** `agent-tasks/020-trip-transition-integrity.md`
 
 ## Problem and resulting behavior
 
-`persist_driver_job_offer_progress` (migration `20260730110000`) had five proven defects:
+`persist_driver_job_offer_progress` (migration `20260730110000`) had five proven defects, all
+repaired by the initial TO-130 implementation (`023a2654`):
 
-1. **Replay double-count** — `total_trips` incremented on every call whose resulting status was `delivered`, so replays inflated payout/earnings counters.
+1. **Replay double-count** — `total_trips` incremented whenever the resulting status was
+   `delivered`, including replays (double click / retry), inflating trip counters, payout
+   entitlement and every earnings figure derived from them.
 2. **No ordering** — any status could be written in any order (skips, reruns, backward moves).
-3. **Unlimited OTP guessing** — no attempt bound on the 4-digit pickup/delivery codes.
-4. **Forgeable chronology** — client-supplied timestamps in `p_extra` were written verbatim and doubled as undocumented transition triggers.
-5. **Unrestricted photo paths** — `photo_loading_url`/`photo_delivery_url` accepted arbitrary strings.
+3. **Unlimited OTP guessing** — the 4-digit pickup/delivery codes had no attempt bound.
+4. **Forgeable chronology** — client-supplied `p_extra` timestamps were written verbatim and
+   doubled as an undocumented transition trigger.
+5. **Unrestricted photo paths** — `photo_loading_url`/`photo_delivery_url` accepted arbitrary
+   strings.
 
-Resulting behavior was an unauthorized, unordered, replay-amplifiable lifecycle that the board queue (2026-10-02 review, carried defect from `6f15554f`) required closed.
+The resulting lifecycle is now ordered (`accepted -> pickup_arrived -> in_transit ->
+delivery_arrived -> delivered`), OTP-gated (pickup OTP for transit, delivery OTP for completion
+with prior pickup verification), replay-safe (identical status returns the authoritative row and
+writes nothing, so `total_trips`/payout/revenue change exactly once), attempt-bounded
+(5 attempts per code, 15-minute lock, reset on success), server-timestamped (`p_extra` timestamps
+ignored) and photo-reference restricted to this job's own `trip-photos/<driver user>/<job>/`
+storage path. Direct driver `UPDATE`/OTP `SELECT` is denied by table revocation + column grants.
 
-## Changed files (working tree → committed this run)
+## This repair run
 
-- `supabase/migrations/20261004000000_trip_transition_integrity.sql` (new) — ordered single-step transitions, durable per-code attempt counters reported via `result_code` (failure path commits instead of raising), server-clock timestamps only (`p_extra` timestamps ignored), photo URLs restricted to this job's own `trip-photos/<driver user>/<job>/` storage path, exactly-once delivery effects (idempotent replay returns the same terminal row without re-incrementing).
-- `scripts/trip_transition_integrity.db.test.mjs` (new) — behavioral proof on PGlite (PostgreSQL 18.3 WASM): replays the full 34-file migration chain, drives the real SECURITY DEFINER RPCs under `SET ROLE authenticated` with real RLS/privilege checks. Closeout fix: `expectError` now matches the message prefix (PGlite appends `" [SQL: ...]"` engine context to driver-level errors).
-- `frontend/src/services/driverTripProgress.ts` — server `result_code` protocol (`OK` / `OTP_INCORRECT` / `OTP_LOCKED`), `isJobProgressOk`, bounded failure copy (`resolveJobProgressFailureMessage`); raw server text never shown.
-- `frontend/src/services/driverTripProgress.test.ts` — tests for the result-code protocol and copy.
-- `frontend/src/pages/DriverTripPage.tsx` — consumes result codes; OTP failure renders attempt-bounded copy, never patches local state on rejection. Closeout fix: explicit null narrowing before `buildJobProgressStatePatch` (TS2345 from the interrupted writer).
-- `frontend/src/pages/TrackingPage.tsx` — customer tracking reads the authoritative progress/result fields.
-- `frontend/src/services/customerSupabaseApi.ts` + `.test.ts` — tracking/service types carry `result_code`/`otp_attempts_remaining`.
-- `frontend/src/types/database.types.ts` — regenerated for the new RPC shape.
+Two items from the review/handoff were closed:
 
-## Exact verification (commands → exit codes/counts)
+1. **Photo-URL acceptance case (was the only red DB case).** The initial implementation's
+   `is_job_trip_photo_url` regex matched exactly two path segments after `/trip-photos/`
+   (`<user>/<job>`), but the driver UI uploads to `${user.id}/${job.id}/${field}.${ext}`
+   (`frontend/src/pages/DriverTripPage.tsx:354`) and the migration's own comment describes
+   `<auth user>/<job offer>/<file>`. Every legitimate upload reference was therefore rejected by
+   the RPC with `Invalid trip photo reference` — a real functional defect, not only a test
+   fixture mismatch. Fixed by new correction migration
+   `supabase/migrations/20261005000000_trip_photo_url_correction.sql` (regex now requires
+   `<user>/<job>/<file>`; ownership position check and signature unchanged; ACL re-asserted).
+   Red/green below.
+2. **Latent `job_offers.created_at` defect (traced to `6f15554f` / TO-138).** Audited at HEAD:
+   the files added/changed by that commit are already repaired by the TO-130 implementation
+   commit — `023a2654` rewrote the earnings and trip selects to `offered_at`/`delivered_at`
+   (`frontend/src/services/customerSupabaseApi.ts:379-382,477,486,506,526,556,579,665,679,697`)
+   and added the regression test `selects delivered_at and computes last_thirty_days from it
+   (regression TO130)` (`customerSupabaseApi.test.ts:526`, green). A repo-wide audit of every
+   `.select(` containing `created_at` found no remaining select against `job_offers` (remaining
+   hits are `agency_jobs`, `shipments`, `packing_jobs`, `subscriptions`, `users`, `drivers`,
+   which do have the column) — exact command in the checks table.
 
-Run on the tree including this work (2026-10-04):
+## Changed files (this repair run)
+
+- `supabase/migrations/20261005000000_trip_photo_url_correction.sql` (new) — corrected
+  `public.is_job_trip_photo_url(TEXT, UUID, UUID)` shape regex to accept the third path segment
+  (the uploaded file) while keeping the `<user>/<job>/` ownership position check.
+- `TASKS.md` — TO-130 row status only.
+- `agent-results/020-result.md` — this file.
+
+Initial implementation commit `023a2654` (unchanged by this run): the integrity migration,
+`scripts/trip_transition_integrity.db.test.mjs`, `driverTripProgress.ts`/`.test.ts`,
+`DriverTripPage.tsx`, `TrackingPage.tsx`, `customerSupabaseApi.ts`/`.test.ts`,
+`database.types.ts`.
+
+## Exact verification (commands → exit codes/counts, run 2026-10-05 on this tree)
 
 | Check | Command | Result |
 |---|---|---|
-| Unit suite | `npm test` | exit 0 — **529/529 passed** (35 files) |
-| Lint | `npm --prefix frontend run lint` (`--max-warnings 0`) | exit 0 |
-| Build+typecheck | `npm --prefix frontend run build` | first run exit 2 (TS2345 above) → fixed → **exit 0** |
-| Packing regression | `npm run test:packing` | exit 0 — 18/18 checks |
-| Server routing | `npm run test:server-routing` | exit 0 |
-| Policy suites | `node --test scripts/{production_config_policy,deployment_safety,payment_readiness_policy,security_boundary_policy,supported_runtime_policy}.test.mjs` | exit 0 (ran via workflow `world.run` on parent tree `1a7af17d`) |
-| Glue check | `node tools/glue-check.mjs` | exit 0 (parent tree `1a7af17d`) |
-| Prod audits | `npm audit --omit=dev --audit-level=high` (root, frontend) | exit 0 / exit 0 |
-| TO-130 DB proof | `node scripts/trip_transition_integrity.db.test.mjs` | **14/15 PASS**; test 15 FAILS — see open finding |
+| TO-130 DB proof (red, before fix) | `node scripts/trip_transition_integrity.db.test.mjs` | **exit 1** — cases 1–14 PASS, then harness abort: `Invalid trip photo reference [SQL: ...persist_driver_job_offer_progress...]` on the valid job-scoped URL; cases 16–20 never reached |
+| TO-130 DB proof (green, after fix) | `node scripts/trip_transition_integrity.db.test.mjs` | **exit 0 — 21/21 cases** (order/skip/backward, wrong/missing/locked OTP both codes, pickup-before-delivery, duplicate + serialized completion with one counter effect, forged `p_extra`/timestamps, ownership, cancellations, post-delivery immutability, photo scoping, direct OTP SELECT/UPDATE denial, privilege composition healing, customer-only code visibility, anon EXECUTE denial) |
+| Unit suite | `npm test` | **exit 0 — 529/529 passed, 35 files** |
+| Trip/earnings service tests | `npx vitest run src/services/customerSupabaseApi.test.ts src/services/driverTripProgress.test.ts` (cwd `frontend`) | **exit 0 — 64/64 passed** |
+| Lint | `npm --prefix frontend run lint` | **exit 0** (`--max-warnings 0`) |
+| Build+typecheck | `npm --prefix frontend run build` | **exit 0** |
+| Packing regression | `npm run test:packing` | **exit 0 — 18 checks passed** |
+| Server routing | `npm run test:server-routing` | **exit 0 — 10/10 pass** |
+| Policy suites | `node --test scripts/{production_config_policy,deployment_safety,payment_readiness_policy,security_boundary_policy,supported_runtime_policy,production_config_audit,launch_gate_policy}.test.mjs` | **exit 0 — 70/70 pass, 0 fail** |
+| Glue check | `node tools/glue-check.mjs` | **exit 0 — 0 gaps, 0 warnings** |
+| Root production audit | `npm audit --omit=dev --audit-level=high` | **exit 0 — 0 vulnerabilities** |
+| Frontend production audit | `npm audit --prefix frontend --omit=dev --audit-level=high` | **exit 0 — 0 vulnerabilities** |
+| `created_at` audit | repo-wide scan of every `.select(` containing `created_at` + per-file review of the TO-138 commit | no `job_offers` hit remains (see above) |
 
-Browser-tier evidence on the parent tree (`1a7af17d`, pre-TO-130), recorded by the run's runtime prover: public smoke **12/12 exit 0**, launch smoke **63/63 exit 0** (local-first verdict; the dead `.env.local` set-aside recipe was applied and restored), apps/web Python auth tests **6/6 exit 0**.
+## Evidence level
 
-## Remaining limitations
+- **DB proof: PGlite tier — real PostgreSQL 18.3 (WASM) engine, real RLS, real `SET ROLE
+  authenticated` + JWT-claims role switching, real table/column privilege checks, full
+  35-migration chain replayed (now ending in the correction migration).** NOT the disposable
+  Supabase stack: Docker is absent on this machine — `docker --version` → `command not found`;
+  `where docker` (cmd) → no result; `C:\Program Files\Docker\Docker\resources\bin\docker.exe`
+  → not found; `npx supabase status` → `failed to inspect container health: docker: command not
+  found (podman also not found) — install Docker Desktop or Podman and ensure it is on PATH`
+  (WSL `docker-desktop` distro is Stopped, no engine/CLI). Consequences, stated plainly:
+  no PostgREST/GoTrue round-trips, no second connection (true concurrent transactions are
+  covered by the sequential replay + `FOR UPDATE` case only), no browser trip proof.
+- **Frontend: unit/vitest (jsdom) + typecheck/build.** No browser run this session.
+- **Browser trip proof (brief-required): NOT RUN.** The TO-129 browser harness
+  (`scripts/atomic_job_offer_response.browser-proof.mjs:26-27`) and the TO-129 RLS test
+  (`scripts/atomic_job_offer_response.rls.test.mjs:8-10`) both require `npx supabase start`,
+  which cannot run without Docker. No browser journey was faked or substituted.
 
-- **Open finding for supervisor review (test 15):** the photo-URL acceptance case raises `Invalid trip photo reference` where the test expects a job-scoped `trip-photos/<user>/<job>/` URL to be accepted. 14/15 behavioral checks PASS — ordered happy path, skip/backward rejection, wrong/missing/locked OTP handling with 5-attempt/15-minute bound and success reset, pickup-before-delivery, duplicate-completion exactly-once (sequential and `FOR UPDATE`-ordered), forged `p_extra` and client-timestamp immunity, own-vs-other driver ownership, terminal cancellations, post-delivery immutability. The failing case is either a fixture mismatch (URL built against `drivers.id` instead of the driver's `user_id`) or an `is_job_trip_photo_url` strictness bug; unresolved in this run's closure budget.
-- Two closeout fixes were made by the supervisor to land the writer's interrupted work: harness prefix-matching in the DB test (`expectError`), explicit null narrowing in `DriverTripPage.tsx`, and the missing `result_code`/`otp_attempts_remaining` OUT-param assignment in the migration's OTP-failure return (proven by tests 4-5 going green).
-- The TO-130 DB proof is **PGlite-tier** (real Postgres engine, real RLS/privileges, full 34-migration replay) — not the disposable Supabase stack (no PostgREST/GoTrue; the stack is currently absent from this machine: no containers, `supabase` CLI not installed). Labeled as such in the test header.
-- Browser journey for the OTP-gated trip flow was not re-verified in a browser after the service change (run budget closed); smokes on the parent tree plus unit-tier coverage stand in until TO-134/TO-135 journey proofs.
-- Supervisor review pending — status is deliberately AWAITING_REVIEW, not DONE.
+## Remaining limitations / risks
+
+- The photo-URL correction is proven at the SQL/RPC layer; the browser upload → persist flow was
+  not re-run end-to-end (needs the local stack).
+- The DB proof cannot execute two true concurrent transactions; the exactly-once guarantee rests
+  on row locking (`FOR UPDATE OF jo`, then driver) plus the identical-status replay path, proven
+  by the sequential case. A true two-connection concurrency run remains part of TO-134/TO-135.
+- `TASKS.md` 2026-10-04 records the local disposable stack as absent; unchanged by this run.
+- Not re-run by this worker: public/launch browser smokes, apps/web pytest, `scripts/
+  atomic_job_offer_response.rls.test.mjs` (stack-gated). Prior-run parent-tree smoke evidence
+  stands in `agent-results/020-result.md` history (commit `366a1e7b`).
+- Untracked local state preserved and untouched: `.serena/`, `.vscode/mcp.json.bak-qdrant-cleanup`,
+  `closeout-logs/`, `.ai-work-factory/quality.json` (factory-managed file created during this
+  session; not product code).
+
+## Owner gates
+
+None new. No hosted/production action was taken; no `supabase db push`; no secrets touched.
 
 ## Next smallest recommendation
 
-Supervisor review of the migration + DB proof; then TO-132 (`agent-tasks/022-sanitized-observability.md`) per the queue.
+GPT-6/supervisor review of the correction migration + 21/21 DB proof. Then TO-132 per the board
+queue. When the disposable stack is rebuilt (TO-134/135/136), re-run
+`scripts/atomic_job_offer_response.rls.test.mjs` and a trip browser proof to lift the two
+stack-gated checks.
+
+## Git state
+
+- Branch `main`, single canonical checkout; no worktrees/branches created.
+- This run: correction migration + `TASKS.md` row + this result file, committed together;
+  TO-130 row set to AWAITING_REVIEW.
+- Initial implementation remains at `023a2654` (already on `main`).
