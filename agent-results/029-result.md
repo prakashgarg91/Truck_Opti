@@ -54,7 +54,7 @@ Artifacts (gitignored working evidence): `logs/to139-audit-red.baseline.txt`, `l
 
 ### Fixed findings (each with red evidence)
 
-1. **P0 — agency layout crash (React #31).** `user_metadata.company` is `{ name }` for the device-local profile, so `AgencyLayout` rendering it collapsed **every** `/agency/*` route to "Something went wrong" (red audit hard failures + red screenshot). Fixed via `toDisplayName`; green: all agency routes render, company label shows.
+1. **P0 — agency layout crash (React #31).** `user_metadata.company` is `{ name }` for the device-local profile, so `AgencyLayout` rendering it collapsed **every** `/agency/*` route to "Something went wrong" (red audit hard failures, `logs/to139-ux-audit-report.red.json`: `errorBoundary: true` on 14 route/viewport results). Fixed via `toDisplayName`; green: all agency routes render, company label shows (`logs/to139-ux-audit/mobile-390x844/agency-dashboard.png`).
 2. **P0 — device-local landing contradiction.** After `/local-start` created the device workspace, `/agency/dashboard` failed its cloud fetch and told the user "No Agency Profile Found — Register your transport agency" (intermediate evidence `logs/to139-ux-audit-report.after-crash-fix.json`, screenshot preserved). Now the dashboard shows the device workspace (`On this device`, local truck/carton counts, quick actions, honest cloud-feature note; no failure toast) — green screenshot `logs/to139-ux-audit/mobile-390x844/agency-dashboard.png`.
 3. **Invented support number removed (brief instruction).** `tel:18001234567` → `tel:+919999352050` (owner-configured). Support email inconsistency (`support@truckopti.in` in ErrorBoundary/PaymentCallback vs the configured address on Contact) resolved through `config/support.ts`.
 4. **Local-first placeholder WebSocket.** Every signed-in page opened `wss://localhost.invalid/realtime/...`; guarded in the three reachable subscribers (AgencyLayout, MobileLayout notifications, TrackingPage). Workspace proof console errors 4 → 0.
@@ -81,7 +81,7 @@ Artifacts (gitignored working evidence): `logs/to139-audit-red.baseline.txt`, `l
 - `/auth/callback` was not driven (needs a real OAuth code); its unit test and the smoke's auth surfaces cover adjacent behaviour only.
 - A11y signals are DOM heuristics (names/labels/headings/overflow) and a sampled contrast ratio; **no axe-core or screen-reader pass** was run. Overflow was checked at the two briefed viewports only.
 - Screenshots/reports are gitignored `logs/` artifacts, not committed.
-- Red-baseline audit numbers: the preserved red run is the refined script (100 checks / 18 hard failures); the very first run additionally counted title mismatches as hard failures (32) before the check was corrected to a finding.
+- Red-baseline audit numbers: the preserved red run is the refined script (100 checks / 18 hard failures); the very first run additionally counted title mismatches as hard failures (32) before the check was corrected to a finding. The red run's screenshots were overwritten by the later green runs — the red JSON report (`logs/to139-ux-audit-report.red.json`) and console transcript (`logs/to139-audit-red.baseline.txt`) are the preserved red artifacts, plus the intermediate post-crash-fix screenshot set in `logs/to139-ux-audit-after-crash-fix/`.
 
 ## 7. Stitch record (per brief)
 
