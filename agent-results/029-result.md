@@ -17,7 +17,7 @@ The September `docs/design-audit.md` scored **generated Stitch HTML**, which can
 
 | File | Change |
 |---|---|
-| `scripts/ux_route_audit.mjs` | **New.** Route/action browser audit: 51 route entries (public / device-local agency / denied-role) × 2 viewports with screenshots, console/page-error and failed-request capture, ErrorBoundary/404/redirect hard-failure detection, overflow + a11y DOM signals (nameless controls, unlabelled fields, alt, headings, lang) and a bounded contrast heuristic; layout-nav href integrity + Terms/Privacy/Contact link targets. Exits 1 on any hard failure. |
+| `scripts/ux_route_audit.mjs` | **New.** Route/action browser audit: 44 route entries (16 public / 23 device-local agency / 5 denied-role) plus link-target, layout-nav and nav-resolution checks — 52 checks per viewport × 2 viewports = 104 — with screenshots, console/page-error and failed-request capture, ErrorBoundary/404/redirect hard-failure detection, overflow + a11y DOM signals (nameless controls, unlabelled fields, alt, headings, lang) and a bounded contrast heuristic. Exits 1 on any hard failure. |
 | `frontend/src/utils/displayName.ts` + `.test.ts` | **New.** Normalizes `user_metadata.company` (string or `{ name }`) to a renderable string — the object shape threw React error #31. 4 unit tests. |
 | `frontend/src/pages/AgencyDashboardPage.tsx` + `.test.ts` | **Device-local branch**: with no backend the dashboard renders the device workspace (company, local truck/carton counts, quick actions, cloud-feature note) instead of the failed cloud fetch + "No Agency Profile Found"/cloud-registration CTA. 2 regression tests. |
 | `frontend/src/layouts/AgencyLayout.tsx` | Company label via `toDisplayName` (P0 crash); realtime job subscription guarded by `isSupabaseConfigured` and cleanup corrected (effect previously returned no cleanup). |
@@ -32,20 +32,20 @@ The September `docs/design-audit.md` scored **generated Stitch HTML**, which can
 | `docs/design-audit.md` | New 2026-10-05 addendum: actual-app route inventory + action/API map refresh, red→green evidence, fixed findings, P1/P2 owner backlog, Stitch record. |
 | `agent-results/029-result.md`, `TASKS.md` | This result; board row → AWAITING_REVIEW. |
 
-No other file was touched; the diff is 13 modified + 6 new files, all inside the brief's allowed scope (`docs/design-audit.md`; route components/layouts/support config affected by concrete findings; browser checks under `scripts/`).
+No other file was touched; the work commit is 12 modified + 6 new files, all inside the brief's allowed scope (`docs/design-audit.md`; route components/layouts/support config affected by concrete findings; browser checks under `scripts/`); `TASKS.md` follows in the small board commit.
 
 ## 3. Red → green (exact commands, exit codes, counts)
 
 | Check | Command (dir) | RED | GREEN |
 |---|---|---|---|
-| UX route audit | `node scripts/ux_route_audit.mjs` (`D:\Github\Truck_Opti`, `PUBLIC_APP_URL=http://127.0.0.1:3000`) | **exit 1 · 100 checks · 18 hard failures · 144 findings** — all 7 `/agency/*` routes ×2 viewports rendered the ErrorBoundary fallback (React #31), agency nav hrefs/nav targets broken, invented phone present | **exit 0 · 104 checks · 0 hard failures · 174 findings** (open P1/P2) |
-| Device-local workspace proof (TO-134 harness) | `node scripts/customer_local_workspace.browser-proof.mjs` | 2/2 viewports but 4 console-error findings (`React #31` + placeholder WSS) | **2/2 viewports · 0 console errors · 0 page errors · 0 failed responses** |
-| Launch smoke | `node scripts/frontend_launch_smoke.mjs` | (baseline ran green pre-change) | **exit 0 · 63/63** |
+| UX route audit | `PUBLIC_APP_URL=http://127.0.0.1:3000 node scripts/ux_route_audit.mjs` (`D:\Github\Truck_Opti`) | **exit 1 · 100 checks · 18 hard failures · 144 findings** — all 7 `/agency/*` routes ×2 viewports rendered the ErrorBoundary fallback (React #31), agency nav hrefs/nav targets broken, invented phone present | **exit 0 · 104 checks · 0 hard failures · 174 findings** (open P1/P2) |
+| Device-local workspace proof (TO-134 harness) | `PUBLIC_APP_URL=http://127.0.0.1:3000 node scripts/customer_local_workspace.browser-proof.mjs` | 2/2 viewports but 4 console-error findings (`React #31` + placeholder WSS) | **2/2 viewports · 0 console errors · 0 page errors · 0 failed responses** |
+| Launch smoke | `PUBLIC_APP_URL=http://127.0.0.1:3000 node scripts/frontend_launch_smoke.mjs` | (baseline ran green pre-change) | **exit 0 · 63/63** |
 | Frontend unit | `npm run test:unit` (`frontend`) | 545/545 (repo baseline) | **exit 0 · 38 files · 551/551** (+4 displayName, +2 AgencyDashboardPage) |
 | Frontend lint | `npm run lint` (`frontend`) | — | **exit 0 · 0 warnings** |
 | Frontend typecheck | `npx tsc --noEmit` (`frontend`) | — | **exit 0** |
 | Frontend build | `npm run build` (`frontend`, `.env.local` moved aside for a local-first artifact) | — | **exit 0** |
-| Policy suite | `node --test scripts/{launch_gate,payment_readiness,production_config_audit,production_config,security_boundary,supported_runtime,deployment_safety}*.test.mjs` | — | **exit 0 · 70/70** |
+| Policy suite | `node --test scripts/launch_gate_policy.test.mjs scripts/payment_readiness_policy.test.mjs scripts/production_config_audit.test.mjs scripts/production_config_policy.test.mjs scripts/security_boundary_policy.test.mjs scripts/supported_runtime_policy.test.mjs scripts/deployment_safety.test.mjs` | — | **exit 0 · 70/70** |
 | Server routing | `npm run test:server-routing` | — | **exit 0 · 15/15** |
 | Packing regression | `npm run test:packing` (`frontend`) | — | **exit 0 · 18/18** |
 | Glue check | `node tools/glue-check.mjs` | — | **exit 0 · 0 gaps, 0 warnings** |
@@ -62,7 +62,7 @@ Artifacts (gitignored working evidence): `logs/to139-audit-red.baseline.txt`, `l
 
 ## 4. Route/action coverage (what the 104 checks prove)
 
-- **Public (15 routes + 5 login surfaces):** all render at both viewports including the 404 page and the DEV-only `/test-payment` (404 in production build); Terms/Privacy/Contact link targets from `/` and `/login` reach their pages.
+- **Public (16 audited entries: 14 public pages, the DEV-only `/test-payment` which 404s in the production build, and a 404 probe):** all render at both viewports; the 5 login surfaces × 2 viewports are covered by the launch smoke (63/63); Terms/Privacy/Contact link targets from `/` and `/login` reach their pages.
 - **Authenticated device-local agency (23 routes):** all render without error boundary; agency and customer layout nav hrefs/buttons present and each nav target resolves (16 hrefs); `/invoice/:shipmentId` renders; denied-role `/admin*` and `/driver/*` (5 routes) render the PermissionDenied state with a working "Go to my home".
 - **Consumer actions checked in-browser:** local workspace setup, truck/carton create → reload → read-back (TO-134 harness), contact form failure fallback (smoke), auth fallback (smoke), keyboard entry to the device workspace (smoke).
 - **Still open and documented** (see §5): local-first degradation of cloud routes, a11y gaps, contrast sample, dead language state, and the carried DB/product findings.
