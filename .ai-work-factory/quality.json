@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "name": "Truck_Opti release checks",
+  "checks": {
+    "unit": {
+      "command": "npm",
+      "args": ["--prefix", "frontend", "run", "test:unit"],
+      "timeoutSeconds": 900,
+      "required": true
+    },
+    "lint": {
+      "command": "npm",
+      "args": ["--prefix", "frontend", "run", "lint"],
+      "timeoutSeconds": 600,
+      "required": true
+    },
+    "build": {
+      "command": "npm",
+      "args": ["--prefix", "frontend", "run", "build"],
+      "timeoutSeconds": 900,
+      "required": true
+    },
+    "packing": {
+      "command": "npm",
+      "args": ["--prefix", "frontend", "run", "test:packing"],
+      "timeoutSeconds": 600,
+      "required": true
+    },
+    "server-routing": {
+      "command": "npm",
+      "args": ["run", "test:server-routing"],
+      "timeoutSeconds": 300,
+      "required": true
+    },
+    "glue": {
+      "command": "npm",
+      "args": ["run", "glue:check"],
+      "timeoutSeconds": 300,
+      "required": true
+    }
+  },
+  "requiredFiles": ["README.md", "AGENTS.md", "ARCHITECTURE.md", "TASKS.md"],
+  "forbiddenTrackedFiles": [".env", ".env.local"],
+  "requireClean": false
+}
