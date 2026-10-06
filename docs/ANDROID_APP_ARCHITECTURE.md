@@ -1,5 +1,7 @@
 # TruckOpti Android App Architecture
 
+> **2026-10-06 alignment:** Historical June expansion proposal. Four apps/regional hierarchy are superseded by the single-PWA pilot and justified tracking companion in [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md). Root architecture and TASKS.md govern implementation.
+
 > **Version:** 1.0 | **Date:** 2026-06-10 | **Status:** Design Phase
 >
 > This document defines the Android app strategy for TruckOpti, covering 4 personas, management hierarchy escalation, and integration with the existing web platform.

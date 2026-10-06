@@ -1,5 +1,7 @@
 # TruckOpti Architecture
 
+> **2026-10-06 alignment:** Historical subsystem reference. Current architecture: [../ARCHITECTURE.md](../ARCHITECTURE.md). Product/hosting decisions: [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md). Old project ID/endpoints below are not verified current configuration.
+
 > **Production**: https://www.truckopti.in  
 > **Supabase Project ID**: `jbxncejtcbpcronndqlx`  
 > **Hosting**: Heroku (Node.js + Vite-built SPA in `dist/`)

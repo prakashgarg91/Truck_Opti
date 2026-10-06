@@ -1,5 +1,7 @@
 # Functional Coverage Inventory — Truck_Opti
 
+> **2026-10-06 alignment:** Historical October 3 coverage snapshot. Later 024/025/026/029 results and fresh [031-result.md](031-result.md) supersede contradictory rows. Current spec: [PRODUCT_ROADMAP.md](../docs/PRODUCT_ROADMAP.md). Passing cases can coexist with separately reproduced defects.
+
 **Generated:** 2026-10-03 · **Branch:** `main` · **Writer:** Coverage writer (dynamic-workflow subagent; this file is its only edit, never committed by it)
 **Source:** 240 coverage rows supplied by the read-only functional coverage sweep behind this ask, spanning 8 areas: auth (40), kyc (25), offers (19), customer (34), agency (30), admin (38), payments (34), ops (20). Statuses, tiers, and evidence anchors are carried **verbatim**.
 

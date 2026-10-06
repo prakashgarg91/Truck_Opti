@@ -1,4 +1,6 @@
 # 🤖 Claude Agent Task Execution Matrix
+
+> **2026-10-06 alignment:** Retired process reference, retained for historical packing evidence. This is not an active router/board. Use [AGENTS.md](../AGENTS.md), [ARCHITECTURE.md](../ARCHITECTURE.md), [TASKS.md](../TASKS.md) and the assigned brief.
 ## Advanced 3D Bin Packing Integration - ✅ COMPLETED
 
 **Status:** 🟢 ALL TASKS COMPLETE

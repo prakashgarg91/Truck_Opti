@@ -1,5 +1,7 @@
 # 🚛 TruckOpti: 3D Truck Loading Optimization Platform
 
+> **Current project direction (2026-10-06):** hosted transport-agency pilot; engineering and hosted gates remain open. Start with [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [TASKS.md](TASKS.md), then the assigned brief. [Product requirements and completion plan](docs/PRODUCT_ROADMAP.md) saves the owner request, remaining workflows/screens and pilot acceptance. [Detailed reusable build prompt](agent-tasks/031-transport-agency-pilot-plan.md). Feature/build badges and legacy instructions below are historical descriptions, not a current production-readiness verdict.
+
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-2.0%2B-green.svg)](https://flask.palletsprojects.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

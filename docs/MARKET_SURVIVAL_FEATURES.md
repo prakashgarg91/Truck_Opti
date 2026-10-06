@@ -1,5 +1,7 @@
 # TruckOpti Market Survival & Thrive Feature Guide
 
+> **2026-10-06 alignment:** Historical market research, not a delivery checklist/readiness claim. Current pilot scope: [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md). Provider/market facts require fresh verification.
+
 > **Date:** 2026-06-10 | **Analyst:** Copilot | **Scope:** Deep competitor research across 5 major Indian logistics players
 >
 > **Competitors Analyzed:** WheelsEye, Delhivery, BlackBuck, Porter, Mahindra Logistics (Rivigo)

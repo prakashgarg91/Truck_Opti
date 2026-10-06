@@ -2,6 +2,14 @@
 
 Single execution board. Details live in `agent-tasks/`; evidence lives in `agent-results/`.
 
+## Current direction — 2026-10-06
+
+TO-141 day close: docs-only assessment accepted, owner request saved; unit 551/551, packing 18/18, policies 62/62 after current queue alignment (initial pre-queue 61/62), routing 15/15, build/lint and glue exit 0, Python auth 6/6; SQL trip 21/21, customer 25/25 + 3 findings, dispatch 35/35 + 6 findings, admin 53/53 + 4 findings. No new hosted/browser/device proof; product gaps still open. 13 checkouts and existing untracked state preserved. Result: `agent-results/031-result.md`.
+
+Owner-selected product scope: hosted Indian transport-agency pilot, 1–2 agencies with 5–10 trucks each and 1–2 platform staff. Current requirements/complete journeys/screen inventory: `docs/PRODUCT_ROADMAP.md`; reusable build prompt: `agent-tasks/031-transport-agency-pilot-plan.md`. This is a documentation assessment, not a feature delivery. Historical DONE proof tasks may still reproduce defects; they do not mean those defects are repaired.
+
+Next AI-executable task: **TO-142**, `agent-tasks/032-tenant-authority-repair.md`, then TO-143 dispatch/lifecycle. Hosted credentials, migration/function rollout, production deployment and real payments remain owner-gated. TO-137 need not block a pilot using manually reconciled subscription receipts. TO-140 remains AWAITING_REVIEW; parked checkouts are preserved.
+
 | ID | Task | Status | Owner | Brief | Result |
 |---|---|---|---|---|---|
 | OPS-000 | Replace active legacy agent routing with simple root control plane | DONE | GPT-6 | — | `agent-results/000-migration.md` |
@@ -38,6 +46,30 @@ Single execution board. Details live in `agent-tasks/`; evidence lives in `agent
 | TO-140 | Consolidate repository state and resolve obsolete tooling | AWAITING_REVIEW | GLM-5.3 Flash + GPT-6 review | `agent-tasks/030-repository-consolidation.md` | `agent-results/030-result.md` — 11 Truck_Opti awf worktrees audited (0 removed: 10 dirty, 1 clean-but-unmerged); 1 proven-merged branch deleted (`stitch/driver-docs-upload-20260919` `d66f10db`); 7 branches + 3 stashes + 4 untracked paths parked with exact next actions; 110 non-Truck_Opti dirs in the shared worktree root left untouched |
 
 ## Known owner gates
+### Pilot delivery queue (same board)
+
+| ID | Task | Status | Owner | Brief | Result |
+|---|---|---|---|---|---|
+| TO-141 | Assess and plan the Indian transport-agency pilot; save owner requirements | DONE_DOCS_ONLY | GPT-6 | `agent-tasks/031-transport-agency-pilot-plan.md` | `agent-results/031-result.md` |
+| TO-142 | Repair tenant, usage and private-document authority | READY | GPT-6 / serialized writer | `agent-tasks/032-tenant-authority-repair.md` | — |
+| TO-143 | Complete authorized booking, assignment and lifecycle propagation | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/033-dispatch-lifecycle.md` | — |
+| TO-144 | Agency setup, memberships, client sites and actual fleet | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/034-agency-client-foundation.md` | — |
+| TO-145 | Sales-order import, load planning and client approval | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/035-order-capacity-planning.md` | — |
+| TO-146 | GR/LR QR and pickup-to-material-receipt proof | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/036-gr-pod-custody.md` | — |
+| TO-147 | Trip tracking, stoppages and breakdown/emergency operations | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/037-tracking-incidents.md` | — |
+| TO-148 | Freight invoices, private documents and collections | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/038-freight-invoices-collections.md` | — |
+| TO-149 | Expense, fuel, advances and maintenance control | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/039-expenses-fuel-maintenance.md` | — |
+| TO-150 | Driver salary, payroll settlement and agency reports | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/040-payroll-reports.md` | — |
+| TO-151 | Normalized order API and first-client ERP connector | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/041-erp-connector.md` | — |
+| TO-152 | Platform onboarding, support, tenant billing and export | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/042-platform-pilot-operations.md` | — |
+| TO-153 | Hosted pilot runtime, restore and selling acceptance | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/043-hosted-pilot-proof.md` | — |
+
+### Current live/discovery gates
+
+- First-client ERP/version/sanitized sample; actual phone/tracker model and screen-off requirements; accountant-reviewed freight tax and payroll examples; hosting spend/recovery/support commitments. See roadmap section 13.
+- These choices block dependent live/integration proof, not independent local TO-142 repair. No product code, Serdroid deployment or provider configuration changed in TO-141.
+- Older “start TO-121” and completion-run notes below are historical; the current next task is TO-142.
+
 - 2026-09-30 assessment: new brief sequence 011-030 supersedes the old all-in-one execution prompt; details/evidence are in `agent-results/010-result.md`. Historical DONE rows retain only their originally verified local/code scope.
 - Start with TO-121 (brief 011). Then work TO-122, TO-124, TO-123; execute other READY tasks serially while hosted recovery is blocked. Dependency statuses are updated by GPT-6 after acceptance.
 - The September 11 Heroku missing-config/release snapshots are historical. Heroku CLI currently requires login; production release/config must be rechecked after owner authentication. Do not assume old secrets are still missing.

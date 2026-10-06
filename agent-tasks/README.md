@@ -3,6 +3,10 @@
 Use `NNN-short-name.md`. Each brief must state objective, allowed scope, forbidden scope, acceptance criteria, required verification, dependencies/owner gates, and expected result file.
 
 Workers do not widen scope. Return architectural uncertainty to GPT-6.
+
+## Current pilot sequence (2026-10-06)
+
+Owner requirements/journeys: `docs/PRODUCT_ROADMAP.md`. Brief 031 contains the assessment and detailed reusable build prompt. Briefs 032–043 define dependency-ordered pilot slices; TASKS.md alone determines READY/blocked/DONE. Start at TO-142/032, not the historical September sequence below. These handoffs do not claim features were built. One writer on main; hosted actions remain owner-gated.
 ## Completion-task execution contract (2026-09-30)
 
 The remaining briefs 011-030 were prepared by GPT-6 after current repository checks. They refine TO-112, not a new task board. Read AGENTS.md -> ARCHITECTURE.md -> TASKS.md -> your single assigned brief. This README supplies the shared execution rules.

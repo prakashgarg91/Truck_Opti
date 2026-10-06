@@ -1,5 +1,7 @@
 # Competitor Feature Analysis
 
+> **2026-10-06 alignment:** Historical research; competitor claims were not refreshed. Current Truck_Opti requirements: [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md); execution: [TASKS.md](../TASKS.md).
+
 > **Date:** 2026-06-10 | **Analyst:** Copilot | **Scope:** WheelsEye, Delhivery, TruckOpti Gap Analysis
 
 ---

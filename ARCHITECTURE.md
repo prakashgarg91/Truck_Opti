@@ -20,6 +20,20 @@ Verified active boundaries include:
 - Keep local-first validation before production verification.
 - Treat old launch counts/status snapshots as historical evidence, not current truth; rerun the repository gates before making readiness claims.
 
+## Owner-selected pilot direction (2026-10-06; proposed modules, not implemented claims)
+
+Retain the existing React/TypeScript PWA and Supabase/PostgreSQL authority boundaries. Build a shared multi-tenant agency/client/driver/platform workflow for 1–2 agencies, 5–10 trucks each and 1–2 support staff. Explicit memberships and client-consented agency order access must precede shared dispatch; do not reuse a browser-selected global role as company authority.
+
+Product spec, screen inventory, command contracts, persistence rules and dependency plan: `docs/PRODUCT_ROADMAP.md`. Single execution board: `TASKS.md`. Reusable implementation prompt: `agent-tasks/031-transport-agency-pilot-plan.md`.
+
+Priority: fix tenant/usage/document access → authorized dispatch/status propagation → company/sites/fleet → sales-order allocations and feasibility → GR/QR/POD → tracking/incidents → freight invoicing/collections → costs/fuel/payroll → first-client ERP → platform ops → hosted/restore proof. Existing local SQL/fixture evidence does not certify hosted identity, storage or Edge behavior.
+
+Freight invoices, goods invoices and SaaS invoices are separate models. All money, document issue and trip/approval transitions are server-authoritative. Browser/Python/optional phone calculation output is untrusted planning input until revalidated.
+
+SMS is an optional delivery adapter; trusted password/Google as configured and stop-scoped handover confirmation allow a pilot without an SMS contract. Browser GPS is not a promise of continuous background tracking.
+
+Serdroid at `D:/Github/Serdroid` uses PocketBase/Termux/cloudflared according to inspected documents; it is not a drop-in replacement for this backend. Optional worker/backup/demo is the recommended trial role. Full backend migration or sole phone hosting needs explicit architectural choice and measured recovery/device proof.
+
 ## Agent architecture
 `GPT-6 supervisor -> bounded task briefs -> GLM-5.3 Flash workers -> result files -> GPT-6 review/integration`.
 

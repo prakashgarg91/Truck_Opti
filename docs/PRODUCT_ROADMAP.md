@@ -1,292 +1,316 @@
-# TruckOpti Product Roadmap & Feature Master List
+# Truck_Opti transport-agency pilot: requirements and completion plan
 
-> **Version:** 2.0 | **Date:** 2026-06-10 | **Status:** Post-Launch Expansion
->
-> This document consolidates the competitive analysis, Android app strategy, and management hierarchy into a unified product roadmap.
+Updated 2026-10-06. Owner-requested scope: hosted software for 1–2 Indian goods transport agencies, 5–10 trucks each, managed by 1–2 platform staff.
 
----
+This is the authoritative product requirements and phased plan. TASKS.md alone owns execution status; ARCHITECTURE.md owns architecture; docs/design-audit.md owns implemented-screen UX evidence. This replaces the June “post-launch/all live” feature claims. Historical roadmaps remain recoverable in Git; they are not current readiness evidence. No product functionality was added by this assessment.
 
-## 1. Vision
+## 1. Verdict and evidence
 
-**TruckOpti** is India's smartest logistics platform, combining **3D bin packing intelligence** with **real-time truck discovery** to reduce shipping costs by 12-20% and eliminate empty miles.
+**Not ready to sell as a fully functioning transport-company management system.** A paid pilot becomes reasonable only after safe tenant isolation, real shared persistence, one complete order-to-cash journey and hosting/restore proof. Screen existence and local green suites do not establish that gate.
 
-**Tagline:** *"Pack Smart. Ship Faster. Pay Less."*
+Assessment tree: main aba05fc8. Fresh fetch exit 0; origin/main...HEAD = 0 behind / 0 ahead before this documentation change. There are 13 checkouts including primary, 11 parked awf worktrees and one legacy detached checkout. Pre-existing untracked .serena/, .vscode/mcp.json.bak-qdrant-cleanup and closeout-logs/ preserved. Do not create branches/worktrees or discard parked work.
 
----
+Fresh 2026-10-06 evidence:
+- frontend npm run test:unit: exit 0, 551/551 tests, 38/38 files. React act and repeated GoTrue client warnings remain in test output.
+- frontend npm run build: exit 0, includes TypeScript; PGlite/browser-external/eval and large-chunk warnings remain.
+- frontend npm run lint: exit 0, zero warnings under the lint gate.
+- node scripts/dispatch_delivery_journey.db.test.mjs: exit 0, 35/35 cases, **6 separate findings reproduced**.
+- node scripts/customer_journey_isolation.db.test.mjs: exit 0, 25/25 cases, **3 separate findings reproduced**.
+- node scripts/admin_rls_proof.db.test.mjs: exit 0, 53/53 cases, **4 separate findings reproduced**.
+- These SQL proofs use PGlite/PostgreSQL 18.3, not the entire Supabase HTTP/Auth/Storage/Edge runtime. They are not hosted E2E proof.
+- Additional fresh gates: packing 18/18, trip SQL 21/21, routing 15/15, glue 0 gaps, Python auth 6/6, policy suites 62/62 after board alignment (initial pre-queue 61/62). Documentation integrity: 13 new briefs and 33 screen/workflow rows with resolved board references.
+- Browser smoke 12/12 and 63/63 and Python 6/6 in the earlier board are historical to this assessment; no fresh credentialed hosted browser test was performed.
 
-## 2. Current State (Heroku v94 — June 2026)
+Existing evidence: agent-results/024-result.md, 025-result.md, 026-result.md and 029-result.md. agent-results/functional-coverage.md is a historical October 3 inventory, superseded where later task results disagree.
 
-### ✅ Live Features
-| Feature | Platform | Status |
-|---------|----------|--------|
-| 3D Smart Packing Algorithm | Web | ✅ Live |
-| Route Optimization | Web | ✅ Live |
-| FTL Truck Booking | Web | ✅ Live |
-| GPS Live Tracking | Web | ✅ Live |
-| Multi-Persona Auth (Driver/Agency/Customer/Admin) | Web | ✅ Live |
-| Razorpay + PhonePe Payments | Web | ✅ Live |
-| Admin Dashboard (Analytics, Users, Payouts, Drivers, Agencies) | Web | ✅ Live |
-| Agency Portal (Fleet, Jobs, Billing) | Web | ✅ Live |
-| Driver Portal (Trips, Earnings, History) | Web | ✅ Live |
-| Customer Dashboard (Orders, Tracking, History) | Web | ✅ Live |
-| PWA with Offline Support | Web | ✅ Live |
-| Email OTP + Password + Google OAuth | Web | ✅ Live |
-| 5 Demo Accounts for Testing | Web | ✅ Live |
+### Confirmed launch blockers
 
----
+| Gap | Evidence | Required completion |
+|---|---|---|
+| Foreign agency can claim another client's shipment | Dispatch harness finding: agency B inserts its own agency_job referencing customer A shipment, then an offer | Explicit client-to-agency authorization; deny all unauthorized read/write/claim paths, including direct DB and service paths |
+| Suspended agency can still insert operational records at DB layer | Dispatch harness | Consistent approval/status checks on every operational write; revocation effective for existing sessions |
+| Fleet guards conflict with RLS and skip service-role writes | Dispatch harness | One authoritative assignment transaction; valid assignment works and cross-agency/double booking is denied |
+| Booking has no dispatch producer | Missing dispatch_job_to_drivers(uuid,text), called by NewShipmentPage.tsx | Implement authorized dispatch or replace caller with a proven command; never fake a dispatched state |
+| Delivered trip leaves shipment and agency_job pending | Dispatch harness | Atomic, idempotent trip-to-shipment/job propagation and explicit multi-stop/partial-delivery handling |
+| Customer can invoke usage/plan RPCs with another user ID | Customer harness finding 23 | Derive caller identity and enforce own-user/admin scope; block arbitrary foreign increment_usage/get_user_plan |
+| Invoice storage remains public-read | Admin harness A7 | Private documents and authorized short-lived links by default; document-access audit and revocation |
+| 4 definer functions have unpinned search_path; anonymous aggregate view; broad doc RPC EXECUTE | Admin/customer proofs | Review grants, pin lookup paths, revoke unnecessary anonymous/public access with regressions |
+| Cloud-only pages fail in local mode | design-audit D1, 12 endpoint families | Honest connected-account state; no placeholder endpoint traffic; local work cannot masquerade as shared agency data |
+| Transport invoice fields/rates are incomplete | InvoicePage.tsx, invoiceGenerator.ts, whatsappShare.ts | Bill-to and ship-to party snapshots, configurable approved tax profile, correct currency rounding; no universal 18% freight rule |
+| Hosted identity/storage/function/deployment proof absent | Board and result limitations | Authorized staging replay + GoTrue/PostgREST/Storage/Edge round trips + multi-role E2E + recovery drill |
+| Hindi/accessible UI and critical state coverage incomplete | design-audit D2–D4 | Restore selected-language behavior for driver journey, labelled actions/forms, keyboard and mobile verification |
 
-## 3. Competitor Landscape
+The billing bucket was previously classified as a lower-priority owner decision. For this B2B pilot, invoice confidentiality is a launch requirement; this plan does not claim that policy has been changed.
 
-### 3.1 WheelsEye
-- **Strengths:** 26+ lakh trucks, instant booking (30 min), trip insurance, driver app, 24x7 support
-- **Weaknesses:** No 3D packing, no route optimization, no smart truck matching
+## 2. Product boundary and approach
 
-### 3.2 Delhivery
-- **Strengths:** 4Bn+ parcels, 99.5% population coverage, warehousing, cross-border, data intelligence
-- **Weaknesses:** No 3D packing, no driver-centric model, complex B2B focus
+Recommended: retain the React/TypeScript PWA, existing packing engine and Supabase/PostgreSQL authority model; repair them and build connected modules incrementally. Prefer a single maintainable app with role workspaces, not four separate apps. Add a small Android tracking companion only when reliable background tracking is required.
 
-### 3.3 TruckOpti Differentiation
-| Differentiator | Description |
-|----------------|-------------|
-| **3D Bin Packing** | Only platform optimizing cargo loading before truck dispatch |
-| **Route + Packing Integration** | Single flow: pack → route → book → track |
-| **Nearby Truck Discovery** | GPS-based matching, not just booking |
-| **Hierarchical Management** | RM → Senior RM → Region Manager → VP escalation |
-| **Multi-Persona Ecosystem** | Driver, Agency, Customer, Management in one platform |
+Alternatives:
+1. Existing stack + reliable hosted backend: lowest rewrite risk; recurring infrastructure cost; recommended for paid operations.
+2. Existing stack + phone for bounded calculation jobs and encrypted backup copies: cheap experiment; phone failure must never block orders, proof or invoices.
+3. Full PocketBase/phone backend replacement: potentially inexpensive hardware, but rewrites auth, RLS, migrations, storage, Edge functions and realtime. Separate assessed project, not an implicit pilot requirement.
 
----
+Initial agency operations focus: contracted clients, owned fleet, optional manually recorded hired vehicles. Do not launch a nationwide marketplace, automatic tender auction or multi-level regional sales hierarchy. The owner has 1–2 staff, so use onboarding, support and exception queues with clear ownership.
 
-## 4. Feature Master List
+Pilot must cover manual/CSV orders, feasible truck plan, quotation approval, allocation, pickup/GR, tracking, delivery/POD, invoice, receipt, expenses, fuel and salary settlement. Generic ERP import and safe Tally/first-client connector follow the same normalized order contract; broad ERP catalog and advanced optimization are later work.
 
-### 4.1 Core Platform (Web — Live)
+## 3. Users, company boundaries and permissions
 
-| ID | Feature | Description | Status |
-|----|---------|-------------|--------|
-| W-01 | 3D Smart Packing | Algorithmic cargo optimization | ✅ |
-| W-02 | Route Optimization | Multi-stop route planning | ✅ |
-| W-03 | FTL Booking | Full truckload booking flow | ✅ |
-| W-04 | GPS Tracking | Real-time location streaming | ✅ |
-| W-05 | Multi-Persona Auth | Role-based access control | ✅ |
-| W-06 | Payment Gateway | Razorpay + PhonePe integration | ✅ |
-| W-07 | Admin Dashboard | Platform management portal | ✅ |
-| W-08 | Agency Portal | Fleet owner management | ✅ |
-| W-09 | Driver Portal | Trip + earnings management | ✅ |
-| W-10 | Customer Portal | Booking + tracking | ✅ |
-| W-11 | PWA | Offline-capable web app | ✅ |
-| W-12 | Email OTP | 6-digit email verification | ✅ |
-| W-13 | Google OAuth | Social login | ✅ |
-| W-14 | Password Login | Email + password auth | ✅ |
-| W-15 | Subscription Plans | Tiered pricing (Starter/Pro/Enterprise) | ✅ |
-| W-16 | Invoice Generation | Auto-generated GST invoices | ✅ |
-| W-17 | WhatsApp Sharing | Share tracking links | ✅ |
-| W-18 | Mobile Responsive | Phone + tablet optimized | ✅ |
-| W-19 | Dark Mode | UI theme toggle | ✅ |
-| W-20 | Hindi Support | Regional language | ✅ |
+| Actor | Permitted work | Must be denied |
+|---|---|---|
+| Platform owner/admin | Agency onboarding/suspension, staff management, subscription invoices, support, deployment/provider health | Unlogged tenant data edits; automatic access to every confidential document |
+| Platform support (1–2 staff) | Assigned cases and onboarding, time-bounded justified tenant access with audit | Granting own admin rights, deleting settled records, unrestricted impersonation |
+| Agency owner | Own company, branches, staff, fleet, drivers, clients, commercial settings, approvals/reports | Other agencies' orders, vehicles, contacts or earnings |
+| Agency dispatcher | Orders, capacity plans, assignment, trip exceptions, GR | Tax settings, payroll approval or unrestricted finance exports |
+| Agency accountant | Freight invoices, receipts, expense/fuel approvals, salary runs | Dispatch/security grants unless explicitly assigned |
+| Client planner | Own company orders/sites/SKUs, transport requests, plan/quote approvals, trip/POD view | Agency salaries, unrelated clients, driver personal documents |
+| Client accounts | Own freight invoices, disputes and receipts | Other client financial records |
+| Driver | Assigned vehicle/trips, offer response, trip checkpoints, expense/fuel submissions, own salary statement | Other drivers' salaries or reading pickup/delivery secrets |
+| Site receiver/consignor | One shipment/stop-specific signed link for handover/receipt | Fleet/client browsing or full tenant login rights |
 
-### 4.2 Android Apps (Planned)
+Support multiple agency staff without abusing the global role field. Model organizations, memberships, agency-client agreements and site contacts. One client may use multiple agencies: explicitly grant an order to selected agency; this does not give that agency all of the client's orders. Test both directions of isolation using two agencies and two clients.
 
-#### Driver App (`apps/android/driver`)
-| ID | Feature | Priority | Phase |
-|----|---------|----------|-------|
-| D-01 | Trip Acceptance | P0 | Phase 1 |
-| D-02 | GPS Tracking (Background) | P0 | Phase 1 |
-| D-03 | Turn-by-Turn Navigation | P0 | Phase 1 |
-| D-04 | POD Photo Upload | P0 | Phase 1 |
-| D-05 | Earnings Dashboard | P0 | Phase 1 |
-| D-06 | Document Wallet (DL, RC, Insurance) | P1 | Phase 1 |
-| D-07 | SOS / Breakdown Alert | P1 | Phase 1 |
-| D-08 | Offline Mode | P1 | Phase 1 |
-| D-09 | Fuel Log | P2 | Phase 2 |
-| D-10 | Chat with Agency | P2 | Phase 2 |
-| D-11 | Rating System | P2 | Phase 2 |
-| D-12 | Incentives & Bonuses | P2 | Phase 2 |
+## 4. Complete journeys and exception handling
 
-#### Customer App (`apps/android/customer`)
-| ID | Feature | Priority | Phase |
-|----|---------|----------|-------|
-| C-01 | Smart Booking (Cargo → Packing → Truck) | P0 | Phase 2 |
-| C-02 | 3D Packing Preview (WebView) | P0 | Phase 2 |
-| C-03 | Price Estimate | P0 | Phase 2 |
-| C-04 | Live Tracking | P0 | Phase 2 |
-| C-05 | Order History | P0 | Phase 2 |
-| C-06 | Nearby Truck Discovery | P0 | Phase 2 |
-| C-07 | Payments (Razorpay SDK) | P0 | Phase 2 |
-| C-08 | Multi-Stop Routes | P1 | Phase 2 |
-| C-09 | Rating & Review | P1 | Phase 2 |
-| C-10 | WhatsApp Sharing | P1 | Phase 2 |
-| C-11 | Trip Insurance Add-on | P2 | Phase 3 |
-| C-12 | Recurring Shipments | P2 | Phase 3 |
-| C-13 | Referral Program | P2 | Phase 3 |
+### Agency onboarding
+Platform creates invitation → agency owner accepts/sets verified credential → company/branch/tax/bank/support settings → fleet and driver setup → staff invitations → client/sites/rates → trial order → onboarding checklist complete. Agency creates trucks/drivers; platform reviews necessary approvals and provides support. No fabricated “verified” badge.
 
-#### Agency App (`apps/android/agency`)
-| ID | Feature | Priority | Phase |
-|----|---------|----------|-------|
-| A-01 | Fleet Management | P0 | Phase 3 |
-| A-02 | Job Allocation | P0 | Phase 3 |
-| A-03 | Live Fleet Map | P0 | Phase 3 |
-| A-04 | Billing & Invoicing | P0 | Phase 3 |
-| A-05 | Driver Performance | P1 | Phase 3 |
-| A-06 | Rate Card Manager | P1 | Phase 3 |
-| A-07 | Customer Leads | P2 | Phase 3 |
-| A-08 | Commission Tracking | P1 | Phase 3 |
-| A-09 | Multi-User Access | P2 | Phase 4 |
-| A-10 | Analytics Dashboard | P2 | Phase 4 |
+Fleet: registration, ownership/hired status, body/length/width/height, legal payload, tare/gross limits, axle constraints if known, permits/fitness/PUC/insurance dates, availability, maintenance block, assigned driver and actual GPS source. Vehicle type catalog is separate from agency vehicle instances.
 
-#### Management App (`apps/android/management`)
-| ID | Feature | Priority | Phase |
-|----|---------|----------|-------|
-| M-01 | Query Inbox | P0 | Phase 4 |
-| M-02 | Escalation Dashboard | P0 | Phase 4 |
-| M-03 | SLA Timer | P0 | Phase 4 |
-| M-04 | Auto-Escalation Engine | P0 | Phase 4 |
-| M-05 | Performance Analytics | P0 | Phase 4 |
-| M-06 | Customer 360° View | P1 | Phase 4 |
-| M-07 | Live Operations Map | P1 | Phase 4 |
-| M-08 | Revenue Dashboard | P1 | Phase 4 |
-| M-09 | Approval Workflows | P2 | Phase 4 |
-| M-10 | Broadcast Messaging | P2 | Phase 4 |
-| M-11 | Audit Trail | P2 | Phase 4 |
+Driver: licence/expiry/class, contact, emergency contact, employment type, document access, assigned vehicle, shift/availability, bank reference as necessary, salary agreement and approval status. Minimize stored identity data; no unnecessary Aadhaar collection.
 
-### 4.3 Management Hierarchy (New)
+### Client order → truck requirement → dispatch
+Planner creates/imports sales order with client/source ID, revision, item/SKU, UOM/quantity, dimensions/weight, packing/stackability, fragile/hazardous/refrigeration requirements, pickup warehouse/window and ship-to contacts/window; bill-to may be different.
 
-| ID | Feature | Description | Priority |
-|----|---------|-------------|----------|
-| H-01 | Role Definition | RM, Senior RM, Region Manager, VP | P0 |
-| H-02 | Query Assignment | Auto-assign based on city + workload | P0 |
-| H-03 | Auto-Escalation | 15min → Senior RM, 30min → Region, 1hr → VP | P0 |
-| H-04 | Manual Escalation | Customer "Talk to Manager" button | P0 |
-| H-05 | Critical Skip | Accident/cargo damage → skip to Region | P0 |
-| H-06 | On-Call Routing | After-hours → on-call Senior RM | P1 |
-| H-07 | VIP Direct Line | Enterprise customers → Senior RM direct | P1 |
-| H-08 | Backup RM | Auto-fallback when primary unavailable | P1 |
-| H-09 | Escalation Analytics | Track resolution time by level | P1 |
-| H-10 | Manager Performance | CSAT, resolution time, escalation rate | P1 |
+Validate units/missing dimensions/address coordinates → preview and resolve invalid rows → persist draft → group compatible pickups/drops and delivery dates → estimate count/types of trucks → show packing feasibility, weight/volume utilization, unmet demand and assumptions → compare eligible actual fleet → cost/rate quote → client/agency approval → reserve trucks and drivers transactionally → issue dispatch/manifest and GR/LR → notify assigned drivers.
 
-### 4.4 Operational Features (Web + Mobile)
+One sales order can require multiple trucks, and one truck can carry several compatible orders. Persist allocation lines: order line, truck/load/trip, quantity, weight and destination stop. Protect remaining quantity against duplicate dispatch, amendments and cancellation. A client may request a vehicle without knowing dimensions: planner must show an estimate needing confirmation, not a certified 3D result.
 
-| ID | Feature | Description | Priority | Phase |
-|----|---------|-------------|----------|-------|
-| O-01 | Digital Bilty | Electronic consignment note | P2 | Q3 |
-| O-02 | e-POD | Digital proof of delivery | P2 | Q3 |
-| O-03 | Trip Insurance | Partner with ICICI Lombard / Digit | P2 | Q3 |
-| O-04 | Multi-City Pickup | FTL with multiple pickup points | P2 | Q3 |
-| O-05 | PTL Service | Part truckload (shared space) | P3 | Q4 |
-| O-06 | Warehousing | Partner warehouse network | P3 | Q4 |
-| O-07 | Cross Border | Nepal, Bangladesh, Bhutan | P3 | Q4 |
-| O-08 | Rate Calculator | Public pricing tool | P2 | Q3 |
-| O-09 | In-App Chat | Customer ↔ RM ↔ Driver | P2 | Q3 |
-| O-10 | Phone Support | 24x7 helpline | P2 | Q3 |
-| O-11 | Cashback Rewards | Loyalty program | P3 | Q4 |
-| O-12 | Referral Program | Invite & earn | P3 | Q4 |
+Route plan uses road distances/truck restrictions when available. Current RoutesPage uses Haversine and fixed average costs: display estimate provenance, not guaranteed road routing/ETA. Configure depot, return legs, loading/unloading duration, customer delivery windows, no-entry restrictions and multi-stop unload order. Never infer feasible/legal load from volume alone.
 
-### 4.5 Data & Intelligence
+### Driver pickup → transit → delivery
+Offer/assignment → driver accept/decline → report to pickup → record arrival → load verification/photos/item counts → authorized consignor confirms handover/start challenge → departure → timestamped location points and checkpoints → destination arrival → recipient records actual received quantities, shortage/damage/rejection plus photos/signature/name → authorized completion challenge → delivered/partially delivered/disputed/return-required → agency review → finance eligibility.
 
-| ID | Feature | Description | Priority | Phase |
-|----|---------|-------------|----------|-------|
-| I-01 | Demand Forecasting | AI-powered route demand prediction | P3 | Q4 |
-| I-02 | Price Intelligence | Dynamic pricing based on demand/supply | P3 | Q4 |
-| I-03 | RTO Reduction | Return-to-origin analytics | P3 | Q4 |
-| I-04 | Driver Scoring | Behavior-based safety score | P2 | Q3 |
-| I-05 | Route Efficiency | Empty mile reduction analytics | P2 | Q3 |
-| I-06 | Customer Segmentation | SME vs Enterprise vs Individual | P2 | Q3 |
-| I-07 | Cargo-Type Matching | Auto-suggest truck based on cargo | P1 | Q3 |
-| I-08 | Fuel Efficiency | MPG tracking per driver/route | P2 | Q3 |
+Use distinct pickup and delivery challenges, bound to shipment + stop + action + actor. Server generates/verifies; persist hash/expiry/attempt limits/used time; raw challenge absent from driver reads/logs/QR. Preserve existing ordering/lockout/idempotency protections. An OTP only confirms a handover action; it is not sufficient proof of physical receipt by itself.
 
-### 4.6 Developer & Partner Ecosystem
+Offline: save draft events/photos encrypted where supported; mark pending sync visibly. Authoritative start/end remains server-verified. Offline emergency override needs dispatcher approval, reason, evidence and reconciliation; it never silently marks OTP verified. On reconnect, replay idempotently and retain device capture time plus server receipt time.
 
-| ID | Feature | Description | Priority | Phase |
-|----|---------|-------------|----------|-------|
-| E-01 | Public APIs | REST API for 3rd party integration | P2 | Q3 |
-| E-02 | Webhooks | Event-driven notifications | P2 | Q3 |
-| E-03 | API Keys | Developer portal for API access | P3 | Q4 |
-| E-04 | SDK | Embed TruckOpti booking in other apps | P3 | Q4 |
-| E-05 | Franchise Portal | Franchisee onboarding + management | P3 | Q4 |
-| E-06 | White Label | Rebrandable truck booking widget | P3 | Q4 |
+### Breakdown, emergency, delay, diversion and returns
+Driver taps phone contact immediately → report trip, location/accuracy, issue type, evidence → dispatcher acknowledgment/assignment → replacement vehicle/cargo transfer or recovery → client notification → resolution and costs. Phone-call initiation works even if API submit fails; queue incident draft. Never display an invented emergency/help number; configure agency support and verify any public emergency number before use. Do not promise 24×7 monitored response with only 1–2 staff.
 
----
+Handle loading cancellation, truck no-show, driver absence, accident, signal loss, late arrival, additional stop, return goods, POD dispute and document expiry. Reassign only with audited authorization; revoke old driver's access; preserve custody/GR history.
 
-## 5. Development Timeline
+### Delivery → invoice → collections → agency closure
+Accepted POD/approved billable event → freight draft with contract tariff and actual permitted extras → accountant approval → immutable numbered invoice snapshot → private PDF/share → due date/outstanding → recorded bank/UPI/cash receipt → allocation/partial payments → dispute or credit/debit note → reconciliation. Final invoices are amended by adjustment documents, not overwritten.
 
-### Q2 2026 (Current — June)
-- ✅ Web platform live (Heroku v94)
-- ✅ All admin pages fixed
-- ✅ Google Maps working
-- ✅ 5 demo accounts seeded
-- ✅ 18/18 launch-check pass
+Distinguish agency freight invoices from Truck_Opti SaaS subscription invoices and from the client's sales-of-goods invoice. Manual receipt recording does not mean bank verification or gateway settlement. SaaS pilot subscription can use manually invoiced, reconciled bank/UPI payment; payment gateways remain owner/provider-gated.
 
-### Q3 2026 (July–September)
-- **Month 1:** Driver Android App (Phase 1)
-- **Month 2:** Customer Android App (Phase 2) + 3D packing WebView
-- **Month 3:** Agency Android App (Phase 3) + Digital Bilty/e-POD
+### Expenses, fuel, payroll
+Driver/dispatcher submits expense (trip/truck, category, date, amount, receipt, advance/payment mode) → accountant validates/rejects → approval ledger → trip P&L/cash advance settlement. Track diesel, toll/FASTag, parking, loading, unloading, repairs, detention and miscellaneous separately.
 
-### Q4 2026 (October–December)
-- **Month 4:** Management App (Phase 4) + Escalation Engine
-- **Month 5:** PTL Service + Rate Calculator + In-App Chat
-- **Month 6:** Data Intelligence Dashboard + Developer APIs
+Fuel entry records litres, rate, total, odometer, station, full/partial fill, receipt and payer; detect duplicate/impossible odometer and quantities; manual versus sensor evidence labelled. Mileage requires enough comparable data; app cannot claim automatic fuel theft detection from manual logs. Stops use configured speed/dwell thresholds, GPS uncertainty, authorized stop reasons and detention rules.
 
-### Q1 2027 (January–March)
-- Warehousing partner network
-- Cross-border (Nepal, Bangladesh)
-- AI demand forecasting
-- Franchise network
+Salary agreement: fixed/monthly or trip/daily/km component; effective dates, attendance/leave, trip allowances, overtime/incentives, approved advances and deductions. Freeze a monthly run with itemized formula inputs, review, payslip and payment reference. Salary and trip earnings are different concepts; prevent double-paying advances/allowances. Statutory payroll treatment requires accountant validation before automation.
 
----
+## 5. Screen backlog: existing versus pending
 
-## 6. Revenue Model
+Existing App.tsx routes include booking, sale orders, packing, routes, tracking, invoice/history, agency dashboard/fleet/jobs/billing/drivers/rates/profile, driver dashboard/trip/earnings/history/profile/KYC and admin agencies/drivers/users/payouts/subscriptions/contact. These are reuse candidates, not all-complete claims.
 
-| Stream | Description | Margin |
-|--------|-------------|--------|
-| **Platform Fee** | 5-10% per booking | Primary |
-| **Subscription** | Monthly SaaS for agencies (₹999-₹49,999) | Recurring |
-| **Insurance Commission** | 10-15% on trip insurance | Add-on |
-| **Priority Matching** | Pay for faster truck assignment | Premium |
-| **Data API** | Charge per API call for enterprise | B2B |
-| **Franchise Fee** | Upfront + royalty from franchisees | Expansion |
+“New” below means no dedicated route found in App.tsx or feature file inventory; some logic may be reusable. Proposed route names are design targets, not current URLs. Screens may share tabs/drawers where appropriate.
 
----
+| Workspace / screen | Current baseline | Required delivery | Phase/task |
+|---|---|---|---|
+| Agency onboarding checklist/company settings | /agency/register, /agency/profile | Resume setup, branch/tax/bank/contact settings, completion proof | TO-144 |
+| Agency staff/roles/invitations | No dedicated route | /agency/team, roles and access review | TO-144 |
+| Fleet/docs/availability | /agency/fleet | Real vehicle specifications, ownership, expiry, service blocks | TO-144 |
+| Drivers/employment/assignment | /agency/drivers | Agency-created drivers, safe invitation, shifts/salary agreement | TO-144 |
+| Client/site/contract master | /management/customers, /agency/rates partial | /agency/clients, bill-to/ship-to, tariffs and credit terms | TO-144 |
+| Client order register/editor | /sale-orders | Sales order headers/lines/revisions, sites/windows, persistent draft | TO-145 |
+| Import preview/errors/mapping | CSV/XLS parser in SaleOrdersPage | Unit/SKU/site mapping, duplicates, invalid rows, resumable batches | TO-145 |
+| Requirements/plan comparison | /packing, /routes partial | /planning, truck count/types, unmet quantities, availability | TO-145 |
+| Client transport requests/quotes | /booking/new partial | /requests, approvals and agency selection | TO-145/146 |
+| Agency dispatch board/detail | /agency/jobs | /agency/dispatch, reservations, manifest, exceptions | TO-143/146 |
+| GR/LR register/editor/print | LR number on invoice only | /agency/gr, revision/void controls, PDF and QR | TO-146 |
+| QR verification | No dedicated route | /verify/gr/:token, redacted authenticity/custody status | TO-146 |
+| Driver trip checkpoints | /driver/trip/:jobId | Quantity/custody verification, retry/offline/permissions | TO-143/146 |
+| Recipient POD/handover | Photos/OTP in current trip | /receive/:token, actual lines/shortage/signature/evidence | TO-146 |
+| Live fleet map/trip timeline | /tracking and browser GPS | /agency/tracking, stale state, stops, restricted client view | TO-147 |
+| Tracking permissions/device diagnostics | Basic GPS message | /driver/tracking-status, last sync, battery/permissions | TO-147 |
+| Incident report/dispatcher queue | No dedicated route | /driver/incidents, /agency/incidents, call + assignment | TO-147 |
+| Driver expense submission | No dedicated route | /driver/expenses, receipt and advance linkage | TO-149 |
+| Agency expenses/approval/cashbook | No dedicated route | /agency/expenses, /agency/advances, approvals/reconciliation | TO-149 |
+| Fuel log/consumption/stops | No dedicated route | /driver/fuel, /agency/fuel, evidence and alerts | TO-149 |
+| Maintenance/doc renewals | Fleet partial | /agency/maintenance, service due, availability block | TO-149 |
+| Freight invoice register/editor | /invoice/:shipmentId partial | /agency/invoices, contract charges/tax profile/version | TO-148 |
+| Receivables/receipts/adjustments | /agency/billing partial | /agency/receivables, receipt allocation, disputes/credit notes | TO-148 |
+| Client finance/documents | Generic invoice/history | /client/invoices, POD/GR/download/dispute by company | TO-148 |
+| Driver salary agreements/attendance | /driver/earnings is trip earnings | /agency/payroll, attendance, run/approve/statement | TO-150 |
+| Driver salary/advance statement | /driver/earnings partial | /driver/salary, payslip and reconciliation | TO-150 |
+| Agency ERP/API integration center | No dedicated route | /integrations, connector credentials/mapping/sync/retry | TO-151 |
+| Client integration/order-sync history | No dedicated route | /client/integrations, duplicate/conflict resolution | TO-151 |
+| Agency performance/finance reports | Dashboards partial | /agency/reports: utilization, trip P&L, overdue, fuel/driver | TO-150 |
+| Platform onboarding/support console | /admin/agencies, /admin/contact partial | /admin/onboarding, assigned checklist/cases/access audit | TO-152 |
+| Platform tenant plan/usage/billing | /admin/subscriptions, /admin/users | Pilot limits, own SaaS invoice, suspension/export | TO-152 |
+| Platform health/backups/jobs/providers | No dedicated route | /admin/operations, health, restore/queues/alerts/config capability | TO-152/153 |
+| Company export/offboarding/privacy | Backup utilities partial | Tenant export, retention and role revocation workflow | TO-152/153 |
 
-## 7. Success Metrics (12-Month Targets)
+UI production requirements for every entry: real action-to-API mapping, server permissions, loading/empty/error/success/permission states, drafts/retry, mobile 390×844 + desktop 1280×900, keyboard/accessibility and selected Hindi/English driver labels. Existing missing Stitch designs (/subscription, /agency/profile, /management/cartons, /driver/profile) are different from missing product functionality. Do not count a generated design as a shipped screen. This documentation task performed no Stitch mutations; actual UI work must follow current stitch_guide and the repository policy.
 
-| Metric | Target | Current |
-|--------|--------|---------|
-| Monthly Bookings | 10,000 | ~50 (demo) |
-| Active Drivers | 5,000 | 1 (demo) |
-| Active Agencies | 500 | 1 (demo) |
-| Registered Customers | 50,000 | ~10 (demo + real) |
-| App Downloads (All) | 25,000 | 0 |
-| Query Resolution Time | < 30 min | N/A |
-| Escalation Rate | < 10% | N/A |
-| CSAT Score | > 4.2/5 | N/A |
-| Revenue | ₹50 lakh/month | ₹0 |
-| NPS Score | > 50 | N/A |
+## 6. Persistence, business model and interfaces
 
----
+Reuse current tables after inspecting final migrations. Introduce normalized structures only where no equivalent exists:
+- organizations/memberships/agency-client agreements/sites/contacts;
+- agency-owned fleet/driver employment/availability and tariff versions;
+- sales orders/lines/import batches/allocations/plans/loads/stops;
+- shipments/agency jobs/offers/trip events (existing boundaries reconciled);
+- consignment notes/versioned manifests/challenges/POD and POD lines;
+- freight invoices/lines/tax snapshots/receipts/allocations/adjustments;
+- expenses/advances/fuel/attendance/salary agreements/payroll runs/lines;
+- incidents/actions, GPS device bindings/points/stop events;
+- integration connections/sync cursors/external references/job outbox/audit events.
 
-## 8. Risk Register
+Use tenant keys, membership predicates and cross-table foreign/unique constraints. Server assigns tenant, document numbers, authoritative timestamps and approval transitions; never trust browser-supplied tenant/price/role. Object files are private with tenant ownership checks and narrow signed links. Avoid exposing KYC/bank data through QR or client map.
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Driver app adoption low | High | Incentives, onboarding support, referral bonuses |
-| 3D packing too complex | Medium | Simplified UI, video tutorials, auto-suggest |
-| Competitor price war | High | Focus on packing + route differentiation, not price |
-| GPS tracking battery drain | Medium | Optimized background service, driver education |
-| Escalation overload | Medium | AI chatbot for L1, human only for L2+ |
-| Payment failures | High | Multiple gateways, retry logic, manual fallback |
-| Cargo damage disputes | Medium | Insurance integration, photo evidence, clear T&C |
+Money: integer paise for stored totals or precise decimal with a documented rounding policy; quantity/unit conversion explicit (kg/tonne/mm/metre). Dates stored UTC, displayed Asia/Kolkata; fiscal-year document sequences and local reporting dates explicit. Transport-tax profile and approved rates/effective dates must be snapshotted at issue time.
 
----
+Proposed command contracts (implementation must first map these to existing services/RPCs):
+- planTransport(request): returns versioned plan, truck suggestions/count, allocations, route estimates, unmet demand and warnings.
+- authorizeAgency(orderId, agencyId, expectedVersion): creates scoped permission, not global client access.
+- dispatchLoad(loadId, vehicleId, driverId, expectedVersion, idempotencyKey): verifies tenant/capacity/approval/availability, reserves and creates authorized offer atomically.
+- advanceTrip(tripId, stopId, action, expectedVersion, proofRef, challengeResponse, idempotencyKey): verifies permitted state and updates dependent statuses once.
+- issueConsignmentNote(loadId, expectedVersion, idempotencyKey): freezes cargo/custody snapshot and creates scoped verification token.
+- recordPOD(stopId, lines, receiver, evidenceRefs, expectedVersion, idempotencyKey): records actual received/exception quantities and invoice eligibility.
+- issueFreightInvoice(draftId, expectedVersion, idempotencyKey): recomputes from approved tariff/tax profile; immutable issued document.
+- importOrders(connectionId, batchId, normalizedOrders): deterministic validate/upsert with source-company/order/line/revision identity.
 
-## 9. Document References
+All mutations return typed results with correlation IDs, not raw SQL/provider errors. Jobs use a persisted outbox, bounded retry/backoff/dead-letter queue and idempotency; no delivery state fabricated by optimistic UI.
 
-| Document | Purpose |
-|----------|---------|
-| `docs/COMPETITOR_ANALYSIS.md` | WheelsEye + Delhivery feature breakdown |
-| `docs/ANDROID_APP_ARCHITECTURE.md` | 4-app architecture + hierarchy escalation |
-| `0.dev-matrix/LAUNCH_CHECKLIST.md` | Current launch readiness |
-| `0.dev-matrix/AI-HANDOFF.md` | Session handoff |
-| `frontend/src/pages/PackingPage.tsx` | 3D packing implementation |
-| `supabase/functions/` | Edge functions (admin + agency portals) |
+State machines:
+- Order: draft → validated → approved → allocated/partially allocated → dispatched → fulfilled/partial/returned/cancelled.
+- Trip: offered → accepted → arrived_pickup → loaded/pickup_verified → in_transit → arrived_delivery → received/partial/disputed → closed (incident path explicit).
+- Freight invoice: draft → approved → issued → partly_paid/paid/disputed → credited/void subject to accounting rules.
+- Expense/payroll: submitted/draft → reviewed → approved → posted/paid; settled lines immutable.
 
----
+Detailed transition permissions/version rules are pinned in each bounded implementation brief; do not create two competing state engines.
 
-*Document created 2026-06-10 as part of TO-111 product expansion planning. All features subject to prioritization based on user feedback and market conditions.*
+## 7. OTP/SMS and communication without a provider
+
+Login authentication is independent from physical pickup/delivery challenges. Pilot login can use existing server-verified password auth and Google only when configured. Agency-created driver credentials use secure invitations or expiring one-use activation; no shared/default passwords. Verify account recovery and privileged-admin protection. Email OTP requires functioning email delivery; do not label it operational until tested.
+
+For transport verification, prefer authenticated consignor/receiver approval or an expiring stop-scoped link delivered by verified email/manual assisted contact. If numeric OTP is used, expose it only to the authorized consignor/receiver—not driver—and verify server-side. A manually shared message is not automated SMS delivery. Supervisor override has separate authority, reason and evidence; receiver confirmation still records material quantities.
+
+Implement NotificationGateway with capability/status, channel, recipient, template, deduplication key, attempts and delivery outcome. Initially in-app inbox + manual WhatsApp share/email as actually configured. User-triggered wa.me sharing is not a WhatsApp Business API integration and provides no delivery proof.
+
+Later compare SMS quotes on effective pilot cost: setup/DLT/entity/header/template costs, minimum recharge, per segment, taxes, retries, sender support and delivery reports. SMS is optional for the core pilot; select a provider only after current quotes. Do not use the old phone's consumer SIM as an assumed compliant bulk gateway or claim a provider is cheapest without evidence.
+
+Capacity example, not forecast: 20 trucks × 2 trips/day × 30 days = 1,200 trips/month; two codes each = 2,400 challenge deliveries before retries. Daily actual activity may be much lower. Budget notifications separately from SaaS revenue.
+
+## 8. ERP and client-side computation
+
+Start with canonical CSV/XLS import/export and documented API; client may export orders from any ERP. Persist source company, external order/line IDs, version, requested date, bill-to, ship-to, SKU/UOM, qty, weight/dimensions, requirements and cancellation status.
+
+Then implement one connector for the first real client's ERP and version, preferably Tally where applicable. Tally exposes integration mechanisms; desktop/local ERP requires a customer-controlled outbound connector. Never expose its LAN port publicly. Scope secrets per client, encrypt server-side, rotate/revoke, and never log credentials.
+
+Connector screen: test connection/read permissions, map company/sites/SKUs/UOM, preview sync, approve import, view last success/errors, retry/dead-letter and revoke. Poll/webhook/agent jobs are idempotent, checkpointed and replayable. Write-back of dispatch/POD/invoice is opt-in and reconciled, not silently enabled. ERP remains authority for sales order changes; Truck_Opti owns dispatch/custody/transport invoices. Revisions after dispatch need explicit quantity/return reconciliation.
+
+Processing:
+- Browser worker: input normalization, CSV/XLS parsing, deterministic packing preview for small jobs; cache by data hash+algorithm version. Never authorize final price/dispatch/payroll in a browser.
+- Python CLI: optional portable calculation tool using the same versioned JSON input/output and golden fixtures; bounded runtime/memory, cancellation, no production credentials. Reuse existing apps/web packing code before duplicating it.
+- VBA: optional Excel import/export template only, if first client needs it; macros are not a required platform backend.
+- Server: persist, authorize, verify feasible capacity and money, number documents and finalize transitions. Use bounded asynchronous heavy jobs; validate any untrusted browser/phone result before accepting.
+- Avoid premature optimizer microservices: pilot heuristic first, measure count/latency/packing quality, only then add a Python worker when it improves a measured bottleneck.
+
+Planning tests: mixed UOM; weight-limited versus volume-limited loads; nonstackable cargo; multi-drop unload sequence; impossible cargo; unavailable vehicles; partial orders; duplicate imports; cancelled/amended order; no eligible truck; road-distance provider outage.
+
+## 9. Serdroid hosting assessment
+
+Inspected D:/Github/Serdroid/AGENTS.md and README.md. Documented design: Kotlin control app → Go supervisor on localhost:8401 → PocketBase on localhost:8090 + cloudflared/Termux + deployed services. This is source/documentation evidence only: no phone, deployment, load test or backup restore was verified.
+
+Truck_Opti currently depends on Supabase Auth, PostgreSQL RLS/RPCs, Storage, Realtime and Edge Functions; PocketBase is not a drop-in replacement. Avoid accepting README memory/cost/uptime claims as benchmarks. PocketBase's own docs warn about production-critical use before stability guarantees.
+
+Recommended role for old phone: non-authoritative calculation worker, encrypted backup replica or supervised demonstration. Keep primary shared data on a dependable host. Phone loss/heat/reboot/network outage must not lose invoices/POD or halt operations. It is not a substitute for SMS onboarding.
+
+If owner insists on phone as primary host: separate explicit architecture choice and measured trial. Require actual ARM64 runtime compatibility; authenticated tunnel; admin surface restricted; TLS; auth/storage/RLS replacement plan; power/thermal/reboot tests; off-device encrypted backup and clean-device restore; outage-visible UI; patch/recovery runbook and an exit migration. Do not run an entire self-hosted Supabase Docker stack on the current Serdroid design without a demonstrated compatible environment.
+
+Provisional pilot targets (requirements to measure, not achieved claims): shared persistence survives restart; recovery point ≤24h with an immediate backup after critical setup/settlement; recovery time ≤4h; 7-day uptime/power/network rehearsal; 20 vehicle feeds for 10h/day; no loss/duplication on retries; documented outage contact. Tighten recovery point before accepting daily volume beyond pilot limits.
+
+GPS sizing assumption: 20 trucks × 10h × 120 points/hour at 30-second sampling = 24,000 points/day, 720,000/month; raw payload storage excludes indexes/photos/backups. Batch/compress/filter redundant points, keep a current-location row separate, configure active-trip retention and archive. Do not perform road geocoding on every point. Capture quality/time and show last-seen; a stale position must not be labelled live.
+
+PWA browser geolocation exists but screen-off/background behavior is not proven. Continuous tracking requires an Android foreground tracking design or tested dedicated tracker, permission disclosure, device binding, battery/reboot tests and offline buffering. Public client links expose only their trip with token expiry/revocation, not driver's off-duty history.
+
+## 10. India-specific requirements and reviewed sources
+
+This is an engineering scope, not a tax/legal certification. Accountant/owner must confirm each agency's actual registrations, GTA election/charge model, exemptions, invoicing regime and statutory payroll before real issue.
+
+- Freight tax cannot universally be 18%; separate SaaS tax from transport tax and support reviewed forward/reverse-charge profiles with effective dates. CBIC rules specify additional particulars for transport invoices (including consignor/consignee and goods/vehicle/route information). Verify current notifications at implementation; some CBIC pages are archival.
+- GR/LR/consignment note: agency/branch sequence, date, consignor/consignee, bill-to/ship-to, goods/packages/weight, vehicle, origin/destination, freight payer/basis, declared value, source invoice/e-way reference, liability/remarks, signatures/custody and revisions. QR proves access to a redacted versioned record, not tax compliance.
+- E-way bill: store number/expiry/transporter/vehicle and uploaded authoritative document; warn/block per approved operational rules. Official generation/Part-B update/API requires eligible credentials/authorization. App QR is not an official e-way or e-invoice IRN QR.
+- Driver/fleet: document expiry, commercial class, insurance/permits/fitness/PUC, lawful capacity, maintenance lock and hired-vehicle agreements.
+- Data: privacy notice/purpose/retention, driver location disclosure, narrow support access, export/deletion workflows consistent with accounting retention. MeitY notified DPDP Rules in 2025 with phased implementation; confirm exact applicable provisions at launch.
+
+Sources reviewed 2026-10-06:
+- [TRAI advice to senders](https://www.trai.gov.in/advice-to-senders) — registration/header/template responsibilities.
+- [MSG91 official OTP pricing](https://msg91.com/in/pricing/otp) and [SMS pricing](https://msg91.com/in/pricing/sms/pricing-india); [Exotel SMS billing](https://docs.exotel.com/messaging-apis/how-is-sms-billed-charged) — quote comparison, no lowest-price claim.
+- [Android background location](https://developer.android.com/develop/sensors-and-location/location/background) — permissions and update limits.
+- [PocketBase introduction](https://pocketbase.io/docs/) and [production guide](https://pocketbase.io/docs/going-to-production/) — phone migration/reliability considerations.
+- [Tally developer hub](https://developer.tallysolutions.com/) — supported connector mechanisms; client version still to confirm.
+- [NIC e-way bill documentation](https://docs.ewaybillgst.gov.in/) and [FAQ](https://docs.ewaybillgst.gov.in/html/faq_new.html) — document/API distinction.
+- [CBIC invoice rules](https://cbic-gst.gov.in/gst-invoice-rules.html) and [services rates](https://cbic-gst.gov.in/hindi/gst-goods-services-rates.html) — tax must be validated against current notifications.
+- [MeitY annual report](https://www.meity.gov.in/static/uploads/2026/04/46face7d48c8f6a97030f713ad5fdab4.pdf) — DPDP Rules notification; obtain actual commencement notifications before compliance claims.
+- [Supabase pricing](https://supabase.com/pricing) and [free-plan pause policy](https://supabase.com/changelog/27497-paused-free-plan-projects-are-restorable-for-90-days) — assess availability/backup budget; no free-production guarantee.
+
+## 11. Dependency-ordered delivery plan
+
+TASKS.md contains the rows and each task has one agent-tasks brief. Run one writer on main. Scope selected by owner is this pilot; no deployment/credential/payment approval is implied.
+
+| Task | Deliverable | Depends on | Acceptance proof |
+|---|---|---|---|
+| TO-141 | This assessment, saved requirements and aligned documents | — | Sources, route/gap inventory, linked briefs, verification result |
+| TO-142 | Tenant/usage/storage authority repair | — | Deny foreign claim/usage/doc access; valid agency path remains; findings become hard regressions |
+| TO-143 | Authorized dispatch and authoritative lifecycle | TO-142 | Customer request produces offer; vehicle/driver unique reservations; delivery propagates once |
+| TO-144 | Agency/client/sites/team/fleet setup | TO-142 | Agency adds own truck/driver, invites staff/client; isolation and expiry blocks |
+| TO-145 | Orders → capacity plan → approval | TO-143/144 | 2-client CSV/manual orders; correct count/types/allocations, invalid inputs and revisions |
+| TO-146 | GR QR + checkpoint/POD custody | TO-143/145 | Start/end approval, signed QR, actual quantities/partial delivery, immutable evidence |
+| TO-147 | Live tracking + incidents | TO-143/144 | Device/browser limitations explicit; real mobile screen-off proof for live promise; call+queue |
+| TO-148 | Freight invoices/collections | TO-144/146 | Reviewed tax snapshots, money authority, private PDF, partial receipt/dispute/credit |
+| TO-149 | Expenses/fuel/advances/maintenance | TO-144/146 | Approved costs and mileage evidence, advance reconciliation, vehicle service block |
+| TO-150 | Salary runs + management reports | TO-148/149 | Effective salary rules, frozen run, no double advance, cross-driver isolation |
+| TO-151 | First-client ERP connector | TO-145/146/148 | CSV/API contract first; one real sandbox/version connector; duplicate/replay/amendment tests |
+| TO-152 | Platform onboarding/support/tenant ops | TO-144/148 | 1–2 staff can onboard/manage cases, scoped support access, limits/export |
+| TO-153 | Hosted pilot release and recovery proof | All pilot tasks | Credentialed two-agency full journey + hosting/restore/device/accountant acceptance |
+
+Tasks are vertical deliveries; split a broad module into one bounded follow-up brief before coding if needed, without inventing another board. TO-147 native companion and TO-151 live connector need device/client discovery before their final implementation spec. TO-153 live steps are owner-gated; execute independent local preparation while access is pending.
+
+## 12. Selling gate and pilot script
+
+Minimum honest demo: agency creates truck/driver/client → client imports 2 orders with different ship-to sites → planner explains vehicle count/constraints → client approves → agency allocates → driver receives/accepts → pickup handover + GR QR → permitted tracking → receiver acknowledges actual goods and exceptions → invoice → partial receipt → expenses/fuel → driver monthly statement → agency margin/outstanding report. Platform staff demonstrate onboarding and support access audit.
+
+Repeat as a second agency/client and attempt foreign IDs at UI/API/DB/storage; all forbidden access denied. Test bad connectivity, duplicate commands, cancellation, stale GPS, driver replacement, receiver without account, document expiry, shortages and dispute. Restart services, restore backup onto a clean target and match record/document counts.
+
+Hosted staging must use GoTrue-issued identities, real HTTP Storage/PostgREST/Edge round trips and actual devices. Local green tests alone do not meet this gate. No P0/P1 journeys/security/data-loss gaps outstanding. Verify current build/lint/unit/packing/policy/routing/glue and relevant integration tests; retain exact exit codes and evidence tiers.
+
+Business readiness: agency-reviewed terms/rate/tax profiles, onboarding instructions, support hours, data backup/exit policy, pricing/caps and invoice collection process. Commercial pilot is not a promise of nationwide marketplace coverage, automatic bank settlement, official GST API generation, fuel sensors or always-on PWA tracking.
+
+## 13. Decisions still needing owner/client input
+
+Proceed with no-SMS login, manual order/CSV support, existing-stack repair and private B2B data as proposed. Before dependent deployment/integration work obtain:
+- first agency and client's operating model: FTL/LTL/hired trucks, cargo, branches, daily order/trip count;
+- first ERP/version, sample sanitized order and company/site mapping;
+- accountant-approved freight/GST and salary examples;
+- old phone model/RAM/Android version, power/network and willingness to use it only as optional worker;
+- actual hosting spend cap, recovery/support-hours commitments;
+- authorized staging/backend and live rollout access, SMTP/OAuth configuration if used;
+- GPS promise: visible-app updates for trial versus continuous Android/tracker coverage.
+
+These are discovery or owner gates, not reasons to leave autonomous local repairs undone.
+
+## 14. Saved owner request (verbatim, 2026-10-06)
+
+check what is remaining for fully functioning, and what screens are still pending to be created for selling this project to Goods transport companies in India, including Invoicing, expenses tracking, driver tracking, linking of ERPs for clients to connect their software for fast ordering of trucks based on requirements from their sales order planning e.g. total trucks required, location etc, and our system will help them plan routes, bill to ship to, right trucks, number of trucks etc, live location tracking, GR copy creating with QR code, OTP while starting and ending, acknowlegement of material received at the end, breakdown call, emergency call, fuel tracking and stopage, driver salary calculations, full company management for goods transport agencies, client side, admin of software side, all user journey to be thought of completely and also save this message so that we know what we discussed and what we built, we'll host the app on our side, for calculation we can create python scripts, or VBA so that client side can be use or if host is to be use for processing then it takes less processing,
+
+give me detailed prompt so that rest of the part can be built, for now many part still not working, as I'm unable to find sms partner (cheap) we need to store the data, I was hoping to use my old android phone as server (another project serdroid in d drive github you can find) we'll manage 1-2 agencies with 5-10 trucks per agency and 1-2 person from my side i.e. admin side for managing onboarding etc, trucks will be added by agency, truck drivers info will be added by them, check more things that we need in this app, plan and save and consolidate all documentation so that every thing is aligned
+
+## 15. What was built versus planned
+
+Built before this request: existing routed UI/auth/packing/portal/KYC/offer/OTP code at aba05fc8 with local evidence above and known findings. Built in this request: assessment, requirements/plan/prompt/briefs/document alignment only. Planned: TO-142–153. Nothing in the roadmap changes a planned feature into delivered functionality; acceptance evidence is recorded only in TASKS.md and agent-results.

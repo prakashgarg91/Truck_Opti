@@ -1,5 +1,13 @@
 # Design Audit — Truck_Opti × Stitch coverage
 
+## 2026-10-06 pilot planning alignment (documentation only)
+
+Current requirements and pending product screens: [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md), sections 4–5. Execution: [TASKS.md](../TASKS.md), TO-142–153. Existing designs/routes below are reuse candidates, not proof of connected transport operations. New pilot surfaces cover memberships/sites, planning/allocations, GR QR/POD, incidents, expenses/fuel, freight collections/payroll, ERP and platform operations.
+
+Fresh dispatch/customer/admin SQL proofs still reproduce foreign agency claims, suspended writes/assignment guards, missing booking producer, absent delivery propagation, foreign usage RPCs and public billing files. Repair these before screen expansion. D1 cloud/local honesty, D2 accessibility and selected Hindi driver journeys belong in affected slices.
+
+No routes/visual designs changed, no browser audit rerun, and no Stitch projects/screens mutated in this assessment (mutations 0; retries 0; no new IDs/screenshots). Existing audit below remains historical evidence. Before the first implementation screen, follow current stitch_status/stitch_guide and repository audit rules; record real action/API and mobile/desktop proof.
+
 Date: 2026-09-19 · Project: Stitch `projects/817968552986251880` ("TruckOpti: India's Logistics Operating System") · Adapter 0.2.0 · Read-only audit (zero mutations).
 
 ## Method & sources
