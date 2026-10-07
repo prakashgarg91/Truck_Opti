@@ -528,12 +528,18 @@ async function main() {
       : 'no views found'
   )
   const anonReadableViews = inventory.views.filter((v) => v.anonSelect)
-  if (anonReadableViews.length > 0) {
-    recordFinding(
-      'A5 finding: aggregate row-count view is anon-readable (info disclosure, P3)',
-      `${anonReadableViews.map((v) => v.name).join(', ')} — exposes only table row counts; recommend REVOKE SELECT ... FROM anon, authenticated (or switch to security_invoker) if the deployed project grants it.`
-    )
-  }
+  const authReadableViews = inventory.views.filter((v) => v.authenticatedSelect)
+  // TO-142 r3: the setup-verification aggregate is revoked from both client
+  // roles (the finding's own house fix) — no product consumer exists (only a
+  // generated type at frontend/src/types/database.types.ts:571); the
+  // owner/service path keeps access for operational verification.
+  record(
+    'A5b. no public view is client-readable (setup-verification aggregate revoked)',
+    anonReadableViews.length === 0 && authReadableViews.length === 0,
+    anonReadableViews.length === 0 && authReadableViews.length === 0
+      ? `${inventory.views.length} view(s); SELECT revoked from anon + authenticated`
+      : `client-readable views remain: anon=[${anonReadableViews.map((v) => v.name).join(', ')}] authenticated=[${authReadableViews.map((v) => v.name).join(', ')}]`
+  )
 
   const otpPrivileges = (
     await rows(
@@ -559,13 +565,12 @@ async function main() {
   )
   inventory.buckets = buckets
   record(
-    'A7. storage bucket configuration matches the migrated privacy contract (driver-docs private)',
-    buckets.length === 3 && buckets.find((b) => b.id === 'driver-docs')?.public === false,
+    'A7. storage bucket configuration matches the migrated privacy contract (all document buckets private)',
+    buckets.length === 3 &&
+      buckets.find((b) => b.id === 'driver-docs')?.public === false &&
+      buckets.find((b) => b.id === 'trip-photos')?.public === false &&
+      buckets.find((b) => b.id === 'billing-documents')?.public === false,
     buckets.map((b) => `${b.id}:public=${b.public}`).join(', ')
-  )
-  recordFinding(
-    'A7 finding: billing-documents bucket is public-read (invoice PDFs URL-accessible)',
-    'billing-documents:public=true with "Public can view billing documents" (storage.objects SELECT). Object paths are unguessable invoice numbers, and the app links invoices by URL; this is a design decision to confirm with the owner — not changed here. KYC (driver-docs) is private.'
   )
 
   // =========================================================================
@@ -613,7 +618,52 @@ async function main() {
   await createStorageObject('driver-docs', `${driverPendingUser}/licence.pdf`, driverPendingUser)
   await createStorageObject('trip-photos', `${driverOkUser}/trip-photo.jpg`, driverOkUser)
   await createStorageObject('trip-photos', `${driverPendingUser}/trip-photo.jpg`, driverPendingUser)
+  await createStorageObject('trip-photos', `${driverOkUser}/${offerOk}/loading.jpg`, driverOkUser)
   await createStorageObject('billing-documents', `invoices/INV-2026-000001.pdf`, adminUser)
+  await createStorageObject('billing-documents', `${customerAUser}/INV-2026-000002.pdf`, customerAUser)
+
+  // =========================================================================
+  // A8. Privatized document buckets (TO-142): anon denied, authorized readers
+  // =========================================================================
+  {
+    await actAsAnon()
+    const anonDocs = (
+      await rows(
+        `SELECT (SELECT count(*) FROM storage.objects WHERE bucket_id = 'billing-documents')::int AS billing,
+                (SELECT count(*) FROM storage.objects WHERE bucket_id = 'trip-photos')::int AS trips`
+      )
+    )[0]
+    expect(anonDocs.billing === 0 && anonDocs.trips === 0, `anon must see zero document objects after privatization: ${JSON.stringify(anonDocs)}`)
+
+    await actAs(customerAUser)
+    const ownBilling = await count(`SELECT count(*) FROM storage.objects WHERE bucket_id = 'billing-documents'`)
+    expect(ownBilling === 1, `invoice owner must read the billing object in their own folder, got ${ownBilling}`)
+
+    await actAs(customerBUser)
+    const foreignBilling = await count(`SELECT count(*) FROM storage.objects WHERE bucket_id = 'billing-documents'`)
+    expect(foreignBilling === 0, `non-owner customer must not read billing documents, got ${foreignBilling}`)
+
+    await actAs(customerAUser)
+    const stakeholderTrip = await count(
+      `SELECT count(*) FROM storage.objects WHERE bucket_id = 'trip-photos' AND name = $1`,
+      [`${driverOkUser}/${offerOk}/loading.jpg`]
+    )
+    expect(stakeholderTrip === 1, `shipment customer must read the driver trip photo as a stakeholder, got ${stakeholderTrip}`)
+
+    await actAs(driverOkUser)
+    const driverOwnTrips = await count(`SELECT count(*) FROM storage.objects WHERE bucket_id = 'trip-photos'`)
+    expect(driverOwnTrips === 2, `uploading driver reads own trip objects (legacy + job-scoped), got ${driverOwnTrips}`)
+
+    await actAs(adminUser)
+    const adminBilling = await count(`SELECT count(*) FROM storage.objects WHERE bucket_id = 'billing-documents'`)
+    expect(adminBilling === 2, `DB admin reads all billing documents, got ${adminBilling}`)
+
+    record(
+      'A8. privatized document buckets: anon denied; billing owner/admin and trip-photo stakeholders authorized (TO-142)',
+      true,
+      'signed-URL flow replaces world-readable URLs; expiry asserted at source level in G7'
+    )
+  }
 
   // =========================================================================
   // B. Anonymous
@@ -691,8 +741,8 @@ async function main() {
     )
   )[0]
   record(
-    'B6. anonymous storage: KYC documents hidden; trip photos and invoice PDFs public by design',
-    anonStorage.driver_docs === 0 && anonStorage.trip_photos >= 1 && anonStorage.billing_docs >= 1,
+    'B6. anonymous storage: every document bucket is private (KYC, trip photos and invoice PDFs hidden)',
+    anonStorage.driver_docs === 0 && anonStorage.trip_photos === 0 && anonStorage.billing_docs === 0,
     JSON.stringify(anonStorage)
   )
 
@@ -1173,6 +1223,22 @@ async function main() {
     /from\('users'\)\s*\n?\s*\.select\('role, login_id'\)/.test(authStore.replace(/\r/g, '')) &&
       !authStore.includes('user_metadata?.role'),
     'source assertion on frontend/src/stores/authStore.ts:87-123 (role route gates are UX-only; every data surface is server-gated)'
+  )
+
+  // TO-142: the private-bucket signed-URL flow, asserted at source level.
+  // NOT an HTTP/Storage round-trip: no Edge/Storage runtime executes here, so
+  // expiry and authorization of the minted URL are proven only as source
+  // contracts (the SQL-side authorization is proven by A8/H-cases).
+  const invoiceViewSource = readSource('supabase/functions/invoice-view/index.ts')
+  const invoiceDeliverySource = readSource('supabase/functions/_shared/invoice-delivery.ts')
+  const subscriptionPageSource = readSource('frontend/src/pages/SubscriptionPage.tsx')
+  record(
+    'G7. invoice signed-URL flow: server-minted createSignedUrl with pinned expiry; no public-URL builder remains',
+    invoiceViewSource.includes('createSignedUrl(') &&
+      invoiceViewSource.includes('INVOICE_SIGNED_URL_EXPIRES_SECONDS = 300') &&
+      !invoiceDeliverySource.includes('getPublicUrl') &&
+      subscriptionPageSource.includes('getSignedUrl'),
+    'invoice-view mints createSignedUrl(path, 300) for the invoice owner/admin; invoice-delivery no longer persists public URLs (email links the authenticated /subscription route); SubscriptionPage fetches a fresh signed URL on click. Issued signed URLs are not revocable before expiry (HMAC over path+expiry) — revocation requires object deletion or key rotation.'
   )
 
   // SQL replica of the requireAdminContext predicate: GoTrue token → caller id,

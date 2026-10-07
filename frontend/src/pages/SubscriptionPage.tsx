@@ -17,6 +17,7 @@ import EmptyState from '../components/EmptyState'
 import { useSubscription } from '../hooks/useSubscription'
 import { invoicesApi, type Invoice } from '../services/subscriptionApi'
 import { useAuthStore } from '../stores/authStore'
+import { logger } from '../utils/logger'
 
 const currencyFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -228,12 +229,20 @@ export default function SubscriptionPage() {
   const planName = isAdmin ? 'Platform Admin Access' : plan?.name || 'Free Plan'
   const invoiceHistory = invoices
 
-  const handleInvoiceDownload = (invoice: Invoice) => {
+  // TO-142: the billing-documents bucket is private — mint a fresh expiring
+  // signed URL through the invoice-view Edge function on every click instead
+  // of opening a stored (world-readable-era) URL.
+  const handleInvoiceDownload = async (invoice: Invoice) => {
     if (!user) return
 
-    if (invoice.pdf_url) {
-      window.open(invoice.pdf_url, '_blank', 'noopener,noreferrer')
-      return
+    try {
+      const signedUrl = await invoicesApi.getSignedUrl(invoice.id)
+      if (signedUrl) {
+        window.open(signedUrl, '_blank', 'noopener,noreferrer')
+        return
+      }
+    } catch (error) {
+      logger.error('[SubscriptionPage] failed to mint invoice signed URL', error)
     }
 
     downloadInvoiceFallback(invoice, {
@@ -458,7 +467,7 @@ export default function SubscriptionPage() {
                           </td>
                           <td className="py-3 text-sm">
                             <button
-                              onClick={() => handleInvoiceDownload(invoice)}
+                              onClick={() => void handleInvoiceDownload(invoice)}
                               className="inline-flex items-center gap-1 font-medium text-primary-600 hover:text-primary-700"
                             >
                               {invoice.pdf_url ? <ExternalLink className="h-4 w-4" /> : <Download className="h-4 w-4" />}

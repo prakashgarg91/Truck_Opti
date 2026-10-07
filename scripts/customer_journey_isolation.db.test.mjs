@@ -590,13 +590,10 @@ async function main() {
     const read = await rows(`SELECT id FROM public.shipments`)
     expect(read.length === 0, 'anon must not read shipments (RLS)')
     const anonExecute = await rows(`SELECT has_function_privilege('anon', 'public.ensure_shipment_document_numbers(uuid)', 'EXECUTE') AS allowed`)
-    record('15. anon cannot read shipments; document-number RPC fails closed for anon', true, `EXECUTE=${anonExecute[0].allowed}`)
-    if (anonExecute[0].allowed) {
-      recordFinding(
-        'ensure_shipment_document_numbers EXECUTE is not revoked from PUBLIC',
-        `has_function_privilege('anon', ..., 'EXECUTE') = true; the call is denied only by the internal guard ("${msg}")`
-      )
-    }
+    // TO-142: the PUBLIC grant is revoked — anon is denied by privilege, not
+    // only by the internal guard. The authenticated grant persists (case 13).
+    expect(anonExecute[0].allowed === false, `anon EXECUTE on ensure_shipment_document_numbers must be revoked, got ${anonExecute[0].allowed}`)
+    record('15. anon cannot read shipments; document-number RPC privilege-denied for anon (PUBLIC grant revoked)', true, `EXECUTE=${anonExecute[0].allowed}`)
   }
 
   // =========================================================================
@@ -762,34 +759,28 @@ async function main() {
     const bSubscriptionId = bSubscription[0].id
     const bUsageBefore = await rows(`SELECT shipments_used FROM public.usage_tracking WHERE subscription_id = $1`, [bSubscriptionId])
 
+    // Positive own-call control: the caller-bound binding still serves the owner.
     await actAs(userA)
-    let crossWrite = null
-    try {
-      await db.query(`SELECT public.increment_usage($1, 'shipments', 7)`, [userB])
-      crossWrite = 'accepted'
-    } catch (error) {
-      crossWrite = error.message.split('\n')[0]
-    }
-    let crossPlan = null
-    try {
-      const plan = await rows(`SELECT plan_name, status FROM public.get_user_plan($1)`, [userB])
-      crossPlan = plan.length ? `${plan[0].plan_name}/${plan[0].status}` : '[]'
-    } catch (error) {
-      crossPlan = error.message.split('\n')[0]
-    }
+    const ownPlan = await rows(`SELECT plan_name, status FROM public.get_user_plan($1)`, [userA])
+    expect(ownPlan.length === 1 && ownPlan[0].status === 'active', `own get_user_plan must work for the caller: ${JSON.stringify(ownPlan)}`)
+
+    // TO-142: the RPCs are caller-bound — a foreign user id is refused with a
+    // typed error instead of being served.
+    const foreignInc = await expectError(
+      db.query(`SELECT public.increment_usage($1, 'shipments', 7)`, [userB]),
+      'Usage and plan RPCs are caller-bound to the authenticated user.'
+    )
+    const foreignPlan = await expectError(
+      db.query(`SELECT plan_name, status FROM public.get_user_plan($1)`, [userB]),
+      'Usage and plan RPCs are caller-bound to the authenticated user.'
+    )
+    expect(/caller-bound/.test(foreignInc) && /caller-bound/.test(foreignPlan), 'foreign calls must fail with the caller-bound typed error')
 
     await actAsService()
     const bUsageAfter = await rows(`SELECT shipments_used FROM public.usage_tracking WHERE subscription_id = $1`, [bSubscriptionId])
     const landed = bUsageAfter[0].shipments_used - bUsageBefore[0].shipments_used
-
-    if (landed > 0) {
-      recordFinding(
-        '23. cross-customer billing RPCs are callable for a foreign user id',
-        `A -> increment_usage(B) ${crossWrite}; B usage ${bUsageBefore[0].shipments_used} -> ${bUsageAfter[0].shipments_used} (+${landed}); A -> get_user_plan(B) = ${crossPlan}`
-      )
-    } else {
-      record('23. cross-customer usage RPC refuses to modify a foreign subscription', true, `increment_usage(B) ${crossWrite}, usage delta ${landed}, plan read ${crossPlan}`)
-    }
+    expect(landed === 0, `foreign increment_usage must not modify B usage, delta ${landed}`)
+    record('23. cross-customer usage RPCs are caller-bound: foreign increment/plan denied, own call works', true, `usage delta ${landed}`)
   }
 
   // =========================================================================
@@ -834,22 +825,55 @@ async function main() {
   }
 
   // =========================================================================
-  // I. Booking dispatch defect (reproduced, not repaired here)
+  // I. Booking dispatch producer (TO-142 r2)
   // =========================================================================
   {
+    // Lifecycle guard: shipmentA was delivered in section F, so it must not
+    // be re-dispatchable.
     await actAs(userA)
-    let dispatchMessage
-    try {
-      await db.query(`SELECT public.dispatch_job_to_drivers($1, 'eicher_14ft')`, [shipmentAId])
-      dispatchMessage = 'accepted'
-    } catch (error) {
-      dispatchMessage = error.message.split('\n')[0]
-    }
-    expect(/does not exist/.test(dispatchMessage), `dispatch RPC unexpectedly callable: ${dispatchMessage}`)
-    recordFinding(
-      '26. booking dispatch RPC is missing (reproduced)',
-      `NewShipmentPage.tsx:93 calls dispatch_job_to_drivers(uuid,text); DB says: ${dispatchMessage}`
+    const closedShipment = await expectError(
+      db.query(`SELECT public.dispatch_job_to_drivers($1, 'eicher_14ft')`, [shipmentAId]),
+      'Shipment is not open for dispatch.'
     )
+    expect(/not open for dispatch/.test(closedShipment), 'delivered shipment must not be re-dispatchable')
+
+    // Producer path: a fresh booking fans an OTP-gated offer to the eligible
+    // approved driver (the harness has exactly one approved eicher_14ft driver).
+    const dispatchedReference = `TO134-D-${Date.now()}`
+    const dispatchedBooking = await rows(
+      `INSERT INTO public.shipments
+         (shipment_id, customer_id, created_by, origin, destination, status, total_weight, estimated_cost,
+          vehicle_type, pickup_date, goods_description, estimated_value)
+       VALUES ($1, $2, $3, 'Delhi', 'Jaipur', 'pending', 1200, 1850, 'eicher_14ft', '2026-10-10', 'Electronics', 75000)
+       RETURNING id`,
+      [dispatchedReference, customerA2, userA]
+    )
+    const dispatched = await rows(`SELECT public.dispatch_job_to_drivers($1, 'eicher_14ft') AS n`, [dispatchedBooking[0].id])
+    expect(Number(dispatched[0].n) === 1, `booking dispatch must notify the eligible approved driver, got ${dispatched[0].n}`)
+    // Offer identity via non-OTP columns (stakeholder row read); OTP contract
+    // via the tracking RPC (direct OTP reads stay denied — section E).
+    const producerOfferRows = await rows(
+      `SELECT id, status FROM public.job_offers WHERE shipment_id = $1`,
+      [dispatchedBooking[0].id]
+    )
+    const producerOffers = await rows(`SELECT * FROM public.get_shipment_job_offer_tracking($1)`, [dispatchedBooking[0].id])
+    expect(
+      producerOfferRows.length === 1 &&
+        producerOfferRows[0].status === 'pending' &&
+        producerOffers.length === 1 &&
+        producerOffers[0].id === producerOfferRows[0].id &&
+        (producerOffers[0].pickup_otp ?? '').length === 4,
+      `producer offer wrong: ${JSON.stringify(producerOfferRows)} / ${JSON.stringify(producerOffers)}`
+    )
+    record('26. booking dispatch RPC fans out an OTP-gated driver offer for the caller shipment (producer present)', true, '1 driver notified')
+
+    // Ownership guard: a foreign caller cannot dispatch someone else's shipment.
+    await actAs(userB)
+    await expectError(
+      db.query(`SELECT public.dispatch_job_to_drivers($1, 'eicher_14ft')`, [dispatchedBooking[0].id]),
+      'Shipment not found or access denied'
+    )
+    record('26b. booking dispatch RPC is ownership-guarded (foreign caller denied)', true)
   }
 
   // -------------------------------------------------------------------------

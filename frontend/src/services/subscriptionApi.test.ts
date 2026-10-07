@@ -9,6 +9,7 @@ const orderMock = vi.hoisted(() => vi.fn())
 const limitMock = vi.hoisted(() => vi.fn())
 const authGetUserMock = vi.hoisted(() => vi.fn())
 const rpcMock = vi.hoisted(() => vi.fn())
+const functionsInvokeMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../lib/supabase', () => ({
     supabase: {
@@ -29,6 +30,9 @@ vi.mock('../lib/supabase', () => ({
             getUser: authGetUserMock,
         },
         rpc: rpcMock,
+        functions: {
+            invoke: functionsInvokeMock,
+        },
     },
 }))
 
@@ -309,27 +313,51 @@ describe('subscriptionApi', () => {
         })
     })
 
-    describe('invoicesApi.downloadPdf', () => {
-        it('returns null when invoice not found', async () => {
-            singleMock.mockResolvedValue({ data: null, error: { message: 'Not found' } })
+    describe('invoicesApi.getSignedUrl', () => {
+        it('mints a signed URL through the invoice-view Edge function (TO-142 private bucket)', async () => {
+            functionsInvokeMock.mockResolvedValue({
+                data: { signedUrl: 'https://example.supabase.co/storage/v1/object/sign/billing-documents/x.pdf?token=t', expiresIn: 300 },
+                error: null,
+            })
 
-            const result = await subscriptionApi.invoices.downloadPdf('invoice_1')
+            const result = await subscriptionApi.invoices.getSignedUrl('invoice_1')
+
+            expect(result).toBe('https://example.supabase.co/storage/v1/object/sign/billing-documents/x.pdf?token=t')
+            expect(functionsInvokeMock).toHaveBeenCalledWith('invoice-view', { body: { invoiceId: 'invoice_1' } })
+        })
+
+        it('returns null when the Edge function errors', async () => {
+            functionsInvokeMock.mockResolvedValue({ data: null, error: { message: 'Access denied.' } })
+
+            const result = await subscriptionApi.invoices.getSignedUrl('invoice_1')
 
             expect(result).toBeNull()
         })
 
-        it('returns pdf_url when invoice exists', async () => {
-            const mockInvoice = { id: 'invoice_1', pdf_url: 'https://example.com/invoice.pdf' }
-            singleMock.mockResolvedValue({ data: mockInvoice, error: null })
+        it('returns null when no signedUrl is returned', async () => {
+            functionsInvokeMock.mockResolvedValue({ data: { signedUrl: null, expiresIn: 300 }, error: null })
+
+            const result = await subscriptionApi.invoices.getSignedUrl('invoice_1')
+
+            expect(result).toBeNull()
+        })
+    })
+
+    describe('invoicesApi.downloadPdf', () => {
+        it('mints a fresh signed URL instead of opening a stored pdf_url (TO-142)', async () => {
+            functionsInvokeMock.mockResolvedValue({
+                data: { signedUrl: 'https://example.supabase.co/storage/v1/object/sign/billing-documents/fresh.pdf?token=t', expiresIn: 300 },
+                error: null,
+            })
 
             const result = await subscriptionApi.invoices.downloadPdf('invoice_1')
 
-            expect(result).toBe('https://example.com/invoice.pdf')
+            expect(result).toBe('https://example.supabase.co/storage/v1/object/sign/billing-documents/fresh.pdf?token=t')
+            expect(functionsInvokeMock).toHaveBeenCalledWith('invoice-view', { body: { invoiceId: 'invoice_1' } })
         })
 
-        it('returns null when pdf_url is missing', async () => {
-            const mockInvoice = { id: 'invoice_1', pdf_url: null }
-            singleMock.mockResolvedValue({ data: mockInvoice, error: null })
+        it('returns null when signing fails', async () => {
+            functionsInvokeMock.mockResolvedValue({ data: null, error: { message: 'Invoice not found.' } })
 
             const result = await subscriptionApi.invoices.downloadPdf('invoice_1')
 

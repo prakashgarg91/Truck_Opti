@@ -10,6 +10,7 @@ import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { shareTrackingLink } from '../utils/whatsappShare'
+import { resolveTripPhotoUrl } from '../services/tripPhotoUrl'
 
 interface ShipmentLocation {
   id: string
@@ -260,9 +261,18 @@ export default function TrackingPage() {
 
         if (!isActive) return
 
+        // TO-142: the trip-photos bucket is private — stored references are
+        // tokenless object URLs, so mint fresh expiring signed URLs for the
+        // customer's stakeholder read.
+        const [signedLoading, signedDelivery] = await Promise.all([
+          resolveTripPhotoUrl(data?.photo_loading_url ?? null),
+          resolveTripPhotoUrl(data?.photo_delivery_url ?? null),
+        ])
+        if (!isActive) return
+
         setJobOffer(data as JobOffer | null)
         setJobPhotos(data
-          ? { loading_url: data.photo_loading_url ?? undefined, delivery_url: data.photo_delivery_url ?? undefined }
+          ? { loading_url: signedLoading ?? undefined, delivery_url: signedDelivery ?? undefined }
           : null)
       } catch (error) {
         if (!isActive) return

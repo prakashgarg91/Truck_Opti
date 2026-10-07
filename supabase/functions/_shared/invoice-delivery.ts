@@ -135,6 +135,19 @@ function sanitizeFileSegment(value: string) {
         .replace(/^-+|-+$/g, '')
 }
 
+// TO-142: canonical tokenless object URL for the private billing-documents
+// bucket. The stored reference keeps a full-URL shape (stable, path
+// extractable) but is no longer directly fetchable — readers mint expiring
+// signed URLs through the invoice-view Edge function.
+function buildPrivateDocumentUrl(bucketPath: string) {
+    const supabaseUrl = normalizeString(Deno.env.get('SUPABASE_URL'))
+    if (!supabaseUrl) {
+        throw new Error('SUPABASE_URL is required to reference the private invoice document')
+    }
+
+    return `${supabaseUrl.replace(/\/+$/, '')}/storage/v1/object/sign/${BILLING_DOCUMENTS_BUCKET}/${bucketPath}`
+}
+
 function formatCurrency(amountInPaise: number, currency = 'INR') {
     const formattedAmount = new Intl.NumberFormat('en-IN', {
         minimumFractionDigits: 2,
@@ -561,7 +574,7 @@ async function buildInvoicePdf(context: InvoiceDeliveryContext) {
 
 async function ensureBillingBucket(supabase: SupabaseClient) {
     const { error } = await supabase.storage.createBucket(BILLING_DOCUMENTS_BUCKET, {
-        public: true,
+        public: false,
         fileSizeLimit: 10 * 1024 * 1024,
         allowedMimeTypes: ['application/pdf'],
     })
@@ -659,13 +672,17 @@ async function loadDeliveryContext(
 async function sendInvoiceEmail(input: {
     invoice: InvoiceRow
     planName: string
-    pdfUrl: string
     recipientEmail: string
     customerName: string
 }) {
     const sesConfig = buildSesConfig()
     const supportEmail = normalizeString(Deno.env.get('BILLING_SUPPORT_EMAIL')) ?? DEFAULT_SUPPORT_EMAIL
     const appUrl = normalizeString(Deno.env.get('BILLING_APP_URL')) ?? DEFAULT_APP_URL
+    // TO-142: the billing-documents bucket is private, so the email links the
+    // authenticated billing-history route where the invoice owner mints a
+    // fresh expiring signed URL on click (invoice-view Edge function). No
+    // world-readable or bearer-less document URL is embedded in email.
+    const billingHistoryUrl = `${appUrl}/subscription`
 
     if (!sesConfig.config) {
         return {
@@ -698,10 +715,10 @@ async function sendInvoiceEmail(input: {
             <tr><td style="padding: 8px 0; color: #475569;">Total Paid</td><td style="padding: 8px 0; font-weight: 700; text-align: right;">${escapeHtml(formattedTotal)}</td></tr>
           </table>
           <div style="margin-bottom: 24px;">
-            <a href="${escapeHtml(input.pdfUrl)}" style="display: inline-block; background: #1d4ed8; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-weight: 600;">Open hosted invoice</a>
+            <a href="${escapeHtml(billingHistoryUrl)}" style="display: inline-block; background: #1d4ed8; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-weight: 600;">Open billing history</a>
           </div>
-          <p style="margin: 0 0 8px; font-size: 14px; line-height: 1.6;">You can also review your billing history anytime in your TruckOpti account.</p>
-          <p style="margin: 0 0 4px; font-size: 14px;"><a href="${escapeHtml(appUrl)}/subscription" style="color: #1d4ed8;">${escapeHtml(appUrl)}/subscription</a></p>
+          <p style="margin: 0 0 8px; font-size: 14px; line-height: 1.6;">Sign in to open your invoice — the document link is generated securely for your account.</p>
+          <p style="margin: 0 0 4px; font-size: 14px;"><a href="${escapeHtml(billingHistoryUrl)}" style="color: #1d4ed8;">${escapeHtml(billingHistoryUrl)}</a></p>
         </div>
         <div style="padding: 18px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
           Need help? Contact ${escapeHtml(supportEmail)}.
@@ -720,8 +737,7 @@ async function sendInvoiceEmail(input: {
         `Billing Period: ${billingPeriod}`,
         `Total Paid: ${formattedTotal}`,
         '',
-        `Hosted invoice: ${input.pdfUrl}`,
-        `Billing history: ${appUrl}/subscription`,
+        `Open your invoice from your billing history: ${billingHistoryUrl}`,
         '',
         `Support: ${supportEmail}`,
     ].join('\n')
@@ -793,13 +809,14 @@ export async function finalizePaidInvoiceDelivery(
             throw uploadError
         }
 
-        const { data } = supabase.storage.from(BILLING_DOCUMENTS_BUCKET).getPublicUrl(filePath)
-        pdfUrl = normalizeString(data.publicUrl)
+        // TO-142: the bucket is private — persist the canonical tokenless
+        // object URL instead of a world-readable public URL. Documents are
+        // opened through the invoice-view Edge function, which mints a fresh
+        // expiring signed URL for the invoice owner or an admin. The path is
+        // deterministic from the invoice row, so documents written before the
+        // privatization resolve without a data backfill.
+        pdfUrl = buildPrivateDocumentUrl(filePath)
         bucketPath = filePath
-
-        if (!pdfUrl) {
-            throw new Error('Failed to build public invoice URL')
-        }
 
         const { error: invoiceUpdateError } = await supabase
             .from('invoices')
@@ -821,11 +838,10 @@ export async function finalizePaidInvoiceDelivery(
 
         if (!recipientEmail) {
             emailError = 'Missing recipient email address'
-        } else if (pdfUrl) {
+        } else {
             const emailResult = await sendInvoiceEmail({
                 invoice: context.invoice,
                 planName: normalizeString(context.plan?.name) ?? 'Subscription plan',
-                pdfUrl,
                 recipientEmail,
                 customerName: buildDisplayName(context),
             })

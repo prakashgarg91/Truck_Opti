@@ -4,7 +4,7 @@ import {
   KeyRound, Camera, AlertTriangle, RefreshCw, ArrowLeft,
   Package, Flag
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { supabase, supabaseConfigResolution } from '../lib/supabase'
 import { driverSupabaseApi, driverTripsApi } from '../services/supabaseApi'
 import {
   buildJobProgressStatePatch,
@@ -21,6 +21,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import { resolveTripPhotoUrl } from '../services/tripPhotoUrl'
 
 interface ShipmentInfo {
   shipment_id: string
@@ -90,6 +91,10 @@ export default function DriverTripPage() {
   const [submitting, setSubmitting] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  // TO-142: persisted photo references are tokenless private-bucket URLs;
+  // renders use freshly signed URLs resolved from the object path.
+  const [resolvedLoadingPhoto, setResolvedLoadingPhoto] = useState<string | null>(null)
+  const [resolvedDeliveryPhoto, setResolvedDeliveryPhoto] = useState<string | null>(null)
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'starting' | 'active' | 'error'>('idle')
   const [gpsMessage, setGpsMessage] = useState('GPS tracking will start when the journey begins.')
   const [lastLocationUpdateAt, setLastLocationUpdateAt] = useState<string | null>(null)
@@ -126,6 +131,22 @@ export default function DriverTripPage() {
   useEffect(() => {
     fetchTrip()
   }, [fetchTrip])
+
+  // TO-142: mint fresh signed URLs for the persisted photo references so the
+  // driver sees previously uploaded proof photos even after a reload (the
+  // stored URLs are tokenless and the bucket is private).
+  useEffect(() => {
+    let active = true
+    void resolveTripPhotoUrl(job?.photo_loading_url).then((signed) => {
+      if (active) setResolvedLoadingPhoto(signed)
+    })
+    void resolveTripPhotoUrl(job?.photo_delivery_url).then((signed) => {
+      if (active) setResolvedDeliveryPhoto(signed)
+    })
+    return () => {
+      active = false
+    }
+  }, [job?.photo_loading_url, job?.photo_delivery_url])
 
   const upsertDriverLocation = useCallback(async (position: GeolocationPosition) => {
     if (!driver?.id) {
@@ -360,16 +381,17 @@ export default function DriverTripPage() {
         logger.error('[DriverTripPage] trip photo upload failed', uploadError)
         return null
       }
-      const { data: urlData } = supabase.storage.from('trip-photos').getPublicUrl(path)
-      const publicUrl = urlData?.publicUrl || null
-      if (publicUrl) {
-        const saved = await persistJobProgress(null, { [field]: publicUrl })
-        if (!isJobProgressOk(saved)) {
-          toast.error(resolveJobProgressFailureMessage(saved))
-          return null
-        }
+      // TO-142: the trip-photos bucket is private — persist the canonical
+      // tokenless object URL (same shape is_job_trip_photo_url accepts) and
+      // let readers mint fresh expiring signed URLs from the object path.
+      const supabaseUrl = supabaseConfigResolution.clientUrl.replace(/\/+$/, '')
+      const objectUrl = `${supabaseUrl}/storage/v1/object/sign/trip-photos/${path}`
+      const saved = await persistJobProgress(null, { [field]: objectUrl })
+      if (!isJobProgressOk(saved)) {
+        toast.error(resolveJobProgressFailureMessage(saved))
+        return null
       }
-      return publicUrl
+      return objectUrl
     } finally {
       setUploading(false)
     }
@@ -629,9 +651,9 @@ export default function DriverTripPage() {
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm text-center">
-              {photoPreview || job.photo_loading_url ? (
+              {photoPreview || resolvedLoadingPhoto ? (
                 <img
-                  src={photoPreview || job.photo_loading_url!}
+                  src={photoPreview || resolvedLoadingPhoto!}
                   alt="Loading photo"
                   className="w-full h-48 object-cover rounded-xl mb-3"
                 />
@@ -655,7 +677,7 @@ export default function DriverTripPage() {
                 className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60"
               >
                 <Camera size={16} />
-                {uploading ? 'Uploading...' : (photoPreview || job.photo_loading_url) ? 'Retake Photo' : 'Take Photo'}
+                {uploading ? 'Uploading...' : (photoPreview || resolvedLoadingPhoto) ? 'Retake Photo' : 'Take Photo'}
               </button>
               {!job.photo_loading_url && (
                 <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
@@ -795,9 +817,9 @@ export default function DriverTripPage() {
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm text-center">
-              {photoPreview || job.photo_delivery_url ? (
+              {photoPreview || resolvedDeliveryPhoto ? (
                 <img
-                  src={photoPreview || job.photo_delivery_url!}
+                  src={photoPreview || resolvedDeliveryPhoto!}
                   alt="Delivery photo"
                   className="w-full h-48 object-cover rounded-xl mb-3"
                 />

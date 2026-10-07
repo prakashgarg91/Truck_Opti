@@ -305,9 +305,22 @@ export const invoicesApi = {
   },
 
   // Download invoice PDF
+  // TO-142: the billing-documents bucket is private — a fresh, expiring
+  // signed URL is minted per request through the invoice-view Edge function
+  // (owner or DB admin). Stored pdf_url values are no longer opened directly.
   async downloadPdf(invoiceId: string): Promise<string | null> {
-    const invoice = await this.getById(invoiceId);
-    return invoice?.pdf_url || null;
+    return this.getSignedUrl(invoiceId);
+  },
+
+  // Mint a fresh expiring signed URL for the invoice document.
+  async getSignedUrl(invoiceId: string): Promise<string | null> {
+    const { data, error } = await supabase.functions.invoke<{
+      signedUrl: string | null;
+      expiresIn: number;
+    }>('invoice-view', { body: { invoiceId } });
+
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
   }
 };
 

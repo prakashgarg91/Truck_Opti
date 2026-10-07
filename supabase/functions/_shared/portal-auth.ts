@@ -230,6 +230,31 @@ type AgencyContextOptions = {
   requireApproved?: boolean
 }
 
+/**
+ * Resolves the caller as any authenticated Supabase user (no role
+ * requirement). Authority comes from the trusted session alone; callers that
+ * need elevated scope must verify it themselves against database-backed state
+ * (as invoice-view does for invoice ownership / users.role).
+ */
+export async function requireUserContext(authorization: string | null) {
+  const accessToken = getBearerToken(authorization)
+  const normalizedAuthorization = authorization ?? `Bearer ${accessToken}`
+
+  const supabaseUrl = getRequiredEnv('SUPABASE_URL')
+  const supabaseAnonKey = getRequiredEnv('SUPABASE_ANON_KEY')
+  const supabaseServiceRoleKey = getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+
+  const authClient = createAuthClient(supabaseUrl, supabaseAnonKey, normalizedAuthorization)
+  const serviceClient = createServiceClient(supabaseUrl, supabaseServiceRoleKey)
+  const caller = await getCaller(authClient, accessToken)
+
+  return {
+    caller,
+    authClient,
+    serviceClient,
+  }
+}
+
 export async function requireAgencyContext(
   authorization: string | null,
   options: AgencyContextOptions = {},

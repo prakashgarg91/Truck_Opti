@@ -463,20 +463,18 @@ async function main() {
   let truckB1
   {
     // Truck creation works on the authenticated own-agency RLS policy (the
-    // guard trigger early-returns while driver_id is NULL).
+    // guard trigger skips while driver_id is NULL).
     await actAs(agencyAUser)
     truckA1 = await createAgencyTruck(agencyA, null)
 
-    // Direct authenticated assignment of a VALID approved fleet driver.
-    const denied = await expectError(
-      db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckA1]),
-      'Driver is not approved for assignment.'
-    )
-    expect(/not approved/.test(denied), 'direct assignment must be denied (SQL), and it was')
-    recordFinding(
-      'authenticated fleet assignment denied even for a valid approved driver (guard trigger sees RLS-filtered drivers)',
-      `agency A UPDATE agency_trucks.driver_id=driver1(approved) -> "${denied}"; the trigger's SELECT on public.drivers is filtered by RLS ("Drivers: own record" is the only policy), so an agency user cannot see any driver row`
-    )
+    // TO-142: direct authenticated assignment of a VALID approved fleet driver
+    // must SUCCEED — the guard resolves drivers through the RLS-safe definer
+    // helper instead of the RLS-filtered plain SELECT that made every
+    // authenticated assignment fail closed.
+    await db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckA1])
+    const assigned = await rows(`SELECT driver_id FROM public.agency_trucks WHERE id = $1`, [truckA1])
+    expect(assigned[0].driver_id === driver1, 'authenticated direct assignment of a valid approved driver must succeed on the RLS path')
+    record('4b. authenticated fleet assignment of a valid approved driver succeeds (RLS-safe guard)', true, `truck ${truckA1}`)
   }
 
   {
@@ -491,23 +489,39 @@ async function main() {
   }
 
   {
-    // Guard-trigger reality at the service layer: auth.uid() is NULL, so the
-    // trigger returns early and the DB-level guard does not run. Demonstrate:
-    // a cross-agency double assignment lands, then clean it up.
+    // TO-142: the guard now runs on BOTH deployed paths. A service-role
+    // cross-agency double assignment must be denied by the definer-backed
+    // check (previously the trigger early-returned on auth.uid() IS NULL).
     await actAsService()
     truckB1 = await createAgencyTruck(agencyB, null)
-    await db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckB1])
-    const doubleAssignment = await rows(
-      `SELECT count(*)::int AS n FROM public.agency_trucks WHERE driver_id = $1`,
-      [driver1]
+    const serviceDenied = await expectError(
+      db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckB1]),
+      'Driver is already assigned to another agency.'
     )
-    expect(doubleAssignment[0].n === 2, `expected the service write to land (guards skipped), got ${doubleAssignment[0].n}`)
-    // Clean up so later fleet assertions see the intended state.
-    await db.query(`UPDATE public.agency_trucks SET driver_id = NULL WHERE id = $1`, [truckB1])
-    recordFinding(
-      'DB-layer assignment guards are inert in both deployed paths',
-      `service-role write (auth.uid() IS NULL) skipped the guard trigger and put driver1 on two agencies' trucks (cleaned up); the authenticated path is denied for valid drivers by the RLS-filtered lookup — the only effective enforcement is the Edge Function contract (assertApprovedDriver / assertDriverAvailableForAgencyTruck)`
+    expect(/another agency/.test(serviceDenied), 'service-role cross-agency double assignment must be denied by the trigger')
+
+    // The authenticated path gets the same denial through the same definer
+    // helper: the caller cannot see other agencies' trucks, the helper can.
+    await actAs(agencyBUser)
+    const authDenied = await expectError(
+      db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckB1]),
+      'Driver is already assigned to another agency.'
     )
+    expect(/another agency/.test(authDenied), 'authenticated cross-agency double assignment must be denied by the trigger')
+
+    // Pinned duplicate rule (TO-142): a driver holds at most ONE truck row
+    // globally, so a second truck in the SAME agency is denied too.
+    await actAs(agencyAUser)
+    const truckA2 = await createAgencyTruck(agencyA, null)
+    const dupDenied = await expectError(
+      db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckA2]),
+      'Driver is already assigned to another truck.'
+    )
+    expect(/another truck/.test(dupDenied), 'same-agency duplicate truck assignment must be denied')
+
+    const assignments = await rows(`SELECT count(*)::int AS n FROM public.agency_trucks WHERE driver_id = $1`, [driver1])
+    expect(assignments[0].n === 1, `driver1 must hold exactly one truck row, got ${assignments[0].n}`)
+    record('5b. DB-layer guards enforce on both paths: service + authenticated cross-agency and duplicate denied', true, `driver1 truck rows=${assignments[0].n}`)
   }
 
   {
@@ -558,22 +572,40 @@ async function main() {
   }
 
   {
-    // The customer's booking flow calls dispatch_job_to_drivers
-    // (NewShipmentPage.tsx:93). It does not exist in any migration: the
-    // customer->driver dispatch producer is missing (re-verified).
-    const missing = await rows(`SELECT to_regprocedure('public.dispatch_job_to_drivers(uuid,text)') AS fn`)
-    let callMessage = 'accepted'
+    // TO-142 r2: the booking dispatch producer exists (NewShipmentPage.tsx:81
+    // calls dispatch_job_to_drivers right after booking). It fans OTP-gated
+    // driver offers out to every ELIGIBLE approved driver for the vehicle
+    // type — driver2 is still pending here, so only driver1 is notified.
     await actAs(customerUser)
-    try {
-      await db.query(`SELECT public.dispatch_job_to_drivers($1, 'eicher_14ft')`, [shipment1.id])
-    } catch (error) {
-      callMessage = error.message.split('\n')[0]
-    }
-    expect(missing[0].fn === null && /does not exist/.test(callMessage), `dispatch RPC unexpectedly present: ${JSON.stringify(missing)}`)
-    recordFinding(
-      'dispatch_job_to_drivers still missing (booking dispatch producer)',
-      `NewShipmentPage.tsx:93 calls it; DB: ${callMessage} — the customer->driver dispatch leg has no producer, so the journey below uses the agency-side dispatch surfaces that do exist`
+    const shipment4 = await createShipment(customer1, customerUser, 'DISPATCH')
+    const notified = await rows(`SELECT public.dispatch_job_to_drivers($1, 'eicher_14ft') AS n`, [shipment4.id])
+    expect(Number(notified[0].n) === 1, `producer must notify only the approved eicher_14ft driver, got ${notified[0].n}`)
+    // Offer identity via non-OTP columns (stakeholder row read — case 16
+    // pattern); OTP contract via the tracking RPC (direct OTP reads stay
+    // denied — case 14).
+    const offers = await rows(`SELECT id, driver_id, status FROM public.job_offers WHERE shipment_id = $1`, [shipment4.id])
+    expect(
+      offers.length === 1 && offers[0].driver_id === driver1 && offers[0].status === 'pending',
+      `producer offer wrong: ${JSON.stringify(offers)}`
     )
+    const tracking = await rows(`SELECT * FROM public.get_shipment_job_offer_tracking($1)`, [shipment4.id])
+    expect(
+      tracking.length === 1 &&
+        tracking[0].id === offers[0].id &&
+        (tracking[0].pickup_otp ?? '').length === 4 &&
+        (tracking[0].delivery_otp ?? '').length === 4,
+      `producer OTPs wrong via tracking: ${JSON.stringify(tracking)}`
+    )
+    record('8b. booking dispatch producer fans out an OTP-gated offer to the eligible approved driver', true, `${notified[0].n} driver notified`)
+
+    // Ownership guard: a foreign caller cannot dispatch someone else's shipment.
+    await actAs(agencyBUser)
+    const foreign = await expectError(
+      db.query(`SELECT public.dispatch_job_to_drivers($1, 'eicher_14ft')`, [shipment4.id]),
+      'Shipment not found or access denied'
+    )
+    expect(/access denied/i.test(foreign), 'foreign dispatch must be ownership-denied')
+    record('8c. booking dispatch producer is ownership-guarded', true)
   }
 
   {
@@ -599,9 +631,25 @@ async function main() {
 
   let agencyJob1
   {
-    // Agency-side dispatch job. The portal's own RLS policy authorizes an
-    // agency to manage agency_jobs rows for its own agency_id; in production
-    // this row would be created by the (missing) dispatch pipeline.
+    // Agency-side dispatch job. TO-142: the INSERT policy additionally requires
+    // an explicit customer-consented / platform-dispatched authorization for
+    // (shipment, agency). The consent producer is the dispatch pipeline
+    // (roadmap §6 authorizeAgency — TO-143); this harness stands in for it
+    // with the service authority exactly where the pipeline would act.
+    await actAs(agencyAUser)
+    const noConsent = await expectError(
+      db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 15000)`, [agencyA, shipment1.id]),
+      'new row violates row-level security policy'
+    )
+    expect(/row-level security/.test(noConsent), 'agency job creation without a shipment authorization must be denied')
+
+    await actAsService()
+    await db.query(
+      `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via, granted_by)
+       VALUES ($1, $2, 'platform_dispatch', $3)`,
+      [shipment1.id, agencyA, customerUser]
+    )
+
     await actAs(agencyAUser)
     const created = await rows(
       `INSERT INTO public.agency_jobs (agency_id, shipment_id, fare, status)
@@ -609,7 +657,7 @@ async function main() {
       [agencyA, shipment1.id]
     )
     agencyJob1 = created[0].id
-    record('11a. agency A creates its dispatch job for the shipment (own-agency RLS policy)', true)
+    record('11a. agency A creates its dispatch job under an active shipment authorization (own-agency RLS + consent predicate)', true)
 
     const duplicate = await expectError(
       db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 15000)`, [agencyA, shipment1.id]),
@@ -671,11 +719,20 @@ async function main() {
   }
 
   let shipment2
+  let shipment3Id
   {
     // Expiry path (offer on a separate shipment so the journey tracking read
     // below is not shadowed by stale pending offers).
     await actAs(customerUser)
     shipment2 = await createShipment(customer1, customerUser, 'NOISE')
+    // Platform-dispatch stand-in (TO-143): authorize agency A on shipment2
+    // before the agency-side job creation below.
+    await actAsService()
+    await db.query(
+      `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via, granted_by)
+       VALUES ($1, $2, 'platform_dispatch', $3)`,
+      [shipment2.id, agencyA, customerUser]
+    )
     await actAs(agencyAUser)
     await db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 100)`, [agencyA, shipment2.id])
     const expiredOffer = await createOffer(shipment2.id, driver2, { expiresExpression: "now() - interval '5 minutes'" })
@@ -745,6 +802,14 @@ async function main() {
     // one trip/driver at a time.
     await actAs(customerUser)
     const shipment3 = await createShipment(customer1, customerUser, 'SECOND')
+    shipment3Id = shipment3.id
+    // Platform-dispatch stand-in (TO-143): authorize agency A on shipment3.
+    await actAsService()
+    await db.query(
+      `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via, granted_by)
+       VALUES ($1, $2, 'platform_dispatch', $3)`,
+      [shipment3.id, agencyA, customerUser]
+    )
     await actAs(agencyAUser)
     await db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 9000)`, [agencyA, shipment3.id])
     const offer2 = await createOffer(shipment3.id, driver1)
@@ -896,8 +961,13 @@ async function main() {
     const buckets = await rows(`SELECT id, public, file_size_limit, allowed_mime_types FROM storage.buckets ORDER BY id`)
     const tripPhotos = buckets.find((b) => b.id === 'trip-photos')
     const driverDocs = buckets.find((b) => b.id === 'driver-docs')
-    expect(tripPhotos && tripPhotos.public === true && Number(tripPhotos.file_size_limit) === 5242880, `trip-photos bucket config wrong: ${JSON.stringify(tripPhotos)}`)
+    const billingDocs = buckets.find((b) => b.id === 'billing-documents')
+    // TO-142: trip-photos and billing-documents are now PRIVATE buckets like
+    // driver-docs; reads go through stakeholder/owner RLS policies plus
+    // expiring signed URLs minted by trusted edges, never world-readable URLs.
+    expect(tripPhotos && tripPhotos.public === false && Number(tripPhotos.file_size_limit) === 5242880, `trip-photos bucket config wrong: ${JSON.stringify(tripPhotos)}`)
     expect(driverDocs && driverDocs.public === false, `driver-docs bucket must stay private: ${JSON.stringify(driverDocs)}`)
+    expect(billingDocs && billingDocs.public === false, `billing-documents bucket must be private: ${JSON.stringify(billingDocs)}`)
 
     await actAs(driver1User)
     const uploaded = await rows(
@@ -919,22 +989,46 @@ async function main() {
 
     await actAs(driver1User)
     const visible = await rows(`SELECT name FROM storage.objects WHERE bucket_id = 'trip-photos'`)
-    expect(visible.some((r) => r.name === `${driver1User}/${offer1}/loading.jpg`), 'uploaded trip photo must be readable')
-    record('26. trip-photo storage: bucket config, owner-folder upload, cross-driver upload denied', true, 'driver-docs private bucket config re-verified (TO-126 provenance)')
+    expect(visible.some((r) => r.name === `${driver1User}/${offer1}/loading.jpg`), 'uploaded trip photo must be readable by its uploader')
+
+    // TO-142 stakeholder reads on the private bucket: the shipment customer and
+    // the owning agency user may view the driver's proof photo; a driver with
+    // no stake on the job and the anonymous role may not.
+    await actAs(customerUser)
+    const customerView = await rows(`SELECT name FROM storage.objects WHERE bucket_id = 'trip-photos'`)
+    expect(customerView.some((r) => r.name === `${driver1User}/${offer1}/loading.jpg`), 'shipment customer must read the trip photo as a stakeholder')
+
+    await actAs(agencyAUser)
+    const agencyView = await rows(`SELECT name FROM storage.objects WHERE bucket_id = 'trip-photos'`)
+    expect(agencyView.some((r) => r.name === `${driver1User}/${offer1}/loading.jpg`), 'owning agency user must read the trip photo as a stakeholder')
+
+    await actAs(driver2User)
+    const foreignView = await rows(`SELECT name FROM storage.objects WHERE bucket_id = 'trip-photos'`)
+    expect(!foreignView.some((r) => r.name === `${driver1User}/${offer1}/loading.jpg`), 'non-stakeholder driver must not read another driver trip photo')
+
+    await actAsAnon()
+    const anonCount = await rows(`SELECT count(*)::int AS n FROM storage.objects WHERE bucket_id = 'trip-photos'`)
+    expect(anonCount[0].n === 0, 'anon must not read trip photos after privatization')
+    record('26. trip-photo storage: private bucket, owner-folder upload, cross-driver upload denied, stakeholder reads scoped', true, 'billing-documents private bucket re-verified (TO-142)')
   }
 
   // =========================================================================
   // G. Handoff linkage: shipment status, agency ledger, driver earnings
   // =========================================================================
   {
-    // Observed truth after trip delivery: neither the shipment nor the agency
-    // job is status-synced from the trip. Each side updates manually.
+    // TO-142 r2: the delivery trigger propagates the completed trip to the
+    // shipment and the agency job server-side (exactly-once: replays no-op).
     await actAsService()
     const shipmentState = (await rows(`SELECT status FROM public.shipments WHERE id = $1`, [shipment1.id]))[0]
     const jobState = (await rows(`SELECT status FROM public.agency_jobs WHERE id = $1`, [agencyJob1]))[0]
-    expect(shipmentState.status === 'pending' && jobState.status === 'pending', `expected no automatic sync, got shipment=${shipmentState.status} job=${jobState.status}`)
+    expect(
+      shipmentState.status === 'delivered' && jobState.status === 'delivered',
+      `server-side propagation must sync shipment + agency job on delivery, got shipment=${shipmentState.status} job=${jobState.status}`
+    )
+    record('27. server-side delivery propagation: shipment and agency job status sync from the delivered trip', true, `shipment=${shipmentState.status}, job=${jobState.status}`)
 
-    // The customer surface can move its own shipment forward; the agency cannot.
+    // The customer surface keeps its own write path; the agency cannot write
+    // the customer's shipment.
     await actAs(customerUser)
     const moved = await rows(`UPDATE public.shipments SET status = 'delivered', updated_at = now() WHERE id = $1 RETURNING status`, [shipment1.id])
     expect(moved[0].status === 'delivered', 'customer must update own shipment status')
@@ -947,11 +1041,7 @@ async function main() {
     const agencyShipment = await rows(`UPDATE public.shipments SET status = 'cancelled' WHERE id = $1 RETURNING id`, [shipment1.id])
     expect(agencyShipment.length === 0, 'agency must not update the customer shipment')
 
-    recordFinding(
-      'no server-side status propagation along the loop',
-      `after a fully delivered trip: shipments.status=${shipmentState.status}, agency_jobs.status=${jobState.status}; the customer and the agency each updated their own status manually (customer moved shipment -> delivered; agency job stayed '${jobState.status}' until its own portal update in the ledger case)`
-    )
-    record('27. shipment status/history move on the customer surface only; agency cannot write it', true)
+    record('27b. customer keeps its own shipment status path; agency cannot write the customer shipment', true)
   }
 
   {
@@ -1101,7 +1191,9 @@ async function main() {
       `SELECT (SELECT count(*)::int FROM public.agency_jobs WHERE status = 'delivered') AS delivered_jobs,
               (SELECT count(*)::int FROM public.agency_trucks) AS trucks`
     )
-    expect(agencyState[0].delivered_jobs === 1 && agencyState[0].trucks === 1, `agency re-read mismatch: ${JSON.stringify(agencyState[0])}`)
+    // trucks=2: A owns truckA1 (assigned) plus truckA2, the empty truck the
+    // duplicate-assignment denial test created in case 5b.
+    expect(agencyState[0].delivered_jobs === 1 && agencyState[0].trucks === 2, `agency re-read mismatch: ${JSON.stringify(agencyState[0])}`)
 
     await actAsAnon()
     await actAs(driver1User)
@@ -1135,67 +1227,71 @@ async function main() {
   }
 
   // =========================================================================
-  // I. Tenant-claim probes (run last; may add rows for the claiming agency)
+  // I. Tenant-claim probes (hard denials after TO-142)
   // =========================================================================
   {
-    // Probe: can a *different* approved agency attach itself to a shipment that
-    // is not its own (the policy predicate only checks the agency_id the caller
-    // supplies)? If it can, its offer-insert policy then lets it dispatch its
-    // own driver onto a foreign customer's shipment, and its portal (which
-    // reads shipments through the service client) would expose the shipment.
+    // TO-142: a different approved agency can no longer attach itself to a
+    // shipment it was never authorized on. The consent predicate denies the
+    // agency_jobs INSERT, which also removes the row that the offer-insert
+    // policy requires, so the derived offer path denies as well.
     await actAs(agencyBUser)
-    let claimResult = 'rejected'
-    try {
-      await db.query(
+    const claimDenied = await expectError(
+      db.query(
         `INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 1)`,
         [agencyB, shipment1.id]
-      )
-      claimResult = 'accepted'
-    } catch (error) {
-      claimResult = error.message.split('\n')[0]
-    }
+      ),
+      'new row violates row-level security policy'
+    )
+    expect(/row-level security/.test(claimDenied), 'foreign agency claim must be denied by the consent predicate')
 
-    if (claimResult === 'accepted') {
-      let offerResult = 'rejected'
-      try {
-        await db.query(
-          `INSERT INTO public.job_offers (shipment_id, driver_id, offered_at, expires_at, pickup_otp, delivery_otp)
-           VALUES ($1, $2, now(), now() + interval '1 hour', '1111', '2222')`,
-          [shipment1.id, driver2]
-        )
-        offerResult = 'accepted'
-      } catch (error) {
-        offerResult = error.message.split('\n')[0]
-      }
-      recordFinding(
-        'cross-tenant dispatch claim: a foreign agency can attach itself to another customer shipment',
-        `agency B INSERT agency_jobs(B, A-customer shipment) ${claimResult}; then agency B INSERT job_offers for that shipment ${offerResult} — agency B was never dispatched by the customer or the platform`
-      )
-    } else {
-      record('34. tenant-claim probe: foreign agency cannot attach itself to another shipment', true, claimResult)
-    }
+    const crossOffer = await expectError(
+      db.query(
+        `INSERT INTO public.job_offers (shipment_id, driver_id, offered_at, expires_at, pickup_otp, delivery_otp)
+         VALUES ($1, $2, now(), now() + interval '1 hour', '1111', '2222')`,
+        [shipment1.id, driver2]
+      ),
+      'new row violates row-level security policy'
+    )
+    expect(/row-level security/.test(crossOffer), 'foreign agency offer dispatch must be denied (no authorized agency job of its own)')
 
-    // Probe: a suspended agency's DB write path (the Edge functions gate on
-    // status, but the RLS policies do not carry a status predicate).
+    const bJobs = await rows(`SELECT count(*)::int AS n FROM public.agency_jobs`)
+    expect(bJobs[0].n === 0, `agency B must hold zero agency jobs, got ${bJobs[0].n}`)
+    record('34. tenant-claim probe: foreign agency cannot attach itself or dispatch offers on another shipment', true, 'consent predicate denies the claim and the derived offer')
+  }
+
+  {
+    // TO-142: suspended agencies are non-operational at the DB write layer.
+    // Fixture: the platform stand-in created one pre-suspension job for C and
+    // granted the authorizations, so the denials below are attributable to the
+    // status predicate alone (not to a missing consent row).
+    await actAsService()
+    await db.query(
+      `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via, granted_by)
+       VALUES ($1, $2, 'platform_dispatch', $3), ($4, $2, 'platform_dispatch', $3)`,
+      [shipment1.id, agencyC, customerUser, shipment3Id]
+    )
+    await db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 1)`, [agencyC, shipment1.id])
+
     await actAs(agencyCUser)
-    let suspendedResult = 'rejected'
-    try {
-      await db.query(
+    const suspendedInsert = await expectError(
+      db.query(
         `INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 1)`,
-        [agencyC, shipment1.id]
-      )
-      suspendedResult = 'accepted'
-    } catch (error) {
-      suspendedResult = error.message.split('\n')[0]
-    }
-    if (suspendedResult === 'accepted') {
-      recordFinding(
-        'suspended agency still operational at the DB layer',
-        `agency C (status='suspended') INSERT agency_jobs ${suspendedResult}; the agency-status gate lives only in the Edge Functions (portal-auth assertApprovedAgency), not in RLS/triggers`
-      )
-    } else {
-      record('35. suspended agency rejected at the DB write layer', true, suspendedResult)
-    }
+        [agencyC, shipment3Id]
+      ),
+      'new row violates row-level security policy'
+    )
+    expect(/row-level security/.test(suspendedInsert), 'suspended agency INSERT must be denied by the status predicate')
+
+    const suspendedUpdate = await expectError(
+      db.query(`UPDATE public.agency_jobs SET status = 'accepted' WHERE agency_id = $1`, [agencyC]),
+      'new row violates row-level security policy'
+    )
+    expect(/row-level security/.test(suspendedUpdate), 'suspended agency UPDATE of its own job must be denied by the status predicate')
+
+    // Reads stay open (the portal must still render for suspended tenants).
+    const cReads = await rows(`SELECT count(*)::int AS n FROM public.agency_jobs`)
+    expect(cReads[0].n === 1, `suspended agency keeps read access to its own job, got ${cReads[0].n}`)
+    record('35. suspended agency rejected at the DB write layer; own reads preserved', true, 'INSERT + UPDATE denied by the agency-status predicate')
   }
 
   // -------------------------------------------------------------------------
