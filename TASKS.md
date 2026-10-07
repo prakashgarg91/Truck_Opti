@@ -8,7 +8,7 @@ TO-141 day close: docs-only assessment accepted, owner request saved; unit 551/5
 
 Owner-selected product scope: hosted Indian transport-agency pilot, 1–2 agencies with 5–10 trucks each and 1–2 platform staff. Current requirements/complete journeys/screen inventory: `docs/PRODUCT_ROADMAP.md`; reusable build prompt: `agent-tasks/031-transport-agency-pilot-plan.md`. This is a documentation assessment, not a feature delivery. Historical DONE proof tasks may still reproduce defects; they do not mean those defects are repaired.
 
-Current checkpoint (2026-10-07): **TO-142 candidate implementation is AWAITING_REVIEW and uncommitted**, `agent-results/032-result.md`. Fresh local SQL proofs: dispatch 42/42, customer 28/28, admin 56/56 + G4 display-source finding, trip 21/21; no hosted proof. Next action is supervisor review/integration of TO-142, then remaining TO-143 agency consent/fleet reservation/concurrency/partial-delivery scope. Basic producer and delivery propagation have already been authored within TO-142; do not duplicate them. Hosted credentials, rollout, deployment and real payments remain owner-gated; parked checkouts preserved.
+Current checkpoint (2026-10-07): **TO-142 accepted and integrated to main (d26e8c90) after TO-142-R supervisor review** (dynamic workflow `dwfrun-5f04bd09`, verdict READY_TO_INTEGRATE): all 7 gates fresh exit 0 — dispatch 42/42, customer 28/28, admin 56/56 + known G4 display-source finding, trip 21/21, unit/lint/build — and all 12 charter items verified in source; two medium known deferrals confirmed (`DriverRegisterPage.tsx:86` stale public URL for the private driver-docs bucket; consent gate has no production writer until TO-143, fails closed). Hosted GoTrue/PostgREST/Storage/Edge and device proof remain TO-153 owner-gated. Next action: TO-143 remainder (agency-side dispatch pipeline producing `shipment_agency_consents`, notification gateway); TO-144 is also dependency-ready. Do not duplicate the already-authored producer/delivery propagation. Hosted credentials, rollout, deployment and real payments remain owner-gated; parked checkouts preserved.
 
 | ID | Task | Status | Owner | Brief | Result |
 |---|---|---|---|---|---|
@@ -51,10 +51,10 @@ Current checkpoint (2026-10-07): **TO-142 candidate implementation is AWAITING_R
 | ID | Task | Status | Owner | Brief | Result |
 |---|---|---|---|---|---|
 | TO-141 | Assess and plan the Indian transport-agency pilot; save owner requirements | DONE_DOCS_ONLY | GPT-6 | `agent-tasks/031-transport-agency-pilot-plan.md` | `agent-results/031-result.md` |
-| TO-142 | Repair tenant, usage and private-document authority | AWAITING_REVIEW | GPT-6 / serialized writer | `agent-tasks/032-tenant-authority-repair.md` | `agent-results/032-result.md` — uncommitted candidate; local proofs rechecked 2026-10-07, not hosted acceptance |
-| TO-142-R | Supervisor review and integration of TO-142 candidate and its TO-143 overlap | READY | GPT-6 supervisor | `agent-tasks/032-tenant-authority-repair.md` (review/acceptance step only) | — |
-| TO-143 | Complete authorized booking, assignment and lifecycle propagation | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/033-dispatch-lifecycle.md` | — |
-| TO-144 | Agency setup, memberships, client sites and actual fleet | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/034-agency-client-foundation.md` | — |
+| TO-142 | Repair tenant, usage and private-document authority | DONE | GPT-6 / serialized writer | `agent-tasks/032-tenant-authority-repair.md` | `agent-results/032-result.md`; accepted 2026-10-07 (d26e8c90) after TO-142-R review — 7/7 fresh gates (dispatch 42/42, customer 28/28, admin 56/56 + G4, trip 21/21, unit/lint/build), 12/12 charter items verified, 2 confirmed medium known deferrals (DriverRegisterPage stale URL; consent writer = TO-143); PGlite tier only, hosted acceptance TO-153 |
+| TO-142-R | Supervisor review and integration of TO-142 candidate and its TO-143 overlap | DONE | GPT-6 supervisor | `agent-tasks/032-tenant-authority-repair.md` (review/acceptance step only) | dynamic workflow `dwfrun-5f04bd09-3eaf-4a6a-a4e5-c308f5f47e1f` (2026-10-07): READY_TO_INTEGRATE — gates run fresh by the workflow, both findings independently confirmed; supervisor addendum in `agent-results/032-result.md`; integrated as d26e8c90 |
+| TO-143 | Complete authorized booking, assignment and lifecycle propagation | READY | GPT-6 / serialized writer | `agent-tasks/033-dispatch-lifecycle.md` | — |
+| TO-144 | Agency setup, memberships, client sites and actual fleet | READY | GPT-6 / serialized writer | `agent-tasks/034-agency-client-foundation.md` | — |
 | TO-145 | Sales-order import, load planning and client approval | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/035-order-capacity-planning.md` | — |
 | TO-146 | GR/LR QR and pickup-to-material-receipt proof | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/036-gr-pod-custody.md` | — |
 | TO-147 | Trip tracking, stoppages and breakdown/emergency operations | WAITING_DEPENDENCIES | GPT-6 / serialized writer | `agent-tasks/037-tracking-incidents.md` | — |
@@ -69,7 +69,7 @@ Current checkpoint (2026-10-07): **TO-142 candidate implementation is AWAITING_R
 
 - First-client ERP/version/sanitized sample; actual phone/tracker model and screen-off requirements; accountant-reviewed freight tax and payroll examples; hosting spend/recovery/support commitments. See roadmap section 13.
 - These choices block dependent live/integration proof, not independent local TO-142 repair. No product code, Serdroid deployment or provider configuration changed in TO-141.
-- Older “start TO-121”, “start TO-142 implementation” and completion-run notes below are historical; the current next task is TO-142-R review/integration.
+- Older “start TO-121”, “start TO-142 implementation” and completion-run notes below are historical; the current next task is the TO-143 remainder, with TO-144 dependency-ready behind it.
 
 - 2026-09-30 assessment: new brief sequence 011-030 supersedes the old all-in-one execution prompt; details/evidence are in `agent-results/010-result.md`. Historical DONE rows retain only their originally verified local/code scope.
 - Start with TO-121 (brief 011). Then work TO-122, TO-124, TO-123; execute other READY tasks serially while hosted recovery is blocked. Dependency statuses are updated by GPT-6 after acceptance.

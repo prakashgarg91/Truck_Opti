@@ -163,3 +163,26 @@ Single cohesive migration covering mapped-plan items 1–6:
 
 ### Round-1 next-smallest task (superseded by round 2)
 TO-143: implement the booking dispatch producer (`dispatch_job_to_drivers`) + server-side delivery→shipment/agency_job status propagation, producing `shipment_agency_consents` rows in the pipeline (the consent table this slice shipped is its persistence contract).
+
+---
+
+## Supervisor review and integration — 2026-10-07 (TO-142-R)
+
+Reviewed by dynamic workflow `dwfrun-5f04bd09-3eaf-4a6a-a4e5-c308f5f47e1f`: one fresh code reviewer against a 12-item charter, gates executed deterministically by the workflow itself (not subagent claims), one independent verifier per finding, one synthesizer deciding the verdict. Verdict: **READY_TO_INTEGRATE**.
+
+### Fresh gates in this checkout (all exit 0, run by the workflow)
+- dispatch journey 42/42 (0 findings); customer isolation 28/28; admin RLS 56/56 (only known G4); trip integrity 21/21
+- frontend unit (exit 0; the tail did not capture the final summary line — count supported by this file's round-3 record of 553/553 and the synthesizer's 38-file check via `git ls-files`), lint (0 warnings), build incl. tsc (known PGlite/large-chunk warnings only)
+
+### Charter review: 12/12 items verified in source
+Consent predicate denies foreign-agency claim + derived offer; suspended-agency operational writes denied at DB layer; fleet guard RLS accepts valid and rejects invalid/cross-agency/duplicate assignments; producer filters approved drivers by vehicle type and does not itself create consents or reserve vehicles (TO-143 remainder); delivery propagation is single-load exactly-once; usage/plan RPCs caller-bound with own/foreign regression coverage; private buckets + server-minted signed links (invoice 300 s, trip photo 60 s) with invoice-view owner/admin auth and re-signed frontend consumers; G4 confirmed display-only; grant revocations coherent; migration quality clean; change set matches scope.
+
+### Confirmed findings (medium, both known deferrals, independently reproduced by fresh verifiers)
+1. `frontend/src/pages/DriverRegisterPage.tsx:86` — new-driver uploads to the private `driver-docs` bucket persist `getPublicUrl(path)`; the stored document reference can never load (bucket private since 20261003000000; consumers render stored URLs plainly). Pre-existing, not a TO-142 regression; document-consumer follow-up.
+2. `supabase/migrations/20261006120000_tenant_authority_repair.sql:382` — consent-gated `agency_jobs` has no production writer of `shipment_agency_consents` until TO-143 (only the harness service stand-in; the 20261006130000 producer creates job_offers only). Fails closed: after deployment no production path can create agency jobs; pre-consent rows lose the authenticated UPDATE path (Edge service-role updates at agency-portal-jobs continue). Documented deferral.
+
+### Not covered (honest limits)
+Hosted GoTrue/PostgREST/Storage/Edge HTTP round trips; real device/browser behavior; signed-link revocation under live access changes; mobile/desktop rendering. All TO-153 owner gates.
+
+### Integration
+Committed to `main` as d26e8c90 (16 files: 10 modified + 6 new, including this file); board updated (TO-142/TO-142-R DONE; TO-143 and TO-144 READY per their briefs' single dependency). Untracked pre-existing paths (`.serena/`, `.vscode/mcp.json.bak-qdrant-cleanup`, `closeout-logs/`) untouched.
