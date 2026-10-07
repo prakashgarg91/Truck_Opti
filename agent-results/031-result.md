@@ -62,3 +62,21 @@ AI-executable now: TO-142 local tenant/usage/private-document repair and regress
 
 Initial tracked tree clean; three pre-existing untracked paths preserved. 13 registered checkouts including primary (11 awf + one legacy detached), parked branches and stashes preserved with existing dispositions; no new isolation or destructive consolidation. TO-140 remains AWAITING_REVIEW, not falsely accepted here. Session files are documentation/brief/result changes only. Next smallest task is TO-142, agent-tasks/032-tenant-authority-repair.md. Git commit/remainder state recorded at final closeout.
 Final decision: commit the verified documentation directly to main; no push, production deployment or product mutation. Pre-existing untracked paths remain after commit. No other writer's changes detected.
+
+## 2026-10-07 owner-requested roadmap update
+
+Owner supplied a TO-142 working-tree repair report and asked to check/update the existing pilot plan. Read the pasted attachment and 032-result, current migration/function source (CodeGraph/source fallback; semantic service unreachable), root architecture/board and brief 032. Main at start 76ef129a; fetch exit 0, origin/main...HEAD 0 behind / 1 ahead. Agent bus reported no live claims. Product edits/result/migrations were already dirty/untracked and preserved.
+
+Fresh local verification on this candidate:
+- `node scripts/dispatch_delivery_journey.db.test.mjs`: exit 0, 42/42, no findings.
+- `node scripts/customer_journey_isolation.db.test.mjs`: exit 0, 28/28, no findings.
+- `node scripts/admin_rls_proof.db.test.mjs`: exit 0, 56/56, one G4 invoice display-source finding.
+- `node scripts/trip_transition_integrity.db.test.mjs`: exit 0, 21/21.
+- `npm run test:unit` in frontend: exit 0, 553/553, 38 files; existing act/GoTrue warnings.
+
+Proof tier: PGlite PostgreSQL 18.3 and unit/source checks. No current Edge/GoTrue/PostgREST/Storage HTTP, browser/mobile, real device, hosted migration/function rollout or deployment proof. Worker reports build/lint/packing/routing/glue green, but those claims are not all freshly rerun by this update. Full immutable-patch supervisor/security/scope review is not claimed.
+
+Updated docs/PRODUCT_ROADMAP.md to separate locally repaired candidates from remaining launch gates, preserve the October 6 baseline and owner request, record signed-link expiry/revocation limits, stale private-KYC public-URL consumer reported by the worker and G4 company/billing snapshot follow-up. Producer currently matches approved driver vehicle type; production agency consent creation, actual fleet reservation, concurrency and partial-delivery aggregation remain TO-143/146 acceptance work.
+
+Aligned TASKS.md: TO-142 AWAITING_REVIEW (not DONE); TO-142-R READY supervisor review/integration using brief 032's review step; TO-143 remains dependent. Updated architecture, design audit and existing prompts/briefs 031/033/038 so the next worker does not duplicate basic producer/propagation or forget G4. This is documentation-only work; no candidate product edits or worker report were staged, modified or accepted. No push/hosted changes; next action TO-142-R. Historical closeout text above describes October 6.
+Documentation verification: real-board policy test exit 0, 1/1; link/requirement integrity check exit 0 (33 screen/workflow rows retained, original owner request present, board references resolve); scoped git diff --check exit 0. Documentation is committed separately on main; candidate product edits and 032-result remain uncommitted for review.

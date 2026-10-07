@@ -22,6 +22,8 @@ Verified active boundaries include:
 
 ## Owner-selected pilot direction (2026-10-06; proposed modules, not implemented claims)
 
+2026-10-07 checkpoint: TO-142 local candidate now includes consent-aware agency policies, usage/grant repair, private document consumers, a basic dispatch producer and delivery propagation; it is uncommitted and awaiting supervisor review/integration. PGlite/unit verification does not replace hosted Auth/Storage/Edge proof. The broader company/agency allocation model and multi-stop/partial-delivery lifecycle below remain planned. See the current roadmap and TASKS.md before starting implementation.
+
 Retain the existing React/TypeScript PWA and Supabase/PostgreSQL authority boundaries. Build a shared multi-tenant agency/client/driver/platform workflow for 1–2 agencies, 5–10 trucks each and 1–2 support staff. Explicit memberships and client-consented agency order access must precede shared dispatch; do not reuse a browser-selected global role as company authority.
 
 Product spec, screen inventory, command contracts, persistence rules and dependency plan: `docs/PRODUCT_ROADMAP.md`. Single execution board: `TASKS.md`. Reusable implementation prompt: `agent-tasks/031-transport-agency-pilot-plan.md`.

@@ -3,6 +3,7 @@
 Owner: GPT-6 supervisor / one serialized implementation writer.
 Spec: docs/PRODUCT_ROADMAP.md (2026-10-06); reusable prompt: agent-tasks/031-transport-agency-pilot-plan.md.
 Dependencies: TO-142 accepted.
+Checkpoint 2026-10-07: uncommitted TO-142 candidate already adds `dispatch_job_to_drivers` and delivery propagation, with dispatch 42/42 and customer 28/28 local proofs. Review/reuse them after TO-142 acceptance. This task still owns agency-consent production, actual fleet/driver availability and transactional reservations, concurrent commands and multi-load/partial-delivery behavior. Do not count the basic producer as this task's complete acceptance.
 Result: agent-results/033-result.md.
 
 ## Allowed scope / first source map
@@ -35,4 +36,3 @@ No branches/worktrees/stashes, concurrent writers, secret output, unrelated clea
 ## Handoff
 
 Changed files, exact commands/directories/exit codes/counts, regressions, proof tier, findings still open, owner blockers, current git state and next smallest task. A green harness that separately reproduces defects is not a defect-free result. Do not mark DONE until reviewed within the actual stated scope.
-

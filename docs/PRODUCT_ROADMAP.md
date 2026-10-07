@@ -1,16 +1,36 @@
 # Truck_Opti transport-agency pilot: requirements and completion plan
 
-Updated 2026-10-06. Owner-requested scope: hosted software for 1–2 Indian goods transport agencies, 5–10 trucks each, managed by 1–2 platform staff.
+Updated 2026-10-07 after checking the pasted TO-142 report against the current working tree. Owner-requested scope: hosted software for 1–2 Indian goods transport agencies, 5–10 trucks each, managed by 1–2 platform staff.
 
-This is the authoritative product requirements and phased plan. TASKS.md alone owns execution status; ARCHITECTURE.md owns architecture; docs/design-audit.md owns implemented-screen UX evidence. This replaces the June “post-launch/all live” feature claims. Historical roadmaps remain recoverable in Git; they are not current readiness evidence. No product functionality was added by this assessment.
+This is the authoritative product requirements and phased plan. TASKS.md alone owns execution status; ARCHITECTURE.md owns architecture; docs/design-audit.md owns implemented-screen UX evidence. This replaces the June “post-launch/all live” feature claims. Historical roadmaps remain recoverable in Git; they are not current readiness evidence. The October 6 assessment and October 7 update change documentation only; separately authored TO-142 implementation is present but uncommitted and awaiting review.
 
 ## 1. Verdict and evidence
 
 **Not ready to sell as a fully functioning transport-company management system.** A paid pilot becomes reasonable only after safe tenant isolation, real shared persistence, one complete order-to-cash journey and hosting/restore proof. Screen existence and local green suites do not establish that gate.
 
-Assessment tree: main aba05fc8. Fresh fetch exit 0; origin/main...HEAD = 0 behind / 0 ahead before this documentation change. There are 13 checkouts including primary, 11 parked awf worktrees and one legacy detached checkout. Pre-existing untracked .serena/, .vscode/mcp.json.bak-qdrant-cleanup and closeout-logs/ preserved. Do not create branches/worktrees or discard parked work.
+### Current repair checkpoint — 2026-10-07
 
-Fresh 2026-10-06 evidence:
+Checked the owner's pasted TO-142 report, `agent-results/032-result.md`, current migration/function source and freshly executed local tests. Main HEAD before this update is `76ef129a`; fetch exit 0, 0 behind / 1 ahead of origin/main. TO-142 product changes and its result are **uncommitted working-tree work, AWAITING_REVIEW**. This update neither integrates those changes nor certifies their hosted behavior.
+
+| Fresh command (repository root) | Result | Evidence limit |
+|---|---|---|
+| `node scripts/dispatch_delivery_journey.db.test.mjs` | exit 0, 42/42, 0 findings | SQL/PGlite; not credentialed browser or true concurrent transactions |
+| `node scripts/customer_journey_isolation.db.test.mjs` | exit 0, 28/28, 0 findings | SQL/PGlite; not GoTrue/PostgREST HTTP |
+| `node scripts/admin_rls_proof.db.test.mjs` | exit 0, 56/56, 1 finding (G4) | SQL plus source checks; not Edge/Storage runtime |
+| `node scripts/trip_transition_integrity.db.test.mjs` | exit 0, 21/21 | Ordered/OTP SQL proof; not hosted/device acceptance |
+
+All four replay 39 migrations including `20261006120000_tenant_authority_repair.sql`, `20261006130000_dispatch_producer_and_trip_propagation.sql` and `20261006140000_revoke_setup_status_view_reads.sql`. They verify candidate local repairs; the migration filenames are identifiers, not proof of rollout.
+
+Worker-reported additional evidence in 032-result: 553/553 unit tests, build/lint exit 0, packing 18/18, routing 15/15 and glue 0 gaps. Fresh unit verification for this update is recorded in 031-result's October 7 addendum. Other worker gate claims have not all been independently rerun here. No new hosted/Edge HTTP, signed-link expiry runtime, mobile/desktop or device proof.
+Fresh `npm run test:unit` (frontend): exit 0, 553/553, 38 files. Existing React act/GoTrue warnings remain. This confirms the current local suite, not a full independent security review of the patch.
+
+Remaining G4 is use of `user_metadata` for invoice contact/company display, not authorization. The worker assigns it to TO-148; move it to authoritative company/billing snapshots without stripping required invoice particulars. That proposed deferral does not establish owner approval or production readiness.
+
+### Historical baseline — 2026-10-06
+
+Assessment tree: main aba05fc8. Then fetch exit 0; origin/main...HEAD = 0 behind / 0 ahead before the planning commit. There were 13 checkouts including primary, 11 parked awf worktrees and one legacy detached checkout. Pre-existing untracked .serena/, .vscode/mcp.json.bak-qdrant-cleanup and closeout-logs/ remain preserved. Do not create branches/worktrees or discard parked work.
+
+Historical 2026-10-06 evidence (superseded by the current checkpoint where counts/findings differ):
 - frontend npm run test:unit: exit 0, 551/551 tests, 38/38 files. React act and repeated GoTrue client warnings remain in test output.
 - frontend npm run build: exit 0, includes TypeScript; PGlite/browser-external/eval and large-chunk warnings remain.
 - frontend npm run lint: exit 0, zero warnings under the lint gate.
@@ -23,24 +43,26 @@ Fresh 2026-10-06 evidence:
 
 Existing evidence: agent-results/024-result.md, 025-result.md, 026-result.md and 029-result.md. agent-results/functional-coverage.md is a historical October 3 inventory, superseded where later task results disagree.
 
-### Confirmed launch blockers
+### Repair status and remaining launch gates
 
 | Gap | Evidence | Required completion |
 |---|---|---|
-| Foreign agency can claim another client's shipment | Dispatch harness finding: agency B inserts its own agency_job referencing customer A shipment, then an offer | Explicit client-to-agency authorization; deny all unauthorized read/write/claim paths, including direct DB and service paths |
-| Suspended agency can still insert operational records at DB layer | Dispatch harness | Consistent approval/status checks on every operational write; revocation effective for existing sessions |
-| Fleet guards conflict with RLS and skip service-role writes | Dispatch harness | One authoritative assignment transaction; valid assignment works and cross-agency/double booking is denied |
-| Booking has no dispatch producer | Missing dispatch_job_to_drivers(uuid,text), called by NewShipmentPage.tsx | Implement authorized dispatch or replace caller with a proven command; never fake a dispatched state |
-| Delivered trip leaves shipment and agency_job pending | Dispatch harness | Atomic, idempotent trip-to-shipment/job propagation and explicit multi-stop/partial-delivery handling |
-| Customer can invoke usage/plan RPCs with another user ID | Customer harness finding 23 | Derive caller identity and enforce own-user/admin scope; block arbitrary foreign increment_usage/get_user_plan |
-| Invoice storage remains public-read | Admin harness A7 | Private documents and authorized short-lived links by default; document-access audit and revocation |
-| 4 definer functions have unpinned search_path; anonymous aggregate view; broad doc RPC EXECUTE | Admin/customer proofs | Review grants, pin lookup paths, revoke unnecessary anonymous/public access with regressions |
+| Unauthorized agency shipment claims | Candidate repaired locally: consent predicate denies foreign agency claim and derived offer; dispatch 42/42 | Supervisor review/integration, production consent creation in the authorized dispatch pipeline and actual HTTP denial proof |
+| Suspended agency operational writes | Candidate repaired locally: DB write denials now regression assertions | Audit all operational entry points, service/admin exceptions and existing-session revocation; hosted proof |
+| Fleet guard RLS conflict/service bypass | Candidate repaired locally: valid assignments and invalid/cross-agency/duplicate denial tested | Transactional vehicle/driver reservation, race tests and actual Edge assignment journey |
+| Missing booking dispatch producer | Function now exists locally; owner-guarded producer covered by dispatch/customer proofs | TO-143 remains: approved-agency/fleet scope, consent production, availability/vehicle reservations, concurrent/replayed booking and real notification/capability behavior |
+| Delivered trip left shipment/job pending | Candidate repaired locally: delivery trigger updates dependent records once | TO-143/146: aggregate per-load/per-stop quantities, partial/disputed/return states, simultaneous commands and hosted E2E |
+| Foreign usage/plan RPC access | Candidate repaired locally: caller binding/grants and lookup-path regression | Supervisor review, integration and real HTTP own/foreign/service/admin denial matrix |
+| Public invoice/trip-proof storage | Local schema now private; signed-link consumers and invoice-view function authored | Actual Storage/Edge HTTP access, existing-file compatibility, expiry/failure UX, support audit and revocation design; not deployed |
+| Lookup-path/view/document-RPC privilege hygiene | Candidate repaired locally; anonymous/client view reads denied in fresh admin proof | Final grant/service-consumer review and hosted replay; G4 invoice display source remains TO-148 |
 | Cloud-only pages fail in local mode | design-audit D1, 12 endpoint families | Honest connected-account state; no placeholder endpoint traffic; local work cannot masquerade as shared agency data |
 | Transport invoice fields/rates are incomplete | InvoicePage.tsx, invoiceGenerator.ts, whatsappShare.ts | Bill-to and ship-to party snapshots, configurable approved tax profile, correct currency rounding; no universal 18% freight rule |
 | Hosted identity/storage/function/deployment proof absent | Board and result limitations | Authorized staging replay + GoTrue/PostgREST/Storage/Edge round trips + multi-role E2E + recovery drill |
 | Hindi/accessible UI and critical state coverage incomplete | design-audit D2–D4 | Restore selected-language behavior for driver journey, labelled actions/forms, keyboard and mobile verification |
 
-The billing bucket was previously classified as a lower-priority owner decision. For this B2B pilot, invoice confidentiality is a launch requirement; this plan does not claim that policy has been changed.
+Invoice confidentiality remains a launch requirement. The private-bucket candidate is now present locally, but no hosted policy change was performed. Invoice links are minted for 300 seconds and trip-photo links for 60 seconds according to source/report; an already issued bearer link does not instantly revoke when app access changes. Verify actual expiry and decide controlled revocation before advertising it.
+
+Further TO-142/143 review items: the new booking producer filters approved drivers by vehicle type and does not itself create agency-consent records or reserve specific fleet vehicles. The delivery trigger marks shipment/all agency jobs delivered after an offer completes; this is not the future multi-load/partial-receipt aggregation model. The worker also reports a stale `DriverRegisterPage.tsx` public-URL consumer for private driver documents; verify and fix it in the document-consumer follow-up. These remain review/engineering items, not closed pilot requirements.
 
 ## 2. Product boundary and approach
 
@@ -130,7 +152,7 @@ Existing App.tsx routes include booking, sale orders, packing, routes, tracking,
 | Import preview/errors/mapping | CSV/XLS parser in SaleOrdersPage | Unit/SKU/site mapping, duplicates, invalid rows, resumable batches | TO-145 |
 | Requirements/plan comparison | /packing, /routes partial | /planning, truck count/types, unmet quantities, availability | TO-145 |
 | Client transport requests/quotes | /booking/new partial | /requests, approvals and agency selection | TO-145/146 |
-| Agency dispatch board/detail | /agency/jobs | /agency/dispatch, reservations, manifest, exceptions | TO-143/146 |
+| Agency dispatch board/detail | /agency/jobs; candidate booking producer and delivery propagation now locally tested | /agency/dispatch, consent pipeline, reservations, manifest, exceptions and real multi-role runtime proof | TO-143/146 |
 | GR/LR register/editor/print | LR number on invoice only | /agency/gr, revision/void controls, PDF and QR | TO-146 |
 | QR verification | No dedicated route | /verify/gr/:token, redacted authenticity/custody status | TO-146 |
 | Driver trip checkpoints | /driver/trip/:jobId | Quantity/custody verification, retry/offline/permissions | TO-143/146 |
@@ -267,8 +289,8 @@ TASKS.md contains the rows and each task has one agent-tasks brief. Run one writ
 | Task | Deliverable | Depends on | Acceptance proof |
 |---|---|---|---|
 | TO-141 | This assessment, saved requirements and aligned documents | — | Sources, route/gap inventory, linked briefs, verification result |
-| TO-142 | Tenant/usage/storage authority repair | — | Deny foreign claim/usage/doc access; valid agency path remains; findings become hard regressions |
-| TO-143 | Authorized dispatch and authoritative lifecycle | TO-142 | Customer request produces offer; vehicle/driver unique reservations; delivery propagates once |
+| TO-142 | Tenant/usage/storage authority repair — candidate implemented, uncommitted, awaiting review | — | Fresh local regressions green; still requires supervisor scope/consumer review, integration and honest runtime limits |
+| TO-143 | Authorized agency dispatch/lifecycle — basic producer/propagation authored within TO-142, broader scope pending | TO-142 acceptance | Agency consent producer, actual eligible fleet/reservations, concurrency and partial-delivery lifecycle; no duplicate rewrite of the new functions |
 | TO-144 | Agency/client/sites/team/fleet setup | TO-142 | Agency adds own truck/driver, invites staff/client; isolation and expiry blocks |
 | TO-145 | Orders → capacity plan → approval | TO-143/144 | 2-client CSV/manual orders; correct count/types/allocations, invalid inputs and revisions |
 | TO-146 | GR QR + checkpoint/POD custody | TO-143/145 | Start/end approval, signed QR, actual quantities/partial delivery, immutable evidence |
@@ -279,6 +301,8 @@ TASKS.md contains the rows and each task has one agent-tasks brief. Run one writ
 | TO-151 | First-client ERP connector | TO-145/146/148 | CSV/API contract first; one real sandbox/version connector; duplicate/replay/amendment tests |
 | TO-152 | Platform onboarding/support/tenant ops | TO-144/148 | 1–2 staff can onboard/manage cases, scoped support access, limits/export |
 | TO-153 | Hosted pilot release and recovery proof | All pilot tasks | Credentialed two-agency full journey + hosting/restore/device/accountant acceptance |
+
+Next action: supervisor review/integration of TO-142 and its limited TO-143 overlap; do not reimplement already-authored producer/propagation blindly. Then complete the remaining TO-143 scope and unlock dependency-ready modules. TASKS.md is authoritative; no task becomes DONE from this documentation update.
 
 Tasks are vertical deliveries; split a broad module into one bounded follow-up brief before coding if needed, without inventing another board. TO-147 native companion and TO-151 live connector need device/client discovery before their final implementation spec. TO-153 live steps are owner-gated; execute independent local preparation while access is pending.
 
@@ -313,4 +337,6 @@ give me detailed prompt so that rest of the part can be built, for now many part
 
 ## 15. What was built versus planned
 
-Built before this request: existing routed UI/auth/packing/portal/KYC/offer/OTP code at aba05fc8 with local evidence above and known findings. Built in this request: assessment, requirements/plan/prompt/briefs/document alignment only. Planned: TO-142–153. Nothing in the roadmap changes a planned feature into delivered functionality; acceptance evidence is recorded only in TASKS.md and agent-results.
+Baseline before the October 6 request: existing routed UI/auth/packing/portal/KYC/offer/OTP code at aba05fc8. October 6 delivered documentation at 76ef129a. Since then: separately authored, uncommitted TO-142 migrations/functions/document consumers and basic dispatch/delivery propagation, locally rechecked October 7 and awaiting review/integration. October 7 work in this chat updates documentation only and preserves all candidate product changes.
+
+Still planned/unaccepted: remaining TO-143 agency allocation/consent/concurrency/partial-delivery work and TO-144–153 modules/runtime acceptance. No new expenses, fuel, payroll, GR QR, ERP or admin-ops screens were delivered by this update. Nothing here changes a local candidate into accepted or deployed functionality; acceptance evidence is recorded only in TASKS.md and agent-results.

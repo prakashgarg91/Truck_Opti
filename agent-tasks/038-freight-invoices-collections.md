@@ -12,6 +12,8 @@ Paths are starting points, not permission to replace whole modules. Discover exa
 
 ## Required behavior / interfaces
 
+Carry-over from TO-142 report, rechecked 2026-10-07: G4 invoice display/contact/company fields still come from user-editable metadata after authentication. Move bill-to/ship-to/tax/company fields to authoritative versioned company/billing snapshots without deleting required address/GSTIN data. This is not a remaining metadata-based authorization defect; final commercial-document integrity still requires the repair.
+
 Agency freight ledger distinct from software subscriptions and customer goods invoice. Bill-to/ship-to snapshots, tariff extras, approved effective tax/forward-reverse-charge profile, paise/decimal rounding and branch/fiscal sequence. Server recomputes approved amounts; issue immutable PDF/snapshot; signed sharing, partial receipts/allocation, dispute, credit/debit note. Preserve SaaS authority and payment boundaries.
 
 Produces: Agency receivable/income ledger and customer invoice portal.
@@ -35,4 +37,3 @@ No branches/worktrees/stashes, concurrent writers, secret output, unrelated clea
 ## Handoff
 
 Changed files, exact commands/directories/exit codes/counts, regressions, proof tier, findings still open, owner blockers, current git state and next smallest task. A green harness that separately reproduces defects is not a defect-free result. Do not mark DONE until reviewed within the actual stated scope.
-

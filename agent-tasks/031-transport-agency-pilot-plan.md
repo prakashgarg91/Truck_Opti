@@ -53,5 +53,6 @@ Completion means the two-agency order-to-cash demonstration in roadmap section 1
 
 ## Current next action
 
-TO-142 is the first AI-executable repair. Its implementation is a separate turn/slice; the current request prepares the plan. TO-137 provider sandbox and hosted rollout remain separate owner gates.
+2026-10-07 checkpoint: TO-142 code/report now exists uncommitted and is AWAITING_REVIEW, with fresh SQL proofs and 553/553 unit tests. Follow current TASKS.md: TO-142-R is the next supervisor review/integration step. Basic dispatch producer/delivery propagation were authored within TO-142; remaining TO-143 agency consent/fleet/reservation/concurrency/partial-delivery scope stays pending. The original instruction below describes the October 6 starting point, not a request to repeat completed candidate work.
 
+TO-142 is the first AI-executable repair. Its implementation is a separate turn/slice; the current request prepares the plan. TO-137 provider sandbox and hosted rollout remain separate owner gates.
