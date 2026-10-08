@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const fromMock = vi.hoisted(() => vi.fn())
 const selectMock = vi.hoisted(() => vi.fn())
 const eqMock = vi.hoisted(() => vi.fn())
+const isMock = vi.hoisted(() => vi.fn())
 const orderMock = vi.hoisted(() => vi.fn()
 )
 const limitMock = vi.hoisted(() => vi.fn())
@@ -12,10 +16,14 @@ const inMock = vi.hoisted(() => vi.fn())
 const gteMock = vi.hoisted(() => vi.fn())
 const updateMock = vi.hoisted(() => vi.fn())
 const insertMock = vi.hoisted(() => vi.fn())
+const authGetUserMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../lib/supabase', () => ({
     supabase: {
         from: fromMock,
+        auth: {
+            getUser: authGetUserMock,
+        },
     },
 }))
 
@@ -47,8 +55,15 @@ describe('agencySupabaseApi', () => {
             Promise.resolve(limitMock()).then(resolve, resolve)
         }
 
+        isMock.mockReturnValue({
+            order: orderMock,
+            limit: limitMock,
+            then: resolveWithLimit,
+        })
+
         selectMock.mockReturnValue({
             eq: eqMock,
+            is: isMock,
             order: orderMock,
             limit: limitMock,
             single: singleMock,
@@ -418,6 +433,167 @@ describe('agencySupabaseApi', () => {
         it('throws UserFacingError (TODO implementation)', async () => {
             await expect(agencyDriversApi.remove('driver_1'))
                 .rejects.toThrow('Driver removal not implemented')
+        })
+    })
+
+    describe('agencyJobsApi.listAuthorizations (TO-143-D1 consent list)', () => {
+        it('selects only the pinned consent columns visible to the agency party', async () => {
+            limitMock.mockResolvedValue({
+                data: [
+                    { shipment_id: 'ship_1', granted_via: 'customer_consent', created_at: '2026-10-07T10:00:00Z' },
+                ],
+                error: null,
+            })
+
+            const result = await agencyJobsApi.listAuthorizations()
+
+            expect(selectMock).toHaveBeenCalledWith('shipment_id, granted_via, created_at')
+            // revoked consents must never be listed as authorized (their Create Job would fail on INSERT)
+            expect(isMock).toHaveBeenCalledWith('revoked_at', null)
+            expect(result).toHaveLength(1)
+            expect(result[0]).toEqual({
+                shipment_id: 'ship_1',
+                granted_via: 'customer_consent',
+                created_at: '2026-10-07T10:00:00Z',
+            })
+        })
+
+        it('throws UserFacingError on query failure', async () => {
+            limitMock.mockResolvedValue({
+                data: null,
+                error: { message: 'Query failed' },
+            })
+
+            await expect(agencyJobsApi.listAuthorizations())
+                .rejects.toThrow('Failed to load authorizations')
+        })
+    })
+
+    describe('agencyJobsApi.createJob (TO-143-D1 consent-gated job command)', () => {
+        it('resolves the caller own-agency id then inserts the full payload including agency_id', async () => {
+            authGetUserMock.mockResolvedValue({
+                data: { user: { id: 'user_1' } },
+                error: null,
+            })
+            maybeSingleMock.mockResolvedValueOnce({
+                data: { id: 'agency_1' },
+                error: null,
+            })
+            insertMock.mockReturnValueOnce({
+                select: vi.fn().mockReturnValue({
+                    single: vi.fn().mockResolvedValue({
+                        data: { id: 'job_1', agency_id: 'agency_1', shipment_id: 'ship_1', fare: 15000, status: 'pending' },
+                        error: null,
+                    }),
+                }),
+            })
+
+            const result = await agencyJobsApi.createJob('ship_1', 15000)
+
+            expect(result.alreadyExists).toBe(false)
+            expect(result.job).toEqual({ id: 'job_1', agency_id: 'agency_1', shipment_id: 'ship_1', fare: 15000, status: 'pending' })
+            expect(fromMock).toHaveBeenNthCalledWith(1, 'transport_agencies')
+            expect(fromMock).toHaveBeenNthCalledWith(2, 'agency_jobs')
+            expect(insertMock).toHaveBeenCalledWith({
+                agency_id: 'agency_1',
+                shipment_id: 'ship_1',
+                fare: 15000,
+                status: 'pending',
+            })
+        })
+
+        it('maps the 23505 duplicate-key violation to the typed already-exists result', async () => {
+            authGetUserMock.mockResolvedValue({
+                data: { user: { id: 'user_1' } },
+                error: null,
+            })
+            maybeSingleMock.mockResolvedValueOnce({
+                data: { id: 'agency_1' },
+                error: null,
+            })
+            insertMock.mockReturnValueOnce({
+                select: vi.fn().mockReturnValue({
+                    single: vi.fn().mockResolvedValue({
+                        data: null,
+                        error: {
+                            code: '23505',
+                            message: 'duplicate key value violates unique constraint "agency_jobs_agency_id_shipment_id_key"',
+                        },
+                    }),
+                }),
+            })
+
+            const result = await agencyJobsApi.createJob('ship_1', 15000)
+
+            expect(result.alreadyExists).toBe(true)
+            expect(result.job).toBeNull()
+        })
+
+        it('throws UserFacingError when the caller has no agency profile', async () => {
+            authGetUserMock.mockResolvedValue({
+                data: { user: { id: 'user_1' } },
+                error: null,
+            })
+            maybeSingleMock.mockResolvedValueOnce({
+                data: null,
+                error: null,
+            })
+
+            await expect(agencyJobsApi.createJob('ship_1', 15000))
+                .rejects.toThrow('Agency profile not found')
+            expect(insertMock).not.toHaveBeenCalled()
+        })
+
+        it('throws UserFacingError when not authenticated', async () => {
+            authGetUserMock.mockResolvedValue({
+                data: { user: null },
+                error: null,
+            })
+
+            await expect(agencyJobsApi.createJob('ship_1', 15000))
+                .rejects.toThrow('Please sign in to create jobs')
+            expect(fromMock).not.toHaveBeenCalled()
+        })
+
+        it('throws UserFacingError on other insert failures', async () => {
+            authGetUserMock.mockResolvedValue({
+                data: { user: { id: 'user_1' } },
+                error: null,
+            })
+            maybeSingleMock.mockResolvedValueOnce({
+                data: { id: 'agency_1' },
+                error: null,
+            })
+            insertMock.mockReturnValueOnce({
+                select: vi.fn().mockReturnValue({
+                    single: vi.fn().mockResolvedValue({
+                        data: null,
+                        error: { code: '42501', message: 'new row violates row-level security policy' },
+                    }),
+                }),
+            })
+
+            await expect(agencyJobsApi.createJob('ship_1', 15000))
+                .rejects.toThrow('Failed to create job')
+        })
+    })
+
+    describe('AgencyJobsPage direct-client binding (TO-143-D1 alias regression guard)', () => {
+        const here = dirname(fileURLToPath(import.meta.url))
+        const pageSource = readFileSync(join(here, '..', 'pages', 'AgencyJobsPage.tsx'), 'utf8')
+
+        it('binds the direct supabase client under an alias for job creation, keeping the Edge client for portal actions', () => {
+            // The alias trap: agencyJobsApi is exported by BOTH agencyPortalApi.ts
+            // (Edge function client) and agencySupabaseApi.ts (direct RLS client).
+            // Job creation must go through the DIRECT client or the call silently
+            // reaches the Edge function and never performs the direct-RLS insert.
+            expect(pageSource).toMatch(
+                /import\s*\{\s*agencyJobsApi\s+as\s+agencyJobsDirectApi\s*\}\s*from\s*'\.\.\/services\/agencySupabaseApi'/
+            )
+            expect(pageSource).toContain('agencyJobsDirectApi.createJob(')
+            expect(pageSource).toMatch(
+                /import\s*\{\s*agencyJobsApi\s*\}\s*from\s*'\.\.\/services\/agencyPortalApi'/
+            )
         })
     })
 })

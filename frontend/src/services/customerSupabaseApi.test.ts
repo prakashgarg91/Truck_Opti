@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const fromMock = vi.hoisted(() => vi.fn())
 const selectMock = vi.hoisted(() => vi.fn())
@@ -988,9 +991,9 @@ describe('customerSupabaseApi', () => {
                 data: mockTruck,
                 error: null,
             })
-            
+
             const result = await trucksApi.getById('truck_1')
-            
+
             expect(result).toEqual(mockTruck)
         })
 
@@ -999,9 +1002,79 @@ describe('customerSupabaseApi', () => {
                 data: null,
                 error: { message: 'Connection error' },
             })
-            
+
             await expect(trucksApi.getById('truck_1'))
                 .rejects.toThrow('Failed to load truck details')
+        })
+    })
+
+    describe('customerShipmentsApi.authorizeAgency (TO-143-D1 consent grant)', () => {
+        it('calls the consent grant RPC with the pinned parameters and maps the state', async () => {
+            rpcMock.mockResolvedValue({
+                data: { id: 'consent_1', state: 'granted' },
+                error: null,
+            })
+
+            const result = await customerShipmentsApi.authorizeAgency('ship_1', 'agency_1')
+
+            expect(rpcMock).toHaveBeenCalledWith('authorize_agency_for_shipment', {
+                p_shipment_id: 'ship_1',
+                p_agency_id: 'agency_1',
+            })
+            expect(result).toEqual({ id: 'consent_1', state: 'granted' })
+        })
+
+        it('passes through the already_active and reactivated idempotent states', async () => {
+            rpcMock.mockResolvedValue({
+                data: { id: 'consent_1', state: 'already_active' },
+                error: null,
+            })
+            expect((await customerShipmentsApi.authorizeAgency('ship_1', 'agency_1')).state).toBe('already_active')
+
+            rpcMock.mockResolvedValue({
+                data: { id: 'consent_1', state: 'reactivated' },
+                error: null,
+            })
+            expect((await customerShipmentsApi.authorizeAgency('ship_1', 'agency_1')).state).toBe('reactivated')
+        })
+
+        it('surfaces the controlled server rejections verbatim', async () => {
+            for (const message of [
+                'Shipment not found or access denied',
+                'An agency cannot grant itself consent on a shipment.',
+                'Agency not found.',
+                'Agency approval is required.',
+                'Shipment is not open for dispatch.',
+            ]) {
+                rpcMock.mockResolvedValue({ data: null, error: { message } })
+                await expect(customerShipmentsApi.authorizeAgency('ship_1', 'agency_1'))
+                    .rejects.toThrow(message)
+            }
+        })
+
+        it('never surfaces unmapped provider error internals', async () => {
+            rpcMock.mockResolvedValue({
+                data: null,
+                error: { message: 'internal SQLSTATE XX000 detail payload' },
+            })
+
+            await expect(customerShipmentsApi.authorizeAgency('ship_1', 'agency_1'))
+                .rejects.toThrow('Failed to authorize agency')
+        })
+
+        it('treats a missing/zero-row RPC result as failure, never as success', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: null })
+
+            await expect(customerShipmentsApi.authorizeAgency('ship_1', 'agency_1'))
+                .rejects.toThrow('Failed to authorize agency')
+        })
+    })
+
+    describe('NewShipmentPage consent wiring (TO-143-D1)', () => {
+        it('grants consent through customerShipmentsApi.authorizeAgency on the success panel', () => {
+            const here = dirname(fileURLToPath(import.meta.url))
+            const pageSource = readFileSync(join(here, '..', 'pages', 'NewShipmentPage.tsx'), 'utf8')
+            expect(pageSource).toContain('customerShipmentsApi.authorizeAgency(')
         })
     })
 })

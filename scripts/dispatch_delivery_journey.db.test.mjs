@@ -633,9 +633,9 @@ async function main() {
   {
     // Agency-side dispatch job. TO-142: the INSERT policy additionally requires
     // an explicit customer-consented / platform-dispatched authorization for
-    // (shipment, agency). The consent producer is the dispatch pipeline
-    // (roadmap §6 authorizeAgency — TO-143); this harness stands in for it
-    // with the service authority exactly where the pipeline would act.
+    // (shipment, agency). TO-143-D1: the consent producer is now the REAL
+    // customer command path — public.authorize_agency_for_shipment — called
+    // here exactly as customerSupabaseApi.authorizeAgency calls it.
     await actAs(agencyAUser)
     const noConsent = await expectError(
       db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 15000)`, [agencyA, shipment1.id]),
@@ -643,12 +643,8 @@ async function main() {
     )
     expect(/row-level security/.test(noConsent), 'agency job creation without a shipment authorization must be denied')
 
-    await actAsService()
-    await db.query(
-      `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via, granted_by)
-       VALUES ($1, $2, 'platform_dispatch', $3)`,
-      [shipment1.id, agencyA, customerUser]
-    )
+    await actAs(customerUser)
+    await rows(`SELECT public.authorize_agency_for_shipment($1, $2)`, [shipment1.id, agencyA])
 
     await actAs(agencyAUser)
     const created = await rows(
@@ -657,7 +653,7 @@ async function main() {
       [agencyA, shipment1.id]
     )
     agencyJob1 = created[0].id
-    record('11a. agency A creates its dispatch job under an active shipment authorization (own-agency RLS + consent predicate)', true)
+    record('11a. agency A creates its dispatch job under an active customer-RPC consent (own-agency RLS + consent predicate)', true)
 
     const duplicate = await expectError(
       db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 15000)`, [agencyA, shipment1.id]),
@@ -725,14 +721,9 @@ async function main() {
     // below is not shadowed by stale pending offers).
     await actAs(customerUser)
     shipment2 = await createShipment(customer1, customerUser, 'NOISE')
-    // Platform-dispatch stand-in (TO-143): authorize agency A on shipment2
+    // TO-143-D1: the customer grants the consent through the production RPC
     // before the agency-side job creation below.
-    await actAsService()
-    await db.query(
-      `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via, granted_by)
-       VALUES ($1, $2, 'platform_dispatch', $3)`,
-      [shipment2.id, agencyA, customerUser]
-    )
+    await rows(`SELECT public.authorize_agency_for_shipment($1, $2)`, [shipment2.id, agencyA])
     await actAs(agencyAUser)
     await db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 100)`, [agencyA, shipment2.id])
     const expiredOffer = await createOffer(shipment2.id, driver2, { expiresExpression: "now() - interval '5 minutes'" })
@@ -803,13 +794,8 @@ async function main() {
     await actAs(customerUser)
     const shipment3 = await createShipment(customer1, customerUser, 'SECOND')
     shipment3Id = shipment3.id
-    // Platform-dispatch stand-in (TO-143): authorize agency A on shipment3.
-    await actAsService()
-    await db.query(
-      `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via, granted_by)
-       VALUES ($1, $2, 'platform_dispatch', $3)`,
-      [shipment3.id, agencyA, customerUser]
-    )
+    // TO-143-D1: the customer grants the consent through the production RPC.
+    await rows(`SELECT public.authorize_agency_for_shipment($1, $2)`, [shipment3.id, agencyA])
     await actAs(agencyAUser)
     await db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 9000)`, [agencyA, shipment3.id])
     const offer2 = await createOffer(shipment3.id, driver1)
@@ -1261,9 +1247,11 @@ async function main() {
 
   {
     // TO-142: suspended agencies are non-operational at the DB write layer.
-    // Fixture: the platform stand-in created one pre-suspension job for C and
-    // granted the authorizations, so the denials below are attributable to the
-    // status predicate alone (not to a missing consent row).
+    // Fixture (TO-143-D1): these consents stay SERVICE-SEEDED on purpose — the
+    // platform_dispatch / admin_grant authority is the documented non-RPC
+    // write path, and the grant RPC would rightly REFUSE a suspended agency,
+    // so the denials below remain attributable to the status predicate alone
+    // (not to a missing consent row).
     await actAsService()
     await db.query(
       `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via, granted_by)
@@ -1292,6 +1280,322 @@ async function main() {
     const cReads = await rows(`SELECT count(*)::int AS n FROM public.agency_jobs`)
     expect(cReads[0].n === 1, `suspended agency keeps read access to its own job, got ${cReads[0].n}`)
     record('35. suspended agency rejected at the DB write layer; own reads preserved', true, 'INSERT + UPDATE denied by the agency-status predicate')
+  }
+
+  // =========================================================================
+  // I2. Consent writer RPCs — the production customer command path (TO-143-D1)
+  //     authorize_agency_for_shipment / revoke_agency_for_shipment are
+  //     SECURITY DEFINER but caller-bound: ownership mirrors the producer's
+  //     predicate (WITHOUT the tracking RPC's is_admin_user arm), self-grant
+  //     is denied explicitly, agency_is_operational and pending status are
+  //     enforced at grant time. Consent validity is REVOCATION-ONLY (section J
+  //     reproduces the terminal-status gap; no cutoff is enforced or claimed).
+  // =========================================================================
+  let shipment5
+  let consentRowId
+  let agencyJob5
+  {
+    // 36 Grant happy path (fresh shipment5, mirroring the producer's
+    // fresh-shipment4 pattern): the customer authorizes agency A through the
+    // production RPC and the agency's authenticated INSERT immediately
+    // succeeds on that real consent — the 11a-style command path now runs on
+    // the real writer, not a service stand-in.
+    await actAs(customerUser)
+    shipment5 = await createShipment(customer1, customerUser, 'CONSENT')
+    const granted = await rows(`SELECT public.authorize_agency_for_shipment($1, $2) AS r`, [shipment5.id, agencyA])
+    expect(
+      granted[0].r && granted[0].r.state === 'granted' && typeof granted[0].r.id === 'string',
+      `grant must return {id, state:'granted'}, got ${JSON.stringify(granted[0].r)}`
+    )
+    consentRowId = granted[0].r.id
+
+    // The grantor consumes the RPC response; the row itself is verified under
+    // the service authority (the SELECT policy covers agency-party/admin only).
+    await actAsService()
+    const consentRows = await rows(
+      `SELECT id, granted_via, granted_by::text AS granted_by, revoked_at
+       FROM public.shipment_agency_consents
+       WHERE shipment_id = $1 AND agency_id = $2`,
+      [shipment5.id, agencyA]
+    )
+    expect(
+      consentRows.length === 1 &&
+        consentRows[0].id === consentRowId &&
+        consentRows[0].granted_via === 'customer_consent' &&
+        consentRows[0].granted_by === customerUser &&
+        consentRows[0].revoked_at === null,
+      `consent row wrong: ${JSON.stringify(consentRows)}`
+    )
+
+    await actAs(agencyAUser)
+    const created5 = await rows(
+      `INSERT INTO public.agency_jobs (agency_id, shipment_id, fare, status)
+       VALUES ($1, $2, 15000, 'pending') RETURNING id`,
+      [agencyA, shipment5.id]
+    )
+    agencyJob5 = created5[0].id
+    record('36. grant RPC writes one active customer_consent row; agency job INSERT succeeds on the real consent', true, `state=granted, job=${agencyJob5}`)
+  }
+
+  {
+    // 37 Foreign caller: an unrelated user cannot grant consent on a shipment
+    // it does not own (the ownership guard fires before every other check).
+    await actAs(agencyBUser)
+    const foreignGrant = await expectError(
+      db.query(`SELECT public.authorize_agency_for_shipment($1, $2)`, [shipment5.id, agencyB]),
+      'Shipment not found or access denied'
+    )
+    expect(/not found or access denied/i.test(foreignGrant), 'foreign grant must be ownership-denied')
+    record('37. grant RPC is ownership-guarded (foreign caller denied)', true)
+  }
+
+  {
+    // 38 Agency self-grant: genuinely non-redundant with the ownership guard —
+    // a caller can be BOTH the shipment creator (created_by = caller) and the
+    // agency owner, so guard (b) must fire where guard (a) passes.
+    await actAs(agencyAUser)
+    const selfCustomer = await createCustomer(agencyAUser, 'AgencyA Self')
+    const selfShipment = await createShipment(selfCustomer, agencyAUser, 'SELF')
+    const selfGrant = await expectError(
+      db.query(`SELECT public.authorize_agency_for_shipment($1, $2)`, [selfShipment.id, agencyA]),
+      'An agency cannot grant itself consent on a shipment.'
+    )
+    expect(/cannot grant itself/.test(selfGrant), 'agency self-grant must be denied')
+    record('38. agency self-grant denied even when the caller owns the shipment', true)
+  }
+
+  {
+    // 39 Grant-time operational gate: a suspended agency is refused (message
+    // parity with portal-auth assertApprovedAgency and the guard triggers).
+    await actAs(customerUser)
+    const suspendedGrant = await expectError(
+      db.query(`SELECT public.authorize_agency_for_shipment($1, $2)`, [shipment5.id, agencyC]),
+      'Agency approval is required.'
+    )
+    expect(/Agency approval is required/.test(suspendedGrant), 'suspended agency grant must be refused')
+    record('39. grant RPC refuses non-operational agencies', true)
+  }
+
+  {
+    // 40 Grant-time lifecycle guard: only pending shipments can be authorized
+    // (shipment1 was delivered by the case-27 server-side propagation).
+    await actAs(customerUser)
+    const closedGrant = await expectError(
+      db.query(`SELECT public.authorize_agency_for_shipment($1, $2)`, [shipment1.id, agencyB]),
+      'Shipment is not open for dispatch.'
+    )
+    expect(/not open for dispatch/.test(closedGrant), 'delivered shipment must not be grantable')
+    record('40. grant-time lifecycle guard: non-pending shipments are not open for new consent', true)
+  }
+
+  {
+    // 41 Idempotent replay: an active consent is returned unchanged, with no
+    // second write (UNIQUE(shipment_id, agency_id) row is untouched).
+    await actAs(customerUser)
+    const replay = await rows(`SELECT public.authorize_agency_for_shipment($1, $2) AS r`, [shipment5.id, agencyA])
+    expect(
+      replay[0].r.state === 'already_active' && replay[0].r.id === consentRowId,
+      `active replay must return already_active with the same id, got ${JSON.stringify(replay[0].r)}`
+    )
+    await actAsService()
+    const consentRows = await rows(
+      `SELECT count(*)::int AS n,
+              (SELECT granted_by::text FROM public.shipment_agency_consents WHERE id = $1) AS granted_by
+       FROM public.shipment_agency_consents
+       WHERE shipment_id = $2 AND agency_id = $3`,
+      [consentRowId, shipment5.id, agencyA]
+    )
+    expect(
+      consentRows[0].n === 1 && consentRows[0].granted_by === customerUser,
+      `replay must not write: ${JSON.stringify(consentRows)}`
+    )
+    record('41. duplicate grant is idempotent: already_active, one row, granted_by unchanged', true)
+  }
+
+  {
+    // 42 Revocation: the customer revokes; the agency loses its authenticated
+    // write path (fail-closed by design) while the service-role Edge path and
+    // the delivery propagation trigger are unaffected.
+    await actAs(customerUser)
+    const revoked = await rows(`SELECT public.revoke_agency_for_shipment($1, $2) AS r`, [shipment5.id, agencyA])
+    expect(revoked[0].r && revoked[0].r.state === 'revoked', `revoke must return {state:'revoked'}, got ${JSON.stringify(revoked[0].r)}`)
+
+    // (i) The agency's authenticated UPDATE of its own in-flight job is
+    // fail-closed by the UPDATE WITH CHECK consent predicate.
+    await actAs(agencyAUser)
+    const updateDenied = await expectError(
+      db.query(`UPDATE public.agency_jobs SET status = 'accepted' WHERE id = $1`, [agencyJob5]),
+      'new row violates row-level security policy'
+    )
+    expect(/row-level security/.test(updateDenied), 'revoked consent must fail-close the agency job UPDATE')
+
+    // (ii) A NEW agency job INSERT on the revoked shipment is denied.
+    const insertDenied = await expectError(
+      db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 1)`, [agencyA, shipment5.id]),
+      'new row violates row-level security policy'
+    )
+    expect(/row-level security/.test(insertDenied), 'revoked consent must deny new agency job INSERTs')
+
+    // (iii) The service-role Edge path (agency-portal-jobs BYPASSRLS) still
+    // writes statuses after revocation.
+    await actAsService()
+    await db.query(`UPDATE public.agency_jobs SET status = 'accepted' WHERE id = $1`, [agencyJob5])
+    const serviceUpdated = await rows(`SELECT status FROM public.agency_jobs WHERE id = $1`, [agencyJob5])
+    expect(serviceUpdated[0].status === 'accepted', 'service-role status write must still succeed after revocation (Edge parity)')
+
+    // (iv) The driver offer/trip path is unaffected (job_offers policies never
+    // consult consents) and the SECURITY DEFINER delivery propagation trigger
+    // still completes the status sync.
+    await actAs(agencyAUser)
+    const offer5 = await createOffer(shipment5.id, driver1)
+    await actAs(driver1User)
+    await rows(`SELECT * FROM public.respond_to_job_offer($1, true)`, [offer5])
+    await rows(`SELECT * FROM public.persist_driver_job_offer_progress($1, 'pickup_arrived', '{}'::jsonb)`, [offer5])
+    await rows(`SELECT * FROM public.persist_driver_job_offer_progress($1, 'in_transit', '{"pickup_otp":"4321"}'::jsonb)`, [offer5])
+    await rows(`SELECT * FROM public.persist_driver_job_offer_progress($1, 'delivery_arrived', '{}'::jsonb)`, [offer5])
+    const delivered5 = await rows(
+      `SELECT * FROM public.persist_driver_job_offer_progress($1, 'delivered', '{"delivery_otp":"8765"}'::jsonb)`,
+      [offer5]
+    )
+    expect(delivered5[0].status === 'delivered', `post-revocation offer must still complete: ${JSON.stringify(delivered5[0])}`)
+    await actAsService()
+    const propagated = await rows(
+      `SELECT (SELECT status FROM public.shipments WHERE id = $1) AS shipment_status,
+              (SELECT status FROM public.agency_jobs WHERE id = $2) AS job_status`,
+      [shipment5.id, agencyJob5]
+    )
+    expect(
+      propagated[0].shipment_status === 'delivered' && propagated[0].job_status === 'delivered',
+      `delivery propagation must still sync after revocation: ${JSON.stringify(propagated[0])}`
+    )
+    record('42. revocation fail-closes the agency authenticated path; service-role writes and delivery propagation continue', true)
+  }
+
+  {
+    // 43 Re-consent after revocation reactivates the single row and restores
+    // the agency's authenticated INSERT/UPDATE path. Case 42(iv)'s delivered
+    // offer left shipment5 in the terminal 'delivered' status (server-side
+    // propagation), so the owner first reopens it through its own shipment
+    // status path (case 27b capability) — the grant-time lifecycle guard (d)
+    // then admits the re-consent, exactly as it would for any reopened
+    // booking.
+    await actAs(customerUser)
+    const reopened = await rows(`UPDATE public.shipments SET status = 'pending', updated_at = now() WHERE id = $1 RETURNING id`, [shipment5.id])
+    expect(reopened.length === 1, 'owner must be able to reopen its own shipment for re-consent')
+    const reactivate = await rows(`SELECT public.authorize_agency_for_shipment($1, $2) AS r`, [shipment5.id, agencyA])
+    expect(
+      reactivate[0].r.state === 'reactivated' && reactivate[0].r.id === consentRowId,
+      `re-grant must reactivate the same row, got ${JSON.stringify(reactivate[0].r)}`
+    )
+    await actAsService()
+    const reactivatedRow = await rows(`SELECT revoked_at FROM public.shipment_agency_consents WHERE id = $1`, [consentRowId])
+    expect(reactivatedRow[0].revoked_at === null, `reactivated row must have revoked_at IS NULL, got ${JSON.stringify(reactivatedRow)}`)
+
+    await actAs(agencyAUser)
+    const restored = await rows(`UPDATE public.agency_jobs SET status = 'accepted' WHERE id = $1 RETURNING status`, [agencyJob5])
+    expect(restored[0].status === 'accepted', 'agency UPDATE path must be restored after re-consent')
+    // INSERT path restored too: RLS now admits the statement, so the
+    // (agency_id, shipment_id) settlement key is what rejects the duplicate —
+    // a policy denial would fire before the constraint check.
+    const dupInsert = await expectError(
+      db.query(`INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 1)`, [agencyA, shipment5.id]),
+      'duplicate key value violates unique constraint'
+    )
+    expect(/duplicate key/.test(dupInsert), 'restored INSERT path must reach the settlement key (RLS admitted, unique constraint rejected)')
+    record('43. re-consent reactivates the single row and restores the INSERT/UPDATE path', true)
+  }
+
+  {
+    // 44 anon EXECUTE revoked on both consent RPCs (trip-battery case-19
+    // pattern, TO-143-D1 verification round 2). The harness grants default
+    // privileges (line ~183) so new public functions are anon-executable
+    // UNTIL the migration's REVOKE ALL ... FROM PUBLIC, anon removes it. The
+    // assertion is discriminating: without the revoke the call would surface
+    // the ownership-guard message ('Shipment not found or access denied'),
+    // not a privilege denial.
+    await actAsAnon()
+    const anonGrant = await expectError(
+      db.query(`SELECT public.authorize_agency_for_shipment($1, $2)`, [shipment5.id, agencyA]),
+      'permission denied'
+    )
+    expect(/permission denied/i.test(anonGrant), `anon grant call must be privilege-denied, got: ${anonGrant}`)
+    const anonRevoke = await expectError(
+      db.query(`SELECT public.revoke_agency_for_shipment($1, $2)`, [shipment5.id, agencyA]),
+      'permission denied'
+    )
+    expect(/permission denied/i.test(anonRevoke), `anon revoke call must be privilege-denied, got: ${anonRevoke}`)
+    record('44. anon EXECUTE revoked on both consent RPCs', true)
+  }
+
+  {
+    // 45 Revoke RPC idempotent replay (verification round 2 — coverage for
+    // the already_revoked branch the round-1 battery never exercised): a
+    // second revoke on the already-revoked pair returns already_revoked with
+    // the same row id and performs no second write (revoked_at unchanged).
+    // Runs after 43 so the pair is ACTIVE again; nothing after this block
+    // depends on it (section J seeds its own agencyB/shipment1 consent).
+    await actAs(customerUser)
+    const first = await rows(`SELECT public.revoke_agency_for_shipment($1, $2) AS r`, [shipment5.id, agencyA])
+    expect(first[0].r && first[0].r.state === 'revoked', `first revoke must return revoked, got ${JSON.stringify(first[0].r)}`)
+    await actAsService()
+    const afterFirst = await rows(
+      `SELECT id, revoked_at FROM public.shipment_agency_consents WHERE shipment_id = $1 AND agency_id = $2`,
+      [shipment5.id, agencyA]
+    )
+    await actAs(customerUser)
+    const second = await rows(`SELECT public.revoke_agency_for_shipment($1, $2) AS r`, [shipment5.id, agencyA])
+    expect(
+      second[0].r && second[0].r.state === 'already_revoked' && second[0].r.id === afterFirst[0].id,
+      `replay must return already_revoked with the same id, got ${JSON.stringify(second[0].r)}`
+    )
+    await actAsService()
+    const afterSecond = await rows(
+      `SELECT id, revoked_at FROM public.shipment_agency_consents WHERE shipment_id = $1 AND agency_id = $2`,
+      [shipment5.id, agencyA]
+    )
+    expect(
+      afterSecond[0].revoked_at !== null &&
+        String(afterSecond[0].revoked_at) === String(afterFirst[0].revoked_at),
+      `replay must not rewrite revoked_at: first=${afterFirst[0].revoked_at} second=${afterSecond[0].revoked_at}`
+    )
+    record('45. revoke RPC replay is idempotent (already_revoked, same id, no rewrite)', true)
+  }
+
+  // =========================================================================
+  // J. Reproduced finding — NOT a passing case (harness finding convention):
+  //    terminal-status consent cutoff missing (owner-deferred).
+  // =========================================================================
+  {
+    // Consent validity is REVOCATION-ONLY. The agency_jobs INSERT/UPDATE
+    // policies (20261006120000:382-421) check ownership + active consent +
+    // agency_is_operational but have NO shipment-status predicate, so an
+    // active consent granted pre-termination (or platform-seeded) still
+    // permits a NEW agency_jobs INSERT after the shipment reaches a terminal
+    // status. agencyB held zero jobs through case 34; this block runs LAST so
+    // nothing earlier is disturbed.
+    await actAsService()
+    await db.query(
+      `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via, granted_by)
+       VALUES ($1, $2, 'platform_dispatch', $3)`,
+      [shipment1.id, agencyB, customerUser]
+    )
+    await actAs(agencyBUser)
+    let terminalInsertOutcome = 'denied'
+    let terminalJobId = null
+    try {
+      const terminalInsert = await rows(
+        `INSERT INTO public.agency_jobs (agency_id, shipment_id, fare) VALUES ($1, $2, 1) RETURNING id`,
+        [agencyB, shipment1.id]
+      )
+      terminalInsertOutcome = 'SUCCEEDED'
+      terminalJobId = terminalInsert[0]?.id ?? null
+    } catch (error) {
+      terminalInsertOutcome = `denied (${error && error.message ? error.message.split('\n')[0] : error})`
+    }
+    recordFinding(
+      'terminal-status consent cutoff missing',
+      `an active consent granted pre-termination (or platform-seeded) permits a NEW agency_jobs INSERT on a delivered/cancelled shipment — INSERT ${terminalInsertOutcome} on delivered shipment1 (agency_jobs.id=${terminalJobId}). Remediation = shipment-status predicate on the agency_jobs INSERT/UPDATE policies (20261006120000:382-421) or a consent auto-revoke trigger on shipments.status; both are policy/schema changes outside the TO-143-D1 fences (owner-deferred).`
+    )
   }
 
   // -------------------------------------------------------------------------

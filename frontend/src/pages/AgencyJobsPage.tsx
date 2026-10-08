@@ -8,6 +8,12 @@ import toast from 'react-hot-toast'
 import MapViewWrapper, { MapMarker, MapRoute } from '../components/MapViewWrapper'
 import { logger } from '../utils/logger'
 import { agencyJobsApi } from '../services/agencyPortalApi'
+// TO-143-D1 alias trap: agencyJobsApi is exported by BOTH agencyPortalApi.ts
+// (Edge function client, above) and agencySupabaseApi.ts (direct RLS client).
+// Consent-gated job creation MUST go through the DIRECT client or the call
+// silently reaches the Edge function and never performs the direct-RLS insert.
+import { agencyJobsApi as agencyJobsDirectApi } from '../services/agencySupabaseApi'
+import type { AgencyShipmentAuthorization } from '../services/agencySupabaseApi'
 
 type JobFilter = 'all' | 'in_transit' | 'pending' | 'accepted' | 'delivered' | 'cancelled'
 
@@ -90,6 +96,54 @@ export default function AgencyJobsPage() {
   const [showTrackModal, setShowTrackModal] = useState(false)
   const [trackingJob, setTrackingJob] = useState<AgencyJob | null>(null)
   const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null)
+
+  // Customer authorizations (TO-143-D1): the consent-gated job-creation
+  // command source. Rendered as shipment uuid + grant date only — the agency
+  // cannot read shipment details (shipments RLS is owner-only).
+  const [authorizations, setAuthorizations] = useState<AgencyShipmentAuthorization[]>([])
+  const [authorizationsFailed, setAuthorizationsFailed] = useState(false)
+  const [creatingJobFor, setCreatingJobFor] = useState<string | null>(null)
+  const [jobFares, setJobFares] = useState<Record<string, string>>({})
+
+  const fetchAuthorizations = useCallback(async () => {
+    try {
+      const rows = await agencyJobsDirectApi.listAuthorizations()
+      setAuthorizations(rows)
+      setAuthorizationsFailed(false)
+    } catch (e) {
+      logger.error('[AgencyJobsPage] fetchAuthorizations failed:', e)
+      setAuthorizationsFailed(true)
+    }
+  }, [])
+
+  useEffect(() => { fetchAuthorizations() }, [fetchAuthorizations])
+
+  const handleCreateJob = async (authorization: AgencyShipmentAuthorization) => {
+    const fareInput = jobFares[authorization.shipment_id] ?? ''
+    const fare = Number(fareInput)
+    if (!fareInput.trim() || Number.isNaN(fare) || fare <= 0) {
+      toast.error('Enter a valid fare')
+      return
+    }
+
+    setCreatingJobFor(authorization.shipment_id)
+    try {
+      const result = await agencyJobsDirectApi.createJob(authorization.shipment_id, fare)
+      if (result.alreadyExists) {
+        toast('A job already exists for this shipment.', { icon: 'ℹ️' })
+      } else {
+        toast.success('Dispatch job created!')
+        fetchAgency()
+      }
+      setJobFares(prev => ({ ...prev, [authorization.shipment_id]: '' }))
+    } catch (e) {
+      logger.error('[AgencyJobsPage] createJob failed:', e)
+      const message = e instanceof Error && e.message ? e.message : 'Failed to create job'
+      toast.error(message)
+    } finally {
+      setCreatingJobFor(null)
+    }
+  }
 
   const fetchAgency = useCallback(async () => {
     if (!user?.id) return
@@ -313,6 +367,58 @@ export default function AgencyJobsPage() {
             )}
           </button>
         ))}
+      </div>
+
+      {/* Customer Authorizations — consent-gated job creation (TO-143-D1) */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Authorized Shipments</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          Shipments the customer authorized you to dispatch. Set your fare and create the job.
+        </p>
+        {authorizationsFailed ? (
+          <p role="alert" className="text-xs text-red-600 dark:text-red-400 mt-3">
+            Failed to load authorizations. Refresh the page to retry.
+          </p>
+        ) : authorizations.length === 0 ? (
+          <p className="text-xs text-slate-400 mt-3">
+            No customer authorizations yet. They appear here once a customer shares their agency ID with you and authorizes your agency.
+          </p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {authorizations.map(auth => (
+              <div key={auth.shipment_id} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-mono font-medium text-slate-700 dark:text-slate-200 truncate" title={auth.shipment_id}>
+                    {auth.shipment_id}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Authorized {new Date(auth.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    inputMode="numeric"
+                    aria-label={`Fare for shipment ${auth.shipment_id}`}
+                    placeholder="Fare ₹"
+                    value={jobFares[auth.shipment_id] ?? ''}
+                    onChange={(e) => setJobFares(prev => ({ ...prev, [auth.shipment_id]: e.target.value }))}
+                    className="w-24 px-2.5 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg"
+                    disabled={creatingJobFor === auth.shipment_id}
+                  />
+                  <button
+                    onClick={() => handleCreateJob(auth)}
+                    disabled={creatingJobFor === auth.shipment_id}
+                    className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {creatingJobFor === auth.shipment_id ? 'Creating...' : 'Create Job'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Jobs List */}

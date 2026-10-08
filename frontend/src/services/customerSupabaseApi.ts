@@ -160,6 +160,34 @@ export const customerDashboardApi = {
 }
 
 // ============= CUSTOMER SHIPMENTS API =============
+
+/** Result of the authorize_agency_for_shipment consent grant RPC (TO-143-D1). */
+export interface AgencyConsentResult {
+    id: string | null
+    state: 'granted' | 'already_active' | 'reactivated'
+}
+
+/**
+ * Bounded mapping from the controlled authorize_agency_for_shipment
+ * exceptions (supabase/migrations/20261007120000) to user-facing messages.
+ * Unmapped provider internals never reach the UI.
+ */
+const AUTHORIZE_AGENCY_ERROR_MESSAGES: Readonly<Record<string, string>> = Object.freeze({
+    'Shipment not found or access denied': 'Shipment not found or access denied',
+    'An agency cannot grant itself consent on a shipment.': 'An agency cannot grant itself consent on a shipment.',
+    'Agency not found.': 'Agency not found.',
+    'Agency approval is required.': 'Agency approval is required.',
+    'Shipment is not open for dispatch.': 'Shipment is not open for dispatch.',
+})
+
+function resolveAuthorizeAgencyMessage(error: unknown): string {
+    const message = (error as { message?: unknown } | null)?.message
+    if (typeof message === 'string') {
+        return AUTHORIZE_AGENCY_ERROR_MESSAGES[message] ?? 'Failed to authorize agency'
+    }
+    return 'Failed to authorize agency'
+}
+
 export const customerShipmentsApi = {
     async getAll(customerId: string, filters?: { status?: string }): Promise<ShipmentDetail[]> {
         let query = supabase
@@ -292,6 +320,41 @@ export const customerShipmentsApi = {
 
         if (error) {
             throw new UserFacingError('Failed to save e-way bill')
+        }
+    },
+
+    /**
+     * Grants one agency consent on ONE shipment through the production
+     * consent writer RPC (TO-143-D1, supabase/migrations/20261007120000).
+     * The server enforces ownership, agency self-grant denial, operational
+     * status and the pending-shipment lifecycle; replays are idempotent
+     * (already_active / reactivated). The caller consumes THIS response —
+     * the consent table itself is not readable by the grantor (the SELECT
+     * policy covers the agency party/admin only).
+     */
+    async authorizeAgency(shipmentId: string, agencyId: string): Promise<AgencyConsentResult> {
+        const { data, error } = await supabase.rpc('authorize_agency_for_shipment', {
+            p_shipment_id: shipmentId,
+            p_agency_id: agencyId,
+        })
+
+        if (error) {
+            throw new UserFacingError(resolveAuthorizeAgencyMessage(error))
+        }
+
+        const row = (Array.isArray(data) ? data[0] : data) as { id?: unknown; state?: unknown } | undefined
+        if (
+            !row ||
+            typeof row.state !== 'string' ||
+            !(['granted', 'already_active', 'reactivated'] as const).includes(row.state as AgencyConsentResult['state'])
+        ) {
+            // A zero-row response means nothing was authorized or written.
+            throw new UserFacingError('Failed to authorize agency')
+        }
+
+        return {
+            id: typeof row.id === 'string' ? row.id : null,
+            state: row.state as AgencyConsentResult['state'],
         }
     }
 }

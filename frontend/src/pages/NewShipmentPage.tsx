@@ -46,6 +46,13 @@ export default function NewShipmentPage() {
   const [hsnCode, setHsnCode] = useState('')
   const [isSubmittingEWayBill, setIsSubmittingEWayBill] = useState(false)
 
+  // Agency authorization (consent grant) state — TO-143-D1. The agency id
+  // travels out-of-band in delivery 1: customers cannot list agencies
+  // ('Agencies: own record' is the only transport_agencies read path).
+  const [authorizedAgencyId, setAuthorizedAgencyId] = useState('')
+  const [isAuthorizing, setIsAuthorizing] = useState(false)
+  const [authorizationMessage, setAuthorizationMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+
   const [formData, setFormData] = useState<FormData>({
     origin_city: '',
     destination_city: '',
@@ -156,6 +163,38 @@ export default function NewShipmentPage() {
       toast.error('Failed to save e-way bill')
     } finally {
       setIsSubmittingEWayBill(false)
+    }
+  }
+
+  // Agency consent grant (TO-143-D1): one shipment × one agency through the
+  // authorize_agency_for_shipment RPC; replays are idempotent server-side.
+  const handleAuthorizeAgency = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newShipmentId) return
+
+    const agencyId = authorizedAgencyId.trim()
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(agencyId)) {
+      setAuthorizationMessage({ kind: 'error', text: 'Enter a valid agency ID (uuid).' })
+      return
+    }
+
+    setIsAuthorizing(true)
+    setAuthorizationMessage(null)
+
+    try {
+      const result = await customerShipmentsApi.authorizeAgency(newShipmentId, agencyId)
+      const text = result.state === 'granted'
+        ? 'Agency authorized for this shipment.'
+        : result.state === 'reactivated'
+          ? 'Authorization restored for this agency.'
+          : 'This agency is already authorized.'
+      setAuthorizationMessage({ kind: 'success', text })
+    } catch (error) {
+      logger.error('[NewShipment] authorizeAgency:', error)
+      const text = error instanceof Error && error.message ? error.message : 'Failed to authorize agency'
+      setAuthorizationMessage({ kind: 'error', text })
+    } finally {
+      setIsAuthorizing(false)
     }
   }
 
@@ -274,6 +313,44 @@ export default function NewShipmentPage() {
                 {'Skip to tracking'}
               </button>
             )}
+          </div>
+
+          {/* Agency Authorization (TO-143-D1 consent grant) */}
+          <div className="mt-4 border-t border-slate-200 dark:border-slate-600 pt-4">
+            <form onSubmit={handleAuthorizeAgency} className="space-y-3 text-left">
+              <label htmlFor="authorize-agency-input" className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                {'Authorize an agency (optional)'}
+              </label>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {'Paste the agency ID the transport agency gave you. This lets them create a dispatch job for this shipment.'}
+              </p>
+              <input
+                id="authorize-agency-input"
+                type="text"
+                value={authorizedAgencyId}
+                onChange={(e) => setAuthorizedAgencyId(e.target.value.trim())}
+                placeholder="e.g., 8f2ac1b4-... agency ID (uuid)"
+                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg"
+                disabled={isAuthorizing}
+              />
+              <button
+                type="submit"
+                disabled={isAuthorizing || !authorizedAgencyId.trim()}
+                className="w-full btn btn-primary py-2 text-sm disabled:opacity-50"
+              >
+                {isAuthorizing ? 'Authorizing...' : 'Authorize an agency'}
+              </button>
+              {authorizationMessage && (
+                <p
+                  role="status"
+                  className={`text-xs ${authorizationMessage.kind === 'success'
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'}`}
+                >
+                  {authorizationMessage.text}
+                </p>
+              )}
+            </form>
           </div>
         </div>
       </div>

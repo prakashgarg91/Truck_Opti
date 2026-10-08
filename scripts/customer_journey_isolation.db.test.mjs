@@ -876,6 +876,60 @@ async function main() {
     record('26b. booking dispatch RPC is ownership-guarded (foreign caller denied)', true)
   }
 
+  // =========================================================================
+  // J. Consent writer RPCs (TO-143-D1): the customer grant command and the
+  //    cross-tenant visibility of the consent row it writes.
+  // =========================================================================
+  {
+    // Fixture: one approved agency row owned by a THIRD identity (service
+    // insert = the admin approval authority; this battery has no agency
+    // helper). The owner is deliberately neither userA nor userB so J2
+    // measures the true cross-tenant read, and the agency is approved so the
+    // grant RPC's operational gate passes.
+    await actAsService()
+    const consentAgencyOwner = await createUser('consent-agency-owner')
+    const consentAgencyId = uid()
+    await db.query(
+      `INSERT INTO public.transport_agencies (id, user_id, company_name, city, status, gstin, pan_number)
+       VALUES ($1, $2, 'Consent Proof Transport Pvt Ltd', 'Delhi', 'approved', $3, $4)`,
+      [consentAgencyId, consentAgencyOwner, `07ABCDE${1000 + seq}A1Z5`, `ABCDE${4000 + seq}Q`]
+    )
+
+    // A fresh pending booking owned by userA (created_by = caller, the
+    // real NewShipmentPage booking shape).
+    await actAs(userA)
+    const consentBooking = await rows(
+      `INSERT INTO public.shipments
+         (shipment_id, customer_id, created_by, origin, destination, status, total_weight, estimated_cost,
+          vehicle_type, pickup_date, goods_description, estimated_value)
+       VALUES ($1, $2, $3, 'Delhi', 'Jaipur', 'pending', 1200, 1850, 'eicher_14ft', '2026-10-10', 'Electronics', 75000)
+       RETURNING id`,
+      [`TO134-CONSENT-${Date.now()}`, customerA2, userA]
+    )
+
+    // J1 Ownership guard: userB cannot grant consent on userA's shipment —
+    // the producer-mirrored ownership predicate fires before every other
+    // check (RED first = the function-missing error before the migration).
+    await actAs(userB)
+    const foreignGrant = await expectError(
+      db.query(`SELECT public.authorize_agency_for_shipment($1, $2)`, [consentBooking[0].id, consentAgencyId]),
+      'Shipment not found or access denied'
+    )
+    expect(/not found or access denied/i.test(foreignGrant), 'foreign grant must be ownership-denied')
+    record('J1. consent grant RPC is ownership-guarded (foreign caller denied)', true)
+
+    // J2 The grant is written, but invisible cross-tenant: the consent SELECT
+    // policy covers the agency party/admin only — the grantor consumes the RPC
+    // response, never the table.
+    await actAs(userA)
+    const granted = await rows(`SELECT public.authorize_agency_for_shipment($1, $2) AS r`, [consentBooking[0].id, consentAgencyId])
+    expect(granted[0].r && granted[0].r.state === 'granted', `owner grant must succeed, got ${JSON.stringify(granted[0].r)}`)
+    await actAs(userB)
+    const foreignRead = await rows(`SELECT count(*)::int AS n FROM public.shipment_agency_consents`)
+    expect(foreignRead[0].n === 0, `userB must see zero consent rows, got ${foreignRead[0].n}`)
+    record('J2. consent rows are cross-tenant invisible; the grantor consumes the RPC response only', true)
+  }
+
   // -------------------------------------------------------------------------
   const failed = results.filter((r) => !r.pass)
   console.log(`\n${results.length - failed.length}/${results.length} cases passed (SQL-level, PostgreSQL engine, two identities)`)

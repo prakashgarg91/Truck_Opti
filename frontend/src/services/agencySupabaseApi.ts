@@ -136,7 +136,102 @@ export const agencyDashboardApi = {
 }
 
 // ============= AGENCY JOBS API =============
+
+/** One customer authorization visible to the agency party (TO-143-D1).
+ * The agency cannot read shipment details (shipments RLS is owner-only),
+ * so only the raw shipment id and the grant metadata are selectable. */
+export interface AgencyShipmentAuthorization {
+    shipment_id: string
+    granted_via: string
+    created_at: string
+}
+
+/** Result of the consent-gated agency_jobs creation command (TO-143-D1).
+ * Duplicate submissions are idempotent: the (agency_id, shipment_id)
+ * settlement key maps SQLSTATE 23505 to the typed already-exists result. */
+export interface AgencyJobCreateResult {
+    job: AgencyJob | null
+    alreadyExists: boolean
+}
+
+function isUniqueViolationError(error: unknown): boolean {
+    const code = (error as { code?: unknown } | null)?.code
+    if (code === '23505') return true
+    const message = (error as { message?: unknown } | null)?.message
+    return typeof message === 'string' && message.includes('duplicate key value violates unique constraint')
+}
+
 export const agencyJobsApi = {
+    /**
+     * Lists the active customer authorizations for the caller's agency, as
+     * permitted by the consent SELECT policy (the agency party reads its own
+     * consents; shipment details stay owner-only). Rendered as shipment uuid
+     * + grant date only.
+     */
+    async listAuthorizations(): Promise<AgencyShipmentAuthorization[]> {
+        const { data, error } = await supabase
+            .from('shipment_agency_consents')
+            .select('shipment_id, granted_via, created_at')
+            .is('revoked_at', null)
+            .order('created_at', { ascending: false })
+
+        if (error) {
+            throw new UserFacingError('Failed to load authorizations')
+        }
+
+        return (data as AgencyShipmentAuthorization[]) || []
+    },
+
+    /**
+     * Creates the agency's dispatch job for ONE authorized shipment through
+     * the direct RLS INSERT (TO-143-D1) — NOT the agency-portal-jobs Edge
+     * function. The caller's own agency id is resolved here (permitted by
+     * the 'Agencies: own record' policy); the agency_jobs INSERT policy
+     * independently re-validates ownership + active consent + operational
+     * status on the write. Re-submission is idempotent: the
+     * (agency_id, shipment_id) unique key maps to { alreadyExists: true }.
+     */
+    async createJob(shipmentId: string, fare: number): Promise<AgencyJobCreateResult> {
+        const { data: authData, error: authError } = await supabase.auth.getUser()
+        const userId = authData?.user?.id
+        if (authError || !userId) {
+            throw new UserFacingError('Please sign in to create jobs')
+        }
+
+        const { data: agency, error: agencyError } = await supabase
+            .from('transport_agencies')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle()
+
+        if (agencyError) {
+            throw new UserFacingError('Failed to resolve agency')
+        }
+        if (!agency?.id) {
+            throw new UserFacingError('Agency profile not found')
+        }
+
+        const { data, error } = await supabase
+            .from('agency_jobs')
+            .insert({
+                agency_id: agency.id,
+                shipment_id: shipmentId,
+                fare,
+                status: 'pending',
+            })
+            .select('id, agency_id, shipment_id, fare, status')
+            .single()
+
+        if (error) {
+            if (isUniqueViolationError(error)) {
+                return { job: null, alreadyExists: true }
+            }
+            throw new UserFacingError('Failed to create job')
+        }
+
+        return { job: data as AgencyJob, alreadyExists: false }
+    },
+
     async getAll(agencyId: string, filters?: { status?: string }): Promise<AgencyJob[]> {
         let query = supabase
             .from('agency_jobs')

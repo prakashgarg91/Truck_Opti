@@ -1258,6 +1258,140 @@ async function main() {
     `admin=${gateAdmin} forged=${gateForged} customer=${gateCustomer}`
   )
 
+  // TO-143-D1: consent-writer audit (the G7-style source+SQL hybrid).
+  // G8 pins three things about the NEW consent writer and the surfaces it
+  // touches: (i) at SQL level the consent table stays service/admin-writable
+  // only (BYPASSRLS platform_dispatch/admin_grant authority; interactive
+  // INSERT is privilege-denied); (ii) at source level no Edge function reads
+  // or writes shipment_agency_consents, no Edge function writes shipments,
+  // and agency-portal-jobs remains the ONLY agency_jobs Edge writer behind
+  // its business guards; (iii) the two new RPCs are SECURITY DEFINER with a
+  // pinned search_path and caller-only EXECUTE (authenticated; never PUBLIC,
+  // anon or service_role — the service path uses direct BYPASSRLS writes, so
+  // it needs no function EXECUTE). RED first: before the migration exists the
+  // (iii) assertions fail and the case records a failure.
+  {
+    // (i) SQL-level: service-role INSERT succeeds (BYPASSRLS).
+    await actAsService()
+    const consentId = uid()
+    let serviceInsert = 'denied'
+    try {
+      await db.query(
+        `INSERT INTO public.shipment_agency_consents (id, shipment_id, agency_id, granted_via, granted_by)
+         VALUES ($1, $2, $3, 'admin_grant', $4)`,
+        [consentId, shipmentA.id, agencyOk, adminUser]
+      )
+      serviceInsert = 'succeeded'
+    } catch (error) {
+      serviceInsert = `denied: ${error && error.message ? error.message.split('\n')[0] : error}`
+    }
+
+    // anon INSERT is privilege-denied (REVOKE INSERT FROM anon).
+    await actAsAnon()
+    const anonInsert = await expectError(
+      db.query(
+        `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via)
+         VALUES ($1, $2, 'customer_consent')`,
+        [shipmentA.id, agencyOk]
+      ),
+      'permission denied'
+    )
+
+    // authenticated INSERT is privilege-denied too (the consent writer is the
+    // two caller-bound RPCs, never a direct table write).
+    await actAs(customerAUser)
+    const authInsert = await expectError(
+      db.query(
+        `INSERT INTO public.shipment_agency_consents (shipment_id, agency_id, granted_via)
+         VALUES ($1, $2, 'customer_consent')`,
+        [shipmentA.id, agencyOk]
+      ),
+      'permission denied'
+    )
+
+    // Interactive SELECT stays granted but RLS-scoped: a non-party customer
+    // (grantor of nothing here — the seeded consent is admin_grant and
+    // customerAUser owns shipmentA but is not the agency party/admin) reads
+    // zero rows; the grantor consumes the RPC response, not the table.
+    const customerRead = await count(`SELECT count(*) FROM public.shipment_agency_consents`)
+
+    // (ii) Source-level Edge function assertions (source assertions; no Deno
+    // runtime executes here).
+    const functionSources = collectSourceFiles(FUNCTIONS_DIR, {
+      exclude: ['.test.ts', 'local-disposable-battery.mjs', 'driver-kyc/local-disposable-battery.mjs'],
+    })
+    const consentReferencingFiles = functionSources
+      .filter((f) => f.text.includes("from('shipment_agency_consents')"))
+      .map((f) => f.relPath)
+    // No Edge writer of shipments anywhere (admin-portal-dashboard only SELECTs).
+    const shipmentWriterFiles = functionSources
+      .filter((f) => /from\('shipments'\)\s*\.\s*(update|insert|upsert|delete)/.test(f.text))
+      .map((f) => f.relPath)
+    // agency_jobs writer chains, whitespace-normalized: only agency-portal-jobs
+    // may contain from('agency_jobs').update(/.insert(/.upsert(/.delete(.
+    const normalized = (text) => text.replace(/\s+/g, '')
+    const agencyJobWriterFiles = functionSources
+      .filter((f) =>
+        /from\('agency_jobs'\)\.(update|insert|upsert|delete)\(/.test(normalized(f.text))
+      )
+      .map((f) => f.relPath)
+    const portalJobsSource = readSource('supabase/functions/agency-portal-jobs/index.ts')
+    const portalJobsGuards =
+      portalJobsSource.includes('requireAgencyContext(') &&
+      portalJobsSource.includes('job.agency_id !== agencyId') &&
+      portalJobsSource.includes('assertApprovedAgency(') &&
+      portalJobsSource.includes('assertApprovedDriver(') &&
+      portalJobsSource.includes('assertDriverOnAgencyFleet(')
+
+    // (iii) Migration source assertions on the two new RPCs.
+    const consentMigrationRel = 'supabase/migrations/20261007120000_consent_writer_and_job_command.sql'
+    const consentMigrationPath = join(REPO_ROOT, consentMigrationRel)
+    let migrationPosture = []
+    if (!existsSync(consentMigrationPath)) {
+      migrationPosture.push('migration file missing')
+    } else {
+      const migrationSql = readFileSync(consentMigrationPath, 'utf8')
+      for (const fn of ['authorize_agency_for_shipment', 'revoke_agency_for_shipment']) {
+        const definerPinned = new RegExp(
+          `CREATE OR REPLACE FUNCTION public\\.${fn}[\\s\\S]{0,600}?SECURITY DEFINER\\s+SET search_path = public`
+        ).test(migrationSql)
+        const revoked = migrationSql.includes(`REVOKE ALL ON FUNCTION public.${fn}(uuid, uuid) FROM PUBLIC, anon`)
+        const granted = migrationSql.includes(`GRANT EXECUTE ON FUNCTION public.${fn}(uuid, uuid) TO authenticated`)
+        const notServiceGranted = !migrationSql.includes(
+          `GRANT EXECUTE ON FUNCTION public.${fn}(uuid, uuid) TO authenticated, service_role`
+        )
+        if (!definerPinned) migrationPosture.push(`${fn}: not SECURITY DEFINER + pinned search_path`)
+        if (!revoked) migrationPosture.push(`${fn}: PUBLIC/anon EXECUTE not revoked`)
+        if (!granted) migrationPosture.push(`${fn}: authenticated EXECUTE not granted`)
+        if (!notServiceGranted) migrationPosture.push(`${fn}: EXECUTE must not reach service_role`)
+      }
+    }
+
+    const g8Pass =
+      serviceInsert === 'succeeded' &&
+      /permission denied/.test(anonInsert) &&
+      /permission denied/.test(authInsert) &&
+      customerRead === 0 &&
+      consentReferencingFiles.length === 0 &&
+      shipmentWriterFiles.length === 0 &&
+      agencyJobWriterFiles.length === 1 &&
+      agencyJobWriterFiles[0] === 'agency-portal-jobs/index.ts' &&
+      portalJobsGuards &&
+      migrationPosture.length === 0
+    record(
+      'G8. consent-writer audit: service-only consent writes, single agency_jobs Edge writer behind its guards, caller-bound definer RPC posture (TO-143-D1)',
+      g8Pass,
+      `service_insert=${serviceInsert}; anon/auth INSERT privilege-denied; non-party authenticated read=${customerRead}; ` +
+        `consent-referencing edge files=[${consentReferencingFiles.join(', ')}]; shipment writers=[${shipmentWriterFiles.join(', ')}]; ` +
+        `agency_jobs writers=[${agencyJobWriterFiles.join(', ')}]; portal-jobs guards=${portalJobsGuards}; ` +
+        `rpc posture issues=[${migrationPosture.join('; ') || 'none'}]`
+    )
+
+    // Cleanup so later sections counting consents/agencies stay stable.
+    await actAsService()
+    await db.query(`DELETE FROM public.shipment_agency_consents WHERE id = $1`, [consentId])
+  }
+
   // =========================================================================
   // H. Storage document matrix
   // =========================================================================
