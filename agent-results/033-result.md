@@ -133,3 +133,48 @@ Holes/gaps found and their disposition:
 ## Independent review (gpt-6.1-sol, 2026-10-08)
 
 Verdict NEEDS_CHANGES with 0 P1 and 2 P2: (1) listAuthorizations listed revoked consents - FIXED (`.is("revoked_at", null)` + test); (2) OPEN P2: in `authorize_agency_for_shipment` the pending-status guard runs before active-consent replay detection, so if a grant succeeds but its response is lost and dispatch then advances the shipment, a retry fails although the consent is already active. Remediation: after the ownership and self-grant checks, return the existing active consent before applying lifecycle checks to a fresh grant. Also still open (owner decision): terminal-status consent cutoff on agency_jobs INSERT (TO-142 policy).
+
+## Supervisor acceptance addendum (2026-10-07)
+
+Supervisor acceptance of TO-143-D1, recorded 2026-10-08. Two evidence tiers, both freshly executed by this acceptance run against HEAD `b362e83e` — the TO-143 implementer commit, which absorbed the round-2 working-tree changes during the browser session (the label association verified live in the pass is from that commit: `frontend/src/pages/NewShipmentPage.tsx:321,328`; the reviewed revoked-consent list fix is `frontend/src/services/agencySupabaseApi.ts:175`).
+
+### Fresh gate table (workflow gate sweep, all exit 0)
+
+| # | Gate | Result | Exit |
+|---|---|---|---|
+| 1 | dispatch journey DB battery (`node scripts/dispatch_delivery_journey.db.test.mjs`) | 52/52 PASS | 0 |
+| 2 | customer isolation DB battery (`node scripts/customer_journey_isolation.db.test.mjs`) | 30/30 PASS | 0 |
+| 3 | admin RLS proof DB battery (`node scripts/admin_rls_proof.db.test.mjs`) | 57/57 PASS | 0 |
+| 4 | trip integrity DB battery (`node scripts/trip_transition_integrity.db.test.mjs`) | 21/21 PASS | 0 |
+| 5 | policy suites (5) | PASS | 0 |
+| 6 | server routing | PASS | 0 |
+| 7 | glue check | PASS | 0 |
+| 8 | packing regression | 32/32 PASS | 0 |
+| 9 | frontend lint (zero warnings) | PASS | 0 |
+| 10 | frontend unit tests | PASS | 0 |
+| 11 | frontend build incl. tsc | PASS | 0 |
+
+### Pre-acceptance browser pass — verdict PASS
+
+Headless Playwright against `npm run dev` (vite on :5173), env files set aside for the run and restored byte-exact afterwards, Supabase calls mocked on `https://localhost.invalid` per `frontend/src/lib/authCapabilities.ts:47`. **58/58 scripted checks passed at BOTH 390×844 (mobile) and 1280×900 (desktop).**
+
+Exercised — customer "Authorize an agency" (`frontend/src/pages/NewShipmentPage.tsx`): uuid shape validation with zero rpc calls; controlled server rejection mapped verbatim; granted / reactivated / already_active success copy; `role="status"`; `Authorizing...` disabled submit state; double-submit suppressed (rpcCalls=1); keyboard-only Tab→type→Enter fires the rpc; label programmatically associated via `htmlFor`/`id`.
+
+Exercised — agency "Authorized Shipments" (`frontend/src/pages/AgencyJobsPage.tsx`): empty copy; uuid + grant-date rows; `aria-label`led fare inputs; empty-fare and zero-fare toasts with no insert; `Creating...` disabled row state; double-submit suppressed (posts=1); success toast + fare cleared + list refresh GET; SQLSTATE 23505 → already-exists info toast; error toast; keyboard-only job create.
+
+Recorded as NOT exercisable in this browser tier: hosted Supabase round-trips (GoTrue/PostgREST/RLS/RPC — the DB-tier guarantees remain the PGlite batteries' domain above); the revoke RPC (ships RPC-only, no UI surface by supervisor acceptance); programmatic contrast measurement (not part of the 58 scripted checks — the historical contrast sample in this audit stays open).
+
+Artifacts: 20 screenshots + per-step evidence JSON under `agent-results/browser-evidence/` (kept untracked per repo practice, not committed). Screenshots: `to143-customer-mobile-success-panel-mobile.png`, `to143-customer-mobile-authorizing-mobile.png`, `to143-customer-mobile-error-mobile.png`, `to143-customer-mobile-uuid-invalid-mobile.png`, `to143-customer-desktop-success-panel-desktop.png`, `to143-customer-desktop-authorizing-desktop.png`, `to143-customer-desktop-error-desktop.png`, `to143-customer-desktop-uuid-invalid-desktop.png`, `to143-agency-mobile-empty-mobile.png`, `to143-agency-mobile-rows-mobile.png`, `to143-agency-mobile-creating-mobile.png`, `to143-agency-mobile-success-toast-mobile.png`, `to143-agency-mobile-already-exists-mobile.png`, `to143-agency-mobile-error-mobile.png`, `to143-agency-desktop-empty-desktop.png`, `to143-agency-desktop-rows-desktop.png`, `to143-agency-desktop-creating-desktop.png`, `to143-agency-desktop-success-toast-desktop.png`, `to143-agency-desktop-already-exists-desktop.png`, `to143-agency-desktop-error-desktop.png`.
+
+Run hygiene: dev server stopped (PID 48576 killed), `.env`/`.env.local` restored byte-exact, debug scripts removed. The 10 console errors observed are the intentional error-state exercises (400/409 responses plus the components' own `logger.error` lines at `frontend/src/pages/NewShipmentPage.tsx:193` and `frontend/src/pages/AgencyJobsPage.tsx:140`); no page errors.
+
+### Acceptance decision
+
+**TO-143-D1 ACCEPTED and integrated to `main`** in this acceptance's feat commit (hash recorded on the TO-143-D1 board row and in the follow-up board commit). The open gpt-6.1-sol P2 (consent replay order after a lost grant response + dispatch advance) stays open exactly as recorded in the Independent review section above and is carried as design input to TO-143-D2/D3.
+
+### Open owner-deferred findings (unchanged by acceptance)
+
+1. **Terminal-status consent cutoff** — consent validity remains REVOCATION-ONLY (dispatch battery section-J FINDING: new `agency_jobs` INSERT succeeds on a delivered shipment with an active consent); remediation fenced to TO-143-D3.
+2. **Revoke ships RPC-only** — no UI surface in delivery 1, by explicit supervisor acceptance.
+3. **No expected_version** on the consent commands — idempotency carried by the two unique keys; versioned commands deferred to TO-143-D2/D3.
+4. **Agency id travels out-of-band** — no customer-facing agency discovery; owned by TO-144.
