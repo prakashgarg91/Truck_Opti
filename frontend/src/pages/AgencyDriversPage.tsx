@@ -1,12 +1,13 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
 import {
   Users, Truck, Star, RefreshCw, AlertTriangle,
-  Phone, MapPin, CheckCircle2, XCircle, Wallet
+  Phone, MapPin, CheckCircle2, XCircle, Wallet, ShieldAlert, FileText
 } from 'lucide-react'
-import { agencyDriversApi } from '../services/agencyPortalApi'
+import { agencyDriversApi, isAgencyDenial, type DriverEmployment } from '../services/agencyPortalApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import { toUserFacingErrorMessage } from '../utils/userFacingError'
 
 interface AssignedDriver {
   id: string
@@ -41,7 +42,11 @@ export default function AgencyDriversPage() {
   const { user } = useAuthStore()
   const [drivers, setDrivers] = useState<AssignedDriver[]>([])
   const [trucks, setTrucks] = useState<AgencyTruck[]>([])
+  const [employments, setEmployments] = useState<DriverEmployment[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [denied, setDenied] = useState<string | null>(null)
+  const [endingId, setEndingId] = useState<string | null>(null)
   const [assignModal, setAssignModal] = useState<{ driverId: string; driverName: string } | null>(null)
   const [payModal, setPayModal] = useState<{ driverId: string; driverName: string } | null>(null)
   const [payAmount, setPayAmount] = useState('')
@@ -52,21 +57,72 @@ export default function AgencyDriversPage() {
   const fetchData = useCallback(async () => {
     if (!user?.id) return
     setLoading(true)
+    setLoadError(false)
+    setDenied(null)
     try {
       const snapshot = await agencyDriversApi.getSnapshot()
       setTrucks(snapshot.trucks as AgencyTruck[])
       setDrivers(snapshot.drivers as AssignedDriver[])
+      // TO-144-D1: RLS-scoped employment records. A controlled agency denial
+      // (approval/profile) renders the denied state; any other failure is the
+      // retryable error state — the assigned-driver list above still shows.
+      try {
+        const records = await agencyDriversApi.listEmployments()
+        setEmployments(records ?? [])
+      } catch (empError) {
+        logger.error('[AgencyDriversPage] listEmployments', empError)
+        if (isAgencyDenial(empError)) {
+          setDenied(toUserFacingErrorMessage(empError, 'Your agency account cannot manage driver records yet.'))
+        } else {
+          setLoadError(true)
+        }
+        setEmployments([])
+      }
     } catch (error) {
       logger.error('[AgencyDriversPage] fetchData', error)
       toast.error('Failed to load drivers')
+      setLoadError(true)
       setDrivers([])
       setTrucks([])
+      setEmployments([])
     } finally {
       setLoading(false)
     }
   }, [user?.id])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  const handleEndEmployment = async (employment: DriverEmployment) => {
+    setEndingId(employment.id)
+    try {
+      const result = await agencyDriversApi.endEmployment(employment.id, employment.version)
+      if (result.ok && result.state === 'already_ended') {
+        toast.success('Employment already ended')
+      } else if (result.ok) {
+        toast.success('Employment ended')
+      }
+      // One refetch in every outcome; a version conflict surfaces ONE
+      // message with the refreshed record — never an auto-retry loop.
+      try {
+        const records = await agencyDriversApi.listEmployments()
+        setEmployments(records ?? [])
+      } catch (refetchError) {
+        logger.error('[AgencyDriversPage] listEmployments', refetchError)
+      }
+      if (!result.ok && result.error === 'version_conflict') {
+        toast.error('This record changed elsewhere. Showing the latest version.')
+      }
+    } catch (e) {
+      logger.error('[AgencyDriversPage] handleEndEmployment', e)
+      if (isAgencyDenial(e)) {
+        setDenied(toUserFacingErrorMessage(e, 'Your agency account cannot manage driver records yet.'))
+      } else {
+        toast.error(toUserFacingErrorMessage(e, 'Failed to end employment'))
+      }
+    } finally {
+      setEndingId(null)
+    }
+  }
 
   const handleAssignTruck = async () => {
     if (!assignModal || !selectedTruckId) return
@@ -118,14 +174,39 @@ export default function AgencyDriversPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <RefreshCw className="animate-spin text-indigo-600" size={32} />
+      <div className="min-h-screen flex items-center justify-center" data-testid="drivers-loading">
+        <RefreshCw className="animate-spin text-indigo-600" size={32} aria-label="Loading drivers" />
       </div>
     )
   }
 
   return (
     <div className="p-4 md:p-8 space-y-4 max-w-7xl mx-auto">
+      {/* Denied state: a controlled agency denial is distinct from load errors */}
+      {denied && (
+        <div role="alert" data-testid="drivers-denied" className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-2xl p-4">
+          <ShieldAlert size={18} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">Action not permitted</p>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{denied}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error state: employment load failure with retry — distinct from empty */}
+      {loadError && (
+        <div role="alert" data-testid="drivers-error" className="text-center py-8 bg-white dark:bg-slate-800 rounded-2xl border border-red-200 dark:border-red-800/40">
+          <AlertTriangle size={32} className="text-red-400 mx-auto mb-3" />
+          <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">We couldn't load driver records.</p>
+          <button
+            onClick={fetchData}
+            className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold"
+          >
+            <RefreshCw size={14} />
+            Retry
+          </button>
+        </div>
+      )}
       {/* Assign Truck Modal */}
       {assignModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -330,6 +411,74 @@ export default function AgencyDriversPage() {
           ))}
         </div>
       )}
+
+      {/* Employment Records (TO-144-D1): RLS-scoped, licence window + expected-version end */}
+      <div data-testid="employments-panel">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Employment Records</h2>
+          <p className="text-xs text-slate-400">{employments.filter(e => e.status === 'active').length} active</p>
+        </div>
+
+        {employments.filter(e => e.status === 'active').length === 0 && !loadError ? (
+          <div className="text-center py-8" data-testid="employments-empty">
+            <FileText size={36} className="text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 dark:text-slate-400 text-sm">No employment records yet.</p>
+            <p className="text-slate-400 text-xs mt-1">Licence and employment records appear here once drivers are onboarded.</p>
+          </div>
+        ) : (
+          employments.filter(e => e.status === 'active').map(emp => {
+            const licenceStatus = emp.licence_expiry ? expiryStatus(emp.licence_expiry) : 'ok'
+            return (
+              <div key={emp.id} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm" data-testid="employment-card">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <FileText size={20} className="text-indigo-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate">
+                        {emp.licence_number || 'Employment record'}
+                      </p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${licenceStatus === 'expired'
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        : licenceStatus === 'soon'
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                          : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        }`}>
+                        {emp.licence_expiry
+                          ? `Licence · ${new Date(emp.licence_expiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}`
+                          : 'Active'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {emp.licence_class && `Class: ${emp.licence_class}`}
+                      {emp.licence_class && emp.contact_phone && ' · '}
+                      {emp.contact_phone}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleEndEmployment(emp)}
+                  disabled={endingId === emp.id}
+                  aria-label={`End employment record ${emp.licence_number || emp.id}`}
+                  className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium disabled:opacity-60"
+                >
+                  <XCircle size={12} />
+                  {endingId === emp.id ? 'Ending...' : 'End Employment'}
+                </button>
+              </div>
+            )
+          })
+        )}
+      </div>
     </div>
   )
+}
+
+function expiryStatus(dateStr: string | null): 'ok' | 'soon' | 'expired' {
+  if (!dateStr) return 'ok'
+  const days = Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000)
+  if (days < 0) return 'expired'
+  if (days < 30) return 'soon'
+  return 'ok'
 }

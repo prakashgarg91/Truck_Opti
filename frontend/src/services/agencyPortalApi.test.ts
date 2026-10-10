@@ -2,11 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const invokeMock = vi.hoisted(() => vi.fn())
 const fromMock = vi.hoisted(() => vi.fn())
+const rpcMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../lib/supabase', () => ({
     supabase: {
         from: fromMock,
+        rpc: rpcMock,
         functions: {
             invoke: invokeMock,
         },
@@ -28,6 +30,7 @@ import {
     agencyDriversApi,
     agencyRegistrationApi,
 } from './agencyPortalApi'
+import { UserFacingError } from '../utils/userFacingError'
 
 describe('agencyPortalApi', () => {
     beforeEach(() => {
@@ -1137,6 +1140,243 @@ describe('agencyPortalApi', () => {
                 company_name: 'Test Agency',
             }))
                 .rejects.toThrow('Unable to submit agency registration right now. Please try again.')
+        })
+    })
+
+    // ============= TO-144-D1 fleet foundation (RLS + typed command RPCs) =============
+    const vehicleRow = {
+        id: '11111111-1111-4111-8111-111111111111',
+        agency_id: '22222222-2222-4222-8222-222222222222',
+        vehicle_type: 'eicher_14ft',
+        rc_number: 'DL01AA1101',
+        insurance_expiry: '2027-01-01',
+        fitness_expiry: null,
+        permit_expiry: null,
+        puc_expiry: null,
+        payload_kg: 4000,
+        body_length_m: 4.26,
+        body_width_m: 1.8,
+        body_height_m: 1.8,
+        is_available: true,
+        maintenance_blocked: false,
+        maintenance_block_reason: null,
+        maintenance_blocked_until: null,
+        driver_id: null,
+        notes: null,
+        version: 3,
+        created_at: '2026-10-08T10:00:00Z',
+        updated_at: '2026-10-08T10:00:00Z',
+    }
+
+    describe('agencyFleetApi.listVehicles', () => {
+        function mockFromList(result: { data: unknown; error: unknown }) {
+            fromMock.mockReturnValue({ select: vi.fn().mockResolvedValue(result) })
+        }
+
+        it('maps RLS rows (including version/maintenance/payload fields) to FleetVehicle[]', async () => {
+            mockFromList({ data: [vehicleRow], error: null })
+
+            const result = await agencyFleetApi.listVehicles()
+
+            expect(fromMock).toHaveBeenCalledWith('agency_trucks')
+            expect(result).toHaveLength(1)
+            expect(result[0]).toMatchObject({
+                id: vehicleRow.id,
+                rc_number: 'DL01AA1101',
+                version: 3,
+                maintenance_blocked: false,
+                payload_kg: 4000,
+            })
+        })
+
+        it('maps an empty list to []', async () => {
+            mockFromList({ data: [], error: null })
+
+            await expect(agencyFleetApi.listVehicles()).resolves.toEqual([])
+        })
+
+        it('throws UserFacingError with the redacted fallback when the select fails', async () => {
+            mockFromList({ data: null, error: { message: 'internal pg_expand_magic detail leaked' } })
+
+            await expect(agencyFleetApi.listVehicles()).rejects.toThrow(UserFacingError)
+            await expect(agencyFleetApi.listVehicles()).rejects.toThrow('Failed to load fleet')
+            await expect(agencyFleetApi.listVehicles()).rejects.not.toThrow(/leaked/)
+        })
+    })
+
+    describe('agencyFleetApi.createVehicle', () => {
+        it('maps the created envelope to the typed result and passes typed args (no agency id)', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'created', vehicle: vehicleRow, version: 1 },
+                error: null,
+            })
+
+            const result = await agencyFleetApi.createVehicle({
+                rc_number: 'DL01AA1101',
+                vehicle_type: 'eicher_14ft',
+                insurance_expiry: '2027-01-01',
+            })
+
+            expect(result).toEqual({ ok: true, state: 'created', vehicle: vehicleRow, version: 1 })
+            expect(rpcMock).toHaveBeenCalledWith('agency_vehicle_create', {
+                p_rc_number: 'DL01AA1101',
+                p_vehicle_type: 'eicher_14ft',
+                p_insurance_expiry: '2027-01-01',
+                p_fitness_expiry: undefined,
+                p_permit_expiry: undefined,
+                p_puc_expiry: undefined,
+                p_payload_kg: undefined,
+                p_notes: undefined,
+            })
+        })
+
+        it('maps the idempotent_replay envelope to the typed replay state', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'idempotent_replay', vehicle: vehicleRow, version: 1 },
+                error: null,
+            })
+
+            const result = await agencyFleetApi.createVehicle({ rc_number: 'DL01AA1101', vehicle_type: 'eicher_14ft' })
+
+            expect(result).toMatchObject({ ok: true, state: 'idempotent_replay' })
+        })
+
+        it('passes the controlled denial message through UserFacingError', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'Agency approval is required.' } })
+
+            await expect(agencyFleetApi.createVehicle({ rc_number: 'X', vehicle_type: 'tata_ace' }))
+                .rejects.toThrow('Agency approval is required.')
+        })
+
+        it('redacts uncontrolled provider errors to the stable fallback', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'duplicate key value violates unique constraint "pg_type_typname_index"' } })
+
+            await expect(agencyFleetApi.createVehicle({ rc_number: 'X', vehicle_type: 'tata_ace' }))
+                .rejects.toThrow('Failed to add vehicle to fleet')
+            await expect(agencyFleetApi.createVehicle({ rc_number: 'X', vehicle_type: 'tata_ace' }))
+                .rejects.not.toThrow(/pg_type/)
+        })
+    })
+
+    describe('agencyFleetApi.updateVehicle', () => {
+        it('maps the success envelope to the typed result with the bumped version', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'updated', vehicle: { ...vehicleRow, version: 4 }, version: 4 },
+                error: null,
+            })
+
+            const result = await agencyFleetApi.updateVehicle(vehicleRow.id, 3, { is_available: false })
+
+            expect(result).toEqual({ ok: true, state: 'updated', vehicle: { ...vehicleRow, version: 4 }, version: 4 })
+            expect(rpcMock).toHaveBeenCalledWith('agency_vehicle_update', {
+                p_vehicle_id: vehicleRow.id,
+                p_expected_version: 3,
+                p_patch: { is_available: false },
+            })
+        })
+
+        it('maps version_conflict to the typed conflict branch WITHOUT throwing', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'version_conflict', current_version: 4 },
+                error: null,
+            })
+
+            const result = await agencyFleetApi.updateVehicle(vehicleRow.id, 3, { is_available: true })
+
+            expect(result).toEqual({ ok: false, error: 'version_conflict', currentVersion: 4 })
+        })
+
+        it('redacts denial exceptions to UserFacingError', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'Agency approval is required.' } })
+
+            await expect(agencyFleetApi.updateVehicle(vehicleRow.id, 3, {}))
+                .rejects.toThrow('Agency approval is required.')
+        })
+    })
+
+    describe('agencyDriversApi.listEmployments', () => {
+        const employmentRow = {
+            id: '33333333-3333-4333-8333-333333333333',
+            agency_id: '22222222-2222-4222-8222-222222222222',
+            driver_id: '44444444-4444-4444-8444-444444444444',
+            licence_number: 'DL-0420190001234',
+            licence_class: 'LMV-TR',
+            licence_expiry: '2027-06-30',
+            contact_phone: '9810011223',
+            status: 'active',
+            version: 1,
+            created_at: '2026-10-08T10:00:00Z',
+            updated_at: '2026-10-08T10:00:00Z',
+        }
+
+        it('maps RLS rows to DriverEmployment[]', async () => {
+            fromMock.mockReturnValue({ select: vi.fn().mockResolvedValue({ data: [employmentRow], error: null }) })
+
+            const result = await agencyDriversApi.listEmployments()
+
+            expect(fromMock).toHaveBeenCalledWith('agency_driver_employment')
+            expect(result).toHaveLength(1)
+            expect(result[0]).toMatchObject({ id: employmentRow.id, status: 'active', version: 1 })
+        })
+
+        it('maps an empty list to []', async () => {
+            fromMock.mockReturnValue({ select: vi.fn().mockResolvedValue({ data: [], error: null }) })
+
+            await expect(agencyDriversApi.listEmployments()).resolves.toEqual([])
+        })
+
+        it('throws UserFacingError with the redacted fallback on failure', async () => {
+            fromMock.mockReturnValue({ select: vi.fn().mockResolvedValue({ data: null, error: { message: 'hidden catalog internals' } }) })
+
+            await expect(agencyDriversApi.listEmployments()).rejects.toThrow('Failed to load driver employments')
+        })
+    })
+
+    describe('agencyDriversApi.endEmployment', () => {
+        const employmentId = '33333333-3333-4333-8333-333333333333'
+
+        it('maps the ended envelope to the typed result', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'ended', version: 3 },
+                error: null,
+            })
+
+            const result = await agencyDriversApi.endEmployment(employmentId, 2)
+
+            expect(result).toEqual({ ok: true, state: 'ended', version: 3 })
+            expect(rpcMock).toHaveBeenCalledWith('agency_driver_employment_end', {
+                p_employment_id: employmentId,
+                p_expected_version: 2,
+            })
+        })
+
+        it('maps the already_ended replay envelope', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'already_ended', version: 3 },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.endEmployment(employmentId, 3)).resolves.toEqual({
+                ok: true, state: 'already_ended', version: 3,
+            })
+        })
+
+        it('maps version_conflict to the typed conflict branch WITHOUT throwing', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'version_conflict', current_version: 4 },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.endEmployment(employmentId, 2)).resolves.toEqual({
+                ok: false, error: 'version_conflict', currentVersion: 4,
+            })
+        })
+
+        it('redacts denial exceptions to UserFacingError', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'Agency approval is required.' } })
+
+            await expect(agencyDriversApi.endEmployment(employmentId, 2))
+                .rejects.toThrow('Agency approval is required.')
         })
     })
 })

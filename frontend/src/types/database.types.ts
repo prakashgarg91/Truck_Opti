@@ -8,6 +8,10 @@
 // otp_attempts_remaining; is_job_trip_photo_url) because no container runtime was available
 // to re-run `supabase gen types`. The delta matches the migration text exactly; regenerate
 // on a machine with Docker before any further schema change.
+// TO-144-D1 (2026-10-10): hand-applied delta for 20261008000000_agency_fleet_foundation.sql
+// (trucks.code key; agency_trucks payload/body/PUC/maintenance/version columns + catalog FK;
+// new agency_driver_employment table) following the same TO-130 precedent — the delta
+// matches the migration text exactly; regenerate on a machine with Docker before relying on it.
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -91,13 +95,13 @@ isOneToOne: false
                   ]
                 },"agency_trucks": {
                   Row: {
-                    "agency_id": string,"created_at": string | null,"driver_id": string | null,"fitness_expiry": string | null,"id": string,"insurance_expiry": string | null,"is_available": boolean | null,"notes": string | null,"permit_expiry": string | null,"rc_number": string,"updated_at": string | null,"vehicle_type": string
+                    "agency_id": string,"body_height_m": number | null,"body_length_m": number | null,"body_width_m": number | null,"created_at": string | null,"driver_id": string | null,"fitness_expiry": string | null,"id": string,"insurance_expiry": string | null,"is_available": boolean | null,"maintenance_block_reason": string | null,"maintenance_blocked": boolean,"maintenance_blocked_until": string | null,"notes": string | null,"payload_kg": number | null,"permit_expiry": string | null,"puc_expiry": string | null,"rc_number": string,"updated_at": string | null,"vehicle_type": string,"version": number
                   }
                   Insert: {
-                    "agency_id": string,"created_at"?: string | null,"driver_id"?: string | null,"fitness_expiry"?: string | null,"id"?: string,"insurance_expiry"?: string | null,"is_available"?: boolean | null,"notes"?: string | null,"permit_expiry"?: string | null,"rc_number": string,"updated_at"?: string | null,"vehicle_type": string
+                    "agency_id": string,"body_height_m"?: number | null,"body_length_m"?: number | null,"body_width_m"?: number | null,"created_at"?: string | null,"driver_id"?: string | null,"fitness_expiry"?: string | null,"id"?: string,"insurance_expiry"?: string | null,"is_available"?: boolean | null,"maintenance_block_reason"?: string | null,"maintenance_blocked"?: boolean,"maintenance_blocked_until"?: string | null,"notes"?: string | null,"payload_kg"?: number | null,"permit_expiry"?: string | null,"puc_expiry"?: string | null,"rc_number": string,"updated_at"?: string | null,"vehicle_type": string,"version"?: number
                   }
                   Update: {
-                    "agency_id"?: string,"created_at"?: string | null,"driver_id"?: string | null,"fitness_expiry"?: string | null,"id"?: string,"insurance_expiry"?: string | null,"is_available"?: boolean | null,"notes"?: string | null,"permit_expiry"?: string | null,"rc_number"?: string,"updated_at"?: string | null,"vehicle_type"?: string
+                    "agency_id"?: string,"body_height_m"?: number | null,"body_length_m"?: number | null,"body_width_m"?: number | null,"created_at"?: string | null,"driver_id"?: string | null,"fitness_expiry"?: string | null,"id"?: string,"insurance_expiry"?: string | null,"is_available"?: boolean | null,"maintenance_block_reason"?: string | null,"maintenance_blocked"?: boolean,"maintenance_blocked_until"?: string | null,"notes"?: string | null,"payload_kg"?: number | null,"permit_expiry"?: string | null,"puc_expiry"?: string | null,"rc_number"?: string,"updated_at"?: string | null,"vehicle_type"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -108,6 +112,37 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "agency_trucks_driver_id_fkey"
+      columns: ["driver_id"]
+isOneToOne: false
+      referencedRelation: "drivers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_trucks_vehicle_type_catalog_fkey"
+      columns: ["vehicle_type"]
+isOneToOne: false
+      referencedRelation: "trucks"
+      referencedColumns: ["code"]
+    }
+                  ]
+                },"agency_driver_employment": {
+                  Row: {
+                    "agency_id": string,"contact_phone": string | null,"created_at": string,"driver_id": string,"id": string,"licence_class": string | null,"licence_expiry": string | null,"licence_number": string | null,"status": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"contact_phone"?: string | null,"created_at"?: string,"driver_id": string,"id"?: string,"licence_class"?: string | null,"licence_expiry"?: string | null,"licence_number"?: string | null,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"contact_phone"?: string | null,"created_at"?: string,"driver_id"?: string,"id"?: string,"licence_class"?: string | null,"licence_expiry"?: string | null,"licence_number"?: string | null,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_driver_employment_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_driver_employment_driver_id_fkey"
       columns: ["driver_id"]
 isOneToOne: false
       referencedRelation: "drivers"
@@ -522,13 +557,13 @@ isOneToOne: false
                   ]
                 },"trucks": {
                   Row: {
-                    "available": number | null,"capacity": number,"cost_per_km": number,"created_at": string | null,"height": number,"id": string,"length": number,"name": string,"name_hi": string,"updated_at": string | null,"width": number
+                    "available": number | null,"capacity": number,"code": string,"cost_per_km": number,"created_at": string | null,"height": number,"id": string,"length": number,"name": string,"name_hi": string,"updated_at": string | null,"width": number
                   }
                   Insert: {
-                    "available"?: number | null,"capacity": number,"cost_per_km": number,"created_at"?: string | null,"height": number,"id"?: string,"length": number,"name": string,"name_hi": string,"updated_at"?: string | null,"width": number
+                    "available"?: number | null,"capacity": number,"code"?: string,"cost_per_km": number,"created_at"?: string | null,"height": number,"id"?: string,"length": number,"name": string,"name_hi": string,"updated_at"?: string | null,"width": number
                   }
                   Update: {
-                    "available"?: number | null,"capacity"?: number,"cost_per_km"?: number,"created_at"?: string | null,"height"?: number,"id"?: string,"length"?: number,"name"?: string,"name_hi"?: string,"updated_at"?: string | null,"width"?: number
+                    "available"?: number | null,"capacity"?: number,"code"?: string,"cost_per_km"?: number,"created_at"?: string | null,"height"?: number,"id"?: string,"length"?: number,"name"?: string,"name_hi"?: string,"updated_at"?: string | null,"width"?: number
                   }
                   Relationships: [
                     

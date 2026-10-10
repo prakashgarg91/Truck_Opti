@@ -115,6 +115,134 @@ export interface AgencyFleetTruckSummary {
     rc_number: string
 }
 
+// ============= TO-144-D1 FLEET FOUNDATION TYPES =============
+/**
+ * Owned fleet vehicle as exposed to the agency portal over RLS (migration
+ * 20261008000000_agency_fleet_foundation.sql). Extends the legacy FleetTruck
+ * shape with payload/body dimensions, PUC, maintenance-block fields and the
+ * optimistic-concurrency `version`.
+ */
+export interface FleetVehicle {
+    id: string
+    agency_id: string
+    vehicle_type: string
+    rc_number: string
+    insurance_expiry: string | null
+    fitness_expiry: string | null
+    permit_expiry: string | null
+    puc_expiry: string | null
+    payload_kg: number | null
+    body_length_m: number | null
+    body_width_m: number | null
+    body_height_m: number | null
+    is_available: boolean | null
+    maintenance_blocked: boolean
+    maintenance_block_reason: string | null
+    maintenance_blocked_until: string | null
+    driver_id: string | null
+    notes: string | null
+    version: number
+    created_at: string | null
+    updated_at: string | null
+}
+
+/** Driver employment record (RLS-scoped to the caller's agency). */
+export interface DriverEmployment {
+    id: string
+    agency_id: string
+    driver_id: string
+    licence_number: string | null
+    licence_class: string | null
+    licence_expiry: string | null
+    contact_phone: string | null
+    status: 'active' | 'ended'
+    version: number
+    created_at: string | null
+    updated_at: string | null
+}
+
+export interface VehicleCreateInput {
+    rc_number: string
+    vehicle_type: string
+    insurance_expiry?: string
+    fitness_expiry?: string
+    permit_expiry?: string
+    puc_expiry?: string
+    payload_kg?: number
+    notes?: string
+}
+
+export interface VehiclePatch {
+    is_available?: boolean
+    notes?: string | null
+    insurance_expiry?: string | null
+    fitness_expiry?: string | null
+    permit_expiry?: string | null
+    puc_expiry?: string | null
+    payload_kg?: number | null
+    body_length_m?: number | null
+    body_width_m?: number | null
+    body_height_m?: number | null
+    maintenance_blocked?: boolean
+    maintenance_block_reason?: string | null
+    maintenance_blocked_until?: string | null
+}
+
+export type VehicleCommandState = 'created' | 'idempotent_replay' | 'updated'
+
+/**
+ * Typed result of the fleet command RPCs (agency_vehicle_create /
+ * agency_vehicle_update). A version_conflict is a RESULT, never an
+ * exception: the page refetches once and shows a single conflict message.
+ */
+export type VehicleCommandResult =
+    | { ok: true; state: VehicleCommandState; vehicle: FleetVehicle; version: number }
+    | { ok: false; error: 'version_conflict'; currentVersion: number }
+
+export type EmploymentCommandState = 'created' | 'idempotent_replay' | 'ended' | 'already_ended' | 'updated'
+
+export type EmploymentCommandResult =
+    | { ok: true; state: EmploymentCommandState; employment?: DriverEmployment; version: number }
+    | { ok: false; error: 'version_conflict'; currentVersion: number }
+
+/**
+ * Bounded mapping from the controlled fleet command exceptions
+ * (supabase/migrations/20261008000000) to user-facing messages. Unmapped
+ * provider internals never reach the UI — they collapse to the caller's
+ * redacted fallback.
+ */
+const FLEET_COMMAND_ERROR_MESSAGES: Readonly<Record<string, string>> = Object.freeze({
+    'Agency approval is required.': 'Agency approval is required.',
+    'No agency profile found for this account.': 'No agency profile found for this account.',
+    'Multiple agency profiles found for this account.': 'Multiple agency profiles found for this account.',
+    'Vehicle not found or access denied.': 'Vehicle not found or access denied.',
+    'Employment record not found or access denied.': 'Employment record not found or access denied.',
+    'Unknown vehicle type.': 'Unknown vehicle type.',
+    'Driver is not approved for assignment.': 'Driver is not approved for assignment.',
+    'Driver already has an active employment record.': 'Driver already has an active employment record.',
+    'RC number is required.': 'RC number is required.',
+})
+
+function resolveCommandUserMessage(error: unknown, fallback: string): string {
+    const message = (error as { message?: unknown } | null)?.message
+    if (typeof message === 'string' && Object.prototype.hasOwnProperty.call(FLEET_COMMAND_ERROR_MESSAGES, message)) {
+        return FLEET_COMMAND_ERROR_MESSAGES[message]
+    }
+    return fallback
+}
+
+/**
+ * True when a thrown UserFacingError is one of the controlled agency
+ * denials (approval required / no or multiple agency profiles). Pages use
+ * this to render a distinct denied state instead of the generic error state.
+ */
+export function isAgencyDenial(error: unknown): boolean {
+    return (
+        error instanceof UserFacingError &&
+        Object.prototype.hasOwnProperty.call(FLEET_COMMAND_ERROR_MESSAGES, error.message)
+    )
+}
+
 // ============= DASHBOARD API =============
 export const agencyDashboardApi = {
     async getSnapshot(): Promise<{ agency: AgencyPortalProfile | null; summary: AgencyPortalSummary }> {
@@ -345,6 +473,103 @@ export const agencyFleetApi = {
             throw new UserFacingError('Failed to update truck')
         }
     },
+
+    // ===== TO-144-D1 fleet foundation: RLS reads + typed command RPCs =====
+
+    /**
+     * RLS-scoped list of the caller agency's owned vehicles (the suspended
+     * portal keeps rendering — reads are ownership-only, never gated on
+     * operational status).
+     */
+    async listVehicles(): Promise<FleetVehicle[]> {
+        const { data, error } = await supabase
+            .from('agency_trucks')
+            .select('*')
+
+        if (error) {
+            throw new UserFacingError('Failed to load fleet')
+        }
+
+        return (data ?? []) as FleetVehicle[]
+    },
+
+    /**
+     * Typed idempotent create through the SECURITY DEFINER command RPC. The
+     * agency is resolved from auth.uid() server-side — no browser-supplied
+     * org id is ever sent. A replayed (agency, rc_number) returns the
+     * existing row as 'idempotent_replay'.
+     */
+    async createVehicle(input: VehicleCreateInput): Promise<VehicleCommandResult> {
+        const { data, error } = await supabase.rpc('agency_vehicle_create', {
+            p_rc_number: input.rc_number,
+            p_vehicle_type: input.vehicle_type,
+            p_insurance_expiry: input.insurance_expiry,
+            p_fitness_expiry: input.fitness_expiry,
+            p_permit_expiry: input.permit_expiry,
+            p_puc_expiry: input.puc_expiry,
+            p_payload_kg: input.payload_kg,
+            p_notes: input.notes,
+        })
+
+        if (error) {
+            throw new UserFacingError(resolveCommandUserMessage(error, 'Failed to add vehicle to fleet'))
+        }
+
+        return mapVehicleCommandEnvelope(data)
+    },
+
+    /**
+     * Expected-version update. The {ok:false,error:'version_conflict'}
+     * envelope maps to the typed conflict branch (never an exception, never
+     * an auto-retry): callers refetch once and show one conflict message.
+     */
+    async updateVehicle(vehicleId: string, expectedVersion: number, patch: VehiclePatch): Promise<VehicleCommandResult> {
+        const { data, error } = await supabase.rpc('agency_vehicle_update', {
+            p_vehicle_id: vehicleId,
+            p_expected_version: expectedVersion,
+            p_patch: patch,
+        })
+
+        if (error) {
+            throw new UserFacingError(resolveCommandUserMessage(error, 'Failed to update vehicle'))
+        }
+
+        return mapVehicleCommandEnvelope(data)
+    },
+}
+
+/** Bounded envelope -> VehicleCommandResult mapping (never throws on shape). */
+function mapVehicleCommandEnvelope(data: unknown): VehicleCommandResult {
+    const envelope = (Array.isArray(data) ? data[0] : data) as
+        | { ok?: unknown; state?: unknown; vehicle?: unknown; version?: unknown; error?: unknown; current_version?: unknown }
+        | undefined
+
+    if (envelope && envelope.ok === false && envelope.error === 'version_conflict') {
+        return {
+            ok: false,
+            error: 'version_conflict',
+            currentVersion: typeof envelope.current_version === 'number' ? envelope.current_version : 0,
+        }
+    }
+
+    if (
+        envelope &&
+        envelope.ok === true &&
+        typeof envelope.state === 'string' &&
+        envelope.vehicle &&
+        typeof envelope.vehicle === 'object' &&
+        typeof envelope.version === 'number'
+    ) {
+        return {
+            ok: true,
+            state: envelope.state as VehicleCommandState,
+            vehicle: envelope.vehicle as FleetVehicle,
+            version: envelope.version,
+        }
+    }
+
+    // A zero-row or malformed response is a failed command, not a success.
+    throw new UserFacingError('Fleet command failed')
 }
 
 // ============= BILLING API =============
@@ -562,6 +787,67 @@ export const agencyDriversApi = {
             reportFunctionFailure('agency-portal-drivers', e)
             throw new UserFacingError('Failed to submit payment request')
         }
+    },
+
+    // ===== TO-144-D1 driver employment records (RLS reads + command RPC) =====
+
+    /** RLS-scoped list of the caller agency's driver employment records. */
+    async listEmployments(): Promise<DriverEmployment[]> {
+        const { data, error } = await supabase
+            .from('agency_driver_employment')
+            .select('*')
+
+        if (error) {
+            throw new UserFacingError('Failed to load driver employments')
+        }
+
+        return (data ?? []) as DriverEmployment[]
+    },
+
+    /**
+     * Expected-version end. {ok:false,error:'version_conflict'} maps to the
+     * typed conflict branch (refetch once, one message, never an auto-retry);
+     * a replayed end on the matching version returns 'already_ended'.
+     */
+    async endEmployment(employmentId: string, expectedVersion: number): Promise<EmploymentCommandResult> {
+        const { data, error } = await supabase.rpc('agency_driver_employment_end', {
+            p_employment_id: employmentId,
+            p_expected_version: expectedVersion,
+        })
+
+        if (error) {
+            throw new UserFacingError(resolveCommandUserMessage(error, 'Failed to end employment'))
+        }
+
+        const envelope = (Array.isArray(data) ? data[0] : data) as
+            | { ok?: unknown; state?: unknown; employment?: unknown; version?: unknown; error?: unknown; current_version?: unknown }
+            | undefined
+
+        if (envelope && envelope.ok === false && envelope.error === 'version_conflict') {
+            return {
+                ok: false,
+                error: 'version_conflict',
+                currentVersion: typeof envelope.current_version === 'number' ? envelope.current_version : 0,
+            }
+        }
+
+        if (
+            envelope &&
+            envelope.ok === true &&
+            typeof envelope.state === 'string' &&
+            typeof envelope.version === 'number'
+        ) {
+            return {
+                ok: true,
+                state: envelope.state as EmploymentCommandState,
+                employment: (envelope.employment && typeof envelope.employment === 'object'
+                    ? envelope.employment
+                    : undefined) as DriverEmployment | undefined,
+                version: envelope.version,
+            }
+        }
+
+        throw new UserFacingError('Failed to end employment')
     },
 }
 
