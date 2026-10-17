@@ -61,7 +61,6 @@ supabase/.temp/
 # Local AI/tooling settings
 .claude/settings.local.json
 .playwright-mcp/
-.github/hooks/delivery-intelligence.json
 rzp-key.csv
 
 # Local SQLite artifacts
