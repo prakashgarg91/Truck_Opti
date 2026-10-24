@@ -102,6 +102,9 @@ export default function DriverTripPage() {
   const [submitting, setSubmitting] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  // 180752ea refresh: the last photo field whose upload failed — renders a
+  // retryable alert on its card instead of leaving only a vanishing toast.
+  const [uploadFailure, setUploadFailure] = useState<'photo_loading_url' | 'photo_delivery_url' | null>(null)
   // TO-142: persisted photo references are tokenless private-bucket URLs;
   // renders use freshly signed URLs resolved from the object path.
   const [resolvedLoadingPhoto, setResolvedLoadingPhoto] = useState<string | null>(null)
@@ -415,11 +418,14 @@ export default function DriverTripPage() {
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>, field: 'photo_loading_url' | 'photo_delivery_url') => {
     const file = e.target.files?.[0]
     if (!file) return
+    // A fresh attempt clears any previous failure banner.
+    setUploadFailure(null)
     const reader = new FileReader()
     reader.onload = ev => setPhotoPreview(ev.target?.result as string)
     reader.readAsDataURL(file)
     const uploadedPhotoUrl = await uploadPhoto(file, field)
     if (!uploadedPhotoUrl) {
+      setUploadFailure(field)
       toast.error('Photo upload failed. Please retry before continuing.')
       return
     }
@@ -884,6 +890,11 @@ export default function DriverTripPage() {
               <button
                 onClick={() => photoInputRef.current?.click()}
                 disabled={uploading}
+                aria-label={uploading
+                  ? 'Uploading proof of delivery photo'
+                  : (photoPreview || job.photo_delivery_url)
+                    ? 'Retake proof of delivery photo'
+                    : 'Capture proof of delivery photo'}
                 className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-3 bg-violet-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60 ${FOCUS_RING}`}
               >
                 <Camera size={16} aria-hidden="true" />
@@ -894,6 +905,21 @@ export default function DriverTripPage() {
                   Stored in the secure private trip-photos bucket; the preview uses a fresh signed URL.
                 </p>
               )}
+              {uploadFailure === 'photo_delivery_url' && (
+                <div role="alert" className="mt-3 flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 dark:border-red-800/40 dark:bg-red-900/20 p-3">
+                  <p className="text-xs font-medium text-red-700 dark:text-red-400 flex items-center gap-1">
+                    <AlertTriangle size={12} aria-hidden="true" />
+                    Photo upload failed. Please retry before continuing.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    className={`self-start min-h-[44px] px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-semibold ${FOCUS_RING}`}
+                  >
+                    Retry Upload
+                  </button>
+                </div>
+              )}
               {!job.photo_delivery_url && (
                 <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                   Upload proof of delivery before you can complete the trip.
@@ -903,6 +929,7 @@ export default function DriverTripPage() {
             <button
               disabled={submitting || !job.photo_delivery_url}
               onClick={() => { setPhotoPreview(null); handleCompleteDelivery() }}
+              aria-label="Complete delivery"
               className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-4 bg-green-600 text-white rounded-2xl font-bold text-base disabled:opacity-60 ${FOCUS_RING}`}
             >
               <CheckCircle2 size={20} aria-hidden="true" />

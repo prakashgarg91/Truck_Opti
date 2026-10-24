@@ -16,6 +16,7 @@ const h = vi.hoisted(() => ({
     getByUserId: vi.fn(),
     getTripByIdForDriver: vi.fn(),
     persistRpc: vi.fn(),
+    storageUpload: vi.fn(),
     resolveTripPhotoUrl: vi.fn(async () => null),
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
@@ -29,7 +30,11 @@ vi.mock('react-hot-toast', () => ({
 }))
 
 vi.mock('../lib/supabase', () => ({
-    supabase: {},
+    supabase: {
+        storage: {
+            from: vi.fn(() => ({ upload: h.storageUpload })),
+        },
+    },
     supabaseConfigResolution: { clientUrl: 'https://localhost.invalid' },
 }))
 
@@ -90,6 +95,10 @@ function jobRow(status: string, overrides: Record<string, unknown> = {}) {
 let container: HTMLElement | null = null
 let root: Root | null = null
 
+function DashboardRouteProbe() {
+    return createElement('div', { 'data-testid': 'dashboard-probe' }, 'DASHBOARD')
+}
+
 async function mountPage(): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
@@ -100,7 +109,13 @@ async function mountPage(): Promise<HTMLElement> {
             createElement(
                 MemoryRouter,
                 { initialEntries: ['/driver/trip/job-1'] },
-                createElement(Routes, null, createElement(Route, { path: '/driver/trip/:jobId', element: page })),
+                createElement(
+                    Routes,
+                    null,
+                    createElement(Route, { path: '/driver/trip/:jobId', element: page }),
+                    // Completing delivery navigates here (DriverTripPage handleCompleteDelivery).
+                    createElement(Route, { path: '/driver/dashboard', element: createElement(DashboardRouteProbe) }),
+                ),
             )
         )
     })
@@ -280,5 +295,122 @@ describe('DriverTripPage refresh states and a11y', () => {
 
         await waitFor(() => (view.textContent || '').includes('Delivery Complete!'), 'complete step')
         expect(Array.from(view.querySelectorAll('button')).some((b) => /Back to Dashboard/.test(b.textContent || ''))).toBe(true)
+    })
+})
+
+// Delivery & Proof sub-flow (180752ea → screen c241f6c1, 2026-10-24): the
+// destination_otp → delivery_photo → complete steps must carry labelled
+// capture/submit actions, a photo-gated completion, and a retryable
+// failed-upload alert instead of a toast alone.
+describe('DriverTripPage delivery and proof sub-flow', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.getByUserId.mockResolvedValue(DRIVER)
+        h.getTripByIdForDriver.mockResolvedValue(jobRow('delivery_arrived'))
+        h.persistRpc.mockResolvedValue({ data: null, error: null })
+        h.storageUpload.mockResolvedValue({ error: null })
+    })
+
+    async function enterDeliveryOtpAndVerify(view: HTMLElement): Promise<void> {
+        await waitFor(() => (view.textContent || '').includes('Enter Delivery OTP'), 'delivery otp step')
+        await act(async () => {
+            setInputValue(view.querySelector('#delivery-otp-input') as HTMLInputElement, '1234')
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        await clickButton(/Verify OTP/)
+        await waitFor(() => (view.textContent || '').includes('Proof of Delivery'), 'delivery photo step')
+    }
+
+    async function pickProofPhoto(view: HTMLElement): Promise<void> {
+        const input = view.querySelector('input[type="file"]') as HTMLInputElement
+        const file = new File(['proof-bytes'], 'proof.jpg', { type: 'image/jpeg' })
+        await act(async () => {
+            Object.defineProperty(input, 'files', { value: [file] })
+            input.dispatchEvent(new Event('change', { bubbles: true }))
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+    }
+
+    it('labels the capture and submit actions and gates completion on the proof photo', async () => {
+        const view = await mountPage()
+        await enterDeliveryOtpAndVerify(view)
+
+        const capture = view.querySelector('button[aria-label="Capture proof of delivery photo"]')
+        expect(capture).not.toBeNull()
+        expect((capture as HTMLElement).textContent || '').toContain('Take Photo')
+
+        const complete = view.querySelector('button[aria-label="Complete delivery"]') as HTMLButtonElement
+        expect(complete).not.toBeNull()
+        expect(complete.disabled).toBe(true)
+        expect(view.textContent || '').toContain('Upload proof of delivery before you can complete the trip.')
+    })
+
+    it('a failed proof upload shows a retryable alert and keeps completion gated', async () => {
+        h.storageUpload.mockResolvedValue({ error: { message: 'bucket denied' } })
+        const view = await mountPage()
+        await enterDeliveryOtpAndVerify(view)
+
+        await pickProofPhoto(view)
+
+        await waitFor(() => (view.textContent || '').includes('Photo upload failed. Please retry before continuing.'), 'failed upload alert')
+        const alert = view.querySelector('[role="alert"]')
+        expect(alert?.textContent || '').toContain('Photo upload failed')
+        const retry = Array.from(view.querySelectorAll('button')).find((b) => /Retry Upload/.test(b.textContent || ''))
+        expect(retry).toBeDefined()
+        // Completion stays photo-gated and no progress was written.
+        expect((view.querySelector('button[aria-label="Complete delivery"]') as HTMLButtonElement).disabled).toBe(true)
+        expect(h.persistRpc).not.toHaveBeenCalled()
+
+        // Retry re-opens the camera capture.
+        const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+        await clickButton(/Retry Upload/)
+        expect(clickSpy).toHaveBeenCalledTimes(1)
+        clickSpy.mockRestore()
+    })
+
+    it('a successful upload persists the proof and enables completing delivery through the RPC', async () => {
+        h.persistRpc.mockResolvedValue({
+            data: {
+                job_offer_id: 'job-1',
+                status: 'delivery_arrived',
+                pickup_arrived_at: '2026-10-24T09:00:00Z',
+                journey_started_at: '2026-10-24T09:10:00Z',
+                delivery_arrived_at: '2026-10-24T10:00:00Z',
+                delivered_at: null,
+                photo_loading_url: null,
+                photo_delivery_url: 'https://localhost.invalid/storage/v1/object/sign/trip-photos/d.jpg',
+                total_trips: 2,
+                result_code: 'OK',
+                otp_attempts_remaining: null,
+            },
+            error: null,
+        })
+        const view = await mountPage()
+        await enterDeliveryOtpAndVerify(view)
+
+        await pickProofPhoto(view)
+
+        await waitFor(() => h.toastSuccess.mock.calls.some((c) => c[0] === 'Photo captured!'), 'upload success toast')
+        // The upload itself persisted the photo reference through the RPC.
+        expect(h.persistRpc).toHaveBeenCalledTimes(1)
+        expect(h.persistRpc.mock.calls[0][0].newStatus).toBeNull()
+        expect(h.persistRpc.mock.calls[0][0].extra.photo_delivery_url).toContain('/storage/v1/object/sign/trip-photos/')
+
+        const complete = view.querySelector('button[aria-label="Complete delivery"]') as HTMLButtonElement
+        expect(complete).not.toBeNull()
+        // Re-query inside the wait: the job patch re-renders the button node.
+        await waitFor(() => {
+            const btn = (container as HTMLElement).querySelector('button[aria-label="Complete delivery"]') as HTMLButtonElement | null
+            return !!btn && !btn.disabled
+        }, 'completion enabled after proof upload')
+
+        await clickButton(/Complete Delivery/)
+
+        // Success sets the complete step and navigates to the dashboard route.
+        await waitFor(() => (container as HTMLElement).querySelector('[data-testid="dashboard-probe"]') !== null, 'navigation to the dashboard after completion')
+        expect(h.toastSuccess).toHaveBeenCalledWith('🎉 Delivery complete! Great job.')
+        expect(h.persistRpc).toHaveBeenCalledTimes(2)
+        expect(h.persistRpc.mock.calls[1][0].newStatus).toBe('delivered')
+        expect(h.persistRpc.mock.calls[1][0].extra.delivery_otp).toBe('1234')
     })
 })

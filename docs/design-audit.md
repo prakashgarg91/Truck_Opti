@@ -1,5 +1,26 @@
 # Design Audit — Truck_Opti × Stitch coverage
 
+## 2026-10-24 backlog item `driver-delivery-proof-refresh` — screen `180752ea` refreshed & integrated (delivery sub-flow of `/driver/trip/:jobId`)
+
+Design side (done upstream, 1 generation): Stitch edit of `180752ea` produced refreshed screen **`c241f6c1673b45e6b3eabb0fa05f7993`** "Driver: Delivery & Proof — TruckOpti" (MOBILE, 780×2504; journaled artifact `…stitch-mcp-state\artifacts\10636db1\…\projects_…_180752ea….2026-10-24T04-19-56-462Z.json`). This screen is a **sub-flow design of the same `/driver/trip/:jobId` page** (steps 5–7), so the integration delta sits on top of the `591699f3` integration above — **0 Stitch calls from this integration, 0 mutations**.
+
+### What changed on `frontend/src/pages/DriverTripPage.tsx` (delta vs the `591699f3` integration)
+
+| Artifact intent | App implementation |
+|---|---|
+| Upload-failure banner with explicit Retry (was toast-only) | **New state:** `uploadFailure` tracks the last failed photo field; `handlePhotoCapture` sets it on failure and clears it on a fresh attempt. The delivery proof card renders a `role="alert"` banner ("Photo upload failed. Please retry before continuing.") with a 44px **Retry Upload** button that re-opens the camera capture. Completion stays photo-gated and no progress RPC is written on failure. (The loading-photo card keeps its toast-only retry for now — that is the `b54728a4` pickup sub-flow's refresh scope, still listed in §6.) |
+| Capture/submit aria-labels | Capture button: `aria-label` "Capture / Retake / Uploading proof of delivery photo" (state-aware); Complete Delivery: `aria-label="Complete delivery"` |
+| Delivery OTP card (linked input, hint, live error, gated Verify) | Already wired by the `591699f3` integration (id/htmlFor, aria-describedby, aria-invalid, aria-live error, 4-digit gating) — contract strings intact, `jobOfferOtpContract.test.ts` still green |
+| Private-bucket signed-URL proof caption | Already wired (TO-142 caption under the preview) |
+| Slim 3-step breadcrumb (Delivery OTP, Proof Photo, Done) | **Adaptation decision: not added** — the page already carries the full 7-step stepper with `aria-current="step"` and the `aria-live` step announcer, which marks steps 5–7 exactly; a second breadcrumb would double-announce the same state to assistive tech |
+| Resend-OTP affordance with timer | **Not implemented — no backend capability exists** (the recipient OTP is shown in the recipient's app; there is no resend endpoint to wire). Honest gap of the generated design, not of the app |
+| State-switcher test bar | Reviewer-only simulator; the real states are covered by the tests below instead |
+| Complete card with earnings note | Existing "Delivery Complete!" card ("earnings credited within 24 hours") + 44px Back to Dashboard with focus ring — unchanged |
+
+- **Proof run this round (from `frontend/`):** `npx vitest run src/pages/DriverTripPage.test.ts src/services/jobOfferOtpContract.test.ts` → **18/18 passed** (trip page 12 = 9 from the `591699f3` round + 3 new: capture/submit labels with photo-gated completion; failed upload → `role="alert"` banner + Retry Upload re-opening capture with completion still gated and zero RPC writes; successful upload → RPC persists `photo_delivery_url` (call 1, `newStatus` null), completion enables, Complete Delivery persists `delivered` + `delivery_otp` (call 2) and navigates to `/driver/dashboard` — asserted via a route probe because the success handler navigates immediately). Two fix cycles: the first run timed out because the success test captured the Complete button before the job patch re-rendered it (fixed by re-querying inside the wait), and because completion navigates away before the complete card can be asserted (fixed with the dashboard route probe). `npx tsc --noEmit` → exit 0. `npx eslint src/pages/DriverTripPage.tsx src/pages/DriverTripPage.test.ts --max-warnings 0` → exit 0.
+- **NOT run this tier:** browser pass (owner-gated driver journey, same tier limitation as the two sections above); real bucket uploads (`supabase.storage` mocked — the failure and success paths are exercised against the mocked client convention `{ error }`); camera hardware.
+- Rubric row for `180752ea` (§5): generated scores retained; app mitigations annotated. §1/§2/§3/§6 rows updated below.
+
 ## 2026-10-24 backlog item `driver-trip-detail-refresh` — screen `591699f3` refreshed & integrated into `/driver/trip/:jobId`
 
 Design side (done upstream, 1 generation): Stitch edit of `591699f3` produced refreshed screen **`98648447567740749b708244dbda03fe`** "Driver Trip Detail — TruckOpti" (MOBILE, 780×2808; journaled artifact `…stitch-mcp-state\artifacts\10636db1\…\projects_…_591699f3….2026-10-24T03-52-09-822Z.json`). Integration adapted the artifact's layout intent to the live 7-step page — **0 Stitch calls from this integration, 0 mutations**; repo tokens/terminology kept; the flow logic (TO-129/TO-130 progress RPC, TO-142 signed-URL photos) is untouched.
@@ -157,7 +178,7 @@ ids are 8-char tails of `projects/817968552986251880/screens/<id>`; full ids in 
 | `05bf2a23` | Driver App Home **(refreshed 2026-10-24 → screen `96715dd2b8cd45abb568e27cbf384498`; integrated — see top section)** | MOBILE | 15726 | n/a (payload has no update time) |
 | `3c30c0e5` | Driver Registration — TruckOpti | DESKTOP | 14842 | n/a (payload has no update time) |
 | `591699f3` | Driver Trip Detail - TruckOpti **(refreshed 2026-10-24 → screen `98648447567740749b708244dbda03fe`; integrated — see top section)** | MOBILE | 16363 | n/a (payload has no update time) |
-| `180752ea` | Driver: Delivery & Proof | MOBILE | 13157 | n/a (payload has no update time) |
+| `180752ea` | Driver: Delivery & Proof **(refreshed 2026-10-24 → screen `c241f6c1673b45e6b3eabb0fa05f7993`; integrated — see top section)** | MOBILE | 13157 | n/a (payload has no update time) |
 | `e72905ba` | Driver: Documents & KYC Upload | MOBILE | 22138 | n/a (payload has no update time) |
 | `202377b7` | Driver: New Job Offer **(RETIRED 2026-10-23 — see top section)** | MOBILE | 12454 | n/a (payload has no update time) |
 | `b54728a4` | Driver: Pickup Workflow | MOBILE | 15954 | n/a (payload has no update time) |
@@ -236,7 +257,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | `/admin/users` | admin | Admin: User Management Hub `c16aa8ef` | COVERED |
 | `/admin/subscriptions` | admin | Admin: Subscription Management `52aa57b7` | COVERED |
 | `/driver/dashboard` | driver | Driver App Home `05bf2a23` (refreshed → `96715dd2b8cd45abb568e27cbf384498`) | COVERED (MOBILE ✔; refresh integrated 2026-10-24 — top section) |
-| `/driver/trip/:jobId` | driver | Driver Trip Detail `591699f3` (refreshed → `98648447567740749b708244dbda03fe`) + Driver: Pickup Workflow `b54728a4` + Driver: Delivery & Proof `180752ea` | DUPLICATE (one page implements both stage flows; stage screens are sub-flows; refresh integrated 2026-10-24 — top section) |
+| `/driver/trip/:jobId` | driver | Driver Trip Detail `591699f3` (refreshed → `98648447567740749b708244dbda03fe`) + Driver: Pickup Workflow `b54728a4` + Driver: Delivery & Proof `180752ea` (refreshed → `c241f6c1673b45e6b3eabb0fa05f7993`) | DUPLICATE (one page implements both stage flows; stage screens are sub-flows; both refreshes integrated 2026-10-24 — top sections) |
 | `/driver/earnings` | driver | Earnings & Wallet `efcc993e` | COVERED (device mismatch: DESKTOP design for a driver screen) |
 | `/driver/history` | driver | Trip History `0d032afa` | COVERED (MOBILE ✔) |
 | `/driver/profile` | driver | — | **MISSING** (no driver-profile design) |
@@ -316,6 +337,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | Driver App Home | incoming `job_offers` realtime events | inline bottom-sheet offer card → `respond_to_job_offer` → `/driver/trip/:jobId` | **RESOLVED (2026-10-23; TO-129/TO-130)** — offer arrives as an inline card with countdown, realtime subscription + focus hydration, accept/decline through the atomic RPC (`DriverDashboardPage.tsx:257-296,298-315,360-385,472-545`); screen `202377b7` retired (top section). Original DEAD END note superseded. |
 | Driver Trip `/driver/trip/:jobId` | stage progression (arrived→loaded→in transit→delivered+POD) | `persist_driver_job_offer_progress` rpc + `driverTripsApi` | OK (2026-10-24 refresh: stepper announces steps via `aria-live` + `aria-current`; OTP inputs programmatically linked with live inline rejections; GPS chip icon+label; all controls ≥44px with focus rings) |
 | Driver Trip | location tracking | `driverSupabaseApi.upsertLocation` (driver_locations) | OK |
+| Driver Trip | delivery proof photo upload | `supabase.storage` → private `trip-photos` bucket + `persist_driver_job_offer_progress` (TO-142) | OK (2026-10-24 refresh: labelled capture/submit, signed-URL caption, failed-upload `role="alert"` banner with Retry Upload re-opening capture; completion photo-gated) |
 | Driver Trip | "call support" | `tel:18001234567` — **hardcoded, unverified number** | **FLAG (P1)** buttons-to-nowhere risk if the number is not live |
 | Driver Trip | back | `/driver/dashboard` | OK |
 | Earnings `/driver/earnings` | balance snapshot, trips, withdraw | `driverEarningsApi.getBalanceSnapshot/getDeliveredTrips/requestPayout` (driver_payouts) | OK |
@@ -395,7 +417,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | `05bf2a23` | Driver App Home | 4 | 3 | 5 | 2 | 1 | 3 | 3 | **POOR** — refreshed 2026-10-24 (screen `96715dd2`); the app implementation now adds the switch semantics, labelled offer actions, ≥44/48px targets, focus-visible rings, icon+label chips and honest error/Retry states the generated HTML lacked (top section); generated scores kept as generated |
 | `3c30c0e5` | Driver Registration — TruckOpti | 5 | 5 | 5 | 3 | 1 | 3 | 3.67 | **POOR** |
 | `591699f3` | Driver Trip Detail - TruckOpti | 5 | 3 | 5 | 1 | 1 | 3 | 3 | **POOR** — refreshed 2026-10-24 (screen `98648447`); the app implementation now adds the labelled back action, step announcer, linked OTP inputs with live inline rejections, GPS icon+label chip, ≥44px targets and focus rings the generated HTML lacked (top section); generated scores kept as generated |
-| `180752ea` | Driver: Delivery & Proof | 5 | 3 | 5 | 2 | 1 | 3 | 3.17 | **POOR** |
+| `180752ea` | Driver: Delivery & Proof | 5 | 3 | 5 | 2 | 1 | 3 | 3.17 | **POOR** — refreshed 2026-10-24 (screen `c241f6c1`); the app implementation now adds the retryable upload-failure state, labelled capture/submit actions, and the linked OTP/live-error a11y from the `591699f3` integration (top section); generated scores kept as generated |
 | `e72905ba` | Driver: Documents & KYC Upload | 5 | 5 | 5 | 3 | 1 | 3 | 3.67 | **POOR** |
 | `202377b7` | Driver: New Job Offer | 4 | 3 | 3 | 1 | 1 | 3 | 2.5 | **POOR** — **RETIRED 2026-10-23** (superseded by the live offer flow; scores kept as generated — see top section) |
 | `b54728a4` | Driver: Pickup Workflow | 5 | 3 | 5 | 3 | 1 | 3 | 3.33 | **POOR** |
@@ -440,7 +462,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 
 ### P1 — POOR screens on live journeys + missing designs
 
-4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `b54728a4` (pickup), `180752ea` (delivery+POD), `0d032afa` (history), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch). (`202377b7` job-offer removed 2026-10-23 — retired with P0 #1; `05bf2a23` home removed 2026-10-24 — refreshed and integrated; `591699f3` trip removed 2026-10-24 — refreshed and integrated; see top sections.)
+4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `b54728a4` (pickup) and `0d032afa` (history), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch). (`202377b7` job-offer retired 2026-10-23; `05bf2a23` home, `591699f3` trip, `180752ea` delivery+proof all refreshed and integrated 2026-10-24 — see top sections.)
 5. Design the four MISSING screens: `/driver/profile`, `/subscription`, `/agency/profile`, `/management/cartons`.
 6. Fix driver dead ends: replace hardcoded `tel:18001234567` with the real support number (or a config), and stop linking drivers into the customer `/profile` layout (driver-scoped account section).
 7. Auth/public POOR screens (`d8615375` OTP, `daab73c1` signup, `c7700d0d` auth-callback, `1e1497ab` payment success + failure states): add error/empty/loading states and a11y before next regeneration cycle.
