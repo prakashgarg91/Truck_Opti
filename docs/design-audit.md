@@ -1,5 +1,25 @@
 # Design Audit — Truck_Opti × Stitch coverage
 
+## 2026-10-24 backlog item `driver-trip-detail-refresh` — screen `591699f3` refreshed & integrated into `/driver/trip/:jobId`
+
+Design side (done upstream, 1 generation): Stitch edit of `591699f3` produced refreshed screen **`98648447567740749b708244dbda03fe`** "Driver Trip Detail — TruckOpti" (MOBILE, 780×2808; journaled artifact `…stitch-mcp-state\artifacts\10636db1\…\projects_…_591699f3….2026-10-24T03-52-09-822Z.json`). Integration adapted the artifact's layout intent to the live 7-step page — **0 Stitch calls from this integration, 0 mutations**; repo tokens/terminology kept; the flow logic (TO-129/TO-130 progress RPC, TO-142 signed-URL photos) is untouched.
+
+### What changed on `frontend/src/pages/DriverTripPage.tsx`
+
+| Artifact intent | App implementation |
+|---|---|
+| Labelled back button, 44px | Back button now `aria-label="Back to dashboard"`, 44×44px, focus-visible ring (was an unlabelled icon-only button — a §D2-class gap) |
+| Real tel: support link | Already wired to `config/support.ts` (TO-139 §C3); bumped to a 44px target with focus ring |
+| 7-step stepper: `aria-live` announcements + `aria-current="step"` | An sr-only `aria-live="polite"` paragraph announces "Step N of 7: <label>" on every step change; the active chip carries `aria-current="step"`; connectors `aria-hidden` |
+| Mirrored OTP cards: linked input, hint, invalid, live error, gated Verify | Both OTP inputs now have `id` + `htmlFor` label links (contract strings "4-Digit OTP from Sender"/"Recipient" preserved — `jobOfferOtpContract.test.ts` stays green), `aria-describedby` → hint + error ids, `aria-invalid` when a rejection is showing, error text in an `aria-live="assertive"` container, Verify gated on 4 digits at 44px with focus rings. **New state:** server OTP_INCORRECT/OTP_LOCKED rejections (TO-130) now surface inline ("Incorrect OTP. N attempts remaining." / lockout copy) instead of only a vanishing toast — `handleProgressRejection` sets the live-region error |
+| Photo cards: take/retake, uploading, signed-URL caption, photo-gated actions | Take/Retake buttons 44px with focus rings; hidden file inputs labelled; preview images keep their alt text; **new caption** when a preview exists: "Stored in the secure private trip-photos bucket; the preview uses a fresh signed URL." (TO-142 honesty); primary actions remain photo-gated |
+| GPS panel: icon+label chip, message, last sync | Chip now pairs an icon with the label via a `GPS_STATUS_CHIPS` map (Active tracking / Starting / Attention needed / Idle — never color alone); amber-700-on-amber-100 = 4.51:1 AA; message and last-sync timestamp unchanged |
+| States | Loading is `role="status"` + `aria-busy` + sr-only text; trip-not-found message is `role="alert"`; submitting/disabled states kept; all step CTAs ≥44px with the shared `FOCUS_RING` |
+
+- **Proof run this round (from `frontend/`):** `npx vitest run src/pages/DriverTripPage.test.ts src/services/jobOfferOtpContract.test.ts` → **15/15 passed** (trip page 9/9 — new file covering busy loading, not-found alert, labelled back + tel support, step announcer/aria-current, labelled+gated pickup OTP through Verify, server OTP rejection → inline announced error with cleared input and `aria-invalid`, GPS no-geolocation failure with the labelled chip, labelled delivery OTP, delivered completion; OTP contract 6/6 — the source pins survived the edit). `npx tsc --noEmit` → exit 0. `npx eslint src/pages/DriverTripPage.tsx src/pages/DriverTripPage.test.ts --max-warnings 0` → exit 0.
+- **NOT run this tier:** browser pass at 390×844/1280×900 — the local-first tier cannot render a signed-in approved-driver trip (cloud-credentialed driver journeys remain owner-gated per the TO-139 addendum); camera capture (`capture="environment"`) and real geolocation watchers are device capabilities not exercisable in jsdom or this tier. Realtime/RPC behavior against hosted Supabase is covered by the TO-130 DB batteries, not re-run here.
+- Rubric row for `591699f3` (§5): generated scores retained; the app implementation now carries the A=1/R=1 mitigations. §1/§2/§3/§6 rows updated below.
+
 ## 2026-10-24 backlog item `driver-app-home-refresh` — screen `05bf2a23` refreshed & integrated into `/driver/dashboard`
 
 Design side (done upstream, 1 generation): Stitch edit of `05bf2a23` produced refreshed screen **`96715dd2b8cd45abb568e27cbf384498`** "Driver App Home" (MOBILE, generated 2026-10-24T03:22:02Z; journaled artifact `…stitch-mcp-state\artifacts\10636db1\…\projects_…_05bf2a23….2026-10-24T03-22-02-566Z.json`). Integration (this section) adapted the artifact's layout intent to the live page — **0 Stitch calls from this integration, 0 mutations**; the HTML was never pasted wholesale; repo tokens/terminology kept ("View Trip" retained, app slate/emerald palette).
@@ -136,7 +156,7 @@ ids are 8-char tails of `projects/817968552986251880/screens/<id>`; full ids in 
 | `141531b6` | Customer: New Shipment Booking | DESKTOP | 16578 | n/a (payload has no update time) |
 | `05bf2a23` | Driver App Home **(refreshed 2026-10-24 → screen `96715dd2b8cd45abb568e27cbf384498`; integrated — see top section)** | MOBILE | 15726 | n/a (payload has no update time) |
 | `3c30c0e5` | Driver Registration — TruckOpti | DESKTOP | 14842 | n/a (payload has no update time) |
-| `591699f3` | Driver Trip Detail - TruckOpti | MOBILE | 16363 | n/a (payload has no update time) |
+| `591699f3` | Driver Trip Detail - TruckOpti **(refreshed 2026-10-24 → screen `98648447567740749b708244dbda03fe`; integrated — see top section)** | MOBILE | 16363 | n/a (payload has no update time) |
 | `180752ea` | Driver: Delivery & Proof | MOBILE | 13157 | n/a (payload has no update time) |
 | `e72905ba` | Driver: Documents & KYC Upload | MOBILE | 22138 | n/a (payload has no update time) |
 | `202377b7` | Driver: New Job Offer **(RETIRED 2026-10-23 — see top section)** | MOBILE | 12454 | n/a (payload has no update time) |
@@ -216,7 +236,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | `/admin/users` | admin | Admin: User Management Hub `c16aa8ef` | COVERED |
 | `/admin/subscriptions` | admin | Admin: Subscription Management `52aa57b7` | COVERED |
 | `/driver/dashboard` | driver | Driver App Home `05bf2a23` (refreshed → `96715dd2b8cd45abb568e27cbf384498`) | COVERED (MOBILE ✔; refresh integrated 2026-10-24 — top section) |
-| `/driver/trip/:jobId` | driver | Driver Trip Detail `591699f3` + Driver: Pickup Workflow `b54728a4` + Driver: Delivery & Proof `180752ea` | DUPLICATE (one page implements both stage flows; stage screens are sub-flows) |
+| `/driver/trip/:jobId` | driver | Driver Trip Detail `591699f3` (refreshed → `98648447567740749b708244dbda03fe`) + Driver: Pickup Workflow `b54728a4` + Driver: Delivery & Proof `180752ea` | DUPLICATE (one page implements both stage flows; stage screens are sub-flows; refresh integrated 2026-10-24 — top section) |
 | `/driver/earnings` | driver | Earnings & Wallet `efcc993e` | COVERED (device mismatch: DESKTOP design for a driver screen) |
 | `/driver/history` | driver | Trip History `0d032afa` | COVERED (MOBILE ✔) |
 | `/driver/profile` | driver | — | **MISSING** (no driver-profile design) |
@@ -294,7 +314,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | Driver App Home | active-job "Support" | real `tel:+919999352050` from `config/support.ts` (was a fake success toast; fixed 2026-10-24 refresh) — header carries the same tel quick action | OK |
 | Driver App Home | "complete registration" (no profile) | `/driver/register` | OK |
 | Driver App Home | incoming `job_offers` realtime events | inline bottom-sheet offer card → `respond_to_job_offer` → `/driver/trip/:jobId` | **RESOLVED (2026-10-23; TO-129/TO-130)** — offer arrives as an inline card with countdown, realtime subscription + focus hydration, accept/decline through the atomic RPC (`DriverDashboardPage.tsx:257-296,298-315,360-385,472-545`); screen `202377b7` retired (top section). Original DEAD END note superseded. |
-| Driver Trip `/driver/trip/:jobId` | stage progression (arrived→loaded→in transit→delivered+POD) | `persist_driver_job_offer_progress` rpc + `driverTripsApi` | OK |
+| Driver Trip `/driver/trip/:jobId` | stage progression (arrived→loaded→in transit→delivered+POD) | `persist_driver_job_offer_progress` rpc + `driverTripsApi` | OK (2026-10-24 refresh: stepper announces steps via `aria-live` + `aria-current`; OTP inputs programmatically linked with live inline rejections; GPS chip icon+label; all controls ≥44px with focus rings) |
 | Driver Trip | location tracking | `driverSupabaseApi.upsertLocation` (driver_locations) | OK |
 | Driver Trip | "call support" | `tel:18001234567` — **hardcoded, unverified number** | **FLAG (P1)** buttons-to-nowhere risk if the number is not live |
 | Driver Trip | back | `/driver/dashboard` | OK |
@@ -374,7 +394,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | `141531b6` | Customer: New Shipment Booking | 5 | 3 | 5 | 3 | 3 | 3 | 3.67 | ok |
 | `05bf2a23` | Driver App Home | 4 | 3 | 5 | 2 | 1 | 3 | 3 | **POOR** — refreshed 2026-10-24 (screen `96715dd2`); the app implementation now adds the switch semantics, labelled offer actions, ≥44/48px targets, focus-visible rings, icon+label chips and honest error/Retry states the generated HTML lacked (top section); generated scores kept as generated |
 | `3c30c0e5` | Driver Registration — TruckOpti | 5 | 5 | 5 | 3 | 1 | 3 | 3.67 | **POOR** |
-| `591699f3` | Driver Trip Detail - TruckOpti | 5 | 3 | 5 | 1 | 1 | 3 | 3 | **POOR** |
+| `591699f3` | Driver Trip Detail - TruckOpti | 5 | 3 | 5 | 1 | 1 | 3 | 3 | **POOR** — refreshed 2026-10-24 (screen `98648447`); the app implementation now adds the labelled back action, step announcer, linked OTP inputs with live inline rejections, GPS icon+label chip, ≥44px targets and focus rings the generated HTML lacked (top section); generated scores kept as generated |
 | `180752ea` | Driver: Delivery & Proof | 5 | 3 | 5 | 2 | 1 | 3 | 3.17 | **POOR** |
 | `e72905ba` | Driver: Documents & KYC Upload | 5 | 5 | 5 | 3 | 1 | 3 | 3.67 | **POOR** |
 | `202377b7` | Driver: New Job Offer | 4 | 3 | 3 | 1 | 1 | 3 | 2.5 | **POOR** — **RETIRED 2026-10-23** (superseded by the live offer flow; scores kept as generated — see top section) |
@@ -420,7 +440,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 
 ### P1 — POOR screens on live journeys + missing designs
 
-4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `591699f3` (trip), `b54728a4` (pickup), `180752ea` (delivery+POD), `0d032afa` (history), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch). (`202377b7` job-offer removed 2026-10-23 — retired with P0 #1; `05bf2a23` home removed 2026-10-24 — refreshed and integrated, top section.)
+4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `b54728a4` (pickup), `180752ea` (delivery+POD), `0d032afa` (history), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch). (`202377b7` job-offer removed 2026-10-23 — retired with P0 #1; `05bf2a23` home removed 2026-10-24 — refreshed and integrated; `591699f3` trip removed 2026-10-24 — refreshed and integrated; see top sections.)
 5. Design the four MISSING screens: `/driver/profile`, `/subscription`, `/agency/profile`, `/management/cartons`.
 6. Fix driver dead ends: replace hardcoded `tel:18001234567` with the real support number (or a config), and stop linking drivers into the customer `/profile` layout (driver-scoped account section).
 7. Auth/public POOR screens (`d8615375` OTP, `daab73c1` signup, `c7700d0d` auth-callback, `1e1497ab` payment success + failure states): add error/empty/loading states and a11y before next regeneration cycle.

@@ -64,6 +64,17 @@ const STEPS: { key: TripStep; label: string }[] = [
   { key: 'complete', label: 'Done' },
 ]
 
+/** Shared keyboard-focus styling so every interactive control shows a visible ring (591699f3 refresh). */
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900'
+
+/** GPS status chips pair an icon with the label so status is never color alone (591699f3 refresh). */
+const GPS_STATUS_CHIPS: Record<string, { icon: typeof Navigation; label: string; classes: string }> = {
+  active: { icon: Navigation, label: 'Active tracking', classes: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
+  starting: { icon: RefreshCw, label: 'Starting', classes: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' },
+  error: { icon: AlertTriangle, label: 'Attention needed', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
+  idle: { icon: MapPin, label: 'Idle', classes: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' },
+}
+
 function statusToStep(status: string): TripStep {
   switch (status) {
     case 'accepted': return 'navigate'
@@ -292,6 +303,10 @@ export default function DriverTripPage() {
     ) {
       setStep(otpStep)
       setOtpInput('')
+      // Surface the bounded server rejection inline so it persists and is
+      // announced by the OTP error live region (591699f3 refresh) — a toast
+      // alone disappears before the driver can read it.
+      setOtpError(resolveJobProgressFailureMessage(result))
       if (otpStep === 'pickup_otp') {
         setVerifiedPickupOtp('')
       } else {
@@ -437,8 +452,9 @@ export default function DriverTripPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <RefreshCw className="animate-spin text-blue-600" size={32} />
+      <div role="status" aria-busy="true" className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <RefreshCw className="animate-spin text-blue-600" size={32} aria-hidden="true" />
+        <span className="sr-only">Loading trip…</span>
       </div>
     )
   }
@@ -446,12 +462,12 @@ export default function DriverTripPage() {
   if (!job) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-50 dark:bg-slate-900">
-        <AlertTriangle size={48} className="text-amber-400 mb-4" />
+        <AlertTriangle size={48} className="text-amber-400 mb-4" aria-hidden="true" />
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Trip Not Found</h2>
-        <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">This job may have been cancelled or expired.</p>
+        <p role="alert" className="text-slate-500 dark:text-slate-400 mb-6 text-sm">This job may have been cancelled or expired.</p>
         <button
           onClick={() => navigate('/driver/dashboard')}
-          className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold"
+          className={`min-h-[44px] bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold ${FOCUS_RING}`}
         >
           Back to Dashboard
         </button>
@@ -468,9 +484,10 @@ export default function DriverTripPage() {
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => navigate('/driver/dashboard')}
-          className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700"
+          aria-label="Back to dashboard"
+          className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 ${FOCUS_RING}`}
         >
-          <ArrowLeft size={20} className="text-slate-600 dark:text-slate-400" />
+          <ArrowLeft size={20} className="text-slate-600 dark:text-slate-400" aria-hidden="true" />
         </button>
         <div className="flex-1">
           <h1 className="text-base font-bold text-slate-800 dark:text-slate-100">Active Trip</h1>
@@ -481,18 +498,26 @@ export default function DriverTripPage() {
         <a
           href={`tel:${SUPPORT_PHONE_TEL}`}
           aria-label={`Call support ${SUPPORT_PHONE_DISPLAY}`}
-          className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-xl text-xs font-semibold"
+          className={`flex items-center gap-1.5 min-h-[44px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-xl text-xs font-semibold ${FOCUS_RING}`}
         >
-          <PhoneCall size={14} />
+          <PhoneCall size={14} aria-hidden="true" />
           Support
         </a>
       </div>
 
       {/* Progress Steps */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 px-4 py-3 overflow-x-auto">
+        {/* Announces every step change to assistive tech (591699f3 refresh). */}
+        <p aria-live="polite" className="sr-only">
+          {`Step ${currentStepIdx + 1} of ${STEPS.length}: ${STEPS[currentStepIdx]?.label ?? ''}`}
+        </p>
         <div className="flex items-center gap-1 min-w-max">
           {STEPS.map((s, idx) => (
-            <div key={s.key} className="flex items-center gap-1">
+            <div
+              key={s.key}
+              aria-current={idx === currentStepIdx ? 'step' : undefined}
+              className="flex items-center gap-1"
+            >
               <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors ${idx < currentStepIdx
                 ? 'bg-green-500 text-white'
                 : idx === currentStepIdx
@@ -508,7 +533,7 @@ export default function DriverTripPage() {
                 {s.label}
               </span>
               {idx < STEPS.length - 1 && (
-                <div className={`w-4 h-0.5 rounded ${idx < currentStepIdx ? 'bg-green-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                <div className={`w-4 h-0.5 rounded ${idx < currentStepIdx ? 'bg-green-400' : 'bg-slate-200 dark:bg-slate-700'}`} aria-hidden="true" />
               )}
             </div>
           ))}
@@ -570,9 +595,9 @@ export default function DriverTripPage() {
               {shipment?.origin && (
                 <button
                   onClick={() => openMaps(shipment.origin)}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm"
+                  className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm ${FOCUS_RING}`}
                 >
-                  <Navigation size={16} />
+                  <Navigation size={16} aria-hidden="true" />
                   Open in Google Maps
                 </button>
               )}
@@ -580,9 +605,9 @@ export default function DriverTripPage() {
             <button
               disabled={submitting}
               onClick={handleArrivedAtPickup}
-              className="w-full flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
+              className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-4 bg-green-600 text-white rounded-2xl font-bold text-base disabled:opacity-60 ${FOCUS_RING}`}
             >
-              <MapPin size={20} />
+              <MapPin size={20} aria-hidden="true" />
               {submitting ? 'Updating...' : 'Arrived at Pickup'}
             </button>
           </div>
@@ -593,24 +618,27 @@ export default function DriverTripPage() {
           <div className="space-y-3">
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-200 dark:border-amber-800/40">
               <div className="flex items-center gap-2 mb-2">
-                <KeyRound size={18} className="text-amber-600" />
+                <KeyRound size={18} className="text-amber-600" aria-hidden="true" />
                 <span className="font-semibold text-amber-800 dark:text-amber-300">Enter Pickup OTP</span>
               </div>
-              <p className="text-sm text-amber-700 dark:text-amber-400">
+              <p id="pickup-otp-hint" className="text-sm text-amber-700 dark:text-amber-400">
                 Ask the sender for the 4-digit OTP shown in their TruckOpti app.
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <label htmlFor="pickup-otp-input" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 4-Digit OTP from Sender
               </label>
               <input
+                id="pickup-otp-input"
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={4}
                 placeholder="0000"
                 value={otpInput}
+                aria-describedby="pickup-otp-hint pickup-otp-error"
+                aria-invalid={otpError ? true : undefined}
                 onChange={e => {
                   setOtpError('')
                   const digits = e.target.value.replace(/\D/g, '')
@@ -619,18 +647,20 @@ export default function DriverTripPage() {
                 className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${otpError
                   ? 'border-red-400 focus:border-red-500'
                   : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
-                  }`}
+                  } ${FOCUS_RING}`}
               />
-              {otpError && (
-                <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                  <AlertTriangle size={12} />
-                  {otpError}
-                </p>
-              )}
+              <div id="pickup-otp-error" aria-live="assertive">
+                {otpError && (
+                  <p className="text-red-600 text-xs mt-2 flex items-center gap-1">
+                    <AlertTriangle size={12} aria-hidden="true" />
+                    {otpError}
+                  </p>
+                )}
+              </div>
               <button
                 disabled={otpInput.length !== 4}
                 onClick={handlePickupOTP}
-                className="w-full mt-4 py-3.5 bg-green-600 text-white rounded-2xl font-bold disabled:opacity-40"
+                className={`w-full mt-4 min-h-[44px] py-3.5 bg-green-600 text-white rounded-2xl font-bold disabled:opacity-40 ${FOCUS_RING}`}
               >
                 Verify OTP
               </button>
@@ -669,16 +699,22 @@ export default function DriverTripPage() {
                 accept="image/*"
                 capture="environment"
                 className="hidden"
+                aria-label="Take loading photo"
                 onChange={e => handlePhotoCapture(e, 'photo_loading_url')}
               />
               <button
                 onClick={() => photoInputRef.current?.click()}
                 disabled={uploading}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60"
+                className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-3 bg-violet-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60 ${FOCUS_RING}`}
               >
-                <Camera size={16} />
+                <Camera size={16} aria-hidden="true" />
                 {uploading ? 'Uploading...' : (photoPreview || resolvedLoadingPhoto) ? 'Retake Photo' : 'Take Photo'}
               </button>
+              {(photoPreview || resolvedLoadingPhoto) && (
+                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  Stored in the secure private trip-photos bucket; the preview uses a fresh signed URL.
+                </p>
+              )}
               {!job.photo_loading_url && (
                 <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                   Upload a loading photo before you can start the journey.
@@ -688,9 +724,9 @@ export default function DriverTripPage() {
             <button
               disabled={submitting || !job.photo_loading_url}
               onClick={() => { setPhotoPreview(null); handleStartJourney() }}
-              className="w-full flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
+              className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-4 bg-blue-600 text-white rounded-2xl font-bold text-base disabled:opacity-60 ${FOCUS_RING}`}
             >
-              <Truck size={20} />
+              <Truck size={20} aria-hidden="true" />
               {submitting ? 'Starting...' : 'Start Journey 🚛'}
             </button>
           </div>
@@ -719,14 +755,16 @@ export default function DriverTripPage() {
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">GPS status</p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{gpsMessage}</p>
                 </div>
-                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${gpsStatus === 'error'
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                  : gpsStatus === 'active'
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                    : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-                  }`}>
-                  {gpsStatus === 'active' ? 'Active' : gpsStatus === 'starting' ? 'Starting' : gpsStatus === 'error' ? 'Attention needed' : 'Idle'}
-                </span>
+                {(() => {
+                  const chip = GPS_STATUS_CHIPS[gpsStatus] ?? GPS_STATUS_CHIPS.idle
+                  const ChipIcon = chip.icon
+                  return (
+                    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${chip.classes}`}>
+                      <ChipIcon size={12} aria-hidden="true" />
+                      {chip.label}
+                    </span>
+                  )
+                })()}
               </div>
               {lastLocationUpdateAt && (
                 <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
@@ -737,18 +775,18 @@ export default function DriverTripPage() {
             {shipment?.destination && (
               <button
                 onClick={() => openMaps(shipment.destination)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-semibold text-sm shadow-sm"
+                className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-semibold text-sm shadow-sm ${FOCUS_RING}`}
               >
-                <Navigation size={16} />
+                <Navigation size={16} aria-hidden="true" />
                 Navigate to Destination
               </button>
             )}
             <button
               disabled={submitting}
               onClick={handleArrivedAtDestination}
-              className="w-full flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
+              className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-4 bg-blue-600 text-white rounded-2xl font-bold text-base disabled:opacity-60 ${FOCUS_RING}`}
             >
-              <Flag size={20} />
+              <Flag size={20} aria-hidden="true" />
               {submitting ? 'Updating...' : 'Arrived at Destination'}
             </button>
           </div>
@@ -759,24 +797,27 @@ export default function DriverTripPage() {
           <div className="space-y-3">
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-200 dark:border-amber-800/40">
               <div className="flex items-center gap-2 mb-2">
-                <KeyRound size={18} className="text-amber-600" />
+                <KeyRound size={18} className="text-amber-600" aria-hidden="true" />
                 <span className="font-semibold text-amber-800 dark:text-amber-300">Enter Delivery OTP</span>
               </div>
-              <p className="text-sm text-amber-700 dark:text-amber-400">
+              <p id="delivery-otp-hint" className="text-sm text-amber-700 dark:text-amber-400">
                 Ask the recipient for the 4-digit OTP shown in their TruckOpti app to confirm delivery.
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <label htmlFor="delivery-otp-input" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 4-Digit OTP from Recipient
               </label>
               <input
+                id="delivery-otp-input"
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={4}
                 placeholder="0000"
                 value={otpInput}
+                aria-describedby="delivery-otp-hint delivery-otp-error"
+                aria-invalid={otpError ? true : undefined}
                 onChange={e => {
                   setOtpError('')
                   const digits = e.target.value.replace(/\D/g, '')
@@ -785,18 +826,20 @@ export default function DriverTripPage() {
                 className={`w-full text-center text-3xl font-bold tracking-widest border-2 rounded-2xl py-4 focus:outline-none bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 transition-colors ${otpError
                   ? 'border-red-400 focus:border-red-500'
                   : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
-                  }`}
+                  } ${FOCUS_RING}`}
               />
-              {otpError && (
-                <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                  <AlertTriangle size={12} />
-                  {otpError}
-                </p>
-              )}
+              <div id="delivery-otp-error" aria-live="assertive">
+                {otpError && (
+                  <p className="text-red-600 text-xs mt-2 flex items-center gap-1">
+                    <AlertTriangle size={12} aria-hidden="true" />
+                    {otpError}
+                  </p>
+                )}
+              </div>
               <button
                 disabled={otpInput.length !== 4}
                 onClick={handleDeliveryOTP}
-                className="w-full mt-4 py-3.5 bg-green-600 text-white rounded-2xl font-bold disabled:opacity-40"
+                className={`w-full mt-4 min-h-[44px] py-3.5 bg-green-600 text-white rounded-2xl font-bold disabled:opacity-40 ${FOCUS_RING}`}
               >
                 Verify OTP
               </button>
@@ -835,16 +878,22 @@ export default function DriverTripPage() {
                 accept="image/*"
                 capture="environment"
                 className="hidden"
+                aria-label="Take delivery proof photo"
                 onChange={e => handlePhotoCapture(e, 'photo_delivery_url')}
               />
               <button
                 onClick={() => photoInputRef.current?.click()}
                 disabled={uploading}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60"
+                className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-3 bg-violet-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60 ${FOCUS_RING}`}
               >
-                <Camera size={16} />
+                <Camera size={16} aria-hidden="true" />
                 {uploading ? 'Uploading...' : (photoPreview || job.photo_delivery_url) ? 'Retake Photo' : 'Take Photo'}
               </button>
+              {(photoPreview || resolvedDeliveryPhoto) && (
+                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  Stored in the secure private trip-photos bucket; the preview uses a fresh signed URL.
+                </p>
+              )}
               {!job.photo_delivery_url && (
                 <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                   Upload proof of delivery before you can complete the trip.
@@ -854,9 +903,9 @@ export default function DriverTripPage() {
             <button
               disabled={submitting || !job.photo_delivery_url}
               onClick={() => { setPhotoPreview(null); handleCompleteDelivery() }}
-              className="w-full flex items-center justify-center gap-2 py-4 bg-green-600 text-white rounded-2xl font-bold text-base disabled:opacity-60"
+              className={`w-full flex items-center justify-center gap-2 min-h-[44px] py-4 bg-green-600 text-white rounded-2xl font-bold text-base disabled:opacity-60 ${FOCUS_RING}`}
             >
-              <CheckCircle2 size={20} />
+              <CheckCircle2 size={20} aria-hidden="true" />
               {submitting ? 'Completing...' : 'Complete Delivery ✓'}
             </button>
           </div>
@@ -874,7 +923,7 @@ export default function DriverTripPage() {
             </p>
             <button
               onClick={() => navigate('/driver/dashboard')}
-              className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold"
+              className={`min-h-[44px] bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold ${FOCUS_RING}`}
             >
               Back to Dashboard
             </button>
