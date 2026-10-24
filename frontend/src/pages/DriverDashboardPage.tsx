@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { driverDashboardApi, driverEarningsApi, driverSupabaseApi } from '../services/supabaseApi'
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../config/support'
 import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
@@ -63,6 +64,17 @@ const VEHICLE_LABELS: Record<string, string> = {
   bharatbenz_32ft: 'BharatBenz 32ft (15T)',
 }
 
+/** Shared keyboard-focus styling so every interactive control shows a visible ring (05bf2a23 a11y refresh). */
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900'
+
+/** Status chips pair an icon with the label so status is never color alone (05bf2a23 refresh). */
+const TRIP_STATUS_CHIPS: Record<string, { icon: typeof CheckCircle2; classes: string }> = {
+  accepted: { icon: CheckCircle2, classes: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  delivered: { icon: CheckCircle2, classes: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  declined: { icon: XCircle, classes: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  expired: { icon: Clock, classes: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400' },
+}
+
 function normalizeShipmentSummary(shipment: Record<string, unknown> | null | undefined) {
   if (!shipment) return undefined
 
@@ -95,6 +107,9 @@ export default function DriverDashboardPage() {
   const navigate = useNavigate()
   const [driver, setDriver] = useState<DriverRecord | null>(null)
   const [loading, setLoading] = useState(true)
+  // 05bf2a23 refresh: a failed profile load is surfaced as its own error state
+  // with Retry instead of masquerading as "No Driver Profile Found".
+  const [loadError, setLoadError] = useState(false)
   const [togglingOnline, setTogglingOnline] = useState(false)
   const [incomingJob, setIncomingJob] = useState<JobOffer | null>(null)
   const [countdown, setCountdown] = useState(30)
@@ -164,11 +179,19 @@ export default function DriverDashboardPage() {
     try {
       const data = await driverSupabaseApi.getByUserId(user.id)
       setDriver(data as DriverRecord | null)
+      setLoadError(false)
     } catch (_error) {
+      setLoadError(true)
       toast.error('Failed to load driver profile')
     }
     setLoading(false)
   }, [user?.id])
+
+  const retryLoad = () => {
+    setLoadError(false)
+    setLoading(true)
+    void fetchDriver()
+  }
 
   const fetchHistory = useCallback(async (driverId: string) => {
     try {
@@ -386,16 +409,37 @@ export default function DriverDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <RefreshCw className="animate-spin text-blue-600" size={32} />
+      <div role="status" aria-busy="true" className="min-h-screen flex items-center justify-center">
+        <RefreshCw className="animate-spin text-blue-600" size={32} aria-hidden="true" />
+        <span className="sr-only">Loading driver dashboard…</span>
       </div>
     )
   }
 
   if (!driver) {
+    if (loadError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+          <AlertTriangle size={48} className="text-amber-400 mb-4" aria-hidden="true" />
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+            Couldn't load your dashboard
+          </h2>
+          <p role="alert" className="text-slate-500 dark:text-slate-400 mb-6 text-sm">
+            We couldn't reach the server to load your driver profile. Check your connection and try again.
+          </p>
+          <button
+            onClick={retryLoad}
+            className={`flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold ${FOCUS_RING}`}
+          >
+            <RefreshCw size={18} aria-hidden="true" />
+            Retry
+          </button>
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <UserCircle size={64} className="text-slate-300 mb-4" />
+        <UserCircle size={64} className="text-slate-300 mb-4" aria-hidden="true" />
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
           No Driver Profile Found
         </h2>
@@ -404,7 +448,7 @@ export default function DriverDashboardPage() {
         </p>
         <button
           onClick={() => navigate('/driver/register')}
-          className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold"
+          className={`min-h-[44px] bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold ${FOCUS_RING}`}
         >
           Register as Driver
         </button>
@@ -426,13 +470,22 @@ export default function DriverDashboardPage() {
       {/* Withdrawal Request Modal */}
       {showWithdrawalModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="withdrawal-dialog-title"
+            className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6"
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+              <h3 id="withdrawal-dialog-title" className="text-lg font-bold text-slate-800 dark:text-slate-100">
                 {'Request Withdrawal'}
               </h3>
-              <button onClick={() => setShowWithdrawalModal(false)} className="p-1">
-                <X size={20} className="text-slate-400" />
+              <button
+                onClick={() => setShowWithdrawalModal(false)}
+                aria-label="Close withdrawal dialog"
+                className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl ${FOCUS_RING}`}
+              >
+                <X size={20} className="text-slate-400" aria-hidden="true" />
               </button>
             </div>
             <div className="space-y-4">
@@ -458,7 +511,7 @@ export default function DriverDashboardPage() {
               <button
                 onClick={handleWithdrawal}
                 disabled={withdrawing || !withdrawalAmount}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white font-semibold rounded-xl transition-colors"
+                className={`w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white font-semibold rounded-xl transition-colors ${FOCUS_RING}`}
               >
                 {withdrawing
                   ? ('Submitting...')
@@ -472,10 +525,17 @@ export default function DriverDashboardPage() {
       {/* Incoming Job Offer Modal */}
       {incomingJob && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
-          <div className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-w-sm p-6 animate-slide-up">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="job-offer-dialog-title"
+            className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-w-sm p-6 animate-slide-up"
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">New Job Offer! 🚛</h3>
+              <h3 id="job-offer-dialog-title" className="text-lg font-bold text-slate-800 dark:text-slate-100">New Job Offer! 🚛</h3>
               <div
+                role="timer"
+                aria-label={`${countdown} seconds left to respond`}
                 className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${countdown <= 10 ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
                   }`}
               >
@@ -526,17 +586,19 @@ export default function DriverDashboardPage() {
               <button
                 disabled={respondingJob}
                 onClick={() => respondToJob(false)}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-semibold disabled:opacity-50"
+                aria-label="Decline job offer"
+                className={`flex-1 flex items-center justify-center gap-2 min-h-[48px] py-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-semibold disabled:opacity-50 ${FOCUS_RING}`}
               >
-                <XCircle size={18} />
+                <XCircle size={18} aria-hidden="true" />
                 Decline
               </button>
               <button
                 disabled={respondingJob}
                 onClick={() => respondToJob(true)}
-                className="flex-2 flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-green-600 text-white font-semibold disabled:opacity-50"
+                aria-label="Accept job offer"
+                className={`flex-2 flex-1 flex items-center justify-center gap-2 min-h-[48px] py-3 rounded-xl bg-green-600 text-white font-semibold disabled:opacity-50 ${FOCUS_RING}`}
               >
-                <CheckCircle2 size={18} />
+                <CheckCircle2 size={18} aria-hidden="true" />
                 Accept
               </button>
             </div>
@@ -545,9 +607,36 @@ export default function DriverDashboardPage() {
       )}
 
       <div className="p-4 md:p-8 space-y-4 max-w-2xl md:max-w-5xl mx-auto">
+        {/* Driver Header — name, rating, verified chip, support quick action (05bf2a23 refresh) */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+          <UserCircle size={40} className="text-blue-500 flex-shrink-0" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="font-bold text-slate-800 dark:text-slate-100 truncate">{driver.full_name}</p>
+              {driver.status === 'approved' && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 flex-shrink-0">
+                  <CheckCircle2 size={12} aria-hidden="true" />
+                  Verified
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+              <Star size={12} className="text-amber-500" aria-hidden="true" />
+              {driver.rating?.toFixed(1) || '—'} rating · {driver.total_trips} trips
+            </p>
+          </div>
+          <a
+            href={`tel:${SUPPORT_PHONE_TEL}`}
+            aria-label={`Call support ${SUPPORT_PHONE_DISPLAY}`}
+            className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ${FOCUS_RING}`}
+          >
+            <PhoneCall size={18} aria-hidden="true" />
+          </a>
+        </div>
+
         {/* Status Banner for non-approved drivers */}
         {driver.status !== 'approved' && (
-          <div className={`rounded-2xl p-4 ${statusInfo.color}`}>
+          <div role="status" className={`rounded-2xl p-4 ${statusInfo.color}`}>
             <div className="flex items-start gap-3">
               <AlertTriangle size={20} className="flex-shrink-0 mt-0.5" />
               <div>
@@ -567,26 +656,33 @@ export default function DriverDashboardPage() {
         {/* Online/Offline Toggle */}
         {driver.status === 'approved' && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
                 <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                   {driver.is_online ? '🟢 Online' : '⚫ Offline'}
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                  {driver.is_online
-                    ? 'You are visible to customers and can receive jobs'
-                    : 'Go online to start receiving job offers'}
+                  {togglingOnline
+                    ? 'Updating status…'
+                    : driver.is_online
+                      ? 'You are visible to customers and can receive jobs'
+                      : 'Go online to start receiving job offers'}
                 </p>
               </div>
               <button
+                type="button"
+                role="switch"
+                aria-checked={driver.is_online}
+                aria-label={driver.is_online ? 'Go offline' : 'Go online'}
                 onClick={toggleOnline}
                 disabled={togglingOnline}
-                className={`relative w-16 h-8 rounded-full transition-colors duration-200 ${driver.is_online ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
-                  } disabled:opacity-60`}
+                className={`relative w-[76px] h-12 rounded-full transition-colors duration-200 flex-shrink-0 ${driver.is_online ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
+                  } disabled:opacity-60 ${FOCUS_RING}`}
               >
                 <Power
-                  size={16}
-                  className={`absolute top-1 transition-all duration-200 ${driver.is_online ? 'left-9 text-white' : 'left-1 text-slate-500'
+                  size={18}
+                  aria-hidden="true"
+                  className={`absolute top-1/2 -translate-y-1/2 transition-all duration-200 ${driver.is_online ? 'left-[50px] text-white' : 'left-2.5 text-slate-500'
                     }`}
                 />
               </button>
@@ -604,9 +700,9 @@ export default function DriverDashboardPage() {
             <p className="text-xs text-slate-500 dark:text-slate-400">Today</p>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-center">
-            <CheckCircle2 size={20} className="text-blue-500 mx-auto mb-1" />
+            <CheckCircle2 size={20} className="text-blue-500 mx-auto mb-1" aria-hidden="true" />
             <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{todayTrips}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Trips</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Delivered</p>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm text-center">
             <Star size={20} className="text-amber-500 mx-auto mb-1" />
@@ -748,26 +844,27 @@ export default function DriverDashboardPage() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button
-                className="flex items-center justify-center gap-2 py-2.5 bg-green-600 text-white rounded-xl font-medium text-sm"
+                className={`flex items-center justify-center gap-2 min-h-[48px] py-2.5 bg-green-600 text-white rounded-xl font-medium text-sm ${FOCUS_RING}`}
                 onClick={() => navigate(`/driver/trip/${driver.active_job_id}`)}
               >
-                <Navigation size={16} />
+                <Navigation size={16} aria-hidden="true" />
                 View Trip
               </button>
-              <button
-                className="flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm"
-                onClick={() => toast.success('Calling customer support...')}
+              <a
+                href={`tel:${SUPPORT_PHONE_TEL}`}
+                aria-label={`Call support ${SUPPORT_PHONE_DISPLAY}`}
+                className={`flex items-center justify-center gap-2 min-h-[48px] py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm ${FOCUS_RING}`}
               >
-                <PhoneCall size={16} />
+                <PhoneCall size={16} aria-hidden="true" />
                 Support
-              </button>
+              </a>
             </div>
           </div>
         )}
 
         {/* Online Waiting State */}
         {driver.is_online && !driver.active_job_id && driver.status === 'approved' && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl p-5 text-center">
+          <div role="status" className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-2xl p-5 text-center">
             <div className="flex justify-center mb-3">
               <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
                 <RefreshCw size={24} className="text-blue-600 dark:text-blue-400 animate-spin" style={{ animationDuration: '3s' }} />
@@ -811,15 +908,17 @@ export default function DriverDashboardPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${trip.status === 'accepted'
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : trip.status === 'declined'
-                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                      }`}>
-                      {trip.status}
-                    </span>
-                    <TrendingUp size={14} className="text-slate-300" />
+                    {(() => {
+                      const chip = TRIP_STATUS_CHIPS[trip.status] ?? { icon: Clock, classes: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400' }
+                      const ChipIcon = chip.icon
+                      return (
+                        <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${chip.classes}`}>
+                          <ChipIcon size={12} aria-hidden="true" />
+                          {trip.status}
+                        </span>
+                      )
+                    })()}
+                    <TrendingUp size={14} className="text-slate-300" aria-hidden="true" />
                   </div>
                 </div>
               ))}

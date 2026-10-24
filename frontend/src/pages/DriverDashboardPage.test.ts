@@ -14,9 +14,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({
     getByUserId: vi.fn(),
     getPendingOffer: vi.fn(),
+    getIncomingJobById: vi.fn(),
     getTripHistory: vi.fn(async () => []),
     getPayoutHistory: vi.fn(async () => []),
     respondToJobOffer: vi.fn(),
+    setDriverOnlineStatus: vi.fn(async () => undefined),
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
 }))
@@ -31,9 +33,11 @@ vi.mock('react-hot-toast', () => ({
 vi.mock('../services/supabaseApi', () => ({
     driverDashboardApi: {
         getPendingOffer: h.getPendingOffer,
+        getIncomingJobById: h.getIncomingJobById,
         getTripHistory: h.getTripHistory,
         getPayoutHistory: h.getPayoutHistory,
         respondToJobOffer: h.respondToJobOffer,
+        setDriverOnlineStatus: h.setDriverOnlineStatus,
     },
     driverEarningsApi: {},
     driverSupabaseApi: {
@@ -249,5 +253,120 @@ describe('DriverDashboardPage offer response states', () => {
         await waitFor(() => lastPath === '/driver/trip/offer-777', 'fallback navigation to the trip route')
         expect(h.toastSuccess).toHaveBeenCalledWith('✅ Job Accepted! Navigate to pickup.')
         expect(h.respondToJobOffer).toHaveBeenCalledTimes(1)
+    })
+})
+
+// Driver App Home refresh (05bf2a23 → screen 96715dd2, 2026-10-24): the page
+// must carry switch semantics on the online toggle, an honest load-error state
+// with Retry, a labelled offer dialog with a timer and named actions, real
+// tel: support links, and a busy loading status region.
+describe('DriverDashboardPage refresh a11y and states', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        lastPath = ''
+        h.getByUserId.mockResolvedValue(DRIVER)
+        h.getPendingOffer.mockResolvedValue(null)
+        h.respondToJobOffer.mockResolvedValue({
+            offerId: 'offer-777',
+            offerStatus: 'accepted',
+            respondedAt: '2026-10-24T09:01:00Z',
+            activeJobId: 'offer-777',
+        })
+    })
+
+    async function waitForElement(selector: string, label: string): Promise<Element> {
+        await waitFor(() => (container as HTMLElement).querySelector(selector) !== null, label)
+        const found = (container as HTMLElement).querySelector(selector)
+        if (!found) throw new Error(`element ${selector} not found after waiting for ${label}`)
+        return found
+    }
+
+    async function clickElement(element: Element): Promise<void> {
+        await act(async () => {
+            element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+    }
+
+    it('loading renders a busy status region before data arrives', async () => {
+        h.getByUserId.mockReturnValue(new Promise(() => {}))
+        const view = await mountPage()
+
+        const status = view.querySelector('[role="status"]')
+        expect(status).not.toBeNull()
+        expect(status?.getAttribute('aria-busy')).toBe('true')
+    })
+
+    it('online toggle is a labelled switch that flips status through the API', async () => {
+        await mountPage()
+        const toggle = await waitForElement('[role="switch"]', 'online switch')
+        expect(toggle.getAttribute('aria-checked')).toBe('true')
+        expect(toggle.getAttribute('aria-label')).toBe('Go offline')
+
+        await clickElement(toggle)
+
+        await waitFor(() => toggle.getAttribute('aria-checked') === 'false', 'switch flipped offline')
+        expect(toggle.getAttribute('aria-label')).toBe('Go online')
+        expect(h.setDriverOnlineStatus).toHaveBeenCalledTimes(1)
+        expect(h.setDriverOnlineStatus).toHaveBeenCalledWith('driver-1', false)
+    })
+
+    it('profile load failure shows an alert with a working Retry', async () => {
+        h.getByUserId.mockRejectedValueOnce(new Error('network down'))
+        const view = await mountPage()
+
+        const alert = await waitForElement('[role="alert"]', 'load error alert')
+        expect(alert.textContent || '').toContain("We couldn't reach the server")
+        const heading = alert.parentElement?.querySelector('h2')
+        expect(heading?.textContent || '').toContain("Couldn't load your dashboard")
+        expect(h.toastError).toHaveBeenCalledWith('Failed to load driver profile')
+
+        h.getByUserId.mockResolvedValue(DRIVER)
+        const retry = Array.from(view.querySelectorAll('button')).find(
+            (b) => (b.textContent || '').includes('Retry')
+        )
+        expect(retry).toBeDefined()
+        await clickElement(retry as Element)
+
+        await waitForElement('[role="switch"]', 'dashboard after retry')
+    })
+
+    it('incoming offer renders a labelled dialog with a timer and named actions', async () => {
+        h.getPendingOffer.mockResolvedValue(PENDING_OFFER)
+        await mountPage()
+
+        const dialog = await waitForElement('[role="dialog"]', 'offer dialog')
+        expect(dialog.getAttribute('aria-modal')).toBe('true')
+        expect(dialog.getAttribute('aria-labelledby')).toBe('job-offer-dialog-title')
+        expect(dialog.querySelector('[role="timer"]')).not.toBeNull()
+
+        const accept = dialog.querySelector('button[aria-label="Accept job offer"]')
+        const decline = dialog.querySelector('button[aria-label="Decline job offer"]')
+        expect(accept).not.toBeNull()
+        expect(decline).not.toBeNull()
+        expect((accept as HTMLElement).textContent || '').toContain('Accept')
+        expect((decline as HTMLElement).textContent || '').toContain('Decline')
+    })
+
+    it('driver header shows name, rating and the verified chip', async () => {
+        const view = await mountPage()
+
+        await waitFor(() => (view.textContent || '').includes(DRIVER.full_name), 'driver header name')
+        expect(view.textContent || '').toContain('Verified')
+        expect(view.textContent || '').toContain('4.5 rating · 2 trips')
+    })
+
+    it('active trip card exposes real tel: support links from the shared config', async () => {
+        h.getByUserId.mockResolvedValue({ ...DRIVER, active_job_id: 'job-42' })
+        const view = await mountPage()
+
+        await waitForElement('a[href^="tel:"]', 'support tel link')
+        const telLinks = Array.from(view.querySelectorAll('a[href^="tel:"]'))
+        // One in the driver header, one on the active-trip card.
+        expect(telLinks.length).toBeGreaterThanOrEqual(2)
+        for (const link of telLinks) {
+            expect(link.getAttribute('href')).toBe('tel:+919999352050')
+            expect(link.getAttribute('aria-label') || '').toContain('support')
+        }
     })
 })

@@ -1,5 +1,26 @@
 # Design Audit — Truck_Opti × Stitch coverage
 
+## 2026-10-24 backlog item `driver-app-home-refresh` — screen `05bf2a23` refreshed & integrated into `/driver/dashboard`
+
+Design side (done upstream, 1 generation): Stitch edit of `05bf2a23` produced refreshed screen **`96715dd2b8cd45abb568e27cbf384498`** "Driver App Home" (MOBILE, generated 2026-10-24T03:22:02Z; journaled artifact `…stitch-mcp-state\artifacts\10636db1\…\projects_…_05bf2a23….2026-10-24T03-22-02-566Z.json`). Integration (this section) adapted the artifact's layout intent to the live page — **0 Stitch calls from this integration, 0 mutations**; the HTML was never pasted wholesale; repo tokens/terminology kept ("View Trip" retained, app slate/emerald palette).
+
+### What changed on `frontend/src/pages/DriverDashboardPage.tsx`
+
+| Artifact intent | App implementation |
+|---|---|
+| Header: name, verified chip, star rating, support quick icon | New driver header card: `full_name` + "Verified" chip (approved only), "★ rating · N trips" line, and a real `tel:+919999352050` quick action (44×44px, `SUPPORT_PHONE_TEL` from `frontend/src/config/support.ts`) |
+| Online/offline switch: `role="switch"`, `aria-checked`, labelled, ≥48px target, "Updating status…" | Toggle is now `role="switch"` with dynamic `aria-checked` and `aria-label` "Go offline"/"Go online", 76×48px target, `disabled` + "Updating status…" copy while the request runs |
+| Dominant offer sheet: countdown, labelled Decline/Accept ≥48px, focus rings | Offer sheet is `role="dialog"` + `aria-modal` + `aria-labelledby="job-offer-dialog-title"`; countdown carries `role="timer"` + "N seconds left to respond"; Decline/Accept have `aria-label="Decline job offer"`/`"Accept job offer"` and `min-h-[48px]` |
+| Active trip card: View Trip + Support | "View Trip" kept (repo terminology, → `/driver/trip/:active_job_id`); Support converted from the fake `toast.success('Calling customer support...')` button (a buttons-to-nowhere) to a real 48px `tel:` link from the shared support config — same fix pattern as TO-139 §C3 on the trip page |
+| Today's stats row | "Trips" label renamed "Delivered" (it already counted only `delivered_at`-today trips) |
+| Recent trips: icon+label status chips, never color alone | Status chips now pair an icon with the text via a `TRIP_STATUS_CHIPS` map (delivered/accepted → check, declined → cancel, expired/other → clock); chip color pairs verified ≥AA (green-700/green-100 4.57:1, red-700/red-100 5.30:1, slate-600/slate-100 6.92:1) |
+| State coverage + Retry | New honest load-error state: a failed profile fetch used to masquerade as "No Driver Profile Found"; now `loadError` renders a `role="alert"` card ("Couldn't load your dashboard") with a ≥44px Retry that re-runs the load. Loading spinner is `role="status"` + `aria-busy` + sr-only text; pending/rejected/suspended banners carry `role="status"`; online-waiting (no offers) state carries `role="status"` |
+| Focus-visible rings everywhere | Shared `FOCUS_RING` constant applied to all interactive controls incl. the previously unlabelled withdrawal-modal ✕ (now `aria-label="Close withdrawal dialog"`, 44×44px) and both dialogs got `role="dialog"`/`aria-modal`/`aria-labelledby` |
+
+- **Proof run this round (from `frontend/`):** `npx vitest run src/pages/DriverDashboardPage.test.ts` → **10/10 passed** (2 pre-existing TO-129 + 2 response-states + 6 new: busy loading region, switch semantics + flip through `setDriverOnlineStatus`, error→Retry recovery, offer dialog/timer/named actions, header name+rating+Verified, both `tel:` links); first run 9/10 — the error test asserted the heading inside the `[role="alert"]` paragraph, fixed to assert paragraph + sibling `h2`. `npx tsc --noEmit` → exit 0 (first run flagged the `waitForElement` null-narrowing and 2 unused vars — fixed). `npx eslint src/pages/DriverDashboardPage.tsx src/pages/DriverDashboardPage.test.ts --max-warnings 0` → exit 0.
+- **NOT run this tier:** browser pass at 390×844/1280×900 — the local-first tier cannot sign in as an approved driver (no cloud backend; driver routes render only in denied/no-profile state per the TO-139 addendum), and cloud-credentialed driver journeys remain owner-gated. The six new DOM-level tests cover the wired states/semantics in jsdom instead. Realtime delivery of offers (Supabase channel) is also not exercisable in this tier; the subscription code path is unchanged from TO-129/TO-130.
+- Rubric row for `05bf2a23` (§5): generated scores retained; the app implementation now carries the accessibility/state/responsive mitigations the refresh brief required. §1/§2/§3/§6 rows updated below.
+
 ## 2026-10-24 backlog item `wcag-aa-contrast-fixes-shipment-agency-jobs` — WCAG AA contrast repair (code-only, no Stitch)
 
 Three light-mode contrast failures on the TO-143-D1 command/consent panels, recomputed this run with the WCAG 2.x relative-luminance formula and repaired in code (**0 Stitch calls, 0 mutations**; route-level screens unchanged — these are implemented panels on `/booking/new` and `/agency/jobs`):
@@ -113,7 +134,7 @@ ids are 8-char tails of `projects/817968552986251880/screens/<id>`; full ids in 
 | `fc97f63d` | Customer Team & Branch Management - TruckOpti | DESKTOP | 24578 | n/a (payload has no update time) |
 | `0afcac09` | Customer Tracking Control Center - TruckOpti | DESKTOP | 25577 | n/a (payload has no update time) |
 | `141531b6` | Customer: New Shipment Booking | DESKTOP | 16578 | n/a (payload has no update time) |
-| `05bf2a23` | Driver App Home | MOBILE | 15726 | n/a (payload has no update time) |
+| `05bf2a23` | Driver App Home **(refreshed 2026-10-24 → screen `96715dd2b8cd45abb568e27cbf384498`; integrated — see top section)** | MOBILE | 15726 | n/a (payload has no update time) |
 | `3c30c0e5` | Driver Registration — TruckOpti | DESKTOP | 14842 | n/a (payload has no update time) |
 | `591699f3` | Driver Trip Detail - TruckOpti | MOBILE | 16363 | n/a (payload has no update time) |
 | `180752ea` | Driver: Delivery & Proof | MOBILE | 13157 | n/a (payload has no update time) |
@@ -194,7 +215,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | `/admin/contact` | admin | Admin: Support & Contact Inbox `142aa41c` | COVERED |
 | `/admin/users` | admin | Admin: User Management Hub `c16aa8ef` | COVERED |
 | `/admin/subscriptions` | admin | Admin: Subscription Management `52aa57b7` | COVERED |
-| `/driver/dashboard` | driver | Driver App Home `05bf2a23` | COVERED (MOBILE ✔) |
+| `/driver/dashboard` | driver | Driver App Home `05bf2a23` (refreshed → `96715dd2b8cd45abb568e27cbf384498`) | COVERED (MOBILE ✔; refresh integrated 2026-10-24 — top section) |
 | `/driver/trip/:jobId` | driver | Driver Trip Detail `591699f3` + Driver: Pickup Workflow `b54728a4` + Driver: Delivery & Proof `180752ea` | DUPLICATE (one page implements both stage flows; stage screens are sub-flows) |
 | `/driver/earnings` | driver | Earnings & Wallet `efcc993e` | COVERED (device mismatch: DESKTOP design for a driver screen) |
 | `/driver/history` | driver | Trip History `0d032afa` | COVERED (MOBILE ✔) |
@@ -268,7 +289,9 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | Screen/page | Action | Target | Status |
 |---|---|---|---|
 | Driver Register `/driver/register` | multi-step register | `driverSupabaseApi.register` → `/login?mode=driver` | OK |
-| Driver App Home `/driver/dashboard` | active-job card | `/driver/trip/:active_job_id` | OK |
+| Driver App Home `/driver/dashboard` | online/offline toggle | `setDriverOnlineStatus` (drivers.is_online); `role="switch"` + `aria-checked` + labelled, 76×48px target (2026-10-24 refresh) | OK |
+| Driver App Home | active-job card | `/driver/trip/:active_job_id` | OK |
+| Driver App Home | active-job "Support" | real `tel:+919999352050` from `config/support.ts` (was a fake success toast; fixed 2026-10-24 refresh) — header carries the same tel quick action | OK |
 | Driver App Home | "complete registration" (no profile) | `/driver/register` | OK |
 | Driver App Home | incoming `job_offers` realtime events | inline bottom-sheet offer card → `respond_to_job_offer` → `/driver/trip/:jobId` | **RESOLVED (2026-10-23; TO-129/TO-130)** — offer arrives as an inline card with countdown, realtime subscription + focus hydration, accept/decline through the atomic RPC (`DriverDashboardPage.tsx:257-296,298-315,360-385,472-545`); screen `202377b7` retired (top section). Original DEAD END note superseded. |
 | Driver Trip `/driver/trip/:jobId` | stage progression (arrived→loaded→in transit→delivered+POD) | `persist_driver_job_offer_progress` rpc + `driverTripsApi` | OK |
@@ -349,7 +372,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | `fc97f63d` | Customer Team & Branch Management - TruckOpti | 5 | 5 | 5 | 3 | 1 | 3 | 3.67 | **POOR** |
 | `0afcac09` | Customer Tracking Control Center - TruckOpti | 5 | 5 | 5 | 3 | 3 | 3 | 4 | ok |
 | `141531b6` | Customer: New Shipment Booking | 5 | 3 | 5 | 3 | 3 | 3 | 3.67 | ok |
-| `05bf2a23` | Driver App Home | 4 | 3 | 5 | 2 | 1 | 3 | 3 | **POOR** |
+| `05bf2a23` | Driver App Home | 4 | 3 | 5 | 2 | 1 | 3 | 3 | **POOR** — refreshed 2026-10-24 (screen `96715dd2`); the app implementation now adds the switch semantics, labelled offer actions, ≥44/48px targets, focus-visible rings, icon+label chips and honest error/Retry states the generated HTML lacked (top section); generated scores kept as generated |
 | `3c30c0e5` | Driver Registration — TruckOpti | 5 | 5 | 5 | 3 | 1 | 3 | 3.67 | **POOR** |
 | `591699f3` | Driver Trip Detail - TruckOpti | 5 | 3 | 5 | 1 | 1 | 3 | 3 | **POOR** |
 | `180752ea` | Driver: Delivery & Proof | 5 | 3 | 5 | 2 | 1 | 3 | 3.17 | **POOR** |
@@ -397,7 +420,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 
 ### P1 — POOR screens on live journeys + missing designs
 
-4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `05bf2a23` (home), `591699f3` (trip), `b54728a4` (pickup), `180752ea` (delivery+POD), `0d032afa` (history), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch). (`202377b7` job-offer removed 2026-10-23 — retired with #1, not a regeneration candidate.)
+4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `591699f3` (trip), `b54728a4` (pickup), `180752ea` (delivery+POD), `0d032afa` (history), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch). (`202377b7` job-offer removed 2026-10-23 — retired with P0 #1; `05bf2a23` home removed 2026-10-24 — refreshed and integrated, top section.)
 5. Design the four MISSING screens: `/driver/profile`, `/subscription`, `/agency/profile`, `/management/cartons`.
 6. Fix driver dead ends: replace hardcoded `tel:18001234567` with the real support number (or a config), and stop linking drivers into the customer `/profile` layout (driver-scoped account section).
 7. Auth/public POOR screens (`d8615375` OTP, `daab73c1` signup, `c7700d0d` auth-callback, `1e1497ab` payment success + failure states): add error/empty/loading states and a11y before next regeneration cycle.
