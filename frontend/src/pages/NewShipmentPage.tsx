@@ -344,7 +344,7 @@ export default function NewShipmentPage() {
                 <p
                   role="status"
                   className={`text-xs ${authorizationMessage.kind === 'success'
-                    ? 'text-green-600 dark:text-green-400'
+                    ? 'text-green-700 dark:text-green-400'
                     : 'text-red-600 dark:text-red-400'}`}
                 >
                   {authorizationMessage.text}

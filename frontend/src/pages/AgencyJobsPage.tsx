@@ -380,7 +380,7 @@ export default function AgencyJobsPage() {
             Failed to load authorizations. Refresh the page to retry.
           </p>
         ) : authorizations.length === 0 ? (
-          <p className="text-xs text-slate-400 mt-3">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-3">
             No customer authorizations yet. They appear here once a customer shares their agency ID with you and authorizes your agency.
           </p>
         ) : (
@@ -391,7 +391,7 @@ export default function AgencyJobsPage() {
                   <p className="text-xs font-mono font-medium text-slate-700 dark:text-slate-200 truncate" title={auth.shipment_id}>
                     {auth.shipment_id}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     Authorized {new Date(auth.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                   </p>
                 </div>

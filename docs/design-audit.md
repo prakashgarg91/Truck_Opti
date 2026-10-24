@@ -1,5 +1,21 @@
 # Design Audit — Truck_Opti × Stitch coverage
 
+## 2026-10-24 backlog item `wcag-aa-contrast-fixes-shipment-agency-jobs` — WCAG AA contrast repair (code-only, no Stitch)
+
+Three light-mode contrast failures on the TO-143-D1 command/consent panels, recomputed this run with the WCAG 2.x relative-luminance formula and repaired in code (**0 Stitch calls, 0 mutations**; route-level screens unchanged — these are implemented panels on `/booking/new` and `/agency/jobs`):
+
+| # | Surface | Before | After |
+|---|---|---|---|
+| 1 | `NewShipmentPage.tsx:346-348` — authorization success copy (`role="status"`) | `text-green-600` on white = **3.30:1** | `text-green-700` = **5.02:1**; `dark:text-green-400` kept (8.40:1 on `dark:bg-slate-800`) |
+| 2 | `AgencyJobsPage.tsx:383` — Authorizations empty state (white card) | `text-slate-400` on white = **2.56:1** | `text-slate-600 dark:text-slate-400` = **7.58:1** light / **5.71:1** dark |
+| 3 | `AgencyJobsPage.tsx:394` — grant date on the `bg-slate-50` authorization row (`:389`; the ask cited `:387`, the container — file drifted) | `text-slate-400` on `bg-slate-50` = **2.45:1** | `text-slate-600 dark:text-slate-400` = **7.24:1** light / **4.83:1** dark on the `dark:bg-slate-700/50` row |
+
+All AA-normal-text thresholds now met (≥4.5:1). Scope note: other bare `text-slate-400` instances remain elsewhere in `AgencyJobsPage` (`:429`, `:449`, `:472`, `:635`, `:660` + the `:656` spinner icon) — they were **not** part of the three verified failures in this item and are left untouched as owner-selectable polish.
+
+- **Contract test (new):** `frontend/src/pages/wcagContrastContract.test.ts` — implements the luminance/ratio math, reproduces the three recorded failures as below-AA (`toBeCloseTo` 3.30 / 2.56 / 2.45), asserts the repaired pairs (light + dark) meet 4.5:1, and pins the class tokens in both page sources (boundary-guarded negatives so the preserved `dark:` variants stay legal; the grant-date pin anchors on the "Authorized" copy to survive line drift, the same drift the ask itself hit).
+- Proof run this round (from `frontend/`): `npx vitest run src/pages/wcagContrastContract.test.ts` → **5/5 passed** (first run 4/5 — the initial `not.toContain('text-slate-400 mt-3')` negative matched the tail of my own `dark:text-slate-400 mt-3` replacement; fixed with the boundary guard); `npx tsc --noEmit` → exit 0; `npx eslint src/pages/wcagContrastContract.test.ts src/pages/NewShipmentPage.tsx src/pages/AgencyJobsPage.tsx --max-warnings 0` → exit 0. Contrast ratios printed via node one-liner: values as in the table.
+- Generated-screen rubric rows for `141531b6` (New Shipment Booking) and `a8b23ee2` (Agency Dispatch Board) are **unchanged** — §5 scores the generated HTML, not the app implementation (same precedent as the `e72905ba` note). Coverage/button/API maps are unaffected: no routes, actions, or API calls changed.
+
 ## 2026-10-23 backlog item `driver-job-offer-acceptance` — screen `202377b7` RETIRED (retrieve-only, code-only)
 
 This closes backlog §6 P0 #1 in its corrected form: the audit's "dead end / build `/driver/job-offer/:offerId`" premise was **superseded in code by TO-129/TO-130** — offer acceptance is live on `/driver/dashboard` and lands on the existing `/driver/trip/:jobId` flow. The item became a retrieve-only diff of screen `202377b7` against the live flow, then edit-or-retire. **Decision: RETIRE** (doc-level; no screen deletion via Stitch, **0 Stitch calls, 0 mutations, 0 retries** — the HTML was read from the journaled audit artifact `.stitch-mcp/scratch/audit/202377b7233d4772adbe6745d5d00e2f.html`, 12,454 bytes, generated 2026-09-19; no live re-fetch, and the payload has no update-time field so drift cannot be excluded).
