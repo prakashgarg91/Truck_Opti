@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Truck, Plus, AlertTriangle, RefreshCw,
-  FileCheck, Clock, XCircle, ChevronRight, ShieldAlert
+  FileCheck, Clock, XCircle, ChevronRight, ShieldAlert,
+  CheckCircle2, Wrench
 } from 'lucide-react'
 import { logger } from '../utils/logger'
 import toast from 'react-hot-toast'
@@ -20,12 +21,42 @@ const VEHICLE_LABELS: Record<string, string> = {
   volvo_40ft: 'Volvo 40ft Container (25T)',
 }
 
+/** Shared keyboard-focus styling for every interactive control (2f54d59c refresh). */
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900'
+
+/** Status chips pair an icon with the label so status is never color alone (2f54d59c refresh). */
+const STATUS_CHIPS = {
+  maintenance: { icon: Wrench, classes: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  onTrip: { icon: Truck, classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  available: { icon: CheckCircle2, classes: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+} as const
+
 function expiryStatus(dateStr: string | null): 'ok' | 'soon' | 'expired' {
   if (!dateStr) return 'ok'
   const days = Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000)
   if (days < 0) return 'expired'
   if (days < 30) return 'soon'
   return 'ok'
+}
+
+/** Names the most urgent expiring document so the alert says what to renew (2f54d59c refresh). */
+function firstDocAlert(truck: FleetVehicle): string | null {
+  const docs: { label: string; expiry: string | null }[] = [
+    { label: 'Insurance', expiry: truck.insurance_expiry },
+    { label: 'Fitness', expiry: truck.fitness_expiry },
+    { label: 'Permit', expiry: truck.permit_expiry },
+    { label: 'PUC', expiry: truck.puc_expiry },
+  ]
+  let best: { label: string; days: number } | null = null
+  for (const doc of docs) {
+    if (!doc.expiry) continue
+    const days = Math.ceil((new Date(doc.expiry).getTime() - Date.now()) / 86400000)
+    if (days < 30 && (best === null || days < best.days)) best = { label: doc.label, days }
+  }
+  if (!best) return null
+  return best.days < 0
+    ? `${best.label} expired ${Math.abs(best.days)} day${Math.abs(best.days) === 1 ? '' : 's'} ago`
+    : `${best.label} expires in ${best.days} day${best.days === 1 ? '' : 's'}`
 }
 
 export default function AgencyFleetPage() {
@@ -109,7 +140,7 @@ export default function AgencyFleetPage() {
       const patch: VehiclePatch = { is_available: !truck.is_available }
       const result = await agencyFleetApi.updateVehicle(truck.id, truck.version, patch)
       if (result.ok) {
-        toast.success(result.vehicle.is_available ? 'Vehicle marked available' : 'Vehicle marked unavailable')
+        toast.success(`Vehicle ${result.vehicle.rc_number} marked ${result.vehicle.is_available ? 'available' : 'unavailable'}`)
       }
       // Single refetch in every outcome; a version conflict surfaces ONE
       // message with the refreshed row — never an auto-retry loop.
@@ -131,16 +162,17 @@ export default function AgencyFleetPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" data-testid="fleet-loading">
+      <div role="status" aria-busy="true" className="min-h-screen flex items-center justify-center" data-testid="fleet-loading">
         <RefreshCw className="animate-spin text-indigo-600" size={32} aria-label="Loading fleet" />
+        <span className="sr-only">Loading fleet…</span>
       </div>
     )
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-4 max-w-2xl md:max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 space-y-4 max-w-2xl md:max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Fleet Management</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -149,9 +181,9 @@ export default function AgencyFleetPage() {
         </div>
         <button
           onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold"
+          className={`flex items-center gap-2 min-h-[44px] bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
         >
-          <Plus size={16} />
+          <Plus size={16} aria-hidden="true" />
           Add Truck
         </button>
       </div>
@@ -170,14 +202,14 @@ export default function AgencyFleetPage() {
       {/* Error state: load failure with retry — distinct from empty */}
       {loadError && (
         <div role="alert" data-testid="fleet-error" className="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl border border-red-200 dark:border-red-800/40">
-          <AlertTriangle size={36} className="text-red-400 mx-auto mb-3" />
+          <AlertTriangle size={36} className="text-red-400 mx-auto mb-3" aria-hidden="true" />
           <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">We couldn't load your fleet.</p>
-          <p className="text-xs text-slate-400 mt-1">Check your connection and try again.</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Check your connection and try again.</p>
           <button
             onClick={fetchData}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold"
+            className={`mt-4 inline-flex items-center gap-2 min-h-[44px] px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold ${FOCUS_RING}`}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} aria-hidden="true" />
             Retry
           </button>
         </div>
@@ -193,7 +225,7 @@ export default function AgencyFleetPage() {
               id="fleet-vehicle-type"
               value={addForm.vehicle_type}
               onChange={e => setAddForm(f => ({ ...f, vehicle_type: e.target.value }))}
-              className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              className={`w-full min-h-[44px] border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${FOCUS_RING}`}
             >
               {Object.entries(VEHICLE_LABELS).map(([val, label]) => (
                 <option key={val} value={val}>{label}</option>
@@ -207,10 +239,10 @@ export default function AgencyFleetPage() {
               placeholder="MH12AB1234"
               value={addForm.rc_number}
               onChange={e => setAddForm(f => ({ ...f, rc_number: e.target.value.toUpperCase() }))}
-              className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              className={`w-full min-h-[44px] border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${FOCUS_RING}`}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1" htmlFor="fleet-insurance">Insurance Expiry</label>
               <input
@@ -218,7 +250,7 @@ export default function AgencyFleetPage() {
                 type="date"
                 value={addForm.insurance_expiry}
                 onChange={e => setAddForm(f => ({ ...f, insurance_expiry: e.target.value }))}
-                className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                className={`w-full min-h-[44px] border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${FOCUS_RING}`}
               />
             </div>
             <div>
@@ -228,7 +260,7 @@ export default function AgencyFleetPage() {
                 type="date"
                 value={addForm.fitness_expiry}
                 onChange={e => setAddForm(f => ({ ...f, fitness_expiry: e.target.value }))}
-                className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                className={`w-full min-h-[44px] border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${FOCUS_RING}`}
               />
             </div>
             <div>
@@ -238,7 +270,7 @@ export default function AgencyFleetPage() {
                 type="date"
                 value={addForm.permit_expiry}
                 onChange={e => setAddForm(f => ({ ...f, permit_expiry: e.target.value }))}
-                className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                className={`w-full min-h-[44px] border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${FOCUS_RING}`}
               />
             </div>
             <div>
@@ -248,21 +280,21 @@ export default function AgencyFleetPage() {
                 type="date"
                 value={addForm.puc_expiry}
                 onChange={e => setAddForm(f => ({ ...f, puc_expiry: e.target.value }))}
-                className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                className={`w-full min-h-[44px] border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${FOCUS_RING}`}
               />
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => setShowAdd(false)}
-              className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-semibold"
+              className={`flex-1 min-h-[44px] py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
             >
               Cancel
             </button>
             <button
               disabled={saving}
               onClick={handleAddTruck}
-              className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
+              className={`flex-1 min-h-[44px] py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold disabled:opacity-60 ${FOCUS_RING}`}
             >
               {saving ? 'Adding...' : 'Add Truck'}
             </button>
@@ -280,7 +312,10 @@ export default function AgencyFleetPage() {
         </div>
       )}
 
-      {trucks.map(truck => {
+      {/* Fleet grid: 2 columns on wide desktop, single column below (2f54d59c refresh) */}
+      {trucks.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-5 items-start">
+          {trucks.map(truck => {
         const insuranceStatus = expiryStatus(truck.insurance_expiry)
         const fitnessStatus = expiryStatus(truck.fitness_expiry)
         const hasAlert = insuranceStatus !== 'ok' || fitnessStatus !== 'ok' || expiryStatus(truck.permit_expiry) !== 'ok' || expiryStatus(truck.puc_expiry) !== 'ok'
@@ -299,23 +334,28 @@ export default function AgencyFleetPage() {
                   <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate">
                     {VEHICLE_LABELS[truck.vehicle_type] || truck.vehicle_type}
                   </p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${truck.maintenance_blocked
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    : truck.is_available
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                    }`}>
-                    {truck.maintenance_blocked ? 'Maintenance' : truck.is_available ? 'Available' : 'On Trip'}
-                  </span>
+                  {(() => {
+                    const chip = truck.maintenance_blocked ? STATUS_CHIPS.maintenance : truck.is_available ? STATUS_CHIPS.available : STATUS_CHIPS.onTrip
+                    const ChipIcon = chip.icon
+                    return (
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2 ${chip.classes}`}>
+                        <ChipIcon size={11} aria-hidden="true" />
+                        {truck.maintenance_blocked ? 'Maintenance' : truck.is_available ? 'Available' : 'On Trip'}
+                      </span>
+                    )
+                  })()}
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">RC: {truck.rc_number}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">RC: {truck.rc_number}</p>
                 {(truck.payload_kg != null || truck.body_length_m != null) && (
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                     {truck.payload_kg != null && `Payload: ${truck.payload_kg}kg`}
                     {truck.payload_kg != null && truck.body_length_m != null && ' · '}
                     {truck.body_length_m != null && `Body: ${truck.body_length_m}×${truck.body_width_m ?? '—'}×${truck.body_height_m ?? '—'}m`}
                   </p>
                 )}
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                  {truck.driver_id ? 'Driver: assigned' : 'Unassigned'}
+                </p>
               </div>
             </div>
 
@@ -331,11 +371,11 @@ export default function AgencyFleetPage() {
                   ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                   : doc.status === 'soon'
                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                    : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                   }`}>
-                  {doc.status === 'expired' ? <XCircle size={10} /> :
-                    doc.status === 'soon' ? <Clock size={10} /> :
-                      <FileCheck size={10} />}
+                  {doc.status === 'expired' ? <XCircle size={10} aria-hidden="true" /> :
+                    doc.status === 'soon' ? <Clock size={10} aria-hidden="true" /> :
+                      <FileCheck size={10} aria-hidden="true" />}
                   {doc.label}
                   {doc.expiry && ` · ${new Date(doc.expiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}`}
                 </div>
@@ -343,9 +383,9 @@ export default function AgencyFleetPage() {
             </div>
 
             {hasAlert && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
-                <AlertTriangle size={12} />
-                Document expiry alert — renew before it expires
+              <div className="mt-2 flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400">
+                <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <span>Document expiry alert — {firstDocAlert(truck)}. Renew before it expires to prevent dispatch blockage.</span>
               </div>
             )}
 
@@ -354,22 +394,24 @@ export default function AgencyFleetPage() {
                 onClick={() => handleToggleAvailability(truck)}
                 disabled={togglingId === truck.id}
                 aria-label={`${truck.is_available ? 'Mark' : 'Mark'} ${VEHICLE_LABELS[truck.vehicle_type] || truck.vehicle_type} (${truck.rc_number}) ${truck.is_available ? 'unavailable' : 'available'}`}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium disabled:opacity-60"
+                className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium disabled:opacity-60 ${FOCUS_RING}`}
               >
-                <RefreshCw size={12} className={togglingId === truck.id ? 'animate-spin' : ''} />
+                <RefreshCw size={12} aria-hidden="true" className={togglingId === truck.id ? 'animate-spin' : ''} />
                 {togglingId === truck.id ? 'Saving...' : truck.is_available ? 'Mark Unavailable' : 'Mark Available'}
               </button>
               <button
                 onClick={() => navigate('/agency/drivers')}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-medium"
+                className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-medium ${FOCUS_RING}`}
               >
-                <ChevronRight size={14} />
+                <ChevronRight size={14} aria-hidden="true" />
                 {truck.driver_id ? 'Manage Driver Assignment' : 'Assign Driver'}
               </button>
             </div>
           </div>
         )
-      })}
+          })}
+        </div>
+      )}
     </div>
   )
 }

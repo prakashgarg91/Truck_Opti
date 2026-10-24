@@ -1,5 +1,27 @@
 # Design Audit — Truck_Opti × Stitch coverage
 
+## 2026-10-24 backlog item `fleet-management-refresh` — screen `2f54d59c` refreshed & integrated into `/agency/fleet`
+
+Design side (done upstream, 1 generation): Stitch edit of `2f54d59c` produced refreshed screen **`cfafbe06345a4061b7e06c9cf519305a`** "Agency: Fleet Management & Vehicle Status" (DESKTOP, 2560×4090; journaled artifact `…stitch-mcp-state\artifacts\10636db1\…\projects_…_2f54d59c….2026-10-24T04-45-25-531Z.json`). The page's TO-144-D1 fleet-foundation wiring (RLS `listVehicles`, `createVehicle`/`updateVehicle` RPCs, five testid states, single-refetch conflict handling) was already real — this integration refreshed the presentation onto it. **0 Stitch calls from this integration, 0 mutations**; the TO-144-D1-verified copies ("This vehicle is already in your fleet", "…updated elsewhere. Showing the latest version.") kept verbatim.
+
+### What changed on `frontend/src/pages/AgencyFleetPage.tsx`
+
+| Artifact intent | App implementation |
+|---|---|
+| Responsive 2→1-col fleet grid, no fixed widths | Fleet list is now `grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-5` inside a widened `md:max-w-7xl` container; the create-form date grid stacks below `sm` (`grid-cols-1 sm:grid-cols-2`); header toolbar wraps (`flex-wrap`) |
+| Status chips icon+text, never color alone | `STATUS_CHIPS` map: Maintenance → wrench, On Trip → truck, Available → check, with the existing green/amber/red token pairs (all ≥AA: green-700/green-100 4.57:1, amber-700/amber-100 4.51:1, red-700/red-100 5.30:1) |
+| WCAG AA contrast fixes | **Real failures fixed:** RC line + payload/body-dims line were `text-slate-400` on white (2.56:1) → `text-slate-600 dark:text-slate-400` (7.58:1); the ok-state document chips were `text-slate-500` on `bg-slate-100` (4.34:1 — below AA) → `text-slate-600` (6.92:1); the error card's helper line `text-slate-400` → `text-slate-600` |
+| Named document-expiry alert | New `firstDocAlert(truck)` helper names the most urgent document and its day count — "Document expiry alert — Fitness expires in 12 days. Renew before it expires to prevent dispatch blockage." (was an unnamed "renew before it expires") |
+| Driver line | Cards now show an honest "Driver: assigned"/"Unassigned" line (the service row carries `driver_id`, not a name — no invented driver names) |
+| 44px targets + focus rings | Shared `FOCUS_RING` on every control; Add Truck, Cancel, submit, Retry, and both card actions are `min-h-[44px]`; all six form fields (select + RC + 4 date inputs) are `min-h-[44px]` with rings |
+| RC-named toasts | Availability success toast now names the RC ("Vehicle MH12AB1234 marked unavailable"); conflict + replay copies unchanged |
+| Five states | Already wired with testids (TO-144-D1): loading now additionally `role="status"` + `aria-busy` + sr-only text; empty/error(Retry)/denied/loaded verified again this run |
+| Not carried over | Filter/search bar (no backend search capability — `listVehicles` has no filter param; would be client-side scope creep) and the reviewer state-switcher bar (design-review simulator; real states covered by tests). Sidebar tabs are AgencyLayout's, not page scope |
+
+- **Proof run this round (from `frontend/`):** `npx vitest run src/pages/AgencyFleetPage.test.ts` → **9/9 passed** (new file, none existed): busy loading hook, loaded card (status chip text, RC, payload/body dims, driver line, "Fitness expires in 12 days" named alert, all four doc chips with icons, toggle aria-label naming vehicle+RC), empty, error `role="alert"` + single Retry refetch, denied `role="alert"` with the bounded message, create form exposing all six `htmlFor`-linked fields and submitting through `createVehicle`, idempotent-replay copy, RC-named toggle toast with exactly one refetch, and the version-conflict toast with exactly one command call + one refetch (no retry loop). Two fix cycles: the denial test initially rejected without the service's `isDenial` marker so the page correctly branched to the error state (fixed by attaching the marker to the `UserFacingError`), and its timeout leaked act() timers into the following tests until fixed. `npx vitest run src/pages/AgencyFleetPage.test.ts src/pages/AgencyDashboardPage.test.ts src/services/jobOfferOtpContract.test.ts` → **17/17**. `npx tsc --noEmit` → exit 0 (one unused-var fix cycle). `npx eslint src/pages/AgencyFleetPage.tsx src/pages/AgencyFleetPage.test.ts --max-warnings 0` → exit 0.
+- **NOT run this tier:** browser pass — the TO-144-D1 scripted browser battery (46/46 at both viewports) covered these states against the pre-refresh markup; re-running it against the refreshed markup is an owner-gated follow-up (the local-first tier renders agency routes via the device-local branch, which this page does not use). Hosted RLS/RPC round-trips stay covered by the PGlite battery, not re-run here.
+- Rubric row for `2f54d59c` (§5): generated scores retained; app mitigations annotated. §1/§2/§6 rows updated below.
+
 ## 2026-10-24 backlog item `driver-delivery-proof-refresh` — screen `180752ea` refreshed & integrated (delivery sub-flow of `/driver/trip/:jobId`)
 
 Design side (done upstream, 1 generation): Stitch edit of `180752ea` produced refreshed screen **`c241f6c1673b45e6b3eabb0fa05f7993`** "Driver: Delivery & Proof — TruckOpti" (MOBILE, 780×2504; journaled artifact `…stitch-mcp-state\artifacts\10636db1\…\projects_…_180752ea….2026-10-24T04-19-56-462Z.json`). This screen is a **sub-flow design of the same `/driver/trip/:jobId` page** (steps 5–7), so the integration delta sits on top of the `591699f3` integration above — **0 Stitch calls from this integration, 0 mutations**.
@@ -163,7 +185,7 @@ ids are 8-char tails of `projects/817968552986251880/screens/<id>`; full ids in 
 | `efa6bcef` | Agency Registration — TruckOpti | DESKTOP | 18153 | n/a (payload has no update time) |
 | `76d2e9e6` | Agency: Billing & Financials Hub | DESKTOP | 22576 | n/a (payload has no update time) |
 | `f5ac1529` | Agency: Driver Roster & Management | DESKTOP | 27798 | n/a (payload has no update time) |
-| `2f54d59c` | Agency: Fleet Management & Vehicle Status | DESKTOP | 23700 | n/a (payload has no update time) |
+| `2f54d59c` | Agency: Fleet Management & Vehicle Status **(refreshed 2026-10-24 → screen `cfafbe06345a4061b7e06c9cf519305a`; integrated — see top section)** | DESKTOP | 23700 | n/a (payload has no update time) |
 | `05b1da56` | Agency: Rate Card Management | DESKTOP | 24237 | n/a (payload has no update time) |
 | `c7700d0d` | Auth Callback — TruckOpti | DESKTOP | 11042 | n/a (payload has no update time) |
 | `f1185d19` | Checkout — TruckOpti | DESKTOP | 17213 | n/a (payload has no update time) |
@@ -264,7 +286,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | `/driver/kyc` | driver | Driver: Documents & KYC Upload `e72905ba` | COVERED (integrated 2026-09-19, `d66f10db`) |
 | `/agency/dashboard` | agency | Agency Operations Dashboard `e18e7ca3` | COVERED |
 | — (agency dup) | — | Agency Dispatch Board `a8b23ee2` | DUPLICATE (could equally be the `/agency/dashboard` design; ambiguous) |
-| `/agency/fleet` | agency | Agency: Fleet Management `2f54d59c` | COVERED |
+| `/agency/fleet` | agency | Agency: Fleet Management `2f54d59c` (refreshed → `cfafbe06345a4061b7e06c9cf519305a`) | COVERED (refresh integrated 2026-10-24 onto the TO-144-D1 wiring — top section) |
 | `/agency/jobs` | agency | Agency Dispatch Board `a8b23ee2` | COVERED (ambiguous pairing — verify intent) |
 | `/agency/billing` | agency | Agency: Billing & Financials Hub `76d2e9e6` | COVERED |
 | `/agency/drivers` | agency | Agency: Driver Roster & Management `f5ac1529` | COVERED |
@@ -402,7 +424,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | `efa6bcef` | Agency Registration — TruckOpti | 5 | 5 | 5 | 3 | 3 | 3 | 4 | ok |
 | `76d2e9e6` | Agency: Billing & Financials Hub | 5 | 5 | 5 | 3 | 1 | 3 | 3.67 | **POOR** |
 | `f5ac1529` | Agency: Driver Roster & Management | 5 | 5 | 4 | 3 | 1 | 3 | 3.5 | **POOR** |
-| `2f54d59c` | Agency: Fleet Management & Vehicle Status | 5 | 5 | 4 | 3 | 1 | 3 | 3.5 | **POOR** |
+| `2f54d59c` | Agency: Fleet Management & Vehicle Status | 5 | 5 | 4 | 3 | 1 | 3 | 3.5 | **POOR** — refreshed 2026-10-24 (screen `cfafbe06`); the app implementation now adds the responsive 2→1-col grid, stacking form, icon+text status chips, the AA contrast fixes (slate-400 lines, slate-500-on-slate-100 chips), 44px targets, focus rings and the named expiry alert (top section); generated scores kept as generated |
 | `05b1da56` | Agency: Rate Card Management | 5 | 5 | 5 | 3 | 3 | 3 | 4 | ok |
 | `c7700d0d` | Auth Callback — TruckOpti | 5 | 3 | 3 | 2 | 1 | 3 | 2.83 | **POOR** |
 | `f1185d19` | Checkout — TruckOpti | 5 | 5 | 5 | 3 | 3 | 3 | 4 | ok |
@@ -462,7 +484,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 
 ### P1 — POOR screens on live journeys + missing designs
 
-4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `b54728a4` (pickup) and `0d032afa` (history), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch). (`202377b7` job-offer retired 2026-10-23; `05bf2a23` home, `591699f3` trip, `180752ea` delivery+proof all refreshed and integrated 2026-10-24 — see top sections.)
+4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `b54728a4` (pickup) and `0d032afa` (history), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch). (`202377b7` job-offer retired 2026-10-23; `05bf2a23` home, `591699f3` trip, `180752ea` delivery+proof refreshed and integrated 2026-10-24 — top sections. `2f54d59c` agency fleet refreshed and integrated 2026-10-24 as a DESKTOP board — its R=1 was the fixed-layout generated artifact; the app grid is responsive.)
 5. Design the four MISSING screens: `/driver/profile`, `/subscription`, `/agency/profile`, `/management/cartons`.
 6. Fix driver dead ends: replace hardcoded `tel:18001234567` with the real support number (or a config), and stop linking drivers into the customer `/profile` layout (driver-scoped account section).
 7. Auth/public POOR screens (`d8615375` OTP, `daab73c1` signup, `c7700d0d` auth-callback, `1e1497ab` payment success + failure states): add error/empty/loading states and a11y before next regeneration cycle.
