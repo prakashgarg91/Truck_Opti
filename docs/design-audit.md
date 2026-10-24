@@ -1,5 +1,31 @@
 # Design Audit — Truck_Opti × Stitch coverage
 
+## 2026-10-23 backlog item `driver-job-offer-acceptance` — screen `202377b7` RETIRED (retrieve-only, code-only)
+
+This closes backlog §6 P0 #1 in its corrected form: the audit's "dead end / build `/driver/job-offer/:offerId`" premise was **superseded in code by TO-129/TO-130** — offer acceptance is live on `/driver/dashboard` and lands on the existing `/driver/trip/:jobId` flow. The item became a retrieve-only diff of screen `202377b7` against the live flow, then edit-or-retire. **Decision: RETIRE** (doc-level; no screen deletion via Stitch, **0 Stitch calls, 0 mutations, 0 retries** — the HTML was read from the journaled audit artifact `.stitch-mcp/scratch/audit/202377b7233d4772adbe6745d5d00e2f.html`, 12,454 bytes, generated 2026-09-19; no live re-fetch, and the payload has no update-time field so drift cannot be excluded).
+
+### Diff: screen `202377b7` ("Job Offer - Driver App", MOBILE) vs the live flow
+
+| Aspect | Screen `202377b7` (generated HTML) | Live app (implemented) |
+|---|---|---|
+| Placement | Standalone full-screen page with its own header and close button (`202377b7…html:122-130`) | Inline bottom-sheet modal over `/driver/dashboard` (`frontend/src/pages/DriverDashboardPage.tsx:472-545`); no offer route exists (`frontend/src/App.tsx:168-169` defines only `/driver/dashboard` and `/driver/trip/:jobId`) |
+| Expiry | Static text "OFFER EXPIRES IN 01:59" (`…html:136`) | Per-second countdown derived from `expires_at`, auto-dismiss at zero with pending-offer re-hydration (`DriverDashboardPage.tsx:317-340`), realtime `job_offers` subscription (`:257-296`) and focus hydration (`:298-315`) |
+| Offer payload | Fabricated fields: ₹45,000 hero payout, 984 km distance, "Steel Coils" cargo, "32ft Multi-Axle" required vehicle, pickup/drop date-times (`…html:139-203`) | The `job_offers` select carries only origin/destination/total_weight/estimated_cost (`frontend/src/services/customerSupabaseApi.ts:725-737`); distance/cargo/required-vehicle do not exist in the data contract |
+| Accept action | Terminal "Accept Job" — the design ends at accept (`…html:206-217`) | Accept → single atomic `respond_to_job_offer` RPC (`customerSupabaseApi.ts:808-831`) → success toast → navigate `/driver/trip/:jobId` (`DriverDashboardPage.tsx:360-385`) |
+| OTP | None designed | 4-digit contract locked by `frontend/src/services/jobOfferOtpContract.test.ts` (page inputs + migration `20260601223849` trigger/CHECKs) and implemented as pickup/delivery steps |
+| Downstream | None | 7-step trip flow navigate → pickup OTP → load photo → in transit → delivery OTP → proof photo → done (`frontend/src/pages/DriverTripPage.tsx:55-65`) |
+| States | One happy state | Responding/disabled buttons (`DriverDashboardPage.tsx:527,535`), decline, expiry auto-dismiss, and a bounded server-rejection message map (`customerSupabaseApi.ts:704-714`) |
+| Look & feel | Material-style token palette, amber accept (`…html:213`) | App slate/emerald Tailwind tokens, green accept |
+
+**Why retire, not edit:** the journey the screen designed is shipped through a different interaction model (ephemeral card → atomic response → 7-step trip page), the screen has no route and no consumer, and editing it to mimic the shipped flow would create a zero-consumer mock of working software. Precedent: the `bc073b70` stale-husk retirement (§2, §6 #8). The screen's rubric score is retained as generated and annotated retired (§5); the inventory and orphan rows are annotated (§1, §2). Also confirmed: the `jobOfferOtpContract` *service file* no longer exists — only the contract test remains, with no importers (`grep -rn jobOfferOtpContract frontend/src` matches the test file only).
+
+### Proof run this round
+
+- New wiring tests in `frontend/src/pages/DriverDashboardPage.test.ts` (response-states describe): (1) a rejected `respondToJobOffer` surfaces the bounded message ("This job offer has expired.") via toast, calls the RPC exactly once with `accept=true`, never navigates, and dismisses the offer card; (2) acceptance with `activeJobId: null` falls back to the incoming offer id and still navigates to `/driver/trip/offer-777`.
+- `npx vitest run src/pages/DriverDashboardPage.test.ts src/services/jobOfferOtpContract.test.ts` (from `frontend/`) → **2 files, 10/10 passed** (dashboard: 4 = 2 pre-existing TO-129 + 2 new; OTP contract: 6).
+- `npx tsc --noEmit` (from `frontend/`) → exit 0. `npx eslint src/pages/DriverDashboardPage.test.ts --max-warnings 0` → exit 0 (hygiene, not a named gate).
+- NOT run this item: browser pass (no UI source changed — tests + docs only; the live offer UI's browser evidence remains the TO-129/TO-130 acceptance record) and any hosted-backend round-trip.
+
 ## 2026-10-10 TO-144-D1 fleet-foundation state wiring (no design generation)
 
 Minimal state wiring on two EXISTING agency routes — no new routes, no visual redesign, no Stitch generation, no stitch_* mutation (mutations 0; retries 0; no new screens):
@@ -76,7 +102,7 @@ ids are 8-char tails of `projects/817968552986251880/screens/<id>`; full ids in 
 | `591699f3` | Driver Trip Detail - TruckOpti | MOBILE | 16363 | n/a (payload has no update time) |
 | `180752ea` | Driver: Delivery & Proof | MOBILE | 13157 | n/a (payload has no update time) |
 | `e72905ba` | Driver: Documents & KYC Upload | MOBILE | 22138 | n/a (payload has no update time) |
-| `202377b7` | Driver: New Job Offer | MOBILE | 12454 | n/a (payload has no update time) |
+| `202377b7` | Driver: New Job Offer **(RETIRED 2026-10-23 — see top section)** | MOBILE | 12454 | n/a (payload has no update time) |
 | `b54728a4` | Driver: Pickup Workflow | MOBILE | 15954 | n/a (payload has no update time) |
 | `efcc993e` | Earnings & Wallet — TruckOpti | MOBILE | 16256 | n/a (payload has no update time) |
 | `b1b215f2` | Forgot Password — TruckOpti | DESKTOP | 11746 | n/a (payload has no update time) |
@@ -183,6 +209,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | Contact Support | `0b4d18c8` | Identical content to `6ed56451`; keep one |
 | Admin: KYC Verification Detail | `d9fafd06` | Intentional: terminology pairing for `e72905ba`; no 1:1 route |
 | Driver: Pickup Workflow / Delivery & Proof | `b54728a4` / `180752ea` | Intentional: stage designs inside `/driver/trip/:jobId` |
+| Driver: New Job Offer | `202377b7` | **RETIRED 2026-10-23** — routeless and superseded: the offer journey ships as the inline card on `/driver/dashboard` + the `/driver/trip/:jobId` flow (TO-129/TO-130); diff in the top section |
 
 ### Near-duplicate clusters
 
@@ -227,7 +254,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | Driver Register `/driver/register` | multi-step register | `driverSupabaseApi.register` → `/login?mode=driver` | OK |
 | Driver App Home `/driver/dashboard` | active-job card | `/driver/trip/:active_job_id` | OK |
 | Driver App Home | "complete registration" (no profile) | `/driver/register` | OK |
-| Driver App Home | incoming `job_offers` realtime events | **no acceptance UI exists** | **DEAD END (P0)** — offer arrives, driver has no way to accept/decline in-app; `jobOfferOtpContract` service (OTP acceptance contract) is **unused by any page**; Stitch screen `202377b7` "Driver: New Job Offer" has no route/page |
+| Driver App Home | incoming `job_offers` realtime events | inline bottom-sheet offer card → `respond_to_job_offer` → `/driver/trip/:jobId` | **RESOLVED (2026-10-23; TO-129/TO-130)** — offer arrives as an inline card with countdown, realtime subscription + focus hydration, accept/decline through the atomic RPC (`DriverDashboardPage.tsx:257-296,298-315,360-385,472-545`); screen `202377b7` retired (top section). Original DEAD END note superseded. |
 | Driver Trip `/driver/trip/:jobId` | stage progression (arrived→loaded→in transit→delivered+POD) | `persist_driver_job_offer_progress` rpc + `driverTripsApi` | OK |
 | Driver Trip | location tracking | `driverSupabaseApi.upsertLocation` (driver_locations) | OK |
 | Driver Trip | "call support" | `tel:18001234567` — **hardcoded, unverified number** | **FLAG (P1)** buttons-to-nowhere risk if the number is not live |
@@ -240,7 +267,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | Driver Profile | "Documents & KYC" | `/driver/kyc` + server KYC status badge (`driver-kyc` `state`) | OK (badge added 2026-10-03, TO-127) |
 | Driver KYC `/driver/kyc` | uploads, submit | **real** since 2026-10-03 (TO-127): `driverKycApi` → `driver-docs` private bucket + `driver-kyc` edge (TO-126); server-authoritative states, dev-only demo, offline/auth denial | RESOLVED driver-side (P0 closed; admin-side loop tracked in §6 item 2 update) |
 
-**Driver dead ends: 1 P0** (job-offer acceptance), **1 P1** (hardcoded support number), **1 P2** (cross-role `/profile` links).
+**Driver dead ends: 0 P0** (job-offer acceptance resolved 2026-10-23 — see the row above and the top section), **1 P1** (hardcoded support number — **fixed 2026-10-05**: `DriverTripPage` now reads `SUPPORT_PHONE_TEL`/`SUPPORT_PHONE_DISPLAY` from `frontend/src/config/support.ts`, `DriverTripPage.tsx:19,481-488`), **1 P2** (cross-role `/profile` links).
 
 ## 4. API map — endpoints ↔ screen actions
 
@@ -254,15 +281,15 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | subscription (`subscriptionApi`) | `subscription_plans`, `subscriptions`, `usage_tracking`, `check_usage_limit`/`increment_usage`/`has_active_subscription` rpcs | Checkout, `/subscription` | `/subscription` has **no design** |
 | contact (`contactInquiry`) | `contact_inquiries` | Contact/Support | — |
 | driver core (`driverSupabaseApi`) | `drivers` | DriverRegister, DriverProfile, DriverDashboard, DriverTrip | — |
-| driver trips (`driverTripsApi`, `driverTripProgress`) | `job_offers`, `persist_driver_job_offer_progress` rpc, `driver_locations` | DriverTrip, DriverHistory, DriverDashboard (realtime) | **inbound job-offer acceptance has no UI** (see §3) |
+| driver trips (`driverTripsApi`, `driverTripProgress`) | `job_offers`, `persist_driver_job_offer_progress` rpc, `driver_locations` | DriverTrip, DriverHistory, DriverDashboard (realtime) | RESOLVED — inbound offer acceptance UI is live (`respond_to_job_offer` via `driverDashboardApi`, `customerSupabaseApi.ts:808-831`; 2026-10-23 section) |
 | driver earnings (`driverEarningsApi`) | `driver_payouts` | DriverEarnings | — |
 | **driver KYC (`driverKycApi` + `driverKycDocuments`)** | `driver-kyc` edge (`state`/`upload`/`submit`/`review`/`access`; `state` accepts admin `driverId` since TO-128), `driver_kyc_documents` versioned rows, private `driver-docs` bucket (signed 60 s previews) | `/driver/kyc` uploads/review states/submit (TO-127, 2026-10-03); profile entry badge; **admin review on `/admin/drivers/:id`** (TO-128, 2026-10-03): per-document accept/reject via `reviewDocument`, `getDriverKycState` + `getDocumentAccessUrl` signed previews, 409-conflict state reload, approve-with-shortfall confirmation | RESOLVED both directions (P0 closed 2026-10-03, TO-126+TO-127+TO-128) |
-| **OTP job-offer contract (`jobOfferOtpContract`)** | contract for `job_offers` OTP acceptance | **nothing — service is dead code** | **UNMAPPED BOTH DIRECTIONS (P0):** the screen (`202377b7`), the data (`job_offers`), and the contract service exist; no page ties them together |
+| **OTP job-offer contract (`jobOfferOtpContract`)** | 4-digit `job_offers.pickup_otp`/`delivery_otp` contract: page inputs + migration `20260601223849` (trigger + CHECKs), locked by `jobOfferOtpContract.test.ts` | consumed by the live flow: `DriverDashboardPage` (offer response) and `DriverTripPage` (OTP steps); the legacy `jobOfferOtpContract` **service file no longer exists** (test-only contract lock, no importers) | RESOLVED both directions (supersedes the P0 "unmapped" note — first recorded in the 2026-10-05 addendum §B, annotated here 2026-10-23) |
 | admin (`adminSupabaseApi`) | `users`, `drivers`, `agencies`, `contact_inquiries` | `/admin/*` pages | KYC review authority lives in `driverKycApi` (`getDriverKycState`/`reviewDocument`/`getDocumentAccessUrl`) consumed by DriverDetailPage (TO-128); `adminSupabaseApi` keeps whole-driver status actions only |
 | agency portal (`agencyPortalApi`, `agencySupabaseApi`) | `agency-portal-{rates,jobs,fleet,drivers,billing}` edges, `agency_jobs`, `transport_agencies` | `/agency/*` pages | — |
 | local-first (`localApi`, PGlite) | local db | packing/dashboard local mode | — |
 
-**Summary of unmapped (both directions):** `jobOfferOtpContract` (dead code awaiting its page) remains; driver KYC is fully mapped both directions (TO-126/TO-127/TO-128, 2026-10-03). Single-direction gaps: 4 routes without designs (`/subscription`, `/agency/profile`, `/management/cartons`, `/driver/profile`), 5 orphan screens without routes, 2 duplicate clusters needing dedupe.
+**Summary of unmapped (both directions):** none — `jobOfferOtpContract`/job-offer acceptance is resolved (TO-129/TO-130; `202377b7` retired 2026-10-23, top section); driver KYC is fully mapped both directions (TO-126/TO-127/TO-128, 2026-10-03). Single-direction gaps: 4 routes without designs (`/subscription`, `/agency/profile`, `/management/cartons`, `/driver/profile`), 6 orphan screens without routes (`202377b7` now among them, retired), 2 duplicate clusters needing dedupe.
 
 ## 5. Quality rubric
 
@@ -311,7 +338,7 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 | `591699f3` | Driver Trip Detail - TruckOpti | 5 | 3 | 5 | 1 | 1 | 3 | 3 | **POOR** |
 | `180752ea` | Driver: Delivery & Proof | 5 | 3 | 5 | 2 | 1 | 3 | 3.17 | **POOR** |
 | `e72905ba` | Driver: Documents & KYC Upload | 5 | 5 | 5 | 3 | 1 | 3 | 3.67 | **POOR** |
-| `202377b7` | Driver: New Job Offer | 4 | 3 | 3 | 1 | 1 | 3 | 2.5 | **POOR** |
+| `202377b7` | Driver: New Job Offer | 4 | 3 | 3 | 1 | 1 | 3 | 2.5 | **POOR** — **RETIRED 2026-10-23** (superseded by the live offer flow; scores kept as generated — see top section) |
 | `b54728a4` | Driver: Pickup Workflow | 5 | 3 | 5 | 3 | 1 | 3 | 3.33 | **POOR** |
 | `efcc993e` | Earnings & Wallet — TruckOpti | 5 | 3 | 5 | 2 | 1 | 3 | 3.17 | **POOR** |
 | `b1b215f2` | Forgot Password — TruckOpti | 5 | 3 | 5 | 3 | 3 | 3 | 3.67 | ok |
@@ -348,13 +375,13 @@ Statuses: **COVERED** (one screen maps to the route) · **DUPLICATE** (≥2 scre
 
 ### P0 — core-journey gaps (block the driver revenue loop)
 
-1. **Driver job-offer acceptance is unreachable.** Screen `202377b7` (MOBILE) exists; `job_offers` table + realtime channel exist; `jobOfferOtpContract` service exists and is unused. Build `/driver/job-offer/:offerId` (accept → OTP verify → trip start) wiring screen ↔ service ↔ table. *Evidence: §3 dead end, §4 unmapped.*
+1. **Driver job-offer acceptance — RESOLVED / superseded (2026-10-23).** The P0 was closed in code by TO-129/TO-130 before any design work: offers arrive in realtime and on focus as an inline bottom-sheet card on `/driver/dashboard` (`DriverDashboardPage.tsx:257-296,298-315,472-545`), accept/decline runs the single atomic `respond_to_job_offer` RPC (`customerSupabaseApi.ts:808-831`) and acceptance navigates to the existing `/driver/trip/:jobId` 7-step flow (`DriverDashboardPage.tsx:360-385`; `DriverTripPage.tsx:55-65`). The proposed `/driver/job-offer/:offerId` route was never built and is not needed; screen `202377b7` is **RETIRED** after a retrieve-only diff showed it designing a conflicting standalone page (static 01:59 timer, fabricated distance/cargo/vehicle fields, terminal accept — full diff in the top section). Original text: "Screen `202377b7` (MOBILE) exists; `job_offers` table + realtime channel exist; `jobOfferOtpContract` service exists and is unused. Build `/driver/job-offer/:offerId` (accept → OTP verify → trip start) wiring screen ↔ service ↔ table."
 2. **KYC loop is real both directions (updated 2026-10-03, TO-126+TO-127+TO-128).** `/driver/kyc` uploads real bytes to the private `driver-docs` bucket and renders server-authoritative review states; the admin half closed the same day: `/admin/drivers/:id` now embeds a KYC Verification section consuming `getDriverKycState` (admin-scoped `state` read), `reviewDocument` (reason-required, 409 conflict → authoritative reload) and fresh `getDocumentAccessUrl` signed previews, and approving a driver without full KYC requires an explicit documented confirmation. *Evidence: `DriverDetailPage.tsx` KYC section consumes `driverKycApi` only; battery 35/35 (incl. admin state read + cross-driver 403) and unit tests 522/522 on 2026-10-03.* Next proposal (one line): the remaining P0 in this backlog is #1 — driver job-offer acceptance (`202377b7` + `jobOfferOtpContract`), matching completion queue TO-129/TO-130.
 3. **`stitch_list_screens` under-reports** (57 listed vs 58 fetchable; no update timestamps). Adapter/upstream consistency issue — blocks reliable audits/automation. Escalate to the adapter owner; not a repo code change.
 
 ### P1 — POOR screens on live journeys + missing designs
 
-4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `05bf2a23` (home), `591699f3` (trip), `b54728a4` (pickup), `180752ea` (delivery+POD), `0d032afa` (history), `202377b7` (job offer — with #1), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch).
+4. Regenerate/fix driver MOBILE screens in the POOR set with a11y + true MOBILE device: `05bf2a23` (home), `591699f3` (trip), `b54728a4` (pickup), `180752ea` (delivery+POD), `0d032afa` (history), and redesign `efcc993e` (earnings) + `3c30c0e5` (registration) as MOBILE (device mismatch). (`202377b7` job-offer removed 2026-10-23 — retired with #1, not a regeneration candidate.)
 5. Design the four MISSING screens: `/driver/profile`, `/subscription`, `/agency/profile`, `/management/cartons`.
 6. Fix driver dead ends: replace hardcoded `tel:18001234567` with the real support number (or a config), and stop linking drivers into the customer `/profile` layout (driver-scoped account section).
 7. Auth/public POOR screens (`d8615375` OTP, `daab73c1` signup, `c7700d0d` auth-callback, `1e1497ab` payment success + failure states): add error/empty/loading states and a11y before next regeneration cycle.

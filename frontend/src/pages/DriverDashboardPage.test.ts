@@ -17,6 +17,15 @@ const h = vi.hoisted(() => ({
     getTripHistory: vi.fn(async () => []),
     getPayoutHistory: vi.fn(async () => []),
     respondToJobOffer: vi.fn(),
+    toastError: vi.fn(),
+    toastSuccess: vi.fn(),
+}))
+
+vi.mock('react-hot-toast', () => ({
+    default: {
+        error: h.toastError,
+        success: h.toastSuccess,
+    },
 }))
 
 vi.mock('../services/supabaseApi', () => ({
@@ -49,6 +58,7 @@ vi.mock('../stores/authStore', () => ({
 }))
 
 import DriverDashboardPage from './DriverDashboardPage'
+import { UserFacingError } from '../utils/userFacingError'
 
 const DRIVER = {
     id: 'driver-1',
@@ -188,5 +198,56 @@ describe('DriverDashboardPage offer response (TO-129)', () => {
         await waitFor(() => h.respondToJobOffer.mock.calls.length === 1, 'decline response call')
         expect(h.respondToJobOffer).toHaveBeenCalledWith('offer-777', false)
         expect(lastPath).toBe('/driver/dashboard')
+    })
+})
+
+// Response-state coverage added with the 2026-10-23 design-audit retirement of
+// Stitch screen 202377b7: the live wiring (not a designed page) owns the offer
+// journey, so its remaining states are pinned here — the bounded server
+// rejection path and the active-job-id fallback after acceptance.
+describe('DriverDashboardPage offer response states', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        lastPath = ''
+        h.getByUserId.mockResolvedValue(DRIVER)
+        h.getPendingOffer.mockResolvedValue(PENDING_OFFER)
+    })
+
+    it('a rejected response surfaces the bounded server message and never navigates', async () => {
+        h.respondToJobOffer.mockRejectedValue(
+            new UserFacingError('This job offer has expired.')
+        )
+        const view = await mountPage()
+
+        await waitFor(() => (view.textContent || '').includes('New Job Offer'), 'incoming offer modal')
+
+        await clickButton(/Accept/)
+
+        await waitFor(() => h.toastError.mock.calls.length > 0, 'bounded rejection toast')
+        expect(h.toastError).toHaveBeenCalledWith('This job offer has expired.')
+        expect(h.respondToJobOffer).toHaveBeenCalledTimes(1)
+        expect(h.respondToJobOffer).toHaveBeenCalledWith('offer-777', true)
+        // The driver stays on the dashboard — no trip navigation on failure.
+        expect(lastPath).toBe('/driver/dashboard')
+        // The offer card is dismissed after the failed response.
+        expect((view.textContent || '')).not.toContain('New Job Offer')
+    })
+
+    it('acceptance falls back to the incoming offer id when the server returns no active job', async () => {
+        h.respondToJobOffer.mockResolvedValue({
+            offerId: 'offer-777',
+            offerStatus: 'accepted',
+            respondedAt: '2026-10-23T09:01:00Z',
+            activeJobId: null,
+        })
+        const view = await mountPage()
+
+        await waitFor(() => (view.textContent || '').includes('New Job Offer'), 'incoming offer modal')
+
+        await clickButton(/Accept/)
+
+        await waitFor(() => lastPath === '/driver/trip/offer-777', 'fallback navigation to the trip route')
+        expect(h.toastSuccess).toHaveBeenCalledWith('✅ Job Accepted! Navigate to pickup.')
+        expect(h.respondToJobOffer).toHaveBeenCalledTimes(1)
     })
 })
