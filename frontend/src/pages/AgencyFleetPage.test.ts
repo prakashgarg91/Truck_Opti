@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import type { ReactElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Agency Fleet refresh (2f54d59c → screen cfafbe06, 2026-10-24) on top of the
 // TO-144-D1 fleet foundation: the five operational states, the create-vehicle
@@ -129,6 +129,12 @@ describe('AgencyFleetPage fleet foundation states and wiring', () => {
         })
     })
 
+    afterEach(() => {
+        // Tests that freeze the clock must not leak it: clearMocks/restoreMocks
+        // in vitest.config.ts do not undo vi.useFakeTimers().
+        vi.useRealTimers()
+    })
+
     it('loading renders a busy status region with the fleet-loading hook', async () => {
         h.listVehicles.mockReturnValue(new Promise(() => {}))
         const view = await mountPage()
@@ -140,6 +146,14 @@ describe('AgencyFleetPage fleet foundation states and wiring', () => {
     })
 
     it('a loaded vehicle card shows status chip text, RC, payload/body dims, driver line and expiry alert', async () => {
+        // Deterministic clock: AgencyFleetPage computes the countdown as
+        // Math.ceil((new Date(expiry).getTime() - Date.now()) / 86400000)
+        // (AgencyFleetPage.tsx:36,53), so freeze "now" at 2026-10-24T12:00:00Z —
+        // fitness_expiry 2026-11-05 is then exactly 11.5 days out and Math.ceil
+        // yields 12 regardless of the machine's local timezone or the hour the
+        // suite runs. shouldAdvanceTime:true keeps real-time timers firing while
+        // the clock is pinned, so the waitFor polling helper below still works.
+        vi.useFakeTimers({ now: Date.parse('2026-10-24T12:00:00Z'), shouldAdvanceTime: true })
         await mountPage()
 
         await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'vehicle card')
@@ -150,7 +164,8 @@ describe('AgencyFleetPage fleet foundation states and wiring', () => {
         expect(card.textContent || '').toContain('Body: 32×8×10m')
         expect(card.textContent || '').toContain('Available')
         expect(card.textContent || '').toContain('Unassigned')
-        // Fitness 2026-11-05 is 12 days out: named alert, not a bare warning.
+        // With the clock pinned at 2026-10-24T12:00:00Z, Fitness 2026-11-05 is
+        // deterministically 12 days out: named alert, not a bare warning.
         expect(card.textContent || '').toContain('Fitness expires in 12 days')
         // All four document chips render with icons (svg) + label.
         for (const label of ['Insurance', 'Fitness', 'Permit', 'PUC']) {

@@ -142,3 +142,72 @@ Hosted Supabase project/credentials, `supabase db push` approval, migration/func
 ### Next smallest completion-focused task (post-acceptance)
 
 **TO-143-D2** — actual fleet assignment and transactional reservations (`agent-tasks/033-dispatch-lifecycle.md` delivery 2), now READY: it consumes `agency_vehicle_allocation_eligible` / `agency_driver_allocation_eligible` and the version/idempotency conventions landed here. TO-144-D2 (memberships/sites/tariffs) follows after.
+
+## Delivery 0 (2026-10-25) — deterministic expiry clock repair
+
+Status: **AWAITING_REVIEW** — recorded and committed by the workflow integrator on `main`; Codex is the independent acceptance authority and no Codex verdict exists yet. Board row: TO-155. Scope is test-only: the time-brittle expiry assertion in the fleet-refresh test is pinned to a deterministic clock; product code untouched (the working tree under this delivery changes only `frontend/src/pages/AgencyFleetPage.test.ts` + docs/board).
+
+### Root cause (read + cited)
+
+The component computes the countdown label in `firstDocAlert` — `frontend/src/pages/AgencyFleetPage.tsx:53`: `const days = Math.ceil((new Date(doc.expiry).getTime() - Date.now()) / 86400000)`; formatted at :59 (`${label} expires in ${days} day(s)`); the same formula drives `expiryStatus` at :36. Rounding is `Math.ceil` over a pure-UTC millisecond delta — `new Date('2026-11-05')` parses date-only ISO as UTC midnight per spec, and both `getTime()` and `Date.now()` are absolute UTC ms, so no local-timezone involvement. The page renders "12 days" iff now ∈ [2026-10-24T00:00:00Z, 2026-10-25T00:00:00Z), so the loaded-card test's real-clock assertion was time-brittle.
+
+### Reproduced red (delivery workflow, pre-fix)
+
+With the fix absent and the real clock on 2026-10-25, `npx vitest run src/pages/AgencyFleetPage.test.ts` failed the loaded-vehicle-card test: expected 'Fitness expires in 12 days' was not present, because real now computes `Math.ceil` = 11 ('Fitness expires in 11 days'). A node arithmetic pre-check (`node -e` evaluating the same `Math.ceil` at candidate instants) confirmed real now → 11 and 2026-10-24T12:00:00Z → 12, matching the reported red output. (Red reproduction and the arithmetic pre-check were run by the delivery workflow; the integrator did not re-run the red state — the working tree already carries the fix.)
+
+### Fix (frontend/src/pages/AgencyFleetPage.test.ts only; +17/−2)
+
+- **Scoped fake clock** — the loaded-vehicle-card test now installs `vi.useFakeTimers({ now: Date.parse('2026-10-24T12:00:00Z'), shouldAdvanceTime: true })` (`frontend/src/pages/AgencyFleetPage.test.ts:156`) before mount. 2026-10-24T12:00:00Z is the midpoint of the 12-day ceil window (fitness_expiry 2026-11-05 is then exactly 11.5 days out → `Math.ceil` = 12), so the result is deterministic regardless of hour-of-day, the machine's local timezone, or hours of suite drift; `shouldAdvanceTime:true` keeps real-time timers firing so the `waitFor`/`setTimeout` polling and React `act` paths keep working. A static `Date.now` spy was not viable: the component reads BOTH `new Date` and `Date.now`, and the test's own `waitFor` helper (`frontend/src/pages/AgencyFleetPage.test.ts:80-89`) uses `Date.now()` for its deadline — spying it out would hang the polling helper. vitest 3.2.4 (`frontend/package.json:65`) supports these options.
+- **Restoration** — `afterEach(() => { vi.useRealTimers() })` in the describe (`frontend/src/pages/AgencyFleetPage.test.ts:132-136`; import updated at :6), because vitest.config.ts's `clearMocks`/`restoreMocks`/`unstubEnvs` (`frontend/vitest.config.ts:11-13`) do not restore fake timers. The freeze is scoped to the one affected test; the other eight never see it.
+- **Assertion kept meaningful** — `toContain('Fitness expires in 12 days')` retained verbatim (`frontend/src/pages/AgencyFleetPage.test.ts:169`) with a comment explaining the pinned clock — not weakened, skipped, or hardcoded to today's real number.
+
+### Green evidence
+
+Focused (clock repair):
+
+| Command (from `frontend/`) | Result | Exit | Run by |
+|---|---|---|---|
+| `npx vitest run src/pages/AgencyFleetPage.test.ts` (run 1) | 9/9 passed, 1.46s (17:48:53) | 0 | delivery workflow |
+| `npx vitest run src/pages/AgencyFleetPage.test.ts` (run 2) | 9/9 passed, 1.34s (17:49:35) | 0 | delivery workflow |
+| `npx vitest run src/pages/AgencyFleetPage.test.ts` (pre-commit re-run) | 9/9 passed, 1.32s (18:48:59) | 0 | integrator (this recording) |
+
+The suite passing proves the async paths did not freeze: every test relies on `waitFor` terminating via `Date.now()` deadlines and real `setTimeout` sleeps, and all completed. Pre-existing stderr noise (`The current testing environment is not configured to support act(...)`) appears on every test including unmodified ones — pre-existing, not introduced by this change, not failures. Git prints an LF→CRLF autocrlf notice for the file — cosmetic; the diff is +17/−2.
+
+Full battery (fresh run by the delivery workflow on the integrated candidate; not re-run by the integrator per the delivery instructions):
+
+| # | Gate | Result | Exit |
+|---|---|---|---|
+| 1 | dispatch journey DB battery (`node scripts/dispatch_delivery_journey.db.test.mjs`) | 52/52 PASS | 0 |
+| 2 | customer isolation DB battery (`node scripts/customer_journey_isolation.db.test.mjs`) | 30/30 PASS | 0 |
+| 3 | admin RLS proof DB battery (`node scripts/admin_rls_proof.db.test.mjs`) | 57/57 PASS | 0 |
+| 4 | trip integrity DB battery (`node scripts/trip_transition_integrity.db.test.mjs`) | 21/21 PASS | 0 |
+| 5 | agency fleet foundation DB battery (`node scripts/agency_fleet_foundation.db.test.mjs`) | 32/32 PASS | 0 |
+| 6 | policy suites (5) | PASS | 0 |
+| 7 | server routing | PASS | 0 |
+| 8 | glue check | PASS | 0 |
+| 9 | packing regression | 32/32 PASS | 0 |
+| 10 | frontend lint (zero warnings) | PASS | 0 |
+| 11 | frontend unit tests | PASS | 0 |
+| 12 | frontend build incl. tsc | PASS | 0 |
+
+### Proof-tier reconciliation (2026-10-25; docs/design-audit.md +19/−12, committed with this delivery)
+
+An evidence-tier reconciliation annotated 8 claims across `docs/design-audit.md`:
+
+- **NEW tranche-level section** '2026-10-25 evidence-tier reconciliation — TO-154 screen tranche (Delivery-0 req 6)' (`docs/design-audit.md:3-7`): defines the five tiers (MOCKED BROWSER / JSDOM-VITEST / SQL-PGlite / HOSTED HTTP / PHYSICAL DEVICE), corrects the tranche-wide 'NOT run this tier: browser pass' claims — a scripted MOCKED BROWSER pass DID run per item (`.stitch-mcp/verify-{driver-offer,wcag-contrast,driver-home-refresh,trip-refresh,proof-refresh,fleet-refresh}-20261024.mjs` + `contrast-recheck.mjs`, Playwright vs dev server :5173 with route mocks on **localhost.invalid/** AND **/*.supabase.co/**) — and states plainly that the 104 gitignored PNGs + console-only scripts are provisional mocked-tier verification, not a durable acceptance record and not evidence of any fresh hosted or physical-device pass.
+- **fleet-management-refresh** (2f54d59c→cfafbe06, `docs/design-audit.md:27-28`): vitest bullet re-labelled 'JSDOM/VITEST unit tier'; the old 'NOT run this tier: browser pass … owner-gated follow-up' claim was FALSE (verify-fleet-refresh-20261024.mjs + 14 fleet-*.png ran 10:37, minutes before commit feb783f1 10:39) and was replaced with a tier record (mocked-browser pass existed but is console-output-only/gitignored/not integrated into `agent-results/browser-evidence/`; the durable browser record remains the TO-144-D1 battery 46/46 against PRE-refresh markup only, re-counted ok:true 46/false 0); 'Hosted RLS/RPC round-trips stay covered by the PGlite battery' re-labelled (PGlite is in-process Postgres, not a hosted round-trip); HOSTED HTTP / PHYSICAL DEVICE: none — absent.
+- **fleet state table** (`docs/design-audit.md:24`): 'empty/error(Retry)/denied/loaded verified again this run' now reads '(JSDOM/VITEST tier — see the proof bullets below)' so it cannot be read as browser verification.
+- **driver-delivery-proof-refresh** (180752ea→c241f6c1, `docs/design-audit.md:48-49`): vitest 18/18 re-labelled JSDOM/VITEST (its mocked supabase.storage client explicitly unit-tier, not a real upload); old 'NOT run this tier: browser pass' replaced — verify-proof-refresh-20261024.mjs + 8 driver-proof-*.png ran 10:09 (before commit 03d5b8f4 10:10) with a mocked storage-upload success/failure path at the HTTP boundary; provisional mocked-tier only; HOSTED HTTP / PHYSICAL DEVICE: none — absent (camera `capture="environment"`/geolocation not exercised in any tier).
+- **driver-trip-detail-refresh** (591699f3→98648447, `docs/design-audit.md:68-69`): vitest 15/15 re-labelled; old 'browser pass NOT run — the local-first tier cannot render a signed-in approved-driver trip' was FALSE (verify-trip-refresh-20261024.mjs + 18 driver-trip-*.png ran 09:42, before commit b5eb0fb5 09:44, via fake-session seeding + HTTP mocks); 'Realtime/RPC behavior against hosted Supabase is covered by the TO-130 DB batteries' re-labelled (PGlite ≠ hosted Supabase); cloud-credentialed real-session journeys remain owner-gated; HOSTED / DEVICE: none — absent.
+- **driver-app-home-refresh** (05bf2a23→96715dd2, `docs/design-audit.md:89-90`): vitest 10/10 re-labelled; old 'cannot sign in as an approved driver' claim was FALSE (verify-driver-home-refresh-20261024.mjs + 22 driver-home-*.png ran 09:14–09:15, before commit 9c6f4312 09:17); hosted realtime offer channel marked not exercised in any tier; HOSTED / DEVICE: none — absent.
+- **wcag-aa-contrast-fixes-shipment-agency-jobs** (`docs/design-audit.md:106-107`): vitest contract-test bullet re-labelled JSDOM/VITEST, node one-liner ratios marked 'static math, not a rendered-page measurement'; ADDED the previously undocumented mocked-browser tier (verify-wcag-contrast-20261024.mjs + contrast-recheck.mjs, 18 wcag-contrast-*.png @08:42, before commit fa5b9ef1 08:45; `/booking/new` customer panels form/error/success light+dark and `/agency/jobs` agency panels empty/rows light+dark + error, both viewports); console-output-only, gitignored; HOSTED / DEVICE: none — absent.
+- **driver-job-offer-acceptance** (screen 202377b7 RETIRED, `docs/design-audit.md:129,134`): proof heading re-labelled JSDOM/VITEST unit tier; old 'NOT run this item: browser pass' was FALSE (verify-driver-offer-20261024.mjs + 24 driver-offer-*.png ran 08:21, before commit c310879b 08:28); the tier record carries the script-header caveat (verify-driver-offer-20261024.mjs:11-18: an external process restored `frontend/.env` mid-pass so the app booted in cloud mode against the configured project host, but every request was intercepted by mocks — nothing reached the network, so it remains MOCKED BROWSER); durable record remains the tracked `scripts/atomic_job_offer_response.browser-proof.mjs` (TO-129/TO-130); HOSTED / DEVICE: none — absent.
+
+Reconciliation notes (evidence established by the reconciling workflow; it re-ran no verify script, battery or browser pass): (1) `agent-results/browser-evidence/` holds only Oct 8/10 TO-143/TO-144 scripts + results JSONs + PNGs — no TO-154-era files; (2) `.stitch-mcp/screenshots/` holds 104 PNGs in six state batches (driver-offer 24 @08:21, wcag-contrast 18 @08:42, driver-home 22 @09:14–09:15, driver-trip 18 @09:42, driver-proof 8 @10:09, fleet 14 @10:37) with zero results JSONs; (3) each batch landed minutes before its item's commit (c310879b 08:28 … feb783f1 10:39); (4) the six verify scripts + contrast-recheck.mjs live in the gitignored `.stitch-mcp/` tree (`.gitignore:91`), all Playwright vs :5173 with `**localhost.invalid/**` + `**/*.supabase.co/**` route mocks and fake-session seeding — grep confirmed no writeFile, PNG-only persistence; (5) results JSONs re-counted: to143 ok:true 58/false 0, to144 ok:true 46/false 0. Because the six scripts persist no results, their pass/fail outcomes are not auditable from the repo — stated as such in the doc rather than claimed.
+
+Findings carried to the integrator (recorded here and acted on in this delivery's board edit): TASKS.md's TO-154-row wording 'browser passes against the refreshed markup are owner-gated' is superseded for the MOCKED tier by the discovered throwaway passes (it remains accurate for HOSTED/DEVICE tiers); and if the mocked-tier passes are to count as acceptance evidence, the verify scripts and a results JSON should be integrated into `agent-results/browser-evidence/` (currently they are console-only and gitignored).
+
+### Honest caveats
+
+- The broader frontend suite was NOT re-run for the clock repair itself — the delivery's named check was this one file, and the change touches no shared code; the full battery above was run by the delivery workflow on the integrated candidate.
+- Not accepted: this delivery is recorded **AWAITING_REVIEW** — Codex review is the next step, and TO-143-D2 implementation waits on that acceptance (its pre-edit plan is pinned in `agent-results/033-result.md`).
