@@ -1,0 +1,103 @@
+== AI-HANDOFF.md (first 60 lines) ==
+# AI Handoff
+
+Purpose: keep a short, durable handoff for future AI work in this repo.
+
+Working rules:
+- Start every session by reading this file first, then `git status`, `AGENTS.md`, and any relevant `.github/instructions` or `.github/agents` files if they exist.
+- If `0.dev-matrix/resume-work.ps1` exists, run it before coding instead of starting with the full launch-check flow.
+- If `0.dev-matrix/pause-work.ps1` exists, use it before a short stop so the next restart can resume immediately.
+- For runtime failures, start with `powershell -ExecutionPolicy Bypass -File .\runtime-error-loop.ps1 -Mode latest`; this repo now detects `npm run track-errors` for capture and `npm run test:hidden-errors` for resolve, with `npm run dev` and `npm test` available as lighter root wrappers.
+- Fix root causes when possible and avoid unrelated churn.
+- Do not commit generated logs, screenshots, or temporary test artifacts unless they are the intended deliverable.
+- Before pushing, record what changed, how it was verified, and what still needs work.
+
+Update protocol:
+- Add the newest entry at the top of the log.
+- Keep entries short and factual.
+- Every close-day entry must include these exact labels:
+	- `Changed:`
+	- `Verified:`
+	- `Operational proof:`
+	- `Continue from:`
+	- `Next step:`
+	- `Blockers:`
+- If a field has nothing to report, write `none` explicitly.
+- Keep each field to the minimum truthful line needed to resume; handoff is a checkpoint, not a long report.
+- Keep `Next step:` small enough that the next short work session can resume without re-planning the whole repo.
+- The latest entry should let the next AI continue from the exact checkpoint without re-discovering context.
+
+## Handoff Log
+
+### 2026-07-17 (Codex + AI Work Factory - local hardening closeout)
+
+- Changed: Used GLM 4.5 Air for discovery and isolated GLM 4.7 builders for implementation/reconciliation; committed packing, public-smoke, subscription, PhonePe, contact-workflow, and public UI/accessibility improvements through `f71b9a9b`. Hardened `D:\Github\ai-work-factory` with review-handoff and bounded dirty-file seeding commits `fdd7da4` and `0e7e1d6`.
+- Verified: frontend production build PASS (3014 modules); focused subscription/PhonePe tests PASS 71/71; contact tests PASS 32/32; packing regression PASS 18/18; Chrome local mobile/public route review passed `/`, `/login`, `/signup`, `/pricing`, `/contact`, driver/agency registration gates, and real 404 handling. Full pending service suite is not green: 235 passed, 65 failed across four unintegrated Supabase suites.
+- Operational proof: no paid AI workers or local preview servers remain running. Agency portal worker produced a 56/56 passing isolated candidate; admin worker reached its 40-turn cap with an unreviewed candidate. Both remain preserved in AI Work Factory evidence/worktrees, not merged.
+- Continue from: independently review and integrate `builder-20260717032527-81c044`, then reconcile `builder-20260717032521-564665`; run GLM 4.7 workers for `agencySupabaseApi.test.ts` and `customerSupabaseApi.test.ts` until the full 300-test suite is green.
+- Next step: make AI Work Factory novice-ready with one command/status screen for choose-project, run-cheap-workers, review, resume, and stop; add installer/health checks for Codex, Claude Code, Zcode, and OpenCode while retaining worktree isolation and human-controlled merge/deploy.
+- Blockers: configured Supabase host `jbxncejtcbpcronndqlx.supabase.co` is DNS NXDOMAIN, so live auth/data/payment cannot be claimed; local certificate-chain errors block Heroku production-config and npm-audit proof; automated Playwright binaries are absent. Existing local MCP/governance/tool files and four broad service tests remain intentionally uncommitted.
+
+### 2026-07-13 (Codex - launch audit and Serdroid backend research)
+
+- Changed: Saved backend-option research at `D:\Github\Serdroid\docs\BACKEND-OPTIONS.md`; PocketBase remains the Serdroid default and is not suitable for migrating TruckOpti. Recorded the verified production blocker: deployed TruckOpti bundle points to `jbxncejtcbpcronndqlx.supabase.co`.
+- Verified: Frontend build PASS (6.82s); unit tests PASS (22/22); all three npm audits PASS with `NODE_OPTIONS=--use-system-ca`; direct HTTPS lookup plus Google and Cloudflare DNS-over-HTTPS return NXDOMAIN for the configured Supabase host. Public SPA routes return HTTP 200 only because they are static. `npm run close-day` ran on 2026-07-13 and recorded 2 pass / 1 fail before its Git-dependent status gate aborted because `git` is unavailable on PATH.
+- Operational proof: auth, database-backed workflows, and payment verification cannot be regarded as live while the deployed Supabase hostname is NXDOMAIN.
+- Continue from: recover or replace the production Supabase project/endpoint, update deployed environment/build configuration, then prove login, protected data, and controlled payment/webhook/subscription activation.
+- Next step: inspect the Supabase dashboard for project ref `jbxncejtcbpcronndqlx`; if unrecoverable, create a replacement project and perform a deliberate migration/secret/deploy cutover.
+- Blockers: production Supabase endpoint is unavailable; current workstation also lacks Playwright browser binaries, Git on PATH, and a noninteractive Heroku login for full live proof.
+
+### 2026-07-03 (Copilot - branch gap audit + Heroku v96 redeploy with security bumps)
+
+- Changed: Audited `copilot/demo-accounts-and-audit-fix` against current `main`. Verdict: **branch fully superseded — no merge needed**. Every meaningful code artifact on the branch is already on `main` (and improved): the 4-digit OTP contract + webwright smoke + Razorpay sanitization came in via the 2026-06-09/10 Heroku v92 + TO-107/TO-108 merges; the agency-portal security refactors (portal-auth.ts 237 lines vs branch 166, agency-portal-fleet/jobs/rates/billing/dashboard/drivers) came in via the 2026-06-30 cursor security branch merges, which refactored inline checks into shared `assertApprovedAgency` / `assertDriverAvailableForAgencyTruck` helpers; both `supabase/migrations/20260531110000_enforce_agency_status_writes.sql` and `20260606110000_fix_agency_driver_security_guards.sql` are present on main. The only branch-unique deltas are stale `0.dev-matrix/*.md` doc edits and `outputs/default/script.py` scratch content — not worth merging. Then pushed `main` to Heroku: **v96 released** from `87e0bad8`, slug 145.5M, frontend build 12.14s, PWA precache 79 entries (1638.50 KiB), `found 0 vulnerabilities` in the Heroku build, `sw-v2.js` regenerated.
+- Verified: `git push heroku main` → `Released v96` + `Verifying deploy... done`. Live site smoke: `https://www.truckopti.in/` → 200, `/login` → 200, `/tracking` → 200. `heroku/main` now at `87e0bad8` (was `2ae23f58`, 28 commits behind). Heroku CLI authed as `reach.prakashgarg@gmail.com`.
+- Operational proof: `git rev-list --count heroku/main..main` now `0` (was 28). Three live HTTP 200s captured above. Heroku build log shows `found 0 vulnerabilities` and `built in 12.14s`.
+- Continue from: production is now current with all security dep bumps + cursor security fixes + referral/rate/carbon/emissions features. `copilot/demo-accounts-and-audit-fix` is closed as superseded — do not attempt to merge it.
+- Next step: owner-side only. Apply `supabase/migrations/20260531110000_enforce_agency_status_writes.sql` + `20260606110000_fix_agency_driver_security_guards.sql` to the live Supabase project if not already applied (run `npx supabase db push --dry-run --yes` to check). Then redeploy the 8 agency-portal edge functions to pick up the cursor-refactored shared helpers.
+- Blockers: owner-side only — live Razorpay prod keys, Google OAuth smoke test, Twilio SMS, Supabase PITR, Sentry DSN, 4-digit OTP migration apply on non-prod first, Supabase db push + edge function redeploy for the agency-portal security refactors.
+
+### 2026-07-03 (Copilot — dependency CVE cleanup: launch-check restored 18/18 PASS)
+
+- Changed: Cleared all 5 dependency audit gates that were failing since the 2026-06-30 sync. Frontend `package.json` overrides bumped to `dompurify>=3.4.11`, `ws>=8.20.2`, added `form-data>=4.0.6`. `apps/web/package.json` overrides bumped to `ws>=8.20.2`, `js-yaml>=4.1.2`, `@babel/core>=7.29.1`. `apps/web/requirements.txt` direct bumps: `joserfc 1.6.5->1.6.8` (cleared CVE-2026-48990 + CVE-2026-49852), `cryptography 46.0.7->48.0.1` (GHSA-537c-gmf6-5ccf), `bleach 6.1.0->6.4.0` (GHSA-gj48-438w-jh9v + GHSA-8rfp-98v4-mmr6), `ujson 5.12.1->5.13.0` (CVE-2026-54911), `python-socketio 5.14.0->5.16.2` (CVE-2026-48804), `flask-socketio 5.3.5->5.5.1`. STATE.md updated with today's evidence.
+
+== STATE.md alerts (first 40 lines) ==
+# 📊 STATE
+
+> **Live System State + AI Agent Registry + Quality Metrics**
+> Version: 3.1 | All AIs MUST register here and update regularly.
+>
+> **2026-09-06 local-first build-out + full offline E2E (opencode):** PGlite
+> packing slice live in `frontend/` (lazy vendor chunk, PWA runtime-cached):
+> Trucks/Cartons pages on `localApi`, device agency profiles, `/local-start`
+> setup, offline login with session resume, Drive backup engine + settings UI,
+> dormant sync client. Proven in headless Chrome: setup -> agency home ->
+> 7 default trucks -> create truck -> survives reload, zero errors. Suite
+> 324/324, tsc clean, lint 0, build clean. react-router v6 advisories (2 mod)
+> deliberately deferred: only fix is breaking v7 migration across ~40 files;
+> reachable sinks hardened + tested instead. Install discipline: frontend deps
+> must be installed in `frontend/` (root hoisting masks missing manifest
+> entries and breaks CI `npm ci`); never `npm audit fix --omit=dev` (prunes
+> devDependencies — reinstall required).
+>
+> **2026-09-06 full local QA + deploy attempt (opencode):** fresh prod build
+> (0 TS errors) served via real `server.js` fully crawled: 53/53 routes HTTP 200,
+> 0 JS page errors, 0 non-backend console/request failures, 36/36 protected
+> routes redirect to /login, 404 page renders, 72 interactive actions (clicks,
+> fills, submits) with 0 errors, mobile 390px clean. Evidence:
+> `D:/Github/localfirst-spike/qa/` (report.json, buttons-report.json, 56 shots,
+> LOCAL-QA-REPORT.md). Authenticated-render testing remains impossible (backend
+> dead). DEPLOY BLOCKED: Heroku app `truck-opti-app` returns not_found and the
+> authed account holds only chatgpt-blog, taxqueries-itr-leads,
+> telegram-mcp-unified — the production origin behind the Cloudflare 530 is
+> gone. Needs owner: locate/recreate the Heroku app (or pick Vercel) + restore
+> Supabase (`jbxncejtcbpcronndqlx` NXDOMAIN) before any deploy matters.
+>
+> **2026-09-06 security+quality sweep (opencode):** fixed the 65 failing service tests without touching production code (admin `{ body }` invoke contract + surfaced error messages; thenable/chainable Supabase builder mocks; 5 not-found tests corrected to the throw behavior the impls have). Suite now 312/312 (incl. new `authReturnTo` open-redirect tests). Closed audit gates: root npm 0 vulns, frontend axios/dompurify/fflate fixed (2 moderate react-router advisories remain, v7 upgrade deferred as breaking), apps/web npm 0 vulns (puppeteer 24.43.1->25.10.0, launch-smoked), pip-audit 0 (cryptography 50.0.1, click 8.3.3, bounded auth test 6/6 in isolated venv). Fixed `advanced_3d_packer_v2.py` multiline f-strings (compiles py3.11+3.12). Fixed 8 unused-catch lint errors via repo logger pattern (lint 0 errors). Hardened `isSafeAuthReturnTo` against backslash open-redirect (CVE-2025-68470 class) after finding `?returnTo=` reaches `navigate()`. LIVE STATUS re-verified 2026-09-06: Supabase hostname `jbxncejtcbpcronndqlx.supabase.co` still NXDOMAIN and `https://www.truckopti.in/` returns Cloudflare 530 (origin DNS) — P0 infra block from July is unchanged, so no user can use the app regardless of code gates.
+> 2026-03-31: Close-day workflow added. End-of-day work must run `npm run close-day`, preserve launch evidence, and record vulnerability sweep + handoff status in `LAST-CLOSEOUT.md`.
+>
+> **2026-07-17 AI Work Factory closeout (Codex):** local build, 18 packing regressions, 71 subscription/PhonePe tests, 32 contact tests, and public/mobile browser routes are verified. Full service suite is still 235/300 because four broad Supabase suites remain to reconcile. No workers or preview servers were left running. Live completion remains blocked by the configured Supabase hostname returning NXDOMAIN; see the newest `AI-HANDOFF.md` entry for exact worker IDs and resume order.
+>
+> **2026-07-13 launch audit (Codex):** Public routes return HTTP 200, but the deployed bundle points to `jbxncejtcbpcronndqlx.supabase.co`. Direct HTTPS plus Google and Cloudflare DNS-over-HTTPS return NXDOMAIN. This is a P0 production block: recover or replace the Supabase endpoint and redeploy configuration before claiming authentication, data workflows, or payments live. Local frontend evidence: build PASS (6.82s), unit tests PASS (22/22). Saved Serdroid decision: `D:\Github\Serdroid\docs\BACKEND-OPTIONS.md`.
+>
+> **2026-07-03 branch audit + Heroku v96 (Copilot):** `copilot/demo-accounts-and-audit-fix` audited and closed as **fully superseded** — every code artifact on that branch is already on `main` (and improved via cursor security refactors that moved inline agency-portal checks into shared `portal-auth.ts` helpers). No merge needed. Heroku redeployed as **v96** from `87e0bad8` (was v94 at `2ae23f58`, 28 commits behind). Live smoke: `/`, `/login`, `/tracking` all return 200. Heroku build: 12.14s, PWA precache 79 entries, `found 0 vulnerabilities`. Remaining owner actions: apply the two agency-status/driver-guard Supabase migrations to the live project, redeploy the 8 agency-portal edge functions to pick up the refactored shared helpers.
+>

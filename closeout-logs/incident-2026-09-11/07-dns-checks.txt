@@ -1,0 +1,53 @@
+=== nslookup jbxncejtcbpcronndqlx.supabase.co (public DNS) ===
+*** one.one.one.one can't find jbxncejtcbpcronndqlx.supabase.co: Non-existent domain
+Server:  one.one.one.one
+Address:  1.1.1.1
+
+
+=== public DNS for truckopti.in ===
+Address:  1.1.1.1
+
+Name:    truckopti.in
+Addresses:  2606:4700:3036::6815:48be
+	  2606:4700:3031::ac43:9a5f
+	  104.21.72.190
+	  172.67.154.95
+
+
+=== public DNS for www.truckopti.in ===
+Address:  8.8.8.8
+
+Name:    www.truckopti.in
+Addresses:  2606:4700:3036::6815:48be
+	  2606:4700:3031::ac43:9a5f
+	  172.67.154.95
+	  104.21.72.190
+
+
+=== NS records for truckopti.in ===
+Non-authoritative answer:
+Server:  one.one.one.one
+Address:  1.1.1.1
+
+truckopti.in	nameserver = bill.ns.cloudflare.com
+truckopti.in	nameserver = uma.ns.cloudflare.com
+== stale apex target ==
+
+Name:    symmetrical-goldenrod-s4vln4fb90e2rfe61w519wtj.herokudns.com
+
+== stale www target ==
+
+Name:    salty-cephalopod-iz1hibowxyzca15pf34m9b1m.herokudns.com
+
+== NEW apex target resolves? ==
+Addresses:  15.197.246.237
+	  52.223.46.195
+	  3.33.193.101
+	  99.83.183.127
+
+== NEW www target resolves? ==
+Addresses:  15.197.246.237
+	  52.223.46.195
+	  3.33.193.101
+	  99.83.183.127
+

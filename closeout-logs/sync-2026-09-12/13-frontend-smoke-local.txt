@@ -1,0 +1,7 @@
+
+> truckopti@1.1.0 test:frontend-smoke
+> node scripts/frontend_launch_smoke.mjs
+
+Frontend launch smoke complete: logs\frontend_launch_smoke_report.json
+Checks run: 52
+Passed checks: 52

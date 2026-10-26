@@ -1,0 +1,24 @@
+== files mentioning cloudflare (config/scripts, no values shown) ==
+0.dev-matrix/AI-HANDOFF.md
+0.dev-matrix/REQUIREMENTS.md
+0.dev-matrix/STATE.md
+0.dev-matrix/TASK.md
+
+== CLOUDFLARE/CF token var names in any .env-ish file (names only) ==
+./.env.example
+./.env.local
+./.env.production.example
+./.env.proof.example
+./.env.proof.local
+./frontend/.env.example
+./frontend/.env.local
+
+== .gitignore dist/sw coverage ==
+11:frontend/dist/
+12:dist/
+23:.env
+24:.env.*
+25:!.env.example
+26:!.env.proof.example
+27:apps/web/.env
+89:.env*

@@ -1,0 +1,49 @@
+== HEAD before sync ==
+8724f7577616cecadeec43f822f5a7ddaff3c5fc
+
+== status --short ==
+ M .vscode/mcp.json
+ M frontend/src/pages/ContactPage.tsx
+?? .agents/skills/kimi-webbridge/
+?? .agents/skills/subagents/
+?? .agents/skills/webwright/
+?? .codex/agents/
+?? .codex/config.toml
+?? .kilo/
+?? .vscode/mcp.json.bak-qdrant-cleanup
+?? check_syntax.py
+?? closeout-logs/
+?? scripts/test-otp-contract.ps1
+?? start_preview.py
+?? sync-2026-09-12-01-inspect.txt
+?? test_otp_contract.sh
+?? verify_syntax.py
+
+== branch ==
+main
+
+== remotes ==
+heroku	https://git.heroku.com/truck-opti-app.git (fetch)
+heroku	https://git.heroku.com/truck-opti-app.git (push)
+origin	https://github.com/prakashgarg91/Truck_Opti.git (fetch)
+origin	https://github.com/prakashgarg91/Truck_Opti.git (push)
+
+== log -15 ==
+8724f757 (HEAD -> main, origin/main, origin/HEAD) docs(state): close-day 2026-09-11 — queue TO-112 production-readiness mission (verbatim brief), handoff continuity
+1e3cc593 docs(state): incident 2026-09-11 production restore — Cloudflare/Heroku repair, v5 live, owner blockers recorded
+3d330d2e (heroku/main) fix(incident): canonical-host 301 routing in server.js + focused routing tests
+01bd0b50 chore: gitignore stitch-mcp adapter local state (.stitch-mcp/)
+ec3e48dd (stitch/pilot-20260911) feat(auth): Supabase-optional client, Google-only GIS login, OTP off by default
+e1a168ea fix(local-first): logger context in localApi catches; record v6-defer + install discipline
+ba8d1d49 feat(local-first): PGlite packing slice, offline identity, Drive backup engine, dormant sync client
+0f3a4d97 security+quality sweep: 0 audit vulns (root/apps-web/python), fix 65 service tests, harden auth return-to, fix lint errors
+98520fc2 (awf/builder-20260719043318-c18c62, awf/builder-20260719042837-c63f1a, awf/builder-20260719042837-07d226, awf/builder-20260719042421-72a077, awf/builder-20260719042421-22fca6) docs(state): close AI factory hardening day
+f71b9a9b fix(ui): improve public trust and accessibility
+05d26f10 test(contact): cover durable inquiry workflow
+0fb8bb2d (awf/builder-20260717032527-81c044, awf/builder-20260717032521-564665) test(phonepe): isolate runtime configuration cases
+80bde4ed test(subscription): reconcile Supabase query mocks
+c3e7e401 test(smoke): fail hard on route 404 pages
+3ec59f0a fix(packing): improve dense mixed-load placement
+
+== ahead/behind vs origin/main (pre-fetch) ==
+0	0

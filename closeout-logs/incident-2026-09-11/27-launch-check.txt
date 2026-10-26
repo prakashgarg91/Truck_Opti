@@ -1,0 +1,44 @@
+
+> truckopti@1.1.0 launch-check
+> powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1
+
+
+============================================================
+  TruckOpti Launch-Readiness Check
+  2026-09-11 20:37:51
+============================================================
+
+  Gate 1: Frontend build (tsc + vite)
+  [OK] Frontend build (tsc + vite)                       [32m✓ built in 10.98s[39m
+  Gate 2: Root npm audit --omit=dev
+  [OK] Root npm audit --omit=dev                         0 vulnerabilities
+  Gate 3: Frontend npm audit --omit=dev
+  [FAIL] Frontend npm audit --omit=dev                     2 moderate severity vulnerabilities
+  Gate 4: apps/web npm audit
+  [OK] apps/web npm audit                                0 vulnerabilities
+  Gate 5: pip-audit (apps/web/requirements.txt)
+  [OK] pip-audit (requirements.txt)                      0 known vulnerabilities
+  Gate 6: Python compileall (apps/web)
+  [OK] Python compileall (apps/web)                      2 target(s) compiled clean
+  Gate 7a: Deep error scan
+  [OK] Deep error scan                                   0 errors found
+  Gate 7b: Glue check
+  [OK] Glue check                                        0 integration gaps
+  Gate 7: Runtime error loop
+  [OK] Runtime error loop                                capture: npm run track-errors | resolve: npm run test:hidden-errors
+  Gate 8: Git working tree cleanliness
+  [FAIL] Git working tree cleanliness                      14 dirty path(s): .vscode/mcp.json | .agents/skills/kimi-webbridge/ | .agents/skills/subagents/ | .agents/skills/webwright/ | .codex/agents/
+  Gate 9: Tree hygiene
+  [OK] Standards presence                                required standards present
+  [OK] Runtime docs                                      tree hygiene, launch checklist, closing-day hook, documentation governance, and handoff present
+  [OK] Fast handoff workflow                             resume-work.ps1 and pause-work.ps1 present for fast session restart/stop
+  [OK] Operational proof contract                        AI-HANDOFF includes the Operational proof handoff label
+  [OK] Launch focus contract                             launch checklist includes product outcome/current launch slice/current blocker/next earning step
+  [OK] Documentation governance                          approved zones and AI rules recorded
+  [OK] Tree hygiene                                      active code tree is clean
+  [OK] State freshness                                   STATE.md modified 5 day(s) ago
+
+============================================================
+  RESULT: 2 GATE(S) FAILED (16 passed, 0 skipped)
+============================================================
+

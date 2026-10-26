@@ -1,0 +1,6 @@
+== audit root (omit=dev, high) ==
+found 0 vulnerabilities
+exit=0
+== audit frontend (omit=dev, high) ==
+found 0 vulnerabilities
+exit=0

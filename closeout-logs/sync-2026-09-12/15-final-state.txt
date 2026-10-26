@@ -1,0 +1,32 @@
+== branch ==
+main
+== HEAD ==
+d92897228f116e35ebc5930eb626cfe3eab74019
+== origin/main ==
+486cb681b8873bfb9ed2fc2e849c2785492e4431
+== ahead/behind (HEAD...origin/main) ==
+1	0
+== status --short ==
+ M .vscode/mcp.json
+?? .agents/skills/kimi-webbridge/
+?? .agents/skills/subagents/
+?? .agents/skills/webwright/
+?? .codex/
+?? .kilo/
+?? .vscode/mcp.json.bak-qdrant-cleanup
+?? check_syntax.py
+?? closeout-logs/
+?? scripts/test-otp-contract.ps1
+?? start_preview.py
+?? test_otp_contract.sh
+?? verify_syntax.py
+== stash ==
+stash@{0}: On main: sync-2026-09-12 full safety snapshot (tracked mods + untracked, tree restored after)
+stash@{1}: WIP on (no branch): 6f5cc272 merge: document project completion gaps (copilot/identify-gaps)
+stash@{2}: On main: park broad service-layer and agency-portal refactor 2026-05-17
+== safety branch ==
+  sync-safety/pre-sync-20260912
+== esbuild lock check ==
+esbuild.exe                  40332 Console                    1     15,224 K
+esbuild.exe                  43148 Console                    1     15,032 K
+esbuild.exe                  43368 Console                    1     14,448 K

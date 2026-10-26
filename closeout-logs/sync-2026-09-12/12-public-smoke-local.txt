@@ -1,0 +1,4 @@
+
+Public frontend smoke complete: logs\public_frontend_smoke_report.json
+Routes tested: 12
+Passed routes: 12

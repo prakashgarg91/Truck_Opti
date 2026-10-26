@@ -1,0 +1,6 @@
+
+PWA v1.2.0
+mode      generateSW
+precache  82 entries (1620.38 KiB)
+files generated
+  dist/sw-v2.js

@@ -1,0 +1,42 @@
+== GET / on Heroku origin (host: default herokuapp) ==
+HTTP/1.1 301 Moved Permanently
+Content-Length: 59
+Content-Type: text/plain; charset=utf-8
+Date: Fri, 11 Sep 2026 14:46:05 GMT
+Location: https://www.truckopti.in/
+Nel: {"report_to":"heroku-nel","response_headers":["Via"],"max_age":3600,"success_fraction":0.01,"failure_fraction":0.1}
+Report-To: {"group":"heroku-nel","endpoints":[{"url":"https://nel.heroku.com/reports?s=iRVhu%2FjZfCNqQRZ%2FhPlmCncGJ8HW8LRuQKMpWM4P2ww%3D\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\u0026ts=1789137965"}],"max_age":3600}
+Reporting-Endpoints: heroku-nel="https://nel.heroku.com/reports?s=iRVhu%2FjZfCNqQRZ%2FhPlmCncGJ8HW8LRuQKMpWM4P2ww%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1789137965"
+Server: Heroku
+Vary: Accept
+Via: 1.1 heroku-router
+X-Powered-By: Express
+
+
+== GET / with apex Host (expect 301 to www, path preserved) ==
+HTTP/1.1 301 Moved Permanently
+Content-Length: 76
+Content-Type: text/plain; charset=utf-8
+Date: Fri, 11 Sep 2026 14:46:05 GMT
+Location: https://www.truckopti.in/pricing?src=probe
+Nel: {"report_to":"heroku-nel","response_headers":["Via"],"max_age":3600,"success_fraction":0.01,"failure_fraction":0.1}
+Report-To: {"group":"heroku-nel","endpoints":[{"url":"https://nel.heroku.com/reports?s=iRVhu%2FjZfCNqQRZ%2FhPlmCncGJ8HW8LRuQKMpWM4P2ww%3D\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\u0026ts=1789137965"}],"max_age":3600}
+Reporting-Endpoints: heroku-nel="https://nel.heroku.com/reports?s=iRVhu%2FjZfCNqQRZ%2FhPlmCncGJ8HW8LRuQKMpWM4P2ww%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1789137965"
+Server: Heroku
+Vary: Accept
+
+== GET /login with www Host (expect 200) ==
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: no-cache, no-store, must-revalidate
+Content-Length: 3345
+Content-Type: text/html; charset=utf-8
+Date: Fri, 11 Sep 2026 14:46:06 GMT
+Etag: W/"d11-1a090ed6098"
+Expires: 0
+Last-Modified: Fri, 11 Sep 2026 14:44:31 GMT
+Nel: {"report_to":"heroku-nel","response_headers":["Via"],"max_age":3600,"success_fraction":0.01,"failure_fraction":0.1}
+Pragma: no-cache
+Report-To: {"group":"heroku-nel","endpoints":[{"url":"https://nel.heroku.com/reports?s=QKJvdivs%2B5zwhrbKwpNvlKxYD4%2FbpRvrzBpvk%2FzYbRM%3D\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\u0026ts=1789137966"}],"max_age":3600}
+Reporting-Endpoints: heroku-nel="https://nel.heroku.com/reports?s=QKJvdivs%2B5zwhrbKwpNvlKxYD4%2FbpRvrzBpvk%2FzYbRM%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1789137966"
+Server: Heroku

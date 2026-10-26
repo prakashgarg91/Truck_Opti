@@ -1,0 +1,4 @@
+PASS layer optimization gap fixture: packed all 4 flat panels with efficient layer stacking
+PASS complex mixed-load gap fixture: extreme_points=18/22, genetic=22/22
+PASS small item filling gap fixture: packed 32/32 mini cubes around the big cube
+Packing regression complete: 18 checks passed

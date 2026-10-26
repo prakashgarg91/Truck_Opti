@@ -1,0 +1,12 @@
+=== truck-opti-app Heroku Domain
+
+truck-opti-app-0de4b9bc1ac2.herokuapp.com
+
+
+=== truck-opti-app Custom Domains
+
+  Domain Name        DNS Record Type   DNS Target                                                         SNI Endpoint
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  truckopti.in       ALIAS or ANAME    introductory-qantassaurus-k64s4nhylrwjjc5m2pxd94bs.herokudns.com
+  www.truckopti.in   CNAME             silhouetted-radish-pu52ykkmld576qwc5w4p5gs3.herokudns.com
+

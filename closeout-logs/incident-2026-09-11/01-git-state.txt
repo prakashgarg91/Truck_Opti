@@ -1,0 +1,32 @@
+## git status --short
+ M .gitignore
+ M .vscode/mcp.json
+?? .agents/skills/kimi-webbridge/
+?? .agents/skills/subagents/
+?? .agents/skills/webwright/
+?? .codex/agents/
+?? .codex/config.toml
+?? .kilo/
+?? .vscode/mcp.json.bak-qdrant-cleanup
+?? check_syntax.py
+?? closeout-logs/
+?? scripts/test-otp-contract.ps1
+?? start_preview.py
+?? test_otp_contract.sh
+?? verify_syntax.py
+
+## git branch --show-current
+main
+
+## git log -5 --oneline
+ec3e48dd feat(auth): Supabase-optional client, Google-only GIS login, OTP off by default
+e1a168ea fix(local-first): logger context in localApi catches; record v6-defer + install discipline
+ba8d1d49 feat(local-first): PGlite packing slice, offline identity, Drive backup engine, dormant sync client
+0f3a4d97 security+quality sweep: 0 audit vulns (root/apps-web/python), fix 65 service tests, harden auth return-to, fix lint errors
+98520fc2 docs(state): close AI factory hardening day
+
+## git remote -v
+heroku	https://git.heroku.com/truck-opti-app.git (fetch)
+heroku	https://git.heroku.com/truck-opti-app.git (push)
+origin	https://github.com/prakashgarg91/Truck_Opti.git (fetch)
+origin	https://github.com/prakashgarg91/Truck_Opti.git (push)

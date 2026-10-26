@@ -1,0 +1,20 @@
+== apex redirect chain (should be exactly 1 hop to www, path+query kept) ==
+final=https://www.truckopti.in/pricing?src=final
+status=200
+redirects=1
+
+== cert chain www ==
+subject=CN=www.truckopti.in
+issuer=C=US, O=Let's Encrypt, CN=YR2
+notBefore=Sep 11 13:58:30 2026 GMT
+notAfter=Dec 10 13:58:29 2026 GMT
+
+== cert chain apex ==
+subject=CN=truckopti.in
+issuer=C=US, O=Let's Encrypt, CN=YE2
+notBefore=Aug 14 12:50:13 2026 GMT
+notAfter=Nov 12 12:50:12 2026 GMT
+
+== CF headers on www ==
+Cache-Control: no-cache, no-store, must-revalidate
+Server: Heroku

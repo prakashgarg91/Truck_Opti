@@ -1,0 +1,12 @@
+ »   Warning: heroku update available from 11.0.2 to 11.9.0.
+=== truck-opti-app
+
+Auto Cert Mgmt: false
+Git URL:        https://git.heroku.com/truck-opti-app.git
+Web URL:        https://truck-opti-app-0de4b9bc1ac2.herokuapp.com/
+Repo Size:      0 B
+Slug Size:      0 B
+Owner:          reach.prakashgarg@gmail.com
+Region:         us
+Dynos:          
+Stack:          heroku-24

@@ -1,0 +1,9 @@
+== var names present across .env.local files ==
+VERCEL_OIDC_TOKEN
+VITE_SUPABASE_ANON_KEY
+VITE_SUPABASE_URL
+VITE_SUPABASE_URL: SET (host not printed)
+supabase host resolves: NO
+VITE_SUPABASE_ANON_KEY: SET
+VITE_GOOGLE_CLIENT_ID: MISSING
+local VITE_APP_URL: MISSING

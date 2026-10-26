@@ -1,0 +1,7 @@
+
+> truckopti@1.1.0 test:public-smoke
+> node scripts/public_frontend_smoke.mjs
+
+Public frontend smoke complete: logs\public_frontend_smoke_report.json
+Routes tested: 12
+Passed routes: 12

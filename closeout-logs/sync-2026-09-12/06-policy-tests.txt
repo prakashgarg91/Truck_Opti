@@ -1,0 +1,17 @@
+== production_config_policy ==
+✔ fails when no production auth provider is configured (0.0753ms)
+ℹ tests 6
+ℹ pass 6
+ℹ fail 0
+== deployment_safety ==
+ℹ tests 4
+ℹ pass 4
+ℹ fail 0
+== payment_readiness_policy ==
+ℹ tests 1
+ℹ pass 1
+ℹ fail 0
+== security_boundary_policy ==
+ℹ tests 1
+ℹ pass 1
+ℹ fail 0

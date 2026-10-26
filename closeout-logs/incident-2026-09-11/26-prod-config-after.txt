@@ -1,0 +1,11 @@
+
+> truckopti@1.1.0 test:prod-config
+> node scripts/production_config_audit.mjs
+
+Production config audit complete: logs\production_config_audit.json
+[PASS] app_url: https://www.truckopti.in
+[FAIL] supabase_auth_backend: missing VITE_SUPABASE_URL
+[FAIL] email_otp_flag: VITE_AUTH_EMAIL_OTP_ENABLED=false
+[FAIL] razorpay_launch_readiness: missing VITE_RAZORPAY_KEY_ID
+[FAIL] sentry_dsn: missing VITE_SENTRY_DSN
+[PASS] phonepe_mode: missing VITE_PHONEPE_API_URL

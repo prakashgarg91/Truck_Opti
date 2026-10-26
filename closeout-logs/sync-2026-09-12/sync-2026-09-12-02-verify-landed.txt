@@ -1,0 +1,56 @@
+== server.js healthz/readyz ==
+62:app.get('/healthz', (_req, res) => {
+67:app.get('/readyz', (_req, res) => {
+
+== react-router version in package.json ==
+39:    "react-router-dom": "7.18.3",
+
+== react-router resolved in lockfile ==
+    "node_modules/react-router": {
+      "version": "7.18.3",
+    "node_modules/react-router-dom": {
+      "version": "7.18.3",
+      "resolved": "https://registry.npmjs.org/react-router-dom/-/react-router-dom-7.18.3.tgz",
+
+== workflows ==
+frontend-ci.yml
+
+== root package.json scripts ==
+dev = cd frontend && npm run dev --
+heroku-postbuild = cd frontend && npm install --include=dev && npm run build
+start = node server.js
+track-errors = powershell -ExecutionPolicy Bypass -File scripts/track-errors.ps1
+check:proof-env = node scripts/check-proof-env.cjs auth
+check:proof-env:seed = node scripts/check-proof-env.cjs seed
+test = cd frontend && npm run test:unit --
+test:hidden-errors = powershell -ExecutionPolicy Bypass -File scripts/test-hidden-errors.ps1
+test:packing = cd frontend && npm run test:packing
+test:live-buttons = node scripts/public_frontend_smoke.mjs
+test:public-smoke = node scripts/public_frontend_smoke.mjs
+test:frontend-smoke = node scripts/frontend_launch_smoke.mjs
+test:server-routing = node --test scripts/test-server-routing.mjs
+test:live-auth = node scripts/live-auth-proof.cjs
+test:live-admin = node scripts/live-admin-proof.cjs
+test:prod-config = node scripts/production_config_audit.mjs
+graph:update = powershell -ExecutionPolicy Bypass -File scripts/graphify-refresh.ps1
+deep-scan = node 0.dev-matrix/deep-error-scanner.mjs
+glue:check = node tools/glue-check.mjs
+launch-check = powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1
+close-day = powershell -ExecutionPolicy Bypass -File scripts/close-day.ps1
+
+== dev-matrix still present? ==
+closeout-logs
+stitch folder
+test-reports
+docs/ADDING_NEW_MODULE.md
+docs/ADVANCED_3D_BINPACKING_INTEGRATION_PLAN.md
+docs/AGENT_TASK_EXECUTION_MATRIX.md
+docs/ANDROID_APP_ARCHITECTURE.md
+docs/API_REFERENCE.md
+docs/ARCHITECTURE.md
+docs/AUTH_ARCHITECTURE_DECISIONS.md
+docs/COMPETITOR_ANALYSIS.md
+docs/MARKET_SURVIVAL_FEATURES.md
+docs/MODULES.md
+docs/PRODUCT_ROADMAP.md
+docs/QUICK_DEPLOY.md

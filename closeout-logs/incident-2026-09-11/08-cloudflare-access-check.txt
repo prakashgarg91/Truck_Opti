@@ -1,0 +1,7 @@
+== Cloudflare-related env var names (names only, values redacted) ==
+
+== ~/.wrangler or ~/.cloudflared config presence ==
+(no wrangler/cloudflare dirs)
+
+== wrangler whoami ==
+(wrangler not installed)

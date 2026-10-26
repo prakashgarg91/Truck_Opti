@@ -1,0 +1,30 @@
+== apex via 1.1.1.1 ==
+
+Name:    truckopti.in
+Addresses:  3.33.193.101
+	  15.197.246.237
+	  99.83.183.127
+	  52.223.46.195
+
+== apex via 8.8.8.8 ==
+
+Name:    truckopti.in
+Addresses:  3.33.193.101
+	  15.197.246.237
+	  99.83.183.127
+	  52.223.46.195
+
+== www via 1.1.1.1 ==
+Addresses:  3.33.193.101
+	  15.197.246.237
+	  52.223.46.195
+	  99.83.183.127
+Aliases:  www.truckopti.in
+
+== www via 8.8.8.8 ==
+Addresses:  3.33.193.101
+	  15.197.246.237
+	  52.223.46.195
+	  99.83.183.127
+Aliases:  www.truckopti.in
+

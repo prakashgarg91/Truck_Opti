@@ -1,0 +1,31 @@
+=== https://www.truckopti.in ===
+HTTP/1.1 530 <none>
+Date: Fri, 11 Sep 2026 14:31:31 GMT
+Content-Type: text/plain; charset=UTF-8
+Content-Length: 17
+Connection: keep-alive
+Cache-Control: private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+Expires: Thu, 01 Jan 1970 00:00:01 GMT
+Referrer-Policy: same-origin
+X-Frame-Options: SAMEORIGIN
+Server: cloudflare
+CF-RAY: a3976064688d2160-DEL
+alt-svc: h3=":443"; ma=86400
+
+
+=== https://truckopti.in ===
+HTTP/1.1 530 <none>
+Date: Fri, 11 Sep 2026 14:31:31 GMT
+Content-Type: text/plain; charset=UTF-8
+Content-Length: 17
+Connection: keep-alive
+Cache-Control: private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+Expires: Thu, 01 Jan 1970 00:00:01 GMT
+Referrer-Policy: same-origin
+X-Frame-Options: SAMEORIGIN
+Server: cloudflare
+CF-RAY: a3976066d8fb9387-DEL
+alt-svc: h3=":443"; ma=86400
+
+
+=== body snippet www ===

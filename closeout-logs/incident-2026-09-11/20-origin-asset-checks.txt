@@ -1,0 +1,12 @@
+== sw-v2.js cache headers ==
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, must-revalidate
+Service-Worker-Allowed: /
+
+== hashed asset cache headers ==
+asset: assets/index-42Dbj6DF.js
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, must-revalidate
+
+== deep SPA route direct ==
+status=200

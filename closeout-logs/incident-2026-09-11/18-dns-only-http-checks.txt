@@ -1,0 +1,18 @@
+== http://truckopti.in/pricing?src=inc (expect one 301 to www, path+query kept) ==
+HTTP/1.1 301 Moved Permanently
+Location: https://www.truckopti.in/pricing?src=inc
+Server: Heroku
+Via: 1.1 heroku-router
+
+== follow redirects ==
+final=https://www.truckopti.in/login?x=1 status=301 redirects=1
+
+== http://www.truckopti.in/ (expect 200) ==
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, must-revalidate
+Server: Heroku
+Via: 1.1 heroku-router
+
+== https://www.truckopti.in (expect TLS fail until ACM issues) ==
+curl: (35) schannel: failed to receive handshake, SSL/TLS connection failed
+000

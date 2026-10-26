@@ -1,0 +1,13 @@
+200  https://www.truckopti.in/
+200  https://www.truckopti.in/login
+200  https://www.truckopti.in/signup
+200  https://www.truckopti.in/forgot-password
+200  https://www.truckopti.in/pricing
+200  https://www.truckopti.in/contact
+200  https://www.truckopti.in/terms
+200  https://www.truckopti.in/privacy
+200  https://www.truckopti.in/tracking
+200  https://www.truckopti.in/customer/dashboard/deep-direct-load
+
+== apex redirect (through CF) ==
+HTTP/1.1 301 Moved Permanently

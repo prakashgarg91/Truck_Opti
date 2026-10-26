@@ -1,0 +1,6 @@
+  700:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  710:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  713:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 26 problems (0 errors, 26 warnings)
+

@@ -1,0 +1,1190 @@
+{
+  "customer": {
+    "mobile": {
+      "steps": [
+        {
+          "name": "boot: authenticated as role user",
+          "ok": true,
+          "detail": "{\"injected\":false,\"bootRole\":\"user\",\"bootAuthed\":true}"
+        },
+        {
+          "name": "booking submitted -> success panel rendered",
+          "ok": true,
+          "detail": "shipmentsInsert=1 dispatchRpc=1"
+        },
+        {
+          "name": "uuid validation rejected with copy",
+          "ok": true,
+          "detail": "Enter a valid agency ID (uuid)."
+        },
+        {
+          "name": "uuid validation made NO rpc call",
+          "ok": true,
+          "detail": "authRpc=0"
+        },
+        {
+          "name": "server rejection shown verbatim (controlled message map)",
+          "ok": true,
+          "detail": "Shipment is not open for dispatch."
+        },
+        {
+          "name": "error message has role=status",
+          "ok": true,
+          "detail": "p[role=status]"
+        },
+        {
+          "name": "submitting state shows \"Authorizing...\" + disabled controls",
+          "ok": true,
+          "detail": "{\"btnText\":\"Authorizing...\",\"btnDisabled\":true,\"inputDisabled\":true,\"clickEventSuppressed\":true}"
+        },
+        {
+          "name": "double-submit suppressed (disabled click-through + el.click())",
+          "ok": true,
+          "detail": "rpcCalls=1, playwrightClickRefused=true"
+        },
+        {
+          "name": "granted success copy",
+          "ok": true,
+          "detail": "Agency authorized for this shipment."
+        },
+        {
+          "name": "already_active success copy",
+          "ok": true,
+          "detail": "This agency is already authorized."
+        },
+        {
+          "name": "reactivated success copy",
+          "ok": true,
+          "detail": "Authorization restored for this agency."
+        },
+        {
+          "name": "input label association",
+          "ok": true,
+          "detail": "{\"id\":\"authorize-agency-input\",\"ariaLabel\":null,\"labelledby\":null,\"labelsLength\":1,\"placeholder\":\"e.g., 8f2ac1b4-... agency ID (uuid)\",\"formButtonIsSubmit\":true}"
+        },
+        {
+          "name": "keyboard-only submit (Tab->type->Enter) triggers rpc",
+          "ok": true,
+          "detail": "tabs=27, authRpcDelta=1"
+        }
+      ],
+      "contrast": [
+        {
+          "label": "error message (text-xs on card)",
+          "found": true,
+          "fg": "#dc2626",
+          "bg": "#ffffff",
+          "ratio": 4.83,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "success message (text-xs on card)",
+          "found": true,
+          "fg": "#16a34a",
+          "bg": "#ffffff",
+          "ratio": 3.3,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "Authorize label (text-xs slate-600 on white card)",
+          "found": true,
+          "fg": "#475569",
+          "bg": "#ffffff",
+          "ratio": 7.58,
+          "fontSizePx": "12px",
+          "fontWeight": "500"
+        },
+        {
+          "label": "helper text (text-xs slate-500)",
+          "found": true,
+          "fg": "#64748b",
+          "bg": "#ffffff",
+          "ratio": 4.76,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "Authorize button (btn-primary, primary-600/white)",
+          "found": true,
+          "fg": "#ffffff",
+          "bg": "#1d4ed8",
+          "ratio": 6.7,
+          "fontSizePx": "14px",
+          "fontWeight": "500"
+        }
+      ],
+      "tabOrder": [
+        {
+          "tag": "BUTTON",
+          "type": "submit",
+          "text": "Authorize an agency",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Home",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Orders",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Pack",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Routes",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Track",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "History",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "body"
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "",
+          "aria": "Open menu",
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "",
+          "aria": "0 notifications",
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "",
+          "aria": "Close notifications",
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "",
+          "aria": "Close menu",
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Home",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Orders",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        }
+      ],
+      "state": {
+        "authRpc": {
+          "status": 200,
+          "body": {
+            "id": "c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f",
+            "state": "granted"
+          }
+        },
+        "counters": {
+          "authRpc": 5,
+          "shipmentsInsert": 1,
+          "dispatchRpc": 1,
+          "agencyLookup": 2
+        },
+        "consentsRows": [],
+        "agencyJobsPost": null,
+        "edgeJobsList": [],
+        "unmocked": [],
+        "pageErrors": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+          "[NewShipment] authorizeAgency: UserFacingError: Shipment is not open for dispatch.\n    at Object.authorizeAgency (http://localhost:5173/src/services/customerSupabaseApi.ts:152:13)\n    at async handleAuthorizeAgency (http://localhost:5173/src/pages/NewShipmentPage.tsx:137:22)"
+        ],
+        "requestFailed": []
+      },
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+        "[NewShipment] authorizeAgency: UserFacingError: Shipment is not open for dispatch.\n    at Object.authorizeAgency (http://localhost:5173/src/services/customerSupabaseApi.ts:152:13)\n    at async handleAuthorizeAgency (http://localhost:5173/src/pages/NewShipmentPage.tsx:137:22)"
+      ],
+      "pageErrors": [],
+      "customerLabel": {
+        "id": "authorize-agency-input",
+        "ariaLabel": null,
+        "labelledby": null,
+        "labelsLength": 1,
+        "placeholder": "e.g., 8f2ac1b4-... agency ID (uuid)",
+        "formButtonIsSubmit": true
+      }
+    },
+    "desktop": {
+      "steps": [
+        {
+          "name": "boot: authenticated as role user",
+          "ok": true,
+          "detail": "{\"injected\":false,\"bootRole\":\"user\",\"bootAuthed\":true}"
+        },
+        {
+          "name": "booking submitted -> success panel rendered",
+          "ok": true,
+          "detail": "shipmentsInsert=1 dispatchRpc=1"
+        },
+        {
+          "name": "uuid validation rejected with copy",
+          "ok": true,
+          "detail": "Enter a valid agency ID (uuid)."
+        },
+        {
+          "name": "uuid validation made NO rpc call",
+          "ok": true,
+          "detail": "authRpc=0"
+        },
+        {
+          "name": "server rejection shown verbatim (controlled message map)",
+          "ok": true,
+          "detail": "Shipment is not open for dispatch."
+        },
+        {
+          "name": "error message has role=status",
+          "ok": true,
+          "detail": "p[role=status]"
+        },
+        {
+          "name": "submitting state shows \"Authorizing...\" + disabled controls",
+          "ok": true,
+          "detail": "{\"btnText\":\"Authorizing...\",\"btnDisabled\":true,\"inputDisabled\":true,\"clickEventSuppressed\":true}"
+        },
+        {
+          "name": "double-submit suppressed (disabled click-through + el.click())",
+          "ok": true,
+          "detail": "rpcCalls=1, playwrightClickRefused=true"
+        },
+        {
+          "name": "granted success copy",
+          "ok": true,
+          "detail": "Agency authorized for this shipment."
+        },
+        {
+          "name": "already_active success copy",
+          "ok": true,
+          "detail": "This agency is already authorized."
+        },
+        {
+          "name": "reactivated success copy",
+          "ok": true,
+          "detail": "Authorization restored for this agency."
+        },
+        {
+          "name": "input label association",
+          "ok": true,
+          "detail": "{\"id\":\"authorize-agency-input\",\"ariaLabel\":null,\"labelledby\":null,\"labelsLength\":1,\"placeholder\":\"e.g., 8f2ac1b4-... agency ID (uuid)\",\"formButtonIsSubmit\":true}"
+        },
+        {
+          "name": "keyboard-only submit (Tab->type->Enter) triggers rpc",
+          "ok": true,
+          "detail": "tabs=19, authRpcDelta=1"
+        }
+      ],
+      "contrast": [
+        {
+          "label": "error message (text-xs on card)",
+          "found": true,
+          "fg": "#dc2626",
+          "bg": "#ffffff",
+          "ratio": 4.83,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "success message (text-xs on card)",
+          "found": true,
+          "fg": "#16a34a",
+          "bg": "#ffffff",
+          "ratio": 3.3,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "Authorize label (text-xs slate-600 on white card)",
+          "found": true,
+          "fg": "#475569",
+          "bg": "#ffffff",
+          "ratio": 7.58,
+          "fontSizePx": "12px",
+          "fontWeight": "500"
+        },
+        {
+          "label": "helper text (text-xs slate-500)",
+          "found": true,
+          "fg": "#64748b",
+          "bg": "#ffffff",
+          "ratio": 4.76,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "Authorize button (btn-primary, primary-600/white)",
+          "found": true,
+          "fg": "#ffffff",
+          "bg": "#1d4ed8",
+          "ratio": 6.7,
+          "fontSizePx": "14px",
+          "fontWeight": "500"
+        }
+      ],
+      "tabOrder": [
+        {
+          "tag": "BUTTON",
+          "type": "submit",
+          "text": "Authorize an agency",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "body"
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "",
+          "aria": "Close notifications",
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Home",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Orders",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Pack",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Routes",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Track",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "History",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Management",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Subscription",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Company Profile",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Settings",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        }
+      ],
+      "state": {
+        "authRpc": {
+          "status": 200,
+          "body": {
+            "id": "c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f",
+            "state": "granted"
+          }
+        },
+        "counters": {
+          "authRpc": 5,
+          "shipmentsInsert": 1,
+          "dispatchRpc": 1,
+          "agencyLookup": 2
+        },
+        "consentsRows": [],
+        "agencyJobsPost": null,
+        "edgeJobsList": [],
+        "unmocked": [],
+        "pageErrors": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+          "[NewShipment] authorizeAgency: UserFacingError: Shipment is not open for dispatch.\n    at Object.authorizeAgency (http://localhost:5173/src/services/customerSupabaseApi.ts:152:13)\n    at async handleAuthorizeAgency (http://localhost:5173/src/pages/NewShipmentPage.tsx:137:22)"
+        ],
+        "requestFailed": []
+      },
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+        "[NewShipment] authorizeAgency: UserFacingError: Shipment is not open for dispatch.\n    at Object.authorizeAgency (http://localhost:5173/src/services/customerSupabaseApi.ts:152:13)\n    at async handleAuthorizeAgency (http://localhost:5173/src/pages/NewShipmentPage.tsx:137:22)"
+      ],
+      "pageErrors": [],
+      "customerLabel": {
+        "id": "authorize-agency-input",
+        "ariaLabel": null,
+        "labelledby": null,
+        "labelsLength": 1,
+        "placeholder": "e.g., 8f2ac1b4-... agency ID (uuid)",
+        "formButtonIsSubmit": true
+      }
+    }
+  },
+  "agency": {
+    "mobile": {
+      "steps": [
+        {
+          "name": "boot: authenticated as role agency",
+          "ok": true,
+          "detail": "{\"injected\":false,\"bootRole\":\"agency\",\"bootAuthed\":true}"
+        },
+        {
+          "name": "empty state copy renders",
+          "ok": true,
+          "detail": "No customer authorizations yet..."
+        },
+        {
+          "name": "rows show shipment uuid + grant date (en-IN)",
+          "ok": true,
+          "detail": "{\"id1\":true,\"id2\":true,\"d1\":true,\"d2\":true,\"fareAria\":[\"Fare for shipment a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\"Fare for shipment b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\"],\"buttons\":2}"
+        },
+        {
+          "name": "fare inputs carry aria-label",
+          "ok": true,
+          "detail": "[\"Fare for shipment a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\"Fare for shipment b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\"]"
+        },
+        {
+          "name": "two Create Job buttons rendered",
+          "ok": true,
+          "detail": "buttons=2"
+        },
+        {
+          "name": "empty fare -> validation toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "zero fare -> validation toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "fare validation made NO insert call",
+          "ok": true,
+          "detail": "agencyJobsPost=0"
+        },
+        {
+          "name": "submitting state shows \"Creating...\" + disabled row controls",
+          "ok": true,
+          "detail": "{\"btnText\":\"Creating...\",\"btnDisabled\":true,\"inputDisabled\":true}"
+        },
+        {
+          "name": "double-submit suppressed",
+          "ok": true,
+          "detail": "posts=1, playwrightClickRefused=true, elClickSuppressed=true"
+        },
+        {
+          "name": "success toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "fare cleared after success",
+          "ok": true,
+          "detail": "value=''"
+        },
+        {
+          "name": "jobs list refresh (edge GET) fired after success",
+          "ok": true,
+          "detail": "edgeGetDelta=1"
+        },
+        {
+          "name": "already-exists info toast (23505 mapped)",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "error toast",
+          "ok": true,
+          "detail": "observed copy: \"Failed to create job\""
+        },
+        {
+          "name": "keyboard-only create (Tab->type->Tab->Enter) triggers insert",
+          "ok": true,
+          "detail": "tabs=19, postsDelta=1"
+        }
+      ],
+      "contrast": [
+        {
+          "label": "Authorized Shipments h2 (slate-800 on white)",
+          "found": true,
+          "fg": "#1e293b",
+          "bg": "#ffffff",
+          "ratio": 14.63,
+          "fontSizePx": "14px",
+          "fontWeight": "600"
+        },
+        {
+          "label": "panel description (text-xs slate-500 on white)",
+          "found": true,
+          "fg": "#64748b",
+          "bg": "#ffffff",
+          "ratio": 4.76,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "empty-state copy (text-xs slate-400 on white)",
+          "found": true,
+          "fg": "#94a3b8",
+          "bg": "#ffffff",
+          "ratio": 2.56,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "Authorized Shipments h2 (slate-800 on white)",
+          "found": true,
+          "fg": "#1e293b",
+          "bg": "#ffffff",
+          "ratio": 14.63,
+          "fontSizePx": "14px",
+          "fontWeight": "600"
+        },
+        {
+          "label": "panel description (text-xs slate-500)",
+          "found": true,
+          "fg": "#64748b",
+          "bg": "#ffffff",
+          "ratio": 4.76,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "shipment uuid (text-xs slate-700 on slate-50 row)",
+          "found": true,
+          "fg": "#334155",
+          "bg": "#f8fafc",
+          "ratio": 9.9,
+          "fontSizePx": "12px",
+          "fontWeight": "500"
+        },
+        {
+          "label": "grant date (text-xs slate-400 on slate-50 row)",
+          "found": true,
+          "fg": "#94a3b8",
+          "bg": "#f8fafc",
+          "ratio": 2.45,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "Create Job button (white on indigo-600)",
+          "found": true,
+          "fg": "#ffffff",
+          "bg": "#4f46e5",
+          "ratio": 6.29,
+          "fontSizePx": "12px",
+          "fontWeight": "600"
+        }
+      ],
+      "tabOrder": [
+        {
+          "tag": "INPUT",
+          "type": "number",
+          "text": "",
+          "aria": "Fare for shipment b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+          "placeholder": "Fare ₹",
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Create Job",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Home",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Fleet",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Drivers",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Jobs",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Billing",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Rates",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "body"
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Profile",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "All",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Pending(0)",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Accepted(0)",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "In Transit(0)",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        }
+      ],
+      "state": {
+        "authRpc": null,
+        "counters": {
+          "authRpc": 0,
+          "agencyJobsPost": 4,
+          "edgeJobs": 6,
+          "agencyLookup": 8
+        },
+        "consentsRows": [
+          {
+            "shipment_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+            "granted_via": "customer_grant",
+            "created_at": "2026-10-07T10:30:00Z"
+          },
+          {
+            "shipment_id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+            "granted_via": "admin_grant",
+            "created_at": "2026-10-06T08:00:00Z"
+          }
+        ],
+        "agencyJobsPost": {
+          "status": 201,
+          "body": {
+            "id": "d4e5f6a7-b8c9-4d0e-9f1a-2b3c4d5e6f7a",
+            "agency_id": "8f2ac1b4-1234-4abc-9def-56789abcdef0",
+            "shipment_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+            "fare": 1500,
+            "status": "pending"
+          }
+        },
+        "edgeJobsList": [],
+        "unmocked": [],
+        "pageErrors": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 409 (Conflict)",
+          "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+          "[AgencyJobsPage] createJob failed: UserFacingError: Failed to create job\n    at Object.createJob (http://localhost:5173/src/services/agencySupabaseApi.ts:96:13)\n    at async handleCreateJob (http://localhost:5173/src/pages/AgencyJobsPage.tsx:68:22)"
+        ],
+        "requestFailed": []
+      },
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict)",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+        "[AgencyJobsPage] createJob failed: UserFacingError: Failed to create job\n    at Object.createJob (http://localhost:5173/src/services/agencySupabaseApi.ts:96:13)\n    at async handleCreateJob (http://localhost:5173/src/pages/AgencyJobsPage.tsx:68:22)"
+      ],
+      "pageErrors": []
+    },
+    "desktop": {
+      "steps": [
+        {
+          "name": "boot: authenticated as role agency",
+          "ok": true,
+          "detail": "{\"injected\":false,\"bootRole\":\"agency\",\"bootAuthed\":true}"
+        },
+        {
+          "name": "empty state copy renders",
+          "ok": true,
+          "detail": "No customer authorizations yet..."
+        },
+        {
+          "name": "rows show shipment uuid + grant date (en-IN)",
+          "ok": true,
+          "detail": "{\"id1\":true,\"id2\":true,\"d1\":true,\"d2\":true,\"fareAria\":[\"Fare for shipment a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\"Fare for shipment b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\"],\"buttons\":2}"
+        },
+        {
+          "name": "fare inputs carry aria-label",
+          "ok": true,
+          "detail": "[\"Fare for shipment a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\"Fare for shipment b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e\"]"
+        },
+        {
+          "name": "two Create Job buttons rendered",
+          "ok": true,
+          "detail": "buttons=2"
+        },
+        {
+          "name": "empty fare -> validation toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "zero fare -> validation toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "fare validation made NO insert call",
+          "ok": true,
+          "detail": "agencyJobsPost=0"
+        },
+        {
+          "name": "submitting state shows \"Creating...\" + disabled row controls",
+          "ok": true,
+          "detail": "{\"btnText\":\"Creating...\",\"btnDisabled\":true,\"inputDisabled\":true}"
+        },
+        {
+          "name": "double-submit suppressed",
+          "ok": true,
+          "detail": "posts=1, playwrightClickRefused=true, elClickSuppressed=true"
+        },
+        {
+          "name": "success toast",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "fare cleared after success",
+          "ok": true,
+          "detail": "value=''"
+        },
+        {
+          "name": "jobs list refresh (edge GET) fired after success",
+          "ok": true,
+          "detail": "edgeGetDelta=1"
+        },
+        {
+          "name": "already-exists info toast (23505 mapped)",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "error toast",
+          "ok": true,
+          "detail": "observed copy: \"Failed to create job\""
+        },
+        {
+          "name": "keyboard-only create (Tab->type->Tab->Enter) triggers insert",
+          "ok": true,
+          "detail": "tabs=19, postsDelta=1"
+        }
+      ],
+      "contrast": [
+        {
+          "label": "Authorized Shipments h2 (slate-800 on white)",
+          "found": true,
+          "fg": "#1e293b",
+          "bg": "#ffffff",
+          "ratio": 14.63,
+          "fontSizePx": "14px",
+          "fontWeight": "600"
+        },
+        {
+          "label": "panel description (text-xs slate-500 on white)",
+          "found": true,
+          "fg": "#64748b",
+          "bg": "#ffffff",
+          "ratio": 4.76,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "empty-state copy (text-xs slate-400 on white)",
+          "found": true,
+          "fg": "#94a3b8",
+          "bg": "#ffffff",
+          "ratio": 2.56,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "Authorized Shipments h2 (slate-800 on white)",
+          "found": true,
+          "fg": "#1e293b",
+          "bg": "#ffffff",
+          "ratio": 14.63,
+          "fontSizePx": "14px",
+          "fontWeight": "600"
+        },
+        {
+          "label": "panel description (text-xs slate-500)",
+          "found": true,
+          "fg": "#64748b",
+          "bg": "#ffffff",
+          "ratio": 4.76,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "shipment uuid (text-xs slate-700 on slate-50 row)",
+          "found": true,
+          "fg": "#334155",
+          "bg": "#f8fafc",
+          "ratio": 9.9,
+          "fontSizePx": "12px",
+          "fontWeight": "500"
+        },
+        {
+          "label": "grant date (text-xs slate-400 on slate-50 row)",
+          "found": true,
+          "fg": "#94a3b8",
+          "bg": "#f8fafc",
+          "ratio": 2.45,
+          "fontSizePx": "12px",
+          "fontWeight": "400"
+        },
+        {
+          "label": "Create Job button (white on indigo-600)",
+          "found": true,
+          "fg": "#ffffff",
+          "bg": "#4f46e5",
+          "ratio": 6.29,
+          "fontSizePx": "12px",
+          "fontWeight": "600"
+        }
+      ],
+      "tabOrder": [
+        {
+          "tag": "INPUT",
+          "type": "number",
+          "text": "",
+          "aria": "Fare for shipment b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+          "placeholder": "Fare ₹",
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Create Job",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "body"
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Home",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Fleet",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Drivers",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Jobs",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Billing",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Rates",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "A",
+          "type": null,
+          "text": "Profile",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Sign Out",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "All",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Pending(0)",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "Accepted(0)",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        },
+        {
+          "tag": "BUTTON",
+          "type": null,
+          "text": "In Transit(0)",
+          "aria": null,
+          "placeholder": null,
+          "disabled": false
+        }
+      ],
+      "state": {
+        "authRpc": null,
+        "counters": {
+          "authRpc": 0,
+          "agencyJobsPost": 4,
+          "edgeJobs": 6,
+          "agencyLookup": 8
+        },
+        "consentsRows": [
+          {
+            "shipment_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+            "granted_via": "customer_grant",
+            "created_at": "2026-10-07T10:30:00Z"
+          },
+          {
+            "shipment_id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+            "granted_via": "admin_grant",
+            "created_at": "2026-10-06T08:00:00Z"
+          }
+        ],
+        "agencyJobsPost": {
+          "status": 201,
+          "body": {
+            "id": "d4e5f6a7-b8c9-4d0e-9f1a-2b3c4d5e6f7a",
+            "agency_id": "8f2ac1b4-1234-4abc-9def-56789abcdef0",
+            "shipment_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+            "fare": 1500,
+            "status": "pending"
+          }
+        },
+        "edgeJobsList": [],
+        "unmocked": [],
+        "pageErrors": [],
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 409 (Conflict)",
+          "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+          "[AgencyJobsPage] createJob failed: UserFacingError: Failed to create job\n    at Object.createJob (http://localhost:5173/src/services/agencySupabaseApi.ts:96:13)\n    at async handleCreateJob (http://localhost:5173/src/pages/AgencyJobsPage.tsx:68:22)"
+        ],
+        "requestFailed": []
+      },
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 409 (Conflict)",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+        "[AgencyJobsPage] createJob failed: UserFacingError: Failed to create job\n    at Object.createJob (http://localhost:5173/src/services/agencySupabaseApi.ts:96:13)\n    at async handleCreateJob (http://localhost:5173/src/pages/AgencyJobsPage.tsx:68:22)"
+      ],
+      "pageErrors": []
+    }
+  }
+}

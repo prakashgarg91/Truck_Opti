@@ -1,0 +1,3 @@
+Enabling Automatic Certificate Management... starting. See status with heroku certs:auto or wait until active with heroku certs:auto --wait
+=== Your certificate will now be managed by Heroku. Check the status by running heroku certs:auto.
+

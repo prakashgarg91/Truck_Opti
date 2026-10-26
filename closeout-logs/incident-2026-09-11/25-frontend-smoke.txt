@@ -1,0 +1,20 @@
+[2m      - element is not stable[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    - waiting for element to be visible, enabled and stable[22m
+[2m    - element is not stable[22m
+[2m  2 × retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m      - waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m  55 × retrying click action[22m
+[2m       - waiting 500ms[22m
+[2m       - waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m  - retrying click action[22m
+[2m    - waiting 500ms[22m
+
+    at collectAuthFallbackResult (D:\Github\Truck_Opti\scripts\frontend_launch_smoke.mjs:282:24)
+    at async main (D:\Github\Truck_Opti\scripts\frontend_launch_smoke.mjs:447:18) {
+  name: 'TimeoutError'
+}

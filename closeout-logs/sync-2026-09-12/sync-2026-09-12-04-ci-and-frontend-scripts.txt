@@ -1,0 +1,50 @@
+== frontend-ci.yml gates ==
+1:name: Frontend CI
+22:      - 'pytest.ini'
+38:      - 'pytest.ini'
+45:    runs-on: ubuntu-latest
+49:      - name: Checkout
+52:      - name: Setup Node
+61:      - name: Install root dependencies
+62:        run: npm ci
+64:      - name: Install frontend dependencies
+65:        run: npm ci --prefix frontend
+67:      - name: Audit root production dependencies
+68:        run: npm audit --omit=dev --audit-level=high
+70:      - name: Audit frontend production dependencies
+71:        run: npm audit --prefix frontend --omit=dev --audit-level=high
+73:      - name: Install Playwright Chromium
+74:        run: npx playwright install --with-deps chromium
+76:      - name: Test production provider policy
+77:        run: node --test scripts/production_config_policy.test.mjs
+79:      - name: Test deployment safety policy
+80:        run: node --test scripts/deployment_safety.test.mjs
+82:      - name: Test payment readiness policy
+83:        run: node --test scripts/payment_readiness_policy.test.mjs
+85:      - name: Test security boundary policy
+86:        run: node --test scripts/security_boundary_policy.test.mjs
+88:      - name: Test production server routing and readiness
+89:        run: npm run test:server-routing
+91:      - name: Lint frontend
+92:        run: npm --prefix frontend run lint
+94:      - name: Build frontend in supported local-first mode
+95:        run: npm --prefix frontend run build
+97:      - name: Run frontend unit tests
+98:        run: npm test
+100:      - name: Run packing regression
+101:        run: npm run test:packing
+103:      - name: Start preview server
+104:        run: |
+115:      - name: Public local-first browser smoke
+116:        run: npm run test:public-smoke
+118:      - name: Core local-first launch smoke
+119:        run: npm run test:frontend-smoke
+
+== frontend package.json scripts ==
+dev = vite
+build = tsc && vite build
+test:unit = vitest run
+test:packing = tsc -p tsconfig.packing-regression.json && node .tmp/packing-regression/scripts/packing-regression.js
+bench:packing = tsc -p tsconfig.packing-benchmark.json && node .tmp/packing-benchmark/scripts/packing-benchmark.js
+preview = vite preview
+lint = eslint . --report-unused-disable-directives --max-warnings 80

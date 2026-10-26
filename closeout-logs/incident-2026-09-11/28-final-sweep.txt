@@ -1,0 +1,13 @@
+Fri Sep 11 15:18:01 UTC 2026
+== www ==
+200 in 0.742351s
+== apex ==
+200 final=https://www.truckopti.in/ redirects=1
+== dynos ==
+=== web (Eco): npm start (1)
+web.1: up 2026/09/11 20:15:03 +0530 (~ 33m ago)
+== releases ==
+=== truck-opti-app Releases - Current: v5
+  v5   Deploy 3d330d2e                                             reach.prakashgarg@gmail.com   2026/09/11 20:14:45 +0530 (~ 33m ago)
+  v4   Set VITE_ALLOW_TEST_RAZORPAY_ON_PRODUCTION config vars      reach.prakashgarg@gmail.com   2026/09/11 20:08:57 +0530 (~ 39m ago)
+  v3   Set VITE_AUTH_EMAIL_OTP_ENABLED, VITE_APP_URL config vars   reach.prakashgarg@gmail.com   2026/09/06 20:32:42 +0530
