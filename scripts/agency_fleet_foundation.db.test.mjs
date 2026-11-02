@@ -319,8 +319,13 @@ async function main() {
   await testCase('A1. migration chain replays cleanly and ends with the fleet-foundation migration', async () => {
     expect(applied.includes('20261008000000_agency_fleet_foundation.sql'),
       `fleet-foundation migration missing from chain (last=${last})`)
-    expect(last === '20261008000000_agency_fleet_foundation.sql',
-      `fleet-foundation migration must sort last, got ${last}`)
+    // Later TO-143-D2+ migrations may follow; what must hold is that the fleet
+    // foundation sits after the consent writer and nothing older follows it.
+    const fleetAt = applied.indexOf('20261008000000_agency_fleet_foundation.sql')
+    expect(fleetAt > applied.indexOf('20261007120000_consent_writer_and_job_command.sql'),
+      'fleet-foundation migration must sort after the consent writer')
+    expect(applied.slice(fleetAt + 1).every((f) => f > '20261008000000_agency_fleet_foundation.sql'),
+      `a migration older than the fleet foundation sorts after it (last=${last})`)
   })
 
   await testCase('A2. trucks catalog carries the 8 stable codes matching existing vehicle_type values', async () => {
