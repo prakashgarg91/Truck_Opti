@@ -355,7 +355,7 @@ export default function DriverEarningsPage() {
               <h3 className="text-lg font-bold text-slate-800 dark:text-white">
                 {'Request Withdrawal'}
               </h3>
-              <button onClick={() => setShowWithdrawModal(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+              <button aria-label="Close withdrawal dialog" onClick={() => setShowWithdrawModal(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                 <X size={20} className="text-slate-500" />
               </button>
             </div>

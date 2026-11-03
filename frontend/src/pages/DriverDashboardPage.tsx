@@ -431,7 +431,7 @@ export default function DriverDashboardPage() {
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                 {'Request Withdrawal'}
               </h3>
-              <button onClick={() => setShowWithdrawalModal(false)} className="p-1">
+              <button aria-label="Close withdrawal dialog" onClick={() => setShowWithdrawalModal(false)} className="p-1">
                 <X size={20} className="text-slate-400" />
               </button>
             </div>
@@ -578,7 +578,7 @@ export default function DriverDashboardPage() {
                     : 'Go online to start receiving job offers'}
                 </p>
               </div>
-              <button
+              <button aria-label={driver.is_online ? 'Go offline' : 'Go online'}
                 onClick={toggleOnline}
                 disabled={togglingOnline}
                 className={`relative w-16 h-8 rounded-full transition-colors duration-200 ${driver.is_online ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'

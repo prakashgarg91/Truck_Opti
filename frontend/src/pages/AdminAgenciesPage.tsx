@@ -167,7 +167,7 @@ export default function AdminAgenciesPage() {
             <h1 className="font-bold text-slate-800 dark:text-slate-100">Agency Approvals</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">Manage transport agency registrations</p>
           </div>
-          <button onClick={fetchSnapshot} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700">
+          <button aria-label="Refresh agencies" onClick={fetchSnapshot} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700">
             <RefreshCw size={16} className="text-slate-500 dark:text-slate-400" />
           </button>
         </div>

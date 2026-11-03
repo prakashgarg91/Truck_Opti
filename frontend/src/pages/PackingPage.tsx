@@ -822,13 +822,13 @@ export default function PackingPage() {
                         </p>
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                        <button
+                        <button aria-label={`Edit ${item.name}`}
                           onClick={() => handleEditItem(item)}
                           className="p-1.5 text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                        <button
+                        <button aria-label={`Remove ${item.name}`}
                           onClick={() => handleRemoveItem(item.id)}
                           className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                         >
@@ -1196,7 +1196,7 @@ export default function PackingPage() {
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Book Truck
               </h3>
-              <button
+              <button aria-label="Close book truck dialog"
                 onClick={() => setShowBookModal(false)}
                 className="text-slate-400 hover:text-slate-600"
               >

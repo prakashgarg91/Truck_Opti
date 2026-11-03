@@ -466,7 +466,7 @@ export default function DriverTripPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center gap-3">
-        <button
+        <button aria-label="Back to dashboard"
           onClick={() => navigate('/driver/dashboard')}
           className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700"
         >

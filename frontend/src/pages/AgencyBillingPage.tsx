@@ -36,6 +36,10 @@ interface AgencyExportRow {
 const GST_RATE = 0.05
 
 export default function AgencyBillingPage() {
+  useEffect(() => {
+    document.title = 'Billing & Invoices - TruckOpti'
+  }, [])
+
   const [summary, setSummary] = useState<BillingSummary>({ thisMonth: 0, pending: 0, totalPaid: 0, gstDue: 0 })
   const [loading, setLoading] = useState(true)
   const [deliveredJobs, setDeliveredJobs] = useState<DeliveredJob[]>([])

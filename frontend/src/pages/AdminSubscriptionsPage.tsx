@@ -95,7 +95,7 @@ export default function AdminSubscriptionsPage() {
             {'Subscriptions'}
           </h1>
         </div>
-        <button
+        <button aria-label="Refresh subscriptions"
           onClick={fetchSubscriptions}
           className="p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
         >

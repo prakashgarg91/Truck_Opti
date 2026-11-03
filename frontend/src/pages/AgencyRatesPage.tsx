@@ -45,6 +45,10 @@ const EMPTY_FORM = {
 }
 
 export default function AgencyRatesPage() {
+  useEffect(() => {
+    document.title = 'Rate Cards - TruckOpti'
+  }, [])
+
   const [rates, setRates] = useState<RateCard[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -304,7 +308,7 @@ export default function AgencyRatesPage() {
                   ? <ToggleRight size={22} className="text-indigo-600" />
                   : <ToggleLeft size={22} />}
               </button>
-              <button onClick={() => handleDelete(rate.id)} className="text-slate-400 hover:text-red-500">
+              <button aria-label={`Delete rate ${rate.origin_city} to ${rate.dest_city}`} onClick={() => handleDelete(rate.id)} className="text-slate-400 hover:text-red-500">
                 <Trash2 size={16} />
               </button>
             </div>

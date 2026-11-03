@@ -40,6 +40,10 @@ interface JobSummary {
 }
 
 export default function AgencyDashboardPage() {
+  useEffect(() => {
+    document.title = 'Agency Dashboard - TruckOpti'
+  }, [])
+
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [agency, setAgency] = useState<AgencyRecord | null>(null)
@@ -122,9 +126,9 @@ export default function AgencyDashboardPage() {
       return (
         <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
           <Building2 size={64} className="text-slate-300 mb-4" />
-          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
             Set up this device
-          </h2>
+          </h1>
           <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">
             Create your company workspace on this device to start managing trucks and cartons offline.
           </p>
@@ -146,9 +150,9 @@ export default function AgencyDashboardPage() {
               <Building2 size={24} className="text-indigo-600 dark:text-indigo-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-bold text-slate-800 dark:text-slate-100 truncate text-lg">
+              <h1 className="font-bold text-slate-800 dark:text-slate-100 truncate text-lg">
                 {localWorkspace.companyName}
-              </h2>
+              </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
                 {localWorkspace.contactName || 'Device-local workspace'}
               </p>
@@ -210,9 +214,9 @@ export default function AgencyDashboardPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
         <Building2 size={64} className="text-slate-300 mb-4" />
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
           No Agency Profile Found
-        </h2>
+        </h1>
         <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">
           Register your transport agency to access the agency portal.
         </p>
@@ -262,9 +266,9 @@ export default function AgencyDashboardPage() {
             <Building2 size={24} className="text-indigo-600 dark:text-indigo-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-slate-800 dark:text-slate-100 truncate text-lg">
+            <h1 className="font-bold text-slate-800 dark:text-slate-100 truncate text-lg">
               {agency.company_name}
-            </h2>
+            </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {agency.city || 'India'} {agency.gstin ? `• GSTIN: ${agency.gstin}` : ''}
             </p>

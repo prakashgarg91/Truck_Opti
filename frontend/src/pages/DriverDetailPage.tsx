@@ -306,7 +306,7 @@ export default function DriverDetailPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 z-10 px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate('/admin/drivers')} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700">
+        <button aria-label="Back to drivers" onClick={() => navigate('/admin/drivers')} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700">
           <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
         </button>
         <div className="flex-1 min-w-0">

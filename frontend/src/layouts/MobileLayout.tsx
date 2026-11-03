@@ -238,9 +238,9 @@ export default function MobileLayout() {
             <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
               <Package className="w-4 h-4 text-white" />
             </div>
-            <h1 className="font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="font-bold text-slate-900 dark:text-slate-100">
               {currentPage?.label || 'TruckOpti'}
-            </h1>
+            </h2>
           </div>
 
           <button
@@ -374,7 +374,7 @@ export default function MobileLayout() {
                         </p>
                       </div>
                       {!notification.is_read && (
-                        <button
+                        <button aria-label="Mark notification as read"
                           onClick={(e) => {
                             e.stopPropagation()
                             handleMarkAsRead(notification.id)

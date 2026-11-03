@@ -39,6 +39,10 @@ const VEHICLE_LABELS: Record<string, string> = {
 }
 
 export default function AgencyDriversPage() {
+  useEffect(() => {
+    document.title = 'Agency Drivers - TruckOpti'
+  }, [])
+
   const { user } = useAuthStore()
   const [drivers, setDrivers] = useState<AssignedDriver[]>([])
   const [trucks, setTrucks] = useState<AgencyTruck[]>([])

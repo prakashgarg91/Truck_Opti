@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
           </h1>
           <p className="text-sm text-slate-500 mt-1">Real-time platform overview</p>
         </div>
-        <button
+        <button aria-label="Refresh analytics"
           onClick={fetchAnalytics}
           className="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
         >

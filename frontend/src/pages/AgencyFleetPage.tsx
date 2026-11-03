@@ -29,6 +29,10 @@ function expiryStatus(dateStr: string | null): 'ok' | 'soon' | 'expired' {
 }
 
 export default function AgencyFleetPage() {
+  useEffect(() => {
+    document.title = 'Fleet Management - TruckOpti'
+  }, [])
+
   const navigate = useNavigate()
   const [trucks, setTrucks] = useState<FleetVehicle[]>([])
   const [loading, setLoading] = useState(true)
