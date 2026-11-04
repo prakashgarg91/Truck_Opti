@@ -206,12 +206,11 @@ async function runCommand<T extends Record<string, unknown>>(
 ): Promise<CommandResult<T>> {
     // The generated rpc() overloads are per function name; this generic runner
     // forwards the already-typed args built by each public method below.
-    const { data, error } = await (
-        supabase.rpc as unknown as (name: string, params: Record<string, unknown>) => Promise<{
-            data: unknown
-            error: { message?: unknown } | null
-        }>
-    )(rpcName, args)
+    // Call as a method: the client's rpc() relies on `this`; a detached call crashes.
+    const client = supabase as unknown as {
+        rpc: (name: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: unknown } | null }>
+    }
+    const { data, error } = await client.rpc(rpcName, args)
 
     if (error) {
         const message = error.message
@@ -248,10 +247,8 @@ async function readRows<T>(
     fallback: string,
     filter?: (query: unknown) => unknown
 ): Promise<T[]> {
-    const from = supabase.from as unknown as (name: string) => {
-        select: (cols: string) => unknown
-    }
-    let query = from(table).select(columns)
+    const client = supabase as unknown as { from: (name: string) => { select: (cols: string) => unknown } }
+    let query = client.from(table).select(columns)
     if (filter) query = filter(query)
     const { data, error } = (await (query as { order: (col: string, opts: { ascending: boolean }) => Promise<{ data: unknown; error: unknown }> }).order(
         'created_at',

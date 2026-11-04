@@ -3,9 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const rpcMock = vi.hoisted(() => vi.fn())
 const fromMock = vi.hoisted(() => vi.fn())
 
-vi.mock('../lib/supabase', () => ({
-    supabase: { rpc: rpcMock, from: fromMock },
-}))
+// The real SupabaseClient methods depend on `this`; a detached call crashes in the
+// browser. These wrappers fail loudly unless the service calls them as methods.
+vi.mock('../lib/supabase', () => {
+    const client: Record<string, unknown> = {}
+    client.rpc = function (this: unknown, ...args: unknown[]) {
+        if (this !== client) throw new TypeError('supabase.rpc called without its client as this')
+        return rpcMock(...args)
+    }
+    client.from = function (this: unknown, ...args: unknown[]) {
+        if (this !== client) throw new TypeError('supabase.from called without its client as this')
+        return fromMock(...args)
+    }
+    return { supabase: client }
+})
 
 vi.mock('../utils/logger', () => ({
     logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
