@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { agencyDriversApi, isAgencyDenial, type DriverEmployment } from '../services/agencyPortalApi'
 import { useAuthStore } from '../stores/authStore'
+import DriverInvitationsPanel from '../components/DriverInvitationsPanel'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
@@ -415,6 +416,9 @@ export default function AgencyDriversPage() {
           ))}
         </div>
       )}
+
+      {/* Driver invitations (TO-144-D2, Stitch Roster edit eac990fe) */}
+      <DriverInvitationsPanel />
 
       {/* Employment Records (TO-144-D1): RLS-scoped, licence window + expected-version end */}
       <div data-testid="employments-panel">
