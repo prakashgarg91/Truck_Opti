@@ -1606,10 +1606,20 @@ async function main() {
     } catch (error) {
       terminalInsertOutcome = `denied (${error && error.message ? error.message.split('\n')[0] : error})`
     }
-    recordFinding(
-      'terminal-status consent cutoff missing',
-      `an active consent granted pre-termination (or platform-seeded) permits a NEW agency_jobs INSERT on a delivered/cancelled shipment — INSERT ${terminalInsertOutcome} on delivered shipment1 (agency_jobs.id=${terminalJobId}). Remediation = shipment-status predicate on the agency_jobs INSERT/UPDATE policies (20261006120000:382-421) or a consent auto-revoke trigger on shipments.status; both are policy/schema changes outside the TO-143-D1 fences (owner-deferred).`
-    )
+    // 20261014000000 enforces the cutoff on the INSERT policy: the finding is
+    // resolved, so this is now an asserted case. A regression re-opens the finding.
+    if (terminalInsertOutcome === 'SUCCEEDED') {
+      recordFinding(
+        'terminal-status consent cutoff REGRESSED',
+        `an active consent permits a NEW agency_jobs INSERT on a delivered shipment (agency_jobs.id=${terminalJobId}); the 20261014000000 policy predicate is not effective`
+      )
+    } else {
+      record(
+        'J1. terminal-status consent cutoff: NEW agency_jobs INSERT on a delivered shipment is denied despite an active consent',
+        /row-level security/.test(terminalInsertOutcome),
+        terminalInsertOutcome
+      )
+    }
   }
 
   // -------------------------------------------------------------------------

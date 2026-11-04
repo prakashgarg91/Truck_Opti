@@ -986,6 +986,9 @@ isOneToOne: false
                            },
 "resolve_caller_agency_for_scopes":
 { Args: { "p_scopes": string[] }; Returns: string
+                           },
+"shipment_accepts_agency_jobs":
+{ Args: { "p_shipment_id": string }; Returns: boolean
                            }
           }
           Enums: {
