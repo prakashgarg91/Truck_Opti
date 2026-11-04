@@ -500,14 +500,16 @@ async function main() {
     truckA1 = env.vehicle.id
     expect(typeof truckA1 === 'string' && truckA1.length > 0, `vehicle id missing: ${JSON.stringify(env.vehicle)}`)
 
-    // Assign the approved fleet driver (C6's cross-agency guard test depends on it).
-    await db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckA1])
-
+    // Employment is the driver authority: the active employment at A must exist
+    // BEFORE the truck link below (C6's cross-agency guard test depends on it).
     const emp = await rows(`SELECT public.agency_driver_employment_create($1, $2, $3, $4, $5) AS r`,
       [driver1, 'DL-0420190001234', 'LMV-TR', '2027-06-30', '9810011223'])
     const empEnv = emp[0].r
     expect(empEnv && empEnv.ok === true && empEnv.state === 'created', `employment create must return created, got ${JSON.stringify(empEnv)}`)
     empA1 = empEnv.employment.id
+
+    // Assign the approved, actively employed fleet driver.
+    await db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckA1])
   })
 
   await testCase('C2. agency B creates its own vehicle and employment; catalog body defaults are per vehicle type', async () => {

@@ -471,6 +471,14 @@ async function main() {
     // must SUCCEED — the guard resolves drivers through the RLS-safe definer
     // helper instead of the RLS-filtered plain SELECT that made every
     // authenticated assignment fail closed.
+    await actAsService()
+    await db.query(
+      `INSERT INTO public.agency_driver_employment (agency_id, driver_id, status)
+       SELECT $1, $2, 'active'
+       WHERE NOT EXISTS (SELECT 1 FROM public.agency_driver_employment WHERE agency_id = $1 AND driver_id = $2 AND status = 'active')`,
+      [agencyA, driver1]
+    )
+    await actAs(agencyAUser)
     await db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckA1])
     const assigned = await rows(`SELECT driver_id FROM public.agency_trucks WHERE id = $1`, [truckA1])
     expect(assigned[0].driver_id === driver1, 'authenticated direct assignment of a valid approved driver must succeed on the RLS path')
@@ -482,6 +490,12 @@ async function main() {
     // service client): the edge contract validates, then the write proceeds.
     await actAsService()
     await assertApprovedDriverContract(driver1)
+    await db.query(
+      `INSERT INTO public.agency_driver_employment (agency_id, driver_id, status)
+       SELECT $1, $2, 'active'
+       WHERE NOT EXISTS (SELECT 1 FROM public.agency_driver_employment WHERE agency_id = $1 AND driver_id = $2 AND status = 'active')`,
+      [agencyA, driver1]
+    )
     await db.query(`UPDATE public.agency_trucks SET driver_id = $1 WHERE id = $2`, [driver1, truckA1])
     const assigned = await rows(`SELECT driver_id FROM public.agency_trucks WHERE id = $1`, [truckA1])
     expect(assigned[0].driver_id === driver1, 'portal authority must assign the approved driver')

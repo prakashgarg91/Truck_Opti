@@ -117,6 +117,9 @@ export default function AgencyDriversPage() {
       if (!result.ok && result.error === 'version_conflict') {
         toast.error('This record changed elsewhere. Showing the latest version.')
       }
+      if (!result.ok && result.error === 'driver_has_active_assignment') {
+        toast.error('This driver has an active assignment. Release it before ending employment.')
+      }
     } catch (e) {
       logger.error('[AgencyDriversPage] handleEndEmployment', e)
       if (isAgencyDenial(e)) {

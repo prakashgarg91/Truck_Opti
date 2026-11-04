@@ -1372,6 +1372,17 @@ describe('agencyPortalApi', () => {
             })
         })
 
+        it('maps driver_has_active_assignment to a typed refusal WITHOUT throwing', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'driver_has_active_assignment' },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.endEmployment(employmentId, 2)).resolves.toEqual({
+                ok: false, error: 'driver_has_active_assignment',
+            })
+        })
+
         it('redacts denial exceptions to UserFacingError', async () => {
             rpcMock.mockResolvedValue({ data: null, error: { message: 'Agency approval is required.' } })
 

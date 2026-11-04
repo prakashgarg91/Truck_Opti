@@ -204,6 +204,7 @@ export type EmploymentCommandState = 'created' | 'idempotent_replay' | 'ended' |
 export type EmploymentCommandResult =
     | { ok: true; state: EmploymentCommandState; employment?: DriverEmployment; version: number }
     | { ok: false; error: 'version_conflict'; currentVersion: number }
+    | { ok: false; error: 'driver_has_active_assignment' }
 
 /**
  * Bounded mapping from the controlled fleet command exceptions
@@ -823,6 +824,10 @@ export const agencyDriversApi = {
         const envelope = (Array.isArray(data) ? data[0] : data) as
             | { ok?: unknown; state?: unknown; employment?: unknown; version?: unknown; error?: unknown; current_version?: unknown }
             | undefined
+
+        if (envelope && envelope.ok === false && envelope.error === 'driver_has_active_assignment') {
+            return { ok: false, error: 'driver_has_active_assignment' }
+        }
 
         if (envelope && envelope.ok === false && envelope.error === 'version_conflict') {
             return {

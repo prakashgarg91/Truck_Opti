@@ -599,6 +599,10 @@ async function main() {
 
   const driverOk = await createDriver(driverOkUser, 'Approved', 'approved')
   const driverPending = await createDriver(driverPendingUser, 'Pending', 'pending')
+  await db.query(
+    `INSERT INTO public.agency_driver_employment (agency_id, driver_id, status) VALUES ($1, $2, 'active')`,
+    [agencyOk, driverOk]
+  )
   await createAgencyTruck(agencyOk, driverOk)
 
   const agencyJobA = await createAgencyJob(agencyOk, shipmentA.id)
