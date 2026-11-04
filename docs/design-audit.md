@@ -1,5 +1,18 @@
 # Design Audit — Truck_Opti × Stitch coverage
 
+## 2026-11-04 TO-144-D2 UI — Stitch screens generated (integration NOT yet done)
+
+Stitch project `817968552986251880` (reused, one per repo), design system `assets/039d7f7b6b7747e8a76dedad4464c9cb` (TruckOpti UI), all DESKTOP to match the existing agency screens. Policy inputs: show-once invitation codes (delivery out of band), agency-owned client parties, tariffs INR / two decimals / per_trip|per_tonne|per_km / rates exclude GST (see `agent-results/034-result.md`).
+
+| Screen | Stitch id | Covers | Planned route | Backend |
+|---|---|---|---|---|
+| Agency: Team & Access | `0691bdff8236492790dc404c415ad9dc` | staff invitations, memberships, scope change/revoke, show-once code | `/agency/team` (new nav item) | `agency_member_invite`, `agency_member_invitation_revoke`, `agency_member_revoke`, `agency_member_change_scope`, tables `agency_memberships`, `agency_invitations` |
+| Agency: Client Agreements & Sites | `0768c6ac3ed54adc982f8d3b104fa9c4` | agreements, bill-to/ship-to sites, contacts | `/agency/clients` (new nav item) | `agency_client_agreement_*`, `agency_client_site_*`, `agency_client_contact_*` |
+| Agency: Tariff Versions | `20944736a64144a0be4287996e6851fe` | publish/revise lane rates, history | `/agency/clients/:agreementId/tariffs` | `agency_tariff_version_publish`, table `agency_tariff_versions` |
+| Agency: Driver Roster & Management (edit pending) | `f5ac15295ada4765b95247e87947c7c4` | driver invitations (create, revoke, show-once code) | existing `/agency/drivers` | `agency_driver_invitation_create`, `agency_driver_invitation_revoke` |
+
+Mutation log: 3 generate calls succeeded (1 attempt each, 0 retries). 1 edit call (`stitch_edit_screens` on the Driver Roster) FAILED with PROVIDER "Requested entity was not found" because the short id `f5ac1529` was passed instead of the full id above; nothing was changed upstream. A corrected attempt awaits owner authorization (guide: a new attempt after a deterministic provider error needs the owner). Artifacts: `C:\Users\Prakash\AppData\Local\stitch-mcp-state\artifacts\10636db1\817968552986251880\screen.2026-11-04T05-01-49-495Z.json` (Team), `...T05-03-59-911Z.json` (Clients), `...T05-07-00-539Z.json` (Tariffs). Screenshots / browser verification: not yet (no code integrated).
+
 ## 2026-10-25 evidence-tier reconciliation — TO-154 screen tranche (Delivery-0 req 6)
 
 Re-label, not deletion: every TO-154 claim in the dated sections below now names its proof tier. Tier vocabulary used throughout: **MOCKED BROWSER** = Playwright against the dev server (`:5173`) with ALL Supabase traffic intercepted at the HTTP boundary (`**localhost.invalid/**` + `**/*.supabase.co/**` route mocks, fake session seeded via localStorage/`authStore.setState`) — not a real backend. **JSDOM/VITEST** = component/service unit tests. **SQL/PGlite** = in-process Postgres batteries. **HOSTED HTTP: none — absent** for the entire tranche. **PHYSICAL DEVICE: none — absent** for the entire tranche.
