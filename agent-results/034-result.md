@@ -311,3 +311,13 @@ Not changed: `TASKS.md`, all frontend and service code, `database.types.ts`, Edg
 ### Next smallest task
 
 Owner review of the policy items (2, 4, 5). Then a TO-144-D2 UI delivery consuming these RPCs, which needs the database.types delta (item 9) and the browser pass with a token-delivery decision (item 3).
+
+## TO-144-D2 policy decisions and types delta (2026-11-04)
+
+Owner delegated three policy questions to the Opus advisor in chat ("ask the opus 5.5"); its recommendations are adopted below and remain overridable by the owner.
+
+- **Client parties (open finding 4): keep agency-owned.** Do not link to the legacy `public.customers` table (global, no tenant column, seed rows). Deferred: an optional `platform_customer_id` link column as a separate forward migration if the same client must be reconciled.
+- **Tariff policy (open finding 5): confirmed as built.** INR only, NUMERIC(12,2), more than two decimals refused (UI uses `step=0.01`), basis `per_trip` / `per_tonne` / `per_km`. `rate_amount` excludes GST (GST belongs at invoicing). Deferred, each a single nullable forward column or vocabulary addition: `per_kg`, detention, minimum charge / minimum weight. Never rename an existing basis value (append-only table).
+- **Token delivery (open finding 3): UI shows the raw token once, owner shares it out of band.** Automated WhatsApp delivery is deferred behind a delivery interface; the gateway or official-API choice and any credentials are owner decisions.
+- **Types (open finding 9): delta applied, machine-checked.** `scripts/db_types_drift.check.mjs` (`npm run types:drift`) replays the migration chain in PGlite, introspects objects added since 20261010000000 and fails on any difference from `frontend/src/types/database.types.ts`; `--write` inserts missing entries only. Result: 8 tables (`fleet_assignment_reservations` plus the seven D2 tables) and 23 public functions added, 313 insertions / 0 deletions, `tsc` clean. Proof tier: local PGlite only; regenerate with the real generator on a Docker machine before hosted proof (TO-153).
+- Known, out of scope: run with `--since 20260101000000`, 9 pre-existing table/function entries (analytics_events, packing_results, routes, subscription_plans, trucks, and four job-offer functions) differ from the replayed schema, and D1 `agency_driver_*` / `shipment_agency_consents` entries are absent. Not touched here.

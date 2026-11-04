@@ -12,6 +12,14 @@
 // (trucks.code key; agency_trucks payload/body/PUC/maintenance/version columns + catalog FK;
 // new agency_driver_employment table) following the same TO-130 precedent — the delta
 // matches the migration text exactly; regenerate on a machine with Docker before relying on it.
+// TO-144-D2 types delta (2026-11-04): fleet_assignment_reservations (20261010000000) and the
+// seven agency membership/client/tariff/driver-invitation tables plus their RPCs
+// (20261011000000) were written by scripts/db_types_drift.check.mjs --write, which introspects the
+// replayed migration chain in PGlite. `node scripts/db_types_drift.check.mjs` fails on any
+// difference for objects added since 20261010000000. Local-DB proof only: regenerate with the
+// real generator on a Docker machine before hosted proof (TO-153).
+// UI NOTE: agency_invitations.token_hash and agency_driver_invitations.token_hash appear in Row
+// but authenticated has NO grant on them, so `select=*` fails; always list columns explicitly.
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -600,6 +608,242 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"agency_client_agreements": {
+                  Row: {
+                    "agency_id": string,"client_gstin": string | null,"client_name": string,"created_at": string,"created_by": string | null,"id": string,"idempotency_key": string,"payment_terms_days": number | null,"status": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"client_gstin"?: string | null,"client_name": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key": string,"payment_terms_days"?: number | null,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"client_gstin"?: string | null,"client_name"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key"?: string,"payment_terms_days"?: number | null,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_client_agreements_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_client_contacts": {
+                  Row: {
+                    "agency_id": string,"agreement_id": string,"created_at": string,"email": string | null,"full_name": string,"id": string,"idempotency_key": string,"phone": string,"site_id": string | null,"status": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"agreement_id": string,"created_at"?: string,"email"?: string | null,"full_name": string,"id"?: string,"idempotency_key": string,"phone": string,"site_id"?: string | null,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"agreement_id"?: string,"created_at"?: string,"email"?: string | null,"full_name"?: string,"id"?: string,"idempotency_key"?: string,"phone"?: string,"site_id"?: string | null,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_client_contacts_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_client_contacts_agreement_fk"
+      columns: ["agreement_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_agreements"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_client_contacts_site_fk"
+      columns: ["site_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_sites"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_client_sites": {
+                  Row: {
+                    "address_line": string,"agency_id": string,"agreement_id": string,"city": string,"created_at": string,"id": string,"idempotency_key": string,"label": string,"pincode": string,"site_kind": string,"state": string,"status": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "address_line": string,"agency_id": string,"agreement_id": string,"city": string,"created_at"?: string,"id"?: string,"idempotency_key": string,"label": string,"pincode": string,"site_kind": string,"state": string,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "address_line"?: string,"agency_id"?: string,"agreement_id"?: string,"city"?: string,"created_at"?: string,"id"?: string,"idempotency_key"?: string,"label"?: string,"pincode"?: string,"site_kind"?: string,"state"?: string,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_client_sites_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_client_sites_agreement_fk"
+      columns: ["agreement_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_agreements"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_driver_invitations": {
+                  Row: {
+                    "accepted_at": string | null,"accepted_by": string | null,"accepted_driver_id": string | null,"agency_id": string,"created_at": string,"created_by": string | null,"employment_id": string | null,"expires_at": string,"id": string,"idempotency_key": string,"invited_phone": string,"revoked_at": string | null,"status": string,"token_hash": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "accepted_at"?: string | null,"accepted_by"?: string | null,"accepted_driver_id"?: string | null,"agency_id": string,"created_at"?: string,"created_by"?: string | null,"employment_id"?: string | null,"expires_at": string,"id"?: string,"idempotency_key": string,"invited_phone": string,"revoked_at"?: string | null,"status"?: string,"token_hash": string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "accepted_at"?: string | null,"accepted_by"?: string | null,"accepted_driver_id"?: string | null,"agency_id"?: string,"created_at"?: string,"created_by"?: string | null,"employment_id"?: string | null,"expires_at"?: string,"id"?: string,"idempotency_key"?: string,"invited_phone"?: string,"revoked_at"?: string | null,"status"?: string,"token_hash"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_driver_invitations_accepted_driver_id_fkey"
+      columns: ["accepted_driver_id"]
+isOneToOne: false
+      referencedRelation: "drivers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_driver_invitations_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_driver_invitations_employment_id_fkey"
+      columns: ["employment_id"]
+isOneToOne: false
+      referencedRelation: "agency_driver_employment"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_invitations": {
+                  Row: {
+                    "accepted_at": string | null,"accepted_by": string | null,"agency_id": string,"created_at": string,"created_by": string | null,"expires_at": string,"id": string,"idempotency_key": string,"invited_email": string,"revoked_at": string | null,"scope": string,"status": string,"token_hash": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "accepted_at"?: string | null,"accepted_by"?: string | null,"agency_id": string,"created_at"?: string,"created_by"?: string | null,"expires_at": string,"id"?: string,"idempotency_key": string,"invited_email": string,"revoked_at"?: string | null,"scope": string,"status"?: string,"token_hash": string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "accepted_at"?: string | null,"accepted_by"?: string | null,"agency_id"?: string,"created_at"?: string,"created_by"?: string | null,"expires_at"?: string,"id"?: string,"idempotency_key"?: string,"invited_email"?: string,"revoked_at"?: string | null,"scope"?: string,"status"?: string,"token_hash"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_invitations_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_memberships": {
+                  Row: {
+                    "agency_id": string,"created_at": string,"granted_at": string,"id": string,"invitation_id": string | null,"invited_by": string | null,"revoked_at": string | null,"revoked_by": string | null,"scope": string,"status": string,"updated_at": string,"user_id": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"created_at"?: string,"granted_at"?: string,"id"?: string,"invitation_id"?: string | null,"invited_by"?: string | null,"revoked_at"?: string | null,"revoked_by"?: string | null,"scope": string,"status"?: string,"updated_at"?: string,"user_id": string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"created_at"?: string,"granted_at"?: string,"id"?: string,"invitation_id"?: string | null,"invited_by"?: string | null,"revoked_at"?: string | null,"revoked_by"?: string | null,"scope"?: string,"status"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_memberships_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_memberships_invitation_id_fkey"
+      columns: ["invitation_id"]
+isOneToOne: false
+      referencedRelation: "agency_invitations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_tariff_versions": {
+                  Row: {
+                    "agency_id": string,"agreement_id": string,"created_at": string,"created_by": string | null,"currency": string,"destination_key": string,"destination_label": string,"effective_from": string,"effective_to": string | null,"id": string,"idempotency_key": string,"origin_key": string,"origin_label": string,"rate_amount": number,"rate_basis": string,"supersedes_version_id": string | null,"vehicle_key": string,"vehicle_type": string | null,"version_no": number
+                  }
+                  Insert: {
+                    "agency_id": string,"agreement_id": string,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"destination_key": string,"destination_label": string,"effective_from": string,"effective_to"?: string | null,"id"?: string,"idempotency_key": string,"origin_key": string,"origin_label": string,"rate_amount": number,"rate_basis": string,"supersedes_version_id"?: string | null,"vehicle_key": string,"vehicle_type"?: string | null,"version_no": number
+                  }
+                  Update: {
+                    "agency_id"?: string,"agreement_id"?: string,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"destination_key"?: string,"destination_label"?: string,"effective_from"?: string,"effective_to"?: string | null,"id"?: string,"idempotency_key"?: string,"origin_key"?: string,"origin_label"?: string,"rate_amount"?: number,"rate_basis"?: string,"supersedes_version_id"?: string | null,"vehicle_key"?: string,"vehicle_type"?: string | null,"version_no"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_tariff_versions_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_tariff_versions_agreement_fk"
+      columns: ["agreement_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_agreements"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_tariff_versions_supersedes_version_id_fkey"
+      columns: ["supersedes_version_id"]
+isOneToOne: false
+      referencedRelation: "agency_tariff_versions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_tariff_versions_vehicle_type_fkey"
+      columns: ["vehicle_type"]
+isOneToOne: false
+      referencedRelation: "trucks"
+      referencedColumns: ["code"]
+    }
+                  ]
+                },"fleet_assignment_reservations": {
+                  Row: {
+                    "agency_id": string,"agency_job_id": string,"created_at": string,"driver_employment_id": string,"driver_id": string,"id": string,"idempotency_key": string,"job_offer_id": string,"released_reason": string | null,"status": string,"updated_at": string,"vehicle_id": string,"version": number,"window_end": string,"window_start": string
+                  }
+                  Insert: {
+                    "agency_id": string,"agency_job_id": string,"created_at"?: string,"driver_employment_id": string,"driver_id": string,"id"?: string,"idempotency_key": string,"job_offer_id": string,"released_reason"?: string | null,"status"?: string,"updated_at"?: string,"vehicle_id": string,"version"?: number,"window_end": string,"window_start": string
+                  }
+                  Update: {
+                    "agency_id"?: string,"agency_job_id"?: string,"created_at"?: string,"driver_employment_id"?: string,"driver_id"?: string,"id"?: string,"idempotency_key"?: string,"job_offer_id"?: string,"released_reason"?: string | null,"status"?: string,"updated_at"?: string,"vehicle_id"?: string,"version"?: number,"window_end"?: string,"window_start"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "fleet_assignment_reservations_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "fleet_assignment_reservations_agency_job_id_fkey"
+      columns: ["agency_job_id"]
+isOneToOne: false
+      referencedRelation: "agency_jobs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "fleet_assignment_reservations_driver_employment_id_fkey"
+      columns: ["driver_employment_id"]
+isOneToOne: false
+      referencedRelation: "agency_driver_employment"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "fleet_assignment_reservations_driver_id_fkey"
+      columns: ["driver_id"]
+isOneToOne: false
+      referencedRelation: "drivers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "fleet_assignment_reservations_job_offer_id_fkey"
+      columns: ["job_offer_id"]
+isOneToOne: false
+      referencedRelation: "job_offers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "fleet_assignment_reservations_vehicle_id_fkey"
+      columns: ["vehicle_id"]
+isOneToOne: false
+      referencedRelation: "agency_trucks"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -667,6 +911,75 @@ isOneToOne: false
 { Args: { "p_accept": boolean,"p_decline_reason"?: string,"p_job_offer_id": string }; Returns: {
               "active_job_id": string,"offer_id": string,"offer_status": string,"responded_at": string
             }[]
+                           },
+"agency_caller_email":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"agency_client_agreement_create":
+{ Args: { "p_client_gstin"?: string,"p_client_name": string,"p_idempotency_key"?: string,"p_payment_terms_days"?: number }; Returns: Json
+                           },
+"agency_client_agreement_update":
+{ Args: { "p_agreement_id": string,"p_expected_version": number,"p_patch"?: Json }; Returns: Json
+                           },
+"agency_client_contact_create":
+{ Args: { "p_agreement_id": string,"p_email"?: string,"p_full_name": string,"p_idempotency_key"?: string,"p_phone": string,"p_site_id"?: string }; Returns: Json
+                           },
+"agency_client_contact_update":
+{ Args: { "p_contact_id": string,"p_expected_version": number,"p_patch"?: Json }; Returns: Json
+                           },
+"agency_client_site_create":
+{ Args: { "p_address_line": string,"p_agreement_id": string,"p_city": string,"p_idempotency_key"?: string,"p_label": string,"p_pincode": string,"p_site_kind": string,"p_state": string }; Returns: Json
+                           },
+"agency_client_site_update":
+{ Args: { "p_expected_version": number,"p_patch"?: Json,"p_site_id": string }; Returns: Json
+                           },
+"agency_driver_invitation_accept":
+{ Args: { "p_token": string }; Returns: Json
+                           },
+"agency_driver_invitation_create":
+{ Args: { "p_expires_in_days"?: number,"p_idempotency_key"?: string,"p_invited_phone": string }; Returns: Json
+                           },
+"agency_driver_invitation_revoke":
+{ Args: { "p_expected_version": number,"p_invitation_id": string }; Returns: Json
+                           },
+"agency_member_accept":
+{ Args: { "p_token": string }; Returns: Json
+                           },
+"agency_member_change_scope":
+{ Args: { "p_expected_version": number,"p_membership_id": string,"p_scope": string }; Returns: Json
+                           },
+"agency_member_has_scope":
+{ Args: { "p_agency_id": string,"p_scope": string }; Returns: boolean
+                           },
+"agency_member_invitation_revoke":
+{ Args: { "p_expected_version": number,"p_invitation_id": string }; Returns: Json
+                           },
+"agency_member_invite":
+{ Args: { "p_expires_in_days"?: number,"p_idempotency_key"?: string,"p_invited_email": string,"p_scope": string }; Returns: Json
+                           },
+"agency_member_revoke":
+{ Args: { "p_expected_version": number,"p_membership_id": string }; Returns: Json
+                           },
+"agency_random_token":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"agency_tariff_rate_at":
+{ Args: { "p_agreement_id": string,"p_as_of": string,"p_destination": string,"p_origin": string,"p_vehicle_type": string }; Returns: Database["public"]["Tables"]["agency_tariff_versions"]["Row"][]
+                           },
+"agency_tariff_version_publish":
+{ Args: { "p_agreement_id": string,"p_destination": string,"p_effective_from": string,"p_effective_to"?: string,"p_idempotency_key"?: string,"p_origin": string,"p_rate_amount": number,"p_rate_basis": string,"p_supersedes_version_id"?: string,"p_vehicle_type"?: string }; Returns: Json
+                           },
+"agency_token_hash":
+{ Args: { "p_token": string }; Returns: string
+                           },
+"release_fleet_assignment":
+{ Args: { "p_expected_version": number,"p_reservation_id": string }; Returns: Json
+                           },
+"release_stale_fleet_reservations":
+{ Args: { "p_agency_id"?: string,"p_as_of"?: string }; Returns: number
+                           },
+"reserve_fleet_assignment":
+{ Args: { "p_agency_job_id": string,"p_driver_employment_id": string,"p_expected_vehicle_version": number,"p_idempotency_key": string,"p_job_offer_id": string,"p_vehicle_id": string,"p_window_end": string,"p_window_start": string }; Returns: Json
                            }
           }
           Enums: {
