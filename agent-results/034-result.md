@@ -231,3 +231,83 @@ Zero repairs applied (the demonstrated defect was already repaired at HEAD); zer
 Evidence: dynamic workflow chain (final run dwfrun-1084d303; predecessors dwfrun-f0f782c1 → 5825c181 → ccc44a58 → 1f77ff94 cached the diagnostic/surface/draft work); fresh-eyes review independently verified; full-suite gate exit 0. Not covered: true overlapping-transaction concurrency (no Docker/native PostgreSQL on this machine — external prerequisite for D2 acceptance), hosted HTTP and physical-device tiers (owner-gated). Status: AWAITING_REVIEW (Codex re-review next). TO-143-D2 implementation remains NOT authorized.
 
 Note: untracked `frontend/src/lib/backupRestoreRoundtrip.test.ts` (296 lines, backup→Drive→restore golden-path test) appeared from a concurrent owner session during this cycle (the same session made the owner R-0689 evidence commit 91b50f76); it is NOT part of this delivery and is preserved untracked.
+
+---
+
+## TO-144-D2 backend candidate
+
+Status: **CANDIDATE, not accepted.** Backend only: no UI, no Stitch, no design generation, no frontend or service changes. Working tree only (no commit, no push, no branch or worktree). `TASKS.md` is not edited, so the TO-144-D2 row still reads WAITING_DEPENDENCIES.
+
+**Proof tier: PGlite (PostgreSQL 18.3 WASM), single session, full supabase/migrations chain replayed in-chain.** Hosted GoTrue, PostgREST, Storage and Edge were NOT exercised, so hosted behaviour is unverified. Browser proof is not applicable (no UI).
+
+### What shipped (one forward migration)
+
+`supabase/migrations/20261011000000_agency_members_clients_tariffs.sql`, sorted after the reservation migration, additive only, pinned search_path, no PUBLIC/anon EXECUTE. Reuses `transport_agencies.user_id` as the owner, `resolve_caller_agency_id()`, `agency_is_operational()`, `driver_is_approved_for_assignment()`, `is_admin_user()`, `set_updated_at()`, D1 `agency_driver_employment` and `trucks.code`. No duplicate party table.
+
+1. **Memberships and invitations.** Scopes are `dispatcher`, `fleet_manager`, `finance`, `viewer`; `owner` is not a scope. RPCs: `agency_member_invite`, `agency_member_invitation_revoke`, `agency_member_accept`, `agency_member_revoke`, `agency_member_change_scope`, plus the read predicate `agency_member_has_scope(agency, scope)`. Tokens are 64-hex, returned once, and stored only as SHA-256. Accept requires the caller's auth email to equal the invited email. Expired, revoked, reused and mismatched tokens are refused. An existing active member's scope is never changed by a fresh invitation. An owner can be neither invited to nor accept into its own agency.
+2. **Client agreements, sites, contacts.** `agency_client_agreement_create/update`, `agency_client_site_create/update`, `agency_client_contact_create/update`. Versioned with expected_version. One active bill-to per agreement (partial unique); any number of ship-to. Sites and contacts use composite (id, agency_id) FKs, so a cross-agency reference is impossible even for a superuser.
+3. **Tariff effective versions.** `agency_tariff_version_publish` plus the service-only lookup `agency_tariff_rate_at`. Rows are append-only (trigger rejects UPDATE and DELETE for every role). Lane = agreement, origin, destination, vehicle key. Supersession requires the current head id (else `version_conflict`). Overlap is rejected (`tariff_overlap`). Ranges are [from, to), with a NULL end meaning open. A superseded open version is never mutated; its end is the successor's start.
+4. **Driver invitations.** `agency_driver_invitation_create/revoke/accept`. Token-hashed, phone-bound, expiring, one-use. Accept requires a caller-owned driver profile with matching phone and an approved driver, refuses an active employment with another agency, and creates or reuses the D1 `agency_driver_employment` row, linked from the invitation.
+
+RLS: all seven tables are owner-or-admin SELECT only. Authenticated holds no write privilege, and `token_hash` is not granted to it at all.
+
+### Red-first evidence (exact)
+
+- `scripts/agency_members_clients_tariffs.db.test.mjs` written before the migration: **1/99**, exit 1. The single pass is J3, a regression guard over existing D1/reservation policies, which passes pre-migration by design.
+- Two harness defects surfaced and were fixed before green (test bugs, not weakened assertions): the employment fixture used a user id where `drivers.id` was required (surfaced as an FK error in I11), and the A4 column check used `invited_email` on the phone-bound driver table.
+- Green: **99/99**, exit 0 (`node scripts/agency_members_clients_tariffs.db.test.mjs`).
+
+### Coverage per command (battery cases)
+
+- Invite: success (C1, token hashed C2), cross-agency (C4), non-owner (C13), self-escalation (C5), unknown scope (C6, C7), idempotent replay (C8), key reuse (C9), duplicate pending (C10), suspended owner (C12), expiry bounds (C11).
+- Accept: success (D1), replay (D3), reused token by another user (D4), recipient mismatch (D5), expired (D6), revoked (D7), unknown token (D8), owner self-accept (D9), already-member no escalation (D10), suspended agency (D11).
+- Revoke/scope: stale version (E2, E6), cross-agency (E5), unknown scope (E3), non-owner and self-escalation (E4), exactly-once revoke replay (E8), revoked membership (E9), revoked staff old session (E10, E11).
+- Agreements/sites/contacts: create/replay/reuse (F1-F3), cross-agency (F5, G5, G12), non-owner (F6), stale version (F7, G6, G11), status and pincode validation (F4, F8, G4), bill-to exclusivity (G3, G7), cross-agreement site reference (G8), ended agreement (G13).
+- Tariffs: success v1/v2/v3 (H1, H3, H6), overlap rejected (H2, H4), stale head `version_conflict` (H5), idempotent replay and key reuse (H7), past-version immutability for superuser and authenticated (H8, H9), effective lookup in gap and before first (H10), lane independence (H11), cross-agency (H12), non-owner (H13), validation (H14), ended agreement (H15), suspended owner (H16).
+- Driver invitations: create, replay and reuse (I1, I2), duplicate and malformed phone (I3), cross-agency (I4), non-owner and driver-as-staff (I5), no driver profile (I6), phone mismatch (I7), unapproved driver (I8), success linking D1 employment (I9), replay and second-user refusal (I10), employed elsewhere (I11), stale revoke and revoked token (I12), expired (I13), suspended agency (I14).
+- Chain and schema: D2 sorts after reservations (A1), 7 tables with RLS (A2), no direct write privilege (A3), token column hygiene (A4), no agency/org id argument on any RPC (A5), SECURITY DEFINER and pinned search_path with no anon EXECUTE (A6), owner-scope CHECK (C7), read isolation (J1), admin read (J2), no D1 policy regression (J3).
+
+### Gate results (exact commands; all run in this session)
+
+| Command | Result | Exit |
+|---|---|---|
+| `node scripts/agency_members_clients_tariffs.db.test.mjs` | 99/99 | 0 |
+| `node scripts/agency_fleet_foundation.db.test.mjs` | 32/32 | 0 |
+| `node scripts/fleet_assignment_reservations.db.test.mjs` | 42/42, 0 findings | 0 |
+| `node scripts/dispatch_delivery_journey.db.test.mjs` | 52/52 | 0 |
+| `node scripts/customer_journey_isolation.db.test.mjs` | 30/30 | 0 |
+| `node scripts/admin_rls_proof.db.test.mjs` | 57/57 | 0 |
+| `node scripts/trip_transition_integrity.db.test.mjs` | 21/21 | 0 |
+| `cd frontend && npx tsc --noEmit` | clean | 0 |
+| `cd frontend && npm run lint` | clean | 0 |
+| `cd frontend && npx vitest run` | Test Files 39 passed (39); Tests 585 passed (585) | 0 |
+| `npm run test:server-routing` | 15 pass, 0 fail | 0 |
+| `npm run glue:check` | GLUE SEALED, 0 gaps, 0 warnings | 0 |
+
+Note on vitest: the D1 record says 38 files and 584 tests. This candidate changed no frontend file (`git status` shows only the two new files below), so the current count comes from the HEAD tree. The cause of the delta was not investigated.
+
+### Changed files
+
+- `supabase/migrations/20261011000000_agency_members_clients_tariffs.sql` (new)
+- `scripts/agency_members_clients_tariffs.db.test.mjs` (new)
+- `agent-results/034-result.md` (this section)
+
+Not changed: `TASKS.md`, all frontend and service code, `database.types.ts`, Edge functions, D1 policies and functions. Stitch calls: 0. Hosted mutations or pushes: 0. Retries: 0.
+
+### Open findings (honest)
+
+1. **Staff scope is not yet consumed.** D1 fleet and driver RLS and the reservation policies remain owner-only. Staff memberships grant nothing on existing tables until TO-145/148/149 call `agency_member_has_scope`.
+2. **Expiry is lazy.** An invitation past `expires_at` stays `pending` until a same-email re-invite or an accept sweeps it. There is no scheduled sweep. Readers must compare `expires_at`.
+3. **Token delivery is out of band.** The raw token is returned once to the owner. No email or SMS. The UI must show it once.
+4. **Client parties are agency-owned.** The legacy `public.customers` table has no tenant column and is not linked. Owner decision needed on linking to platform customers.
+5. **Tariff policy to confirm.** Amounts with more than two decimals are refused, not rounded. Currency is INR only. Rate basis vocabulary is `per_trip`, `per_tonne`, `per_km`.
+6. **Append-only FKs.** RESTRICT FKs mean agency deletion is blocked while agreement, site, contact or tariff history exists. This is deliberate.
+7. **Column-level grant.** `token_hash` is hidden from authenticated. A PostgREST `select=*` by an authenticated client will fail with permission denied, so clients must list columns (UI tier).
+8. **Concurrency unproven.** Advisory lock and `FOR UPDATE` are in place, but the battery is single-session only.
+9. **Types not updated.** `frontend/src/types/database.types.ts` lacks the seven new tables. A hand-applied delta is needed before any UI.
+10. **Hosted gates.** No `supabase db push`, no hosted round-trip. Hosted proof stays with TO-153, owner-gated.
+11. **Owner self-accept path (D9) is defense in depth.** It is seeded by superuser because the public invite API already refuses the owner's own email.
+
+### Next smallest task
+
+Owner review of the policy items (2, 4, 5). Then a TO-144-D2 UI delivery consuming these RPCs, which needs the database.types delta (item 9) and the browser pass with a token-delivery decision (item 3).

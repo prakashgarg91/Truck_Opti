@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Truck, MapPin, Calendar, Scale, FileText, DollarSign, ArrowLeft, Loader2, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
@@ -29,6 +29,10 @@ interface FormData {
 }
 
 export default function NewShipmentPage() {
+  useEffect(() => {
+    document.title = 'New Booking - TruckOpti'
+  }, [])
+
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { isExpired } = useSubscription()
@@ -244,10 +248,10 @@ export default function NewShipmentPage() {
             {showEWayBill && (
               <form onSubmit={handleEWayBillSubmit} className="mt-4 space-y-3 text-left">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="ewb-consignor-gstin" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                     {'Consignor GSTIN'}
                   </label>
-                  <input
+                  <input id="ewb-consignor-gstin"
                     type="text"
                     value={consignorGSTIN}
                     onChange={(e) => setConsignorGSTIN(e.target.value.toUpperCase())}
@@ -256,10 +260,10 @@ export default function NewShipmentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="ewb-consignee-gstin" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                     {'Consignee GSTIN'}
                   </label>
-                  <input
+                  <input id="ewb-consignee-gstin"
                     type="text"
                     value={consigneeGSTIN}
                     onChange={(e) => setConsigneeGSTIN(e.target.value.toUpperCase())}
@@ -268,10 +272,10 @@ export default function NewShipmentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="ewb-invoice-value" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                     {'Invoice Value (₹)'}
                   </label>
-                  <input
+                  <input id="ewb-invoice-value"
                     type="number"
                     value={invoiceValue || ''}
                     onChange={(e) => setInvoiceValue(parseInt(e.target.value) || 0)}
@@ -281,10 +285,10 @@ export default function NewShipmentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="ewb-hsn-code" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                     {'HSN Code'}
                   </label>
-                  <input
+                  <input id="ewb-hsn-code"
                     type="text"
                     value={hsnCode}
                     onChange={(e) => setHsnCode(e.target.value)}
@@ -363,7 +367,7 @@ export default function NewShipmentPage() {
       <div className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-10">
         <div className="max-w-md md:max-w-4xl mx-auto px-4 md:px-6 py-4">
           <div className="flex items-center gap-3">
-            <button
+            <button aria-label="Go back"
               onClick={() => navigate(-1)}
               className="p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
             >
@@ -385,11 +389,11 @@ export default function NewShipmentPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Origin City */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="ship-pickup-city" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <MapPin className="w-4 h-4 inline mr-1" />
               {'Pickup City *'}
             </label>
-            <input
+            <input id="ship-pickup-city"
               type="text"
               value={formData.origin_city}
               onChange={(e) => updateField('origin_city', e.target.value)}
@@ -401,11 +405,11 @@ export default function NewShipmentPage() {
 
           {/* Destination City */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="ship-delivery-city" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <MapPin className="w-4 h-4 inline mr-1" />
               {'Delivery City *'}
             </label>
-            <input
+            <input id="ship-delivery-city"
               type="text"
               value={formData.destination_city}
               onChange={(e) => updateField('destination_city', e.target.value)}
@@ -417,11 +421,11 @@ export default function NewShipmentPage() {
 
           {/* Vehicle Type */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="ship-truck-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <Truck className="w-4 h-4 inline mr-1" />
               {'Truck Type *'}
             </label>
-            <select
+            <select id="ship-truck-type"
               value={formData.vehicle_type}
               onChange={(e) => updateField('vehicle_type', e.target.value)}
               className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -436,11 +440,11 @@ export default function NewShipmentPage() {
 
           {/* Weight */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="ship-weight-kg" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <Scale className="w-4 h-4 inline mr-1" />
               {'Weight (kg) *'}
             </label>
-            <input
+            <input id="ship-weight-kg"
               type="number"
               value={formData.weight_kg || ''}
               onChange={(e) => updateField('weight_kg', parseInt(e.target.value) || 0)}
@@ -453,11 +457,11 @@ export default function NewShipmentPage() {
 
           {/* Pickup Date */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="ship-pickup-date" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <Calendar className="w-4 h-4 inline mr-1" />
               {'Pickup Date *'}
             </label>
-            <input
+            <input id="ship-pickup-date"
               type="date"
               value={formData.pickup_date}
               onChange={(e) => updateField('pickup_date', e.target.value)}
@@ -469,11 +473,11 @@ export default function NewShipmentPage() {
 
           {/* Goods Description */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="ship-goods-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <FileText className="w-4 h-4 inline mr-1" />
               {'Goods Description'}
             </label>
-            <textarea
+            <textarea id="ship-goods-description"
               value={formData.goods_description}
               onChange={(e) => updateField('goods_description', e.target.value)}
               placeholder={'e.g., Electronics, Furniture, etc.'}
@@ -484,11 +488,11 @@ export default function NewShipmentPage() {
 
           {/* Estimated Value */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="ship-estimated-value" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <DollarSign className="w-4 h-4 inline mr-1" />
               {'Estimated Value (₹)'}
             </label>
-            <input
+            <input id="ship-estimated-value"
               type="number"
               value={formData.estimated_value || ''}
               onChange={(e) => updateField('estimated_value', parseInt(e.target.value) || 0)}

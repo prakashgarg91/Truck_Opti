@@ -26,6 +26,10 @@ type FilterStatus = 'all' | 'delivered' | 'cancelled' | 'pending' | 'in_transit'
 const PAGE_SIZE = 10
 
 export default function ShipmentHistoryPage() {
+  useEffect(() => {
+    document.title = 'Shipment History - TruckOpti'
+  }, [])
+
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const [shipments, setShipments] = useState<Shipment[]>([])

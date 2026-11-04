@@ -669,7 +669,7 @@ export default function TrackingPage() {
                   <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedShipment.shipment_id}</h2>
                   <p className="text-xs text-slate-500">{'Shipment Details'}</p>
                 </div>
-                <button
+                <button aria-label="Close shipment details"
                   onClick={() => setShowDetailModal(false)}
                   className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"
                 >
@@ -752,7 +752,7 @@ export default function TrackingPage() {
                     <p className="text-sm text-slate-500">{selectedShipment.vehicle_number || '—'}</p>
                   </div>
                   {selectedShipment.driver_phone && selectedShipment.status !== 'pending' && (
-                    <button
+                    <button aria-label="Call driver"
                       onClick={() => handleContactDriver(selectedShipment.driver_phone || undefined)}
                       className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-700"
                     >
@@ -855,7 +855,7 @@ export default function TrackingPage() {
             className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
             onClick={() => setLightboxPhoto(null)}
           >
-            <button
+            <button aria-label="Close photo"
               className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
               onClick={() => setLightboxPhoto(null)}
             >

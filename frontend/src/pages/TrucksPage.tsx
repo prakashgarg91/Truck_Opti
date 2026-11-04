@@ -311,7 +311,7 @@ export default function TrucksPage() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 pb-8 md:pb-12">
       <div className="flex items-center gap-4">
-        <button
+        <button aria-label="Back to management"
           onClick={() => navigate('/management')}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
         >
@@ -373,7 +373,7 @@ export default function TrucksPage() {
             {seedMutation.isPending ? <div className="spinner w-5 h-5" /> : <Database className="w-5 h-5" />}
           </button>
         )}
-        <button
+        <button aria-label="Add truck type"
           onClick={() => handleOpenModal()}
           className="bg-primary-600 hover:bg-primary-700 text-white p-2.5 rounded-xl shadow-lg shadow-primary-600/20 transition-all"
         >
@@ -424,14 +424,14 @@ export default function TrucksPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button
+                  <button aria-label={`Edit ${truck.name}`}
                     onClick={() => handleOpenModal(truck)}
                     disabled={isMutating}
                     className="p-2 text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button
+                  <button aria-label={`Delete ${truck.name}`}
                     onClick={() => handleDelete(truck.id)}
                     disabled={deleteMutation.isPending}
                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
@@ -470,7 +470,7 @@ export default function TrucksPage() {
           <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <h2 className="text-xl font-bold">{editingTruck ? 'Edit Truck' : 'Add New Truck'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
+              <button aria-label="Close truck dialog" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>

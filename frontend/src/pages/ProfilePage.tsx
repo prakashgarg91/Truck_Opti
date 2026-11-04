@@ -333,7 +333,7 @@ export default function ProfilePage() {
                     )}
                     <span>{'Save'}</span>
                   </button>
-                  <button
+                  <button aria-label="Close edit profile"
                     onClick={() => setIsEditing(false)}
                     className="btn btn-secondary"
                   >
@@ -608,7 +608,7 @@ export default function ProfilePage() {
                       )}
                       <span>{'Save'}</span>
                     </button>
-                    <button
+                    <button aria-label="Close edit company"
                       onClick={() => setIsEditingCompany(false)}
                       className="btn btn-secondary"
                     >

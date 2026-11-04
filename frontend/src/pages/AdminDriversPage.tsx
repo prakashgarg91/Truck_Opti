@@ -189,7 +189,7 @@ export default function AdminDriversPage() {
               CSV
             </button>
           )}
-          <button onClick={fetchDrivers} disabled={loading}
+          <button aria-label="Refresh drivers" onClick={fetchDrivers} disabled={loading}
             className="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
             <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
           </button>

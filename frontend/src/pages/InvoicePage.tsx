@@ -197,6 +197,7 @@ export default function InvoicePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
+        <h1 className="sr-only">{text.title}</h1>
         <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
@@ -205,7 +206,7 @@ export default function InvoicePage() {
   if (!shipment || !invoiceData) {
     return (
       <div className="p-8 text-center">
-        <p className="text-slate-500">{text.notAvailable}</p>
+        <h1 className="text-slate-500">{text.notAvailable}</h1>
         <button
           onClick={() => navigate('/tracking')}
           className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg"

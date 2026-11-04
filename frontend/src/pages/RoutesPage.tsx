@@ -320,7 +320,7 @@ export default function RoutesPage() {
                 {selectedRoute.start_location} → {selectedRoute.destinations[selectedRoute.destinations.length - 1]}
               </p>
             </div>
-            <button
+            <button aria-label="Close route map"
               onClick={() => setShowRouteMap(false)}
               className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl"
             >
@@ -444,7 +444,7 @@ export default function RoutesPage() {
                 <h2 className="text-xl font-bold">Optimize New Route</h2>
                 <p className="text-xs text-slate-500">Enter locations to find the best path</p>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
+              <button aria-label="Close route dialog" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -496,7 +496,7 @@ export default function RoutesPage() {
                       />
                     </div>
                     {formData.destinations.length > 1 && (
-                      <button
+                      <button aria-label={`Remove destination ${index + 1}`}
                         onClick={() => handleRemoveDestination(index)}
                         className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
                       >

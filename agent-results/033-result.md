@@ -194,3 +194,60 @@ What the revision pins (full detail in the standalone document):
 - All 8 unresolved contracts of the superseded plan are answered in §14 of the document; "approved/review-approved" wording is purged (R7); UI obligations follow the Stitch policy (status/guide first, design-audit update, mobile+desktop browser verification, generation only if warranted).
 
 Status: **AWAITING_REVIEW** — Codex re-review is the acceptance authority and TO-143-D2 implementation remains NOT authorized. The suite-diagnostic evidence backing correction point 1 (the 597/21-vs-618/618 inconsistency) is retained in `agent-results/to155-suite-logs/` and recorded in `agent-results/034-result.md` (Delivery 0 — review correction).
+
+## TO-143-D2 — Verification (candidate)
+
+Status: **CANDIDATE, not accepted, not DONE** (TASKS.md untouched). Proof tier: **PGlite (PostgreSQL 18.3 WASM) only, single session**. Hosted Supabase (GoTrue/PostgREST/RLS over HTTP, `supabase db push`) is **unverified**, owner-gated under TO-153. Changes are left uncommitted in the working tree on `claude/compassionate-mccarthy-cymfwp`; no branch, worktree, stash, commit or push.
+
+### Changed files
+
+- `supabase/migrations/20261010000000_fleet_assignment_reservations.sql` (new, forward-only, additive): `fleet_assignment_reservations` table with RLS (SELECT only for authenticated; no direct write privilege); overlap guard trigger (vehicle then driver row locks + `tstzrange` overlap check; no btree_gist dependency); one active reservation per agency job (partial unique); `reserve_fleet_assignment` and `release_fleet_assignment` jsonb commands; `release_stale_fleet_reservations` (service_role sweep); automatic release on offer declined/expired/cancelled, consume on delivered, release on agency job cancelled.
+- `scripts/fleet_assignment_reservations.db.test.mjs` (new, red-first battery, 42 cases).
+- `scripts/agency_fleet_foundation.db.test.mjs` (one assertion changed, see Deviations).
+- `agent-results/033-result.md` (this section).
+
+### Red-first evidence
+
+- `node scripts/fleet_assignment_reservations.db.test.mjs` before the migration existed: **0/42 passed, exit 1** (every case failed on the missing schema or function).
+
+### Green evidence (exact commands, run from `/home/user/Truck_Opti`)
+
+| Command | Result | Exit |
+|---|---|---|
+| `node scripts/fleet_assignment_reservations.db.test.mjs` | 42/42 cases passed | 0 |
+| `node scripts/agency_fleet_foundation.db.test.mjs` | 32/32 | 0 |
+| `node scripts/dispatch_delivery_journey.db.test.mjs` | 52/52 | 0 |
+| `node scripts/customer_journey_isolation.db.test.mjs` | 30/30 | 0 |
+| `node scripts/admin_rls_proof.db.test.mjs` | 57/57 passed, 0 failed | 0 |
+| `node scripts/trip_transition_integrity.db.test.mjs` | 21/21 | 0 |
+| `cd frontend && npx tsc --noEmit` | no errors | 0 |
+| `cd frontend && npm run lint` | clean | 0 |
+| `cd frontend && npx vitest run` | Test Files 38 passed (38); Tests 584 passed (584) | 0 |
+| `npm run test:server-routing` | pass 15, fail 0 | 0 |
+| `npm run glue:check` | GLUE SEALED, 0 gaps, 0 warnings | 0 |
+
+All five DB batteries replay the whole migrations directory, so they ran with the new migration in the chain.
+
+### Deviations (disclosed, not weakened)
+
+1. **D1 battery A1 assertion changed.** It required the fleet-foundation migration to sort last, which any later migration breaks by design. It now requires the fleet migration to sit after the consent writer and only migrations at or after it to follow. The intent (no older migration appears after the fleet foundation) is kept.
+2. **agency_jobs truck/driver columns are not written by reservations.** The first draft wrote `agency_jobs.truck_id/driver_id`, and the pre-existing TO-142 guard `trg_agency_jobs_driver_assignment` (20261006120000:270-274) rejected the write, because it only admits a driver already linked through legacy `agency_trucks.driver_id`. The guard was not weakened. The reservation table is the allocation authority; projecting it onto `agency_jobs` is open (see findings).
+3. **Test-only fixes during green:** D5/F2 fixtures corrected (a helper that counted zero rows for a job already holding its first reservation, and a replay that used a fresh idempotency key). Both were defects in my test, not the contract.
+
+### Honest limits of this proof
+
+- PGlite is one session. **Concurrent double-reserve was not raced.** The battery proves sequential double-reserve, a direct-INSERT bypass blocked by the trigger, and idempotent replay. The concurrent-transaction guarantee rests on the row-lock order (vehicle, then driver) plus READ COMMITTED statement snapshots, which is reasoned, not observed.
+- Offer expiry is lazy in the existing schema (no writer sets `expired`). It is covered by the service-role sweep, which is not scheduled anywhere. Nothing calls it on a timer yet.
+- Hosted behaviour (PostgREST role switching, the btree-free trigger under the hosted pool, `service_role` scheduling) is not verified.
+
+### Open findings (not closed by this candidate)
+
+1. **Two driver-to-agency models coexist.** Legacy `agency_trucks.driver_id` (gates `agency_jobs.driver_id` writes) and the D1 `agency_driver_employment` (gates reservations). Reconciling them and projecting reservations onto `agency_jobs` is the TO-143-D3 / owner decision.
+2. **`release_stale_fleet_reservations` has no scheduler.** It needs a service-side trigger (cron or Edge schedule) before stale holds release on their own.
+3. **`frontend/src/types/database.types.ts` not updated** for `fleet_assignment_reservations` (backend-only scope; regeneration waits for the Docker machine noted in the file header).
+4. **No UI and no service methods** for reserve/release. Out of scope for this delivery.
+5. **Pre-existing open items from TO-143-D1 / TO-144-D1 unchanged** (terminal-status consent cutoff, `UNIQUE(transport_agencies.user_id)` deferral, catalog FK NOT VALID).
+
+### Next smallest task
+
+Decide the driver-allocation authority (legacy `agency_trucks.driver_id` vs `agency_driver_employment`) and, if reservations should project to `agency_jobs`, specify that as TO-143-D3 with a red-first test for the guard interaction. Separately, schedule `release_stale_fleet_reservations` in service context.

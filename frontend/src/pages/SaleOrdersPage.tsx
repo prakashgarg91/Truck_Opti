@@ -436,7 +436,7 @@ Carton C,30,20,15,2,20,Bangalore`
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{text.pastOrders}</h2>
-          <button
+          <button aria-label="Refresh past orders"
             onClick={fetchOrders}
             className="p-2 text-slate-400 hover:text-slate-600"
           >
@@ -493,7 +493,7 @@ Carton C,30,20,15,2,20,Bangalore`
                         ? <Loader2 className="w-4 h-4 animate-spin" />
                         : <RefreshCw className="w-4 h-4" />}
                     </button>
-                    <button
+                    <button aria-label="Delete sale order"
                       onClick={() => handleDelete(order.id)}
                       className="p-2 text-red-400 hover:text-red-600"
                     >

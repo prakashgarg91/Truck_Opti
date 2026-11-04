@@ -80,6 +80,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 }
 
 export default function AgencyJobsPage() {
+  useEffect(() => {
+    document.title = 'Agency Jobs - TruckOpti'
+  }, [])
+
   const { user } = useAuthStore()
   const [jobs, setJobs] = useState<AgencyJob[]>([])
   const [filter, setFilter] = useState<JobFilter>('all')
@@ -557,7 +561,7 @@ export default function AgencyJobsPage() {
           <div className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-h-[80vh] overflow-hidden">
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Assign Driver</h2>
-              <button
+              <button aria-label="Close assign driver dialog"
                 onClick={() => { setShowAssignModal(false); setSelectedJob(null) }}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl"
               >
@@ -610,7 +614,7 @@ export default function AgencyJobsPage() {
                   {trackingJob.origin} → {trackingJob.destination}
                 </p>
               </div>
-              <button
+              <button aria-label="Close tracking dialog"
                 onClick={() => { setShowTrackModal(false); setTrackingJob(null) }}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl"
               >

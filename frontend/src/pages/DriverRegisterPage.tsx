@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   User, Truck, CreditCard, CheckCircle2,
@@ -55,6 +55,10 @@ const INITIAL: FormData = {
 }
 
 export default function DriverRegisterPage() {
+  useEffect(() => {
+    document.title = 'Driver Registration - TruckOpti'
+  }, [])
+
   const navigate = useNavigate()
   const { user, updateUser } = useAuthStore()
   const [step, setStep] = useState(1)
@@ -199,7 +203,7 @@ export default function DriverRegisterPage() {
           <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Application Submitted!</h2>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Application Submitted!</h1>
           <p className="text-slate-500 dark:text-slate-400 mb-2">
             Thank you, <strong>{form.full_name}</strong>! Your driver application is under review.
           </p>
@@ -348,7 +352,7 @@ export default function DriverRegisterPage() {
                       <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
                         <img src={form.dl_url} alt="Licence" className="w-12 h-12 object-cover rounded-lg" />
                         <span className="text-xs text-green-700 dark:text-green-400 flex-1">Uploaded</span>
-                        <button type="button" onClick={() => removeFile('dl_url')} className="p-1 text-red-500">
+                        <button aria-label="Remove driving licence photo" type="button" onClick={() => removeFile('dl_url')} className="p-1 text-red-500">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
@@ -389,7 +393,7 @@ export default function DriverRegisterPage() {
                       <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
                         <img src={form.rc_url} alt="RC" className="w-12 h-12 object-cover rounded-lg" />
                         <span className="text-xs text-green-700 dark:text-green-400 flex-1">Uploaded</span>
-                        <button type="button" onClick={() => removeFile('rc_url')} className="p-1 text-red-500">
+                        <button aria-label="Remove RC photo" type="button" onClick={() => removeFile('rc_url')} className="p-1 text-red-500">
                           <X className="w-4 h-4" />
                         </button>
                       </div>

@@ -221,6 +221,7 @@ export default function Dashboard() {
   if (loading && !loadError) {
     return (
       <div className="p-4 space-y-6 pb-8">
+        <h1 className="sr-only">Dashboard</h1>
         {/* Welcome Section Skeleton */}
         <div className="bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700 rounded-3xl p-6 h-40 animate-pulse" />
 
@@ -250,9 +251,9 @@ export default function Dashboard() {
     return (
       <div className="p-4 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+        <h1 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
           {'Failed to load dashboard'}
-        </h2>
+        </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {'Please check your connection and try again'}
         </p>

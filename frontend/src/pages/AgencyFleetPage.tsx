@@ -60,6 +60,10 @@ function firstDocAlert(truck: FleetVehicle): string | null {
 }
 
 export default function AgencyFleetPage() {
+  useEffect(() => {
+    document.title = 'Fleet Management - TruckOpti'
+  }, [])
+
   const navigate = useNavigate()
   const [trucks, setTrucks] = useState<FleetVehicle[]>([])
   const [loading, setLoading] = useState(true)

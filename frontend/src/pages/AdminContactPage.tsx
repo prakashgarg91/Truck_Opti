@@ -56,7 +56,7 @@ export default function AdminContactPage() {
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button
+        <button aria-label="Back to admin"
           onClick={() => navigate('/admin')}
           className="p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700"
         >
@@ -69,7 +69,7 @@ export default function AdminContactPage() {
           </h1>
           <p className="text-sm text-slate-500">{filtered.length} {'inquiries'}</p>
         </div>
-        <button
+        <button aria-label="Refresh inquiries"
           onClick={fetchInquiries}
           className="p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700"
         >

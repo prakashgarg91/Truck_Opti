@@ -38,6 +38,10 @@ const INDIAN_STATES = [
 ]
 
 export default function CompanyProfilePage() {
+  useEffect(() => {
+    document.title = 'Company Settings - TruckOpti'
+  }, [])
+
   const [form, setForm] = useState<CompanyData>(EMPTY)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -162,16 +166,16 @@ export default function CompanyProfilePage() {
         <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Basic Information</h2>
         <div className="grid gap-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Company / Business Name *</label>
-            <input value={form.name} onChange={set('name')} placeholder="e.g. Garg Logistics Pvt Ltd"
+            <label htmlFor="company-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Company / Business Name *</label>
+            <input id="company-name" value={form.name} onChange={set('name')} placeholder="e.g. Garg Logistics Pvt Ltd"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="company-gstin" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 <span className="flex items-center gap-1"><FileText className="w-3.5 h-3.5" /> GSTIN</span>
               </label>
-              <input value={form.gstin} onChange={set('gstin')} placeholder="22AAAAA0000A1Z5" maxLength={15}
+              <input id="company-gstin" value={form.gstin} onChange={set('gstin')} placeholder="22AAAAA0000A1Z5" maxLength={15}
                 className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase ${form.gstin && !validateGSTIN(form.gstin.toUpperCase())
                   ? 'border-red-400 focus:ring-red-400'
                   : 'border-slate-200 dark:border-slate-600'
@@ -181,8 +185,8 @@ export default function CompanyProfilePage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PAN Number *</label>
-              <input value={form.pan} onChange={set('pan')} placeholder="AAAPZ1234C" maxLength={10}
+              <label htmlFor="company-pan" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PAN Number *</label>
+              <input id="company-pan" value={form.pan} onChange={set('pan')} placeholder="AAAPZ1234C" maxLength={10}
                 className={`w-full px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm uppercase ${form.pan && !validatePAN(form.pan.toUpperCase())
                   ? 'border-red-400 focus:ring-red-400'
                   : 'border-slate-200 dark:border-slate-600'
@@ -204,30 +208,30 @@ export default function CompanyProfilePage() {
         </h2>
         <div className="grid gap-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Address Line 1 *</label>
-            <input value={form.address_line1} onChange={set('address_line1')} placeholder="Building, street"
+            <label htmlFor="company-address1" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Address Line 1 *</label>
+            <input id="company-address1" value={form.address_line1} onChange={set('address_line1')} placeholder="Building, street"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Address Line 2</label>
-            <input value={form.address_line2} onChange={set('address_line2')} placeholder="Area, landmark"
+            <label htmlFor="company-address2" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Address Line 2</label>
+            <input id="company-address2" value={form.address_line2} onChange={set('address_line2')} placeholder="Area, landmark"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">City *</label>
-              <input value={form.city} onChange={set('city')} placeholder="Mumbai"
+              <label htmlFor="company-city" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">City *</label>
+              <input id="company-city" value={form.city} onChange={set('city')} placeholder="Mumbai"
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pincode *</label>
-              <input value={form.pincode} onChange={set('pincode')} placeholder="400001" maxLength={6}
+              <label htmlFor="company-pincode" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pincode *</label>
+              <input id="company-pincode" value={form.pincode} onChange={set('pincode')} placeholder="400001" maxLength={6}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">State *</label>
-            <select value={form.state} onChange={set('state')}
+            <label htmlFor="company-state" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">State *</label>
+            <select id="company-state" value={form.state} onChange={set('state')}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm">
               <option value="">-- Select State --</option>
               {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -243,13 +247,13 @@ export default function CompanyProfilePage() {
         </h2>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phone *</label>
-            <input value={form.phone} onChange={set('phone')} placeholder="+91 98765 43210"
+            <label htmlFor="company-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phone *</label>
+            <input id="company-phone" value={form.phone} onChange={set('phone')} placeholder="+91 98765 43210"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
-            <input value={form.email} onChange={set('email')} placeholder="billing@company.com" type="email"
+            <label htmlFor="company-email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+            <input id="company-email" value={form.email} onChange={set('email')} placeholder="billing@company.com" type="email"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm" />
           </div>
         </div>
