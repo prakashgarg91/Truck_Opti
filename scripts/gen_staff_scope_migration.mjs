@@ -93,7 +93,10 @@ function renderPolicy(table, name, scopes) {
     return `${table}.agency_id IN (SELECT public.agency_caller_agencies(${arr(scopes)}))`
   })
   if (hits === 0) throw new Error(`no owner subquery in ${table}.${name} (${file})`)
-  return `-- ${table}.${name} (from ${file}; ${hits} owner check${hits === 1 ? '' : 's'} -> scope-aware)\nDROP POLICY IF EXISTS "${name}" ON public.${table};\n${replaced2}\n`
+  // agency_jobs policies carry no TO clause: scope them to authenticated so anon never evaluates the helper.
+  const finalSql =
+    table === 'agency_jobs' ? replaced2.replace(/\bFOR (SELECT|INSERT|UPDATE)\b/, 'FOR $1 TO authenticated') : replaced2
+  return `-- ${table}.${name} (from ${file}; ${hits} owner check${hits === 1 ? '' : 's'} -> scope-aware)\nDROP POLICY IF EXISTS "${name}" ON public.${table};\n${finalSql}\n`
 }
 
 // ---------------------------------------------------------------------------
@@ -244,9 +247,7 @@ $$;
 
 REVOKE ALL ON FUNCTION public.agency_caller_agencies(text[]) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.resolve_caller_agency_for_scopes(text[]) FROM PUBLIC, anon;
--- anon needs EXECUTE only because policies without a TO clause (e.g. agency_jobs read) are
--- evaluated for anon too; with auth.uid() NULL the helper returns no rows.
-GRANT EXECUTE ON FUNCTION public.agency_caller_agencies(text[]) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.agency_caller_agencies(text[]) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.resolve_caller_agency_for_scopes(text[]) TO authenticated, service_role;
 
 -- ---------------------------------------------------------------------------

@@ -218,7 +218,8 @@ BEGIN
   SELECT * INTO v_employment
   FROM public.agency_driver_employment
   WHERE id = p_driver_employment_id
-    AND agency_id = v_agency_id;
+    AND agency_id = v_agency_id
+  FOR SHARE;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Employment record not found or access denied.';
@@ -528,6 +529,9 @@ BEGIN
       'current_version', v_current.version
     );
   END IF;
+
+  -- Serialise with reserve_fleet_assignment (which takes FOR SHARE on this row).
+  PERFORM 1 FROM public.agency_driver_employment e0 WHERE e0.id = p_employment_id FOR UPDATE;
 
   IF EXISTS (
     SELECT 1 FROM public.fleet_assignment_reservations r

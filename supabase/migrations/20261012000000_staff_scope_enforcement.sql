@@ -92,9 +92,7 @@ $$;
 
 REVOKE ALL ON FUNCTION public.agency_caller_agencies(text[]) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.resolve_caller_agency_for_scopes(text[]) FROM PUBLIC, anon;
--- anon needs EXECUTE only because policies without a TO clause (e.g. agency_jobs read) are
--- evaluated for anon too; with auth.uid() NULL the helper returns no rows.
-GRANT EXECUTE ON FUNCTION public.agency_caller_agencies(text[]) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.agency_caller_agencies(text[]) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.resolve_caller_agency_for_scopes(text[]) TO authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
@@ -175,14 +173,14 @@ CREATE POLICY fleet_reservations_select ON public.fleet_assignment_reservations
 -- agency_jobs.agency_job_owner_read (from 20261006120000_tenant_authority_repair.sql; 1 owner check -> scope-aware)
 DROP POLICY IF EXISTS "agency_job_owner_read" ON public.agency_jobs;
 CREATE POLICY agency_job_owner_read ON public.agency_jobs
-  FOR SELECT USING (
+  FOR SELECT TO authenticated USING (
     agency_id IN (SELECT public.agency_caller_agencies(ARRAY['dispatcher', 'fleet_manager', 'finance', 'viewer']::text[]))
   );
 
 -- agency_jobs.agency_job_owner_insert (from 20261006120000_tenant_authority_repair.sql; 1 owner check -> scope-aware)
 DROP POLICY IF EXISTS "agency_job_owner_insert" ON public.agency_jobs;
 CREATE POLICY agency_job_owner_insert ON public.agency_jobs
-  FOR INSERT WITH CHECK (
+  FOR INSERT TO authenticated WITH CHECK (
     agency_id IN (SELECT public.agency_caller_agencies(ARRAY['dispatcher']::text[]))
     AND EXISTS (
       SELECT 1
@@ -197,7 +195,7 @@ CREATE POLICY agency_job_owner_insert ON public.agency_jobs
 -- agency_jobs.agency_job_owner_update (from 20261006120000_tenant_authority_repair.sql; 2 owner checks -> scope-aware)
 DROP POLICY IF EXISTS "agency_job_owner_update" ON public.agency_jobs;
 CREATE POLICY agency_job_owner_update ON public.agency_jobs
-  FOR UPDATE USING (
+  FOR UPDATE TO authenticated USING (
     agency_id IN (SELECT public.agency_caller_agencies(ARRAY['dispatcher']::text[]))
   )
   WITH CHECK (

@@ -52,10 +52,11 @@ function extract(name) {
 function patch(name, edits) {
   const { file, sql } = extract(name)
   let out = sql
-  for (const { anchor, insertBefore, insertAfter } of edits) {
+  for (const { anchor, insertBefore, insertAfter, replaceWith } of edits) {
     const count = out.split(anchor).length - 1
     if (count !== 1) throw new Error(`${name} (${file}): anchor must match exactly once, found ${count}: ${JSON.stringify(anchor.slice(0, 70))}`)
-    out = insertBefore ? out.replace(anchor, insertBefore + anchor) : out.replace(anchor, anchor + insertAfter)
+    if (replaceWith !== undefined) out = out.replace(anchor, replaceWith)
+    else out = insertBefore ? out.replace(anchor, insertBefore + anchor) : out.replace(anchor, anchor + insertAfter)
   }
   return `-- ${name} (from ${file}, patched)\n${out}\n`
 }
@@ -164,6 +165,14 @@ const parts = [
   ]),
   patch('reserve_fleet_assignment', [
     {
+      // Lock the employment row (shared) so a concurrent employment end cannot slip in.
+      anchor: `  WHERE id = p_driver_employment_id
+    AND agency_id = v_agency_id;`,
+      replaceWith: `  WHERE id = p_driver_employment_id
+    AND agency_id = v_agency_id
+  FOR SHARE;`,
+    },
+    {
       anchor: `  RETURN jsonb_build_object(
     'ok', true,
     'state', 'created',`,
@@ -217,7 +226,10 @@ const parts = [
     {
       anchor: `  UPDATE public.agency_driver_employment e SET
     status = 'ended'`,
-      insertBefore: `  IF EXISTS (
+      insertBefore: `  -- Serialise with reserve_fleet_assignment (which takes FOR SHARE on this row).
+  PERFORM 1 FROM public.agency_driver_employment e0 WHERE e0.id = p_employment_id FOR UPDATE;
+
+  IF EXISTS (
     SELECT 1 FROM public.fleet_assignment_reservations r
     WHERE r.driver_employment_id = p_employment_id
       AND r.agency_id = v_agency_id

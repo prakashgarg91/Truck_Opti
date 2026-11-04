@@ -14,8 +14,8 @@
  * yet, so the cutoff cases are EXPECTED to fail now; regression guards may pass):
  *   An active shipment_agency_consents row must NOT let an agency CREATE a NEW
  *   agency_jobs row for a shipment that has reached a terminal status
- *   (delivered | cancelled). Live statuses are pending and in_transit.
- *   - T1/T2: agency OWNER may INSERT (active consent) on pending / in_transit.
+ *   (delivered | cancelled). Only 'pending' (pre-dispatch) accepts new jobs.
+ *   - T1/T2: agency OWNER may INSERT (active consent) on pending; denied on in_transit.
  *   - T3/T4: agency OWNER is denied INSERT on delivered / cancelled
  *     (error contains 'row-level security').
  *   - T5: dispatcher staff (agency A) allowed on pending, denied on delivered
@@ -520,9 +520,9 @@ async function main() {
     await expectInsertAllowed(agencyUserA, agencyA, shipmentId, 'owner on pending')
   })
 
-  await testCase('T2. agency owner may INSERT an agency job for an in_transit shipment with an active consent', async () => {
+  await testCase('T2. agency owner is denied INSERT for an in_transit shipment (pre-dispatch only; advisor ruling 2026-11-04)', async () => {
     const shipmentId = await shipmentWithConsent(agencyA, 'in_transit', 'T2')
-    await expectInsertAllowed(agencyUserA, agencyA, shipmentId, 'owner on in_transit')
+    await expectInsertDenied(agencyUserA, agencyA, shipmentId, 'owner on in_transit')
   })
 
   await testCase('T3. agency owner is denied INSERT for a delivered shipment even with an active consent', async () => {
@@ -585,7 +585,7 @@ async function main() {
   // =========================================================================
   // H. Helper function public.shipment_accepts_agency_jobs(uuid)
   // =========================================================================
-  await testCase('T9. shipment_accepts_agency_jobs(uuid) is callable by owner, dispatcher and anon and answers by status', async () => {
+  await testCase('T9. shipment_accepts_agency_jobs(uuid) answers true only for pending to owner and dispatcher; anon has no EXECUTE', async () => {
     const ids = {
       pending: await shipmentWithConsent(agencyA, 'pending', 'T9-P'),
       in_transit: await shipmentWithConsent(agencyA, 'in_transit', 'T9-I'),
@@ -593,11 +593,10 @@ async function main() {
       cancelled: await shipmentWithConsent(agencyA, 'cancelled', 'T9-C'),
       unknown: randomUUID(),
     }
-    const expected = { pending: true, in_transit: true, delivered: false, cancelled: false, unknown: false }
+    const expected = { pending: true, in_transit: false, delivered: false, cancelled: false, unknown: false }
     const actors = [
       ['owner', agencyUserA],
       ['dispatcher', dispatcherId],
-      ['anon', 'anon'],
     ]
     const checks = []
     for (const [label, actor] of actors) {
@@ -607,6 +606,17 @@ async function main() {
           expect(value === expected[status], `expected ${expected[status]}, got ${JSON.stringify(value)}`)
         }])
       }
+    }
+    for (const [status, id] of Object.entries(ids)) {
+      checks.push([`anon/${status} is denied EXECUTE`, async () => {
+        let message = null
+        try {
+          await acceptsAs('anon', id)
+        } catch (error) {
+          message = error && error.message ? error.message : String(error)
+        }
+        expect(message !== null && /permission denied/.test(message), `anon must not be able to call the helper, got ${message}`)
+      }])
     }
     await gather(checks)
   })
