@@ -213,6 +213,7 @@ export type EmploymentCommandResult =
  */
 const FLEET_COMMAND_ERROR_MESSAGES: Readonly<Record<string, string>> = Object.freeze({
     'Agency approval is required.': 'Agency approval is required.',
+    'Your access scope does not allow this action.': 'Your access scope does not allow this action.',
     'No agency profile found for this account.': 'No agency profile found for this account.',
     'Multiple agency profiles found for this account.': 'Multiple agency profiles found for this account.',
     'Vehicle not found or access denied.': 'Vehicle not found or access denied.',

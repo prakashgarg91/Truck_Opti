@@ -137,6 +137,24 @@ describe('agencyOrganizationApi', () => {
             ).rejects.toThrow('Pincode must be six digits.')
         })
 
+        it('shows the staff-scope denial message verbatim', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'Your access scope does not allow this action.' } })
+
+            await expect(
+                agencyTariffApi.publish({
+                    agreementId: 'agr-1',
+                    origin: 'A',
+                    destination: 'B',
+                    vehicleType: null,
+                    rateBasis: 'per_trip',
+                    rateAmount: 100,
+                    effectiveFrom: '2026-12-01',
+                    effectiveTo: null,
+                    idempotencyKey: 'k',
+                })
+            ).rejects.toThrow('Your access scope does not allow this action.')
+        })
+
         it('collapses unknown provider errors to the redacted fallback', async () => {
             rpcMock.mockResolvedValue({
                 data: null,

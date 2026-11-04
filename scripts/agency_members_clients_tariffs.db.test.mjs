@@ -715,7 +715,7 @@ async function main() {
     await actAs(dispatcher)
     await expectError(
       db.query(`SELECT public.agency_member_change_scope($1, 1, 'finance')`, [membershipDispatcherId]),
-      'No agency profile found for this account.'
+      'Your access scope does not allow this action.'
     )
     await actAsService()
     const r = await rows(`SELECT scope FROM public.agency_memberships WHERE id = $1`, [membershipDispatcherId])
@@ -846,11 +846,11 @@ async function main() {
     )
   })
 
-  await testCase('F6. a non-owner dispatcher cannot create agreements (no agency profile)', async () => {
+  await testCase('F6. a non-owner dispatcher cannot create agreements (scope denied)', async () => {
     await actAs(dispatcher)
     await expectError(
       db.query(`SELECT public.agency_client_agreement_create('Staff Made Ltd', NULL, 15, 'client-agreement-staff')`),
-      'No agency profile found for this account.'
+      'Your access scope does not allow this action.'
     )
   })
 
@@ -1138,11 +1138,11 @@ async function main() {
     expect(seen.length === 0, `B must see 0 of A's tariffs, saw ${seen.length}`)
   })
 
-  await testCase('H13. a non-owner dispatcher cannot publish tariffs (no agency profile)', async () => {
+  await testCase('H13. a non-owner dispatcher cannot publish tariffs (scope denied)', async () => {
     await actAs(dispatcher)
     await expectError(
       db.query(`SELECT public.agency_tariff_version_publish($1, 'Delhi', 'Pune', 'per_trip', 1000.00, '2027-05-01', NULL, NULL, NULL, 'tariff-staff-1')`, [agr1]),
-      'No agency profile found for this account.'
+      'Your access scope does not allow this action.'
     )
   })
 
@@ -1232,11 +1232,11 @@ async function main() {
     )
   })
 
-  await testCase('I5. a dispatcher and a driver cannot create driver invitations (no agency profile)', async () => {
+  await testCase('I5. a dispatcher (scope denied) and a driver (no agency profile) cannot create driver invitations', async () => {
     await actAs(dispatcher)
     await expectError(
       db.query(`SELECT public.agency_driver_invitation_create('9800000005', 7, 'driver-invite-staff')`),
-      'No agency profile found for this account.'
+      'Your access scope does not allow this action.'
     )
     await actAs(driverOk)
     await expectError(

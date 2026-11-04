@@ -149,6 +149,9 @@ const COMMAND_ERROR_MESSAGES: Readonly<Record<Exclude<CommandErrorCode, 'unknown
 /** Controlled RAISE EXCEPTION texts from the migration; anything else is redacted. */
 const CONTROLLED_EXCEPTIONS: ReadonlySet<string> = new Set([
     'Agency approval is required.',
+    'Your access scope does not allow this action.',
+    'No agency profile found for this account.',
+    'Multiple agency profiles found for this account.',
     'Sign-in is required.',
     'Idempotency key is required.',
     'Site label, address, city and state are required.',

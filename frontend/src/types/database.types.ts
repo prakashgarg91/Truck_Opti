@@ -980,6 +980,12 @@ isOneToOne: false
                            },
 "reserve_fleet_assignment":
 { Args: { "p_agency_job_id": string,"p_driver_employment_id": string,"p_expected_vehicle_version": number,"p_idempotency_key": string,"p_job_offer_id": string,"p_vehicle_id": string,"p_window_end": string,"p_window_start": string }; Returns: Json
+                           },
+"agency_caller_agencies":
+{ Args: { "p_scopes": string[] }; Returns: string[]
+                           },
+"resolve_caller_agency_for_scopes":
+{ Args: { "p_scopes": string[] }; Returns: string
                            }
           }
           Enums: {
