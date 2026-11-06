@@ -1,0 +1,266 @@
+[
+  {
+    "id": "z-truck-test-agency-jobs",
+    "title": "regression tests for AgencyJobsPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AgencyJobsPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AgencyJobsPage.tsx (agency job board: list, filters, offers and status actions; services/agencyPortalApi.ts agencyJobsApi and services/agencySupabaseApi.ts). Create frontend/src/pages/AgencyJobsPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AgencyJobsPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-agency-rates",
+    "title": "regression tests for AgencyRatesPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AgencyRatesPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AgencyRatesPage.tsx (agency rate cards (legacy agencyRatesApi): list, add, toggle, delete). Create frontend/src/pages/AgencyRatesPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AgencyRatesPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-agency-billing",
+    "title": "regression tests for AgencyBillingPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AgencyBillingPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AgencyBillingPage.tsx (agency billing summary and delivered jobs (agencyBillingApi)). Create frontend/src/pages/AgencyBillingPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AgencyBillingPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-agency-profile",
+    "title": "regression tests for AgencyProfilePage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AgencyProfilePage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AgencyProfilePage.tsx (agency profile view and edit). Create frontend/src/pages/AgencyProfilePage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AgencyProfilePage.test.ts"
+  },
+  {
+    "id": "z-truck-test-agency-register",
+    "title": "regression tests for AgencyRegisterPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AgencyRegisterPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AgencyRegisterPage.tsx (agency registration form and validation). Create frontend/src/pages/AgencyRegisterPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AgencyRegisterPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-driver-earnings",
+    "title": "regression tests for DriverEarningsPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/DriverEarningsPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/DriverEarningsPage.tsx (driver earnings and payouts). Create frontend/src/pages/DriverEarningsPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/DriverEarningsPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-driver-history",
+    "title": "regression tests for DriverHistoryPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/DriverHistoryPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/DriverHistoryPage.tsx (driver trip history). Create frontend/src/pages/DriverHistoryPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/DriverHistoryPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-driver-profile",
+    "title": "regression tests for DriverProfilePage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/DriverProfilePage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/DriverProfilePage.tsx (driver profile page (docs/design-audit.md notes Account Center links that self-link; record that as a FINDING if it is still true)). Create frontend/src/pages/DriverProfilePage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/DriverProfilePage.test.ts"
+  },
+  {
+    "id": "z-truck-test-driver-register",
+    "title": "regression tests for DriverRegisterPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/DriverRegisterPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/DriverRegisterPage.tsx (driver registration form and validation). Create frontend/src/pages/DriverRegisterPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/DriverRegisterPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-admin-dashboard",
+    "title": "regression tests for AdminDashboardPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AdminDashboardPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AdminDashboardPage.tsx (admin dashboard counters). Create frontend/src/pages/AdminDashboardPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AdminDashboardPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-admin-drivers",
+    "title": "regression tests for AdminDriversPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AdminDriversPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AdminDriversPage.tsx (admin driver list and approval actions). Create frontend/src/pages/AdminDriversPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AdminDriversPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-admin-agencies",
+    "title": "regression tests for AdminAgenciesPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AdminAgenciesPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AdminAgenciesPage.tsx (admin agency list and approval or suspension actions). Create frontend/src/pages/AdminAgenciesPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AdminAgenciesPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-admin-users",
+    "title": "regression tests for AdminUsersPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AdminUsersPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AdminUsersPage.tsx (admin user list). Create frontend/src/pages/AdminUsersPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AdminUsersPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-admin-payouts",
+    "title": "regression tests for AdminPayoutsPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AdminPayoutsPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AdminPayoutsPage.tsx (admin payouts review). Create frontend/src/pages/AdminPayoutsPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AdminPayoutsPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-admin-subscriptions",
+    "title": "regression tests for AdminSubscriptionsPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/AdminSubscriptionsPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/AdminSubscriptionsPage.tsx (admin subscriptions list). Create frontend/src/pages/AdminSubscriptionsPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/AdminSubscriptionsPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-shipment-history",
+    "title": "regression tests for ShipmentHistoryPage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/ShipmentHistoryPage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/ShipmentHistoryPage.tsx (customer shipment history). Create frontend/src/pages/ShipmentHistoryPage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/ShipmentHistoryPage.test.ts"
+  },
+  {
+    "id": "z-truck-test-company-profile",
+    "title": "regression tests for CompanyProfilePage",
+    "kind": "zcode-test",
+    "priority": 4,
+    "allow": [
+      "frontend/src/pages/CompanyProfilePage.test.ts"
+    ],
+    "brief": "Page: frontend/src/pages/CompanyProfilePage.tsx (company profile and backup section (BackupSection is a child component; mock it)). Create frontend/src/pages/CompanyProfilePage.test.ts. Read the page first, then every service and store it imports (read its import lines) so your mocks have the right shapes.",
+    "check": "cd frontend && npx vitest run src/pages/CompanyProfilePage.test.ts"
+  },
+  {
+    "id": "z-truck-doc-agency-guide",
+    "title": "documentation: agency-guide",
+    "kind": "zcode-docs",
+    "priority": 7,
+    "allow": [
+      "docs/USER-GUIDE-AGENCY.md"
+    ],
+    "brief": "User guide for a transport-agency owner and staff: register and approval, fleet (vehicles), drivers (employment, invitations), jobs and offers, clients and tariffs, team and scopes, billing. Reader: a non-technical agency owner. Describe only what exists in the app routes (frontend/src/App.tsx) and say \"planned\" for TASKS.md modules not built (orders import, GR/LR, tracking, invoices, expenses, payroll).",
+    "check": "node -e \"if(require('fs').readFileSync('docs/USER-GUIDE-AGENCY.md','utf8').length<2500)process.exit(1)\""
+  },
+  {
+    "id": "z-truck-doc-driver-guide",
+    "title": "documentation: driver-guide",
+    "kind": "zcode-docs",
+    "priority": 7,
+    "allow": [
+      "docs/USER-GUIDE-DRIVER.md"
+    ],
+    "brief": "User guide for a truck driver: registration and KYC, going online, receiving and accepting a job offer with OTP, pickup, transit, delivery proof, earnings, history. Reader: a driver on a phone. Source: the frontend driver pages and services. Keep sentences very short.",
+    "check": "node -e \"if(require('fs').readFileSync('docs/USER-GUIDE-DRIVER.md','utf8').length<2500)process.exit(1)\""
+  },
+  {
+    "id": "z-truck-doc-deploy-runbook",
+    "title": "documentation: deploy-runbook",
+    "kind": "zcode-docs",
+    "priority": 7,
+    "allow": [
+      "docs/DEPLOYMENT-RUNBOOK.md"
+    ],
+    "brief": "Deployment and rollback runbook for the hosted pilot: environments, required settings by NAME only (never values), Supabase migration order, Edge function deploy, Heroku deploy, health checks (/healthz and /readyz), smoke test, rollback steps, backup and restore. Mark every step that only the owner may perform with [OWNER]. Sources: package.json, Procfile, heroku.yml, deploy-heroku.sh, supabase/, docs/QUICK_DEPLOY.md, docs/payment-production-handoff.md, TASKS.md.",
+    "check": "node -e \"if(require('fs').readFileSync('docs/DEPLOYMENT-RUNBOOK.md','utf8').length<2500)process.exit(1)\""
+  },
+  {
+    "id": "z-truck-doc-changelog",
+    "title": "documentation: changelog",
+    "kind": "zcode-docs",
+    "priority": 7,
+    "allow": [
+      "CHANGELOG.md"
+    ],
+    "brief": "Keep-a-Changelog style CHANGELOG.md summarising delivered work grouped by date, from git history (git log is available) and TASKS.md. The current package version is in package.json. Facts only.",
+    "check": "node -e \"if(require('fs').readFileSync('CHANGELOG.md','utf8').length<2500)process.exit(1)\""
+  },
+  {
+    "id": "z-truck-doc-landing-copy",
+    "title": "documentation: landing-copy",
+    "kind": "zcode-docs",
+    "priority": 7,
+    "allow": [
+      "docs/sales/LANDING-COPY.md"
+    ],
+    "brief": "Landing page copy for the subscription: headline, subhead, 6 benefit blocks, how it works in 4 steps, FAQ (8 questions), call to action. Audience: owners of small Indian trucking agencies (5-10 trucks). Claim only features that exist today; mark upcoming ones as \"coming soon\".",
+    "check": "node -e \"if(require('fs').readFileSync('docs/sales/LANDING-COPY.md','utf8').length<2500)process.exit(1)\""
+  },
+  {
+    "id": "z-truck-doc-sales-checklist",
+    "title": "documentation: sales-checklist",
+    "kind": "zcode-docs",
+    "priority": 7,
+    "allow": [
+      "docs/sales/SALES-CHECKLIST.md"
+    ],
+    "brief": "Sales and pilot-onboarding checklist for a human seller: qualification questions, a 10-minute demo script using real routes of the app, data the agency must provide, pilot success measures, objections and answers, what is not yet available. Facts from the repo only.",
+    "check": "node -e \"if(require('fs').readFileSync('docs/sales/SALES-CHECKLIST.md','utf8').length<2500)process.exit(1)\""
+  },
+  {
+    "id": "z-truck-doc-support",
+    "title": "documentation: support",
+    "kind": "zcode-docs",
+    "priority": 7,
+    "allow": [
+      "docs/SUPPORT.md"
+    ],
+    "brief": "Support policy and first-line troubleshooting guide: how to contact support (leave phone and email as clearly marked placeholders for the owner), response times as placeholders, the 12 most likely problems an agency or driver hits with fixes drawn from the code (login and OTP, approval pending, driver not approved, vehicle not eligible, offer expired, invitation code, version conflict message).",
+    "check": "node -e \"if(require('fs').readFileSync('docs/SUPPORT.md','utf8').length<2500)process.exit(1)\""
+  }
+]

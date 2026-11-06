@@ -1,0 +1,2 @@
+## Kind: documentation (NEW markdown file only)
+Write for the stated reader in plain words. Every claim must be checkable in this repository: read the code, TASKS.md, README.md, docs/ and agent-results/ before writing and cite the file or route for each feature. Never invent a feature, price, number, legal claim or integration; if something is not built, say "planned" or leave it out. No secrets, no keys, no internal URLs. Keep it under 400 lines, with headings and short paragraphs, Indian business English.
