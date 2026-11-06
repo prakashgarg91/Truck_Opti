@@ -5,11 +5,36 @@
   "maxWorkers": 8,
   "commitPrefix": "test",
   "coAuthor": "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>",
-  "perTaskGates": ["cd frontend && npx tsc --noEmit"],
+  "perTaskGates": [
+    "cd frontend && npx tsc --noEmit"
+  ],
   "kinds": {
-    "zcode-test": { "engine": "zcode", "template": ".fleet/templates/test.md", "gates": ["cd frontend && npx tsc --noEmit"] },
-    "zcode-docs": { "engine": "zcode", "template": ".fleet/templates/docs.md", "gates": [] },
-    "zcode-ui": { "engine": "zcode", "template": ".fleet/templates/ui.md", "gates": ["cd frontend && npx tsc --noEmit", "cd frontend && npx eslint src --max-warnings 0"] },
-    "haiku-sql-test": { "engine": "haiku", "template": ".fleet/templates/haiku-sql.md" }
-  }
+    "zcode-test": {
+      "engine": "zcode",
+      "template": ".fleet/templates/test.md",
+      "gates": [
+        "cd frontend && npx tsc --noEmit"
+      ],
+      "autoLand": true
+    },
+    "zcode-docs": {
+      "engine": "zcode",
+      "template": ".fleet/templates/docs.md",
+      "gates": [],
+      "autoLand": true
+    },
+    "zcode-ui": {
+      "engine": "zcode",
+      "template": ".fleet/templates/ui.md",
+      "gates": [
+        "cd frontend && npx tsc --noEmit",
+        "cd frontend && npx eslint src --max-warnings 0"
+      ]
+    },
+    "haiku-sql-test": {
+      "engine": "haiku",
+      "template": ".fleet/templates/haiku-sql.md"
+    }
+  },
+  "maxAttempts": 3
 }
