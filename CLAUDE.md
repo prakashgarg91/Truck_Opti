@@ -47,4 +47,10 @@
 - If concurrent writes are detected, stop rather than creating an automatic worktree.
 - Temporary isolation (extra branches, worktrees, stashes) is prohibited unless the
   owner explicitly changes this policy.
+- Owner exception (2026-11-06, given in chat): AI Work Factory / ZCode worker jobs MAY use
+  temporary worktrees and `awf/*` or detached job checkouts under the factory state root.
+  Nothing from a job branch is pushed or merged as a branch: only a reviewed patch is applied
+  to the primary checkout and committed on `main` (one writer at a time, full gates first),
+  and finished job worktrees/branches are cleaned with `zcode_task.py clean --id`. Stashes
+  and any other extra branches stay prohibited.
 <!-- MAIN_ONLY_POLICY_END -->
