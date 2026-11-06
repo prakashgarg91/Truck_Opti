@@ -25,6 +25,12 @@ const SCOPES: ReadonlyArray<{ value: MembershipScope; label: string }> = [
   { value: 'viewer', label: 'Viewer' },
 ]
 const SCOPE_LABEL: Record<string, string> = Object.fromEntries(SCOPES.map((s) => [s.value, s.label]))
+const SCOPE_HELP: Record<MembershipScope, string> = {
+  dispatcher: 'Reserve vehicles and drivers, manage jobs',
+  fleet_manager: 'Manage vehicles, drivers and driver invitations',
+  finance: 'Manage clients and publish tariffs',
+  viewer: 'View only',
+}
 
 const DENIAL_MESSAGES = new Set(['Agency approval is required.', 'Sign-in is required.'])
 
@@ -78,6 +84,8 @@ export default function AgencyTeamPage() {
   const inviteKey = useRef<string | null>(null)
   const [shareCode, setShareCode] = useState<{ token: string; email: string } | null>(null)
   const [confirm, setConfirm] = useState<Confirm | null>(null)
+  const [changeTarget, setChangeTarget] = useState<MembershipRow | null>(null)
+  const [targetScope, setTargetScope] = useState<MembershipScope>('dispatcher')
 
   const fetchData = useCallback(async () => {
     try {
@@ -165,6 +173,24 @@ export default function AgencyTeamPage() {
       setConfirm(null)
     } finally {
       setBusy(false)
+    }
+  }
+
+  const handleChangeScope = async () => {
+    if (!changeTarget) return
+    setBusy(true)
+    try {
+      const result = await agencyTeamApi.changeScope(changeTarget.id, targetScope, changeTarget.version)
+      if (result.ok) toast.success(result.state === 'unchanged' ? 'Access scope is already set' : 'Access scope updated')
+      else toast.error(result.message)
+    } catch (e) {
+      logger.error('[AgencyTeamPage] change scope failed:', e)
+      toast.error(toUserFacingErrorMessage(e, 'Failed to change access scope'))
+    } finally {
+      setChangeTarget(null)
+      setBusy(false)
+      // Single refetch after every outcome; never an automatic retry.
+      await fetchData()
     }
   }
 
@@ -289,12 +315,23 @@ export default function AgencyTeamPage() {
                 </span>
                 <StatusBadge status={m.status} />
                 {m.status === 'active' && (
-                  <button
-                    onClick={() => setConfirm({ kind: 'member', id: m.id, version: m.version, name: memberName(m) })}
-                    className={`flex items-center gap-1 min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-red-800 ${FOCUS_RING}`}
-                  >
-                    <UserMinus size={14} aria-hidden="true" /> Revoke access
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setTargetScope(m.scope)
+                        setChangeTarget(m)
+                      }}
+                      className={`min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 ${FOCUS_RING}`}
+                    >
+                      Change scope
+                    </button>
+                    <button
+                      onClick={() => setConfirm({ kind: 'member', id: m.id, version: m.version, name: memberName(m) })}
+                      className={`flex items-center gap-1 min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-red-800 ${FOCUS_RING}`}
+                    >
+                      <UserMinus size={14} aria-hidden="true" /> Revoke access
+                    </button>
+                  </>
                 )}
               </div>
             </li>
@@ -427,6 +464,51 @@ export default function AgencyTeamPage() {
                 {confirm.kind === 'member' ? 'Revoke access' : 'Revoke invitation'}
               </button>
               <button onClick={() => setConfirm(null)} disabled={busy} className={`min-h-[44px] rounded-xl border border-slate-300 px-4 text-sm font-semibold ${FOCUS_RING}`}>
+                Keep
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {changeTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="change-scope-title"
+            onKeyDown={(e) => e.key === 'Escape' && !busy && setChangeTarget(null)}
+            className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-xl"
+          >
+            <h2 id="change-scope-title" className="text-lg font-bold text-slate-900">Change access scope</h2>
+            <p className="text-sm text-slate-700">
+              Update the access scope for {memberName(changeTarget)}. The new scope applies immediately.
+            </p>
+            <div>
+              <label htmlFor="change-scope" className="block text-sm font-medium text-slate-800">Access scope</label>
+              <select
+                id="change-scope"
+                name="change-scope"
+                autoFocus
+                value={targetScope}
+                onChange={(e) => setTargetScope(e.target.value as MembershipScope)}
+                className={`mt-1 w-full min-h-[44px] rounded-xl border border-slate-300 px-3 ${FOCUS_RING}`}
+              >
+                {SCOPES.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-600">{SCOPE_HELP[targetScope]}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleChangeScope}
+                disabled={busy || targetScope === changeTarget.scope}
+                className={`min-h-[44px] flex-1 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white disabled:opacity-60 ${FOCUS_RING}`}
+              >
+                Save
+              </button>
+              <button onClick={() => setChangeTarget(null)} disabled={busy} className={`min-h-[44px] rounded-xl border border-slate-300 px-4 text-sm font-semibold ${FOCUS_RING}`}>
                 Keep
               </button>
             </div>

@@ -247,4 +247,112 @@ describe('AgencyTeamPage', () => {
         expect(h.toastError).toHaveBeenCalledWith('An invitation is already pending for this person. Revoke it to send a new one.')
         expect(q('[data-testid="team-share-code"]')).toBeNull()
     })
+
+    it('change scope dialog names the member, offers the four staff scopes and preselects the current one', async () => {
+        await mountPage()
+        await click(buttons(/Change scope/)[0])
+        const dialog = q('[role="dialog"]') as HTMLElement
+        expect(dialog.getAttribute('aria-modal')).toBe('true')
+        expect(dialog.getAttribute('aria-labelledby')).toBe('change-scope-title')
+        expect(dialog.textContent).toContain('Change access scope')
+        expect(dialog.textContent).toContain('ravi@example.com')
+        const select = q('select[name="change-scope"]') as HTMLSelectElement
+        expect(Array.from(select.options).map((o) => o.value)).toEqual(['dispatcher', 'fleet_manager', 'finance', 'viewer'])
+        expect(select.value).toBe('dispatcher')
+        expect(dialog.textContent).toContain('Reserve vehicles and drivers, manage jobs')
+        await type(select, 'finance')
+        expect(dialog.textContent).toContain('Manage clients and publish tariffs')
+        expect(dialog.textContent).not.toContain('Reserve vehicles and drivers, manage jobs')
+    })
+
+    it('Save stays disabled until a different scope is chosen; Keep and Escape close without calling', async () => {
+        h.changeScope.mockResolvedValue({ ok: true, state: 'changed', membership: { ...MEMBER, scope: 'fleet_manager', version: 3 } })
+        await mountPage()
+        await click(buttons(/Change scope/)[0])
+        const dialog = q('[role="dialog"]') as HTMLElement
+        const save = Array.from(dialog.querySelectorAll('button')).find((b) => /Save/.test(b.textContent || '')) as HTMLButtonElement
+        expect(save.disabled).toBe(true)
+        await type(q('select[name="change-scope"]') as HTMLSelectElement, 'fleet_manager')
+        expect(save.disabled).toBe(false)
+        await click(Array.from(dialog.querySelectorAll('button')).find((b) => /Keep/.test(b.textContent || '')) as HTMLButtonElement)
+        expect(h.changeScope).not.toHaveBeenCalled()
+        expect(q('[role="dialog"]')).toBeNull()
+        await click(buttons(/Change scope/)[0])
+        const reopened = q('[role="dialog"]') as HTMLElement
+        await act(async () => {
+            reopened.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+            await new Promise((r) => setTimeout(r, 0))
+        })
+        expect(q('[role="dialog"]')).toBeNull()
+        expect(h.changeScope).not.toHaveBeenCalled()
+    })
+
+    it('Save sends the membership, the chosen scope and the expected version, then closes and refetches once', async () => {
+        h.changeScope.mockResolvedValue({ ok: true, state: 'changed', membership: { ...MEMBER, scope: 'fleet_manager', version: 3 } })
+        await mountPage()
+        const before = h.listMembers.mock.calls.length
+        await click(buttons(/Change scope/)[0])
+        await type(q('select[name="change-scope"]') as HTMLSelectElement, 'fleet_manager')
+        await click(Array.from((q('[role="dialog"]') as HTMLElement).querySelectorAll('button')).find((b) => /Save/.test(b.textContent || '')) as HTMLButtonElement)
+        expect(h.changeScope).toHaveBeenCalledTimes(1)
+        expect(h.changeScope).toHaveBeenCalledWith('mem-1', 'fleet_manager', 2)
+        expect(h.toastSuccess).toHaveBeenCalledTimes(1)
+        expect(h.toastSuccess).toHaveBeenCalledWith('Access scope updated')
+        expect(q('[role="dialog"]')).toBeNull()
+        expect(h.listMembers.mock.calls.length).toBe(before + 1)
+    })
+
+    it('an unchanged scope reports "already set" and still closes and refetches once', async () => {
+        h.changeScope.mockResolvedValue({ ok: true, state: 'unchanged', membership: MEMBER })
+        await mountPage()
+        const before = h.listMembers.mock.calls.length
+        await click(buttons(/Change scope/)[0])
+        await type(q('select[name="change-scope"]') as HTMLSelectElement, 'finance')
+        await click(Array.from((q('[role="dialog"]') as HTMLElement).querySelectorAll('button')).find((b) => /Save/.test(b.textContent || '')) as HTMLButtonElement)
+        expect(h.toastSuccess).toHaveBeenCalledTimes(1)
+        expect(h.toastSuccess).toHaveBeenCalledWith('Access scope is already set')
+        expect(q('[role="dialog"]')).toBeNull()
+        expect(h.listMembers.mock.calls.length).toBe(before + 1)
+    })
+
+    it('a change-scope version conflict shows one message and exactly one extra listMembers call', async () => {
+        h.changeScope.mockResolvedValue({
+            ok: false,
+            error: 'version_conflict',
+            currentVersion: 5,
+            message: 'This record changed. Reload to continue.',
+        })
+        await mountPage()
+        const before = h.listMembers.mock.calls.length
+        await click(buttons(/Change scope/)[0])
+        await type(q('select[name="change-scope"]') as HTMLSelectElement, 'viewer')
+        await click(Array.from((q('[role="dialog"]') as HTMLElement).querySelectorAll('button')).find((b) => /Save/.test(b.textContent || '')) as HTMLButtonElement)
+        expect(h.changeScope).toHaveBeenCalledTimes(1)
+        expect(h.toastError).toHaveBeenCalledTimes(1)
+        expect(h.toastError).toHaveBeenCalledWith('This record changed. Reload to continue.')
+        expect(q('[role="dialog"]')).toBeNull()
+        expect(h.listMembers.mock.calls.length).toBe(before + 1)
+    })
+
+    it('a thrown change-scope error surfaces the fallback message and still closes and refetches once', async () => {
+        h.changeScope.mockRejectedValue(new UserFacingError('Failed to change access scope'))
+        await mountPage()
+        const before = h.listMembers.mock.calls.length
+        await click(buttons(/Change scope/)[0])
+        await type(q('select[name="change-scope"]') as HTMLSelectElement, 'viewer')
+        await click(Array.from((q('[role="dialog"]') as HTMLElement).querySelectorAll('button')).find((b) => /Save/.test(b.textContent || '')) as HTMLButtonElement)
+        expect(h.changeScope).toHaveBeenCalledTimes(1)
+        expect(h.toastError).toHaveBeenCalledTimes(1)
+        expect(h.toastError).toHaveBeenCalledWith('Failed to change access scope')
+        expect(q('[role="dialog"]')).toBeNull()
+        expect(h.listMembers.mock.calls.length).toBe(before + 1)
+    })
+
+    it('revoked members have no Change scope or Revoke access button', async () => {
+        h.listMembers.mockResolvedValue([{ ...MEMBER, id: 'mem-9', user_id: 'user-9', status: 'revoked', invitation_id: null }])
+        await mountPage()
+        expect(buttons(/Change scope/)).toHaveLength(0)
+        expect(buttons(/Revoke access/)).toHaveLength(0)
+        expect(text()).toContain('Revoked')
+    })
 })

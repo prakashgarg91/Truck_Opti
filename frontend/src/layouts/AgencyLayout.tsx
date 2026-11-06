@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Truck, Briefcase,
-  LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign, UserCog
+  LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign, UserCog, Handshake
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -21,6 +21,7 @@ const NAV = [
 // Desktop sidebar only: the six-item bottom bar has no room for more tabs at 390px.
 const MORE_NAV = [
   { to: '/agency/team', icon: UserCog, label: 'Team' },
+  { to: '/agency/clients', icon: Handshake, label: 'Clients' },
 ]
 
 export default function AgencyLayout() {
