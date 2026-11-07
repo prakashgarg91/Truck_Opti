@@ -1,0 +1,27 @@
+{"ts":"2026-11-07T02:27:34.030Z","project":"truck-opti","task":"z-truck-test-agency-rates","kind":"zcode-test","outcome":"FAILED","attempts":3,"mins":655,"reason":"DEAD"}
+{"ts":"2026-11-07T02:27:34.033Z","project":"truck-opti","task":"z-truck-test-agency-register","kind":"zcode-test","outcome":"FAILED","attempts":3,"mins":654,"reason":"DEAD"}
+{"ts":"2026-11-07T02:27:34.033Z","project":"truck-opti","task":"z-truck-test-driver-earnings","kind":"zcode-test","outcome":"FAILED","attempts":3,"mins":656,"reason":"DEAD"}
+{"ts":"2026-11-07T03:35:28.778Z","project":"truck-opti","task":"z-truck-test-driver-history","kind":"zcode-test","outcome":"FAILED","attempts":3,"mins":62,"reason":"DEAD"}
+{"ts":"2026-11-07T04:11:07.686Z","project":"truck-opti","task":"z-truck-test-driver-profile","kind":"zcode-test","outcome":"LANDED","attempts":3,"mins":35}
+{"ts":"2026-11-07T04:11:21.619Z","project":"truck-opti","task":"z-truck-test-driver-register","kind":"zcode-test","outcome":"LANDED","attempts":3,"mins":35}
+{"ts":"2026-11-07T04:11:36.802Z","project":"truck-opti","task":"z-truck-test-admin-users","kind":"zcode-test","outcome":"LANDED","attempts":1,"mins":32}
+{"ts":"2026-11-07T04:12:24.747Z","project":"truck-opti","task":"z-truck-test-admin-dashboard","kind":"zcode-test","outcome":"LANDED","attempts":2,"mins":35}
+{"ts":"2026-11-07T04:14:37.336Z","project":"truck-opti","task":"z-truck-test-agency-jobs","kind":"zcode-test","outcome":"LANDED","attempts":2,"mins":1}
+{"ts":"2026-11-07T04:14:45.632Z","project":"truck-opti","task":"z-truck-test-agency-rates","kind":"zcode-test","outcome":"LANDED","attempts":2,"mins":655}
+{"ts":"2026-11-07T04:14:55.958Z","project":"truck-opti","task":"z-truck-test-agency-billing","kind":"zcode-test","outcome":"LANDED","attempts":2,"mins":6}
+{"ts":"2026-11-07T04:15:34.453Z","project":"truck-opti","task":"z-truck-test-agency-profile","kind":"zcode-test","outcome":"LANDED","attempts":2,"mins":6}
+{"ts":"2026-11-07T04:15:54.665Z","project":"truck-opti","task":"z-truck-test-agency-register","kind":"zcode-test","outcome":"LANDED","attempts":2,"mins":654}
+{"ts":"2026-11-07T04:16:19.456Z","project":"truck-opti","task":"z-truck-test-driver-earnings","kind":"zcode-test","outcome":"LANDED","attempts":2,"mins":656}
+{"ts":"2026-11-07T04:17:19.738Z","project":"truck-opti","task":"z-truck-test-driver-history","kind":"zcode-test","outcome":"LANDED","attempts":2,"mins":62}
+{"ts":"2026-11-07T04:19:11.627Z","project":"truck-opti","task":"z-truck-test-admin-subscriptions","kind":"zcode-test","outcome":"LANDED","attempts":1,"mins":6}
+{"ts":"2026-11-07T04:19:48.335Z","project":"truck-opti","task":"z-truck-test-agency-billing","kind":"zcode-test","outcome":"REJECTED","attempts":3,"mins":3,"reason":"no changes (worker produced nothing)"}
+{"ts":"2026-11-07T04:20:17.790Z","project":"truck-opti","task":"z-truck-test-admin-payouts","kind":"zcode-test","outcome":"LANDED","attempts":1,"mins":9}
+{"ts":"2026-11-07T04:43:32.903Z","project":"truck-opti","task":"z-truck-test-admin-agencies","kind":"zcode-test","outcome":"LANDED","attempts":3,"mins":25}
+{"ts":"2026-11-07T04:43:50.002Z","project":"truck-opti","task":"z-truck-test-shipment-history","kind":"zcode-test","outcome":"LANDED","attempts":1,"mins":24}
+{"ts":"2026-11-07T04:43:50.721Z","project":"truck-opti","task":"z-truck-doc-agency-guide","kind":"zcode-docs","outcome":"LANDED","attempts":1,"mins":22}
+{"ts":"2026-11-07T04:44:22.403Z","project":"truck-opti","task":"z-truck-doc-driver-guide","kind":"zcode-docs","outcome":"LANDED","attempts":1,"mins":21}
+{"ts":"2026-11-07T04:44:23.140Z","project":"truck-opti","task":"z-truck-doc-deploy-runbook","kind":"zcode-docs","outcome":"LANDED","attempts":1,"mins":22}
+{"ts":"2026-11-07T05:12:13.096Z","project":"truck-opti","task":"z-truck-doc-changelog","kind":"zcode-docs","outcome":"LANDED","attempts":1,"mins":29}
+{"ts":"2026-11-07T05:12:13.765Z","project":"truck-opti","task":"z-truck-doc-landing-copy","kind":"zcode-docs","outcome":"LANDED","attempts":1,"mins":28}
+{"ts":"2026-11-07T05:12:14.364Z","project":"truck-opti","task":"z-truck-doc-sales-checklist","kind":"zcode-docs","outcome":"LANDED","attempts":1,"mins":27}
+{"ts":"2026-11-07T05:12:35.010Z","project":"truck-opti","task":"z-truck-doc-support","kind":"zcode-docs","outcome":"LANDED","attempts":1,"mins":27}
