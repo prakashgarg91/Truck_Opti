@@ -59,5 +59,26 @@ for (const [slug, file, brief] of docs) {
   })
 }
 
+
+// ---- wave 2: replace the legacy Edge write paths (launch blocker) --------------------
+tasks.push({
+  id: 'z-truck-w2-rpc-wrappers',
+  title: 'service wrappers: job status, driver and truck assignment through database commands',
+  kind: 'zcode-ui',
+  priority: 2,
+  allow: ['frontend/src/services/agencyPortalApi.ts', 'frontend/src/services/agencyPortalApi.test.ts'],
+  brief: `Four methods of frontend/src/services/agencyPortalApi.ts still call Supabase Edge functions that write with the service role: agencyJobsApi.updateStatus(jobId,status) and agencyJobsApi.assignDriver(jobId,driverId) (Edge agency-portal-jobs), agencyDriversApi.assignTruckToDriver(truckId,driverId) and agencyDriversApi.unassignTruck(truckId) (Edge agency-portal-drivers). The Edge write actions are being deleted. Re-implement ONLY those four methods on top of new database commands. KEEP the method names, parameters and return type Promise<void> so no page changes; on any failure throw UserFacingError carrying the user-facing message. Do NOT touch createPayout, the list/snapshot methods or any other method.
+
+Database contract (new SECURITY DEFINER RPCs, all return jsonb; business refusals are {ok:false,error:'<code>'}, controlled problems are thrown exceptions with fixed texts; call supabase.rpc as a METHOD of the client, never detached, see how frontend/src/services/agencyOrganizationApi.ts does it with a local cast helper because the generated types do not know these functions yet):
+1. rpc('agency_job_set_status', { p_job_id, p_status }) -> {ok:true,state:'updated'|'unchanged',job} or {ok:false,error:'invalid_transition'}.
+2. rpc('agency_job_assign_driver', { p_job_id, p_driver_id }) -> {ok:true,state:'assigned'|'unchanged',job} or {ok:false,error:'job_not_assignable'|'driver_not_approved'|'driver_not_employed'|'job_has_reservation'}.
+3. rpc('agency_truck_assign_driver', { p_truck_id, p_driver_id, p_expected_version }) -> {ok:true,state:'assigned'|'unchanged',truck,version} or {ok:false,error:'version_conflict'|'driver_not_employed'|'driver_already_assigned'}.
+4. rpc('agency_truck_unassign_driver', { p_truck_id, p_expected_version }) -> {ok:true,state:'unassigned'|'unchanged'} or {ok:false,error:'version_conflict'}.
+Because the page methods do not carry a version, for methods 3 and 4 FIRST read the truck's current version with supabase.from('agency_trucks').select('version').eq('id', truckId).maybeSingle() (explicit column list, called as a client method), throw UserFacingError('Vehicle not found or access denied.') when no row, then call the RPC with that version; a version_conflict result becomes UserFacingError('This vehicle was updated elsewhere. Reload and try again.').
+Message map for refusals (UserFacingError texts): invalid_transition -> 'This job cannot move to that status from its current one.'; job_not_assignable -> 'Only pending or accepted jobs can be given a driver.'; driver_not_approved -> 'This driver is not approved yet.'; driver_not_employed -> 'This driver is not employed by your agency. Add the driver in Drivers first.'; job_has_reservation -> 'This job already has a vehicle and driver reserved. Release the reservation first.'; driver_already_assigned -> 'This driver is already assigned to another truck.'. Controlled exception texts that may be shown verbatim: 'Job not found or access denied.', 'Unknown job status.', 'Your access scope does not allow this action.', 'Agency approval is required.', 'No agency profile found for this account.', 'Vehicle not found or access denied.'. Anything else collapses to the old fallbacks ('Failed to update job status', 'Failed to assign driver', 'Failed to assign truck', 'Failed to unassign truck') and is logged through the existing reportFunctionFailure or logger the file already uses.
+Tests: edit frontend/src/services/agencyPortalApi.test.ts: REPLACE the existing tests of these four methods that expect supabase.functions.invoke with tests of the new behaviour (rpcMock and fromMock exist in that file; make the mock enforce that rpc/from are called as methods of the client like agencyOrganizationApi.test.ts does). Cover every refusal code and message above, the version read-then-call, the not-found vehicle, and that nothing calls functions.invoke for these four methods any more. Keep every other existing test untouched and green.`,
+  check: 'cd frontend && npx vitest run src/services/agencyPortalApi.test.ts',
+});
+
 writeFileSync(new URL('./tasks.json', import.meta.url), JSON.stringify(tasks, null, 2))
 console.log(tasks.length, 'tasks written')
