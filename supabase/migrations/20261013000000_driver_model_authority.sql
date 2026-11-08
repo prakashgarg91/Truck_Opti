@@ -289,6 +289,26 @@ BEGIN
     WHERE r.agency_job_id = p_agency_job_id
       AND r.status = 'active'
   ) THEN
+    SELECT * INTO v_existing
+    FROM public.fleet_assignment_reservations
+    WHERE agency_id = v_agency_id
+      AND idempotency_key = p_idempotency_key;
+
+    IF FOUND
+       AND v_existing.agency_job_id = p_agency_job_id
+       AND v_existing.job_offer_id = p_job_offer_id
+       AND v_existing.vehicle_id = p_vehicle_id
+       AND v_existing.driver_employment_id = p_driver_employment_id
+       AND v_existing.window_start = p_window_start
+       AND v_existing.window_end = p_window_end THEN
+      RETURN jsonb_build_object(
+        'ok', true,
+        'state', 'idempotent_replay',
+        'reservation', to_jsonb(v_existing),
+        'version', v_existing.version
+      );
+    END IF;
+
     RETURN jsonb_build_object('ok', false, 'error', 'agency_job_already_assigned');
   END IF;
 

@@ -24,6 +24,33 @@
 -- Payout creation (agency-portal-drivers create-payout) is money code and stays on its
 -- own task; it is NOT changed here.
 
+-- Found by the real-PostgreSQL race test (scripts/race, R6): "a driver holds at most one truck" was
+-- only an unlocked EXISTS check (in the command and in the truck trigger), so two concurrent
+-- assignments to different trucks both succeeded. The unique index is the backstop; the
+-- command turns its violation into the typed result.
+DO $idx$
+DECLARE
+  v_dupes text;
+BEGIN
+  SELECT string_agg(d.driver_id::text, ', ')
+    INTO v_dupes
+  FROM (
+    SELECT driver_id FROM public.agency_trucks
+    WHERE driver_id IS NOT NULL
+    GROUP BY driver_id
+    HAVING count(*) > 1
+  ) d;
+
+  IF v_dupes IS NOT NULL THEN
+    RAISE EXCEPTION 'Duplicate driver truck links block the unique index: %', v_dupes;
+  END IF;
+END
+$idx$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS agency_trucks_one_truck_per_driver
+  ON public.agency_trucks (driver_id)
+  WHERE driver_id IS NOT NULL;
+
 CREATE OR REPLACE FUNCTION public.agency_job_set_status(p_job_id uuid, p_status text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -184,10 +211,20 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'driver_already_assigned');
   END IF;
 
-  UPDATE public.agency_trucks
-  SET driver_id = p_driver_id
-  WHERE id = p_truck_id
-  RETURNING * INTO v_updated;
+  BEGIN
+    UPDATE public.agency_trucks
+    SET driver_id = p_driver_id
+    WHERE id = p_truck_id
+    RETURNING * INTO v_updated;
+  EXCEPTION
+    WHEN unique_violation THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'driver_already_assigned');
+    WHEN raise_exception THEN
+      IF SQLERRM IN ('Driver is already assigned to another truck.', 'Driver is already assigned to another agency.') THEN
+        RETURN jsonb_build_object('ok', false, 'error', 'driver_already_assigned');
+      END IF;
+      RAISE;
+  END;
 
   RETURN jsonb_build_object('ok', true, 'state', 'assigned', 'truck', to_jsonb(v_updated), 'version', v_updated.version);
 END;

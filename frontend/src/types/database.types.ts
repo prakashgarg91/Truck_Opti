@@ -844,6 +844,19 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"expiry_sweep_runs": {
+                  Row: {
+                    "as_of": string,"driver_invitations_expired": number,"error": string | null,"id": string,"invitations_expired": number,"ran_at": string,"reservations_released": number
+                  }
+                  Insert: {
+                    "as_of": string,"driver_invitations_expired"?: number,"error"?: string | null,"id"?: string,"invitations_expired"?: number,"ran_at"?: string,"reservations_released"?: number
+                  }
+                  Update: {
+                    "as_of"?: string,"driver_invitations_expired"?: number,"error"?: string | null,"id"?: string,"invitations_expired"?: number,"ran_at"?: string,"reservations_released"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
                 }
           }
           Views: {
@@ -1001,6 +1014,9 @@ isOneToOne: false
                            },
 "agency_truck_unassign_driver":
 { Args: { "p_expected_version": number,"p_truck_id": string }; Returns: Json
+                           },
+"run_expiry_sweeps":
+{ Args: { "p_as_of"?: string }; Returns: Json
                            }
           }
           Enums: {
