@@ -80,5 +80,25 @@ Tests: edit frontend/src/services/agencyPortalApi.test.ts: REPLACE the existing 
   check: 'cd frontend && npx vitest run src/services/agencyPortalApi.test.ts',
 });
 
+
+tasks.push({
+  id: 'z-truck-w2-payout-wrapper',
+  deps: ['z-truck-w2-rpc-wrappers'],
+  title: 'agency payout request through the database command',
+  kind: 'zcode-ui',
+  priority: 2,
+  allow: ['frontend/src/services/agencyPortalApi.ts', 'frontend/src/services/agencyPortalApi.test.ts', 'frontend/src/pages/AgencyDriversPage.tsx'],
+  brief: `agencyDriversApi.createPayout(driverId, amount, note?) in frontend/src/services/agencyPortalApi.ts still calls the Edge function agency-portal-drivers action create-payout, which is being deleted. Re-implement ONLY that method on the new database command and update the one page that calls it. Do NOT touch any other method.
+
+Database contract: supabase.rpc('agency_driver_payout_request', { p_driver_id, p_amount, p_note, p_idempotency_key }) returns jsonb: {ok:true,state:'created'|'idempotent_replay',payout:{id,amount,status,requested_at}} or {ok:false,error:'driver_not_approved'|'driver_not_employed'|'idempotency_key_reused'}. Controlled exceptions with FIXED texts that may be shown verbatim: 'Idempotency key is required.', 'Payout amount must be greater than zero.', 'Payout amount must have at most two decimal places.', 'Payout amount exceeds the per-request limit.', 'Payout note is too long.', 'Your access scope does not allow this action.', 'Agency approval is required.', 'No agency profile found for this account.'. Call supabase.rpc as a METHOD of the client (never detached) with the same local cast helper style used by the other RPC wrappers in that file because the generated types may not list the function.
+
+Service: new signature createPayout(driverId: string, amount: number, note: string | undefined, idempotencyKey: string): Promise<void>. Refusal messages (UserFacingError): driver_not_approved -> 'This driver is not approved yet.'; driver_not_employed -> 'This driver is not employed by your agency. Add the driver in Drivers first.'; idempotency_key_reused -> 'This payment request was already used for different details. Start again.'. state idempotent_replay is a success. Anything else collapses to 'Failed to submit payment request' and is logged like the other methods in the file.
+
+Page frontend/src/pages/AgencyDriversPage.tsx handlePayDriver (around line 160): keep one idempotency key per payment dialog OPEN: create it with crypto.randomUUID() when the pay modal opens (a useRef, reset to null when the modal closes or the request succeeds), pass it to createPayout, and on failure keep the same key so a retry is safe. Show the thrown UserFacingError message in the error toast instead of the fixed 'Payment failed' when it is a UserFacingError (use the toUserFacingErrorMessage helper already imported in that file). Validate in the page: amount at least 1, at most two decimals (message 'Enter an amount with at most two decimals'). Change nothing else on the page.
+
+Tests: edit frontend/src/services/agencyPortalApi.test.ts: replace the existing createPayout tests (they expect functions.invoke) with tests of the new behaviour (rpcMock exists; keep the method-binding guard style used by the neighbouring wrapper tests), covering created, replay, each refusal code and message, the controlled exception texts, argument mapping (p_note undefined -> null), and that functions.invoke is no longer used. All other tests stay untouched and green.`,
+  check: 'cd frontend && npx vitest run src/services/agencyPortalApi.test.ts',
+})
+
 writeFileSync(new URL('./tasks.json', import.meta.url), JSON.stringify(tasks, null, 2))
 console.log(tasks.length, 'tasks written')

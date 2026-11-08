@@ -33,6 +33,10 @@ check('W7. agency-portal-drivers never writes agency_trucks', !/agency_trucks'\)
 check('W8. agency-portal-drivers keeps the read-only snapshot action', /'snapshot'/.test(drivers))
 check('W9. the removed actions answer with a clear "moved" refusal, not a silent success', /moved to database commands/i.test(jobs) && /moved to database commands/i.test(drivers))
 
+check('W10. agency-portal-drivers no longer creates payouts (agency_driver_payout_request replaces create-payout)', !/'create-payout'/.test(drivers) && !/driver_payouts/.test(drivers))
+const portalFunctions = ['agency-portal-jobs', 'agency-portal-drivers', 'agency-portal-fleet', 'agency-portal-rates', 'agency-portal-billing', 'agency-portal-dashboard']
+check('W11. no agency-portal-* Edge function touches driver_payouts', portalFunctions.every((n) => !/driver_payouts/.test(read(`supabase/functions/${n}/index.ts`))))
+
 const failed = results.filter((r) => !r.pass)
 console.log(`\n${results.length - failed.length}/${results.length} cases passed (static Edge source check)`)
 process.exit(failed.length ? 1 : 0)
