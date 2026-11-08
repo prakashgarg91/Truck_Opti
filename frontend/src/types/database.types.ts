@@ -1017,6 +1017,9 @@ isOneToOne: false
                            },
 "run_expiry_sweeps":
 { Args: { "p_as_of"?: string }; Returns: Json
+                           },
+"agency_driver_payout_request":
+{ Args: { "p_amount": number,"p_driver_id": string,"p_idempotency_key": string,"p_note": string }; Returns: Json
                            }
           }
           Enums: {

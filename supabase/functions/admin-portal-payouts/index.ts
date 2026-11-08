@@ -76,12 +76,17 @@ serve(async (req) => {
           processed_at: new Date().toISOString(),
         })
         .eq('id', body.payoutId)
+        .eq('status', 'pending')
         .select('*, drivers(full_name, phone)')
-        .single()
+        .maybeSingle()
 
       if (error) {
         console.error('Failed to approve payout', error)
         throw new RequestError('Unable to approve payout.', 500, false)
+      }
+
+      if (!data) {
+        throw new RequestError('Only a pending payout can be approved.', 409)
       }
 
       return jsonResponse({ payout: data })
@@ -92,16 +97,21 @@ serve(async (req) => {
         .from('driver_payouts')
         .update({
           status: 'rejected',
-          note: body.rejectionNote,
+          rejection_note: body.rejectionNote,
           processed_at: new Date().toISOString(),
         })
         .eq('id', body.payoutId)
+        .eq('status', 'pending')
         .select('*, drivers(full_name, phone)')
-        .single()
+        .maybeSingle()
 
       if (error) {
         console.error('Failed to reject payout', error)
         throw new RequestError('Unable to reject payout.', 500, false)
+      }
+
+      if (!data) {
+        throw new RequestError('Only a pending payout can be rejected.', 409)
       }
 
       return jsonResponse({ payout: data })
@@ -114,12 +124,17 @@ serve(async (req) => {
         processed_at: new Date().toISOString(),
       })
       .eq('id', body.payoutId)
+      .eq('status', 'approved')
       .select('*, drivers(full_name, phone)')
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Failed to mark payout as paid', error)
       throw new RequestError('Unable to mark payout as paid.', 500, false)
+    }
+
+    if (!data) {
+      throw new RequestError('Only an approved payout can be marked as paid.', 409)
     }
 
     return jsonResponse({ payout: data })

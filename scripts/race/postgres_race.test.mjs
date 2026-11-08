@@ -17,6 +17,8 @@
  *   R4 end vs reserve               agency_driver_employment_end races reserve for the employment
  *   R5 release vs re-reserve        release of reservation A races a new reserve for job B
  *   R6 truck pairing race           same driver assigned to two trucks at once
+ *   R7 payout same-key race         two owner sessions, same key, identical args (agency_driver_payout_request)
+ *   R8 payout same-key different    two owner sessions, same key, different amounts
  *
  * Usage:  node scripts/race/postgres_race.test.mjs            (from the repo root)
  *         RACE_ITERATIONS=30 node scripts/race/postgres_race.test.mjs
@@ -115,8 +117,8 @@ async function createCustomer(userId) {
   return id
 }
 
-/** Approved driver with an ACTIVE employment at the agency, licence valid to 2030. */
-async function freshDriver() {
+/** Approved driver with an ACTIVE employment at the agency (default: the shared race agency), licence valid to 2030. */
+async function freshDriver(atAgency = agencyId) {
   const k = next()
   const userId = await createUser('race-drv')
   const driverId = randomUUID()
@@ -129,7 +131,7 @@ async function freshDriver() {
   await q(
     `INSERT INTO public.agency_driver_employment (id, agency_id, driver_id, licence_number, licence_class, licence_expiry, status)
      VALUES ($1, $2, $3, $4, 'HGV', '2030-01-01', 'active')`,
-    [employmentId, agencyId, driverId, `DL-RACE-${k}`]
+    [employmentId, atAgency, driverId, `DL-RACE-${k}`]
   )
   return { userId, driverId, employmentId }
 }
@@ -449,6 +451,83 @@ async function r6(open) {
   return { label: pairLabel(a, b), violations }
 }
 
+/**
+ * Owner and agency for one payout iteration. A fresh agency per iteration keeps the
+ * per-agency daily limit (100 requests, 2000000.00) out of the race: only the race is measured.
+ */
+async function freshPayoutAgency() {
+  const ownerId = await createUser('race-payout-owner')
+  const agency = await createAgency(ownerId, 'Race Payout')
+  return { ownerId, agency }
+}
+
+const PAYOUT_SQL = `SELECT public.agency_driver_payout_request($1::uuid, $2::numeric, $3::text, $4::text) AS r`
+
+async function requestPayout(conn, driverId, amount, note, key) {
+  const r = await conn.query(PAYOUT_SQL, [driverId, amount, note, key])
+  return parseJson(r.rows[0].r)
+}
+
+async function payoutRowsForKey(agency, key) {
+  return (await oneRow(`SELECT count(*)::int AS n FROM public.driver_payouts WHERE agency_id = $1 AND idempotency_key = $2`, [agency, key])).n
+}
+
+/** R7: the same owner, the same key and identical arguments, from two connections at once. */
+async function r7(open) {
+  const { ownerId, agency } = await freshPayoutAgency()
+  const d = await freshDriver(agency)
+  const key = `r7-${randomUUID()}`
+  const note = `R7 ${key}`
+  const cA = await open(ownerId)
+  const cB = await open(ownerId)
+  const { a, b } = await fireTogether(
+    () => requestPayout(cA, d.driverId, '125.50', note, key),
+    () => requestPayout(cB, d.driverId, '125.50', note, key)
+  )
+  const violations = []
+  const states = [a, b].map((o) => (o.kind === 'ok' ? o.state : null)).sort()
+  if (!(a.kind === 'ok' && b.kind === 'ok')) {
+    violations.push(`both calls must return ok:true, got A=${a.label} B=${b.label}`)
+  } else {
+    if (JSON.stringify(states) !== JSON.stringify(['created', 'idempotent_replay'])) {
+      violations.push(`expected states [created, idempotent_replay], got ${JSON.stringify(states)}`)
+    }
+    if (a.value.payout.id !== b.value.payout.id) violations.push('the two calls returned different payout ids')
+  }
+  const n = await payoutRowsForKey(agency, key)
+  if (n !== 1) violations.push(`expected exactly one payout row for (agency, key), found ${n}`)
+  const label = a.kind === 'ok' && b.kind === 'ok' ? `both ok: ${states.join(' + ')}` : pairLabel(a, b)
+  return { label, violations }
+}
+
+/** R8: the same owner and key, different amounts, from two connections at once. */
+async function r8(open) {
+  const { ownerId, agency } = await freshPayoutAgency()
+  const d = await freshDriver(agency)
+  const key = `r8-${randomUUID()}`
+  const cA = await open(ownerId)
+  const cB = await open(ownerId)
+  const { a, b } = await fireTogether(
+    () => requestPayout(cA, d.driverId, '100.00', `R8a ${key}`, key),
+    () => requestPayout(cB, d.driverId, '200.00', `R8b ${key}`, key)
+  )
+  const violations = []
+  const oks = [a, b].filter((o) => o.kind === 'ok')
+  if (oks.length !== 1) {
+    violations.push(`expected exactly one ok:true, got A=${a.label} B=${b.label}`)
+  } else {
+    const winner = a.kind === 'ok' ? a : b
+    const loser = a.kind === 'ok' ? b : a
+    if (winner.state !== 'created') violations.push(`winner state ${winner.state}, expected created`)
+    if (!(loser.kind === 'refused' && loser.code === 'idempotency_key_reused')) {
+      violations.push(`loser ${loser.label}, expected refused:idempotency_key_reused`)
+    }
+  }
+  const n = await payoutRowsForKey(agency, key)
+  if (n !== 1) violations.push(`expected exactly one payout row for (agency, key), found ${n}`)
+  return { label: pairLabel(a, b), violations }
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -470,6 +549,8 @@ async function main() {
     results.push(await runScenario('R4', 'end employment vs reserve (same employment)', r4))
     results.push(await runScenario('R5', 'release reservation A vs re-reserve for job B', r5))
     results.push(await runScenario('R6', 'truck pairing race (same driver, two trucks)', r6))
+    results.push(await runScenario('R7', 'payout same-key race (same owner, same key, identical arguments)', r7))
+    results.push(await runScenario('R8', 'payout same-key race (same owner, same key, different amounts)', r8))
 
     const r4Result = results.find((r) => r.id === 'R4')
     const endWon = [...r4Result.distribution.entries()].filter(([label]) => label.startsWith('end won')).reduce((n, [, c]) => n + c, 0)

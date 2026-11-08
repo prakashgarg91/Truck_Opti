@@ -308,8 +308,8 @@ export default function AdminPayoutsPage() {
                             {'Completed'}
                           </span>
                         )}
-                        {payout.status === 'rejected' && payout.note && (
-                          <span className="text-sm text-gray-500 dark:text-gray-400" title={payout.note}>
+                        {payout.status === 'rejected' && (payout.rejection_note ?? payout.note) && (
+                          <span className="text-sm text-gray-500 dark:text-gray-400" title={payout.rejection_note ?? payout.note ?? undefined}>
                             <AlertTriangle className="w-4 h-4 inline mr-1" />
                             {'Reason provided'}
                           </span>

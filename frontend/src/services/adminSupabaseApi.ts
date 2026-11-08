@@ -30,6 +30,8 @@ export interface DriverPayout {
     requested_at: string
     processed_at: string | null
     note: string | null
+    /** why an admin rejected the payout (kept separate from the requester's note) */
+    rejection_note?: string | null
     drivers: {
         full_name: string
         phone: string
