@@ -191,9 +191,9 @@ function stubDownload() {
     urlAny.revokeObjectURL = (u: string) => {
         revoked.push(u)
     }
-    let anchor: HTMLAnchorElement | null = null
+    const anchors: HTMLAnchorElement[] = []
     const spy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-        anchor = this
+        anchors.push(this)
     })
     const restore = () => {
         spy.mockRestore()
@@ -202,7 +202,7 @@ function stubDownload() {
         if (origRevoke === undefined) delete urlAny.revokeObjectURL
         else urlAny.revokeObjectURL = origRevoke
     }
-    return { blobs, revoked, getAnchor: () => anchor, restore }
+    return { blobs, revoked, getAnchor: () => anchors[anchors.length - 1] ?? null, restore }
 }
 
 describe('AdminDriversPage', () => {
