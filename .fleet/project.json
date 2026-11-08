@@ -13,7 +13,8 @@
       "engine": "zcode",
       "template": ".fleet/templates/test.md",
       "gates": [
-        "cd frontend && npx tsc --noEmit"
+        "cd frontend && npx tsc --noEmit",
+        "cd frontend && npx eslint src --max-warnings 0"
       ],
       "autoLand": true
     },
