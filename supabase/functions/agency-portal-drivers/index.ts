@@ -2,7 +2,6 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import {
   assertApprovedAgency,
   assertApprovedDriver,
-  assertDriverAvailableForAgencyTruck,
   assertDriverLinkedToAgency,
   corsHeaders,
   handleRequestError,
@@ -14,8 +13,6 @@ import {
 
 type DriversRequest =
   | { action: 'snapshot' }
-  | { action: 'assign-truck'; truckId: string; driverId: string }
-  | { action: 'unassign-truck'; truckId: string }
   | { action: 'create-payout'; driverId: string; amount: number; note?: string }
 
 function parseRequestBody(body: unknown): DriversRequest {
@@ -26,18 +23,6 @@ function parseRequestBody(body: unknown): DriversRequest {
   switch (body.action) {
     case 'snapshot':
       return { action: 'snapshot' }
-    case 'assign-truck':
-      if (typeof body.truckId !== 'string' || typeof body.driverId !== 'string') {
-        throw new RequestError('truckId and driverId are required.')
-      }
-
-      return { action: 'assign-truck', truckId: body.truckId, driverId: body.driverId }
-    case 'unassign-truck':
-      if (typeof body.truckId !== 'string') {
-        throw new RequestError('truckId is required.')
-      }
-
-      return { action: 'unassign-truck', truckId: body.truckId }
     case 'create-payout':
       if (
         typeof body.driverId !== 'string' ||
@@ -55,7 +40,7 @@ function parseRequestBody(body: unknown): DriversRequest {
         note: typeof body.note === 'string' ? body.note : undefined,
       }
     default:
-      throw new RequestError('Unsupported action.')
+      throw new RequestError('This action moved to database commands.', 410, false)
   }
 }
 
@@ -130,44 +115,6 @@ serve(async (req) => {
         trucks: trucksRes.data ?? [],
         drivers,
       })
-    }
-
-    if (body.action === 'assign-truck') {
-      await assertDriverAvailableForAgencyTruck(serviceClient, agencyId, body.driverId)
-
-      const { data: assignedTruck, error } = await serviceClient
-        .from('agency_trucks')
-        .update({ driver_id: body.driverId })
-        .eq('id', body.truckId)
-        .eq('agency_id', agencyId)
-        .select('id')
-        .maybeSingle()
-
-      if (error) {
-        console.error('Failed to assign truck to driver', error)
-        throw new RequestError('Unable to assign truck.', 500, false)
-      }
-
-      if (!assignedTruck) {
-        throw new RequestError('Truck not found.', 404)
-      }
-
-      return jsonResponse({ message: 'Truck assigned.' })
-    }
-
-    if (body.action === 'unassign-truck') {
-      const { error } = await serviceClient
-        .from('agency_trucks')
-        .update({ driver_id: null })
-        .eq('id', body.truckId)
-        .eq('agency_id', agencyId)
-
-      if (error) {
-        console.error('Failed to unassign truck', error)
-        throw new RequestError('Unable to unassign driver.', 500, false)
-      }
-
-      return jsonResponse({ message: 'Driver unassigned.' })
     }
 
     await assertApprovedDriver(serviceClient, body.driverId)

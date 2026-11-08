@@ -1340,12 +1340,9 @@ async function main() {
       )
       .map((f) => f.relPath)
     const portalJobsSource = readSource('supabase/functions/agency-portal-jobs/index.ts')
-    const portalJobsGuards =
-      portalJobsSource.includes('requireAgencyContext(') &&
-      portalJobsSource.includes('job.agency_id !== agencyId') &&
-      portalJobsSource.includes('assertApprovedAgency(') &&
-      portalJobsSource.includes('assertApprovedDriver(') &&
-      portalJobsSource.includes('assertDriverOnAgencyFleet(')
+    // Wave 2 (20261015000000): agency-portal-jobs is READ-ONLY now (writes moved to the
+    // agency_job_* database commands); it must still resolve the caller through requireAgencyContext.
+    const portalJobsGuards = portalJobsSource.includes('requireAgencyContext(')
 
     // (iii) Migration source assertions on the two new RPCs.
     const consentMigrationRel = 'supabase/migrations/20261007120000_consent_writer_and_job_command.sql'
@@ -1378,12 +1375,11 @@ async function main() {
       customerRead === 0 &&
       consentReferencingFiles.length === 0 &&
       shipmentWriterFiles.length === 0 &&
-      agencyJobWriterFiles.length === 1 &&
-      agencyJobWriterFiles[0] === 'agency-portal-jobs/index.ts' &&
+      agencyJobWriterFiles.length === 0 &&
       portalJobsGuards &&
       migrationPosture.length === 0
     record(
-      'G8. consent-writer audit: service-only consent writes, single agency_jobs Edge writer behind its guards, caller-bound definer RPC posture (TO-143-D1)',
+      'G8. consent-writer audit: service-only consent writes, NO agency_jobs Edge writer (writes moved to database commands; portal-jobs read-only behind requireAgencyContext), caller-bound definer RPC posture (TO-143-D1)',
       g8Pass,
       `service_insert=${serviceInsert}; anon/auth INSERT privilege-denied; non-party authenticated read=${customerRead}; ` +
         `consent-referencing edge files=[${consentReferencingFiles.join(', ')}]; shipment writers=[${shipmentWriterFiles.join(', ')}]; ` +

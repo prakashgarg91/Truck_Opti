@@ -989,6 +989,18 @@ isOneToOne: false
                            },
 "shipment_accepts_agency_jobs":
 { Args: { "p_shipment_id": string }; Returns: boolean
+                           },
+"agency_job_assign_driver":
+{ Args: { "p_driver_id": string,"p_job_id": string }; Returns: Json
+                           },
+"agency_job_set_status":
+{ Args: { "p_job_id": string,"p_status": string }; Returns: Json
+                           },
+"agency_truck_assign_driver":
+{ Args: { "p_driver_id": string,"p_expected_version": number,"p_truck_id": string }; Returns: Json
+                           },
+"agency_truck_unassign_driver":
+{ Args: { "p_expected_version": number,"p_truck_id": string }; Returns: Json
                            }
           }
           Enums: {
