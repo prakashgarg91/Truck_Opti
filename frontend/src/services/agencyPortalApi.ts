@@ -245,6 +245,135 @@ export function isAgencyDenial(error: unknown): boolean {
     )
 }
 
+// ============= JOB/TRUCK COMMAND RPCS (Edge write actions retired) =============
+/**
+ * Approved refusal messages for the job/truck command RPCs that replace the
+ * retired agency-portal-jobs / agency-portal-drivers Edge write actions. A
+ * business refusal ({ok:false,error:'<code>'}) maps to exactly one approved
+ * user-facing message — never a provider string.
+ */
+const JOB_SET_STATUS_REFUSALS: Readonly<Record<string, string>> = Object.freeze({
+    invalid_transition: 'This job cannot move to that status from its current one.',
+})
+
+const JOB_ASSIGN_DRIVER_REFUSALS: Readonly<Record<string, string>> = Object.freeze({
+    job_not_assignable: 'Only pending or accepted jobs can be given a driver.',
+    driver_not_approved: 'This driver is not approved yet.',
+    driver_not_employed: 'This driver is not employed by your agency. Add the driver in Drivers first.',
+    job_has_reservation: 'This job already has a vehicle and driver reserved. Release the reservation first.',
+})
+
+const TRUCK_ASSIGN_DRIVER_REFUSALS: Readonly<Record<string, string>> = Object.freeze({
+    version_conflict: 'This vehicle was updated elsewhere. Reload and try again.',
+    driver_not_employed: 'This driver is not employed by your agency. Add the driver in Drivers first.',
+    driver_already_assigned: 'This driver is already assigned to another truck.',
+})
+
+const TRUCK_UNASSIGN_DRIVER_REFUSALS: Readonly<Record<string, string>> = Object.freeze({
+    version_conflict: 'This vehicle was updated elsewhere. Reload and try again.',
+})
+
+/** Controlled command-RPC exception texts; anything else is redacted. */
+const PORTAL_COMMAND_EXCEPTION_MESSAGES: ReadonlySet<string> = new Set([
+    'Job not found or access denied.',
+    'Unknown job status.',
+    'Your access scope does not allow this action.',
+    'Agency approval is required.',
+    'No agency profile found for this account.',
+    'Vehicle not found or access denied.',
+])
+
+/**
+ * Runs one job/truck command RPC and resolves only on an {ok:true,...}
+ * envelope ('updated' | 'unchanged' | 'assigned' | 'unassigned' all settle
+ * the same for the pages). The generated rpc() overloads do not know these
+ * functions yet, hence the local cast; rpc is called as a client method
+ * because the real rpc() relies on `this`.
+ */
+async function runPortalCommand(
+    rpcName: string,
+    args: Record<string, unknown>,
+    fallback: string,
+    refusals: Readonly<Record<string, string>>
+): Promise<void> {
+    try {
+        const client = supabase as unknown as {
+            rpc: (name: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: unknown } | null }>
+        }
+        const { data, error } = await client.rpc(rpcName, args)
+
+        if (error) {
+            const message = error.message
+            if (typeof message === 'string' && PORTAL_COMMAND_EXCEPTION_MESSAGES.has(message)) {
+                throw new UserFacingError(message)
+            }
+
+            reportFunctionFailure(rpcName, error)
+            throw new UserFacingError(fallback)
+        }
+
+        const envelope = (Array.isArray(data) ? data[0] : data) as
+            | { ok?: unknown; state?: unknown; error?: unknown }
+            | null
+            | undefined
+
+        if (envelope && envelope.ok === true && typeof envelope.state === 'string') {
+            return
+        }
+
+        if (envelope && envelope.ok === false && typeof envelope.error === 'string') {
+            const refusal = refusals[envelope.error]
+            if (refusal !== undefined) {
+                throw new UserFacingError(refusal)
+            }
+        }
+
+        reportFunctionFailure(rpcName, new Error('unexpected command envelope'))
+        throw new UserFacingError(fallback)
+    } catch (e) {
+        if (e instanceof UserFacingError) {
+            throw e
+        }
+
+        reportFunctionFailure(rpcName, e)
+        throw new UserFacingError(fallback)
+    }
+}
+
+/**
+ * Reads the truck's current version right before an expected-version truck
+ * command (the page methods do not carry one). RLS hides other agencies'
+ * trucks, so a missing row is the approved not-found denial; a failed read
+ * collapses to the command's own fallback.
+ */
+async function readTruckVersion(truckId: string, fallback: string): Promise<number> {
+    try {
+        const { data, error } = await supabase
+            .from('agency_trucks')
+            .select('version')
+            .eq('id', truckId)
+            .maybeSingle()
+
+        if (error) {
+            reportFunctionFailure('agency_trucks', error)
+            throw new UserFacingError(fallback)
+        }
+
+        if (!data || typeof data.version !== 'number') {
+            throw new UserFacingError('Vehicle not found or access denied.')
+        }
+
+        return data.version
+    } catch (e) {
+        if (e instanceof UserFacingError) {
+            throw e
+        }
+
+        reportFunctionFailure('agency_trucks', e)
+        throw new UserFacingError(fallback)
+    }
+}
+
 // ============= DASHBOARD API =============
 export const agencyDashboardApi = {
     async getSnapshot(): Promise<{ agency: AgencyPortalProfile | null; summary: AgencyPortalSummary }> {
@@ -307,45 +436,21 @@ export const agencyJobsApi = {
     },
 
     async updateStatus(jobId: string, status: string): Promise<void> {
-        try {
-            const { error } = await supabase.functions.invoke('agency-portal-jobs', {
-                method: 'POST',
-                body: { action: 'update-status', jobId, status },
-            })
-
-            if (error) {
-                reportFunctionFailure('agency-portal-jobs', error)
-                throw new UserFacingError('Failed to update job status')
-            }
-        } catch (e) {
-            if (e instanceof UserFacingError) {
-                throw e
-            }
-
-            reportFunctionFailure('agency-portal-jobs', e)
-            throw new UserFacingError('Failed to update job status')
-        }
+        await runPortalCommand(
+            'agency_job_set_status',
+            { p_job_id: jobId, p_status: status },
+            'Failed to update job status',
+            JOB_SET_STATUS_REFUSALS
+        )
     },
 
     async assignDriver(jobId: string, driverId: string): Promise<void> {
-        try {
-            const { error } = await supabase.functions.invoke('agency-portal-jobs', {
-                method: 'POST',
-                body: { action: 'assign-driver', jobId, driverId },
-            })
-
-            if (error) {
-                reportFunctionFailure('agency-portal-jobs', error)
-                throw new UserFacingError('Failed to assign driver')
-            }
-        } catch (e) {
-            if (e instanceof UserFacingError) {
-                throw e
-            }
-
-            reportFunctionFailure('agency-portal-jobs', e)
-            throw new UserFacingError('Failed to assign driver')
-        }
+        await runPortalCommand(
+            'agency_job_assign_driver',
+            { p_job_id: jobId, p_driver_id: driverId },
+            'Failed to assign driver',
+            JOB_ASSIGN_DRIVER_REFUSALS
+        )
     },
 
     async getAssignableDrivers(): Promise<AgencyDriverAssignmentRow[]> {
@@ -732,43 +837,25 @@ export const agencyDriversApi = {
     },
 
     async assignTruckToDriver(truckId: string, driverId: string): Promise<void> {
-        try {
-            const { error } = await supabase.functions.invoke('agency-portal-drivers', {
-                body: { action: 'assign-truck', truckId, driverId },
-            })
+        const expectedVersion = await readTruckVersion(truckId, 'Failed to assign truck')
 
-            if (error) {
-                reportFunctionFailure('agency-portal-drivers', error)
-                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to assign truck'))
-            }
-        } catch (e) {
-            if (e instanceof UserFacingError) {
-                throw e
-            }
-
-            reportFunctionFailure('agency-portal-drivers', e)
-            throw new UserFacingError('Failed to assign truck')
-        }
+        await runPortalCommand(
+            'agency_truck_assign_driver',
+            { p_truck_id: truckId, p_driver_id: driverId, p_expected_version: expectedVersion },
+            'Failed to assign truck',
+            TRUCK_ASSIGN_DRIVER_REFUSALS
+        )
     },
 
     async unassignTruck(truckId: string): Promise<void> {
-        try {
-            const { error } = await supabase.functions.invoke('agency-portal-drivers', {
-                body: { action: 'unassign-truck', truckId },
-            })
+        const expectedVersion = await readTruckVersion(truckId, 'Failed to unassign truck')
 
-            if (error) {
-                reportFunctionFailure('agency-portal-drivers', error)
-                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to unassign driver'))
-            }
-        } catch (e) {
-            if (e instanceof UserFacingError) {
-                throw e
-            }
-
-            reportFunctionFailure('agency-portal-drivers', e)
-            throw new UserFacingError('Failed to unassign driver')
-        }
+        await runPortalCommand(
+            'agency_truck_unassign_driver',
+            { p_truck_id: truckId, p_expected_version: expectedVersion },
+            'Failed to unassign truck',
+            TRUCK_UNASSIGN_DRIVER_REFUSALS
+        )
     },
 
     async createPayout(driverId: string, amount: number, note?: string): Promise<void> {

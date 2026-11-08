@@ -5,15 +5,21 @@ const fromMock = vi.hoisted(() => vi.fn())
 const rpcMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock('../lib/supabase', () => ({
-    supabase: {
-        from: fromMock,
-        rpc: rpcMock,
-        functions: {
-            invoke: invokeMock,
-        },
-    },
-}))
+// The real SupabaseClient methods depend on `this`; a detached call crashes in the
+// browser. These wrappers fail loudly unless the service calls them as methods.
+vi.mock('../lib/supabase', () => {
+    const client: Record<string, unknown> = {}
+    client.from = function (this: unknown, ...args: unknown[]) {
+        if (this !== client) throw new TypeError('supabase.from called without its client as this')
+        return fromMock(...args)
+    }
+    client.rpc = function (this: unknown, ...args: unknown[]) {
+        if (this !== client) throw new TypeError('supabase.rpc called without its client as this')
+        return rpcMock(...args)
+    }
+    client.functions = { invoke: invokeMock }
+    return { supabase: client }
+})
 
 vi.mock('../utils/logger', () => ({
     logger: {
@@ -198,62 +204,178 @@ describe('agencyPortalApi', () => {
     })
 
     describe('agencyJobsApi.updateStatus', () => {
-        it('updates job status successfully', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
+        it('updates the status through the agency_job_set_status RPC, never an Edge function', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'updated', job: { id: 'job_1', status: 'completed' } },
                 error: null,
             })
-            
+
             await expect(agencyJobsApi.updateStatus('job_1', 'completed'))
                 .resolves.not.toThrow()
-            
-            expect(invokeMock).toHaveBeenCalledWith('agency-portal-jobs', {
-                method: 'POST',
-                body: {
-                    action: 'update-status',
-                    jobId: 'job_1',
-                    status: 'completed',
-                },
+
+            expect(rpcMock).toHaveBeenCalledTimes(1)
+            expect(rpcMock).toHaveBeenCalledWith('agency_job_set_status', {
+                p_job_id: 'job_1',
+                p_status: 'completed',
             })
+            expect(invokeMock).not.toHaveBeenCalled()
         })
 
-        it('throws UserFacingError on update failure', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
-                error: { message: 'Update failed' },
+        it('resolves on an unchanged replay state', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'unchanged', job: { id: 'job_1', status: 'completed' } },
+                error: null,
             })
-            
+
+            await expect(agencyJobsApi.updateStatus('job_1', 'completed'))
+                .resolves.not.toThrow()
+        })
+
+        it('maps invalid_transition to the approved message', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'invalid_transition' },
+                error: null,
+            })
+
+            await expect(agencyJobsApi.updateStatus('job_1', 'completed'))
+                .rejects.toThrow('This job cannot move to that status from its current one.')
+        })
+
+        it('shows the controlled job-not-found exception verbatim', async () => {
+            rpcMock.mockResolvedValue({
+                data: null,
+                error: { message: 'Job not found or access denied.' },
+            })
+
+            await expect(agencyJobsApi.updateStatus('job_1', 'completed'))
+                .rejects.toThrow('Job not found or access denied.')
+        })
+
+        it('shows the controlled unknown-status exception verbatim', async () => {
+            rpcMock.mockResolvedValue({
+                data: null,
+                error: { message: 'Unknown job status.' },
+            })
+
+            await expect(agencyJobsApi.updateStatus('job_1', 'delivered'))
+                .rejects.toThrow('Unknown job status.')
+        })
+
+        it('collapses uncontrolled errors to the fallback with bounded diagnostics', async () => {
+            rpcMock.mockResolvedValue({
+                data: null,
+                error: { message: 'SQLSTATE 42703: relation "public.agency_jobs" does not exist' },
+            })
+
+            await expect(agencyJobsApi.updateStatus('job_1', 'completed'))
+                .rejects.toThrow('Failed to update job status')
+            await expect(agencyJobsApi.updateStatus('job_1', 'completed'))
+                .rejects.not.toThrow(/SQLSTATE/)
+
+            const logged = loggerErrorMock.mock.calls.map((call) => call.join(' ')).join(' ')
+            expect(logged).toContain('agency_job_set_status')
+            expect(logged).not.toContain('SQLSTATE')
+        })
+
+        it('collapses a malformed envelope to the fallback', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: null })
+
             await expect(agencyJobsApi.updateStatus('job_1', 'completed'))
                 .rejects.toThrow('Failed to update job status')
         })
     })
 
     describe('agencyJobsApi.assignDriver', () => {
-        it('assigns driver successfully', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
+        it('assigns through the agency_job_assign_driver RPC, never an Edge function', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'assigned', job: { id: 'job_1', driver_id: 'driver_1' } },
                 error: null,
             })
-            
+
             await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
                 .resolves.not.toThrow()
-            
-            expect(invokeMock).toHaveBeenCalledWith('agency-portal-jobs', {
-                method: 'POST',
-                body: {
-                    action: 'assign-driver',
-                    jobId: 'job_1',
-                    driverId: 'driver_1',
-                },
+
+            expect(rpcMock).toHaveBeenCalledTimes(1)
+            expect(rpcMock).toHaveBeenCalledWith('agency_job_assign_driver', {
+                p_job_id: 'job_1',
+                p_driver_id: 'driver_1',
             })
+            expect(invokeMock).not.toHaveBeenCalled()
         })
 
-        it('throws UserFacingError on assignment failure', async () => {
-            invokeMock.mockResolvedValue({
+        it('resolves on an unchanged replay state', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'unchanged', job: { id: 'job_1' } },
+                error: null,
+            })
+
+            await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
+                .resolves.not.toThrow()
+        })
+
+        it('maps job_not_assignable to the approved message', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'job_not_assignable' },
+                error: null,
+            })
+
+            await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
+                .rejects.toThrow('Only pending or accepted jobs can be given a driver.')
+        })
+
+        it('maps driver_not_approved to the approved message', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'driver_not_approved' },
+                error: null,
+            })
+
+            await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
+                .rejects.toThrow('This driver is not approved yet.')
+        })
+
+        it('maps driver_not_employed to the approved message', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'driver_not_employed' },
+                error: null,
+            })
+
+            await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
+                .rejects.toThrow('This driver is not employed by your agency. Add the driver in Drivers first.')
+        })
+
+        it('maps job_has_reservation to the approved message', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'job_has_reservation' },
+                error: null,
+            })
+
+            await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
+                .rejects.toThrow('This job already has a vehicle and driver reserved. Release the reservation first.')
+        })
+
+        it('shows controlled denial exceptions verbatim', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'Your access scope does not allow this action.' } })
+
+            await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
+                .rejects.toThrow('Your access scope does not allow this action.')
+
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'Agency approval is required.' } })
+
+            await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
+                .rejects.toThrow('Agency approval is required.')
+
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'No agency profile found for this account.' } })
+
+            await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
+                .rejects.toThrow('No agency profile found for this account.')
+        })
+
+        it('collapses uncontrolled errors to the fallback', async () => {
+            rpcMock.mockResolvedValue({
                 data: null,
                 error: { message: 'Assignment failed' },
             })
-            
+
             await expect(agencyJobsApi.assignDriver('job_1', 'driver_1'))
                 .rejects.toThrow('Failed to assign driver')
         })
@@ -876,62 +998,191 @@ describe('agencyPortalApi', () => {
         })
     })
 
+    // The page methods do not carry a version: each truck command first reads
+    // the current version from agency_trucks, then calls the expected-version RPC.
+    function mockTruckVersionRead(version: number | null, readError: unknown = null) {
+        const maybeSingle = vi.fn().mockResolvedValue({
+            data: version === null ? null : { version },
+            error: readError,
+        })
+        const eq = vi.fn().mockReturnValue({ maybeSingle })
+        const select = vi.fn().mockReturnValue({ eq })
+        fromMock.mockReturnValue({ select })
+        return { select, eq, maybeSingle }
+    }
+
     describe('agencyDriversApi.assignTruckToDriver', () => {
-        it('assigns truck successfully', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
+        it('reads the version first, then assigns through agency_truck_assign_driver (never an Edge function)', async () => {
+            const { select, eq, maybeSingle } = mockTruckVersionRead(7)
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'assigned', truck: { id: 'truck_1', driver_id: 'driver_1' }, version: 8 },
                 error: null,
             })
-            
+
             await expect(agencyDriversApi.assignTruckToDriver('truck_1', 'driver_1'))
                 .resolves.not.toThrow()
-            
-            expect(invokeMock).toHaveBeenCalledWith('agency-portal-drivers', {
-                body: {
-                    action: 'assign-truck',
-                    truckId: 'truck_1',
-                    driverId: 'driver_1',
-                },
+
+            expect(fromMock).toHaveBeenCalledWith('agency_trucks')
+            expect(select).toHaveBeenCalledWith('version')
+            expect(eq).toHaveBeenCalledWith('id', 'truck_1')
+            expect(maybeSingle).toHaveBeenCalledTimes(1)
+            expect(fromMock.mock.invocationCallOrder[0]).toBeLessThan(rpcMock.mock.invocationCallOrder[0])
+            expect(rpcMock).toHaveBeenCalledWith('agency_truck_assign_driver', {
+                p_truck_id: 'truck_1',
+                p_driver_id: 'driver_1',
+                p_expected_version: 7,
             })
+            expect(invokeMock).not.toHaveBeenCalled()
         })
 
-        it('throws UserFacingError on assignment failure', async () => {
-            invokeMock.mockResolvedValue({
+        it('resolves on an unchanged replay state', async () => {
+            mockTruckVersionRead(7)
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'unchanged', truck: { id: 'truck_1', driver_id: 'driver_1' }, version: 7 },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.assignTruckToDriver('truck_1', 'driver_1'))
+                .resolves.not.toThrow()
+        })
+
+        it('throws the approved denial when the truck row is not visible and never calls the RPC', async () => {
+            mockTruckVersionRead(null)
+
+            await expect(agencyDriversApi.assignTruckToDriver('truck_1', 'driver_1'))
+                .rejects.toThrow('Vehicle not found or access denied.')
+
+            expect(rpcMock).not.toHaveBeenCalled()
+        })
+
+        it('collapses a failed version read to the assign fallback', async () => {
+            mockTruckVersionRead(null, { message: 'read failed' })
+
+            await expect(agencyDriversApi.assignTruckToDriver('truck_1', 'driver_1'))
+                .rejects.toThrow('Failed to assign truck')
+
+            expect(rpcMock).not.toHaveBeenCalled()
+        })
+
+        it('maps version_conflict to the reload message', async () => {
+            mockTruckVersionRead(7)
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'version_conflict' },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.assignTruckToDriver('truck_1', 'driver_1'))
+                .rejects.toThrow('This vehicle was updated elsewhere. Reload and try again.')
+        })
+
+        it('maps driver_not_employed to the approved message', async () => {
+            mockTruckVersionRead(7)
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'driver_not_employed' },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.assignTruckToDriver('truck_1', 'driver_1'))
+                .rejects.toThrow('This driver is not employed by your agency. Add the driver in Drivers first.')
+        })
+
+        it('maps driver_already_assigned to the approved message', async () => {
+            mockTruckVersionRead(7)
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'driver_already_assigned' },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.assignTruckToDriver('truck_1', 'driver_1'))
+                .rejects.toThrow('This driver is already assigned to another truck.')
+        })
+
+        it('collapses uncontrolled RPC errors to the fallback', async () => {
+            mockTruckVersionRead(7)
+            rpcMock.mockResolvedValue({
                 data: null,
                 error: { message: 'Assignment failed' },
             })
-            
+
             await expect(agencyDriversApi.assignTruckToDriver('truck_1', 'driver_1'))
                 .rejects.toThrow('Failed to assign truck')
         })
     })
 
     describe('agencyDriversApi.unassignTruck', () => {
-        it('unassigns truck successfully', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
+        it('reads the version first, then unassigns through agency_truck_unassign_driver (never an Edge function)', async () => {
+            const { select, eq, maybeSingle } = mockTruckVersionRead(7)
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'unassigned' },
                 error: null,
             })
-            
+
             await expect(agencyDriversApi.unassignTruck('truck_1'))
                 .resolves.not.toThrow()
-            
-            expect(invokeMock).toHaveBeenCalledWith('agency-portal-drivers', {
-                body: {
-                    action: 'unassign-truck',
-                    truckId: 'truck_1',
-                },
+
+            expect(fromMock).toHaveBeenCalledWith('agency_trucks')
+            expect(select).toHaveBeenCalledWith('version')
+            expect(eq).toHaveBeenCalledWith('id', 'truck_1')
+            expect(maybeSingle).toHaveBeenCalledTimes(1)
+            expect(fromMock.mock.invocationCallOrder[0]).toBeLessThan(rpcMock.mock.invocationCallOrder[0])
+            expect(rpcMock).toHaveBeenCalledWith('agency_truck_unassign_driver', {
+                p_truck_id: 'truck_1',
+                p_expected_version: 7,
             })
+            expect(invokeMock).not.toHaveBeenCalled()
         })
 
-        it('throws UserFacingError on unassignment failure', async () => {
-            invokeMock.mockResolvedValue({
+        it('resolves on an unchanged replay state', async () => {
+            mockTruckVersionRead(4)
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'unchanged' },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.unassignTruck('truck_1'))
+                .resolves.not.toThrow()
+        })
+
+        it('throws the approved denial when the truck row is not visible and never calls the RPC', async () => {
+            mockTruckVersionRead(null)
+
+            await expect(agencyDriversApi.unassignTruck('truck_1'))
+                .rejects.toThrow('Vehicle not found or access denied.')
+
+            expect(rpcMock).not.toHaveBeenCalled()
+        })
+
+        it('maps version_conflict to the reload message', async () => {
+            mockTruckVersionRead(4)
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'version_conflict' },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.unassignTruck('truck_1'))
+                .rejects.toThrow('This vehicle was updated elsewhere. Reload and try again.')
+        })
+
+        it('shows the controlled vehicle-not-found exception verbatim', async () => {
+            mockTruckVersionRead(4)
+            rpcMock.mockResolvedValue({
+                data: null,
+                error: { message: 'Vehicle not found or access denied.' },
+            })
+
+            await expect(agencyDriversApi.unassignTruck('truck_1'))
+                .rejects.toThrow('Vehicle not found or access denied.')
+        })
+
+        it('collapses uncontrolled errors to the fallback', async () => {
+            mockTruckVersionRead(4)
+            rpcMock.mockResolvedValue({
                 data: null,
                 error: { message: 'Unassignment failed' },
             })
-            
+
             await expect(agencyDriversApi.unassignTruck('truck_1'))
-                .rejects.toThrow('Failed to unassign driver')
+                .rejects.toThrow('Failed to unassign truck')
         })
     })
 
@@ -1086,7 +1337,9 @@ describe('agencyPortalApi', () => {
                 error: functionHttpError(409, JSON.stringify({ error: 'You cannot modify your own account from this screen.' })),
             })
 
-            await expect(agencyDriversApi.unassignTruck('truck_1'))
+            // createPayout still routes through the Edge function; the four
+            // re-implemented command methods no longer do.
+            await expect(agencyDriversApi.createPayout('driver_1', 1000))
                 .rejects.toThrow('This account cannot be modified from this screen.')
         })
 
