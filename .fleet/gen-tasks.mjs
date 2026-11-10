@@ -100,5 +100,35 @@ Tests: edit frontend/src/services/agencyPortalApi.test.ts: replace the existing 
   check: 'cd frontend && npx vitest run src/services/agencyPortalApi.test.ts',
 })
 
+
+tasks.push({
+  id: 'z-truck-to145-order-parser',
+  title: 'TO-145 order import: CSV parser and row validator (pure library)',
+  kind: 'zcode-ui',
+  priority: 2,
+  allow: ['frontend/src/lib/orderImport.ts', 'frontend/src/lib/orderImport.test.ts'],
+  brief: `Create a PURE TypeScript library (no React, no network, no Supabase, no dependencies beyond what frontend already has; do not add npm packages) that turns the text of a sales-order CSV into validated, normalized rows. It is the first slice of the Order Import screen (Stitch screen f17f9e265b854a21a9c5d3f394a4b2bb). Write the tests FIRST.
+
+Exports (frontend/src/lib/orderImport.ts):
+- type OrderUnit = 'kg' | 'tonne' | 'piece' | 'carton'
+- interface KnownSites { pickup: string[]; drop: string[] }   // site LABELS of the chosen client, matched case-insensitively after trimming
+- interface NormalizedLine { clientOrderRef: string; lineNo: number; sku: string; description: string | null; quantity: number; unit: OrderUnit; weightPerUnitKg: number | null; lengthM: number | null; widthM: number | null; heightM: number | null; pickupSite: string; dropSite: string; pickupFrom: string | null; pickupTo: string | null; deliveryFrom: string | null; deliveryTo: string | null; stackable: boolean; fragile: boolean }   // dates as ISO strings (YYYY-MM-DD or full ISO as given, validated)
+- type RowStatus = 'ready' | 'warning' | 'error'
+- interface ParsedRow { rowNumber: number /* 1-based CSV line incl. header = row 1, so first data row is 2 */; status: RowStatus; messages: string[]; line: NormalizedLine | null /* null when status is 'error' */ }
+- interface ParseSummary { rows: number; ready: number; warnings: number; errors: number; duplicatesInFile: number }
+- interface ParseResult { headerErrors: string[]; rows: ParsedRow[]; summary: ParseSummary }
+- parseOrderCsv(text: string, sites: KnownSites): ParseResult
+- hashOrderFile(text: string): Promise<string>   // lowercase hex SHA-256 of the UTF-8 text using globalThis.crypto.subtle
+- ORDER_CSV_TEMPLATE: string   // header line plus two example rows, valid against parseOrderCsv with matching KnownSites
+- orderRowsToCsv(rows: ParsedRow[]): string   // CSV of the NOT-ready rows: columns row_number,status,messages (messages joined with ' | '), quoted correctly
+
+CSV rules: RFC 4180 (quoted fields, doubled quotes, commas and newlines inside quotes), accept CRLF and LF, strip a UTF-8 BOM, ignore completely empty lines (but keep row numbering of the remaining lines true to the file), trim cells. A cell starting with = + - @ must be returned unchanged by the parser (no execution) and orderRowsToCsv must prefix such cells with a single quote when writing (CSV injection guard).
+Header: case-insensitive, spaces/hyphens treated as underscores. Required columns: client_order_ref, line_no, sku, quantity, unit, pickup_site, drop_site. Optional: description, weight_per_unit, weight_unit (kg|tonne, default kg), length, width, height, dim_unit (mm|cm|m, default m), pickup_from, pickup_to, delivery_from, delivery_to, stackable (yes/no/true/false/1/0, default yes), fragile (same, default no). A missing required column goes to headerErrors as "Column 'sku' is missing." and then rows is [] .
+Row validation (collect ALL messages for a row, exact texts): required cell empty -> "<Column label> is missing." where label is e.g. 'Order reference', 'Line number', 'SKU', 'Quantity', 'Unit', 'Pickup site', 'Drop site'; non-numeric or <= 0 quantity -> "Quantity must be a number greater than zero."; line_no not a positive integer -> "Line number must be a whole number greater than zero."; unit not in the four -> "Unit 'bags' is not supported" (echo the given value); weight_per_unit given but not a number >= 0 -> "Weight must be a number."; when unit is kg or tonne the line weight is the quantity itself so weight_per_unit is not needed; when unit is piece or carton and weight_per_unit is empty -> status warning with "Weight is missing; the load plan will treat this line as unweighted." ; dimension cells given must be numbers > 0 else "Length must be a number greater than zero." (same for Width, Height); pickup_site not in sites.pickup (case-insensitive) -> "Pickup site not found for this client."; drop_site not in sites.drop -> "Drop site not found for this client."; each date given must parse as a valid date else "<Field> is not a valid date." with labels 'Pickup from', 'Pickup to', 'Delivery from', 'Delivery to'; if both pickup_to and delivery_from exist and delivery_from is before pickup_from or any 'to' is before its 'from' -> "Delivery window ends before pickup window." for delivery_to before pickup_from, and "<Window> ends before it starts." for a window whose to precedes its from (labels 'Pickup window', 'Delivery window'). Duplicate (client_order_ref + line_no) within the file: the second and later occurrences are errors "Duplicate line in this file." and counted in summary.duplicatesInFile. Any error message -> status 'error' and line null; otherwise warnings only -> 'warning'; otherwise 'ready'.
+Normalization: weights to kg (tonne x 1000; for unit kg/tonne weightPerUnitKg = 1 for kg and 1000 for tonne so that quantity x weightPerUnitKg is the line weight in kg), dimensions to metres (mm /1000, cm /100), trimmed strings, quantity as a JS number.
+Tests (>= 30 cases, frontend/src/lib/orderImport.test.ts, vitest, no DOM needed): every message above, BOM, CRLF, quoted commas/newlines/doubled quotes, empty lines keep numbering, unit conversion (tonne, mm, cm), defaults, duplicates, summary counts, header errors, template round-trips with no errors, orderRowsToCsv quoting and injection guard, hashOrderFile known vector (sha256 of 'abc' is ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad) and stability. Do NOT touch any other file.`,
+  check: 'cd frontend && npx vitest run src/lib/orderImport.test.ts',
+})
+
 writeFileSync(new URL('./tasks.json', import.meta.url), JSON.stringify(tasks, null, 2))
 console.log(tasks.length, 'tasks written')
