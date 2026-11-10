@@ -857,6 +857,99 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"agency_order_batches": {
+                  Row: {
+                    "agency_id": string,"agreement_id": string,"created_at": string,"created_by": string | null,"file_hash": string,"id": string,"idempotency_key": string,"row_count": number
+                  }
+                  Insert: {
+                    "agency_id": string,"agreement_id": string,"created_at"?: string,"created_by"?: string | null,"file_hash": string,"id"?: string,"idempotency_key": string,"row_count": number
+                  }
+                  Update: {
+                    "agency_id"?: string,"agreement_id"?: string,"created_at"?: string,"created_by"?: string | null,"file_hash"?: string,"id"?: string,"idempotency_key"?: string,"row_count"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_order_batches_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_order_batches_agreement_fk"
+      columns: ["agreement_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_agreements"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_order_lines": {
+                  Row: {
+                    "agency_id": string,"delivery_from": string | null,"delivery_to": string | null,"description": string | null,"drop_site_id": string | null,"fragile": boolean,"height_m": number | null,"id": string,"length_m": number | null,"line_no": number,"order_id": string,"pickup_from": string | null,"pickup_site_id": string | null,"pickup_to": string | null,"quantity": number,"sku": string,"stackable": boolean,"unit": string,"weight_per_unit_kg": number | null,"width_m": number | null
+                  }
+                  Insert: {
+                    "agency_id": string,"delivery_from"?: string | null,"delivery_to"?: string | null,"description"?: string | null,"drop_site_id"?: string | null,"fragile"?: boolean,"height_m"?: number | null,"id"?: string,"length_m"?: number | null,"line_no": number,"order_id": string,"pickup_from"?: string | null,"pickup_site_id"?: string | null,"pickup_to"?: string | null,"quantity": number,"sku": string,"stackable"?: boolean,"unit": string,"weight_per_unit_kg"?: number | null,"width_m"?: number | null
+                  }
+                  Update: {
+                    "agency_id"?: string,"delivery_from"?: string | null,"delivery_to"?: string | null,"description"?: string | null,"drop_site_id"?: string | null,"fragile"?: boolean,"height_m"?: number | null,"id"?: string,"length_m"?: number | null,"line_no"?: number,"order_id"?: string,"pickup_from"?: string | null,"pickup_site_id"?: string | null,"pickup_to"?: string | null,"quantity"?: number,"sku"?: string,"stackable"?: boolean,"unit"?: string,"weight_per_unit_kg"?: number | null,"width_m"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_order_lines_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_order_lines_drop_site_id_fkey"
+      columns: ["drop_site_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_sites"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_order_lines_order_fk"
+      columns: ["order_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_orders"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_order_lines_pickup_site_id_fkey"
+      columns: ["pickup_site_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_sites"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_orders": {
+                  Row: {
+                    "agency_id": string,"agreement_id": string,"batch_id": string | null,"client_order_ref": string,"created_at": string,"id": string,"status": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"agreement_id": string,"batch_id"?: string | null,"client_order_ref": string,"created_at"?: string,"id"?: string,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"agreement_id"?: string,"batch_id"?: string | null,"client_order_ref"?: string,"created_at"?: string,"id"?: string,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_orders_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_orders_agreement_fk"
+      columns: ["agreement_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_agreements"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_orders_batch_fk"
+      columns: ["batch_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_order_batches"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -1020,6 +1113,12 @@ isOneToOne: false
                            },
 "agency_driver_payout_request":
 { Args: { "p_amount": number,"p_driver_id": string,"p_idempotency_key": string,"p_note": string }; Returns: Json
+                           },
+"agency_order_cancel":
+{ Args: { "p_expected_version": number,"p_order_id": string }; Returns: Json
+                           },
+"agency_order_import":
+{ Args: { "p_agreement_id": string,"p_file_hash": string,"p_idempotency_key": string,"p_lines": Json }; Returns: Json
                            }
           }
           Enums: {
