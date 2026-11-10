@@ -807,6 +807,29 @@ export const agencyRatesApi = {
     },
 }
 
+/**
+ * Approved refusal messages for the payout command RPC
+ * (agency_driver_payout_request). A business refusal maps to exactly one
+ * approved user-facing message — never a provider string.
+ */
+const PAYOUT_REQUEST_REFUSALS: Readonly<Record<string, string>> = Object.freeze({
+    driver_not_approved: 'This driver is not approved yet.',
+    driver_not_employed: 'This driver is not employed by your agency. Add the driver in Drivers first.',
+    idempotency_key_reused: 'This payment request was already used for different details. Start again.',
+})
+
+/** Controlled payout command exception texts; anything else is redacted. */
+const PAYOUT_COMMAND_EXCEPTION_MESSAGES: ReadonlySet<string> = new Set([
+    'Idempotency key is required.',
+    'Payout amount must be greater than zero.',
+    'Payout amount must have at most two decimal places.',
+    'Payout amount exceeds the per-request limit.',
+    'Payout note is too long.',
+    'Your access scope does not allow this action.',
+    'Agency approval is required.',
+    'No agency profile found for this account.',
+])
+
 export const agencyDriversApi = {
     async getSnapshot(): Promise<{ trucks: AgencyFleetTruckSummary[]; drivers: AgencyAssignedDriver[] }> {
         try {
@@ -858,22 +881,58 @@ export const agencyDriversApi = {
         )
     },
 
-    async createPayout(driverId: string, amount: number, note?: string): Promise<void> {
+    /**
+     * Idempotent payout request through the agency_driver_payout_request
+     * command RPC (the create-payout Edge action is retired). 'created' and
+     * 'idempotent_replay' both settle as success; the idempotency key belongs
+     * to the page's pay dialog (one key per open dialog, reused on retry).
+     */
+    async createPayout(driverId: string, amount: number, note: string | undefined, idempotencyKey: string): Promise<void> {
         try {
-            const { error } = await supabase.functions.invoke('agency-portal-drivers', {
-                body: { action: 'create-payout', driverId, amount, note },
+            const client = supabase as unknown as {
+                rpc: (name: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: unknown } | null }>
+            }
+            const { data, error } = await client.rpc('agency_driver_payout_request', {
+                p_driver_id: driverId,
+                p_amount: amount,
+                p_note: note ?? null,
+                p_idempotency_key: idempotencyKey,
             })
 
             if (error) {
-                reportFunctionFailure('agency-portal-drivers', error)
-                throw new UserFacingError(resolveFunctionUserMessage(error, 'Failed to submit payment request'))
+                const message = error.message
+                if (typeof message === 'string' && PAYOUT_COMMAND_EXCEPTION_MESSAGES.has(message)) {
+                    throw new UserFacingError(message)
+                }
+
+                reportFunctionFailure('agency_driver_payout_request', error)
+                throw new UserFacingError('Failed to submit payment request')
             }
+
+            const envelope = (Array.isArray(data) ? data[0] : data) as
+                | { ok?: unknown; state?: unknown; error?: unknown }
+                | null
+                | undefined
+
+            if (envelope && envelope.ok === true && typeof envelope.state === 'string') {
+                return
+            }
+
+            if (envelope && envelope.ok === false && typeof envelope.error === 'string') {
+                const refusal = PAYOUT_REQUEST_REFUSALS[envelope.error]
+                if (refusal !== undefined) {
+                    throw new UserFacingError(refusal)
+                }
+            }
+
+            reportFunctionFailure('agency_driver_payout_request', new Error('unexpected command envelope'))
+            throw new UserFacingError('Failed to submit payment request')
         } catch (e) {
             if (e instanceof UserFacingError) {
                 throw e
             }
 
-            reportFunctionFailure('agency-portal-drivers', e)
+            reportFunctionFailure('agency_driver_payout_request', e)
             throw new UserFacingError('Failed to submit payment request')
         }
     },

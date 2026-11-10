@@ -1187,50 +1187,130 @@ describe('agencyPortalApi', () => {
     })
 
     describe('agencyDriversApi.createPayout', () => {
-        it('creates payout successfully', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
+        const payoutRow = { id: 'payout_1', amount: 1000, status: 'requested', requested_at: '2026-11-09T10:00:00Z' }
+
+        it('submits through the agency_driver_payout_request RPC, never an Edge function', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'created', payout: payoutRow },
                 error: null,
             })
-            
-            await expect(agencyDriversApi.createPayout('driver_1', 1000))
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, 'Weekly payout', 'idem-key-1'))
                 .resolves.not.toThrow()
-            
-            expect(invokeMock).toHaveBeenCalledWith('agency-portal-drivers', {
-                body: {
-                    action: 'create-payout',
-                    driverId: 'driver_1',
-                    amount: 1000,
-                },
+
+            expect(rpcMock).toHaveBeenCalledTimes(1)
+            expect(rpcMock).toHaveBeenCalledWith('agency_driver_payout_request', {
+                p_driver_id: 'driver_1',
+                p_amount: 1000,
+                p_note: 'Weekly payout',
+                p_idempotency_key: 'idem-key-1',
+            })
+            expect(invokeMock).not.toHaveBeenCalled()
+        })
+
+        it('maps an undefined note to p_note null', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'created', payout: payoutRow },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1'))
+                .resolves.not.toThrow()
+
+            expect(rpcMock).toHaveBeenCalledWith('agency_driver_payout_request', {
+                p_driver_id: 'driver_1',
+                p_amount: 1000,
+                p_note: null,
+                p_idempotency_key: 'idem-key-1',
             })
         })
 
-        it('creates payout with note', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
+        it('resolves on an idempotent_replay state', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: true, state: 'idempotent_replay', payout: payoutRow },
                 error: null,
             })
-            
-            await expect(agencyDriversApi.createPayout('driver_1', 1000, 'Test note'))
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1'))
                 .resolves.not.toThrow()
-            
-            expect(invokeMock).toHaveBeenCalledWith('agency-portal-drivers', {
-                body: {
-                    action: 'create-payout',
-                    driverId: 'driver_1',
-                    amount: 1000,
-                    note: 'Test note',
-                },
-            })
         })
 
-        it('throws UserFacingError on create failure', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
-                error: { message: 'Create failed' },
+        it('maps driver_not_approved to the approved message', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'driver_not_approved' },
+                error: null,
             })
-            
-            await expect(agencyDriversApi.createPayout('driver_1', 1000))
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1'))
+                .rejects.toThrow('This driver is not approved yet.')
+        })
+
+        it('maps driver_not_employed to the approved message', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'driver_not_employed' },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1'))
+                .rejects.toThrow('This driver is not employed by your agency. Add the driver in Drivers first.')
+        })
+
+        it('maps idempotency_key_reused to the approved message', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'idempotency_key_reused' },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1'))
+                .rejects.toThrow('This payment request was already used for different details. Start again.')
+        })
+
+        it('shows the controlled exception texts verbatim', async () => {
+            const controlled = [
+                'Idempotency key is required.',
+                'Payout amount must be greater than zero.',
+                'Payout amount must have at most two decimal places.',
+                'Payout amount exceeds the per-request limit.',
+                'Payout note is too long.',
+                'Your access scope does not allow this action.',
+                'Agency approval is required.',
+                'No agency profile found for this account.',
+            ]
+
+            for (const message of controlled) {
+                rpcMock.mockResolvedValue({ data: null, error: { message } })
+
+                await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1'))
+                    .rejects.toThrow(message)
+            }
+        })
+
+        it('collapses uncontrolled RPC errors to the fallback with bounded diagnostics', async () => {
+            rpcMock.mockResolvedValue({
+                data: null,
+                error: { message: 'SQLSTATE 42703: relation "public.agency_driver_payouts" does not exist' },
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1'))
+                .rejects.toThrow('Failed to submit payment request')
+
+            const logged = loggerErrorMock.mock.calls.map((call) => call.join(' ')).join(' ')
+            expect(logged).toContain('agency_driver_payout_request')
+            expect(logged).not.toContain('SQLSTATE')
+        })
+
+        it('collapses an unknown refusal code and a malformed envelope to the fallback', async () => {
+            rpcMock.mockResolvedValue({
+                data: { ok: false, error: 'brand_new_refusal' },
+                error: null,
+            })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1'))
+                .rejects.toThrow('Failed to submit payment request')
+
+            rpcMock.mockResolvedValue({ data: null, error: null })
+
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1'))
                 .rejects.toThrow('Failed to submit payment request')
         })
     })
@@ -1251,64 +1331,66 @@ describe('agencyPortalApi', () => {
             }
         }
 
+        // createPayout no longer routes through the Edge function; its safe
+        // error boundary is exercised over the agency_driver_payout_request RPC.
         it('does not surface SQL table/column details', async () => {
-            invokeMock.mockResolvedValue({
+            rpcMock.mockResolvedValue({
                 data: null,
-                error: functionHttpError(500, JSON.stringify({ error: SQL_DETAIL })),
+                error: { message: SQL_DETAIL },
             })
 
-            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1')).rejects.toThrow(FALLBACK)
         })
 
-        it('does not surface JWT-like response payloads', async () => {
-            invokeMock.mockResolvedValue({
+        it('does not surface JWT-like payloads from provider messages', async () => {
+            rpcMock.mockResolvedValue({
                 data: null,
-                error: functionHttpError(502, JSON.stringify({ error: `upstream auth failed: ${JWT_LIKE}` })),
+                error: { message: `upstream auth failed: ${JWT_LIKE}` },
             })
 
-            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1')).rejects.toThrow(FALLBACK)
         })
 
         it('does not surface stack traces from raw error messages', async () => {
-            invokeMock.mockResolvedValue({
+            rpcMock.mockResolvedValue({
                 data: null,
                 error: new Error(`TypeError: x is not a function\n    at handler (file:///srv/index.ts:42:15)\n    at ${JWT_LIKE}`),
             })
 
-            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1')).rejects.toThrow(FALLBACK)
         })
 
         it('does not surface HTML provider responses', async () => {
-            invokeMock.mockResolvedValue({
+            rpcMock.mockResolvedValue({
                 data: null,
-                error: functionHttpError(502, '<html><body><h1>502 Bad Gateway</h1><p>nginx/1.24.0</p></body></html>', 'text/html'),
+                error: { message: '<html><body><h1>502 Bad Gateway</h1><p>nginx/1.24.0</p></body></html>' },
             })
 
-            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1')).rejects.toThrow(FALLBACK)
         })
 
-        it('does not surface malformed JSON responses', async () => {
-            invokeMock.mockResolvedValue({
+        it('does not surface malformed JSON payloads', async () => {
+            rpcMock.mockResolvedValue({
                 data: null,
-                error: functionHttpError(500, '{not valid json'),
+                error: { message: '{not valid json' },
             })
 
-            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1')).rejects.toThrow(FALLBACK)
         })
 
         it('does not surface network failure internals', async () => {
-            invokeMock.mockRejectedValue(new Error('Failed to send a request to the Edge Function: getaddrinfo ENOTFOUND'))
+            rpcMock.mockRejectedValue(new Error('Failed to send a request to the Edge Function: getaddrinfo ENOTFOUND'))
 
-            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1')).rejects.toThrow(FALLBACK)
         })
 
         it('does not surface unknown error shapes', async () => {
-            invokeMock.mockResolvedValue({
+            rpcMock.mockResolvedValue({
                 data: null,
                 error: { code: 'PGRST116', details: SQL_DETAIL, hint: null },
             })
 
-            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1')).rejects.toThrow(FALLBACK)
         })
 
         it('maps an approved 401 code to a sign-in message', async () => {
@@ -1337,27 +1419,25 @@ describe('agencyPortalApi', () => {
                 error: functionHttpError(409, JSON.stringify({ error: 'You cannot modify your own account from this screen.' })),
             })
 
-            // createPayout still routes through the Edge function; the four
-            // re-implemented command methods no longer do.
-            await expect(agencyDriversApi.createPayout('driver_1', 1000))
+            // createPayout no longer routes through the Edge function; the
+            // approved status mapping is verified on a method that still does.
+            await expect(agencyDriversApi.getSnapshot())
                 .rejects.toThrow('This account cannot be modified from this screen.')
         })
 
         it('logs bounded diagnostics without internal details', async () => {
-            invokeMock.mockResolvedValue({
+            rpcMock.mockResolvedValue({
                 data: null,
-                error: functionHttpError(500, JSON.stringify({ error: SQL_DETAIL })),
+                error: { message: SQL_DETAIL },
             })
 
-            await expect(agencyDriversApi.createPayout('driver_1', 1000)).rejects.toThrow(FALLBACK)
+            await expect(agencyDriversApi.createPayout('driver_1', 1000, undefined, 'idem-key-1')).rejects.toThrow(FALLBACK)
 
             expect(loggerErrorMock).toHaveBeenCalledTimes(1)
             const logged = loggerErrorMock.mock.calls.map((call) => call.join(' ')).join(' ')
-            expect(logged).toContain('agency-portal-drivers')
-            expect(logged).toContain('500')
+            expect(logged).toContain('agency_driver_payout_request')
             expect(logged).not.toContain(SQL_DETAIL)
             expect(logged).not.toContain('otp_hash')
-            expect(logged).not.toContain('Edge Function returned a non-2xx status code')
         })
     })
 

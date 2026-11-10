@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Users, Truck, Star, RefreshCw, AlertTriangle,
   Phone, MapPin, CheckCircle2, XCircle, Wallet, ShieldAlert, FileText
@@ -58,6 +58,10 @@ export default function AgencyDriversPage() {
   const [payNote, setPayNote] = useState('')
   const [selectedTruckId, setSelectedTruckId] = useState('')
   const [saving, setSaving] = useState(false)
+  // One idempotency key per open pay dialog: created when the dialog opens,
+  // kept across failed retries (so a retry is safe), cleared when the dialog
+  // closes or the request succeeds.
+  const payIdempotencyKeyRef = useRef<string | null>(null)
 
   const fetchData = useCallback(async () => {
     if (!user?.id) return
@@ -164,16 +168,26 @@ export default function AgencyDriversPage() {
       toast.error('Enter a valid amount (min ₹1)')
       return
     }
+    const decimals = payAmount.split('.')[1]
+    if (decimals && decimals.length > 2) {
+      toast.error('Enter an amount with at most two decimals')
+      return
+    }
+    // A failure keeps this key so a retry with the same dialog can only ever
+    // create one payout server-side.
+    const idempotencyKey = payIdempotencyKeyRef.current ?? crypto.randomUUID()
+    payIdempotencyKeyRef.current = idempotencyKey
     setSaving(true)
     try {
-      await agencyDriversApi.createPayout(payModal.driverId, amount, payNote || undefined)
+      await agencyDriversApi.createPayout(payModal.driverId, amount, payNote || undefined, idempotencyKey)
     } catch (error) {
       logger.error('[AgencyDrivers] pay:', error)
-      toast.error('Payment failed')
+      toast.error(toUserFacingErrorMessage(error, 'Payment failed'))
       setSaving(false)
       return
     }
     toast.success('Payment request submitted for admin review')
+    payIdempotencyKeyRef.current = null
     setPayModal(null)
     setPayAmount('')
     setPayNote('')
@@ -294,7 +308,7 @@ export default function AgencyDriversPage() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => { setPayModal(null); setPayAmount(''); setPayNote('') }}
+                onClick={() => { payIdempotencyKeyRef.current = null; setPayModal(null); setPayAmount(''); setPayNote('') }}
                 className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium"
               >
                 {'Cancel'}
@@ -376,7 +390,10 @@ export default function AgencyDriversPage() {
                 Call
               </a>
               <button
-                onClick={() => setPayModal({ driverId: driver.id, driverName: driver.full_name })}
+                onClick={() => {
+                  payIdempotencyKeyRef.current = crypto.randomUUID()
+                  setPayModal({ driverId: driver.id, driverName: driver.full_name })
+                }}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-xs font-medium"
               >
                 <Wallet size={12} />
