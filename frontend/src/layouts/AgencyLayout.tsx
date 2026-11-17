@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Truck, Briefcase,
-  LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign, UserCog, Handshake, PackagePlus, FileText, Receipt, Wallet
+  LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign, UserCog, Handshake, PackagePlus, FileText, Receipt, Wallet, MapPin, Banknote, Plug
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -26,6 +26,9 @@ const MORE_NAV = [
   { to: '/agency/consignments', icon: FileText, label: 'Consignments' },
   { to: '/agency/invoices', icon: Receipt, label: 'Invoices' },
   { to: '/agency/expenses', icon: Wallet, label: 'Expenses' },
+  { to: '/agency/tracking', icon: MapPin, label: 'Tracking' },
+  { to: '/agency/payroll', icon: Banknote, label: 'Payroll' },
+  { to: '/agency/erp', icon: Plug, label: 'ERP' },
 ]
 
 export default function AgencyLayout() {
