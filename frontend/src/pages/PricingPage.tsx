@@ -6,6 +6,8 @@ import { PRICING_TIERS, type PricingTier } from '../config/pricing'
 import { subscriptionPlansApi } from '../services/subscriptionApi'
 import { useAuthStore } from '../stores/authStore'
 import { useSubscription } from '../hooks/useSubscription'
+import { FALLBACK_PLAN_PRICES_PAISE, GST_NOTE, TWO_MONTHS_FREE } from '../lib/billingState'
+import { FOCUS_RING } from '../components/billing/styles'
 
 const normalizePlanFeatures = (features: unknown): string[] => {
   if (Array.isArray(features)) {
@@ -27,16 +29,26 @@ const normalizePlanFeatures = (features: unknown): string[] => {
 }
 
 // ── Data fetcher ────────────────────────────────────────────────────────────
+// Enterprise is never listed here: it is "contact us" only.
+const isListedTier = (id: string) => id !== 'enterprise'
+
+// Display-only launch prices, used only when the plans table cannot be read.
+const FALLBACK_TIERS: PricingTier[] = PRICING_TIERS.filter((t) => isListedTier(t.id)).map((t) => ({
+  ...t,
+  monthlyPrice: (FALLBACK_PLAN_PRICES_PAISE[t.id]?.monthly ?? t.monthlyPrice * 100) / 100,
+  yearlyPrice: (FALLBACK_PLAN_PRICES_PAISE[t.id]?.yearly ?? t.yearlyPrice * 100) / 100,
+}))
+
 const fetchPricingPlans = async (): Promise<PricingTier[]> => {
   try {
-    const data = await subscriptionPlansApi.getAll()
+    const data = (await subscriptionPlansApi.getAll()).filter((plan) => isListedTier(plan.tier))
 
     if (!data || data.length === 0) {
-      return PRICING_TIERS
+      return FALLBACK_TIERS
     }
 
     return data.map((plan) => ({
-      id: plan.id, name: plan.name,
+      id: plan.tier, name: plan.name,
       monthlyPrice: plan.price_monthly / 100, yearlyPrice: plan.price_yearly / 100,
       features: normalizePlanFeatures(plan.features),
       limits: {
@@ -53,7 +65,7 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
       targetAudience: plan.name,
     }))
   } catch {
-    return PRICING_TIERS
+    return FALLBACK_TIERS
   }
 }
 
@@ -68,10 +80,10 @@ const LABELS = {
   summaryEyebrow: 'What changes by plan',
   summaryTitle: 'Capacity grows with your users, trucks, and shipment volume.',
   summarySubtitle: 'Every tier keeps the same core workflow: packing, dispatch, tracking, and billing. Upgrade only when usage expands.',
-  highlightFree: 'No card required for the free tier',
+  highlightFree: 'Free trial, no card required',
   highlightBilling: 'Monthly and yearly billing available',
   highlightScale: 'Enterprise rollout support for larger fleets',
-  monthly: 'Monthly', yearly: 'Yearly', saveTag: 'Save 17%',
+  monthly: 'Monthly', yearly: 'Yearly', saveTag: 'Two months free',
   perMonth: '/mo', perYear: '/yr',
   getStarted: 'Get Started', contactSales: 'Contact Sales', startFree: 'Start Free →',
   mostPopular: 'Most Popular', currentPlan: 'Your Plan',
@@ -82,7 +94,7 @@ const LABELS = {
   support: 'Support', unlimited: 'Unlimited',
   compareTitle: 'Full Feature Comparison',
   compareNote: 'Compare the limits before you lock a billing cycle.',
-  freeForever: 'Start for Free', freeDesc: 'No credit card required. Full access to free tier.',
+  freeForever: 'Start for Free', freeDesc: 'Try TruckOpti free. No credit card required to start your trial.',
   enterprise: 'Need a custom plan?',
   enterpriseDesc: 'Large fleet or multiple locations? Get a tailored quote from our team.',
   talkToUs: 'Talk to Our Team',
@@ -187,9 +199,10 @@ function PricingCard({ tier, isYearly, L, isCurrent, isUpgrade, isDowngrade, cla
             <span className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${cfg.txt}`}>{fmtINR(price)}</span>
             <span className="text-sm text-slate-500 mb-1">{isYearly ? L.perYear : L.perMonth}</span>
           </div>
+          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{GST_NOTE}</p>
           {isYearly && tier.monthlyPrice > 0 && (
-            <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-              Save {fmtINR(tier.monthlyPrice * 12 - tier.yearlyPrice)} vs monthly
+            <p className="text-xs text-green-700 dark:text-green-400 mt-1 font-medium">
+              {TWO_MONTHS_FREE}
             </p>
           )}
         </div>
@@ -198,7 +211,7 @@ function PricingCard({ tier, isYearly, L, isCurrent, isUpgrade, isDowngrade, cla
         <button
           onClick={onCta}
           disabled={isCtaDisabled}
-          className={`w-full py-3 rounded-xl font-semibold text-sm transition-all mb-4 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed ${getCtaClass()}`}
+          className={`w-full min-h-[44px] py-3 rounded-xl font-semibold text-sm transition-all mb-4 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed ${FOCUS_RING} ${getCtaClass()}`}
         >
           {getCtaContent()}
         </button>
@@ -259,14 +272,14 @@ export default function PricingPage() {
     navigate(`/checkout?${params.toString()}`)
   }
 
-  const { data: tiers = PRICING_TIERS, isLoading } = useQuery<PricingTier[]>({
-    queryKey: ['pricing-plans'], queryFn: fetchPricingPlans,
-    staleTime: 1000 * 60 * 5, initialData: PRICING_TIERS,
+  const { data: tiers = FALLBACK_TIERS, isLoading } = useQuery<PricingTier[]>({
+    queryKey: ['pricing-plans-v2'], queryFn: fetchPricingPlans,
+    staleTime: 1000 * 60 * 5, initialData: FALLBACK_TIERS,
   })
 
   // Determine current tier index (based on price order - lowest first)
   const currentTierIndex = currentPlan
-    ? tiers.findIndex(t => t.id === currentPlan.id)
+    ? tiers.findIndex(t => t.id === currentPlan.tier)
     : -1
 
   // Determine if each tier is upgrade or downgrade
@@ -330,11 +343,11 @@ export default function PricingPage() {
             <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm">
               <button
                 onClick={() => setIsYearly(false)}
-                className={`px-3 py-1.5 rounded-md font-medium transition-all text-xs sm:text-sm ${!isYearly ? 'bg-white dark:bg-slate-700 shadow text-slate-900 dark:text-white' : 'text-slate-500'}`}
+                className={`min-h-[44px] px-3 py-1.5 rounded-md font-medium transition-all text-xs sm:text-sm ${FOCUS_RING} ${!isYearly ? 'bg-white dark:bg-slate-700 shadow text-slate-900 dark:text-white' : 'text-slate-500'}`}
               >{L.monthly}</button>
               <button
                 onClick={() => setIsYearly(true)}
-                className={`px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1 text-xs sm:text-sm ${isYearly ? 'bg-white dark:bg-slate-700 shadow text-slate-900 dark:text-white' : 'text-slate-500'}`}
+                className={`min-h-[44px] px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1 text-xs sm:text-sm ${FOCUS_RING} ${isYearly ? 'bg-white dark:bg-slate-700 shadow text-slate-900 dark:text-white' : 'text-slate-500'}`}
               >
                 {L.yearly}
                 <span className="hidden sm:inline text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-bold">{L.saveTag}</span>
@@ -428,7 +441,7 @@ export default function PricingPage() {
 
         {/* Cards */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 animate-pulse space-y-3 h-80" />
             ))}
@@ -447,7 +460,7 @@ export default function PricingPage() {
                 return (
                   <PricingCard
                     key={tier.id} tier={tier} isYearly={isYearly} L={L}
-                    isCurrent={currentPlan?.id === tier.id}
+                    isCurrent={currentPlan?.tier === tier.id}
                     isUpgrade={isUpgrade}
                     isDowngrade={isDowngrade}
                     className="snap-center shrink-0 w-[88vw] max-w-sm sm:w-[55vw]"
@@ -478,13 +491,13 @@ export default function PricingPage() {
             </div>
 
             {/* Desktop grid */}
-            <div className="hidden lg:grid grid-cols-4 gap-6 items-stretch">
+            <div className="hidden lg:grid grid-cols-3 gap-6 items-stretch">
               {tiers.map((tier, idx) => {
                 const { isUpgrade, isDowngrade } = getTierRelation(idx)
                 return (
                   <PricingCard
                     key={tier.id} tier={tier} isYearly={isYearly} L={L}
-                    isCurrent={currentPlan?.id === tier.id}
+                    isCurrent={currentPlan?.tier === tier.id}
                     isUpgrade={isUpgrade}
                     isDowngrade={isDowngrade}
                     onCta={() => {
@@ -543,10 +556,10 @@ export default function PricingPage() {
                   ))}
                   {/* Price row */}
                   <tr className="border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/60 dark:bg-slate-800/40">
-                    <td className="py-3 px-5 text-slate-600 dark:text-slate-400 font-medium">Price/month</td>
+                    <td className="py-3 px-5 text-slate-600 dark:text-slate-400 font-medium">{isYearly ? 'Price/year (excl. GST)' : 'Price/month (excl. GST)'}</td>
                     {tiers.map((tier) => (
                       <td key={tier.id} className="py-3 px-3 text-center font-bold text-slate-900 dark:text-white">
-                        {fmtINR(isYearly ? Math.round(tier.yearlyPrice / 12) : tier.monthlyPrice)}
+                        {fmtINR(isYearly ? tier.yearlyPrice : tier.monthlyPrice)}
                       </td>
                     ))}
                   </tr>
@@ -558,9 +571,9 @@ export default function PricingPage() {
                       return (
                         <td key={tier.id} className="py-5 px-3 text-center">
                           <button
-                            onClick={() => tier.id === 'enterprise' ? navigate('/contact') : navigateToCheckout(tier.id)}
-                            className={`px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${cfg.grad} hover:opacity-90 transition-opacity active:scale-95`}
-                          >{tier.id === 'enterprise' ? L.contactSales : L.getStarted}</button>
+                            onClick={() => navigateToCheckout(tier.id)}
+                            className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${cfg.grad} hover:opacity-90 transition-opacity active:scale-95 ${FOCUS_RING}`}
+                          >{L.getStarted}</button>
                         </td>
                       )
                     })}

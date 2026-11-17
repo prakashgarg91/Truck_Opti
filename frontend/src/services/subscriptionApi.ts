@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { PRICING_TIERS, type PricingTier } from '../config/pricing';
+import { FALLBACK_PLAN_PRICES_PAISE, parseEntitlement, parseTrialError, type Entitlement } from '../lib/billingState';
 
 // ============= SUBSCRIPTION PLAN TYPES =============
 export interface SubscriptionPlan {
@@ -25,7 +26,7 @@ export interface Subscription {
   id: string;
   user_id: string;
   plan_id: string;
-  status: 'active' | 'paused' | 'cancelled' | 'expired' | 'trial';
+  status: 'active' | 'paused' | 'cancelled' | 'expired' | 'trial' | 'past_due' | 'grace';
   billing_cycle: 'monthly' | 'yearly';
   current_period_start: string;
   current_period_end: string;
@@ -88,8 +89,8 @@ function mapPricingTierToSubscriptionPlan(tier: PricingTier): SubscriptionPlan {
     name: tier.name,
     name_hi: tier.name,
     tier: tier.id as SubscriptionPlan['tier'],
-    price_monthly: tier.monthlyPrice * 100,
-    price_yearly: tier.yearlyPrice * 100,
+    price_monthly: FALLBACK_PLAN_PRICES_PAISE[tier.id]?.monthly ?? tier.monthlyPrice * 100,
+    price_yearly: FALLBACK_PLAN_PRICES_PAISE[tier.id]?.yearly ?? tier.yearlyPrice * 100,
     trucks_limit: tier.limits.trucksManaged,
     shipments_monthly: tier.limits.shipmentsPerMonth,
     users_limit: tier.limits.users,
@@ -163,24 +164,65 @@ export const subscriptionPlansApi = {
   }
 };
 
+// ============= ENTITLEMENT (the only read path) =============
+// TO-152: the subscriptions and usage tables are no longer readable by the
+// client. agency_subscription_entitlement() is the single read path.
+export class TrialError extends Error {
+  code: ReturnType<typeof parseTrialError>;
+  constructor(code: ReturnType<typeof parseTrialError>, message: string) {
+    super(message);
+    this.name = 'TrialError';
+    this.code = code;
+  }
+}
+
+export const entitlementApi = {
+  async get(): Promise<Entitlement> {
+    const { data, error } = await supabase.rpc('agency_subscription_entitlement');
+    if (error) throw error;
+    return parseEntitlement(data);
+  },
+
+  // Owner-only, server-enforced. Typed errors: identity_required,
+  // trial_already_claimed, forbidden_scope.
+  async startTrial(): Promise<Entitlement> {
+    const { data, error } = await supabase.rpc('agency_subscription_start_trial');
+    if (error) throw new TrialError(parseTrialError(error), error.message);
+    const payload = data as { ok?: boolean; error?: string } | null;
+    if (payload && payload.ok === false) {
+      throw new TrialError(parseTrialError(payload), payload.error ?? 'trial_failed');
+    }
+    return entitlementApi.get();
+  },
+};
+
+function entitlementToLegacySubscription(ent: Entitlement): Subscription | null {
+  // Legacy callers only know live, usable subscriptions. past_due still has
+  // full access (banner only), so it maps to active; grace/expired/none do not.
+  if (ent.status !== 'trial' && ent.status !== 'active' && ent.status !== 'past_due') return null;
+  const end = ent.status === 'trial' ? (ent.trialEnd ?? ent.periodEnd) : ent.periodEnd;
+  return {
+    id: ent.agencyId ?? '',
+    user_id: '',
+    plan_id: ent.planTier ?? '',
+    status: ent.status === 'past_due' ? 'active' : ent.status,
+    billing_cycle: 'monthly',
+    current_period_start: '',
+    current_period_end: end ?? new Date(0).toISOString(),
+    trial_end: ent.trialEnd ?? undefined,
+    cancel_at_period_end: false,
+  };
+}
+
 // ============= SUBSCRIPTIONS API =============
 export const subscriptionsApi = {
-  // Get current user's subscription
+  // Get the agency's live subscription (legacy shape, read through the RPC)
   async getCurrent(): Promise<Subscription | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .in('status', ['active', 'trial'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) return null;
-    return data;
+    try {
+      return entitlementToLegacySubscription(await entitlementApi.get());
+    } catch {
+      return null;
+    }
   },
 
   // Get subscription with plan details
@@ -202,9 +244,9 @@ export const subscriptionsApi = {
     throw new Error('Direct client subscription creation is disabled. Use the secure checkout flow.');
   },
 
-  // Start trial
-  async startTrial(_planId: string): Promise<Subscription> {
-    throw new Error('Direct client trial activation is disabled. Use a server-managed trial flow.');
+  // Start trial (server-managed RPC; owner only)
+  async startTrial(): Promise<Entitlement> {
+    return entitlementApi.startTrial();
   },
 
   // Cancel subscription
@@ -220,21 +262,25 @@ export const subscriptionsApi = {
 
 // ============= USAGE TRACKING API =============
 export const usageApi = {
-  // Get current period usage
+  // Current usage, read from the entitlement RPC (no usage_tracking read)
   async getCurrent(): Promise<UsageTracking | null> {
-    const subscription = await subscriptionsApi.getCurrent();
-    if (!subscription) return null;
-
-    const { data, error } = await supabase
-      .from('usage_tracking')
-      .select('*')
-      .eq('subscription_id', subscription.id)
-      .lte('period_start', new Date().toISOString())
-      .gte('period_end', new Date().toISOString())
-      .single();
-
-    if (error) return null;
-    return data;
+    try {
+      const ent = await entitlementApi.get();
+      if (!entitlementToLegacySubscription(ent)) return null;
+      return {
+        id: ent.agencyId ?? '',
+        subscription_id: ent.agencyId ?? '',
+        period_start: '',
+        period_end: ent.periodEnd ?? '',
+        shipments_used: ent.usage.orders_month,
+        api_calls_used: 0,
+        sms_sent: 0,
+        maps_requests: 0,
+        storage_used_mb: 0,
+      };
+    } catch {
+      return null;
+    }
   },
 
   // Check if user can perform action (within limits)
@@ -258,21 +304,59 @@ export const usageApi = {
       .rpc('increment_usage', { p_user_id: user.id, p_resource: resource, p_amount: amount });
   },
 
-  // Get usage history
+  // No client read path for usage history after TO-152.
   async getHistory(): Promise<UsageTracking[]> {
-    const subscription = await subscriptionsApi.getCurrent();
-    if (!subscription) return [];
-
-    const { data, error } = await supabase
-      .from('usage_tracking')
-      .select('*')
-      .eq('subscription_id', subscription.id)
-      .order('period_start', { ascending: false })
-      .limit(12);
-
-    if (error) return [];
-    return data || [];
+    return [];
   }
+};
+
+// ============= CHECKOUT (the server prices everything) =============
+export interface CheckoutOrderRequest {
+  plan_tier: 'starter' | 'growth' | 'professional';
+  billing_cycle: 'monthly' | 'yearly';
+  coupon_code?: string;
+}
+
+// Order as returned by the Edge function. amount is the server's figure,
+// shown to the buyer and handed to Razorpay Checkout; never computed here.
+export interface CheckoutOrder {
+  id: string;
+  amount: number;
+  currency: string;
+}
+
+export const checkoutApi = {
+  async createOrder(request: CheckoutOrderRequest): Promise<CheckoutOrder> {
+    const coupon = request.coupon_code?.trim();
+    const body: Record<string, string> = {
+      plan_tier: request.plan_tier,
+      billing_cycle: request.billing_cycle,
+    };
+    if (coupon) body.coupon_code = coupon.toUpperCase();
+
+    const { data, error } = await supabase.functions.invoke<Partial<CheckoutOrder> & { error?: string }>(
+      'create-razorpay-order',
+      { body },
+    );
+    if (error || !data?.id) {
+      throw new Error(data?.error || 'Unable to start payment right now. Please try again.');
+    }
+    return { id: data.id, amount: Number(data.amount ?? 0), currency: data.currency || 'INR' };
+  },
+
+  // Asks the server to verify the signature. The result is never treated as
+  // activation: callers refetch the entitlement instead.
+  async verifyPayment(payload: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }): Promise<void> {
+    try {
+      await supabase.functions.invoke('verify-razorpay-payment', { body: payload });
+    } catch {
+      // The webhook is the backstop; polling decides what the buyer sees.
+    }
+  },
 };
 
 // ============= INVOICES API =============
@@ -368,6 +452,8 @@ export const subscriptionHelpers = {
 export const subscriptionApi = {
   plans: subscriptionPlansApi,
   subscriptions: subscriptionsApi,
+  entitlement: entitlementApi,
+  checkout: checkoutApi,
   usage: usageApi,
   invoices: invoicesApi,
   helpers: subscriptionHelpers

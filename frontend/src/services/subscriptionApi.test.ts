@@ -36,6 +36,7 @@ vi.mock('../lib/supabase', () => ({
     },
 }))
 
+import { supabase } from '../lib/supabase'
 import {
     subscriptionApi,
     subscriptionHelpers,
@@ -161,48 +162,143 @@ describe('subscriptionApi', () => {
         })
     })
 
-    describe('subscriptionsApi.getCurrent', () => {
-        it('returns null when no user is authenticated', async () => {
-            authGetUserMock.mockResolvedValue({ data: { user: null } })
-
-            const result = await subscriptionApi.subscriptions.getCurrent()
-
-            expect(result).toBeNull()
+    describe('subscriptionsApi.getCurrent (entitlement RPC, no table read)', () => {
+        const entitlement = (over: Record<string, unknown> = {}) => ({
+            ok: true,
+            agency_id: 'ag_1',
+            status: 'active',
+            plan_tier: 'growth',
+            period_end: '2027-01-01T00:00:00Z',
+            grace_end: null,
+            trial_end: null,
+            can_write: true,
+            can_dispatch: true,
+            limits: { trucks: 10, staff: 5, drivers: 20, orders_month: 500 },
+            usage: { trucks: 3, staff: 1, drivers: 2, orders_month: 40 },
+            ...over,
         })
 
-        it('returns active subscription when found', async () => {
-            const mockUser = { id: 'user_1' }
-            const mockSubscription = { id: 'sub_1', user_id: 'user_1', status: 'active' }
-
-            authGetUserMock.mockResolvedValue({ data: { user: mockUser } })
-            maybeSingleMock.mockResolvedValue({ data: mockSubscription, error: null })
+        it('reads through the RPC and never touches the subscriptions table', async () => {
+            rpcMock.mockResolvedValue({ data: entitlement(), error: null })
 
             const result = await subscriptionApi.subscriptions.getCurrent()
 
-            expect(result).toEqual(mockSubscription)
+            expect(rpcMock).toHaveBeenCalledWith('agency_subscription_entitlement')
+            expect(supabase.from).not.toHaveBeenCalled()
+            expect(result).toMatchObject({ status: 'active', plan_id: 'growth', current_period_end: '2027-01-01T00:00:00Z' })
         })
 
-        it('returns trial subscription when found', async () => {
-            const mockUser = { id: 'user_1' }
-            const mockSubscription = { id: 'sub_1', user_id: 'user_1', status: 'trial' }
-
-            authGetUserMock.mockResolvedValue({ data: { user: mockUser } })
-            maybeSingleMock.mockResolvedValue({ data: mockSubscription, error: null })
+        it('returns a trial subscription using trial_end', async () => {
+            rpcMock.mockResolvedValue({
+                data: entitlement({ status: 'trial', trial_end: '2026-12-01T00:00:00Z', period_end: null }),
+                error: null,
+            })
 
             const result = await subscriptionApi.subscriptions.getCurrent()
 
-            expect(result).toEqual(mockSubscription)
+            expect(result).toMatchObject({ status: 'trial', current_period_end: '2026-12-01T00:00:00Z' })
         })
 
-        it('returns null on query error', async () => {
-            const mockUser = { id: 'user_1' }
-
-            authGetUserMock.mockResolvedValue({ data: { user: mockUser } })
-            maybeSingleMock.mockResolvedValue({ data: null, error: { message: 'Query error' } })
+        it('keeps past_due fully usable (banner only) for legacy callers', async () => {
+            rpcMock.mockResolvedValue({ data: entitlement({ status: 'past_due' }), error: null })
 
             const result = await subscriptionApi.subscriptions.getCurrent()
 
-            expect(result).toBeNull()
+            expect(result?.status).toBe('active')
+        })
+
+        it.each(['grace', 'expired', 'cancelled'])('returns null for %s', async (status) => {
+            rpcMock.mockResolvedValue({ data: entitlement({ status, can_write: false }), error: null })
+
+            expect(await subscriptionApi.subscriptions.getCurrent()).toBeNull()
+        })
+
+        it('returns null when the agency has no subscription', async () => {
+            rpcMock.mockResolvedValue({ data: { ok: false }, error: null })
+
+            expect(await subscriptionApi.subscriptions.getCurrent()).toBeNull()
+        })
+
+        it('returns null on RPC error', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'boom' } })
+
+            expect(await subscriptionApi.subscriptions.getCurrent()).toBeNull()
+        })
+    })
+
+    describe('usageApi.getCurrent (entitlement RPC)', () => {
+        it('maps orders_month to shipments_used without reading usage_tracking', async () => {
+            rpcMock.mockResolvedValue({
+                data: {
+                    ok: true, agency_id: 'ag_1', status: 'active', plan_tier: 'starter',
+                    period_end: '2027-01-01T00:00:00Z', can_write: true, can_dispatch: true,
+                    limits: {}, usage: { trucks: 1, staff: 0, drivers: 0, orders_month: 77 },
+                },
+                error: null,
+            })
+
+            const usage = await subscriptionApi.usage.getCurrent()
+
+            expect(usage?.shipments_used).toBe(77)
+            expect(supabase.from).not.toHaveBeenCalled()
+        })
+
+        it('returns null with no live subscription and an empty history', async () => {
+            rpcMock.mockResolvedValue({ data: { ok: false }, error: null })
+
+            expect(await subscriptionApi.usage.getCurrent()).toBeNull()
+            expect(await subscriptionApi.usage.getHistory()).toEqual([])
+        })
+    })
+
+    describe('entitlementApi.startTrial', () => {
+        it('calls the owner-only trial RPC then refetches the entitlement', async () => {
+            rpcMock
+                .mockResolvedValueOnce({ data: { ok: true }, error: null })
+                .mockResolvedValueOnce({ data: { ok: true, status: 'trial', can_write: true, can_dispatch: true }, error: null })
+
+            const ent = await subscriptionApi.entitlement.startTrial()
+
+            expect(rpcMock).toHaveBeenNthCalledWith(1, 'agency_subscription_start_trial')
+            expect(rpcMock).toHaveBeenNthCalledWith(2, 'agency_subscription_entitlement')
+            expect(ent.status).toBe('trial')
+        })
+
+        it('surfaces the typed error from a raised exception', async () => {
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'trial_already_claimed' } })
+
+            await expect(subscriptionApi.entitlement.startTrial()).rejects.toMatchObject({ code: 'trial_already_claimed' })
+        })
+
+        it('surfaces the typed error from an ok:false payload', async () => {
+            rpcMock.mockResolvedValue({ data: { ok: false, error: 'identity_required' }, error: null })
+
+            await expect(subscriptionApi.entitlement.startTrial()).rejects.toMatchObject({ code: 'identity_required' })
+        })
+    })
+
+    describe('checkoutApi.createOrder', () => {
+        it('sends only plan_tier, billing_cycle and coupon_code (no amount)', async () => {
+            functionsInvokeMock.mockResolvedValue({ data: { id: 'order_1', amount: 58882, currency: 'INR' }, error: null })
+
+            const order = await subscriptionApi.checkout.createOrder({
+                plan_tier: 'growth',
+                billing_cycle: 'monthly',
+                coupon_code: ' founding50 ',
+            })
+
+            expect(functionsInvokeMock).toHaveBeenCalledWith('create-razorpay-order', {
+                body: { plan_tier: 'growth', billing_cycle: 'monthly', coupon_code: 'FOUNDING50' },
+            })
+            expect(order).toEqual({ id: 'order_1', amount: 58882, currency: 'INR' })
+        })
+
+        it('omits an empty coupon and rejects when no order id comes back', async () => {
+            functionsInvokeMock.mockResolvedValue({ data: null, error: { message: 'x' } })
+
+            await expect(subscriptionApi.checkout.createOrder({ plan_tier: 'starter', billing_cycle: 'yearly', coupon_code: '  ' }))
+                .rejects.toThrow('Unable to start payment')
+            expect(functionsInvokeMock.mock.calls[0][1]).toEqual({ body: { plan_tier: 'starter', billing_cycle: 'yearly' } })
         })
     })
 
@@ -210,13 +306,6 @@ describe('subscriptionApi', () => {
         it('throws error when called directly', async () => {
             await expect(subscriptionApi.subscriptions.create('pro', 'monthly'))
                 .rejects.toThrow('Direct client subscription creation is disabled')
-        })
-    })
-
-    describe('subscriptionsApi.startTrial', () => {
-        it('throws error when called directly', async () => {
-            await expect(subscriptionApi.subscriptions.startTrial('pro'))
-                .rejects.toThrow('Direct client trial activation is disabled')
         })
     })
 

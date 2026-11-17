@@ -1,486 +1,383 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Check, Loader2, CreditCard, Smartphone, AlertCircle, ShieldCheck } from 'lucide-react';
-import { initiateRazorpayPayment, getRazorpayConfig, RazorpayPaymentResult } from '../services/razorpayPayment';
-import { initiatePhonePePayment, getPaymentConfig } from '../services/phonepePayment';
-import { subscriptionPlansApi } from '../services/subscriptionApi';
-import { calculateSubscriptionBillingAmounts } from '../config/billing';
-import toast from 'react-hot-toast';
-import { logger } from '../utils/logger';
-import { useSubscription } from '../hooks/useSubscription';
-import { useAuthStore } from '../stores/authStore';
+﻿import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { AlertCircle, Check, CheckCircle2, Loader2, ShieldCheck, Smartphone } from 'lucide-react'
+import { getRazorpayConfig } from '../services/razorpayPayment'
+import {
+  checkoutApi,
+  entitlementApi,
+  subscriptionPlansApi,
+  type SubscriptionPlan,
+} from '../services/subscriptionApi'
+import {
+  GST_NOTE,
+  TWO_MONTHS_FREE,
+  formatPlanPrice,
+  pollForActivation,
+  type Entitlement,
+} from '../lib/billingState'
+import { openRazorpayCheckout } from '../components/billing/razorpayCheckout'
+import { BTN_PRIMARY, BTN_SECONDARY, FOCUS_RING } from '../components/billing/styles'
+import { useEntitlement } from '../components/billing/useEntitlement'
+import { logger } from '../utils/logger'
+import { useAuthStore } from '../stores/authStore'
 
-interface Plan {
-  id: string;
-  name: string;
-  name_hi: string;
-  tier: string;
-  price_monthly: number;
-  price_yearly: number;
-  features: string[];
+type PlanTier = 'starter' | 'growth' | 'professional'
+type Phase = 'form' | 'opening' | 'activating' | 'active' | 'timeout'
+
+const PAYABLE_TIERS: readonly PlanTier[] = ['starter', 'growth', 'professional']
+const TIER_ORDER: Record<string, number> = { starter: 1, growth: 2, professional: 3, enterprise: 4 }
+
+function isPayableTier(value: string | null): value is PlanTier {
+  return value !== null && (PAYABLE_TIERS as readonly string[]).includes(value)
 }
 
-const PLAN_TIERS = ['starter', 'growth', 'professional', 'enterprise'] as const;
+const INPUT_CLASS = `min-h-[44px] w-full rounded-lg border border-slate-300 bg-white px-4 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white ${FOCUS_RING}`
+const CARD = 'rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800'
 
-function isPlanTierLookup(value: string): value is Plan['tier'] {
-  return (PLAN_TIERS as readonly string[]).includes(value);
-}
-
-const SUPPORTED_UPI_APPS = [
-  {
-    name: 'PhonePe',
-    label: 'PP',
-    tone: 'bg-fuchsia-100 text-fuchsia-700 ring-fuchsia-200',
-    detail: 'Fast UPI collect flow',
-  },
-  {
-    name: 'Google Pay',
-    label: 'G',
-    tone: 'bg-sky-100 text-sky-700 ring-sky-200',
-    detail: 'Popular UPI app support',
-  },
-  {
-    name: 'Any UPI App',
-    label: 'UPI',
-    tone: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
-    detail: 'Works with most bank apps',
-  },
-] as const;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 const CheckoutPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { subscription: currentSubscription, plan: currentPlan } = useSubscription();
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { user } = useAuthStore()
+  const { entitlement: current, refetch: refetchEntitlement } = useEntitlement()
 
-  const planId = searchParams.get('plan');
-  const billingCycle: 'monthly' | 'yearly' = searchParams.get('billing') === 'yearly' ? 'yearly' : 'monthly';
+  const tierParam = searchParams.get('plan')
+  const billingCycle: 'monthly' | 'yearly' = searchParams.get('billing') === 'yearly' ? 'yearly' : 'monthly'
 
-  const { user } = useAuthStore();
+  const [plan, setPlan] = useState<SubscriptionPlan | null>(null)
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [phase, setPhase] = useState<Phase>('form')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState(user?.email || '')
+  const [coupon, setCoupon] = useState('')
+  const [formError, setFormError] = useState<string | null>(null)
+  const cancelled = useRef(false)
 
-  const [plan, setPlan] = useState<Plan | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [subscriptionChange, setSubscriptionChange] = useState<'upgrade' | 'downgrade' | null>(null);
-
-  const razorpayConfig = getRazorpayConfig();
-  const phonePeConfig = getPaymentConfig();
-  const hasLivePhonePe = phonePeConfig.isLaunchReady;
-  const hasRazorpayCheckout = razorpayConfig.isCheckoutEnabled;
-  const paymentTemporarilyUnavailable = !hasLivePhonePe && !hasRazorpayCheckout;
+  const razorpayConfig = getRazorpayConfig()
+  const paymentUnavailable = !razorpayConfig.isCheckoutEnabled
 
   useEffect(() => {
     document.title = 'Checkout - TruckOpti'
+    cancelled.current = false
+    return () => {
+      cancelled.current = true
+    }
   }, [])
 
-  const loadData = useCallback(async () => {
-    try {
-      // Get user
-      if (!user) {
-        toast.error('Please login to continue');
-        navigate('/login');
-        return;
-      }
-      setEmail(user.email || '');
-
-      // Get plan details
-      if (!planId) {
-        navigate('/pricing');
-        return;
-      }
-      if (planId) {
-        const planData = isPlanTierLookup(planId)
-          ? await subscriptionPlansApi.getByTier(planId)
-          : await subscriptionPlansApi.getById(planId);
-
-        if (!planData) {
-          toast.error(
-            isPlanTierLookup(planId)
-              ? 'Selected plan is temporarily unavailable. Please refresh pricing and try again.'
-              : 'Plan not found'
-          );
-          navigate('/pricing');
-          return;
-        }
-        setPlan(planData);
-
-        // Check for existing subscription and determine upgrade/downgrade
-        if (currentSubscription && currentPlan) {
-          const tierOrder = { starter: 1, growth: 2, professional: 3, enterprise: 4 };
-          const currentTier = currentPlan.tier || 'starter';
-          const newTier = planData.tier || 'starter';
-          const currentTierNum = tierOrder[currentTier as keyof typeof tierOrder] || 1;
-          const newTierNum = tierOrder[newTier as keyof typeof tierOrder] || 1;
-
-          if (newTierNum > currentTierNum) {
-            setSubscriptionChange('upgrade');
-          } else if (newTierNum < currentTierNum) {
-            setSubscriptionChange('downgrade');
-          }
-        }
-      }
-    } catch (error) {
-      logger.error('Error loading checkout data:', error);
-      toast.error('Failed to load checkout');
-    } finally {
-      setLoading(false);
+  const loadPlan = useCallback(async () => {
+    if (!isPayableTier(tierParam)) {
+      // Enterprise is contact-only; anything else is not a plan.
+      navigate(tierParam === 'enterprise' ? '/contact' : '/pricing', { replace: true })
+      return
     }
-  }, [user, navigate, planId, currentSubscription, currentPlan]); // language removed: only used in toast text, not query logic
+    setLoadState('loading')
+    try {
+      const data = await subscriptionPlansApi.getByTier(tierParam)
+      if (!data) {
+        setLoadState('error')
+        return
+      }
+      setPlan(data)
+      setLoadState('ready')
+    } catch (error) {
+      logger.error('Error loading checkout plan:', error)
+      setLoadState('error')
+    }
+  }, [tierParam, navigate])
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    void loadPlan()
+  }, [loadPlan])
 
-  const handlePayment = async () => {
-    if (!plan || !user) return;
-
-    if (!phone || phone.length < 10) {
-      toast.error('Please enter a valid phone number');
-      return;
+  const handlePay = async () => {
+    if (!plan || !isPayableTier(tierParam)) return
+    if (phone.length !== 10) {
+      setFormError('Enter a valid 10 digit mobile number.')
+      return
+    }
+    if (paymentUnavailable) {
+      setFormError('Payments are temporarily unavailable. Please contact support.')
+      return
     }
 
-    if (paymentTemporarilyUnavailable) {
-      toast.error('Live payments are temporarily unavailable. Please contact support.');
-      return;
-    }
+    setFormError(null)
+    setPhase('opening')
 
-    setProcessing(true);
+    // Snapshot before paying so a renewal or plan change can be told apart.
+    let before: Entitlement | null = current ?? null
+    try {
+      before = await entitlementApi.get()
+    } catch {
+      // keep the cached snapshot
+    }
 
     try {
-      const amount = billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
-      const { totalAmount } = calculateSubscriptionBillingAmounts(amount);
+      // Only plan, cycle and coupon are sent. The server prices and taxes.
+      const order = await checkoutApi.createOrder({
+        plan_tier: tierParam,
+        billing_cycle: billingCycle,
+        coupon_code: coupon,
+      })
 
-      const phonePeResult = await initiatePhonePePayment({
-        amount: totalAmount,
-        orderId: `ORD${Date.now()}`,
-        userId: user.id,
-        planId: plan.id,
-        billingCycle: billingCycle === 'yearly' ? 'yearly' : 'monthly',
-        customerPhone: phone,
-        customerEmail: email,
-      });
+      const outcome = await openRazorpayCheckout({
+        keyId: razorpayConfig.keyId,
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        description: `TruckOpti ${plan.name} - ${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}`,
+        prefill: { name: user?.name || '', email, contact: phone },
+      })
 
-      if (phonePeResult.success && phonePeResult.data?.instrumentResponse?.redirectInfo?.url) {
-        const redirectUrl = phonePeResult.data.instrumentResponse.redirectInfo.url;
-        // Security: validate redirect URL is on an allowed PhonePe domain (BUG-REDIRECT-001 fix)
-        const ALLOWED_PHONEPE_DOMAINS = ['api.phonepe.com', 'mercury.phonepe.com', 'api-preprod.phonepe.com'];
-        let isSafeUrl = false;
-        try {
-          const parsed = new URL(redirectUrl);
-          isSafeUrl = parsed.protocol === 'https:' &&
-            ALLOWED_PHONEPE_DOMAINS.some(d => parsed.hostname === d || parsed.hostname.endsWith(`.${d}`));
-        } catch {
-          isSafeUrl = false;
-        }
-        if (!isSafeUrl) {
-          logger.error('PhonePe redirect URL failed domain validation:', redirectUrl);
-          toast.error('Payment redirect validation failed. Please try again.');
-          setProcessing(false);
-          return;
-        }
-        toast.success('Redirecting to PhonePe...');
-        window.location.href = redirectUrl;
-        return;
+      if (outcome.kind === 'dismissed') {
+        setPhase('form')
+        return
+      }
+      if (outcome.kind === 'failed') {
+        setFormError(outcome.message)
+        setPhase('form')
+        return
       }
 
-      toast.error('PhonePe unavailable. Switching to Razorpay...');
-
-      const result: RazorpayPaymentResult = await initiateRazorpayPayment({
-        amount: totalAmount, // Already in paise from database
-        description: `TruckOpti ${plan.name} - ${billingCycle === 'yearly' ? 'Annual' : 'Monthly'}`,
-        userId: user.id,
-        planId: plan.id,
-        billingCycle: billingCycle === 'yearly' ? 'yearly' : 'monthly',
-        customerPhone: phone,
-        customerEmail: email,
-        customerName: user.name || 'Customer',
-      });
-
-      if (result.success) {
-        toast.success('Payment successful!');
-        navigate('/payment/success?payment_id=' + result.paymentId + '&status=success');
-      } else if (result.status === 'pending' && result.paymentId) {
-        toast('Payment received. Subscription verification is still pending.', { icon: '⏳' });
-        navigate('/payment/callback?payment_id=' + result.paymentId + '&order_id=' + result.orderId + '&status=pending');
-      } else if (result.error === 'Payment cancelled by user') {
-        toast('Payment cancelled.', { icon: 'ℹ️' });
-      } else {
-        logger.warn('[CheckoutPage] Razorpay initiation failed', result);
-        toast.error('Unable to start payment right now. Please try again.');
-      }
+      // The callback is not activation. Ask the server to verify, then watch
+      // the entitlement until it says active.
+      setPhase('activating')
+      await checkoutApi.verifyPayment(outcome.payload)
+      const result = await pollForActivation({
+        fetchEntitlement: () => entitlementApi.get(),
+        before,
+        sleep,
+        isCancelled: () => cancelled.current,
+      })
+      if (result === 'cancelled') return
+      await refetchEntitlement()
+      setPhase(result === 'activated' ? 'active' : 'timeout')
     } catch (error) {
-      logger.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
-    } finally {
-      setProcessing(false);
+      logger.error('Payment error:', error)
+      setFormError(error instanceof Error && error.message ? error.message : 'Payment could not be started. Please try again.')
+      setPhase('form')
     }
-  };
-
-  const formatPrice = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
   }
 
-  if (!plan) {
+  if (loadState === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Plan not found</p>
-          <button
-            onClick={() => navigate('/pricing')}
-            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            View Plans
-          </button>
+      <div role="status" aria-label="Loading checkout" className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" aria-hidden="true" />
+      </div>
+    )
+  }
+
+  if (loadState === 'error' || !plan) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
+        <div role="alert" className="text-center">
+          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-600" aria-hidden="true" />
+          <p className="text-slate-700 dark:text-slate-200">We could not load this plan.</p>
+          <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
+            <button type="button" onClick={() => void loadPlan()} className={BTN_PRIMARY}>Try again</button>
+            <button type="button" onClick={() => navigate('/pricing')} className={BTN_SECONDARY}>View plans</button>
+          </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const amount = billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
-  const { taxAmount, totalAmount, gstEnabled, gstRatePercent } = calculateSubscriptionBillingAmounts(amount);
+  if (phase === 'activating') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
+        <div role="status" aria-live="polite" className={`${CARD} max-w-md text-center`}>
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-600" aria-hidden="true" />
+          <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">Payment received, activating</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            We are confirming your payment with the bank. This usually takes a few seconds. Please keep this page open.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'active') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
+        <div role="status" className={`${CARD} max-w-md text-center`}>
+          <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" aria-hidden="true" />
+          <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">Your {plan.name} plan is active</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Thank you. Your invoice will be available under Subscription.</p>
+          <button type="button" onClick={() => navigate('/subscription')} className={`${BTN_PRIMARY} mt-5`}>Go to subscription</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'timeout') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
+        <div role="status" className={`${CARD} max-w-md text-center`}>
+          <AlertCircle className="mx-auto h-10 w-10 text-amber-600" aria-hidden="true" />
+          <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">We have your payment</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            Activation is taking longer than usual. You do not need to pay again. We will email you as soon as your plan is active. If you do not hear from us, contact support.
+          </p>
+          <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+            <button type="button" onClick={() => navigate('/subscription')} className={BTN_PRIMARY}>Check subscription</button>
+            <button type="button" onClick={() => navigate('/support')} className={BTN_SECONDARY}>Contact support</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const listPrice = billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly
+  const busy = phase === 'opening'
+  const currentTier = current?.planTier ?? null
+  const isLiveChange = current?.status === 'active' && currentTier !== null && currentTier !== plan.tier
+  const change = isLiveChange
+    ? (TIER_ORDER[plan.tier] ?? 0) > (TIER_ORDER[currentTier] ?? 0) ? 'upgrade' : 'downgrade'
+    : null
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Test Mode Banner */}
-        {(phonePeConfig.isTestMode || razorpayConfig.isTestMode) && (
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            <span>
-              {'Test mode is active. Use sandbox credentials only; no live payment will be captured.'}
-            </span>
+    <div className="min-h-screen bg-slate-50 px-4 py-12 dark:bg-slate-900">
+      <div className="mx-auto max-w-4xl">
+        {razorpayConfig.isTestMode && (
+          <div role="status" className="mb-6 flex items-center gap-2 rounded-lg border border-yellow-400 bg-yellow-100 px-4 py-3 text-yellow-900">
+            <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span>Test mode is active. Use sandbox credentials only; no live payment will be captured.</span>
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Order Summary */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-              {'Order Summary'}
-            </h2>
+        <div className="grid gap-8 md:grid-cols-2">
+          <section className={CARD} aria-labelledby="order-summary-heading">
+            <h1 id="order-summary-heading" className="mb-6 text-xl font-bold text-slate-900 dark:text-white">Order summary</h1>
 
-            {/* Upgrade/Downgrade Notice */}
-            {subscriptionChange && (
-              <div className={`mb-4 p-3 rounded-lg ${subscriptionChange === 'upgrade' ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'}`}>
-                {subscriptionChange === 'upgrade' ? (
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    {`You are upgrading from ${currentPlan?.name || 'your current plan'} to ${plan.name}. The new limits apply after payment is confirmed.`}
-                  </p>
-                ) : (
-                  <p className="text-sm text-amber-700 dark:text-amber-300">
-                    {`You are switching from ${currentPlan?.name || 'your current plan'} to ${plan.name}. Review the lower limits before you continue.`}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {plan.name} Plan
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {billingCycle === 'yearly'
-                      ? ('Annual subscription')
-                      : ('Monthly subscription')}
-                  </p>
-                </div>
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {formatPrice(amount)}
-                </span>
-              </div>
-            </div>
-
-            {/* Features */}
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                {'Included Features'}
-              </h4>
-              <ul className="space-y-2">
-                {plan.features.slice(0, 5).map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Check className="w-4 h-4 text-green-500" />
-                    {feature.replace(/_/g, ' ')}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Price Breakdown */}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">
-                  {'Subtotal'}
-                </span>
-                <span className="text-gray-900 dark:text-white">{formatPrice(amount)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">
-                  {gstEnabled ? `GST (${gstRatePercent}%)` : 'GST (currently disabled)'}
-                </span>
-                <span className="text-gray-900 dark:text-white">{formatPrice(taxAmount)}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
-                <span className="text-gray-900 dark:text-white">
-                  {'Total'}
-                </span>
-                <span className="text-blue-600">{formatPrice(totalAmount)}</span>
-              </div>
-            </div>
-
-            {!gstEnabled && (
-              <p className="mt-4 text-xs text-amber-600 dark:text-amber-400">
-                {'GST is not being charged yet. TruckOpti billing can enable GST later after tax registration is active.'}
+            {change && (
+              <p className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-100">
+                {change === 'upgrade'
+                  ? `You are upgrading to ${plan.name}. The new limits apply once your payment is confirmed.`
+                  : `You are moving to ${plan.name}. Review the lower limits before you continue.`}
               </p>
             )}
-          </div>
 
-          {/* Payment Form */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-              {'Payment Details'}
-            </h2>
+            <div className="mb-4 flex items-start justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
+              <div>
+                <h2 className="font-semibold text-slate-900 dark:text-white">{plan.name} plan</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {billingCycle === 'yearly' ? `Yearly (${TWO_MONTHS_FREE})` : 'Monthly'}
+                </p>
+              </div>
+              <span className="font-semibold text-slate-900 dark:text-white">
+                {formatPlanPrice(listPrice)}
+                <span className="block text-right text-xs font-normal text-slate-600 dark:text-slate-300">excl. GST</span>
+              </span>
+            </div>
+
+            <ul className="mb-6 space-y-2" aria-label="Included features">
+              {plan.features.slice(0, 5).map((feature) => (
+                <li key={feature} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                  <Check className="h-4 w-4 shrink-0 text-green-600" aria-hidden="true" />
+                  {feature.replace(/_/g, ' ')}
+                </li>
+              ))}
+            </ul>
+
+            <p className="border-t border-slate-200 pt-4 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-200">
+              {GST_NOTE}. The final amount, including GST and any coupon, is calculated securely and shown in the payment window before you pay.
+            </p>
+            <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
+              See our <Link to="/terms" className={`font-semibold text-indigo-700 underline dark:text-indigo-300 ${FOCUS_RING}`}>refund policy</Link>.
+            </p>
+          </section>
+
+          <section className={CARD} aria-labelledby="payment-details-heading">
+            <h2 id="payment-details-heading" className="mb-6 text-xl font-bold text-slate-900 dark:text-white">Payment details</h2>
 
             <div className="space-y-4">
-              {/* Phone Number */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {'Mobile Number'} *
-                </label>
+                <label htmlFor="checkout-phone" className="mb-2 block text-sm font-medium text-slate-800 dark:text-slate-200">Mobile number *</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">+91</span>
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" aria-hidden="true">+91</span>
                   <input
+                    id="checkout-phone"
                     type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     placeholder="9876543210"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`${INPUT_CLASS} pl-12`}
+                    aria-describedby="checkout-phone-help"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {'UPI payment link will be sent to this number'}
-                </p>
+                <p id="checkout-phone-help" className="mt-1 text-xs text-slate-600 dark:text-slate-300">Used by the payment window for UPI and bank confirmation.</p>
               </div>
 
-              {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {'Email Address'}
-                </label>
+                <label htmlFor="checkout-email" className="mb-2 block text-sm font-medium text-slate-800 dark:text-slate-200">Email address</label>
                 <input
+                  id="checkout-email"
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={INPUT_CLASS}
                 />
               </div>
 
-              {/* Payment Methods */}
-              <div className="pt-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  {'Pay with'}
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2 p-3 border-2 border-blue-500 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-                    <Smartphone className="w-5 h-5 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-600">UPI</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg opacity-50 cursor-not-allowed">
-                    <CreditCard className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm text-gray-400">Card</span>
-                  </div>
-                </div>
+              <div>
+                <label htmlFor="checkout-coupon" className="mb-2 block text-sm font-medium text-slate-800 dark:text-slate-200">Coupon code (optional)</label>
+                <input
+                  id="checkout-coupon"
+                  type="text"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  value={coupon}
+                  onChange={(e) => setCoupon(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 32))}
+                  className={INPUT_CLASS}
+                  aria-describedby="checkout-coupon-help"
+                />
+                <p id="checkout-coupon-help" className="mt-1 text-xs text-slate-600 dark:text-slate-300">Checked on our server when you pay.</p>
               </div>
 
-              {/* UPI Apps */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      {'Accepted UPI apps'}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {'Complete payment with PhonePe, Google Pay, or any supported UPI app after checkout opens.'}
-                    </p>
-                  </div>
-                  <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                    {'UPI Ready'}
-                  </div>
-                </div>
+              <p className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-100">
+                <Smartphone className="h-5 w-5 shrink-0 text-indigo-600" aria-hidden="true" />
+                Pay with UPI, cards or net banking through Razorpay.
+              </p>
 
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {SUPPORTED_UPI_APPS.map((app) => (
-                    <div
-                      key={app.name}
-                      className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/80"
-                    >
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-semibold ring-1 ${app.tone}`}>
-                        {app.label}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                          {app.name}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {app.detail}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {paymentTemporarilyUnavailable && (
-                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  Live payments are temporarily unavailable on this deployment. Please contact support before attempting a subscription checkout.
+              {paymentUnavailable && (
+                <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  Live payments are temporarily unavailable. Please contact support before trying again.
                 </div>
               )}
 
-              {razorpayConfig.isTestMode && hasRazorpayCheckout && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                  Razorpay test verification mode is enabled for this deployment. No real money will be charged.
-                </div>
+              {formError && (
+                <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{formError}</div>
               )}
 
-              {/* Pay Button */}
               <button
-                onClick={handlePayment}
-                disabled={processing || !phone || paymentTemporarilyUnavailable}
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+                type="button"
+                onClick={() => void handlePay()}
+                disabled={busy || phone.length !== 10 || paymentUnavailable}
+                className={`${BTN_PRIMARY} w-full !min-h-[52px]`}
               >
-                {processing ? (
+                {busy ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {'Processing...'}
+                    <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                    Preparing payment...
                   </>
                 ) : (
-                  <>
-                    <Smartphone className="w-5 h-5" />
-                    {`Pay ${formatPrice(totalAmount)}`}
-                  </>
+                  'Continue to payment'
                 )}
               </button>
 
-              {/* Security Note */}
-              <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
-                <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span>{'Payments are completed on secure gateway pages. TruckOpti never asks for your UPI PIN.'}</span>
-              </div>
+              <p className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+                Payments are completed on the secure gateway. TruckOpti never asks for your UPI PIN.
+              </p>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default CheckoutPage;
+export default CheckoutPage
