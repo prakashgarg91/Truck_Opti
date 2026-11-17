@@ -1712,6 +1712,101 @@ isOneToOne: false
       referencedColumns: ["id", "agency_id"]
     }
                   ]
+                },"subscription_coupon_redemptions": {
+                  Row: {
+                    "agency_id": string,"coupon_code": string,"cycle_no": number,"id": string,"payment_id": string,"redeemed_at": string,"subscription_id": string
+                  }
+                  Insert: {
+                    "agency_id": string,"coupon_code": string,"cycle_no": number,"id"?: string,"payment_id": string,"redeemed_at"?: string,"subscription_id": string
+                  }
+                  Update: {
+                    "agency_id"?: string,"coupon_code"?: string,"cycle_no"?: number,"id"?: string,"payment_id"?: string,"redeemed_at"?: string,"subscription_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "subscription_coupon_redemptions_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "subscription_coupon_redemptions_coupon_code_fkey"
+      columns: ["coupon_code"]
+isOneToOne: false
+      referencedRelation: "subscription_coupons"
+      referencedColumns: ["code"]
+    },{
+      foreignKeyName: "subscription_coupon_redemptions_payment_id_fkey"
+      columns: ["payment_id"]
+isOneToOne: true
+      referencedRelation: "payment_history"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "subscription_coupon_redemptions_subscription_fk"
+      columns: ["subscription_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "subscriptions"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"subscription_coupons": {
+                  Row: {
+                    "code": string,"created_at": string,"max_cycles": number,"max_redemptions": number | null,"monthly_only": boolean,"percent_off": number,"valid_until": string | null
+                  }
+                  Insert: {
+                    "code": string,"created_at"?: string,"max_cycles": number,"max_redemptions"?: number | null,"monthly_only"?: boolean,"percent_off": number,"valid_until"?: string | null
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"max_cycles"?: number,"max_redemptions"?: number | null,"monthly_only"?: boolean,"percent_off"?: number,"valid_until"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"subscription_refund_exceptions": {
+                  Row: {
+                    "agency_id": string | null,"amount_paise": number,"created_at": string,"detail": Json,"id": string,"payment_id": string,"payment_row_id": string | null,"reason": string,"refund_id": string
+                  }
+                  Insert: {
+                    "agency_id"?: string | null,"amount_paise": number,"created_at"?: string,"detail"?: Json,"id"?: string,"payment_id": string,"payment_row_id"?: string | null,"reason": string,"refund_id": string
+                  }
+                  Update: {
+                    "agency_id"?: string | null,"amount_paise"?: number,"created_at"?: string,"detail"?: Json,"id"?: string,"payment_id"?: string,"payment_row_id"?: string | null,"reason"?: string,"refund_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"subscription_reminders": {
+                  Row: {
+                    "created_at": string,"id": string,"kind": string,"period_end": string,"subscription_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"kind": string,"period_end": string,"subscription_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"kind"?: string,"period_end"?: string,"subscription_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "subscription_reminders_subscription_id_fkey"
+      columns: ["subscription_id"]
+isOneToOne: false
+      referencedRelation: "subscriptions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"subscription_sweep_runs": {
+                  Row: {
+                    "as_of": string,"finished_at": string | null,"grace_expired": number,"grace_started": number,"id": string,"reminders_created": number,"result": Json | null,"started_at": string,"trials_expired": number
+                  }
+                  Insert: {
+                    "as_of": string,"finished_at"?: string | null,"grace_expired"?: number,"grace_started"?: number,"id"?: string,"reminders_created"?: number,"result"?: Json | null,"started_at"?: string,"trials_expired"?: number
+                  }
+                  Update: {
+                    "as_of"?: string,"finished_at"?: string | null,"grace_expired"?: number,"grace_started"?: number,"id"?: string,"reminders_created"?: number,"result"?: Json | null,"started_at"?: string,"trials_expired"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
                 }
           }
           Views: {
@@ -2023,6 +2118,30 @@ isOneToOne: false
                            },
 "agency_subscription_lock":
 { Args: { "p_agency_id": string }; Returns: undefined
+                           },
+"run_subscription_sweeps":
+{ Args: { "p_as_of"?: string }; Returns: Json
+                           },
+"subscription_activate_payment":
+{ Args: { "p_amount_paise": number,"p_currency": string,"p_method": string,"p_order_id": string,"p_payment_id": string,"p_source": string }; Returns: Json
+                           },
+"subscription_create_order":
+{ Args: { "p_agency_id": string,"p_billing_cycle": string,"p_coupon_code": string,"p_plan_tier": string,"p_razorpay_order_id": string }; Returns: Json
+                           },
+"subscription_note_refund_exception":
+{ Args: { "p_agency_id": string,"p_amount_paise": number,"p_detail"?: Json,"p_payment_id": string,"p_payment_row_id": string,"p_reason": string,"p_refund_id": string }; Returns: string
+                           },
+"subscription_note_refusal":
+{ Args: { "p_error"?: string,"p_payment_id": string,"p_refusal": string,"p_row_id": string }; Returns: undefined
+                           },
+"subscription_quote_order":
+{ Args: { "p_agency_id": string,"p_billing_cycle": string,"p_coupon_code": string,"p_plan_tier": string }; Returns: Json
+                           },
+"subscription_record_refund":
+{ Args: { "p_amount_paise": number,"p_payment_id": string,"p_refund_id": string }; Returns: Json
+                           },
+"subscription_support_reopen":
+{ Args: { "p_agency_id": string }; Returns: Json
                            }
           }
           Enums: {
