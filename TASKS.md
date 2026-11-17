@@ -170,3 +170,13 @@ GPT-6 supervisor review accepted all seven 2026-09-30 wave rows — TO-121 `cb01
 - TO-140 stays `READY_AUDIT_ONLY`; the owner extended its scope to proven-safe cleanup — delete only reviewed/merged or explicitly parked items with recorded proof; destructive actions remain owner-gated. Excluded from this completion queue as a separate phase.
 
 Completion queue (dependency-first): TO-123 (brief 013, auth) → TO-126 (016, kyc) → TO-127 (017, kyc) → TO-128 (018, kyc) → TO-129 (019, offers) → TO-130 (020, offers) → TO-132 (022, ops) → TO-134 (024, customer) → TO-135 (025, agency) → TO-136 (026, admin) → TO-139 (029, ux).
+
+## 2026-11-17 day-close checkpoint (TO-145..152)
+
+Built, reviewed by Opus where money or access is involved, and pushed (main 3485308c and later): orders, load plans, consignments, tracking, freight invoices (record-only), expenses/fuel/maintenance, payroll, ERP connector (+ erp-ingest Edge function), driver directory, agency-level subscriptions, plan limit guard (enforcement OFF by default), GST invoicing, activation/refund/credit notes, Razorpay webhook, expiry sweep and reminders, billing UI, entitlement gating, invitation acceptance, staff-scoped portal functions, admin subscriptions. Evidence: 32 PGlite suites, edge write guard 23/23, real-PostgreSQL race tests (new_commands 9, subscription 8), frontend 2108 tests, tsc/eslint clean, clean-clone typecheck. Rulings: docs/TO-152-rulings.md (Fable 5.2); docs/CONTRACT-AUDIT-2026-11-17.md with resolution log; docs/FABLE-RULINGS-2026-11-17-B.md (second rulings: guard coverage, local full-journey harness, release gates) if present.
+
+NOT proven (honest list): nothing ran on a hosted Supabase, in Deno (three Razorpay Edge index.ts + erp-ingest + portal functions never type-checked or run), or in a browser (no screen viewed). ZCode plan reported out of balance; work was done with Haiku/Sonnet/Opus agents.
+
+Owner-only (agents cannot do): staging Supabase project and db push approval; Razorpay test webhook secret + registration (test key pair is in the git-ignored .env.proof, old test key expires 2026-11-19 20:24); GSTIN, legal name, address, state, SAC confirmation; Terms/refund wording (draft docs/legal/SUBSCRIPTION-POLICY-DRAFT.md); Edge deploy (erp-ingest needs JWT verification off); Sentry key; live-money test approval; branch/stash/legacy-app cleanup (docs/HOUSEKEEPING-INVENTORY.md); ZCode renewal; launch-check run (last failed 2026-09-30).
+
+Next session opens with the owner-pending list (see memory owner-pending-first), then continues: local full-journey harness per Fable's second rulings, guard coverage migration, residual audit items.

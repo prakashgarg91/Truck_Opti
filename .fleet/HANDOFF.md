@@ -9,3 +9,7 @@ Written 2026-11-08T07:07:29.326Z. A new session resumes by itself (the agent-fle
 
 Durable facts: landed work is in git (commit subjects carry [task-id]); lessons in .fleet/lessons.md; task plan in .fleet/tasks.json; outcomes in .fleet/ledger.jsonl.
 Needs you (agents cannot do these): see the Needs-you list in TASKS.md.
+
+
+## 2026-11-17 day close
+All TO-145..152 work is on main (see TASKS.md day-close checkpoint). ZCode plan out of balance: workers were Haiku/Sonnet/Opus agents. Resume: read TASKS.md checkpoint, docs/FABLE-RULINGS-2026-11-17-B.md, then build the local full-journey harness and guard-coverage migration. Owner-only items listed in TASKS.md.

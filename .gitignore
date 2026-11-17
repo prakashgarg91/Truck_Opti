@@ -93,3 +93,6 @@ docs/archive/
 # Razorpay sandbox proof reports (may contain order ids)
 proof-output/
 .env.proof
+
+# TypeScript incremental build artifacts
+frontend/*.tsbuildinfo
