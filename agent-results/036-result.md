@@ -14,3 +14,11 @@ Red-first batteries written by Haiku workers, migrations written by Sonnet worke
 Battery fixture bugs fixed by their authors (assertions unchanged): tracking T22/T59/T61, expenses E35/E41/E78. One assertion changed on purpose: invoices I40 (odd paisa now split CGST=SGST).
 Gates at commit: 21 PGlite batteries pass, edge guard 12/12, tsc clean, types drift PASS.
 Not done: UI for TO-146..151, race test on real PostgreSQL for the new commands, review of consignments/tracking/expenses by Opus. ZCode plan out of balance (owner action).
+
+## Addendum 2026-11-17 (later): load plans, screens, review fixes
+- TO-145 slice 3: 20261025000000_agency_load_plans.sql, battery 98/98, Opus review (no HIGH; MED fixed: typed invalid payloads, order cancel refuses orders in an approved plan, approve repeats weight check). Partial: no truck-maintenance refusal for approved plans; trigger-depth bypass narrowed for DELETE only.
+- Review fixes applied to consignments (64), tracking (74), expenses (107), invoices (74), payroll (114), ERP (67).
+- Screens built and routed (not viewed in a browser): Order Import, Load Plan, Consignments, Invoices, Expenses, Tracking, Payroll, ERP.
+- Real PostgreSQL race test scripts/race/new_commands.race.mjs: 9 scenarios pass (8 parallel x 5 rounds). R6 odometer scenario is weak.
+- Gates at commit: 22 PGlite suites pass, edge guard 12/12, tsc and eslint clean, frontend 1853 tests, types drift PASS.
+- Owner-open: ZCode plan out of balance; hosted project, db push, Razorpay keys (TO-152), deploy (TO-153), browser verification.

@@ -1480,6 +1480,136 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"agency_load_plan_lines": {
+                  Row: {
+                    "agency_id": string,"id": string,"load_id": string,"order_line_id": string,"plan_id": string,"quantity": number
+                  }
+                  Insert: {
+                    "agency_id": string,"id"?: string,"load_id": string,"order_line_id": string,"plan_id": string,"quantity": number
+                  }
+                  Update: {
+                    "agency_id"?: string,"id"?: string,"load_id"?: string,"order_line_id"?: string,"plan_id"?: string,"quantity"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_load_plan_lines_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_load_plan_lines_load_fk"
+      columns: ["load_id", "plan_id"]
+isOneToOne: false
+      referencedRelation: "agency_load_plan_loads"
+      referencedColumns: ["id", "plan_id"]
+    },{
+      foreignKeyName: "agency_load_plan_lines_load_tenant_fk"
+      columns: ["load_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_load_plan_loads"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_load_plan_lines_order_line_fk"
+      columns: ["order_line_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_order_lines"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_load_plan_lines_plan_fk"
+      columns: ["plan_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_load_plans"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_load_plan_loads": {
+                  Row: {
+                    "agency_id": string,"id": string,"plan_id": string,"total_kg": number,"truck_id": string,"utilization_pct": number
+                  }
+                  Insert: {
+                    "agency_id": string,"id"?: string,"plan_id": string,"total_kg": number,"truck_id": string,"utilization_pct": number
+                  }
+                  Update: {
+                    "agency_id"?: string,"id"?: string,"plan_id"?: string,"total_kg"?: number,"truck_id"?: string,"utilization_pct"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_load_plan_loads_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_load_plan_loads_plan_fk"
+      columns: ["plan_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_load_plans"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_load_plan_loads_truck_fk"
+      columns: ["truck_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_trucks"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_load_plan_unmet": {
+                  Row: {
+                    "agency_id": string,"id": string,"order_line_id": string,"plan_id": string,"reason": string
+                  }
+                  Insert: {
+                    "agency_id": string,"id"?: string,"order_line_id": string,"plan_id": string,"reason": string
+                  }
+                  Update: {
+                    "agency_id"?: string,"id"?: string,"order_line_id"?: string,"plan_id"?: string,"reason"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_load_plan_unmet_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_load_plan_unmet_order_line_fk"
+      columns: ["order_line_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_order_lines"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_load_plan_unmet_plan_fk"
+      columns: ["plan_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_load_plans"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_load_plans": {
+                  Row: {
+                    "agency_id": string,"approved_at": string | null,"approved_by": string | null,"batch_id": string | null,"created_at": string,"created_by": string | null,"id": string,"idempotency_key": string,"name": string,"payload_hash": string | null,"plan_version": number,"status": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"approved_at"?: string | null,"approved_by"?: string | null,"batch_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key": string,"name": string,"payload_hash"?: string | null,"plan_version"?: number,"status"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"approved_at"?: string | null,"approved_by"?: string | null,"batch_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key"?: string,"name"?: string,"payload_hash"?: string | null,"plan_version"?: number,"status"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_load_plans_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_load_plans_batch_fk"
+      columns: ["batch_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_order_batches"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -1733,6 +1863,23 @@ isOneToOne: false
                            },
 "agency_consignment_qr":
 { Args: { "p_consignment_id": string }; Returns: Json
+                           },
+"agency_load_plan_approve":
+{ Args: { "p_expected_version": number,"p_plan_id": string }; Returns: Json
+                           },
+"agency_load_plan_cancel":
+{ Args: { "p_expected_version": number,"p_plan_id": string }; Returns: Json
+                           },
+"agency_load_plan_flatten":
+{ Args: { "p_loads": Json }; Returns: {
+              "load_idx": number,"line_idx": number,"truck_id": string,"order_line_id": string,"quantity": number
+            }[]
+                           },
+"agency_load_plan_save":
+{ Args: { "p_batch_id": string,"p_idempotency_key": string,"p_loads": Json,"p_name": string,"p_unmet": Json }; Returns: Json
+                           },
+"agency_load_plan_weight":
+{ Args: { "p_quantity": number,"p_unit": string,"p_weight_per_unit": number }; Returns: number
                            }
           }
           Enums: {
