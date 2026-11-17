@@ -2017,6 +2017,12 @@ isOneToOne: false
                            },
 "subscription_usage_visible":
 { Args: { "p_subscription_id": string }; Returns: boolean
+                           },
+"agency_subscription_assert":
+{ Args: { "p_action": string,"p_add": number,"p_agency_id": string }; Returns: undefined
+                           },
+"agency_subscription_lock":
+{ Args: { "p_agency_id": string }; Returns: undefined
                            }
           }
           Enums: {
