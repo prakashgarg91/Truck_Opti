@@ -61,6 +61,7 @@ type SimpleErrorCode =
     | 'agreement_not_active'
     | 'version_conflict'
     | 'order_not_draft'
+    | 'order_in_approved_plan'
     | 'unknown'
 
 export type OrderErrorCode = 'invalid_lines' | 'order_exists' | SimpleErrorCode
@@ -84,6 +85,7 @@ const ERROR_MESSAGES: Readonly<Record<Exclude<OrderErrorCode, 'unknown'>, string
     agreement_not_active: 'This client agreement is not active. Reactivate it before importing orders.',
     version_conflict: 'This order changed. Reload to continue.',
     order_not_draft: 'Only draft orders can be cancelled.',
+    order_in_approved_plan: 'This order is in an approved load plan. Cancel the plan first.',
 })
 
 /** Controlled RAISE EXCEPTION texts; anything else is redacted to the fallback. */
@@ -132,7 +134,8 @@ function simpleCode(envelope: Envelope): SimpleErrorCode {
         raw === 'idempotency_key_reused' ||
         raw === 'agreement_not_active' ||
         raw === 'version_conflict' ||
-        raw === 'order_not_draft'
+        raw === 'order_not_draft' ||
+        raw === 'order_in_approved_plan'
     ) {
         return raw
     }

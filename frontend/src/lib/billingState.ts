@@ -326,12 +326,19 @@ export function parseSubscriptionError(err: unknown): SubscriptionErrorInfo | nu
 
 // --------------------------------------------------------------- trial errors
 
-export type TrialErrorCode = 'identity_required' | 'trial_already_claimed' | 'forbidden_scope'
+export type TrialErrorCode =
+  | 'identity_required'
+  | 'trial_already_claimed'
+  | 'forbidden_scope'
+  | 'subscription_exists'
+  | 'plan_unavailable'
 
 const TRIAL_MESSAGES: Record<TrialErrorCode, string> = {
   identity_required: 'Add your GSTIN and phone to the agency profile first, then start your trial.',
   trial_already_claimed: 'A free trial has already been used for this agency, GSTIN or phone number. Choose a plan to continue.',
   forbidden_scope: 'Only the agency owner can start the free trial.',
+  subscription_exists: 'This agency already has a subscription, so a free trial is not needed. Open Billing to see your plan.',
+  plan_unavailable: 'The trial plan is not available right now. Please try again shortly or contact support.',
 }
 
 /** Find a typed trial error in a thrown error or an {ok:false,error} payload. */

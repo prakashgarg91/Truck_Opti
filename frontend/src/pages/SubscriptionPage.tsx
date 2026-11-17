@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   CreditCard,
   Download,
-  ExternalLink,
   LifeBuoy,
   Receipt,
   RefreshCw,
@@ -18,7 +17,7 @@ import UsageBars from '../components/billing/UsageBars'
 import AgencyTrialPanel from '../components/billing/AgencyTrialPanel'
 import { BTN_PRIMARY, BTN_SECONDARY, FOCUS_RING } from '../components/billing/styles'
 import { useEntitlement } from '../components/billing/useEntitlement'
-import { invoicesApi, type Invoice } from '../services/subscriptionApi'
+import { gstInvoicesApi, type SubscriptionInvoice } from '../services/subscriptionApi'
 import { formatInr } from '../lib/invoiceMoney'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
@@ -42,90 +41,56 @@ function formatTier(tier: string | null) {
   return tier.charAt(0).toUpperCase() + tier.slice(1)
 }
 
-function buildCustomerAddress(user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>) {
-  const company = user.user_metadata?.company
-  const addressParts = [
-    company?.address_line1,
-    company?.address_line2,
-    company?.address,
-    company?.city,
-    company?.state,
-    company?.pincode,
-  ].filter(Boolean)
-
-  return addressParts.length > 0 ? addressParts.join(', ') : 'Not provided'
-}
-
-function downloadInvoiceFallback(invoice: Invoice, options: {
-  customerName: string
-  customerEmail: string
-  customerPhone?: string | null
-  customerGstin?: string
-  planName: string
-}) {
+function downloadInvoice(invoice: SubscriptionInvoice, options: { customerName: string; planName: string }) {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
   let cursorY = 18
 
-  const writeLine = (label: string, value: string, indent = 0) => {
+  const writeLine = (label: string, value: string) => {
     pdf.setFont('helvetica', 'bold')
-    pdf.text(label, 14 + indent, cursorY)
+    pdf.text(label, 14, cursorY)
     pdf.setFont('helvetica', 'normal')
-    pdf.text(value, 62 + indent, cursorY)
+    pdf.text(value, 70, cursorY)
     cursorY += 7
   }
 
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(18)
-  pdf.text('TruckOpti Subscription Invoice', 14, cursorY)
+  pdf.text('TruckOpti Subscription Tax Invoice', 14, cursorY)
   cursorY += 10
 
   pdf.setFontSize(11)
   writeLine('Invoice Number', invoice.invoice_number)
-  writeLine('Status', invoice.status.toUpperCase())
-  writeLine('Paid On', formatDate(invoice.paid_at || invoice.billing_period_start))
-  writeLine('Billing Period', `${formatDate(invoice.billing_period_start)} to ${formatDate(invoice.billing_period_end)}`)
+  writeLine('Issued On', formatDate(invoice.issued_at))
   writeLine('Plan', options.planName)
+  writeLine('Billed To', invoice.recipient_name || options.customerName)
+  if (invoice.recipient_gstin) writeLine('Recipient GSTIN', invoice.recipient_gstin)
+  writeLine('Place of Supply', invoice.place_of_supply_state_code)
+  writeLine('SAC', invoice.sac_code)
+
   cursorY += 3
-
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Billed To', 14, cursorY)
-  cursorY += 7
-  pdf.setFont('helvetica', 'normal')
-  pdf.text(options.customerName, 14, cursorY)
-  cursorY += 6
-  pdf.text(options.customerEmail, 14, cursorY)
-  cursorY += 6
-  if (options.customerPhone) {
-    pdf.text(options.customerPhone, 14, cursorY)
-    cursorY += 6
-  }
-  const currentUser = useAuthStore.getState().user
-  if (currentUser) {
-    pdf.text(buildCustomerAddress(currentUser), 14, cursorY)
-    cursorY += 6
-  }
-  if (options.customerGstin) {
-    pdf.text(`GSTIN: ${options.customerGstin}`, 14, cursorY)
-    cursorY += 6
-  }
-
-  cursorY += 4
   pdf.setDrawColor(226, 232, 240)
   pdf.line(14, cursorY, 196, cursorY)
   cursorY += 10
 
-  // Amounts are the stored invoice figures; nothing is recomputed here.
-  writeLine('Subtotal', formatInr(invoice.amount))
-  writeLine('Tax', formatInr(invoice.tax_amount))
-  writeLine('Total Paid', formatInr(invoice.total_amount))
-  writeLine('Currency', invoice.currency || 'INR')
+  // Amounts are the stored integer-paise figures; nothing is recomputed here.
+  writeLine('Taxable value', formatInr(invoice.taxable_paise))
+  if (invoice.igst_paise > 0) {
+    writeLine('IGST (18%)', formatInr(invoice.igst_paise))
+  } else {
+    writeLine('CGST (9%)', formatInr(invoice.cgst_paise))
+    writeLine('SGST (9%)', formatInr(invoice.sgst_paise))
+  }
+  writeLine('Total', formatInr(invoice.total_paise))
+  for (const note of invoice.credit_notes) {
+    writeLine(`Credit note ${note.credit_note_number}`, `-${formatInr(note.total_paise)} on ${formatDate(note.issued_at)}`)
+  }
 
   cursorY += 6
   pdf.setFontSize(10)
   pdf.setTextColor(100, 116, 139)
-  pdf.text('This copy was generated from your TruckOpti billing history because no hosted invoice PDF was available.', 14, cursorY, { maxWidth: 180 })
+  pdf.text('This copy was generated from your TruckOpti billing records. A signed PDF is not stored for this invoice.', 14, cursorY, { maxWidth: 180 })
 
-  pdf.save(`${invoice.invoice_number.toLowerCase()}.pdf`)
+  pdf.save(`${invoice.invoice_number.replace(/[^A-Za-z0-9-]/g, '-').toLowerCase()}.pdf`)
 }
 
 const CARD = 'rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/95'
@@ -142,7 +107,7 @@ export default function SubscriptionPage() {
     refetch: refetchInvoices,
   } = useQuery({
     queryKey: ['subscription-invoices'],
-    queryFn: () => invoicesApi.getAll(),
+    queryFn: () => gstInvoicesApi.list(),
     staleTime: 1000 * 60 * 2,
     retry: 1,
   })
@@ -154,28 +119,18 @@ export default function SubscriptionPage() {
   const isAdmin = user?.role === 'admin'
   const goPricing = () => navigate('/pricing')
 
-  // TO-142: the billing-documents bucket is private, so a fresh expiring
-  // signed URL is minted through the invoice-view Edge function on every click.
-  const handleInvoiceDownload = async (invoice: Invoice) => {
+  // Payment activation writes GST invoices (agency keyed). The copy is built here from the stored
+  // integer-paise figures; no hosted PDF is generated server-side yet.
+  const handleInvoiceDownload = (invoice: SubscriptionInvoice) => {
     if (!user) return
-
     try {
-      const signedUrl = await invoicesApi.getSignedUrl(invoice.id)
-      if (signedUrl) {
-        window.open(signedUrl, '_blank', 'noopener,noreferrer')
-        return
-      }
+      downloadInvoice(invoice, {
+        customerName: user.name || user.email,
+        planName: formatTier(entitlement?.planTier ?? null),
+      })
     } catch (error) {
-      logger.error('[SubscriptionPage] failed to mint invoice signed URL', error)
+      logger.error('[SubscriptionPage] failed to build invoice copy', error)
     }
-
-    downloadInvoiceFallback(invoice, {
-      customerName: user.name || user.email,
-      customerEmail: user.email,
-      customerPhone: user.phone,
-      customerGstin: user.user_metadata?.company?.gstin,
-      planName: formatTier(entitlement?.planTier ?? null),
-    })
   }
 
   return (
@@ -333,28 +288,27 @@ export default function SubscriptionPage() {
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
                     <th scope="col" className="pb-3 pr-4 font-semibold">Invoice</th>
-                    <th scope="col" className="pb-3 pr-4 font-semibold">Status</th>
-                    <th scope="col" className="pb-3 pr-4 font-semibold">Period</th>
+                    <th scope="col" className="pb-3 pr-4 font-semibold">Issued</th>
                     <th scope="col" className="pb-3 pr-4 font-semibold">Amount (incl. GST)</th>
                     <th scope="col" className="pb-3 font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {invoices.map((invoice: Invoice) => (
+                  {invoices.map((invoice: SubscriptionInvoice) => (
                     <tr key={invoice.id}>
                       <td className="py-3 pr-4">
                         <p className="font-medium text-slate-900 dark:text-white">{invoice.invoice_number}</p>
                       </td>
-                      <td className="py-3 pr-4">
-                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-800 dark:bg-slate-700 dark:text-slate-100">
-                          {invoice.status}
-                        </span>
-                      </td>
                       <td className="py-3 pr-4 text-sm text-slate-700 dark:text-slate-200">
-                        {formatDate(invoice.billing_period_start)} to {formatDate(invoice.billing_period_end)}
+                        {formatDate(invoice.issued_at)}
                       </td>
                       <td className="py-3 pr-4 text-sm font-medium text-slate-900 dark:text-white">
-                        {formatInr(invoice.total_amount)}
+                        {formatInr(invoice.total_paise)}
+                        {invoice.credit_notes.length > 0 && (
+                          <span className="ml-2 text-xs font-normal text-slate-600 dark:text-slate-300">
+                            {invoice.credit_notes.length} credit {invoice.credit_notes.length === 1 ? 'note' : 'notes'}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 text-sm">
                         <button
@@ -362,8 +316,8 @@ export default function SubscriptionPage() {
                           onClick={() => void handleInvoiceDownload(invoice)}
                           className={`inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2 font-medium text-indigo-700 hover:text-indigo-900 dark:text-indigo-300 ${FOCUS_RING}`}
                         >
-                          {invoice.pdf_url ? <ExternalLink className="h-4 w-4" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
-                          {invoice.pdf_url ? 'Open' : 'Download'}
+                          <Download className="h-4 w-4" aria-hidden="true" />
+                          Download
                         </button>
                       </td>
                     </tr>

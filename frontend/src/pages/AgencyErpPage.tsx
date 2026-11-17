@@ -658,12 +658,26 @@ export default function AgencyErpPage() {
       <section aria-labelledby="erp-how" className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2" data-testid="erp-how">
         <h2 id="erp-how" className="text-base font-bold text-slate-900">How to connect</h2>
         <p className="text-sm text-slate-800">
-          Your ERP system sends each batch of orders as a POST request. The endpoint address is provided by your account manager.
+          Your ERP system sends each batch of orders as a POST request with a JSON body to this address, where SUPABASE_URL is your
+          TruckOpti project address provided by your account manager:
         </p>
+        <pre data-testid="erp-endpoint" className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">{`POST SUPABASE_URL/functions/v1/erp-ingest
+Content-Type: application/json
+Authorization: Bearer <your-secret>
+
+{
+  "connection_id": "<connection id>",
+  "external_event_id": "batch-2026-11-17-001",
+  "lines": [ { "client_order_ref": "PO-1001", "line_no": 1, "sku": "SKU-1" } ]
+}`}</pre>
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-800">
-          <li>Send the connection id (shown on the connection above) and the secret you saved when you created or rotated it.</li>
+          <li>Send the connection id (shown on the connection above) and the secret you saved when you created or rotated it. Prefer the Authorization header (or an x-truckopti-secret header) for the secret over the request body, so it is not recorded by proxies.</li>
           <li>Send an external event id that is unique for each batch. Sending the same batch again with the same event id is safe: it is recorded as a duplicate and no orders are created twice.</li>
           <li>Send the order lines in the request. A batch is accepted whole or rejected whole; the problems for a rejected batch appear in the events table.</li>
+          <li>
+            Answers: 200 with {'{"ok": true, "outcome": "accepted"}'} (or "duplicate") when the batch is stored. 200 with{' '}
+            {'{"ok": false, "outcome": "rejected", "problems": [...]}'} when lines need fixing; nothing is stored, so fix the lines and resend with the same event id. 401 for a wrong connection id or secret, 403 when the connection is not active, 413 when the batch is too large.
+          </li>
           <li>A paused or revoked connection is refused. A rotated secret replaces the old one immediately.</li>
         </ul>
         <p className="text-sm text-slate-700">Keep the secret private. It is shown only once and is not stored in a readable form.</p>

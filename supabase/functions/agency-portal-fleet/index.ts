@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import {
   assertApprovedAgency,
+  assertPortalWriter,
   assertDriverAvailableForAgencyTruck,
   corsHeaders,
   handleRequestError,
@@ -82,14 +83,17 @@ serve(async (req) => {
   }
 
   try {
-    const { serviceClient, agencyId, agencyStatus } = await requireAgencyContext(
+    const context = await requireAgencyContext(
       req.headers.get('Authorization'),
-      { requireApproved: false },
+      { requireApproved: false, portal: 'fleet' },
     )
+
+    const { serviceClient, agencyId, agencyStatus } = context
 
     const body = req.method === 'GET' ? { action: 'list' as const } : parseRequestBody(await req.json())
 
     if (body.action !== 'list') {
+      assertPortalWriter(context)
       assertApprovedAgency(agencyStatus)
     }
 

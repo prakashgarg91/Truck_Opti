@@ -10,6 +10,7 @@ import {
   type MembershipRow,
   type MembershipScope,
 } from '../services/agencyOrganizationApi'
+import { buildInviteLink } from '../services/agencyInvitesApi'
 import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
 import type { SubscriptionErrorInfo } from '../lib/billingState'
 import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
@@ -208,8 +209,8 @@ export default function AgencyTeamPage() {
   const copyCode = async () => {
     if (!shareCode) return
     try {
-      await navigator.clipboard.writeText(shareCode.token)
-      toast.success('Code copied')
+      await navigator.clipboard.writeText(buildInviteLink(shareCode.token))
+      toast.success('Link copied')
     } catch {
       toast.error('Could not copy. Select the code and copy it manually.')
     }
@@ -237,7 +238,7 @@ export default function AgencyTeamPage() {
   }
 
   const whatsappHref = shareCode
-    ? `https://wa.me/?text=${encodeURIComponent(`You are invited to join our agency team on TruckOpti. Sign in with ${shareCode.email} and enter this code: ${shareCode.token}`)}`
+    ? `https://wa.me/?text=${encodeURIComponent(`You are invited to join our agency team on TruckOpti. Sign in with ${shareCode.email} and open this link: ${buildInviteLink(shareCode.token)}`)}`
     : '#'
 
   return (
@@ -276,11 +277,12 @@ export default function AgencyTeamPage() {
             Share this invitation code with {shareCode.email} now. It is shown only once and cannot be recovered.
           </p>
           <code className="block select-all break-all rounded-lg bg-white border border-indigo-200 px-3 py-2 font-mono text-base text-slate-900">
-            {shareCode.token}
+            {buildInviteLink(shareCode.token)}
           </code>
+          <p className="text-xs text-indigo-900">Invitation code: <span className="font-mono">{shareCode.token}</span></p>
           <div className="flex flex-wrap gap-2">
             <button onClick={copyCode} className={`flex items-center gap-2 min-h-[44px] rounded-xl bg-white border border-indigo-300 px-4 text-sm font-semibold text-indigo-900 ${FOCUS_RING}`}>
-              <Copy size={16} aria-hidden="true" /> Copy
+              <Copy size={16} aria-hidden="true" /> Copy link
             </button>
             <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 min-h-[44px] rounded-xl bg-white border border-indigo-300 px-4 text-sm font-semibold text-indigo-900 ${FOCUS_RING}`}>
               <Share2 size={16} aria-hidden="true" /> Share on WhatsApp

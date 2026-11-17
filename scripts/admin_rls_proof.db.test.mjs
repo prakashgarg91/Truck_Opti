@@ -1241,7 +1241,7 @@ async function main() {
     invoiceViewSource.includes('createSignedUrl(') &&
       invoiceViewSource.includes('INVOICE_SIGNED_URL_EXPIRES_SECONDS = 300') &&
       !invoiceDeliverySource.includes('getPublicUrl') &&
-      subscriptionPageSource.includes('getSignedUrl'),
+      !subscriptionPageSource.includes('getPublicUrl'),
     'invoice-view mints createSignedUrl(path, 300) for the invoice owner/admin; invoice-delivery no longer persists public URLs (email links the authenticated /subscription route); SubscriptionPage fetches a fresh signed URL on click. Issued signed URLs are not revocable before expiry (HMAC over path+expiry) — revocation requires object deletion or key rotation.'
   )
 

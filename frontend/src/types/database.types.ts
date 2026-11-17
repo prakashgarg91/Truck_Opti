@@ -2180,6 +2180,9 @@ isOneToOne: false
                            },
 "agency_driver_directory":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"agency_subscription_invoices":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            }
           }
           Enums: {

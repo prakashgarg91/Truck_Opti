@@ -39,6 +39,20 @@ check('W11. no agency-portal-* Edge function touches driver_payouts', portalFunc
 const payouts = read('supabase/functions/admin-portal-payouts/index.ts')
 check('W12. admin payouts is a state machine: approve and reject need pending, mark-paid needs approved, the rejection reason is its own column', /\.eq\('status', 'pending'\)/.test(payouts) && /\.eq\('status', 'approved'\)/.test(payouts) && /rejection_note: body\.rejectionNote/.test(payouts) && !/note: body\.rejectionNote/.test(payouts.replace(/rejection_note: body\.rejectionNote/g, '')))
 
+// Staff scopes (20261012): the portal functions resolve owners AND active staff through one scope resolver.
+const portalAuth = read('supabase/functions/_shared/portal-auth.ts')
+const portalScopes = read('supabase/functions/_shared/portalScopes.ts')
+const portalScopeMap = { 'agency-portal-dashboard': 'dashboard', 'agency-portal-jobs': 'jobs', 'agency-portal-billing': 'billing', 'agency-portal-rates': 'rates', 'agency-portal-drivers': 'drivers', 'agency-portal-fleet': 'fleet' }
+check('W13. requireAgencyContext resolves staff through resolvePortalAccess and active agency_memberships, not the owner row alone', /resolvePortalAccess\(/.test(portalAuth) && /from\('agency_memberships'\)/.test(portalAuth) && /\.eq\('status', 'active'\)/.test(portalAuth))
+for (const [fn, portal] of Object.entries(portalScopeMap)) {
+  check(`W14. ${fn} calls the scope resolver with portal '${portal}'`, new RegExp(`requireAgencyContext\\([\\s\\S]*?portal: '${portal}'`).test(read(`supabase/functions/${fn}/index.ts`)))
+}
+check('W15. staff are read-only: fleet and rates writes call assertPortalWriter, and only owners can write', ['agency-portal-fleet', 'agency-portal-rates'].every((n) => /assertPortalWriter\(context\)/.test(read(`supabase/functions/${n}/index.ts`))) && /role === 'owner'/.test(portalScopes))
+
+const erpIngest = read('supabase/functions/erp-ingest/index.ts')
+check('W16. erp-ingest calls only erp_event_ingest through the service client and caps the raw body before parsing', /rpc\('erp_event_ingest'/.test(erpIngest) && /readCappedBytes\(req\.body, MAX_ERP_BODY_BYTES/.test(erpIngest) && erpIngest.indexOf('readCappedBytes') < erpIngest.indexOf('parseErpBytes'))
+check('W17. erp-ingest never logs the secret or the lines and sends no CORS headers', !/console\.(log|error)\([^)]*(secret|lines|body)/i.test(erpIngest) && !/Access-Control/i.test(erpIngest))
+
 const failed = results.filter((r) => !r.pass)
 console.log(`\n${results.length - failed.length}/${results.length} cases passed (static Edge source check)`)
 process.exit(failed.length ? 1 : 0)

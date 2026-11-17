@@ -137,7 +137,14 @@ describe('trial errors', () => {
     expect(parseTrialError({ message: 'trial_already_claimed' })).toBe('trial_already_claimed')
     expect(parseTrialError({ ok: false, error: 'identity_required' })).toBe('identity_required')
     expect(parseTrialError(new Error('forbidden_scope: x'))).toBe('forbidden_scope')
+    expect(parseTrialError({ ok: false, error: 'subscription_exists' })).toBe('subscription_exists')
+    expect(parseTrialError({ ok: false, error: 'plan_unavailable' })).toBe('plan_unavailable')
     expect(parseTrialError({ message: 'other' })).toBeNull()
+  })
+  it('has calm messages for subscription_exists and plan_unavailable', () => {
+    expect(trialErrorMessage('subscription_exists')).toMatch(/already has a subscription/)
+    expect(trialErrorMessage('plan_unavailable')).toMatch(/not available/)
+    expect(trialErrorMessage('subscription_exists')).not.toMatch(/could not start/)
   })
   it('has a message for each', () => {
     expect(trialErrorMessage('forbidden_scope')).toMatch(/owner/)

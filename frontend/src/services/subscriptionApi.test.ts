@@ -402,6 +402,48 @@ describe('subscriptionApi', () => {
         })
     })
 
+    describe('gstInvoicesApi.list', () => {
+        const row = {
+            id: 'inv_1', invoice_number: 'TO/26-27/000001', issued_at: '2026-07-15T06:00:00Z',
+            taxable_paise: 49900, cgst_paise: 4491, sgst_paise: 4491, igst_paise: 0, total_paise: 58882,
+            place_of_supply_state_code: '27', sac_code: '997331', recipient_name: null, recipient_gstin: null,
+            credit_notes: [],
+        }
+
+        it('reads the agency invoices through agency_subscription_invoices()', async () => {
+            rpcMock.mockResolvedValue({ data: { ok: true, invoices: [row] }, error: null })
+
+            const result = await subscriptionApi.gstInvoices.list()
+
+            expect(rpcMock).toHaveBeenCalledWith('agency_subscription_invoices')
+            expect(result).toEqual([row])
+        })
+
+        it('defaults missing credit_notes to an empty array', async () => {
+            const { credit_notes: _omit, ...bare } = row
+            void _omit
+            rpcMock.mockResolvedValue({ data: { ok: true, invoices: [bare] }, error: null })
+
+            const result = await subscriptionApi.gstInvoices.list()
+
+            expect(result[0].credit_notes).toEqual([])
+        })
+
+        it('returns an empty list for a scope that may not see billing documents', async () => {
+            rpcMock.mockResolvedValue({ data: { ok: false, error: 'forbidden_scope' }, error: null })
+
+            await expect(subscriptionApi.gstInvoices.list()).resolves.toEqual([])
+        })
+
+        it('throws on other refusals and on transport errors', async () => {
+            rpcMock.mockResolvedValue({ data: { ok: false, error: 'no_agency' }, error: null })
+            await expect(subscriptionApi.gstInvoices.list()).rejects.toThrow('no_agency')
+
+            rpcMock.mockResolvedValue({ data: null, error: { message: 'boom' } })
+            await expect(subscriptionApi.gstInvoices.list()).rejects.toEqual({ message: 'boom' })
+        })
+    })
+
     describe('invoicesApi.getSignedUrl', () => {
         it('mints a signed URL through the invoice-view Edge function (TO-142 private bucket)', async () => {
             functionsInvokeMock.mockResolvedValue({

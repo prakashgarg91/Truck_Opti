@@ -199,6 +199,7 @@ export type VehicleCommandState = 'created' | 'idempotent_replay' | 'updated'
 export type VehicleCommandResult =
     | { ok: true; state: VehicleCommandState; vehicle: FleetVehicle; version: number }
     | { ok: false; error: 'version_conflict'; currentVersion: number }
+    | { ok: false; error: 'truck_in_approved_plan'; message: string }
 
 export type EmploymentCommandState = 'created' | 'idempotent_replay' | 'ended' | 'already_ended' | 'updated'
 
@@ -662,6 +663,14 @@ function mapVehicleCommandEnvelope(data: unknown): VehicleCommandResult {
         }
     }
 
+    if (envelope && envelope.ok === false && envelope.error === 'truck_in_approved_plan') {
+        return {
+            ok: false,
+            error: 'truck_in_approved_plan',
+            message: 'This truck is in an approved load plan. Cancel the plan first.',
+        }
+    }
+
     if (
         envelope &&
         envelope.ok === true &&
@@ -828,6 +837,8 @@ const PAYOUT_COMMAND_EXCEPTION_MESSAGES: ReadonlySet<string> = new Set([
     'Payout amount must have at most two decimal places.',
     'Payout amount exceeds the per-request limit.',
     'Payout note is too long.',
+    'Daily payout limit for this agency reached.',
+    'Idempotency key is too long.',
     'Your access scope does not allow this action.',
     'Agency approval is required.',
     'No agency profile found for this account.',

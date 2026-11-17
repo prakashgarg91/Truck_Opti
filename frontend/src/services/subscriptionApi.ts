@@ -26,7 +26,7 @@ export interface Subscription {
   id: string;
   user_id: string;
   plan_id: string;
-  status: 'active' | 'paused' | 'cancelled' | 'expired' | 'trial' | 'past_due' | 'grace';
+  status: 'active' | 'cancelled' | 'expired' | 'trial' | 'past_due' | 'grace';
   billing_cycle: 'monthly' | 'yearly';
   current_period_start: string;
   current_period_end: string;
@@ -64,6 +64,30 @@ export interface Invoice {
   razorpay_payment_id?: string;
   paid_at?: string;
   pdf_url?: string;
+}
+
+// GST subscription invoice as returned by agency_subscription_invoices() (integer paise).
+export interface SubscriptionCreditNote {
+  id: string;
+  credit_note_number: string;
+  issued_at: string;
+  total_paise: number;
+}
+
+export interface SubscriptionInvoice {
+  id: string;
+  invoice_number: string;
+  issued_at: string;
+  taxable_paise: number;
+  cgst_paise: number;
+  sgst_paise: number;
+  igst_paise: number;
+  total_paise: number;
+  place_of_supply_state_code: string;
+  sac_code: string;
+  recipient_name: string | null;
+  recipient_gstin: string | null;
+  credit_notes: SubscriptionCreditNote[];
 }
 
 function mapPlanFeatures(features: unknown): string[] {
@@ -424,6 +448,26 @@ export const invoicesApi = {
   }
 };
 
+// ============= GST INVOICES (agency read path) =============
+// Payment activation writes subscription_invoices (agency keyed). The billing page reads them through
+// agency_subscription_invoices(): owner, finance and viewer scopes. Dispatcher and fleet manager scopes
+// are not allowed to see billing documents, so they get an empty list rather than an error banner.
+export const gstInvoicesApi = {
+  async list(): Promise<SubscriptionInvoice[]> {
+    const { data, error } = await supabase.rpc('agency_subscription_invoices');
+    if (error) throw error;
+    const payload = data as { ok?: boolean; error?: string; invoices?: SubscriptionInvoice[] } | null;
+    if (!payload || payload.ok !== true) {
+      if (payload?.error === 'forbidden_scope') return [];
+      throw new Error(payload?.error ?? 'invoices_unavailable');
+    }
+    return Array.isArray(payload.invoices) ? payload.invoices.map((invoice) => ({
+      ...invoice,
+      credit_notes: Array.isArray(invoice.credit_notes) ? invoice.credit_notes : [],
+    })) : [];
+  },
+};
+
 // ============= HELPER FUNCTIONS =============
 export const subscriptionHelpers = {
   // Format price from paise to rupees
@@ -472,6 +516,7 @@ export const subscriptionApi = {
   checkout: checkoutApi,
   usage: usageApi,
   invoices: invoicesApi,
+  gstInvoices: gstInvoicesApi,
   helpers: subscriptionHelpers
 };
 

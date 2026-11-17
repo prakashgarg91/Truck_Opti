@@ -30,7 +30,7 @@ serve(async (req) => {
   try {
     const { serviceClient, agencyId } = await requireAgencyContext(
       req.headers.get('Authorization'),
-      { requireApproved: false },
+      { requireApproved: false, portal: 'billing' },
     )
 
     const body = req.method === 'GET' ? { action: 'list' as const } : parseRequestBody(await req.json())

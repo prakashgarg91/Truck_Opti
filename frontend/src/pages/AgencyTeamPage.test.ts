@@ -191,6 +191,7 @@ describe('AgencyTeamPage', () => {
 
         const code = q('[data-testid="team-share-code"]')
         expect(code?.textContent).toContain('ONE-TIME-CODE-123')
+        expect(code?.textContent).toContain('/invite/ONE-TIME-CODE-123')
         expect(text()).toContain('shown only once')
 
         await click(buttons(/I have shared it/)[0])

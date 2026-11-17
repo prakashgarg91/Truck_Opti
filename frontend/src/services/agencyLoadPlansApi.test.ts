@@ -85,6 +85,7 @@ describe('agencyLoadPlansApi', () => {
             ['order_line_not_found', /could not be found/],
             ['order_cancelled', /cancelled/],
             ['line_allocated_twice', /more than one load/],
+            ['line_allocated_and_unmet', /both placed on a load and listed as unplaced/],
             ['over_allocated', /more than its order quantity/],
             ['weight_missing', /no weight/],
             ['over_capacity', /heavier than its truck/],
@@ -241,6 +242,14 @@ describe('agencyLoadPlansApi', () => {
         it('throws the fallback when a read fails', async () => {
             mockQuery([], { message: 'raw detail' })
             await expect(agencyLoadPlansApi.listPlans()).rejects.toThrow('Failed to load plans')
+        })
+    })
+
+    describe('describeProblem line_allocated_and_unmet', () => {
+        it('names the line and the conflict', () => {
+            expect(describeProblem({ code: 'line_allocated_and_unmet', loadIndex: 0, index: 1 })).toBe(
+                'Load 1, line 2: this line is placed on a load and also listed as unplaced.',
+            )
         })
     })
 

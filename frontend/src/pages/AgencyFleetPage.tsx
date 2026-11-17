@@ -160,6 +160,8 @@ export default function AgencyFleetPage() {
       await fetchData()
       if (!result.ok && result.error === 'version_conflict') {
         toast.error('This vehicle was updated elsewhere. Showing the latest version.')
+      } else if (!result.ok && result.error === 'truck_in_approved_plan') {
+        toast.error(result.message)
       }
     } catch (e) {
       logger.error('[AgencyFleetPage] handleToggleAvailability failed:', e)

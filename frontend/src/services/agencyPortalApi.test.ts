@@ -1272,6 +1272,8 @@ describe('agencyPortalApi', () => {
                 'Payout amount must have at most two decimal places.',
                 'Payout amount exceeds the per-request limit.',
                 'Payout note is too long.',
+                'Daily payout limit for this agency reached.',
+                'Idempotency key is too long.',
                 'Your access scope does not allow this action.',
                 'Agency approval is required.',
                 'No agency profile found for this account.',
@@ -1617,6 +1619,18 @@ describe('agencyPortalApi', () => {
             const result = await agencyFleetApi.updateVehicle(vehicleRow.id, 3, { is_available: true })
 
             expect(result).toEqual({ ok: false, error: 'version_conflict', currentVersion: 4 })
+        })
+
+        it('maps truck_in_approved_plan to a typed result WITHOUT throwing', async () => {
+            rpcMock.mockResolvedValue({ data: { ok: false, error: 'truck_in_approved_plan' }, error: null })
+
+            const result = await agencyFleetApi.updateVehicle(vehicleRow.id, 3, { maintenance_blocked: true })
+
+            expect(result).toEqual({
+                ok: false,
+                error: 'truck_in_approved_plan',
+                message: 'This truck is in an approved load plan. Cancel the plan first.',
+            })
         })
 
         it('redacts denial exceptions to UserFacingError', async () => {

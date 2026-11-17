@@ -136,6 +136,15 @@ describe('agencyOrdersApi', () => {
             expect(await agencyOrdersApi.cancelOrder('o-1', 1)).toMatchObject({ ok: false, error: 'order_not_draft', message: 'Only draft orders can be cancelled.' })
         })
 
+        it('returns order_in_approved_plan in plain language, not the generic failure', async () => {
+            rpcMock.mockResolvedValue({ data: { ok: false, error: 'order_in_approved_plan' }, error: null })
+            expect(await agencyOrdersApi.cancelOrder('o-1', 1)).toMatchObject({
+                ok: false,
+                error: 'order_in_approved_plan',
+                message: 'This order is in an approved load plan. Cancel the plan first.',
+            })
+        })
+
         it('surfaces the not-found exception', async () => {
             rpcMock.mockResolvedValue({ data: null, error: { message: 'Order not found or access denied.' } })
             await expect(agencyOrdersApi.cancelOrder('o-1', 1)).rejects.toThrow('Order not found or access denied.')

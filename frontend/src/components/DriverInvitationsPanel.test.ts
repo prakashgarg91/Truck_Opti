@@ -134,6 +134,7 @@ describe('DriverInvitationsPanel', () => {
         expect(arg.phone).toBe('+919876543211')
         expect(arg.idempotencyKey.length).toBeGreaterThan(8)
         expect(q('[data-testid="driver-invite-code"]')?.textContent).toContain('DRV-CODE-9X8Y')
+        expect(q('[data-testid="driver-invite-code"]')?.textContent).toContain('/invite/DRV-CODE-9X8Y')
         expect(text()).toContain('shown only once')
 
         await click(buttons(/I have shared it/)[0])

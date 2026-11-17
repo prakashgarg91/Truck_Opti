@@ -32,7 +32,7 @@ serve(async (req) => {
   try {
     const { serviceClient, agencyId, agencyStatus } = await requireAgencyContext(
       req.headers.get('Authorization'),
-      { requireApproved: false },
+      { requireApproved: false, portal: 'drivers' },
     )
     const body = parseRequestBody(await req.json())
 

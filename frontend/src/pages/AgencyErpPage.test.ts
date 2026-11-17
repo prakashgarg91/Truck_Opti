@@ -349,13 +349,16 @@ describe('AgencyErpPage', () => {
         expect(q('[data-testid="erp-events-c-1"]')!.textContent).toContain('No events yet')
     })
 
-    it('shows the read-only How to connect block without inventing an endpoint', async () => {
+    it('shows the How to connect block with the real endpoint pattern and a placeholder secret', async () => {
         await mountPage()
         const how = q('[data-testid="erp-how"]')!.textContent!
         expect(how).toContain('How to connect')
         expect(how).toContain('provided by your account manager')
         expect(how).toMatch(/connection id/)
         expect(how).toMatch(/secret/)
+        expect(q('[data-testid="erp-endpoint"]')!.textContent).toContain('POST SUPABASE_URL/functions/v1/erp-ingest')
+        expect(how).toContain('Bearer <your-secret>')
+        expect(how).toContain('"outcome": "rejected"')
         expect(how).not.toMatch(/https?:\/\//)
         expect(q('[data-testid="erp-how"] button, [data-testid="erp-how"] input')).toBeNull()
     })

@@ -82,6 +82,7 @@ const ContactPage = React.lazy(() => import('./pages/ContactPage'))
 const AdminContactPage = React.lazy(() => import('./pages/AdminContactPage'))
 const AdminUsersPage = React.lazy(() => import('./pages/AdminUsersPage'))
 const AdminSubscriptionsPage = React.lazy(() => import('./pages/AdminSubscriptionsPage'))
+const AcceptInvitePage = React.lazy(() => import('./pages/AcceptInvitePage'))
 const LandingPage = React.lazy(() => import('./pages/LandingPage'))
 const LocalSetupPage = React.lazy(() => import('./pages/LocalSetupPage'))
 
@@ -119,6 +120,7 @@ function AppContent() {
           <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
           <Route path="/driver/register" element={<DriverRegisterPage />} />
           <Route path="/agency/register" element={<AgencyRegisterPage />} />
+          <Route path="/invite/:token" element={<ProtectedRoute><AcceptInvitePage /></ProtectedRoute>} />
           <Route path="/local-start" element={<LocalSetupPage />} />
           {import.meta.env.DEV && (
             <Route path="/test-payment" element={<TestPaymentPage />} />

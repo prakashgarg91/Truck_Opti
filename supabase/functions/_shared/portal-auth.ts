@@ -1,4 +1,10 @@
 import { createClient, type SupabaseClient, type User as AuthUser } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  canWriteThroughPortal,
+  PORTAL_MESSAGES,
+  resolvePortalAccess,
+  type PortalFunction,
+} from './portalScopes.ts'
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -228,6 +234,8 @@ export async function assertDriverAvailableForAgencyTruck(
 
 type AgencyContextOptions = {
   requireApproved?: boolean
+  /** Which portal function is asking; decides the staff scopes allowed to read it. */
+  portal: PortalFunction
 }
 
 /**
@@ -255,9 +263,14 @@ export async function requireUserContext(authorization: string | null) {
   }
 }
 
+/**
+ * Resolves the acting agency for a portal function: the owner, or an active staff member whose scope
+ * is allowed for `options.portal` (see portalScopes.ts). Staff are read-only: write actions must call
+ * assertPortalWriter(context).
+ */
 export async function requireAgencyContext(
   authorization: string | null,
-  options: AgencyContextOptions = {},
+  options: AgencyContextOptions,
 ) {
   const requireApproved = options.requireApproved ?? true
   const accessToken = getBearerToken(authorization)
@@ -271,30 +284,66 @@ export async function requireAgencyContext(
   const serviceClient = createServiceClient(supabaseUrl, supabaseServiceRoleKey)
   const caller = await getCaller(authClient, accessToken)
 
-  const { data: agency, error: agencyError } = await serviceClient
+  const { data: ownedRows, error: ownedError } = await serviceClient
     .from('transport_agencies')
     .select('id, status')
     .eq('user_id', caller.id)
-    .maybeSingle<{ id: string; status: string | null }>()
+    .order('created_at', { ascending: true })
+    .limit(2)
 
-  if (agencyError) {
-    console.error('Failed to resolve agency', agencyError)
+  if (ownedError) {
+    console.error('Failed to resolve agency', ownedError)
     throw new RequestError('Unable to verify agency access.', 500, false)
   }
 
-  if (!agency?.id) {
-    throw new RequestError('Agency access is required.', 403)
+  const { data: membershipRows, error: membershipError } = await serviceClient
+    .from('agency_memberships')
+    .select('agency_id, scope')
+    .eq('user_id', caller.id)
+    .eq('status', 'active')
+    .limit(50)
+
+  if (membershipError) {
+    console.error('Failed to resolve agency membership', membershipError)
+    throw new RequestError('Unable to verify agency access.', 500, false)
   }
 
-  if (requireApproved) {
-    assertApprovedAgency(agency.status)
+  const memberships = (membershipRows ?? []) as Array<{ agency_id: string; scope: string }>
+  let agencies: Array<{ id: string; status: string | null }> = []
+
+  if (memberships.length > 0) {
+    const { data: agencyRows, error: agencyRowsError } = await serviceClient
+      .from('transport_agencies')
+      .select('id, status')
+      .in('id', memberships.map((row) => row.agency_id))
+
+    if (agencyRowsError) {
+      console.error('Failed to resolve member agency status', agencyRowsError)
+      throw new RequestError('Unable to verify agency access.', 500, false)
+    }
+
+    agencies = (agencyRows ?? []) as Array<{ id: string; status: string | null }>
+  }
+
+  const decision = resolvePortalAccess({
+    portal: options.portal,
+    requireApproved,
+    owned: (ownedRows ?? []) as Array<{ id: string; status: string | null }>,
+    memberships,
+    agencies,
+  })
+
+  if (!decision.ok) {
+    throw new RequestError(decision.message, decision.status)
   }
 
   return {
     caller,
     serviceClient,
-    agencyId: agency.id,
-    agencyStatus: agency.status,
+    agencyId: decision.agencyId,
+    agencyStatus: decision.agencyStatus,
+    role: decision.role,
+    canWrite: canWriteThroughPortal(decision),
   }
 }
 
@@ -336,6 +385,12 @@ export async function requireDriverContext(authorization: string | null) {
     serviceClient,
     driverId: driver.id,
     driverStatus: driver.status,
+  }
+}
+
+export function assertPortalWriter(context: { canWrite: boolean }) {
+  if (!context.canWrite) {
+    throw new RequestError(PORTAL_MESSAGES.ownerOnlyWrite, 403)
   }
 }
 

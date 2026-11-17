@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import { agencyDriverInvitationApi, type DriverInvitationRow } from '../services/agencyOrganizationApi'
+import { buildInviteLink } from '../services/agencyInvitesApi'
 import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
 import type { SubscriptionErrorInfo } from '../lib/billingState'
 import { SubscriptionLimitPrompt, useBillingGate } from './billing/BillingGate'
@@ -143,8 +144,8 @@ export default function DriverInvitationsPanel() {
   const copy = async () => {
     if (!code) return
     try {
-      await navigator.clipboard.writeText(code.token)
-      toast.success('Code copied')
+      await navigator.clipboard.writeText(buildInviteLink(code.token))
+      toast.success('Link copied')
     } catch {
       toast.error('Could not copy. Select the code and copy it manually.')
     }
@@ -178,13 +179,14 @@ export default function DriverInvitationsPanel() {
           <p className="text-sm font-semibold text-indigo-950">
             Share this invitation code with {displayPhone(code.phone)} now. It is shown only once and cannot be recovered.
           </p>
-          <code className="block select-all break-all rounded-lg border border-indigo-200 bg-white px-3 py-2 font-mono text-base text-slate-900">{code.token}</code>
+          <code className="block select-all break-all rounded-lg border border-indigo-200 bg-white px-3 py-2 font-mono text-base text-slate-900">{buildInviteLink(code.token)}</code>
+          <p className="text-xs text-indigo-900">Invitation code: <span className="font-mono">{code.token}</span></p>
           <div className="flex flex-wrap gap-2">
             <button onClick={copy} className={`flex items-center gap-2 min-h-[44px] rounded-xl border border-indigo-300 bg-white px-4 text-sm font-semibold text-indigo-900 ${FOCUS_RING}`}>
-              <Copy size={16} aria-hidden="true" /> Copy
+              <Copy size={16} aria-hidden="true" /> Copy link
             </button>
             <a
-              href={`https://wa.me/${code.phone.replace('+', '')}?text=${encodeURIComponent(`You are invited to drive for our agency on TruckOpti. Sign in with this phone number and enter this code: ${code.token}`)}`}
+              href={`https://wa.me/${code.phone.replace('+', '')}?text=${encodeURIComponent(`You are invited to drive for our agency on TruckOpti. Sign in with this phone number and open this link: ${buildInviteLink(code.token)}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className={`flex items-center gap-2 min-h-[44px] rounded-xl border border-indigo-300 bg-white px-4 text-sm font-semibold text-indigo-900 ${FOCUS_RING}`}

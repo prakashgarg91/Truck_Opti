@@ -103,6 +103,7 @@ export type LoadPlanErrorCode =
     | 'order_line_not_found'
     | 'order_cancelled'
     | 'line_allocated_twice'
+    | 'line_allocated_and_unmet'
     | 'over_allocated'
     | 'weight_missing'
     | 'over_capacity'
@@ -170,6 +171,7 @@ const ERROR_MESSAGES: Readonly<Record<Exclude<LoadPlanErrorCode, 'unknown'>, str
     order_line_not_found: 'An order line in this plan could not be found. Reload and propose again.',
     order_cancelled: 'An order in this plan was cancelled. Reload and propose again.',
     line_allocated_twice: 'An order line is placed on more than one load. Propose the plan again.',
+    line_allocated_and_unmet: 'An order line is both placed on a load and listed as unplaced. Propose the plan again.',
     over_allocated: 'A line carries more than its order quantity. Reload and propose again.',
     weight_missing: 'A line has no weight, so it cannot be planned. Add a weight per unit to the order line.',
     over_capacity: 'A load is heavier than its truck can carry. Reload and propose again.',
@@ -298,6 +300,8 @@ export function describeProblem(p: PlanProblem): string {
             return `${where ?? 'A line'}: its order was cancelled.`
         case 'line_allocated_twice':
             return `${where ?? 'A line'}: this line is already placed on an earlier load.`
+        case 'line_allocated_and_unmet':
+            return `${where ?? 'A line'}: this line is placed on a load and also listed as unplaced.`
         case 'over_allocated':
             return `${where ?? 'A line'}: this load carries more than the order quantity.`
         case 'weight_missing':
