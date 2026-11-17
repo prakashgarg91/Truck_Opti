@@ -9,7 +9,7 @@
 // The JSON report goes to proof-output/ (the script also drops a self-ignoring .gitignore there).
 
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs'
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createInterface } from 'node:readline'
@@ -461,7 +461,22 @@ export async function runLive(env, { fetchImpl = fetch, log = console.log, outDi
 
 // ---------------------------------------------------------------------------------------------
 
+// Optional local secrets file (git-ignored): KEY=VALUE lines, never overrides variables already set.
+function loadProofEnvFile() {
+  try {
+    const text = readFileSync(new URL('../.env.proof', import.meta.url), 'utf8')
+    for (const line of text.split(/\r?\n/)) {
+      const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line)
+      if (!m || line.trimStart().startsWith('#')) continue
+      if (process.env[m[1]] === undefined || process.env[m[1]] === '') process.env[m[1]] = m[2].replace(/^["']|["']$/g, '')
+    }
+  } catch {
+    /* no .env.proof: environment variables only */
+  }
+}
+
 async function main() {
+  loadProofEnvFile()
   const args = parseArgs(process.argv.slice(2))
   if (args.help || args.dryRun) {
     console.log(renderPlan(process.env))

@@ -92,3 +92,4 @@ docs/archive/
 
 # Razorpay sandbox proof reports (may contain order ids)
 proof-output/
+.env.proof
