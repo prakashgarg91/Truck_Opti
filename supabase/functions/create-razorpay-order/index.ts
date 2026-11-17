@@ -1,196 +1,167 @@
-// Razorpay Order Creation Edge Function
+// Razorpay order creation: a THIN shell. The database prices, stores and compares (TO-152).
 // Deploy with: supabase functions deploy create-razorpay-order
+// Env: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET (never logged, never returned).
+//
+// The client sends ONLY { plan_tier, billing_cycle, coupon_code }. No amount, price or agency id is read.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { calculateExpectedAmounts } from '../_shared/billing.ts'
-import { resolveSubscriptionPlanByIdentifier } from '../_shared/plans.ts'
+import { corsHeaders, handleRequestError, jsonResponse, requireUserContext, RequestError } from '../_shared/portal-auth.ts'
+import {
+  buildRazorpayOrderBody,
+  cancelPendingOrderBestEffort,
+  checkoutPrecheck,
+  finalizeCreateOrder,
+  parseCreateOrderRequest,
+  readQuote,
+  resolveOwnerAgency,
+  type UserFacingError,
+} from '../_shared/activation.ts'
+import { readCappedText } from '../_shared/razorpay.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const MAX_JSON_BODY_BYTES = 16 * 1024
+
+function refuse(error: UserFacingError) {
+  return jsonResponse({ error: error.code, message: error.message }, error.status)
 }
-
-const VALID_PAYMENT_METHODS = new Set(['card', 'upi', 'netbanking', 'wallet'])
-const USER_FACING_ORDER_ERROR = 'Unable to start Razorpay payment right now. Please try again.'
-
-function toRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>
-  }
-
-  return {}
-}
-
-function getPendingPaymentMethod(value: unknown): 'card' | 'upi' | 'netbanking' | 'wallet' {
-  if (typeof value === 'string' && VALID_PAYMENT_METHODS.has(value)) {
-    return value as 'card' | 'upi' | 'netbanking' | 'wallet'
-  }
-
-  return 'upi'
-}
-
-function normalizeBillingCycle(value: unknown): 'monthly' | 'yearly' | null {
-  if (value === 'monthly' || value === 'yearly') {
-    return value
-  }
-
-  return null
-}
-
-// Razorpay API configuration
-const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID') || ''
-const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET') || ''
 
 serve(async (req) => {
-  // Handle CORS preflight
+  // Set once the Razorpay order exists; any later failure releases its coupon reservation.
+  let createdOrderId: string | null = null
+  let cleanupClient: Parameters<typeof cancelPendingOrderBestEffort>[0] | null = null
+
+  async function refuseAndCancel(error: UserFacingError) {
+    if (createdOrderId && cleanupClient) {
+      const code = await cancelPendingOrderBestEffort(cleanupClient, createdOrderId)
+      if (code) console.error('[create-razorpay-order] cancel pending order failed', code)
+    }
+    return refuse(error)
+  }
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+  if (req.method !== 'POST') {
+    return jsonResponse({ error: 'method_not_allowed', message: 'Method not allowed.' }, 405)
+  }
 
   try {
-    const { amount, currency, receipt, notes, customerPhone, customerEmail } = await req.json()
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const authorization = req.headers.get('Authorization')
-
-    if (!authorization) {
-      throw new Error('Authentication is required to create a Razorpay order')
+    const keyId = Deno.env.get('RAZORPAY_KEY_ID') ?? ''
+    const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET') ?? ''
+    if (!keyId || !keySecret) {
+      console.error('[create-razorpay-order] Razorpay keys are not configured')
+      return refuse({ status: 503, code: 'billing_unavailable', message: 'Payments are not available right now. Please try again later.' })
     }
 
-    const accessToken = authorization.replace('Bearer ', '').trim()
-
-    if (!accessToken) {
-      throw new Error('Authentication is required to create a Razorpay order')
-    }
-
-    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authorization,
-        },
-      },
-    })
-
-    const { data: { user }, error: userError } = await authClient.auth.getUser(accessToken)
-
-    if (userError || !user) {
-      throw userError || new Error('Unable to resolve authenticated user')
-    }
-
-    const normalizedNotes = toRecord(notes)
-    const requestedUserId = typeof normalizedNotes.user_id === 'string' ? normalizedNotes.user_id : null
-
-    if (requestedUserId && requestedUserId !== user.id) {
-      throw new Error('Authenticated user does not match requested payment user')
-    }
-
-    const orderNotes = {
-      ...normalizedNotes,
-      user_id: user.id,
-    }
-    const requestedPlanId = typeof orderNotes.plan_id === 'string' ? orderNotes.plan_id : null
-    const resolvedBillingCycle = normalizeBillingCycle(orderNotes.billing_cycle)
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
-
-    // Validate required fields
-    if (!amount || amount < 100) {
-      throw new Error('Amount must be at least ₹1 (100 paise)')
-    }
-
-    if (!requestedPlanId) {
-      throw new Error('plan_id is required to create a Razorpay order')
-    }
-
-    if (!resolvedBillingCycle) {
-      throw new Error('billing_cycle must be monthly or yearly')
-    }
-
-    const planData = await resolveSubscriptionPlanByIdentifier(supabase, requestedPlanId)
-
-    if (!planData) {
-      throw new Error('Subscription plan not found')
-    }
-
-    const canonicalPlanId = planData.id
-    const canonicalOrderNotes = {
-      ...orderNotes,
-      plan_id: canonicalPlanId,
-      billing_cycle: resolvedBillingCycle,
-    }
-
-    const planAmount = resolvedBillingCycle === 'yearly'
-      ? planData.price_yearly
-      : planData.price_monthly
-    const { totalAmount } = calculateExpectedAmounts(planAmount)
-
-    if (amount !== totalAmount) {
-      throw new Error('Payment amount does not match selected plan')
-    }
-
-    // Create Razorpay order
-    const orderData = {
-      amount: amount, // in paise
-      currency: currency || 'INR',
-      receipt: receipt || `rcpt_${Date.now()}`,
-      notes: canonicalOrderNotes,
-    }
-
-    const auth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)
-
-    const response = await fetch('https://api.razorpay.com/v1/orders', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(orderData)
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      console.error('Razorpay order creation failed:', error)
-      throw new Error(error.error?.description || 'Failed to create order')
-    }
-
-    const order = await response.json()
-
-    // Store order in Supabase
-    const { error: paymentHistoryError } = await supabase.from('payment_history').insert({
-      user_id: user.id,
-      amount: amount,
-      currency: currency || 'INR',
-      payment_method: getPendingPaymentMethod(canonicalOrderNotes.payment_method),
-      status: 'pending',
-      razorpay_order_id: order.id,
-      metadata: {
-        payment_provider: 'razorpay',
-        receipt: receipt || orderData.receipt,
-        plan_id: canonicalPlanId,
-        billing_cycle: resolvedBillingCycle,
-        customer_phone: customerPhone || null,
-        customer_email: customerEmail || null,
-        notes: canonicalOrderNotes,
+    let body: unknown = null
+    const rawBody = await readCappedText(req.body, MAX_JSON_BODY_BYTES, req.headers.get('content-length'))
+    if (rawBody.ok) {
+      try {
+        body = JSON.parse(rawBody.text)
+      } catch {
+        body = null
       }
-    })
+    }
+    const parsed = parseCreateOrderRequest(body)
+    if (!parsed.ok) {
+      return refuse(parsed.error)
+    }
+    const input = parsed.value
 
-    if (paymentHistoryError) {
-      console.error('Failed to persist Razorpay payment history:', paymentHistoryError)
-      throw paymentHistoryError
+    // Authenticate and resolve the caller's own agency (owner). Approval is judged below, calmly.
+    const { caller, serviceClient } = await requireUserContext(req.headers.get('Authorization'))
+    const owner = await resolveOwnerAgency(serviceClient, caller.id)
+    if (!owner.ok) {
+      if (owner.error.status >= 500) console.error('[create-razorpay-order]', owner.log)
+      return refuse(owner.error)
+    }
+    const { agencyId, agencyStatus } = owner
+    cleanupClient = serviceClient
+
+    // 1. State check BEFORE anything is created at Razorpay.
+    const { data: state, error: stateError } = await serviceClient.rpc('agency_subscription_state', { p_agency_id: agencyId })
+    if (stateError) {
+      console.error('[create-razorpay-order] state lookup failed', stateError.code ?? 'unknown')
+    }
+    const precheck = checkoutPrecheck(agencyStatus, stateError ? null : state)
+    if (!precheck.ok) {
+      return refuse(precheck.error)
     }
 
-    return new Response(JSON.stringify(order), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
+    // 2. Quote server-side.
+    const { data: quoteData, error: quoteError } = await serviceClient.rpc('subscription_quote_order', {
+      p_agency_id: agencyId,
+      p_plan_tier: input.planTier,
+      p_billing_cycle: input.billingCycle,
+      p_coupon_code: input.couponCode,
     })
+    if (quoteError) {
+      console.error('[create-razorpay-order] quote failed', quoteError.code ?? 'unknown')
+      return refuse({ status: 503, code: 'order_failed', message: 'Unable to start the payment right now. Please try again.' })
+    }
+    const quote = readQuote(quoteData)
+    if (!quote.ok) {
+      return refuse(quote.error)
+    }
 
-  } catch (error) {
-    console.error('Error creating Razorpay order:', error)
-    return new Response(JSON.stringify({ error: USER_FACING_ORDER_ERROR }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400
+    // 3. Create the Razorpay order with the quoted total.
+    const orderBody = buildRazorpayOrderBody(quote.quote, Date.now())
+    let razorpayResponse: Response
+    try {
+      razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderBody),
+        signal: AbortSignal.timeout(15000),
+      })
+    } catch {
+      console.error('[create-razorpay-order] Razorpay order request failed to complete')
+      return refuse({ status: 502, code: 'order_failed', message: 'Unable to start the payment right now. Please try again.' })
+    }
+    if (!razorpayResponse.ok) {
+      console.error('[create-razorpay-order] Razorpay refused the order', razorpayResponse.status)
+      return refuse({ status: 502, code: 'order_failed', message: 'Unable to start the payment right now. Please try again.' })
+    }
+    const razorpayOrder = (await razorpayResponse.json().catch(() => null)) as { id?: unknown; amount?: unknown; currency?: unknown } | null
+    if (
+      !razorpayOrder ||
+      typeof razorpayOrder.id !== 'string' ||
+      razorpayOrder.amount !== quote.quote.totalPaise ||
+      razorpayOrder.currency !== 'INR'
+    ) {
+      console.error('[create-razorpay-order] Razorpay order does not match the quote')
+      if (razorpayOrder && typeof razorpayOrder.id === 'string') createdOrderId = razorpayOrder.id
+      return await refuseAndCancel({ status: 502, code: 'order_failed', message: 'Unable to start the payment right now. Please try again.' })
+    }
+
+    createdOrderId = razorpayOrder.id
+
+    // 4. Store the order (server snapshot) and COMPARE the stored total with what Razorpay was sent.
+    const { data: created, error: createError } = await serviceClient.rpc('subscription_create_order', {
+      p_agency_id: agencyId,
+      p_plan_tier: input.planTier,
+      p_billing_cycle: input.billingCycle,
+      p_coupon_code: input.couponCode,
+      p_razorpay_order_id: razorpayOrder.id,
     })
+    if (createError) {
+      console.error('[create-razorpay-order] subscription_create_order failed', createError.code ?? 'unknown')
+      return await refuseAndCancel({ status: 503, code: 'order_failed', message: 'Unable to start the payment right now. Please try again.' })
+    }
+    const outcome = finalizeCreateOrder(razorpayOrder.id, quote.quote.totalPaise, created)
+    if (!outcome.ok) {
+      console.error('[create-razorpay-order] refused checkout:', outcome.log, 'order', razorpayOrder.id)
+      return await refuseAndCancel(outcome.error)
+    }
+
+    return jsonResponse(outcome.response, 200)
+  } catch (error) {
+    if (error instanceof RequestError) {
+      return handleRequestError('create-razorpay-order', error)
+    }
+    console.error('[create-razorpay-order] unexpected error', error instanceof Error ? error.name : 'unknown')
+    return await refuseAndCancel({ status: 500, code: 'order_failed', message: 'Unable to start the payment right now. Please try again.' })
   }
 })

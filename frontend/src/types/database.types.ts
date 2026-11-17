@@ -1807,6 +1807,32 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"razorpay_webhook_attempts": {
+                  Row: {
+                    "at": string,"attempt_no": number,"event_id": string,"sqlstate_or_code": string
+                  }
+                  Insert: {
+                    "at"?: string,"attempt_no": number,"event_id": string,"sqlstate_or_code": string
+                  }
+                  Update: {
+                    "at"?: string,"attempt_no"?: number,"event_id"?: string,"sqlstate_or_code"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"razorpay_webhook_events": {
+                  Row: {
+                    "error": string | null,"event_id": string,"event_type": string,"order_id": string | null,"payload": Json | null,"payload_sha256": string,"payment_id": string | null,"processed_at": string,"received_at": string,"result": string
+                  }
+                  Insert: {
+                    "error"?: string | null,"event_id": string,"event_type": string,"order_id"?: string | null,"payload"?: Json | null,"payload_sha256": string,"payment_id"?: string | null,"processed_at": string,"received_at"?: string,"result": string
+                  }
+                  Update: {
+                    "error"?: string | null,"event_id"?: string,"event_type"?: string,"order_id"?: string | null,"payload"?: Json | null,"payload_sha256"?: string,"payment_id"?: string | null,"processed_at"?: string,"received_at"?: string,"result"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 }
           }
           Views: {
@@ -2142,6 +2168,15 @@ isOneToOne: false
                            },
 "subscription_support_reopen":
 { Args: { "p_agency_id": string }; Returns: Json
+                           },
+"subscription_verify_webhook_signature":
+{ Args: { "p_body": string,"p_secret": string,"p_signature": string }; Returns: boolean
+                           },
+"subscription_webhook_process":
+{ Args: { "p_event_id": string,"p_event_type": string,"p_payload": Json,"p_payload_sha256": string }; Returns: Json
+                           },
+"subscription_cancel_pending_order":
+{ Args: { "p_razorpay_order_id": string }; Returns: Json
                            }
           }
           Enums: {

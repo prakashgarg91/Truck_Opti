@@ -124,8 +124,8 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: 'starter',
     name: 'Starter',
-    monthlyPrice: 500, // Launch pricing
-    yearlyPrice: 5000, // Launch pricing
+    monthlyPrice: 499, // Launch pricing
+    yearlyPrice: 4990, // Launch pricing
     features: [
       '3D Bin Packing Optimization',
       'Basic Truck Catalog (8 types)',
@@ -152,7 +152,7 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'growth',
     name: 'Growth',
     monthlyPrice: 1999, // Cost ₹4,225 × 1.6 = ₹6,760, but priced competitively
-    yearlyPrice: 19999, // ~17% discount
+    yearlyPrice: 19990, // ~17% discount
     features: [
       'Everything in Starter +',
       'Smart Truck Recommendation AI',
@@ -182,7 +182,7 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'professional',
     name: 'Professional',
     monthlyPrice: 4999, // Cost ₹5,784 × 1.6 = ₹9,254
-    yearlyPrice: 49999, // ~17% discount
+    yearlyPrice: 49990, // ~17% discount
     features: [
       'Everything in Growth +',
       'Multi-location Support',
@@ -213,7 +213,7 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'enterprise',
     name: 'Enterprise',
     monthlyPrice: 14999, // Cost ₹71,222 × 1.6 = ₹113,955, but volume pricing
-    yearlyPrice: 149999, // ~17% discount
+    yearlyPrice: 149990, // ~17% discount
     features: [
       'Everything in Professional +',
       'Unlimited Users',
