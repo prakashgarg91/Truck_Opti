@@ -67,6 +67,9 @@ const AgencyRatesPage = React.lazy(() => import('./pages/AgencyRatesPage'))
 const AgencyTeamPage = React.lazy(() => import('./pages/AgencyTeamPage'))
 const AgencyClientsPage = React.lazy(() => import('./pages/AgencyClientsPage'))
 const AgencyOrderImportPage = React.lazy(() => import('./pages/AgencyOrderImportPage'))
+const AgencyConsignmentsPage = React.lazy(() => import('./pages/AgencyConsignmentsPage'))
+const AgencyInvoicesPage = React.lazy(() => import('./pages/AgencyInvoicesPage'))
+const AgencyExpensesPage = React.lazy(() => import('./pages/AgencyExpensesPage'))
 const AgencyTariffsPage = React.lazy(() => import('./pages/AgencyTariffsPage'))
 const AgencyProfilePage = React.lazy(() => import('./pages/AgencyProfilePage'))
 const NewShipmentPage = React.lazy(() => import('./pages/NewShipmentPage'))
@@ -193,6 +196,9 @@ function AppContent() {
             <Route path="/agency/clients" element={<AgencyClientsPage />} />
             <Route path="/agency/clients/:agreementId/tariffs" element={<AgencyTariffsPage />} />
             <Route path="/agency/orders/import" element={<AgencyOrderImportPage />} />
+            <Route path="/agency/consignments" element={<AgencyConsignmentsPage />} />
+            <Route path="/agency/invoices" element={<AgencyInvoicesPage />} />
+            <Route path="/agency/expenses" element={<AgencyExpensesPage />} />
             <Route path="/agency/profile" element={<AgencyProfilePage />} />
           </Route>
 
