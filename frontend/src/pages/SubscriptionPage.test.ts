@@ -20,6 +20,7 @@ vi.mock('jspdf', () => ({
         setDrawColor = vi.fn()
         setTextColor = vi.fn()
         line = vi.fn()
+        splitTextToSize = (value: string) => [value]
         text = h.text
         save = h.save
     },
@@ -114,5 +115,8 @@ describe('SubscriptionPage invoice history', () => {
         expect(h.save).toHaveBeenCalledWith('to-26-27-000001.pdf')
         const written = h.text.mock.calls.map((c) => String(c[0])).join(' | ')
         expect(written).toContain('TO/26-27/000001')
+        expect(written).toContain('Total in words')
+        expect(written).toContain('Rs. ')
+        expect(written).not.toContain('₹')
     })
 })

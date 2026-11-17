@@ -438,9 +438,9 @@ async function main() {
     expect(i.recipient_gstin === '27AAAPL1234C1ZV' && i.recipient_name === 'Alpha Freight', JSON.stringify(i))
   })
 
-  await testCase('R21. only the pinned keys are exposed (no agency_id, supplier or refund internals)', async () => {
+  await testCase('R21. only the pinned keys are exposed (printed invoice fields only: no agency_id or refund internals)', async () => {
     const v = expectOk(await readAs(A.owner))
-    const allowed = new Set(['id', 'invoice_number', 'issued_at', 'taxable_paise', 'cgst_paise', 'sgst_paise', 'igst_paise', 'total_paise', 'place_of_supply_state_code', 'sac_code', 'recipient_name', 'recipient_gstin', 'credit_notes'])
+    const allowed = new Set(['id', 'invoice_number', 'issued_at', 'taxable_paise', 'cgst_paise', 'sgst_paise', 'igst_paise', 'total_paise', 'place_of_supply_state_code', 'sac_code', 'recipient_name', 'recipient_gstin', 'recipient_address', 'supplier_legal_name', 'supplier_address', 'supplier_gstin', 'credit_notes'])
     const extra = Object.keys(v.invoices[0]).filter((k) => !allowed.has(k))
     expect(extra.length === 0, `extra keys: ${extra.join(',')}`)
     const noteKeys = Object.keys(v.invoices.find((x) => x.credit_notes.length).credit_notes[0])

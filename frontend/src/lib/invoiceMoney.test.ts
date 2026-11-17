@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatInr, parseQuantity, rupeesToPaise, STATE_CODE_PATTERN } from './invoiceMoney'
+import { formatInr, paiseToWords, parseQuantity, rupeesToPaise, STATE_CODE_PATTERN } from './invoiceMoney'
 
 describe('formatInr', () => {
   it.each([
@@ -55,5 +55,22 @@ describe('STATE_CODE_PATTERN', () => {
     expect(STATE_CODE_PATTERN.test('00')).toBe(false)
     expect(STATE_CODE_PATTERN.test('39')).toBe(false)
     expect(STATE_CODE_PATTERN.test('7')).toBe(false)
+  })
+})
+
+describe('paiseToWords', () => {
+  it('writes rupees and paise in the Indian system', () => {
+    expect(paiseToWords(0)).toBe('Indian Rupees Zero Only')
+    expect(paiseToWords(100)).toBe('Indian Rupees One Only')
+    expect(paiseToWords(58882)).toBe('Indian Rupees Five Hundred Eighty Eight and Eighty Two Paise Only')
+    expect(paiseToWords(123456700)).toBe('Indian Rupees Twelve Lakh Thirty Four Thousand Five Hundred Sixty Seven Only')
+    expect(paiseToWords(1_00_00_000_00)).toBe('Indian Rupees One Crore Only')
+    expect(paiseToWords(50)).toBe('Indian Rupees Zero and Fifty Paise Only')
+    expect(paiseToWords(1900)).toBe('Indian Rupees Nineteen Only')
+  })
+  it('refuses a negative, fractional or unsafe amount', () => {
+    expect(paiseToWords(-1)).toBeNull()
+    expect(paiseToWords(10.5)).toBeNull()
+    expect(paiseToWords(Number.MAX_SAFE_INTEGER + 2)).toBeNull()
   })
 })

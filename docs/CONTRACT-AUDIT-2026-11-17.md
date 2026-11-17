@@ -65,3 +65,35 @@ Every module below was checked for: argument names (`p_` prefix), count, types a
 - Column-level SELECT grants checked: `agency_consignments` (no `qr_token`), `agency_erp_connections` (no `secret_hash`), `agency_invitations` and `agency_driver_invitations` (no `token_hash`), `subscriptions` (no `razorpay_*`, `payment_method_id`, `user_id`). No frontend select names a revoked column.
 - Not audited: pages under `frontend/src/pages` beyond the gate and scope checks quoted above; the Android app; the legacy PhonePe functions beyond finding 1; `agency-portal-rates` table `agency_rate_cards` (pre-18 module).
 - No SQL was executed; all claims come from reading migrations and source at the commit on `main` of 2026-11-17.
+
+## Resolution log
+
+Closed 2026-11-17 (commit d159a9a4 plus the follow-up working-tree change with migration `20261034000000_contract_audit_followups.sql`, battery `scripts/contract_followups.db.test.mjs`). Rows were re-read against the current code before each entry.
+
+| Row | Result | Note |
+|-----|--------|------|
+| 1 | fixed | d159a9a4: `verify-payment` retired (410). |
+| 2 | fixed | d159a9a4: `erp-ingest` Edge function and `_shared/erpIngest.ts`. |
+| 3 | fixed | d159a9a4 read path (`agency_subscription_invoices`). Now also returns supplier legal name, supplier address, supplier GSTIN and recipient address as stored (migration 20261034); the client copy (`lib/subscriptionInvoiceCopy.ts`) prints supplier, GSTINs, addresses, invoice number, place of supply, SAC, taxable value, CGST/SGST or IGST, total and total in words (new `paiseToWords`). A field is printed only when the snapshot has it. Rupee sign replaced by "Rs." (built-in PDF font has no glyph). A server-signed PDF is still not stored: the copy stays client-built. |
+| 4 | fixed | d159a9a4: portal functions resolve staff scopes. |
+| 5 | fixed | d159a9a4: accept page and `agencyInvitesApi`. |
+| 6 | fixed | Migration 20261034: entitlement snapshot returns `enforcement_enabled`; `deriveBillingGate` stays open when it is false (tests F04, `BillingGate.test.ts`). |
+| 7 | fixed | Migration 20261033 (orders_month counts what the guard counts). |
+| 8 | fixed | Migration 20261033 (staff counts pending invitations). |
+| 9 | fixed | `agency-portal-fleet` is read-only (add-truck and update-truck removed, staff and owners alike); `agencyFleetApi.addTruck/updateTruck` removed; edge guard W18 and client surface test. |
+| 10 | fixed | d159a9a4: `order_in_approved_plan` mapped. |
+| 11 | fixed | d159a9a4: `truck_in_approved_plan` typed branch. |
+| 12 | fixed | d159a9a4: `line_allocated_and_unmet` mapped. |
+| 13 | fixed | `createOrder` reads the refusal body from `error.context` and shows `message`, never the code; three tests. |
+| 14 | fixed | d159a9a4: `subscription_exists`, `plan_unavailable` messages. |
+| 15 | fixed | Migration 20261034: trigger marks draft orders `planned` on approval and back to `draft` on cancel/supersede unless another approved plan holds a line; `agency_order_cancel` answers `order_in_approved_plan` before the version and draft checks. `agency_load_plans` L97 updated to the new contract (planned v2, draft v3). Tests F05-F11. |
+| 16 | fixed (wording); enforcement deferred | The lock text now names what is actually guarded (orders, trucks, drivers, team members). Adding `agency_subscription_assert` to expenses, invoices, payroll, consignments, incidents, ERP, clients and tariffs is a product decision (it changes what a grace-period agency may do) and is deferred; those modules stay writable. |
+| 17 | fixed | A limit of -1 prints "N used (unlimited)". |
+| 18 | fixed | d159a9a4: both payout exception strings. |
+| 19 | fixed | Dead `past_due` branch and the `pay` action removed from `parseSubscriptionError` / `LimitPrompt`. |
+| 20 | fixed | `'paused'` dropped from `Subscription.status`. |
+| 21 | partly fixed; rest deferred | `node scripts/db_types_drift.check.mjs --since 20261008000000 --write` added the 8 missing function entries (vehicle and employment commands among them); check passes for that and the default range. Stale COLUMNS on pre-existing tables (`subscriptions`, `subscription_plans`, `payment_history`) are not touched: the script only inserts missing entries and hand edits are not allowed. Regenerate with the Supabase generator on a Docker machine. No runtime effect (client is untyped). |
+| 22 | not applicable | A replay returns the originally recorded result by design (idempotency); `AgencyConsignmentsPage` refetches after every event, so no stale state is shown. |
+| 23 | not applicable | Documented behaviour: viewers do not see driver names (the pages show the fallback label). Changing it is a privacy decision, not a contract defect. |
+
+Gate results: all 31 `scripts/*.db.test.mjs` suites exit 0 (new `contract_followups.db.test.mjs` 11/11), `edge_write_paths.test.mjs` 23/23, frontend vitest 2108/2108, `tsc --noEmit` and `eslint src --max-warnings 0` clean. Not run: Deno, a hosted database, a browser.

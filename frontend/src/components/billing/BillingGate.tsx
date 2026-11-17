@@ -17,7 +17,7 @@ export interface BillingGate {
   view: BillingView | null
 }
 
-export const WRITE_LOCKED_TITLE = 'Your subscription is read-only, so new records cannot be created. Renew to continue.'
+export const WRITE_LOCKED_TITLE = 'Your subscription is read-only, so new orders, trucks, drivers and team members cannot be added. Renew to continue.'
 export const DISPATCH_LOCKED_TITLE = 'Your subscription has expired, so dispatch is locked. Renew to continue.'
 
 const OPEN_GATE: BillingGate = {
@@ -42,7 +42,9 @@ export function deriveBillingGate(
   view: BillingView | null,
   loading: boolean,
 ): BillingGate {
-  const known = entitlement !== undefined && entitlement.ok && entitlement.status !== 'none'
+  // The server only refuses when enforcement is switched on; while it is off the gate stays open.
+  const known =
+    entitlement !== undefined && entitlement.ok && entitlement.status !== 'none' && entitlement.enforcementEnabled !== false
   const canWrite = !known || entitlement.canWrite
   const canDispatch = !known || entitlement.canDispatch
   return {

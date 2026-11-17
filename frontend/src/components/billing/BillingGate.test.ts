@@ -34,6 +34,26 @@ describe('deriveBillingGate', () => {
         expect(deriveBillingGate(trial, deriveBillingView(trial), false).canWrite).toBe(true)
     })
 
+    it('stays open for grace, expired and cancelled while the server reports enforcement off', () => {
+        for (const status of ['grace', 'expired', 'cancelled']) {
+            const off = ent({ status, can_write: false, can_dispatch: false, enforcement_enabled: false })
+            const gate = deriveBillingGate(off, deriveBillingView(off), false)
+            expect(gate.canWrite).toBe(true)
+            expect(gate.canDispatch).toBe(true)
+            expect(gate.writeTitle).toBeUndefined()
+            expect(gate.dispatchTitle).toBeUndefined()
+        }
+    })
+
+    it('locks grace and expired when the server reports enforcement on, or does not report it', () => {
+        for (const flag of [{ enforcement_enabled: true }, {}]) {
+            const grace = ent({ status: 'grace', can_write: false, can_dispatch: true, ...flag })
+            expect(deriveBillingGate(grace, deriveBillingView(grace), false).canWrite).toBe(false)
+            const expired = ent({ status: 'expired', can_write: false, can_dispatch: false, ...flag })
+            expect(deriveBillingGate(expired, deriveBillingView(expired), false).canDispatch).toBe(false)
+        }
+    })
+
     it('grace blocks create but not dispatch; expired blocks both', () => {
         const grace = gateFor('grace')
         expect(grace.canWrite).toBe(false)

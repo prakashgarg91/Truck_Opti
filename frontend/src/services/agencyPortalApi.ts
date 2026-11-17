@@ -531,59 +531,6 @@ export const agencyFleetApi = {
         }
     },
 
-    async addTruck(rcNumber: string, vehicleType: string, expiryData?: {
-        insurance_expiry?: string
-        fitness_expiry?: string
-        permit_expiry?: string
-    }): Promise<FleetTruck> {
-        try {
-            const { data, error } = await supabase.functions.invoke('agency-portal-fleet', {
-                method: 'POST',
-                body: {
-                    action: 'add-truck',
-                    rc_number: rcNumber,
-                    vehicle_type: vehicleType,
-                    ...expiryData,
-                },
-            })
-
-            if (error) {
-                reportFunctionFailure('agency-portal-fleet', error)
-                throw new UserFacingError('Failed to add truck')
-            }
-
-            return data?.truck
-        } catch (e) {
-            if (e instanceof UserFacingError) {
-                throw e
-            }
-
-            reportFunctionFailure('agency-portal-fleet', e)
-            throw new UserFacingError('Failed to add truck')
-        }
-    },
-
-    async updateTruck(truckId: string, updateData: Record<string, unknown>): Promise<void> {
-        try {
-            const { error } = await supabase.functions.invoke('agency-portal-fleet', {
-                method: 'POST',
-                body: { action: 'update-truck', truckId, data: updateData },
-            })
-
-            if (error) {
-                reportFunctionFailure('agency-portal-fleet', error)
-                throw new UserFacingError('Failed to update truck')
-            }
-        } catch (e) {
-            if (e instanceof UserFacingError) {
-                throw e
-            }
-
-            reportFunctionFailure('agency-portal-fleet', e)
-            throw new UserFacingError('Failed to update truck')
-        }
-    },
-
     // ===== TO-144-D1 fleet foundation: RLS reads + typed command RPCs =====
 
     /**

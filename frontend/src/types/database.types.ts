@@ -2183,6 +2183,30 @@ isOneToOne: false
                            },
 "agency_subscription_invoices":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"agency_driver_allocation_eligible":
+{ Args: { "p_agency_id": string,"p_as_of"?: string,"p_driver_id": string }; Returns: boolean
+                           },
+"agency_driver_employment_create":
+{ Args: { "p_contact_phone"?: string,"p_driver_id": string,"p_licence_class"?: string,"p_licence_expiry"?: string,"p_licence_number"?: string }; Returns: Json
+                           },
+"agency_driver_employment_end":
+{ Args: { "p_employment_id": string,"p_expected_version": number }; Returns: Json
+                           },
+"agency_driver_employment_update":
+{ Args: { "p_employment_id": string,"p_expected_version": number,"p_patch"?: Json }; Returns: Json
+                           },
+"agency_vehicle_allocation_eligible":
+{ Args: { "p_as_of"?: string,"p_vehicle_id": string }; Returns: boolean
+                           },
+"agency_vehicle_create":
+{ Args: { "p_body_height_m"?: number,"p_body_length_m"?: number,"p_body_width_m"?: number,"p_fitness_expiry"?: string,"p_insurance_expiry"?: string,"p_notes"?: string,"p_payload_kg"?: number,"p_permit_expiry"?: string,"p_puc_expiry"?: string,"p_rc_number": string,"p_vehicle_type": string }; Returns: Json
+                           },
+"agency_vehicle_update":
+{ Args: { "p_expected_version": number,"p_patch"?: Json,"p_vehicle_id": string }; Returns: Json
+                           },
+"resolve_caller_agency_id":
+{ Args: Record<PropertyKey, never>; Returns: string
                            }
           }
           Enums: {

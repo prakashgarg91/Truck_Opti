@@ -302,6 +302,32 @@ describe('subscriptionApi', () => {
         })
     })
 
+    describe('checkoutApi.createOrder refusals', () => {
+        it('shows the server message from error.context, not the generic text', async () => {
+            const context = new Response(JSON.stringify({ error: 'coupon_invalid', message: 'This coupon is not valid.' }), { status: 422 })
+            functionsInvokeMock.mockResolvedValue({ data: null, error: { message: 'Edge Function returned a non-2xx status code', context } })
+
+            await expect(subscriptionApi.checkout.createOrder({ plan_tier: 'growth', billing_cycle: 'monthly' }))
+                .rejects.toThrow('This coupon is not valid.')
+        })
+
+        it('falls back to the generic text when the body is not JSON', async () => {
+            const context = new Response('<html>bad gateway</html>', { status: 502 })
+            functionsInvokeMock.mockResolvedValue({ data: null, error: { message: 'x', context } })
+
+            await expect(subscriptionApi.checkout.createOrder({ plan_tier: 'growth', billing_cycle: 'monthly' }))
+                .rejects.toThrow('Unable to start payment')
+        })
+
+        it('never shows the machine code when the body has no message', async () => {
+            const context = new Response(JSON.stringify({ error: 'coupon_invalid' }), { status: 422 })
+            functionsInvokeMock.mockResolvedValue({ data: null, error: { message: 'x', context } })
+
+            await expect(subscriptionApi.checkout.createOrder({ plan_tier: 'growth', billing_cycle: 'monthly' }))
+                .rejects.toThrow('Unable to start payment')
+        })
+    })
+
     describe('subscriptionsApi.create', () => {
         it('throws error when called directly', async () => {
             await expect(subscriptionApi.subscriptions.create('pro', 'monthly'))

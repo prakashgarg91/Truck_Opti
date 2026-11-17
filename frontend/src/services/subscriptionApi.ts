@@ -87,6 +87,11 @@ export interface SubscriptionInvoice {
   sac_code: string;
   recipient_name: string | null;
   recipient_gstin: string | null;
+  /** Supplier and recipient details as stored on the invoice snapshot; null/absent when none was recorded. */
+  recipient_address?: string | null;
+  supplier_legal_name?: string | null;
+  supplier_address?: string | null;
+  supplier_gstin?: string | null;
   credit_notes: SubscriptionCreditNote[];
 }
 
@@ -365,6 +370,19 @@ export interface CheckoutOrder {
   currency: string;
 }
 
+// Reads the user-facing `message` from the Response that supabase-js keeps on a non-2xx
+// FunctionsHttpError (`error.context`). Returns null when there is none to read.
+async function readRefusalMessage(error: unknown): Promise<string | null> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (!context || typeof (context as { json?: unknown }).json !== 'function') return null;
+  try {
+    const body = (await (context as { json: () => Promise<unknown> }).json()) as { message?: unknown } | null;
+    return typeof body?.message === 'string' && body.message.trim() ? body.message.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export const checkoutApi = {
   async createOrder(request: CheckoutOrderRequest): Promise<CheckoutOrder> {
     const coupon = request.coupon_code?.trim();
@@ -379,7 +397,10 @@ export const checkoutApi = {
       { body },
     );
     if (error || !data?.id) {
-      throw new Error(data?.error || 'Unable to start payment right now. Please try again.');
+      // supabase-js hands back data:null for a non-2xx answer; the function's {error, message} body
+      // sits on error.context (a Response). `message` is the user-facing text, `error` only a code.
+      const refusal = await readRefusalMessage(error);
+      throw new Error(refusal ?? 'Unable to start payment right now. Please try again.');
     }
     return { id: data.id, amount: Number(data.amount ?? 0), currency: data.currency || 'INR' };
   },

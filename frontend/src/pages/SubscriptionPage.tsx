@@ -19,6 +19,7 @@ import { BTN_PRIMARY, BTN_SECONDARY, FOCUS_RING } from '../components/billing/st
 import { useEntitlement } from '../components/billing/useEntitlement'
 import { gstInvoicesApi, type SubscriptionInvoice } from '../services/subscriptionApi'
 import { formatInr } from '../lib/invoiceMoney'
+import { buildInvoiceCopyRows } from '../lib/subscriptionInvoiceCopy'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
 
@@ -49,8 +50,10 @@ function downloadInvoice(invoice: SubscriptionInvoice, options: { customerName: 
     pdf.setFont('helvetica', 'bold')
     pdf.text(label, 14, cursorY)
     pdf.setFont('helvetica', 'normal')
-    pdf.text(value, 70, cursorY)
-    cursorY += 7
+    // The built-in PDF font has no rupee glyph, so print "Rs." there; long values wrap.
+    const lines = pdf.splitTextToSize(value.replace(/₹/g, 'Rs. '), 126) as string[]
+    pdf.text(lines, 70, cursorY)
+    cursorY += 7 * lines.length
   }
 
   pdf.setFont('helvetica', 'bold')
@@ -59,30 +62,17 @@ function downloadInvoice(invoice: SubscriptionInvoice, options: { customerName: 
   cursorY += 10
 
   pdf.setFontSize(11)
-  writeLine('Invoice Number', invoice.invoice_number)
-  writeLine('Issued On', formatDate(invoice.issued_at))
-  writeLine('Plan', options.planName)
-  writeLine('Billed To', invoice.recipient_name || options.customerName)
-  if (invoice.recipient_gstin) writeLine('Recipient GSTIN', invoice.recipient_gstin)
-  writeLine('Place of Supply', invoice.place_of_supply_state_code)
-  writeLine('SAC', invoice.sac_code)
-
-  cursorY += 3
-  pdf.setDrawColor(226, 232, 240)
-  pdf.line(14, cursorY, 196, cursorY)
-  cursorY += 10
-
-  // Amounts are the stored integer-paise figures; nothing is recomputed here.
-  writeLine('Taxable value', formatInr(invoice.taxable_paise))
-  if (invoice.igst_paise > 0) {
-    writeLine('IGST (18%)', formatInr(invoice.igst_paise))
-  } else {
-    writeLine('CGST (9%)', formatInr(invoice.cgst_paise))
-    writeLine('SGST (9%)', formatInr(invoice.sgst_paise))
-  }
-  writeLine('Total', formatInr(invoice.total_paise))
-  for (const note of invoice.credit_notes) {
-    writeLine(`Credit note ${note.credit_note_number}`, `-${formatInr(note.total_paise)} on ${formatDate(note.issued_at)}`)
+  const rows = buildInvoiceCopyRows(invoice, { ...options, formatDate })
+  let inAmounts = false
+  for (const row of rows) {
+    if (row.section === 'amounts' && !inAmounts) {
+      inAmounts = true
+      cursorY += 3
+      pdf.setDrawColor(226, 232, 240)
+      pdf.line(14, cursorY, 196, cursorY)
+      cursorY += 10
+    }
+    writeLine(row.label, row.value)
   }
 
   cursorY += 6

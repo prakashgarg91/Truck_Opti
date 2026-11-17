@@ -551,118 +551,6 @@ describe('agencyPortalApi', () => {
         })
     })
 
-    describe('agencyFleetApi.addTruck', () => {
-        it('adds truck successfully', async () => {
-            const mockTruck = {
-                id: 'truck_1',
-                vehicle_type: 'truck',
-                rc_number: 'MH123456',
-                insurance_expiry: null,
-                fitness_expiry: null,
-                permit_expiry: null,
-                is_available: true,
-                driver_id: null,
-                agency_id: 'agency_1',
-            }
-            
-            invokeMock.mockResolvedValue({
-                data: { truck: mockTruck },
-                error: null,
-            })
-            
-            const result = await agencyFleetApi.addTruck('MH123456', 'truck')
-            
-            expect(result).toEqual(mockTruck)
-            expect(invokeMock).toHaveBeenCalledWith('agency-portal-fleet', {
-                method: 'POST',
-                body: {
-                    action: 'add-truck',
-                    rc_number: 'MH123456',
-                    vehicle_type: 'truck',
-                },
-            })
-        })
-
-        it('adds truck with expiry dates', async () => {
-            const mockTruck = {
-                id: 'truck_1',
-                vehicle_type: 'truck',
-                rc_number: 'MH123456',
-                insurance_expiry: '2024-12-31',
-                fitness_expiry: '2024-12-31',
-                permit_expiry: '2024-12-31',
-                is_available: true,
-                driver_id: null,
-                agency_id: 'agency_1',
-            }
-            
-            invokeMock.mockResolvedValue({
-                data: { truck: mockTruck },
-                error: null,
-            })
-            
-            const result = await agencyFleetApi.addTruck('MH123456', 'truck', {
-                insurance_expiry: '2024-12-31',
-                fitness_expiry: '2024-12-31',
-                permit_expiry: '2024-12-31',
-            })
-            
-            expect(result).toEqual(mockTruck)
-            expect(invokeMock).toHaveBeenCalledWith('agency-portal-fleet', {
-                method: 'POST',
-                body: {
-                    action: 'add-truck',
-                    rc_number: 'MH123456',
-                    vehicle_type: 'truck',
-                    insurance_expiry: '2024-12-31',
-                    fitness_expiry: '2024-12-31',
-                    permit_expiry: '2024-12-31',
-                },
-            })
-        })
-
-        it('throws UserFacingError on add failure', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
-                error: { message: 'Add failed' },
-            })
-            
-            await expect(agencyFleetApi.addTruck('MH123456', 'truck'))
-                .rejects.toThrow('Failed to add truck')
-        })
-    })
-
-    describe('agencyFleetApi.updateTruck', () => {
-        it('updates truck successfully', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
-                error: null,
-            })
-            
-            await expect(agencyFleetApi.updateTruck('truck_1', { is_available: false }))
-                .resolves.not.toThrow()
-            
-            expect(invokeMock).toHaveBeenCalledWith('agency-portal-fleet', {
-                method: 'POST',
-                body: {
-                    action: 'update-truck',
-                    truckId: 'truck_1',
-                    data: { is_available: false },
-                },
-            })
-        })
-
-        it('throws UserFacingError on update failure', async () => {
-            invokeMock.mockResolvedValue({
-                data: null,
-                error: { message: 'Update failed' },
-            })
-            
-            await expect(agencyFleetApi.updateTruck('truck_1', { is_available: false }))
-                .rejects.toThrow('Failed to update truck')
-        })
-    })
-
     describe('agencyBillingApi.list', () => {
         it('returns zero summary and empty jobs when no data exists', async () => {
             invokeMock.mockResolvedValue({
@@ -1502,6 +1390,14 @@ describe('agencyPortalApi', () => {
         created_at: '2026-10-08T10:00:00Z',
         updated_at: '2026-10-08T10:00:00Z',
     }
+
+    describe('agencyFleetApi surface', () => {
+        it('has no Edge add/update truck path (writes go through the guarded vehicle commands)', () => {
+            expect(Object.keys(agencyFleetApi).sort()).toEqual(['createVehicle', 'list', 'listVehicles', 'updateVehicle'])
+            expect('addTruck' in agencyFleetApi).toBe(false)
+            expect('updateTruck' in agencyFleetApi).toBe(false)
+        })
+    })
 
     describe('agencyFleetApi.listVehicles', () => {
         function mockFromList(result: { data: unknown; error: unknown }) {

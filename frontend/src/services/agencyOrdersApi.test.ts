@@ -133,7 +133,7 @@ describe('agencyOrdersApi', () => {
 
         it('returns order_not_draft in plain language', async () => {
             rpcMock.mockResolvedValue({ data: { ok: false, error: 'order_not_draft' }, error: null })
-            expect(await agencyOrdersApi.cancelOrder('o-1', 1)).toMatchObject({ ok: false, error: 'order_not_draft', message: 'Only draft orders can be cancelled.' })
+            expect(await agencyOrdersApi.cancelOrder('o-1', 1)).toMatchObject({ ok: false, error: 'order_not_draft', message: 'Only draft orders can be cancelled. An order that is already planned or cancelled stays as it is.' })
         })
 
         it('returns order_in_approved_plan in plain language, not the generic failure', async () => {

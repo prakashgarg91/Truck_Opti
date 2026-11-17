@@ -47,7 +47,9 @@ check('W13. requireAgencyContext resolves staff through resolvePortalAccess and 
 for (const [fn, portal] of Object.entries(portalScopeMap)) {
   check(`W14. ${fn} calls the scope resolver with portal '${portal}'`, new RegExp(`requireAgencyContext\\([\\s\\S]*?portal: '${portal}'`).test(read(`supabase/functions/${fn}/index.ts`)))
 }
-check('W15. staff are read-only: fleet and rates writes call assertPortalWriter, and only owners can write', ['agency-portal-fleet', 'agency-portal-rates'].every((n) => /assertPortalWriter\(context\)/.test(read(`supabase/functions/${n}/index.ts`))) && /role === 'owner'/.test(portalScopes))
+check('W15. staff are read-only: rate writes call assertPortalWriter, and only owners can write', ['agency-portal-rates'].every((n) => /assertPortalWriter\(context\)/.test(read(`supabase/functions/${n}/index.ts`))) && /role === 'owner'/.test(portalScopes))
+const fleetFn = read('supabase/functions/agency-portal-fleet/index.ts').replace(/\s+/g, ' ')
+check('W18. agency-portal-fleet is read-only: no add-truck or update-truck action and no agency_trucks write', !/add-truck|update-truck/.test(fleetFn) && !/\.(insert|update|delete|upsert)\(/.test(fleetFn) && /from\('agency_trucks'\) \.select\(/.test(fleetFn))
 
 const erpIngest = read('supabase/functions/erp-ingest/index.ts')
 check('W16. erp-ingest calls only erp_event_ingest through the service client and caps the raw body before parsing', /rpc\('erp_event_ingest'/.test(erpIngest) && /readCappedBytes\(req\.body, MAX_ERP_BODY_BYTES/.test(erpIngest) && erpIngest.indexOf('readCappedBytes') < erpIngest.indexOf('parseErpBytes'))

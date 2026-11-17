@@ -10,7 +10,6 @@ interface Props {
 
 const ACTION_LABEL: Record<SubscriptionErrorInfo['action'], string> = {
   upgrade: 'Upgrade plan',
-  pay: 'Pay now',
   renew: 'Renew',
 }
 

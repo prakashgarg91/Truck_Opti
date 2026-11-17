@@ -1560,10 +1560,13 @@ async function main() {
     expectOk(ok, 'cancel of an unplanned order')
     await mustApprove(p.plan_id, 1)
     expectErr(await callAs(ownerA, ORDER_CANCEL_SQL, [o.orderId, 1]), 'order_in_approved_plan')
-    const st = await suOne(`SELECT status FROM public.agency_orders WHERE id = $1`, [o.orderId])
-    expect(st.status === 'draft', `order status ${st.status}`)
+    expectErr(await callAs(ownerA, ORDER_CANCEL_SQL, [o.orderId, 2]), 'order_in_approved_plan')
+    const st = await suOne(`SELECT status, version FROM public.agency_orders WHERE id = $1`, [o.orderId])
+    expect(st.status === 'planned' && Number(st.version) === 2, `order ${st.status} v${st.version}, expected planned v2`)
     expectOk(await cancelAs(ownerA, p.plan_id, 2), 'cancel plan')
-    expectOk(await callAs(ownerA, ORDER_CANCEL_SQL, [o.orderId, 1]), 'cancel order after the plan is cancelled')
+    const back = await suOne(`SELECT status, version FROM public.agency_orders WHERE id = $1`, [o.orderId])
+    expect(back.status === 'draft' && Number(back.version) === 3, `order ${back.status} v${back.version}, expected draft v3`)
+    expectOk(await callAs(ownerA, ORDER_CANCEL_SQL, [o.orderId, 3]), 'cancel order after the plan is cancelled')
   })
 
   await gatedCase('L98. service_role cannot TRUNCATE the plan tables and the guard functions are not callable by clients', async () => {

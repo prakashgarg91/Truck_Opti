@@ -41,6 +41,8 @@ export interface Entitlement {
   trialEnd: string | null
   canWrite: boolean
   canDispatch: boolean
+  /** Server flag (platform_billing_settings.enforcement_enabled); undefined when the server did not report it. */
+  enforcementEnabled?: boolean
   limits: EntitlementLimits
   usage: EntitlementUsage
 }
@@ -85,6 +87,7 @@ export function parseEntitlement(raw: unknown): Entitlement {
     trialEnd: asStringOrNull(r.trial_end),
     canWrite: r.ok === true && r.can_write === true,
     canDispatch: r.ok === true && r.can_dispatch === true,
+    ...(typeof r.enforcement_enabled === 'boolean' ? { enforcementEnabled: r.enforcement_enabled } : {}),
     limits: {
       trucks: asLimit(limits.trucks),
       staff: asLimit(limits.staff),
@@ -187,6 +190,8 @@ export function buildUsageRows(ent: Entitlement): UsageRow[] {
   return USAGE_LABELS.map(({ key, label }) => {
     const used = ent.usage[key]
     const limit = ent.limits[key]
+    // The server uses -1 for "unlimited" (enterprise plans).
+    const unlimited = limit === -1
     const hasLimit = limit !== null && limit > 0
     const percent = hasLimit ? Math.min(100, Math.round((used / limit) * 100)) : 0
     return {
@@ -196,7 +201,7 @@ export function buildUsageRows(ent: Entitlement): UsageRow[] {
       limit,
       percent,
       atLimit: hasLimit && used >= limit,
-      text: limit === null ? `${used} used` : `${used} of ${limit}`,
+      text: limit === null ? `${used} used` : unlimited ? `${used} used (unlimited)` : `${used} of ${limit}`,
     }
   })
 }
@@ -216,7 +221,7 @@ export interface SubscriptionErrorInfo {
   title: string
   message: string
   /** Which call to action the prompt should offer. */
-  action: 'upgrade' | 'pay' | 'renew'
+  action: 'upgrade' | 'renew'
 }
 
 const RESOURCE_LABELS: Record<string, string> = {
@@ -293,7 +298,6 @@ export function parseSubscriptionError(err: unknown): SubscriptionErrorInfo | nu
   }
 
   if (code === 'SB002') {
-    const pastDue = status === 'past_due'
     return {
       code,
       kind: 'read_only',
@@ -303,10 +307,9 @@ export function parseSubscriptionError(err: unknown): SubscriptionErrorInfo | nu
       plan,
       status,
       title: 'Your account is read-only',
-      message: pastDue
-        ? 'Payment is due. Pay now to create or import new records. Your data stays visible.'
-        : 'Your subscription is in its grace period, so new records cannot be created. Renew to continue. Your data stays visible.',
-      action: pastDue ? 'pay' : 'renew',
+      // The server never raises SB002 for past_due (those writes stay allowed), so there is no payment-due branch.
+      message: 'Your subscription is read-only, so new orders, trucks, drivers and team members cannot be added. Renew to continue. Your data stays visible.',
+      action: 'renew',
     }
   }
 

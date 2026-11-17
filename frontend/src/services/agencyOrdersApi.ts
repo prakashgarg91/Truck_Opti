@@ -84,7 +84,7 @@ const ERROR_MESSAGES: Readonly<Record<Exclude<OrderErrorCode, 'unknown'>, string
     idempotency_key_reused: 'This request was already used for a different file. Choose the file again.',
     agreement_not_active: 'This client agreement is not active. Reactivate it before importing orders.',
     version_conflict: 'This order changed. Reload to continue.',
-    order_not_draft: 'Only draft orders can be cancelled.',
+    order_not_draft: 'Only draft orders can be cancelled. An order that is already planned or cancelled stays as it is.',
     order_in_approved_plan: 'This order is in an approved load plan. Cancel the plan first.',
 })
 

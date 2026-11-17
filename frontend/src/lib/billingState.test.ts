@@ -96,9 +96,23 @@ describe('buildUsageRows', () => {
     expect(rows[0].percent).toBe(100)
     expect(rows[1].percent).toBe(40)
   })
+  it('prints unlimited (-1) plans as used / unlimited, never "of -1' +'"', () => {
+    const rows = buildUsageRows(ent({ limits: { trucks: -1, staff: 5, drivers: 20, orders_month: 500 } }))
+    expect(rows[0]).toMatchObject({ limit: -1, percent: 0, atLimit: false, text: '10 used (unlimited)' })
+    expect(rows[1].text).toBe('2 of 5')
+  })
   it('handles missing limits', () => {
     const rows = buildUsageRows(ent({ limits: {} }))
     expect(rows[0]).toMatchObject({ limit: null, percent: 0, atLimit: false, text: '10 used' })
+  })
+})
+
+describe('parseEntitlement enforcement flag', () => {
+  it('reads enforcement_enabled when the server reports it and leaves it undefined otherwise', () => {
+    expect(ent({ enforcement_enabled: false }).enforcementEnabled).toBe(false)
+    expect(ent({ enforcement_enabled: true }).enforcementEnabled).toBe(true)
+    expect(ent().enforcementEnabled).toBeUndefined()
+    expect(ent({ enforcement_enabled: 'yes' }).enforcementEnabled).toBeUndefined()
   })
 })
 
@@ -110,11 +124,12 @@ describe('parseSubscriptionError', () => {
     expect(info?.message).toContain('5 of 5')
     expect(info?.message).toContain('trucks')
   })
-  it('parses SB002 and distinguishes past_due', () => {
+  it('parses SB002 as read-only with Renew whatever the status text says (past_due is never raised)', () => {
     const grace = parseSubscriptionError({ message: 'SB002 SUBSCRIPTION_READ_ONLY', details: JSON.stringify({ status: 'grace' }) })
     expect(grace).toMatchObject({ kind: 'read_only', action: 'renew' })
     const due = parseSubscriptionError({ message: 'SB002 x', details: JSON.stringify({ status: 'past_due' }) })
-    expect(due?.action).toBe('pay')
+    expect(due).toMatchObject({ kind: 'read_only', action: 'renew' })
+    expect(due?.message).not.toContain('Payment is due')
   })
   it('parses SB003', () => {
     expect(parseSubscriptionError({ message: 'SB003 SUBSCRIPTION_DISPATCH_LOCKED' })).toMatchObject({ kind: 'dispatch_locked', action: 'renew' })
