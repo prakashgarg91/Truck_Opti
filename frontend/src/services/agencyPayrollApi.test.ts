@@ -165,3 +165,47 @@ describe('agencyPayrollApi', () => {
         })
     })
 })
+
+describe('agencyPayrollApi.listDriverDirectory', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('calls agency_driver_directory with no arguments and returns the entries', async () => {
+        rpcMock.mockResolvedValue({
+            data: { ok: true, drivers: [{ driver_id: 'd-1', name: 'Ravi Kumar', phone_last4: '3210' }] },
+            error: null,
+        })
+        const rows = await agencyPayrollApi.listDriverDirectory()
+        expect(rpcMock).toHaveBeenCalledWith('agency_driver_directory', {})
+        expect(rows).toEqual([{ driver_id: 'd-1', name: 'Ravi Kumar', phone_last4: '3210' }])
+    })
+
+    it('drops malformed entries and sanitises phone_last4', async () => {
+        rpcMock.mockResolvedValue({
+            data: {
+                ok: true,
+                drivers: [
+                    { driver_id: 'd-1', name: 'A', phone_last4: '12' },
+                    { driver_id: 'd-2', name: '   ', phone_last4: '1234' },
+                    { name: 'No id', phone_last4: '1234' },
+                    null,
+                ],
+            },
+            error: null,
+        })
+        expect(await agencyPayrollApi.listDriverDirectory()).toEqual([{ driver_id: 'd-1', name: 'A', phone_last4: null }])
+    })
+
+    it('returns an empty list for a typed refusal', async () => {
+        rpcMock.mockResolvedValue({ data: { ok: false, error: 'forbidden_scope' }, error: null })
+        expect(await agencyPayrollApi.listDriverDirectory()).toEqual([])
+    })
+
+    it('throws the fallback for an unknown database error and an unusable reply', async () => {
+        rpcMock.mockResolvedValue({ data: null, error: { message: 'relation x does not exist' } })
+        await expect(agencyPayrollApi.listDriverDirectory()).rejects.toThrow('Failed to load driver names')
+        rpcMock.mockResolvedValue({ data: 'nope', error: null })
+        await expect(agencyPayrollApi.listDriverDirectory()).rejects.toThrow('Failed to load driver names')
+    })
+})

@@ -4,6 +4,9 @@ import { AlertTriangle, Check, CheckCircle2, Download, FileUp, RefreshCw, Shield
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import {
   agencyOrdersApi,
   type ClientAgreementWithSites,
@@ -92,6 +95,8 @@ export default function AgencyOrderImportPage() {
   const [reading, setReading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const gate = useBillingGate()
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [outcome, setOutcome] = useState<ImportResult | null>(null)
   // One idempotency key per import intent (agreement + file); a failed submit
@@ -207,6 +212,7 @@ export default function AgencyOrderImportPage() {
     if (!importKey.current) importKey.current = crypto.randomUUID()
     setSubmitting(true)
     setOutcome(null)
+    setLimitInfo(null)
     try {
       const result = await agencyOrdersApi.importOrders({
         agreementId: agreement.id,
@@ -226,7 +232,9 @@ export default function AgencyOrderImportPage() {
       await fetchHistory(agreement.id)
     } catch (e) {
       logger.error('[AgencyOrderImportPage] import failed:', e)
-      toast.error(toUserFacingErrorMessage(e, 'Failed to import orders'))
+      const limit = subscriptionInfoFromError(e)
+      if (limit) setLimitInfo(limit)
+      else toast.error(toUserFacingErrorMessage(e, 'Failed to import orders'))
     } finally {
       setSubmitting(false)
     }
@@ -501,11 +509,14 @@ export default function AgencyOrderImportPage() {
             </div>
           )}
 
+          {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
+
           <div className="space-y-2">
             <button
               type="button"
               onClick={handleImport}
-              disabled={blocker !== null || imported !== null}
+              disabled={blocker !== null || imported !== null || !gate.canWrite}
+              title={gate.writeTitle}
               aria-describedby={blocker && blocker !== 'submitting' ? 'import-blocker' : undefined}
               className={`min-h-[44px] w-full rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white disabled:opacity-60 sm:w-auto ${FOCUS_RING}`}
             >

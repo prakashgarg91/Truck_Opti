@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { UserFacingError } from '../utils/userFacingError'
+import { throwIfSubscriptionError } from '../lib/subscriptionGuard'
 import type { ImportLinePayload } from '../lib/orderImportPayload'
 
 /**
@@ -116,6 +117,7 @@ async function callRpc(name: string, args: Record<string, unknown>, fallback: st
     const client = supabase as unknown as RpcClient
     const { data, error } = await client.rpc(name, args)
     if (error) {
+        throwIfSubscriptionError(error)
         const message = error.message
         throw new UserFacingError(typeof message === 'string' && CONTROLLED_EXCEPTIONS.has(message) ? message : fallback)
     }

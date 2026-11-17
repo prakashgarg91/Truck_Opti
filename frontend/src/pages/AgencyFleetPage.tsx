@@ -9,6 +9,9 @@ import { logger } from '../utils/logger'
 import toast from 'react-hot-toast'
 import { agencyFleetApi, isAgencyDenial, type FleetVehicle, type VehiclePatch } from '../services/agencyPortalApi'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 
 const VEHICLE_LABELS: Record<string, string> = {
   tata_ace: 'Tata Ace (750kg)',
@@ -69,6 +72,8 @@ export default function AgencyFleetPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [denied, setDenied] = useState<string | null>(null)
+  const gate = useBillingGate()
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [addForm, setAddForm] = useState({
     vehicle_type: 'eicher_14ft',
@@ -127,7 +132,11 @@ export default function AgencyFleetPage() {
       await fetchData()
     } catch (e) {
       logger.error('[AgencyFleetPage] handleAddTruck failed:', e)
-      if (isAgencyDenial(e)) {
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setShowAdd(false)
+        setLimitInfo(limit)
+      } else if (isAgencyDenial(e)) {
         setDenied(toUserFacingErrorMessage(e, 'Your agency account cannot manage the fleet yet.'))
       } else {
         toast.error(toUserFacingErrorMessage(e, 'Failed to add truck'))
@@ -184,13 +193,17 @@ export default function AgencyFleetPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowAdd(true)}
-          className={`flex items-center gap-2 min-h-[44px] bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
+          onClick={() => { setLimitInfo(null); setShowAdd(true) }}
+          disabled={!gate.canWrite}
+          title={gate.writeTitle}
+          className={`flex items-center gap-2 min-h-[44px] bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
         >
           <Plus size={16} aria-hidden="true" />
           Add Truck
         </button>
       </div>
+
+      {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
 
       {/* Denied state: a controlled agency denial (approval / profile) is distinct */}
       {denied && (

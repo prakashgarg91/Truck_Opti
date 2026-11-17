@@ -84,25 +84,70 @@ export interface AdminUser {
     banned_until?: string | null
 }
 
+export type AdminSubscriptionStatus = 'trial' | 'active' | 'past_due' | 'grace' | 'expired' | 'cancelled'
+
+// Subscriptions are agency-level. `user` was the old per-user owner; the purchaser is now informational only.
 export interface AdminSubscription {
     id: string
-    user_id: string
-    status: 'active' | 'trial' | 'expired' | 'cancelled'
+    agency_id: string | null
+    agency: {
+        name: string | null
+        gstin: string | null
+        status: string | null
+    } | null
+    purchaser: {
+        name: string | null
+        email: string | null
+    } | null
+    status: AdminSubscriptionStatus
     billing_cycle: 'monthly' | 'yearly'
     current_period_start: string
     current_period_end: string
     trial_end: string | null
+    grace_end: string | null
+    first_paid_at: string | null
     cancel_at_period_end: boolean
     created_at: string
-    user: {
-        name: string
-        email: string
-    } | null
     plan: {
         id: string
         name: string
         tier: string
     } | null
+    // True only on the newest cancelled row of an agency with no live subscription.
+    can_reopen: boolean
+}
+
+// A Razorpay payment that was captured but refused by activation (payment_history.metadata.refusal).
+export interface AdminRefusedPayment {
+    id: string
+    agency_id: string | null
+    subscription_id: string | null
+    amount_paise: number | null
+    order_id: string | null
+    payment_id: string | null
+    refused_payment_ids: string[]
+    refusal: string
+    refused_at: string
+    error_message: string | null
+}
+
+// A refund Razorpay already processed that could not be credit-noted (append-only subscription_refund_exceptions).
+export interface AdminRefundException {
+    id: string
+    refund_id: string
+    payment_id: string
+    agency_id: string | null
+    amount_paise: number
+    reason: string
+    created_at: string
+}
+
+export interface AdminSubscriptionsSnapshot {
+    subscriptions: AdminSubscription[]
+    opsAttention: {
+        refusedPayments: AdminRefusedPayment[]
+        refundExceptions: AdminRefundException[]
+    }
 }
 
 export interface AdminDriverProfile {
@@ -248,9 +293,24 @@ export const adminSupabaseApi = {
         return adminPayoutsApi.getAll()
     },
 
-    async getAdminSubscriptions(): Promise<AdminSubscription[]> {
-        const data = await invokeAdminFunction<{ subscriptions: AdminSubscription[] }>('admin-portal-subscriptions', { action: 'list' }, 'Unable to load subscriptions right now. Please try again.')
-        return data?.subscriptions ?? []
+    async getAdminSubscriptions(): Promise<AdminSubscriptionsSnapshot> {
+        const data = await invokeAdminFunction<{
+            subscriptions?: AdminSubscription[]
+            ops_attention?: { refused_payments?: AdminRefusedPayment[]; refund_exceptions?: AdminRefundException[] }
+        }>('admin-portal-subscriptions', { action: 'list' }, 'Unable to load subscriptions right now. Please try again.')
+        return {
+            subscriptions: data?.subscriptions ?? [],
+            opsAttention: {
+                refusedPayments: data?.ops_attention?.refused_payments ?? [],
+                refundExceptions: data?.ops_attention?.refund_exceptions ?? [],
+            },
+        }
+    },
+
+    // The only subscription write the admin side has: support reopen after a cancellation or refund. The server
+    // runs subscription_support_reopen (service-only, admin-checked); status is never edited directly.
+    async reopenSubscription(agencyId: string): Promise<void> {
+        await invokeAdminFunction('admin-portal-subscriptions', { action: 'reopen', agencyId }, 'Unable to reopen the subscription. Please try again.')
     },
 
     async deleteUser(userId: string): Promise<void> {

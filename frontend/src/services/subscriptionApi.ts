@@ -196,6 +196,22 @@ export const entitlementApi = {
   },
 };
 
+// Owner check for the trial offer: only the agency owner owns a transport_agencies
+// row (staff reach the agency through memberships). The server still enforces
+// forbidden_scope; this only decides what the screen offers. Returns null when
+// the answer is unknown (query failed) so the UI can fall back to the server.
+export const agencyOwnerApi = {
+  async isOwner(userId: string): Promise<boolean | null> {
+    const { data, error } = await supabase
+      .from('transport_agencies')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) return null;
+    return Boolean(data?.id);
+  },
+};
+
 function entitlementToLegacySubscription(ent: Entitlement): Subscription | null {
   // Legacy callers only know live, usable subscriptions. past_due still has
   // full access (banner only), so it maps to active; grace/expired/none do not.

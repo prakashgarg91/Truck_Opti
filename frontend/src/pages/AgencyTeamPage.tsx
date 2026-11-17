@@ -10,6 +10,9 @@ import {
   type MembershipRow,
   type MembershipScope,
 } from '../services/agencyOrganizationApi'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 
 // TO-144-D2 Team & Access (Stitch screen 0691bdff). Owner-only: staff
 // memberships and invitations. The server (RLS + command RPCs) is the
@@ -75,6 +78,8 @@ export default function AgencyTeamPage() {
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
 
+  const gate = useBillingGate()
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
   const [showInvite, setShowInvite] = useState(false)
   const [email, setEmail] = useState('')
   const [scope, setScope] = useState<MembershipScope>('dispatcher')
@@ -148,7 +153,13 @@ export default function AgencyTeamPage() {
       await fetchData()
     } catch (e) {
       logger.error('[AgencyTeamPage] invite failed:', e)
-      toast.error(toUserFacingErrorMessage(e, 'Failed to create invitation'))
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setShowInvite(false)
+        setLimitInfo(limit)
+      } else {
+        toast.error(toUserFacingErrorMessage(e, 'Failed to create invitation'))
+      }
     } finally {
       setBusy(false)
     }
@@ -239,12 +250,16 @@ export default function AgencyTeamPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowInvite(true)}
-          className={`flex items-center gap-2 min-h-[44px] bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
+          onClick={() => { setLimitInfo(null); setShowInvite(true) }}
+          disabled={!gate.canWrite}
+          title={gate.writeTitle}
+          className={`flex items-center gap-2 min-h-[44px] bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
         >
           <MailPlus size={16} aria-hidden="true" /> Invite team member
         </button>
       </div>
+
+      {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">

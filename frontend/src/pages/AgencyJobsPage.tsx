@@ -7,6 +7,9 @@ import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import MapViewWrapper, { MapMarker, MapRoute } from '../components/MapViewWrapper'
 import { logger } from '../utils/logger'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import { agencyJobsApi } from '../services/agencyPortalApi'
 // TO-143-D1 alias trap: agencyJobsApi is exported by BOTH agencyPortalApi.ts
 // (Edge function client, above) and agencySupabaseApi.ts (direct RLS client).
@@ -95,6 +98,8 @@ export default function AgencyJobsPage() {
   const [selectedJob, setSelectedJob] = useState<AgencyJob | null>(null)
   const [availableDrivers, setAvailableDrivers] = useState<AvailableDriver[]>([])
   const [assigning, setAssigning] = useState(false)
+  const gate = useBillingGate()
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
 
   // Track Live Modal State
   const [showTrackModal, setShowTrackModal] = useState(false)
@@ -212,6 +217,7 @@ export default function AgencyJobsPage() {
 
   const openAssignModal = async (job: AgencyJob) => {
     setSelectedJob(job)
+    setLimitInfo(null)
     setShowAssignModal(true)
     await fetchAvailableDrivers()
   }
@@ -229,7 +235,9 @@ export default function AgencyJobsPage() {
       fetchAgency()
     } catch (err) {
       logger.error('Assign error:', err)
-      toast.error('Failed to assign driver')
+      const limit = subscriptionInfoFromError(err)
+      if (limit) setLimitInfo(limit)
+      else toast.error('Failed to assign driver')
     } finally {
       setAssigning(false)
     }
@@ -514,7 +522,9 @@ export default function AgencyJobsPage() {
             {job.status === 'accepted' && !job.driver_id && (
               <button
                 onClick={() => openAssignModal(job)}
-                className="w-full mt-3 flex items-center justify-center gap-1.5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-semibold"
+                disabled={!gate.canDispatch}
+                title={gate.dispatchTitle}
+                className="w-full mt-3 flex items-center justify-center gap-1.5 py-2.5 min-h-[44px] bg-indigo-600 text-white rounded-xl text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <UserPlus size={14} />
                 Assign Driver
@@ -570,6 +580,11 @@ export default function AgencyJobsPage() {
             </div>
 
             <div className="p-4 overflow-y-auto max-h-[60vh]">
+              {limitInfo && (
+                <div className="mb-3">
+                  <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />
+                </div>
+              )}
               {availableDrivers.length === 0 ? (
                 <p className="text-center text-slate-500 py-8">
                   No available drivers. Add drivers to your trucks first.
@@ -580,7 +595,8 @@ export default function AgencyJobsPage() {
                     <button
                       key={driver.id}
                       onClick={() => handleAssignDriver(driver)}
-                      disabled={assigning}
+                      disabled={assigning || !gate.canDispatch}
+                      title={gate.dispatchTitle}
                       className="w-full p-4 text-left bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                     >
                       <div className="flex items-center justify-between">

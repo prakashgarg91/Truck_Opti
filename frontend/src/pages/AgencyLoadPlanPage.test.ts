@@ -41,6 +41,8 @@ vi.mock('../services/agencyLoadPlansApi', async () => {
 
 import AgencyLoadPlanPage from './AgencyLoadPlanPage'
 import { UserFacingError } from '../utils/userFacingError'
+import { withGate, gateFor, sbError, SB003_ERROR } from '../components/billing/testGate'
+import type { BillingGate } from '../components/billing/BillingGate'
 
 const order = (id: string, ref: string) => ({
     id, client_order_ref: ref, status: 'draft', version: 1, created_at: '2026-11-10T00:00:00Z',
@@ -62,12 +64,12 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let root: Root | null = null
 let container: HTMLElement | null = null
 
-async function mountPage(): Promise<HTMLElement> {
+async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(AgencyLoadPlanPage))
+        root!.render(gate ? withGate(createElement(AgencyLoadPlanPage), gate) : createElement(AgencyLoadPlanPage))
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -359,4 +361,23 @@ describe('AgencyLoadPlanPage', () => {
             await new Promise((r) => setTimeout(r, 0))
         })
     })
+
+    it('SB003 on approve shows the dispatch-locked prompt and closes the confirm', async () => {
+        h.listPlans.mockResolvedValue([plan('p-2', 'Mon', 'draft', 2, 1)])
+        h.approvePlan.mockRejectedValue(sbError(SB003_ERROR))
+        await mountPage()
+        await click(button(/Approve Mon version 2/))
+        await click(button(/Confirm approval/))
+        expect(q('[role="alert"]')?.textContent).toContain('Dispatch is locked')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('disables Approve with an explanation once dispatch is locked', async () => {
+        h.listPlans.mockResolvedValue([plan('p-2', 'Mon', 'draft', 2, 1)])
+        await mountPage(gateFor('expired'))
+        const b = button(/Approve Mon version 2/)!
+        expect(b.disabled).toBe(true)
+        expect(b.title).toContain('dispatch is locked')
+    })
+
 })

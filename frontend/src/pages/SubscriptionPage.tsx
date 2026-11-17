@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -15,10 +15,10 @@ import jsPDF from 'jspdf'
 import EmptyState from '../components/EmptyState'
 import BillingBanner from '../components/billing/BillingBanner'
 import UsageBars from '../components/billing/UsageBars'
+import AgencyTrialPanel from '../components/billing/AgencyTrialPanel'
 import { BTN_PRIMARY, BTN_SECONDARY, FOCUS_RING } from '../components/billing/styles'
 import { useEntitlement } from '../components/billing/useEntitlement'
-import { invoicesApi, entitlementApi, TrialError, type Invoice } from '../services/subscriptionApi'
-import { trialErrorMessage } from '../lib/billingState'
+import { invoicesApi, type Invoice } from '../services/subscriptionApi'
 import { formatInr } from '../lib/invoiceMoney'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
@@ -134,8 +134,6 @@ export default function SubscriptionPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { entitlement, view, isLoading, isError, refetch } = useEntitlement()
-  const [trialBusy, setTrialBusy] = useState(false)
-  const [trialMessage, setTrialMessage] = useState<string | null>(null)
 
   const {
     data: invoices = [],
@@ -155,19 +153,6 @@ export default function SubscriptionPage() {
 
   const isAdmin = user?.role === 'admin'
   const goPricing = () => navigate('/pricing')
-
-  const handleStartTrial = async () => {
-    setTrialBusy(true)
-    setTrialMessage(null)
-    try {
-      await entitlementApi.startTrial()
-      await refetch()
-    } catch (error) {
-      setTrialMessage(trialErrorMessage(error instanceof TrialError ? error.code : null))
-    } finally {
-      setTrialBusy(false)
-    }
-  }
 
   // TO-142: the billing-documents bucket is private, so a fresh expiring
   // signed URL is minted through the invoice-view Edge function on every click.
@@ -288,17 +273,14 @@ export default function SubscriptionPage() {
                 <EmptyState
                   icon={CreditCard}
                   title="No plan yet"
-                  description="Start the free trial as the agency owner, or choose a paid plan."
+                  description="Start your free trial, or choose a paid plan."
                   actionLabel="View plans"
                   onAction={goPricing}
                   variant="compact"
                 />
                 <h2 id="no-plan-heading" className="sr-only">Start a plan</h2>
-                <div className="mt-2 flex flex-col items-center gap-3">
-                  <button type="button" onClick={() => void handleStartTrial()} disabled={trialBusy} className={BTN_PRIMARY}>
-                    {trialBusy ? 'Starting trial...' : 'Start free trial'}
-                  </button>
-                  {trialMessage && <p role="alert" className="max-w-md text-center text-sm text-red-700 dark:text-red-300">{trialMessage}</p>}
+                <div className="mt-2">
+                  <AgencyTrialPanel onStarted={refetch} />
                 </div>
               </section>
             )}

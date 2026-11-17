@@ -21,6 +21,8 @@ vi.mock('../services/agencyOrganizationApi', () => ({
 
 import DriverInvitationsPanel from './DriverInvitationsPanel'
 import { UserFacingError } from '../utils/userFacingError'
+import { withGate, gateFor, sbError, SB002_ERROR } from './billing/testGate'
+import type { BillingGate } from './billing/BillingGate'
 
 const FUTURE = new Date(Date.now() + 4 * 86400000).toISOString()
 const PENDING = {
@@ -39,12 +41,12 @@ const ACCEPTED = { ...PENDING, id: 'di-2', invited_phone: '+919000000001', statu
 let root: Root | null = null
 let container: HTMLElement | null = null
 
-async function mountPanel(): Promise<void> {
+async function mountPanel(gate?: BillingGate): Promise<void> {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(DriverInvitationsPanel))
+        root!.render(gate ? withGate(createElement(DriverInvitationsPanel), gate) : createElement(DriverInvitationsPanel))
         await new Promise((r) => setTimeout(r, 0))
     })
 }
@@ -153,4 +155,22 @@ describe('DriverInvitationsPanel', () => {
         expect(h.toastError).toHaveBeenCalledWith('This record changed. Reload to continue.')
         expect(h.list.mock.calls.length).toBe(before + 1)
     })
+
+    it('SB002 on invite creation shows the read-only prompt', async () => {
+        h.create.mockRejectedValue(sbError(SB002_ERROR))
+        await mountPanel()
+        await click(buttons(/Invite driver/)[0])
+        await type(q('input[name="driver-phone"]') as HTMLInputElement, '98765 43211')
+        await click(buttons(/Create invitation/)[0])
+        expect(q('[role="alert"]')?.textContent).toContain('read-only')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('disables Invite driver with an explanation while read-only', async () => {
+        await mountPanel(gateFor('grace'))
+        const b = buttons(/Invite driver/)[0]
+        expect(b.disabled).toBe(true)
+        expect(b.title).toContain('read-only')
+    })
+
 })

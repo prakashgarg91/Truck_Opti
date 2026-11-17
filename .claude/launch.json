@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "truckopti-local-first",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d D:\\Github\\Truck_Opti\\frontend&&set VITE_SUPABASE_URL=&&set VITE_SUPABASE_ANON_KEY=&&npx vite --port 5199 --strictPort"],
+      "port": 5199
+    }
+  ]
+}

@@ -329,7 +329,7 @@ export function parseSubscriptionError(err: unknown): SubscriptionErrorInfo | nu
 export type TrialErrorCode = 'identity_required' | 'trial_already_claimed' | 'forbidden_scope'
 
 const TRIAL_MESSAGES: Record<TrialErrorCode, string> = {
-  identity_required: 'Add your agency GSTIN or phone number in your company profile before starting a trial.',
+  identity_required: 'Add your GSTIN and phone to the agency profile first, then start your trial.',
   trial_already_claimed: 'A free trial has already been used for this agency, GSTIN or phone number. Choose a plan to continue.',
   forbidden_scope: 'Only the agency owner can start the free trial.',
 }

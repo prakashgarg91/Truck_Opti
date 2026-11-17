@@ -1,13 +1,15 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Truck, Briefcase,
-  LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign, UserCog, Handshake, PackagePlus, FileText, Receipt, Wallet, MapPin, Banknote, Plug, ClipboardList
+  LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign, UserCog, Handshake, PackagePlus, FileText, Receipt, Wallet, MapPin, Banknote, Plug, ClipboardList, CreditCard
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { toDisplayName } from '../utils/displayName'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
+import { BillingGateProvider } from '../components/billing/BillingGate'
+import AgencyBillingBanner from '../components/billing/AgencyBillingBanner'
 
 const NAV = [
   { to: '/agency/dashboard', icon: LayoutDashboard, label: 'Home' },
@@ -30,6 +32,7 @@ const MORE_NAV = [
   { to: '/agency/tracking', icon: MapPin, label: 'Tracking' },
   { to: '/agency/payroll', icon: Banknote, label: 'Payroll' },
   { to: '/agency/erp', icon: Plug, label: 'ERP' },
+  { to: '/subscription', icon: CreditCard, label: 'Subscription' },
 ]
 
 export default function AgencyLayout() {
@@ -222,7 +225,10 @@ export default function AgencyLayout() {
 
       {/* ── Main content ─────────────────────────────────────── */}
       <main className="flex-1 pb-24 md:pb-8 md:ml-64">
-        <Outlet />
+        <BillingGateProvider>
+          <AgencyBillingBanner />
+          <Outlet />
+        </BillingGateProvider>
       </main>
 
       {/* ── Mobile Bottom Navigation (hidden on lg+) ─────────── */}

@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({
     listRates: vi.fn(),
     listEmployedDrivers: vi.fn(),
+    listDriverDirectory: vi.fn(),
     listPeriods: vi.fn(),
     listLines: vi.fn(),
     listAdjustments: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock('../services/agencyPayrollApi', () => ({
     agencyPayrollApi: {
         listRates: h.listRates,
         listEmployedDrivers: h.listEmployedDrivers,
+        listDriverDirectory: h.listDriverDirectory,
         listPeriods: h.listPeriods,
         listLines: h.listLines,
         listAdjustments: h.listAdjustments,
@@ -71,6 +73,7 @@ beforeEach(() => {
     vi.clearAllMocks()
     h.listRates.mockResolvedValue([RATE])
     h.listEmployedDrivers.mockResolvedValue([DRIVER])
+    h.listDriverDirectory.mockResolvedValue([])
     h.listPeriods.mockResolvedValue([OPEN, CLOSED])
     h.listLines.mockResolvedValue([LINE])
     h.listAdjustments.mockResolvedValue([])
@@ -283,5 +286,40 @@ describe('payroll csv', () => {
         const [header, row] = csv.split('\r\n')
         expect(header.startsWith('Driver,Trips')).toBe(true)
         expect(row).toBe('"\'=HYPERLINK(""x"")",2,1.00,2.50,3.50,0.00,0.00,0.00,3.50,0.00')
+    })
+})
+
+describe('AgencyPayrollPage driver names', () => {
+    it('shows the directory name and last 4 digits instead of the id text', async () => {
+        h.listDriverDirectory.mockResolvedValue([{ driver_id: D1, name: 'Ravi Kumar', phone_last4: '3210' }])
+        await mountPage()
+        expect(text()).toContain('Ravi Kumar (ends 3210)')
+        expect(text()).not.toContain('Driver aaaaaaaa')
+    })
+
+    it('shows the name alone when the phone digits are unknown', async () => {
+        h.listDriverDirectory.mockResolvedValue([{ driver_id: D1, name: 'Ravi Kumar', phone_last4: null }])
+        await mountPage()
+        expect(text()).toContain('Ravi Kumar')
+        expect(text()).not.toContain('(ends')
+    })
+
+    it('falls back to the current Driver <id8> text when the directory is empty', async () => {
+        await mountPage()
+        expect(text()).toContain('Driver aaaaaaaa')
+    })
+
+    it('falls back to the current text, and still renders, when the directory call fails', async () => {
+        h.listDriverDirectory.mockRejectedValue(new UserFacingError('Your access scope does not allow this action.'))
+        await mountPage()
+        expect(q('[data-testid="payroll-denied"]')).toBeNull()
+        expect(text()).toContain('Driver aaaaaaaa')
+    })
+
+    it('keeps the fallback phone text for drivers missing from the directory', async () => {
+        h.listEmployedDrivers.mockResolvedValue([{ ...DRIVER, contact_phone: '+91 90000 11111' }])
+        h.listDriverDirectory.mockResolvedValue([{ driver_id: 'other', name: 'Someone Else', phone_last4: '0000' }])
+        await mountPage()
+        expect(text()).toContain('Driver aaaaaaaa (+91 90000 11111)')
     })
 })

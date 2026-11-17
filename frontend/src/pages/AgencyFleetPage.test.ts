@@ -38,6 +38,8 @@ vi.mock('../services/agencyPortalApi', () => ({
 
 import AgencyFleetPage from './AgencyFleetPage'
 import { UserFacingError } from '../utils/userFacingError'
+import { withGate, gateFor, sbError, SB001_ERROR } from '../components/billing/testGate'
+import type { BillingGate } from '../components/billing/BillingGate'
 
 const VEHICLE = {
     id: 'veh-1',
@@ -66,13 +68,13 @@ const VEHICLE = {
 let container: HTMLElement | null = null
 let root: Root | null = null
 
-async function mountPage(): Promise<HTMLElement> {
+async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
     const page = createElement(AgencyFleetPage) as ReactElement
     await act(async () => {
         root = createRoot(container as HTMLElement)
-        root.render(createElement(MemoryRouter, null, page))
+        root.render(createElement(MemoryRouter, null, gate ? withGate(page, gate) : page))
     })
     return container as HTMLElement
 }
@@ -293,4 +295,35 @@ describe('AgencyFleetPage fleet foundation states and wiring', () => {
         // Exactly one refetch — never an auto-retry loop (TO-144-D1 contract).
         expect(h.listVehicles).toHaveBeenCalledTimes(2)
     })
+
+describe('AgencyFleetPage subscription guard', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.listVehicles.mockResolvedValue([VEHICLE])
+    })
+
+    it('SB001 on Add Truck shows the limit prompt and no generic toast', async () => {
+        h.createVehicle.mockRejectedValue(sbError(SB001_ERROR))
+        await mountPage()
+        await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'fleet loaded')
+        await clickButton(findButtons(/Add Truck/)[0])
+        await waitFor(() => queryOne('#fleet-rc-number') !== null, 'create form open')
+        await act(async () => {
+            setInputValue(queryOne('#fleet-rc-number') as HTMLInputElement, 'KA05EK2222')
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        await clickButton(findButtons(/Add Truck/)[1])
+        await waitFor(() => (container as HTMLElement).textContent!.includes('Plan limit reached'), 'limit prompt')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('disables Add Truck with an explanation while read-only', async () => {
+        await mountPage(gateFor('grace'))
+        await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'fleet loaded')
+        const add = findButtons(/Add Truck/)[0]
+        expect(add.disabled).toBe(true)
+        expect(add.title).toContain('read-only')
+    })
+})
+
 })

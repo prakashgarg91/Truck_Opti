@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { UserFacingError } from '../utils/userFacingError'
+import { throwIfSubscriptionError } from '../lib/subscriptionGuard'
 import type { Json } from '../types/database.types'
 
 /**
@@ -216,6 +217,7 @@ async function runCommand<T extends Record<string, unknown>>(
     const { data, error } = await client.rpc(rpcName, args)
 
     if (error) {
+        throwIfSubscriptionError(error)
         const message = error.message
         throw new UserFacingError(typeof message === 'string' && CONTROLLED_EXCEPTIONS.has(message) ? message : fallback)
     }

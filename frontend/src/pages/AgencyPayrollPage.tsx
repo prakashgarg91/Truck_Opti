@@ -7,6 +7,7 @@ import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import {
   agencyPayrollApi,
   type AdjustmentRow,
+  type DriverDirectoryEntry,
   type DriverRateRow,
   type EmployedDriver,
   type PayrollLineRow,
@@ -55,7 +56,13 @@ function intentKey(ref: { current: { sig: string; key: string } | null }, sig: s
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
-function driverLabel(drivers: Map<string, EmployedDriver>, id: string): string {
+function driverLabel(
+  drivers: Map<string, EmployedDriver>,
+  id: string,
+  directory: Map<string, DriverDirectoryEntry> = new Map()
+): string {
+  const named = directory.get(id)
+  if (named) return `${named.name}${named.phone_last4 ? ` (ends ${named.phone_last4})` : ''}`
   const phone = drivers.get(id)?.contact_phone
   return `Driver ${id.slice(0, 8)}${phone ? ` (${phone})` : ''}`
 }
@@ -75,6 +82,7 @@ export default function AgencyPayrollPage() {
 
   const [rates, setRates] = useState<DriverRateRow[]>([])
   const [drivers, setDrivers] = useState<EmployedDriver[]>([])
+  const [directory, setDirectory] = useState<DriverDirectoryEntry[]>([])
   const [periods, setPeriods] = useState<PayrollPeriodRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -130,6 +138,13 @@ export default function AgencyPayrollPage() {
         logger.warn('[AgencyPayrollPage] drivers load failed:', e)
         setDrivers([])
       }
+      // Names are optional: on any failure the 'Driver <id> (phone)' text stays.
+      try {
+        setDirectory(await agencyPayrollApi.listDriverDirectory())
+      } catch (e) {
+        logger.warn('[AgencyPayrollPage] driver names load failed:', e)
+        setDirectory([])
+      }
       setDenied(false)
     } catch (e) {
       logger.error('[AgencyPayrollPage] load failed:', e)
@@ -173,6 +188,7 @@ export default function AgencyPayrollPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedKey, fetchDetail])
 
+  const directoryMap = useMemo(() => new Map(directory.map((d) => [d.driver_id, d])), [directory])
   const driverMap = useMemo(() => new Map(drivers.map((d) => [d.driver_id, d])), [drivers])
   const rateMap = useMemo(() => new Map(rates.map((r) => [r.driver_id, r])), [rates])
   const activeDriverIds = useMemo(() => {
@@ -181,7 +197,7 @@ export default function AgencyPayrollPage() {
     for (const r of rates) ids.add(r.driver_id)
     return Array.from(ids)
   }, [drivers, rates])
-  const label = (id: string) => driverLabel(driverMap, id)
+  const label = (id: string) => driverLabel(driverMap, id, directoryMap)
 
   // ---- Rates ---------------------------------------------------------------
   const startEdit = (driverId: string) => {

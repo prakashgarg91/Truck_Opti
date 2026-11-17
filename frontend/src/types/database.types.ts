@@ -2177,6 +2177,9 @@ isOneToOne: false
                            },
 "subscription_cancel_pending_order":
 { Args: { "p_razorpay_order_id": string }; Returns: Json
+                           },
+"agency_driver_directory":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            }
           }
           Enums: {

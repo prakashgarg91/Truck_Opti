@@ -33,6 +33,8 @@ vi.mock('../services/agencyOrdersApi', () => ({
 import AgencyOrderImportPage from './AgencyOrderImportPage'
 import { UserFacingError } from '../utils/userFacingError'
 import { ORDER_CSV_TEMPLATE } from '../lib/orderImport'
+import { withGate, gateFor, sbError, SB002_ERROR } from '../components/billing/testGate'
+import type { BillingGate } from '../components/billing/BillingGate'
 
 const AGREEMENT = {
     id: 'ag-1',
@@ -53,12 +55,12 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let root: Root | null = null
 let container: HTMLElement | null = null
 
-async function mountPage(): Promise<HTMLElement> {
+async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(AgencyOrderImportPage))
+        root!.render(gate ? withGate(createElement(AgencyOrderImportPage), gate) : createElement(AgencyOrderImportPage))
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -267,4 +269,24 @@ describe('AgencyOrderImportPage', () => {
         expect(h.cancelOrder).toHaveBeenCalledWith('o-1', 1)
         expect(h.toastSuccess).toHaveBeenCalledWith('Order cancelled')
     })
+
+    it('SB002 on import shows the read-only prompt instead of a toast', async () => {
+        h.importOrders.mockRejectedValue(sbError(SB002_ERROR))
+        await mountPage()
+        await choose(q('#import-agreement') as HTMLSelectElement, 'ag-1')
+        await upload(ORDER_CSV_TEMPLATE)
+        await click(button(/^Import 2 lines/)!)
+        expect(q('[role="alert"]')?.textContent).toContain('read-only')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('disables Import with an explanation while read-only', async () => {
+        await mountPage(gateFor('grace'))
+        await choose(q('#import-agreement') as HTMLSelectElement, 'ag-1')
+        await upload(ORDER_CSV_TEMPLATE)
+        const b = button(/^Import 2 lines/)!
+        expect(b.disabled).toBe(true)
+        expect(b.title).toContain('read-only')
+    })
+
 })

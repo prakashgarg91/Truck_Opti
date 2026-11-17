@@ -27,6 +27,12 @@ export interface EmployedDriver {
     contact_phone: string | null
 }
 
+export interface DriverDirectoryEntry {
+    driver_id: string
+    name: string
+    phone_last4: string | null
+}
+
 export type PeriodStatus = 'open' | 'closed'
 
 export interface PayrollPeriodRow {
@@ -233,6 +239,26 @@ export const agencyPayrollApi = {
 
     listEmployedDrivers: () =>
         readOrdered<EmployedDriver>('agency_driver_employment', EMPLOYMENT_COLUMNS, 'Failed to load drivers', 'created_at', true),
+
+    /**
+     * Display names (and last 4 phone digits) of the drivers this agency employs or employed, from
+     * agency_driver_directory(). A typed refusal yields an empty list; the caller keeps its fallback label.
+     */
+    async listDriverDirectory(): Promise<DriverDirectoryEntry[]> {
+        const envelope = await callRpc('agency_driver_directory', {}, 'Failed to load driver names')
+        if (envelope.ok !== true || !Array.isArray(envelope.drivers)) return []
+        const entries: DriverDirectoryEntry[] = []
+        for (const raw of envelope.drivers as unknown[]) {
+            const d = raw as { driver_id?: unknown; name?: unknown; phone_last4?: unknown } | null
+            if (!d || typeof d.driver_id !== 'string' || typeof d.name !== 'string' || d.name.trim() === '') continue
+            entries.push({
+                driver_id: d.driver_id,
+                name: d.name,
+                phone_last4: typeof d.phone_last4 === 'string' && /^\d{4}$/.test(d.phone_last4) ? d.phone_last4 : null,
+            })
+        }
+        return entries
+    },
 
     listPeriods: () =>
         readOrdered<PayrollPeriodRow>('agency_payroll_periods', PERIOD_COLUMNS, 'Failed to load payroll periods', 'period_start', false),

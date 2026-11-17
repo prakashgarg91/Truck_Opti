@@ -1,22 +1,22 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  interpretReopenResult,
+  parseAdminRequest,
+  reopenableSubscriptionIds,
+  shapeRefundException,
+  shapeRefusal,
+  shapeSubscription,
+  type AgencyInfo,
+  type AdminAction,
+  type RefundExceptionRowInput,
+  type RefusalRowInput,
+  type SubscriptionRowInput,
+} from './logic.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-type PortalSubscriptionRow = {
-  id: string
-  user_id: string
-  plan_id: string
-  status: 'active' | 'paused' | 'cancelled' | 'expired' | 'trial'
-  billing_cycle: 'monthly' | 'yearly'
-  current_period_start: string
-  current_period_end: string
-  trial_end: string | null
-  cancel_at_period_end: boolean
-  created_at: string
 }
 
 type PortalUserProfileRow = {
@@ -30,8 +30,6 @@ type SubscriptionPlanRow = {
   name: string
   tier: string
 }
-
-type AdminRequest = { action: 'list' }
 
 class RequestError extends Error {
   status: number
@@ -53,10 +51,6 @@ function jsonResponse(payload: unknown, status = 200) {
       'Content-Type': 'application/json',
     },
   })
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
 function getRequiredEnv(name: string) {
@@ -87,12 +81,14 @@ function normalizeRole(role: string | null) {
   return typeof role === 'string' && role.trim().length > 0 ? role : 'user'
 }
 
-function parseRequestBody(body: unknown): AdminRequest {
-  if (!isRecord(body) || body.action !== 'list') {
-    throw new RequestError('A valid admin action is required.')
+function parseRequestBody(body: unknown): AdminAction {
+  const parsed = parseAdminRequest(body)
+
+  if ('error' in parsed) {
+    throw new RequestError(parsed.error)
   }
 
-  return { action: 'list' }
+  return parsed
 }
 
 async function requireAdmin(
@@ -184,6 +180,85 @@ async function loadSubscriptionPlans(serviceClient: SupabaseClient, planIds: str
   return new Map((data ?? []).map((plan) => [plan.id, plan as SubscriptionPlanRow]))
 }
 
+async function loadAgencies(serviceClient: SupabaseClient, agencyIds: string[]) {
+  if (agencyIds.length === 0) {
+    return new Map<string, AgencyInfo>()
+  }
+
+  const { data, error } = await serviceClient
+    .from('transport_agencies')
+    .select('id, company_name, gstin, status')
+    .in('id', agencyIds)
+
+  if (error) {
+    console.error('Failed to load subscription agencies', error)
+    throw new RequestError('Unable to load subscriptions.', 500, false)
+  }
+
+  return new Map((data ?? []).map((agency) => [agency.id as string, agency as AgencyInfo]))
+}
+
+async function listSubscriptions(serviceClient: SupabaseClient) {
+  const { data: subscriptions, error: subscriptionsError } = await serviceClient
+    .from('subscriptions')
+    .select('id, agency_id, user_id, plan_id, status, billing_cycle, current_period_start, current_period_end, trial_end, grace_end, first_paid_at, cancel_at_period_end, created_at')
+    .order('created_at', { ascending: false })
+
+  if (subscriptionsError) {
+    console.error('Failed to load subscriptions', subscriptionsError)
+    throw new RequestError('Unable to load subscriptions.', 500, false)
+  }
+
+  const rows = (subscriptions ?? []) as SubscriptionRowInput[]
+  const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter((id): id is string => Boolean(id))))
+  const planIds = Array.from(new Set(rows.map((row) => row.plan_id).filter(Boolean)))
+  const agencyIds = Array.from(new Set(rows.map((row) => row.agency_id).filter((id): id is string => Boolean(id))))
+
+  // Ops attention: captured payments the system refused (payment_history.metadata.refusal) and refunds Razorpay
+  // already processed that could not be credit-noted (subscription_refund_exceptions, append-only).
+  const [profilesById, plansById, agenciesById, refusals, refundExceptions] = await Promise.all([
+    loadUserProfiles(serviceClient, userIds),
+    loadSubscriptionPlans(serviceClient, planIds),
+    loadAgencies(serviceClient, agencyIds),
+    serviceClient
+      .from('payment_history')
+      .select('id, agency_id, subscription_id, amount, status, razorpay_order_id, razorpay_payment_id, error_message, metadata, created_at')
+      .not('metadata->>refusal', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(200),
+    serviceClient
+      .from('subscription_refund_exceptions')
+      .select('id, refund_id, payment_id, agency_id, amount_paise, reason, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200),
+  ])
+
+  if (refusals.error || refundExceptions.error) {
+    console.error('Failed to load ops attention', refusals.error ?? refundExceptions.error)
+    throw new RequestError('Unable to load subscriptions.', 500, false)
+  }
+
+  const reopenable = reopenableSubscriptionIds(rows)
+
+  return {
+    subscriptions: rows.map((row) =>
+      shapeSubscription(
+        row,
+        row.agency_id ? agenciesById.get(row.agency_id) ?? null : null,
+        row.user_id ? profilesById.get(row.user_id) ?? null : null,
+        plansById.get(row.plan_id) ?? null,
+        reopenable,
+      )
+    ),
+    ops_attention: {
+      refused_payments: ((refusals.data ?? []) as RefusalRowInput[])
+        .map(shapeRefusal)
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== null),
+      refund_exceptions: ((refundExceptions.data ?? []) as RefundExceptionRowInput[]).map(shapeRefundException),
+    },
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -192,12 +267,13 @@ serve(async (req) => {
   try {
     const authorization = req.headers.get('Authorization')
     const accessToken = getBearerToken(authorization)
-    parseRequestBody(await req.json())
+    const request = parseRequestBody(await req.json())
 
     const supabaseUrl = getRequiredEnv('SUPABASE_URL')
     const supabaseAnonKey = getRequiredEnv('SUPABASE_ANON_KEY')
     const supabaseServiceRoleKey = getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
 
+    // Admin only, for both actions. No free-form status write exists here: the DB status machine owns transitions.
     const serviceClient = await requireAdmin(
       authorization!,
       accessToken,
@@ -206,55 +282,24 @@ serve(async (req) => {
       supabaseServiceRoleKey,
     )
 
-    const { data: subscriptions, error: subscriptionsError } = await serviceClient
-      .from('subscriptions')
-      .select('id, user_id, plan_id, status, billing_cycle, current_period_start, current_period_end, trial_end, cancel_at_period_end, created_at')
-      .order('created_at', { ascending: false })
+    if (request.action === 'reopen') {
+      const { data, error } = await serviceClient.rpc('subscription_support_reopen', { p_agency_id: request.agencyId })
 
-    if (subscriptionsError) {
-      console.error('Failed to load subscriptions', subscriptionsError)
-      throw new RequestError('Unable to load subscriptions.', 500, false)
+      if (error) {
+        console.error('subscription_support_reopen failed', error)
+        throw new RequestError('Unable to reopen the subscription.', 500, false)
+      }
+
+      const outcome = interpretReopenResult(data)
+
+      if (!outcome.ok) {
+        throw new RequestError(outcome.message, outcome.status)
+      }
+
+      return jsonResponse({ ok: true, subscription_id: outcome.subscriptionId, status: 'expired' })
     }
 
-    const userIds = Array.from(new Set((subscriptions ?? []).map((subscription) => subscription.user_id).filter(Boolean)))
-    const planIds = Array.from(new Set((subscriptions ?? []).map((subscription) => subscription.plan_id).filter(Boolean)))
-    const [profilesById, plansById] = await Promise.all([
-      loadUserProfiles(serviceClient, userIds),
-      loadSubscriptionPlans(serviceClient, planIds),
-    ])
-
-    return jsonResponse({
-      subscriptions: (subscriptions ?? []).map((subscription) => {
-        const typedSubscription = subscription as PortalSubscriptionRow
-        const user = profilesById.get(typedSubscription.user_id) ?? null
-        const plan = plansById.get(typedSubscription.plan_id) ?? null
-
-        return {
-          id: typedSubscription.id,
-          user_id: typedSubscription.user_id,
-          status: typedSubscription.status,
-          billing_cycle: typedSubscription.billing_cycle,
-          current_period_start: typedSubscription.current_period_start,
-          current_period_end: typedSubscription.current_period_end,
-          trial_end: typedSubscription.trial_end,
-          cancel_at_period_end: typedSubscription.cancel_at_period_end,
-          created_at: typedSubscription.created_at,
-          user: user
-            ? {
-              name: user.name,
-              email: user.email,
-            }
-            : null,
-          plan: plan
-            ? {
-              id: plan.id,
-              name: plan.name,
-              tier: plan.tier,
-            }
-            : null,
-        }
-      }),
-    })
+    return jsonResponse(await listSubscriptions(serviceClient))
   } catch (error) {
     const requestError = error instanceof RequestError ? error : null
 

@@ -5,6 +5,9 @@ import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import { agencyDriverInvitationApi, type DriverInvitationRow } from '../services/agencyOrganizationApi'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from './billing/BillingGate'
 
 // TO-144-D2 driver invitations (Stitch Roster edit eac990fe), embedded in
 // /agency/drivers. Phone-bound, token-hashed, one-use on the server; the raw
@@ -52,6 +55,8 @@ export default function DriverInvitationsPanel() {
   const [rows, setRows] = useState<DriverInvitationRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const gate = useBillingGate()
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [phone, setPhone] = useState('')
   const [phoneError, setPhoneError] = useState<string | null>(null)
@@ -105,8 +110,12 @@ export default function DriverInvitationsPanel() {
       await fetchRows()
     } catch (e) {
       logger.error('[DriverInvitationsPanel] create failed:', e)
+      const limit = subscriptionInfoFromError(e)
       const message = toUserFacingErrorMessage(e, 'Failed to create driver invitation')
-      if (message === PHONE_ERROR) setPhoneError(message)
+      if (limit) {
+        setShowForm(false)
+        setLimitInfo(limit)
+      } else if (message === PHONE_ERROR) setPhoneError(message)
       else toast.error(message)
     } finally {
       setBusy(false)
@@ -153,12 +162,16 @@ export default function DriverInvitationsPanel() {
           </p>
         </div>
         <button
-          onClick={() => { setShowForm(true); setPhoneError(null) }}
-          className={`flex items-center gap-2 min-h-[44px] rounded-xl border border-indigo-300 px-4 text-sm font-semibold text-indigo-900 ${FOCUS_RING}`}
+          onClick={() => { setLimitInfo(null); setShowForm(true); setPhoneError(null) }}
+          disabled={!gate.canWrite}
+          title={gate.writeTitle}
+          className={`flex items-center gap-2 min-h-[44px] rounded-xl border border-indigo-300 px-4 text-sm font-semibold text-indigo-900 disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
         >
           <UserPlus size={16} aria-hidden="true" /> Invite driver
         </button>
       </div>
+
+      {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
 
       {code && (
         <div className="rounded-2xl border-2 border-indigo-300 bg-indigo-50 p-4 space-y-3" data-testid="driver-invite-code" role="region" aria-label="Invitation code">

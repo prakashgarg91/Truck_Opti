@@ -34,6 +34,8 @@ vi.mock('../services/agencyOrganizationApi', () => ({
 
 import AgencyTeamPage from './AgencyTeamPage'
 import { UserFacingError } from '../utils/userFacingError'
+import { withGate, gateFor, sbError, SB001_ERROR } from '../components/billing/testGate'
+import type { BillingGate } from '../components/billing/BillingGate'
 
 const FUTURE = new Date(Date.now() + 5 * 86400000).toISOString()
 
@@ -74,12 +76,12 @@ const PENDING = {
 let root: Root | null = null
 let container: HTMLElement | null = null
 
-async function mountPage(): Promise<HTMLElement> {
+async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(MemoryRouter, null, createElement(AgencyTeamPage)))
+        root!.render(createElement(MemoryRouter, null, gate ? withGate(createElement(AgencyTeamPage), gate) : createElement(AgencyTeamPage)))
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -355,4 +357,28 @@ describe('AgencyTeamPage', () => {
         expect(buttons(/Revoke access/)).toHaveLength(0)
         expect(text()).toContain('Revoked')
     })
+
+    it('SB001 on invite shows the limit prompt instead of a generic toast', async () => {
+        h.invite.mockRejectedValue(sbError(SB001_ERROR))
+        await mountPage()
+        await click(buttons(/Invite team member/)[0])
+        await type(q('input[name="invite-email"]') as HTMLInputElement, 'new@example.com')
+        await click(buttons(/Create invitation/)[0])
+        expect(q('[role="alert"]')?.textContent).toContain('Plan limit reached')
+        expect(text()).toContain('Upgrade plan')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('disables Invite with an explanation when the subscription is read-only', async () => {
+        await mountPage(gateFor('grace'))
+        const invite = buttons(/Invite team member/)[0]
+        expect(invite.disabled).toBe(true)
+        expect(invite.title).toContain('read-only')
+    })
+
+    it('leaves Invite enabled when the entitlement is none or unknown (server decides)', async () => {
+        await mountPage(gateFor('none'))
+        expect(buttons(/Invite team member/)[0].disabled).toBe(false)
+    })
+
 })

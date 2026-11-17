@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { UserFacingError, reportFunctionFailure, resolveFunctionUserMessage } from '../utils/userFacingError'
+import { throwIfSubscriptionError } from '../lib/subscriptionGuard'
 
 // ============= TYPES =============
 export interface AgencyJob {
@@ -303,6 +304,7 @@ async function runPortalCommand(
         const { data, error } = await client.rpc(rpcName, args)
 
         if (error) {
+            throwIfSubscriptionError(error)
             const message = error.message
             if (typeof message === 'string' && PORTAL_COMMAND_EXCEPTION_MESSAGES.has(message)) {
                 throw new UserFacingError(message)
@@ -619,6 +621,7 @@ export const agencyFleetApi = {
         })
 
         if (error) {
+            throwIfSubscriptionError(error)
             throw new UserFacingError(resolveCommandUserMessage(error, 'Failed to add vehicle to fleet'))
         }
 

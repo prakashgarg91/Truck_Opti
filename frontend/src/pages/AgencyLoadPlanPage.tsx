@@ -3,6 +3,9 @@ import { CheckCircle2, RefreshCw, ShieldAlert, Truck as TruckIcon, Wand2 } from 
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import {
   agencyLoadPlansApi,
   describeProblem,
@@ -161,6 +164,8 @@ export default function AgencyLoadPlanPage() {
     return key
   }
 
+  const gate = useBillingGate()
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<{ id: string; kind: 'approve' | 'cancel' } | null>(null)
   const [notice, setNotice] = useState<PlanNotice | null>(null)
@@ -338,6 +343,7 @@ export default function AgencyLoadPlanPage() {
     const intent = `${kind}:${plan.id}:${plan.version}`
     setBusy(intent)
     setNotice(null)
+    setLimitInfo(null)
     try {
       const result =
         kind === 'approve'
@@ -360,6 +366,12 @@ export default function AgencyLoadPlanPage() {
       if (openDetail === plan.id) await fetchDetail(plan.id)
     } catch (e) {
       logger.error('[AgencyLoadPlanPage] transition failed:', e)
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setConfirm(null)
+        setLimitInfo(limit)
+        return
+      }
       const message = toUserFacingErrorMessage(e, kind === 'approve' ? 'Failed to approve the plan' : 'Failed to cancel the plan')
       setNotice({ id: plan.id, text: message, problems: [], staleLineIds: [], stale: false })
       toast.error(message)
@@ -423,6 +435,8 @@ export default function AgencyLoadPlanPage() {
           Pick draft orders and trucks, propose how the lines fit on each truck, then save, approve or cancel the plan.
         </p>
       </div>
+
+      {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
@@ -655,7 +669,8 @@ export default function AgencyLoadPlanPage() {
                       <button
                         type="button"
                         onClick={() => setConfirm({ id: p.id, kind: 'approve' })}
-                        disabled={busy !== null}
+                        disabled={busy !== null || !gate.canDispatch}
+                        title={gate.dispatchTitle}
                         aria-label={`Approve ${p.name} version ${p.plan_version}`}
                         className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-60 ${FOCUS_RING}`}
                       >

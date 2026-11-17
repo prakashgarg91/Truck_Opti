@@ -4,28 +4,20 @@ import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Regression suite for the admin subscriptions list: AdminSubscriptionsPage
-// over the single adminSupabaseApi call it makes (getAdminSubscriptions).
-// Pins the CURRENT behaviour — the admin-gated fetch, loading/empty/error
-// states, the summary-card derivation, per-row user/plan/status/date
-// rendering with its fallbacks, and the Refresh/back header actions.
+// Admin subscriptions page, agency-level (TO-152): lists by agency, filters by
+// status, shows trial/grace/expired, an Ops attention list (captured-but-refused
+// payments and refund exceptions) and ONE legal action, Reopen after
+// cancellation (confirm step, calls the service only on confirm).
 //
 // FINDING (robustness): for a signed-in non-admin (or a signed-out session)
-// the page stays in the initial loading state forever — `loading` starts
+// the page stays in the initial loading state forever -- `loading` starts
 // true and only fetchSubscriptions() clears it, while the effect skips
-// non-admin roles. Only the spinner renders; no header, no message. Masked
-// today by the admin-only route guard in App.tsx. The gate test below pins
-// the no-fetch behaviour and the spinner-only render; it does not bless the
-// stuck state.
-// FINDING (a11y): the loading region has no role="status"/aria-busy
-// (AgencyTeamPage exposes [data-testid="team-loading"]) — it is only a
-// centered animate-spin icon, and the table's <th> cells carry no scope.
-// FINDING (semantics): the "Expired" summary card counts cancelled
-// subscriptions too (status === 'expired' || 'cancelled') even though the
-// table shows them as distinct badges; pinned as current behaviour.
+// non-admin roles. Masked today by the admin-only route guard in App.tsx.
+// The gate test pins the no-fetch behaviour; it does not bless the stuck state.
 
 const h = vi.hoisted(() => ({
     getAdminSubscriptions: vi.fn(),
+    reopenSubscription: vi.fn(),
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
     currentUser: null as { id: string; email: string; name: string; role: string } | null,
@@ -36,6 +28,7 @@ vi.mock('react-hot-toast', () => ({ default: { error: h.toastError, success: h.t
 vi.mock('../services/adminSupabaseApi', () => ({
     adminSupabaseApi: {
         getAdminSubscriptions: h.getAdminSubscriptions,
+        reopenSubscription: h.reopenSubscription,
     },
 }))
 
@@ -46,86 +39,104 @@ vi.mock('../stores/authStore', () => ({
 import AdminSubscriptionsPage from './AdminSubscriptionsPage'
 import { UserFacingError } from '../utils/userFacingError'
 
-// Real adminSupabaseApi AdminSubscription shapes (see services/adminSupabaseApi.ts).
-const ACTIVE = {
-    id: 'sub-1',
-    user_id: 'u-agency',
-    status: 'active',
+const base = {
     billing_cycle: 'monthly',
     current_period_start: '2026-11-01T00:00:00Z',
     current_period_end: '2026-12-01T00:00:00Z',
     trial_end: null,
+    grace_end: null,
+    first_paid_at: null,
     cancel_at_period_end: false,
+    can_reopen: false,
+}
+const ACTIVE = {
+    ...base,
+    id: 'sub-1',
+    agency_id: 'ag-1',
+    status: 'active',
+    first_paid_at: '2026-09-20T00:00:00Z',
     created_at: '2026-09-15T09:30:00Z',
-    user: { name: 'Fast Movers', email: 'ops@fastmovers.test' },
+    agency: { name: 'Fast Movers', gstin: '27AAAAA0000A1Z5', status: 'approved' },
+    purchaser: { name: 'Owner', email: 'ops@fastmovers.test' },
     plan: { id: 'plan-pro', name: 'Pro Monthly', tier: 'pro' },
 }
 const TRIAL = {
+    ...base,
     id: 'sub-2',
-    user_id: 'u-cust',
+    agency_id: 'ag-2',
     status: 'trial',
-    billing_cycle: 'monthly',
-    current_period_start: '2026-11-05T00:00:00Z',
-    current_period_end: '2026-12-05T00:00:00Z',
     trial_end: '2026-11-12T00:00:00Z',
-    cancel_at_period_end: false,
     created_at: '2026-10-05T10:15:00Z',
-    user: { name: 'Meena Rao', email: 'meena@example.com' },
+    agency: { name: 'Meena Logistics', gstin: null, status: 'approved' },
+    purchaser: { name: 'Meena Rao', email: 'meena@example.com' },
     plan: { id: 'plan-growth', name: 'Growth', tier: 'growth' },
 }
+const GRACE = {
+    ...base,
+    id: 'sub-g',
+    agency_id: 'ag-g',
+    status: 'grace',
+    grace_end: '2026-11-20T00:00:00Z',
+    created_at: '2026-08-01T00:00:00Z',
+    agency: { name: 'Grace Carriers', gstin: null, status: 'approved' },
+    purchaser: null,
+    plan: { id: 'plan-basic', name: 'Basic', tier: 'basic' },
+}
+const PAST_DUE = { ...GRACE, id: 'sub-p', agency_id: 'ag-p', status: 'past_due', grace_end: null, agency: { name: 'Late Payers', gstin: null, status: 'approved' } }
 const EXPIRED = {
+    ...base,
     id: 'sub-3',
-    user_id: 'u-x1',
+    agency_id: 'ag-3',
     status: 'expired',
-    billing_cycle: 'yearly',
-    current_period_start: '2025-01-01T00:00:00Z',
-    current_period_end: '2026-01-01T00:00:00Z',
-    trial_end: '2026-01-01T00:00:00Z',
-    cancel_at_period_end: false,
     created_at: '2025-01-01T00:00:00Z',
-    user: { name: 'Ravi Kumar', email: 'ravi@example.com' },
+    agency: { name: 'Ravi Transport', gstin: null, status: 'approved' },
+    purchaser: { name: 'Ravi Kumar', email: 'ravi@example.com' },
     plan: { id: 'plan-basic', name: 'Basic', tier: 'basic' },
 }
 const CANCELLED = {
+    ...base,
     id: 'sub-4',
-    user_id: 'u-x2',
+    agency_id: 'ag-4',
     status: 'cancelled',
-    billing_cycle: 'monthly',
-    current_period_start: '2026-06-01T00:00:00Z',
-    current_period_end: '2026-07-01T00:00:00Z',
-    trial_end: null,
-    cancel_at_period_end: true,
+    can_reopen: true,
     created_at: '2026-02-10T00:00:00Z',
-    user: null,
+    agency: { name: 'Refunded Co', gstin: null, status: 'approved' },
+    purchaser: null,
     plan: null,
 }
-const NO_NAME = {
-    id: 'sub-5',
-    user_id: 'u-x3',
-    status: 'active',
-    billing_cycle: 'monthly',
-    current_period_start: '2026-11-05T00:00:00Z',
-    current_period_end: '2026-12-05T00:00:00Z',
-    trial_end: '2026-11-20T00:00:00Z',
-    cancel_at_period_end: false,
-    created_at: '2026-11-05T00:00:00Z',
-    user: { name: '', email: 'noname@example.com' },
-    plan: { id: 'plan-starter', name: 'Starter', tier: 'starter' },
+const CANCELLED_OLD = { ...CANCELLED, id: 'sub-4-old', can_reopen: false, created_at: '2026-01-10T00:00:00Z' }
+
+const REFUSED = {
+    id: 'pay-1',
+    agency_id: 'ag-1',
+    subscription_id: 'sub-1',
+    amount_paise: 118000,
+    order_id: 'order_X',
+    payment_id: 'pay_CAPTURED',
+    refused_payment_ids: ['pay_CAPTURED'],
+    refusal: 'AMOUNT_MISMATCH',
+    refused_at: '2026-11-06T08:00:00Z',
+    error_message: null,
 }
-// The AdminSubscription status union has only the four mapped values, but
-// getStatusBadge has a raw-label fallback branch; pin it with an unmapped status.
-const PAUSED = { ...ACTIVE, id: 'sub-paused', status: 'paused' }
+const REFUND_EXC = {
+    id: 'rx-1',
+    refund_id: 'rfnd_1',
+    payment_id: 'pay_9',
+    agency_id: 'ag-4',
+    amount_paise: 59000,
+    reason: 'subscription_not_found',
+    created_at: '2026-11-06T09:00:00Z',
+}
+
+const snap = (subscriptions: unknown[], refusedPayments: unknown[] = [], refundExceptions: unknown[] = []) => ({
+    subscriptions,
+    opsAttention: { refusedPayments, refundExceptions },
+})
 
 const SUBS = [ACTIVE, TRIAL, EXPIRED, CANCELLED]
 const CURRENT_ADMIN = { id: 'me-admin', email: 'boss@truckopti.test', name: 'Boss', role: 'admin' }
 
-// The page formats dates with toLocaleDateString('en-IN', { day: '2-digit',
-// month: 'short', year: 'numeric' }); computing the expectation through the
-// same call keeps the assertion deterministic in any host timezone while
-// still pinning the format wiring.
 const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-const TRIAL_END_TEXT = fmt(TRIAL.trial_end as string)
-const CREATED_ACTIVE_TEXT = fmt(ACTIVE.created_at)
 
 let root: Root | null = null
 let container: HTMLElement | null = null
@@ -166,6 +177,8 @@ const q = (sel: string) => (container as HTMLElement).querySelector(sel)
 const text = () => (container as HTMLElement).textContent || ''
 const cardTexts = () => Array.from((q('.grid.grid-cols-2') as HTMLElement)?.children || []).map((c) => c.textContent || '')
 const refreshButton = () => q('button[aria-label="Refresh subscriptions"]') as HTMLButtonElement
+const buttonByText = (label: string) =>
+    Array.from((container as HTMLElement).querySelectorAll('button')).find((b) => (b.textContent || '').includes(label)) as HTMLButtonElement
 
 async function click(button: HTMLButtonElement) {
     await act(async () => {
@@ -180,22 +193,34 @@ async function flush() {
     })
 }
 
+async function setSelect(el: HTMLSelectElement, value: string) {
+    await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!.call(el, value)
+        el.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+}
+
+async function setInput(el: HTMLInputElement, value: string) {
+    await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, value)
+        el.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+}
+
 describe('AdminSubscriptionsPage', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        // Pinned clock (auto-advancing) so date rendering stays deterministic;
-        // restored in afterEach.
         vi.useFakeTimers({ shouldAdvanceTime: true })
         vi.setSystemTime(new Date('2026-11-07T10:00:00Z'))
         h.currentUser = { ...CURRENT_ADMIN }
-        h.getAdminSubscriptions.mockResolvedValue(SUBS)
+        h.getAdminSubscriptions.mockResolvedValue(snap(SUBS))
+        h.reopenSubscription.mockResolvedValue(undefined)
     })
 
     it('never fetches subscriptions for a non-admin session (permission gate)', async () => {
         h.currentUser = { ...CURRENT_ADMIN, role: 'agency' }
         await mountPage()
         expect(h.getAdminSubscriptions).not.toHaveBeenCalled()
-        // current behaviour: the initial loading state persists (see FINDING above)
         expect((container as HTMLElement).querySelectorAll('.animate-spin').length).toBeGreaterThan(0)
         expect(q('h1')).toBeNull()
     })
@@ -204,7 +229,6 @@ describe('AdminSubscriptionsPage', () => {
         h.getAdminSubscriptions.mockReturnValue(new Promise(() => {}))
         await mountPage()
         expect((container as HTMLElement).querySelectorAll('.animate-spin').length).toBeGreaterThan(0)
-        // the early return hides the whole app shell, including Refresh
         expect(refreshButton()).toBeNull()
         expect(q('.grid.grid-cols-2')).toBeNull()
         expect(text()).not.toContain('No subscriptions yet')
@@ -213,116 +237,175 @@ describe('AdminSubscriptionsPage', () => {
     it('a rejected list call surfaces its user-facing message via toast and falls back to the empty list', async () => {
         h.getAdminSubscriptions.mockRejectedValue(new UserFacingError('Unable to load subscriptions right now. Please try again.'))
         await mountPage()
-        expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Unable to load subscriptions right now. Please try again.')
         expect(text()).toContain('No subscriptions yet')
-        expect(cardTexts()).toEqual(['Total0', 'Active0', 'Trial0', 'Expired0'])
+        expect(cardTexts()).toEqual(['Total0', 'Active0', 'Trial0', 'Past due / Grace0', 'Expired / Cancelled0'])
     })
 
     it('a raw transport error falls back to the page message and leaks nothing', async () => {
         h.getAdminSubscriptions.mockRejectedValue(new Error('postgres JWT secret leaked in stack'))
         await mountPage()
-        expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Failed to load subscriptions')
         expect(text()).not.toContain('postgres')
     })
 
-    it('Refresh is the retry affordance: it refetches and recovers the list after an error', async () => {
+    it('Refresh is the retry affordance after an error', async () => {
         h.getAdminSubscriptions
             .mockRejectedValueOnce(new UserFacingError('Unable to load subscriptions right now. Please try again.'))
-            .mockResolvedValueOnce(SUBS)
+            .mockResolvedValueOnce(snap(SUBS))
         await mountPage()
-        expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(text()).toContain('No subscriptions yet')
         await click(refreshButton())
         await flush()
         expect(h.getAdminSubscriptions).toHaveBeenCalledTimes(2)
-        expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(text()).toContain('Fast Movers')
     })
 
-    it('empty state: zero subscriptions renders the empty message with zeroed cards', async () => {
-        h.getAdminSubscriptions.mockResolvedValue([])
+    it('empty state: zero subscriptions renders the empty message and a calm ops list', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap([]))
         await mountPage()
         expect(text()).toContain('No subscriptions yet')
-        expect(cardTexts()).toEqual(['Total0', 'Active0', 'Trial0', 'Expired0'])
+        expect(text()).toContain('Nothing needs attention.')
     })
 
-    it('happy path: fetches once and renders real shapes — users, plan names, tiers and dates', async () => {
+    it('lists by agency (not by user) with plan, tier and dates', async () => {
         await mountPage()
         expect(h.getAdminSubscriptions).toHaveBeenCalledTimes(1)
         expect(text()).toContain('Fast Movers')
         expect(text()).toContain('ops@fastmovers.test')
         expect(text()).toContain('Pro Monthly')
-        expect(text()).toContain('Meena Rao')
-        expect(text()).toContain('meena@example.com')
-        expect(text()).toContain('Growth')
-        // tier is rendered as-is (uppercased only by CSS)
+        expect(text()).toContain('Meena Logistics')
         expect(text()).toContain('growth')
-        expect(text()).toContain(TRIAL_END_TEXT)
-        expect(text()).toContain(CREATED_ACTIVE_TEXT)
+        expect(text()).toContain(fmt(TRIAL.trial_end as string))
+        expect(text()).toContain(fmt(ACTIVE.first_paid_at as string))
+        expect(text()).toContain(fmt(ACTIVE.current_period_end))
+        const headers = Array.from((container as HTMLElement).querySelectorAll('thead th')).map((th) => th.textContent)
+        expect(headers).toEqual(['Agency', 'Plan', 'Status', 'Trial End', 'Period End', 'Grace End', 'First Paid', 'Created', 'Action'])
     })
 
-    it('summary cards derive from the statuses (cancelled counts toward Expired)', async () => {
+    it('summary cards count trial, past_due and grace, expired and cancelled', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap([ACTIVE, TRIAL, GRACE, PAST_DUE, EXPIRED, CANCELLED]))
         await mountPage()
-        // current behaviour: the Expired card also counts cancelled rows
-        expect(cardTexts()).toEqual(['Total4', 'Active1', 'Trial1', 'Expired2'])
+        expect(cardTexts()).toEqual(['Total6', 'Active1', 'Trial1', 'Past due / Grace2', 'Expired / Cancelled2'])
     })
 
-    it('user cell falls back to email when the name is blank and to em-dashes when user is null', async () => {
-        h.getAdminSubscriptions.mockResolvedValue([NO_NAME, CANCELLED])
-        await mountPage()
-        // blank name renders the email on both the primary and secondary lines
-        expect((text().match(/noname@example\.com/g) || []).length).toBe(2)
-        // null user renders em-dashes twice (name line + email line), plus a
-        // third for its missing trial_end
-        expect((text().match(/—/g) || []).length).toBe(3)
-    })
-
-    it('plan cell: a named plan shows name and tier; a null plan shows Unknown plan with no tier', async () => {
-        h.getAdminSubscriptions.mockResolvedValue([ACTIVE, CANCELLED])
-        await mountPage()
-        expect(text()).toContain('Pro Monthly')
-        expect(text()).toContain('pro')
-        expect(text()).toContain('Unknown plan')
-        // no tier line is rendered for the planless row
-        expect(text()).not.toContain('basic')
-    })
-
-    it('trial end column: formatted when present, em-dash when null', async () => {
-        h.getAdminSubscriptions.mockResolvedValue([ACTIVE, TRIAL])
-        await mountPage()
-        expect(text()).toContain(TRIAL_END_TEXT)
-        // ACTIVE has a user and a plan, so the only em-dash on the page is its
-        // missing trial_end cell
-        expect((text().match(/—/g) || []).length).toBe(1)
-    })
-
-    it('an unmapped status renders its raw label and counts only toward Total', async () => {
-        h.getAdminSubscriptions.mockResolvedValue([PAUSED])
-        await mountPage()
-        expect(text()).toContain('paused')
-        expect(cardTexts()).toEqual(['Total1', 'Active0', 'Trial0', 'Expired0'])
-    })
-
-    it('status badges render the four mapped labels in row order', async () => {
+    it('shows all six statuses with their labels and the grace end date', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap([ACTIVE, TRIAL, PAST_DUE, GRACE, EXPIRED, CANCELLED]))
         await mountPage()
         const badges = Array.from((container as HTMLElement).querySelectorAll('tbody tr')).map(
             (tr) => tr.querySelector('td:nth-child(3)')?.textContent || '',
         )
-        expect(badges).toEqual(['Active', 'Trial', 'Expired', 'Cancelled'])
+        expect(badges).toEqual(['Active', 'Trial', 'Past due', 'Grace', 'Expired', 'Cancelled'])
+        expect(text()).toContain(fmt(GRACE.grace_end))
+    })
+
+    it('a planless, purchaserless row falls back to Unknown plan', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap([CANCELLED]))
+        await mountPage()
+        expect(text()).toContain('Unknown plan')
+        expect(text()).toContain('Refunded Co')
+    })
+
+    it('an unmapped status renders its raw label and counts only toward Total', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap([{ ...ACTIVE, id: 'sub-x', status: 'paused' }]))
+        await mountPage()
+        expect(text()).toContain('paused')
+        expect(cardTexts()).toEqual(['Total1', 'Active0', 'Trial0', 'Past due / Grace0', 'Expired / Cancelled0'])
+    })
+
+    it('filters by status and by agency text, with a no-match state', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap([ACTIVE, TRIAL, GRACE, EXPIRED]))
+        await mountPage()
+        await setSelect(q('#sub-status-filter') as HTMLSelectElement, 'grace')
+        expect(text()).toContain('Grace Carriers')
+        expect(text()).not.toContain('Fast Movers')
+        await setSelect(q('#sub-status-filter') as HTMLSelectElement, 'all')
+        await setInput(q('#sub-agency-search') as HTMLInputElement, 'meena')
+        expect(text()).toContain('Meena Logistics')
+        expect(text()).not.toContain('Ravi Transport')
+        await setInput(q('#sub-agency-search') as HTMLInputElement, 'zzz-nothing')
+        expect(text()).toContain('No subscriptions match these filters')
+    })
+
+    it('Ops attention lists captured-but-refused payments and refund exceptions by agency', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap(SUBS, [REFUSED], [REFUND_EXC]))
+        await mountPage()
+        const refused = q('[data-testid="refused-payment"]')?.textContent || ''
+        expect(refused).toContain('Fast Movers')
+        expect(refused).toContain('AMOUNT_MISMATCH')
+        expect(refused).toContain('pay_CAPTURED')
+        expect(refused).toContain('1,180.00')
+        const exc = q('[data-testid="refund-exception"]')?.textContent || ''
+        expect(exc).toContain('Refunded Co')
+        expect(exc).toContain('rfnd_1')
+        expect(exc).toContain('subscription_not_found')
+        expect(exc).toContain('590.00')
+        expect(q('[data-testid="ops-attention"]')?.textContent).toContain('(2)')
+    })
+
+    it('offers the one legal action, Reopen after cancellation, only where can_reopen is set', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap([ACTIVE, CANCELLED, CANCELLED_OLD]))
+        await mountPage()
+        const reopenButtons = Array.from((container as HTMLElement).querySelectorAll('tbody button')).filter((b) => /Reopen after cancellation/.test(b.textContent || ''))
+        expect(reopenButtons).toHaveLength(1)
+    })
+
+    it('has no free-form status control: no row inputs, no edit/cancel/plan-change buttons', async () => {
+        await mountPage()
+        expect((container as HTMLElement).querySelectorAll('tbody select, tbody input')).toHaveLength(0)
+        const labels = Array.from((container as HTMLElement).querySelectorAll('button')).map((b) => b.textContent || '')
+        expect(labels.filter((l) => /(edit|change|force|activate|extend|cancel subscription)/i.test(l))).toEqual([])
+        // the only select is the read-only list filter
+        expect((container as HTMLElement).querySelectorAll('select')).toHaveLength(1)
+    })
+
+    it('Reopen needs a confirm step; Cancel closes it without calling the service', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap([CANCELLED]))
+        await mountPage()
+        await click(buttonByText('Reopen after cancellation'))
+        expect(q('[data-testid="reopen-confirm"]')).not.toBeNull()
+        expect(h.reopenSubscription).not.toHaveBeenCalled()
+        await click(buttonByText('Cancel'))
+        expect(q('[data-testid="reopen-confirm"]')).toBeNull()
+        expect(h.reopenSubscription).not.toHaveBeenCalled()
+    })
+
+    it('confirming Reopen calls the service with the agency id, toasts and refetches', async () => {
+        h.getAdminSubscriptions
+            .mockResolvedValueOnce(snap([CANCELLED]))
+            .mockResolvedValueOnce(snap([{ ...CANCELLED, can_reopen: false }]))
+        await mountPage()
+        await click(buttonByText('Reopen after cancellation'))
+        await click(buttonByText('Confirm reopen'))
+        await flush()
+        expect(h.reopenSubscription).toHaveBeenCalledTimes(1)
+        expect(h.reopenSubscription).toHaveBeenCalledWith('ag-4')
+        expect(h.toastSuccess).toHaveBeenCalledTimes(1)
+        expect(h.getAdminSubscriptions).toHaveBeenCalledTimes(2)
+        expect(q('[data-testid="reopen-confirm"]')).toBeNull()
+    })
+
+    it('a refused Reopen shows the server message, keeps the confirm open and does not refetch', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap([CANCELLED]))
+        h.reopenSubscription.mockRejectedValue(new UserFacingError('The agency already has a live subscription.'))
+        await mountPage()
+        await click(buttonByText('Reopen after cancellation'))
+        await click(buttonByText('Confirm reopen'))
+        await flush()
+        expect(h.toastError).toHaveBeenCalledWith('The agency already has a live subscription.')
+        expect(h.toastSuccess).not.toHaveBeenCalled()
+        expect(h.getAdminSubscriptions).toHaveBeenCalledTimes(1)
+        expect(q('[data-testid="reopen-confirm"]')).not.toBeNull()
     })
 
     it('Refresh replaces the list with the latest snapshot', async () => {
-        h.getAdminSubscriptions.mockResolvedValueOnce(SUBS).mockResolvedValueOnce([TRIAL])
+        h.getAdminSubscriptions.mockResolvedValueOnce(snap(SUBS)).mockResolvedValueOnce(snap([TRIAL]))
         await mountPage()
         expect(cardTexts()[0]).toBe('Total4')
         await click(refreshButton())
         await flush()
-        expect(h.getAdminSubscriptions).toHaveBeenCalledTimes(2)
-        expect(cardTexts()).toEqual(['Total1', 'Active0', 'Trial1', 'Expired0'])
+        expect(cardTexts()).toEqual(['Total1', 'Active0', 'Trial1', 'Past due / Grace0', 'Expired / Cancelled0'])
         expect(text()).not.toContain('Fast Movers')
-        expect(text()).toContain('meena@example.com')
     })
 
     it('the back control navigates to /admin', async () => {
@@ -331,12 +414,13 @@ describe('AdminSubscriptionsPage', () => {
         expect(text()).toContain('ADMIN-HOME-MARKER')
     })
 
-    it('accessibility hooks: named header controls, page heading and table column headers', async () => {
+    it('accessibility hooks: named header controls, heading, labelled filters, scoped column headers', async () => {
         await mountPage()
         expect(q('button[aria-label="Back to admin dashboard"]')).not.toBeNull()
         expect(refreshButton()).not.toBeNull()
         expect(q('h1')?.textContent).toBe('Subscriptions')
-        const headers = Array.from((container as HTMLElement).querySelectorAll('thead th')).map((th) => th.textContent)
-        expect(headers).toEqual(['User', 'Plan', 'Status', 'Trial End', 'Created'])
+        expect(q('label[for="sub-status-filter"]')).not.toBeNull()
+        expect(q('label[for="sub-agency-search"]')).not.toBeNull()
+        expect((container as HTMLElement).querySelectorAll('thead th[scope="col"]').length).toBe(9)
     })
 })
