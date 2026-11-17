@@ -89,3 +89,6 @@ docs/archive/
 
 # stitch-mcp adapter local state (mappings, journal, artifacts)
 .stitch-mcp/
+
+# Razorpay sandbox proof reports (may contain order ids)
+proof-output/
