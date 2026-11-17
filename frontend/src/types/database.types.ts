@@ -950,6 +950,536 @@ isOneToOne: false
       referencedColumns: ["id", "agency_id"]
     }
                   ]
+                },"agency_consignment_events": {
+                  Row: {
+                    "actor": string | null,"agency_id": string,"consignment_id": string,"created_at": string,"event": string,"from_status": string | null,"id": string,"idempotency_key": string | null,"note": string | null,"to_status": string,"version_after": number | null
+                  }
+                  Insert: {
+                    "actor"?: string | null,"agency_id": string,"consignment_id": string,"created_at"?: string,"event": string,"from_status"?: string | null,"id"?: string,"idempotency_key"?: string | null,"note"?: string | null,"to_status": string,"version_after"?: number | null
+                  }
+                  Update: {
+                    "actor"?: string | null,"agency_id"?: string,"consignment_id"?: string,"created_at"?: string,"event"?: string,"from_status"?: string | null,"id"?: string,"idempotency_key"?: string | null,"note"?: string | null,"to_status"?: string,"version_after"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_consignment_events_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_consignment_events_consignment_fk"
+      columns: ["consignment_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_consignments"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_consignments": {
+                  Row: {
+                    "agency_id": string,"created_at": string,"gr_number": string,"id": string,"idempotency_key": string,"order_id": string,"qr_token": string,"status": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"created_at"?: string,"gr_number": string,"id"?: string,"idempotency_key": string,"order_id": string,"qr_token": string,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"created_at"?: string,"gr_number"?: string,"id"?: string,"idempotency_key"?: string,"order_id"?: string,"qr_token"?: string,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_consignments_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_consignments_order_fk"
+      columns: ["order_id", "agency_id"]
+isOneToOne: true
+      referencedRelation: "agency_orders"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_driver_rates": {
+                  Row: {
+                    "agency_id": string,"base_paise": number,"driver_id": string,"per_km_paise": number,"per_tonne_paise": number,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"base_paise": number,"driver_id": string,"per_km_paise": number,"per_tonne_paise": number,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"base_paise"?: number,"driver_id"?: string,"per_km_paise"?: number,"per_tonne_paise"?: number,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_driver_rates_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_driver_rates_driver_id_fkey"
+      columns: ["driver_id"]
+isOneToOne: false
+      referencedRelation: "drivers"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_erp_connections": {
+                  Row: {
+                    "agency_id": string,"agreement_id": string,"client_id": string,"created_at": string,"created_by": string | null,"id": string,"idempotency_key": string,"kind": string,"name": string,"secret_hash": string,"secret_hint": string,"status": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"agreement_id": string,"client_id": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key": string,"kind": string,"name": string,"secret_hash": string,"secret_hint": string,"status"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"agreement_id"?: string,"client_id"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key"?: string,"kind"?: string,"name"?: string,"secret_hash"?: string,"secret_hint"?: string,"status"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_erp_connections_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_erp_connections_agreement_fk"
+      columns: ["agreement_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_agreements"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_erp_connections_client_fk"
+      columns: ["client_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_agreements"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_erp_events": {
+                  Row: {
+                    "agency_id": string,"batch_id": string | null,"connection_id": string,"external_event_id": string,"id": string,"outcome": string,"payload_hash": string,"problems": Json | null,"received_at": string
+                  }
+                  Insert: {
+                    "agency_id": string,"batch_id"?: string | null,"connection_id": string,"external_event_id": string,"id"?: string,"outcome": string,"payload_hash": string,"problems"?: Json | null,"received_at"?: string
+                  }
+                  Update: {
+                    "agency_id"?: string,"batch_id"?: string | null,"connection_id"?: string,"external_event_id"?: string,"id"?: string,"outcome"?: string,"payload_hash"?: string,"problems"?: Json | null,"received_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_erp_events_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_erp_events_batch_fk"
+      columns: ["batch_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_order_batches"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_erp_events_connection_fk"
+      columns: ["connection_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_erp_connections"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_expenses": {
+                  Row: {
+                    "agency_id": string,"amount_paise": number,"category": string,"created_at": string,"created_by": string | null,"id": string,"idempotency_key": string,"note": string | null,"spent_on": string,"truck_id": string | null
+                  }
+                  Insert: {
+                    "agency_id": string,"amount_paise": number,"category": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key": string,"note"?: string | null,"spent_on": string,"truck_id"?: string | null
+                  }
+                  Update: {
+                    "agency_id"?: string,"amount_paise"?: number,"category"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key"?: string,"note"?: string | null,"spent_on"?: string,"truck_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_expenses_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_expenses_truck_id_fkey"
+      columns: ["truck_id"]
+isOneToOne: false
+      referencedRelation: "agency_trucks"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_fuel_fills": {
+                  Row: {
+                    "agency_id": string,"created_at": string,"expense_id": string | null,"filled_on": string,"full_tank": boolean,"id": string,"litres": number,"odometer_km": number,"truck_id": string
+                  }
+                  Insert: {
+                    "agency_id": string,"created_at"?: string,"expense_id"?: string | null,"filled_on": string,"full_tank"?: boolean,"id"?: string,"litres": number,"odometer_km": number,"truck_id": string
+                  }
+                  Update: {
+                    "agency_id"?: string,"created_at"?: string,"expense_id"?: string | null,"filled_on"?: string,"full_tank"?: boolean,"id"?: string,"litres"?: number,"odometer_km"?: number,"truck_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_fuel_fills_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_fuel_fills_expense_id_fkey"
+      columns: ["expense_id"]
+isOneToOne: false
+      referencedRelation: "agency_expenses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_fuel_fills_truck_id_fkey"
+      columns: ["truck_id"]
+isOneToOne: false
+      referencedRelation: "agency_trucks"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_gr_sequences": {
+                  Row: {
+                    "agency_id": string,"fy": string,"last_seq": number
+                  }
+                  Insert: {
+                    "agency_id": string,"fy": string,"last_seq"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"fy"?: string,"last_seq"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_gr_sequences_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_incidents": {
+                  Row: {
+                    "agency_id": string,"created_at": string,"created_by": string | null,"dedupe_key": string,"details": Json,"id": string,"job_id": string,"kind": string,"resolution_note": string | null,"status": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"created_at"?: string,"created_by"?: string | null,"dedupe_key": string,"details"?: Json,"id"?: string,"job_id": string,"kind": string,"resolution_note"?: string | null,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"created_at"?: string,"created_by"?: string | null,"dedupe_key"?: string,"details"?: Json,"id"?: string,"job_id"?: string,"kind"?: string,"resolution_note"?: string | null,"status"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_incidents_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_incidents_job_id_fkey"
+      columns: ["job_id"]
+isOneToOne: false
+      referencedRelation: "agency_jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_invoice_lines": {
+                  Row: {
+                    "amount_paise": number,"description": string,"id": string,"invoice_id": string,"line_no": number,"quantity": number,"rate_paise": number
+                  }
+                  Insert: {
+                    "amount_paise": number,"description": string,"id"?: string,"invoice_id": string,"line_no": number,"quantity": number,"rate_paise": number
+                  }
+                  Update: {
+                    "amount_paise"?: number,"description"?: string,"id"?: string,"invoice_id"?: string,"line_no"?: number,"quantity"?: number,"rate_paise"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_invoice_lines_invoice_id_fkey"
+      columns: ["invoice_id"]
+isOneToOne: false
+      referencedRelation: "agency_invoices"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_invoice_payments": {
+                  Row: {
+                    "agency_id": string,"amount_paise": number,"created_at": string,"created_by": string | null,"id": string,"idempotency_key": string,"invoice_id": string,"method": string,"received_on": string,"reference": string | null
+                  }
+                  Insert: {
+                    "agency_id": string,"amount_paise": number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key": string,"invoice_id": string,"method": string,"received_on": string,"reference"?: string | null
+                  }
+                  Update: {
+                    "agency_id"?: string,"amount_paise"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key"?: string,"invoice_id"?: string,"method"?: string,"received_on"?: string,"reference"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_invoice_payments_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_invoice_payments_invoice_fk"
+      columns: ["invoice_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_invoices"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_invoice_sequences": {
+                  Row: {
+                    "agency_id": string,"fy": string,"last_seq": number
+                  }
+                  Insert: {
+                    "agency_id": string,"fy": string,"last_seq"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"fy"?: string,"last_seq"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_invoice_sequences_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_invoices": {
+                  Row: {
+                    "agency_id": string,"cancelled_at": string | null,"cancelled_reason": string | null,"cgst_paise": number,"client_id": string,"created_at": string,"created_by": string | null,"gst_rate_pct": number,"id": string,"idempotency_key": string,"igst_paise": number,"invoice_number": string,"paid_paise": number,"place_of_supply_state_code": string,"request_hash": string | null,"reverse_charge": boolean,"round_off_paise": number,"sgst_paise": number,"status": string,"subtotal_paise": number,"supplier_state_code": string,"total_paise": number,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"cancelled_at"?: string | null,"cancelled_reason"?: string | null,"cgst_paise"?: number,"client_id": string,"created_at"?: string,"created_by"?: string | null,"gst_rate_pct": number,"id"?: string,"idempotency_key": string,"igst_paise"?: number,"invoice_number": string,"paid_paise"?: number,"place_of_supply_state_code": string,"request_hash"?: string | null,"reverse_charge"?: boolean,"round_off_paise"?: number,"sgst_paise"?: number,"status"?: string,"subtotal_paise": number,"supplier_state_code": string,"total_paise": number,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"cancelled_at"?: string | null,"cancelled_reason"?: string | null,"cgst_paise"?: number,"client_id"?: string,"created_at"?: string,"created_by"?: string | null,"gst_rate_pct"?: number,"id"?: string,"idempotency_key"?: string,"igst_paise"?: number,"invoice_number"?: string,"paid_paise"?: number,"place_of_supply_state_code"?: string,"request_hash"?: string | null,"reverse_charge"?: boolean,"round_off_paise"?: number,"sgst_paise"?: number,"status"?: string,"subtotal_paise"?: number,"supplier_state_code"?: string,"total_paise"?: number,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_invoices_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_invoices_client_fk"
+      columns: ["client_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_client_agreements"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_maintenance_items": {
+                  Row: {
+                    "agency_id": string,"created_at": string,"id": string,"interval_days": number | null,"interval_km": number | null,"last_service_km": number | null,"last_service_on": string | null,"name": string,"truck_id": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"created_at"?: string,"id"?: string,"interval_days"?: number | null,"interval_km"?: number | null,"last_service_km"?: number | null,"last_service_on"?: string | null,"name": string,"truck_id": string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"created_at"?: string,"id"?: string,"interval_days"?: number | null,"interval_km"?: number | null,"last_service_km"?: number | null,"last_service_on"?: string | null,"name"?: string,"truck_id"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_maintenance_items_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_maintenance_items_truck_id_fkey"
+      columns: ["truck_id"]
+isOneToOne: false
+      referencedRelation: "agency_trucks"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_maintenance_services": {
+                  Row: {
+                    "agency_id": string,"cost_paise": number,"created_at": string,"created_by": string | null,"expense_id": string | null,"id": string,"idempotency_key": string,"item_id": string,"service_km": number,"service_on": string
+                  }
+                  Insert: {
+                    "agency_id": string,"cost_paise"?: number,"created_at"?: string,"created_by"?: string | null,"expense_id"?: string | null,"id"?: string,"idempotency_key": string,"item_id": string,"service_km": number,"service_on": string
+                  }
+                  Update: {
+                    "agency_id"?: string,"cost_paise"?: number,"created_at"?: string,"created_by"?: string | null,"expense_id"?: string | null,"id"?: string,"idempotency_key"?: string,"item_id"?: string,"service_km"?: number,"service_on"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_maintenance_services_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_maintenance_services_expense_id_fkey"
+      columns: ["expense_id"]
+isOneToOne: false
+      referencedRelation: "agency_expenses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_maintenance_services_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "agency_maintenance_items"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_payroll_adjustments": {
+                  Row: {
+                    "agency_id": string,"amount_paise": number,"created_at": string,"created_by": string | null,"driver_id": string,"id": string,"kind": string,"period_id": string,"reason": string
+                  }
+                  Insert: {
+                    "agency_id": string,"amount_paise": number,"created_at"?: string,"created_by"?: string | null,"driver_id": string,"id"?: string,"kind": string,"period_id": string,"reason": string
+                  }
+                  Update: {
+                    "agency_id"?: string,"amount_paise"?: number,"created_at"?: string,"created_by"?: string | null,"driver_id"?: string,"id"?: string,"kind"?: string,"period_id"?: string,"reason"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_payroll_adjustments_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_payroll_adjustments_driver_id_fkey"
+      columns: ["driver_id"]
+isOneToOne: false
+      referencedRelation: "drivers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_payroll_adjustments_period_fk"
+      columns: ["period_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_payroll_periods"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_tracking_pings": {
+                  Row: {
+                    "agency_id": string,"created_at": string,"driver_id": string | null,"id": string,"job_id": string,"lat": number,"lng": number,"recorded_at": string,"speed_kmph": number | null
+                  }
+                  Insert: {
+                    "agency_id": string,"created_at"?: string,"driver_id"?: string | null,"id"?: string,"job_id": string,"lat": number,"lng": number,"recorded_at": string,"speed_kmph"?: number | null
+                  }
+                  Update: {
+                    "agency_id"?: string,"created_at"?: string,"driver_id"?: string | null,"id"?: string,"job_id"?: string,"lat"?: number,"lng"?: number,"recorded_at"?: string,"speed_kmph"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_tracking_pings_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_tracking_pings_driver_id_fkey"
+      columns: ["driver_id"]
+isOneToOne: false
+      referencedRelation: "drivers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_tracking_pings_job_id_fkey"
+      columns: ["job_id"]
+isOneToOne: false
+      referencedRelation: "agency_jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_payroll_line_jobs": {
+                  Row: {
+                    "agency_id": string,"completed_at": string | null,"distance_km": number | null,"driver_id": string,"id": string,"job_id": string,"line_id": string,"period_id": string,"weight_kg": number | null
+                  }
+                  Insert: {
+                    "agency_id": string,"completed_at"?: string | null,"distance_km"?: number | null,"driver_id": string,"id"?: string,"job_id": string,"line_id": string,"period_id": string,"weight_kg"?: number | null
+                  }
+                  Update: {
+                    "agency_id"?: string,"completed_at"?: string | null,"distance_km"?: number | null,"driver_id"?: string,"id"?: string,"job_id"?: string,"line_id"?: string,"period_id"?: string,"weight_kg"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_payroll_line_jobs_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_payroll_line_jobs_driver_id_fkey"
+      columns: ["driver_id"]
+isOneToOne: false
+      referencedRelation: "drivers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_payroll_line_jobs_line_id_fkey"
+      columns: ["line_id"]
+isOneToOne: false
+      referencedRelation: "agency_payroll_lines"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_payroll_line_jobs_period_fk"
+      columns: ["period_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_payroll_periods"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_payroll_lines": {
+                  Row: {
+                    "advances_paise": number,"agency_id": string,"base_paise": number,"carried_in_paise": number,"deductions_paise": number,"driver_id": string,"id": string,"net_paise": number,"per_km_paise": number,"per_tonne_paise": number,"period_id": string,"rate_version": number,"shortfall_paise": number,"trip_count": number,"trips_paise": number
+                  }
+                  Insert: {
+                    "advances_paise": number,"agency_id": string,"base_paise": number,"carried_in_paise"?: number,"deductions_paise": number,"driver_id": string,"id"?: string,"net_paise": number,"per_km_paise"?: number,"per_tonne_paise"?: number,"period_id": string,"rate_version"?: number,"shortfall_paise": number,"trip_count": number,"trips_paise": number
+                  }
+                  Update: {
+                    "advances_paise"?: number,"agency_id"?: string,"base_paise"?: number,"carried_in_paise"?: number,"deductions_paise"?: number,"driver_id"?: string,"id"?: string,"net_paise"?: number,"per_km_paise"?: number,"per_tonne_paise"?: number,"period_id"?: string,"rate_version"?: number,"shortfall_paise"?: number,"trip_count"?: number,"trips_paise"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_payroll_lines_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_payroll_lines_driver_id_fkey"
+      columns: ["driver_id"]
+isOneToOne: false
+      referencedRelation: "drivers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_payroll_lines_period_fk"
+      columns: ["period_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_payroll_periods"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_payroll_periods": {
+                  Row: {
+                    "agency_id": string,"close_idempotency_key": string | null,"closed_at": string | null,"closed_by": string | null,"created_at": string,"id": string,"idempotency_key": string,"period_end": string,"period_start": string,"status": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"close_idempotency_key"?: string | null,"closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"id"?: string,"idempotency_key": string,"period_end": string,"period_start": string,"status"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"close_idempotency_key"?: string | null,"closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"id"?: string,"idempotency_key"?: string,"period_end"?: string,"period_start"?: string,"status"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_payroll_periods_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -1119,6 +1649,87 @@ isOneToOne: false
                            },
 "agency_order_import":
 { Args: { "p_agreement_id": string,"p_file_hash": string,"p_idempotency_key": string,"p_lines": Json }; Returns: Json
+                           },
+"agency_consignment_create":
+{ Args: { "p_idempotency_key": string,"p_order_id": string }; Returns: Json
+                           },
+"agency_consignment_event":
+{ Args: { "p_consignment_id": string,"p_event": string,"p_expected_version": number,"p_idempotency_key": string,"p_note": string }; Returns: Json
+                           },
+"agency_driver_rate_set":
+{ Args: { "p_base_paise": number,"p_driver_id": string,"p_expected_version": number,"p_per_km_paise": number,"p_per_tonne_paise": number }; Returns: Json
+                           },
+"agency_erp_connection_create":
+{ Args: { "p_agreement_id": string,"p_client_id": string,"p_idempotency_key": string,"p_kind": string,"p_name": string }; Returns: Json
+                           },
+"agency_erp_connection_rotate_secret":
+{ Args: { "p_connection_id": string,"p_expected_version": number }; Returns: Json
+                           },
+"agency_erp_connection_set_status":
+{ Args: { "p_connection_id": string,"p_expected_version": number,"p_to_status": string }; Returns: Json
+                           },
+"agency_erp_hash":
+{ Args: { "p_text": string }; Returns: string
+                           },
+"agency_erp_new_secret":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"agency_expense_record":
+{ Args: { "p_amount_paise": number,"p_category": string,"p_idempotency_key": string,"p_note": string,"p_spent_on": string,"p_truck_id": string }; Returns: Json
+                           },
+"agency_expense_summary":
+{ Args: { "p_from": string,"p_to": string }; Returns: Json
+                           },
+"agency_fuel_fill_record":
+{ Args: { "p_amount_paise": number,"p_filled_on": string,"p_full_tank": boolean,"p_idempotency_key": string,"p_litres": number,"p_odometer_km": number,"p_truck_id": string }; Returns: Json
+                           },
+"agency_incident_open":
+{ Args: { "p_dedupe_key": string,"p_details": Json,"p_job_id": string,"p_kind": string }; Returns: Json
+                           },
+"agency_incident_update":
+{ Args: { "p_expected_version": number,"p_incident_id": string,"p_note": string,"p_to_status": string }; Returns: Json
+                           },
+"agency_invoice_cancel":
+{ Args: { "p_expected_version": number,"p_invoice_id": string,"p_reason": string }; Returns: Json
+                           },
+"agency_invoice_issue":
+{ Args: { "p_client_id": string,"p_gst_rate_pct": number,"p_idempotency_key": string,"p_lines": Json,"p_place_of_supply_state": string,"p_reverse_charge": boolean,"p_round_off": boolean,"p_supplier_state": string }; Returns: Json
+                           },
+"agency_invoice_record_payment":
+{ Args: { "p_amount_paise": number,"p_expected_version": number,"p_idempotency_key": string,"p_invoice_id": string,"p_method": string,"p_received_on": string,"p_reference": string }; Returns: Json
+                           },
+"agency_maintenance_item_upsert":
+{ Args: { "p_expected_version": number,"p_interval_days": number,"p_interval_km": number,"p_last_service_km": number,"p_last_service_on": string,"p_name": string,"p_truck_id": string }; Returns: Json
+                           },
+"agency_maintenance_service_done":
+{ Args: { "p_cost_paise": number,"p_expected_version": number,"p_idempotency_key": string,"p_item_id": string,"p_service_km": number,"p_service_on": string }; Returns: Json
+                           },
+"agency_payroll_adjust":
+{ Args: { "p_amount_paise": number,"p_driver_id": string,"p_kind": string,"p_period_id": string,"p_reason": string }; Returns: Json
+                           },
+"agency_payroll_caller_driver_ids":
+{ Args: Record<PropertyKey, never>; Returns: string[]
+                           },
+"agency_payroll_close_period":
+{ Args: { "p_idempotency_key": string,"p_period_end": string,"p_period_start": string }; Returns: Json
+                           },
+"agency_payroll_my_lines":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"agency_trip_live":
+{ Args: { "p_job_id": string }; Returns: Json
+                           },
+"erp_event_ingest":
+{ Args: { "p_connection_id": string,"p_external_event_id": string,"p_lines": Json,"p_secret": string }; Returns: Json
+                           },
+"tracking_caller_driver_ids":
+{ Args: Record<PropertyKey, never>; Returns: string[]
+                           },
+"tracking_ping_record":
+{ Args: { "p_job_id": string,"p_lat": number,"p_lng": number,"p_recorded_at": string,"p_speed_kmph": number }; Returns: Json
+                           },
+"agency_payroll_open_period":
+{ Args: { "p_idempotency_key": string,"p_period_end": string,"p_period_start": string }; Returns: Json
                            }
           }
           Enums: {
