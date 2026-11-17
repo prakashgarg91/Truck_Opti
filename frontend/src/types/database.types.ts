@@ -1087,62 +1087,6 @@ isOneToOne: false
       referencedColumns: ["id", "agency_id"]
     }
                   ]
-                },"agency_expenses": {
-                  Row: {
-                    "agency_id": string,"amount_paise": number,"category": string,"created_at": string,"created_by": string | null,"id": string,"idempotency_key": string,"note": string | null,"spent_on": string,"truck_id": string | null
-                  }
-                  Insert: {
-                    "agency_id": string,"amount_paise": number,"category": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key": string,"note"?: string | null,"spent_on": string,"truck_id"?: string | null
-                  }
-                  Update: {
-                    "agency_id"?: string,"amount_paise"?: number,"category"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key"?: string,"note"?: string | null,"spent_on"?: string,"truck_id"?: string | null
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "agency_expenses_agency_id_fkey"
-      columns: ["agency_id"]
-isOneToOne: false
-      referencedRelation: "transport_agencies"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "agency_expenses_truck_id_fkey"
-      columns: ["truck_id"]
-isOneToOne: false
-      referencedRelation: "agency_trucks"
-      referencedColumns: ["id"]
-    }
-                  ]
-                },"agency_fuel_fills": {
-                  Row: {
-                    "agency_id": string,"created_at": string,"expense_id": string | null,"filled_on": string,"full_tank": boolean,"id": string,"litres": number,"odometer_km": number,"truck_id": string
-                  }
-                  Insert: {
-                    "agency_id": string,"created_at"?: string,"expense_id"?: string | null,"filled_on": string,"full_tank"?: boolean,"id"?: string,"litres": number,"odometer_km": number,"truck_id": string
-                  }
-                  Update: {
-                    "agency_id"?: string,"created_at"?: string,"expense_id"?: string | null,"filled_on"?: string,"full_tank"?: boolean,"id"?: string,"litres"?: number,"odometer_km"?: number,"truck_id"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "agency_fuel_fills_agency_id_fkey"
-      columns: ["agency_id"]
-isOneToOne: false
-      referencedRelation: "transport_agencies"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "agency_fuel_fills_expense_id_fkey"
-      columns: ["expense_id"]
-isOneToOne: false
-      referencedRelation: "agency_expenses"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "agency_fuel_fills_truck_id_fkey"
-      columns: ["truck_id"]
-isOneToOne: false
-      referencedRelation: "agency_trucks"
-      referencedColumns: ["id"]
-    }
-                  ]
                 },"agency_gr_sequences": {
                   Row: {
                     "agency_id": string,"fy": string,"last_seq": number
@@ -1273,62 +1217,6 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "agency_client_agreements"
       referencedColumns: ["id", "agency_id"]
-    }
-                  ]
-                },"agency_maintenance_items": {
-                  Row: {
-                    "agency_id": string,"created_at": string,"id": string,"interval_days": number | null,"interval_km": number | null,"last_service_km": number | null,"last_service_on": string | null,"name": string,"truck_id": string,"updated_at": string,"version": number
-                  }
-                  Insert: {
-                    "agency_id": string,"created_at"?: string,"id"?: string,"interval_days"?: number | null,"interval_km"?: number | null,"last_service_km"?: number | null,"last_service_on"?: string | null,"name": string,"truck_id": string,"updated_at"?: string,"version"?: number
-                  }
-                  Update: {
-                    "agency_id"?: string,"created_at"?: string,"id"?: string,"interval_days"?: number | null,"interval_km"?: number | null,"last_service_km"?: number | null,"last_service_on"?: string | null,"name"?: string,"truck_id"?: string,"updated_at"?: string,"version"?: number
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "agency_maintenance_items_agency_id_fkey"
-      columns: ["agency_id"]
-isOneToOne: false
-      referencedRelation: "transport_agencies"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "agency_maintenance_items_truck_id_fkey"
-      columns: ["truck_id"]
-isOneToOne: false
-      referencedRelation: "agency_trucks"
-      referencedColumns: ["id"]
-    }
-                  ]
-                },"agency_maintenance_services": {
-                  Row: {
-                    "agency_id": string,"cost_paise": number,"created_at": string,"created_by": string | null,"expense_id": string | null,"id": string,"idempotency_key": string,"item_id": string,"service_km": number,"service_on": string
-                  }
-                  Insert: {
-                    "agency_id": string,"cost_paise"?: number,"created_at"?: string,"created_by"?: string | null,"expense_id"?: string | null,"id"?: string,"idempotency_key": string,"item_id": string,"service_km": number,"service_on": string
-                  }
-                  Update: {
-                    "agency_id"?: string,"cost_paise"?: number,"created_at"?: string,"created_by"?: string | null,"expense_id"?: string | null,"id"?: string,"idempotency_key"?: string,"item_id"?: string,"service_km"?: number,"service_on"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "agency_maintenance_services_agency_id_fkey"
-      columns: ["agency_id"]
-isOneToOne: false
-      referencedRelation: "transport_agencies"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "agency_maintenance_services_expense_id_fkey"
-      columns: ["expense_id"]
-isOneToOne: false
-      referencedRelation: "agency_expenses"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "agency_maintenance_services_item_id_fkey"
-      columns: ["item_id"]
-isOneToOne: false
-      referencedRelation: "agency_maintenance_items"
-      referencedColumns: ["id"]
     }
                   ]
                 },"agency_payroll_adjustments": {
@@ -1477,6 +1365,118 @@ isOneToOne: false
       columns: ["agency_id"]
 isOneToOne: false
       referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agency_expenses": {
+                  Row: {
+                    "agency_id": string,"amount_paise": number,"category": string,"created_at": string,"created_by": string | null,"id": string,"idempotency_key": string,"note": string | null,"spent_on": string,"truck_id": string | null
+                  }
+                  Insert: {
+                    "agency_id": string,"amount_paise": number,"category": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key": string,"note"?: string | null,"spent_on": string,"truck_id"?: string | null
+                  }
+                  Update: {
+                    "agency_id"?: string,"amount_paise"?: number,"category"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"idempotency_key"?: string,"note"?: string | null,"spent_on"?: string,"truck_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_expenses_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_expenses_truck_agency_fkey"
+      columns: ["truck_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_trucks"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_fuel_fills": {
+                  Row: {
+                    "agency_id": string,"created_at": string,"expense_id": string | null,"filled_on": string,"full_tank": boolean,"id": string,"litres": number,"odometer_km": number,"truck_id": string
+                  }
+                  Insert: {
+                    "agency_id": string,"created_at"?: string,"expense_id"?: string | null,"filled_on": string,"full_tank"?: boolean,"id"?: string,"litres": number,"odometer_km": number,"truck_id": string
+                  }
+                  Update: {
+                    "agency_id"?: string,"created_at"?: string,"expense_id"?: string | null,"filled_on"?: string,"full_tank"?: boolean,"id"?: string,"litres"?: number,"odometer_km"?: number,"truck_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_fuel_fills_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_fuel_fills_expense_agency_fkey"
+      columns: ["expense_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_expenses"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_fuel_fills_truck_agency_fkey"
+      columns: ["truck_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_trucks"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_maintenance_items": {
+                  Row: {
+                    "agency_id": string,"created_at": string,"id": string,"interval_days": number | null,"interval_km": number | null,"last_service_km": number | null,"last_service_on": string | null,"name": string,"truck_id": string,"updated_at": string,"version": number
+                  }
+                  Insert: {
+                    "agency_id": string,"created_at"?: string,"id"?: string,"interval_days"?: number | null,"interval_km"?: number | null,"last_service_km"?: number | null,"last_service_on"?: string | null,"name": string,"truck_id": string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "agency_id"?: string,"created_at"?: string,"id"?: string,"interval_days"?: number | null,"interval_km"?: number | null,"last_service_km"?: number | null,"last_service_on"?: string | null,"name"?: string,"truck_id"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_maintenance_items_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_maintenance_items_truck_agency_fkey"
+      columns: ["truck_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_trucks"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"agency_maintenance_services": {
+                  Row: {
+                    "agency_id": string,"cost_paise": number,"created_at": string,"created_by": string | null,"expense_id": string | null,"id": string,"idempotency_key": string,"item_id": string,"service_km": number,"service_on": string
+                  }
+                  Insert: {
+                    "agency_id": string,"cost_paise"?: number,"created_at"?: string,"created_by"?: string | null,"expense_id"?: string | null,"id"?: string,"idempotency_key": string,"item_id": string,"service_km": number,"service_on": string
+                  }
+                  Update: {
+                    "agency_id"?: string,"cost_paise"?: number,"created_at"?: string,"created_by"?: string | null,"expense_id"?: string | null,"id"?: string,"idempotency_key"?: string,"item_id"?: string,"service_km"?: number,"service_on"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_maintenance_services_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agency_maintenance_services_expense_agency_fkey"
+      columns: ["expense_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_expenses"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_maintenance_services_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "agency_maintenance_items"
       referencedColumns: ["id"]
     }
                   ]
@@ -1730,6 +1730,9 @@ isOneToOne: false
                            },
 "agency_payroll_open_period":
 { Args: { "p_idempotency_key": string,"p_period_end": string,"p_period_start": string }; Returns: Json
+                           },
+"agency_consignment_qr":
+{ Args: { "p_consignment_id": string }; Returns: Json
                            }
           }
           Enums: {

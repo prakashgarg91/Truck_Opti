@@ -880,12 +880,14 @@ async function main() {
 
   await testCase('T33. the 120-per-hour rate guard accepts 120 pings and refuses the 121st with rate_limited', async () => {
     await requireFunction('tracking_ping_record')
+    // FIXTURE CHANGE (min spacing guard, T64+): pings are 5s apart from one fixed base so no two are within 2s.
+    const base33 = Date.now() - 2 * 60 * 60e3
     for (let i = 0; i < 120; i++) {
-      const ts = new Date(Date.now() - 2 * 60 * 60e3 - i * 1000).toISOString()
+      const ts = new Date(base33 - i * 5000).toISOString()
       const r = await pingAs(driverUserA1, jobARate, 10, 10, 10, ts)
       expect(r && r.ok === true, `ping ${i + 1} of 120 refused: ${JSON.stringify(r)}`)
     }
-    await expectRefusal(pingAs(driverUserA1, jobARate, 10, 10, 10, new Date(Date.now() - 2 * 60 * 60e3 - 500000).toISOString()), ['rate_limited'])
+    await expectRefusal(pingAs(driverUserA1, jobARate, 10, 10, 10, new Date(base33 - 700000).toISOString()), ['rate_limited'])
   })
 
   await testCase('T34. another driver of the same agency cannot read pings of a job not assigned to him', async () => {
@@ -1170,6 +1172,137 @@ async function main() {
       ['revoked member', async () => expect(await refusedOrNotOk(liveAs(revokedA, jobA1)), 'revoked member read the trip')],
       ['no agency', async () => expect(await refusedOrNotOk(liveAs(noAgency, jobA1)), 'no-agency user read the trip')],
     ])
+  })
+
+  // =========================================================================
+  // Review hardening (T64+)
+  // =========================================================================
+  await testCase('T64. the rate guard counts server created_at only: 120 fresh rows with old recorded_at still refuse a new ping', async () => {
+    await requireFunction('tracking_ping_record')
+    const job = await seedJob(agencyA, 'accepted', driverA1, 'rate64')
+    await su(
+      `INSERT INTO public.agency_tracking_pings (agency_id, job_id, driver_id, recorded_at, lat, lng, speed_kmph)
+       SELECT $1, $2, $3, now() - interval '20 hours' + g * interval '10 seconds', 10, 10, 10 FROM generate_series(1, 120) g`,
+      [agencyA, job, driverA1]
+    )
+    await expectRefusal(pingAs(driverUserA1, job, 10, 10, 10, pastIso()), ['rate_limited'])
+  })
+
+  await testCase('T65. a job at the hard per-job cap refuses further pings with ping_cap_reached', async () => {
+    await requireFunction('tracking_ping_record')
+    const job = await seedJob(agencyA, 'accepted', driverA1, 'cap65')
+    await su(
+      `INSERT INTO public.agency_tracking_pings (agency_id, job_id, driver_id, recorded_at, lat, lng, speed_kmph, created_at)
+       SELECT $1, $2, $3, now() - interval '23 hours' + g * interval '1 second', 10, 10, 10, now() - interval '3 days'
+       FROM generate_series(1, 20000) g`,
+      [agencyA, job, driverA1]
+    )
+    await expectRefusal(pingAs(driverUserA1, job, 10, 10, 10, pastIso()), ['ping_cap_reached'])
+  })
+
+  await testCase('T66. two distinct recorded_at values less than 2 seconds apart are refused with too_frequent; 3 seconds apart is accepted', async () => {
+    await requireFunction('tracking_ping_record')
+    const job = await seedJob(agencyA, 'accepted', driverA1, 'freq66')
+    const t0 = Date.now() - 3 * 60 * 60e3
+    expect((await pingAs(driverUserA1, job, 10, 10, 10, new Date(t0).toISOString())).ok === true, 'first ping refused')
+    await expectRefusal(pingAs(driverUserA1, job, 10, 10, 10, new Date(t0 + 1000).toISOString()), ['too_frequent'])
+    await expectRefusal(pingAs(driverUserA1, job, 10, 10, 10, new Date(t0 - 1500).toISOString()), ['too_frequent'])
+    expect((await pingAs(driverUserA1, job, 10, 10, 10, new Date(t0 + 3000).toISOString())).ok === true, '3s later refused')
+  })
+
+  await testCase('T67. the same recorded_at with different coordinates is refused with ping_conflict and stores nothing new', async () => {
+    await requireFunction('tracking_ping_record')
+    const job = await seedJob(agencyA, 'accepted', driverA1, 'conf67')
+    const ts = pastIso()
+    expect((await pingAs(driverUserA1, job, 20.5, 70.5, 10, ts)).ok === true, 'first ping refused')
+    await expectRefusal(pingAs(driverUserA1, job, 21.5, 70.5, 10, ts), ['ping_conflict'])
+    const again = await pingAs(driverUserA1, job, 20.5, 70.5, 10, ts)
+    expect(again.ok === true && again.replay === true, `exact resend not a replay: ${JSON.stringify(again)}`)
+    expect((await pingCount(job)) === 1, 'more than one row stored')
+  })
+
+  await testCase('T68. a reused dedupe_key for another job or kind is refused with idempotency_key_reused; same job and kind replays', async () => {
+    await requireFunction('agency_incident_open')
+    const key = nx('reuse68')
+    const first = await openAs(dispatcherA, jobA1, 'overspeed', { a: 1 }, key)
+    expect(first.ok === true, `open refused: ${JSON.stringify(first)}`)
+    await expectRefusal(openAs(dispatcherA, jobA2, 'overspeed', { a: 1 }, key), ['idempotency_key_reused'])
+    await expectRefusal(openAs(dispatcherA, jobA1, 'breakdown', { a: 1 }, key), ['idempotency_key_reused'])
+    const same = await openAs(dispatcherA, jobA1, 'overspeed', { a: 1 }, key)
+    expect(same.ok === true && same.replay === true && same.incident_id === first.incident_id, `replay mismatch ${JSON.stringify(same)}`)
+  })
+
+  await testCase('T69. a dedupe_key of 200 characters is accepted and 201 is refused with dedupe_key_too_long', async () => {
+    await requireFunction('agency_incident_open')
+    const ok200 = await openAs(dispatcherA, jobA1, 'other', {}, 'k'.repeat(200))
+    expect(ok200.ok === true, `200 chars refused: ${JSON.stringify(ok200)}`)
+    await expectRefusal(openAs(dispatcherA, jobA1, 'other', {}, 'k'.repeat(201)), ['dedupe_key_too_long'])
+  })
+
+  await testCase('T70. the 51st open incident of one job is refused with too_many_open_incidents; resolving one frees a slot', async () => {
+    await requireFunction('agency_incident_open')
+    const job = await seedJob(agencyA, 'accepted', driverA1, 'inc70')
+    const ids = []
+    for (let i = 0; i < 50; i++) {
+      const r = await openAs(dispatcherA, job, 'other', {}, nx('lim70'))
+      expect(r.ok === true, `incident ${i + 1} of 50 refused: ${JSON.stringify(r)}`)
+      ids.push(r.incident_id)
+    }
+    await expectRefusal(openAs(dispatcherA, job, 'other', {}, nx('lim70')), ['too_many_open_incidents'])
+    expect((await updateAs(dispatcherA, ids[0], 'resolved', 1, 'handled')).ok === true, 'resolve refused')
+    expect((await openAs(dispatcherA, job, 'other', {}, nx('lim70'))).ok === true, 'slot not freed after resolve')
+  })
+
+  await testCase('T71. pings are append-only for every role, service_role and superuser included', async () => {
+    await requireTable('agency_tracking_pings')
+    const r = await goodPing(driverUserA1, jobALive, 'immutable71')
+    await gather([
+      ['superuser update', async () => expectRaises(su(`UPDATE public.agency_tracking_pings SET lat = 1 WHERE id = $1`, [r.ping_id]), 'append-only')],
+      ['superuser delete', async () => expectRaises(su(`DELETE FROM public.agency_tracking_pings WHERE id = $1`, [r.ping_id]), 'append-only')],
+      ['service_role update', async () => {
+        await actAsService()
+        await db.query(`SET ROLE service_role`)
+        try {
+          await expectRaises(db.query(`UPDATE public.agency_tracking_pings SET speed_kmph = 1 WHERE id = $1`, [r.ping_id]), 'append-only')
+        } finally {
+          await db.query(`RESET ROLE`)
+        }
+      }],
+    ])
+    expect((await pingCount(jobALive)) >= 1, 'ping vanished')
+  })
+
+  await testCase('T72. pings still cascade-delete with their job', async () => {
+    await requireTable('agency_tracking_pings')
+    const job = await seedJob(agencyA, 'accepted', driverA1, 'casc72')
+    await goodPing(driverUserA1, job, 'casc72')
+    await su(`DELETE FROM public.agency_jobs WHERE id = $1`, [job])
+    expect((await pingCount(job)) === 0, 'pings survived their job')
+  })
+
+  await testCase('T73. incidents allow only status, version and resolution_note to change; delete is refused; the command still works', async () => {
+    await requireTable('agency_incidents')
+    const inc = await openIncident(dispatcherA, jobA1, 'other', nx('imm73'))
+    await gather([
+      ['kind change', async () => expectRaises(su(`UPDATE public.agency_incidents SET kind = 'accident' WHERE id = $1`, [inc.id]), 'only status')],
+      ['details change', async () => expectRaises(su(`UPDATE public.agency_incidents SET details = '{"x":1}' WHERE id = $1`, [inc.id]), 'only status')],
+      ['job change', async () => expectRaises(su(`UPDATE public.agency_incidents SET job_id = $2 WHERE id = $1`, [inc.id, jobA2]), 'only status')],
+      ['delete', async () => expectRaises(su(`DELETE FROM public.agency_incidents WHERE id = $1`, [inc.id]), 'cannot be deleted')],
+      ['command', async () => expect((await updateAs(dispatcherA, inc.id, 'acknowledged', 1, null)).ok === true, 'update command refused')],
+    ])
+  })
+
+  await testCase('T74. a user with two driver rows can ping as the assigned (not the oldest) driver row', async () => {
+    await requireFunction('tracking_ping_record')
+    const u = await createUser('at-driver-two')
+    const first = await createDriver(u, 'Two first')
+    const second = await createDriver(u, 'Two second')
+    await employ(agencyA, second)
+    const job = await seedJob(agencyA, 'accepted', second, 'two74')
+    const r = await pingAs(u, job, 12, 12, 12, pastIso())
+    expect(r && r.ok === true, `refused: ${JSON.stringify(r)} (oldest driver row ${first})`)
+    const row = await suOne(`SELECT driver_id FROM public.agency_tracking_pings WHERE id = $1`, [r.ping_id])
+    expect(row.driver_id === second, 'ping stored under the wrong driver row')
   })
 
   // =========================================================================

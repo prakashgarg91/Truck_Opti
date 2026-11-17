@@ -1553,6 +1553,179 @@ async function main() {
   })
 
   // =========================================================================
+  // Opus review hardening (E98+): bounds, svc: key namespace, append-only guards,
+  // composite agency FKs, unique fill expense, date floor. Appended; E01-E97 untouched.
+  // =========================================================================
+  async function asServiceRole(sql, params = []) {
+    await db.exec('RESET ROLE')
+    await db.query(`SELECT set_config('request.jwt.claims', '{}', false)`)
+    await db.exec('SET ROLE service_role')
+    try {
+      return { rows: (await db.query(sql, params)).rows }
+    } catch (error) {
+      return { error: firstLine(error) }
+    } finally {
+      await actAsService()
+    }
+  }
+
+  await testCase('E98. odometer: NaN and absurd values are refused by the table check and by the command', async () => {
+    await requireSchema()
+    const truck = await seedTruck(agencyA)
+    const ins = (v) =>
+      su(
+        `INSERT INTO public.agency_fuel_fills (agency_id, truck_id, odometer_km, litres, full_tank, filled_on) VALUES ($1, $2, $3::numeric, 10, true, '2025-06-01')`,
+        [agencyA, truck, v]
+      )
+    await gather([
+      ['table NaN', () => expectRaises(ins('NaN'), 'violates check constraint')],
+      ['table 10000000', () => expectRaises(ins('10000000'), 'violates check constraint')],
+      ['table Infinity', () => expectRaises(ins('Infinity'), 'violates check constraint')],
+      ['cmd NaN', async () => expectResult((await fuelFill(ownerA, { truck, odometer: 'NaN' })).r, 'invalid_odometer')],
+      ['cmd 10000000', async () => expectResult((await fuelFill(ownerA, { truck, odometer: 10000000 })).r, 'invalid_odometer')],
+      ['cmd 9999999 ok', async () => expect((await fuelFill(ownerA, { truck, odometer: 9999999 })).r?.ok === true, 'sane maximum refused')],
+    ])
+  })
+
+  await testCase('E99. litres, service km and last service km reject NaN and absurd values', async () => {
+    await requireSchema()
+    const truck = await seedTruck(agencyA)
+    const item = await seedItem({ agencyId: agencyA, truckId: truck, name: nx('Bounds'), lastKm: 100 })
+    await gather([
+      ['cmd litres NaN', async () => expectResult((await fuelFill(ownerA, { truck, odometer: 100, litres: 'NaN' })).r, 'invalid_litres')],
+      ['table litres NaN', () => expectRaises(su(`INSERT INTO public.agency_fuel_fills (agency_id, truck_id, odometer_km, litres, full_tank, filled_on) VALUES ($1, $2, 1, 'NaN'::numeric, true, '2025-06-01')`, [agencyA, truck]), 'violates check constraint')],
+      ['cmd service NaN', async () => expectResult((await serviceDone(ownerA, { item, serviceKm: 'NaN', expectedVersion: 1 })).r, 'invalid_km')],
+      ['cmd service huge', async () => expectResult((await serviceDone(ownerA, { item, serviceKm: 10000000, expectedVersion: 1 })).r, 'invalid_km')],
+      ['cmd upsert last NaN', async () => expectResult((await upsertItem(ownerA, { truck, name: nx('N'), intervalKm: 1000, lastKm: 'NaN' })).r, 'invalid_km')],
+      ['cmd upsert last huge', async () => expectResult((await upsertItem(ownerA, { truck, name: nx('H'), intervalKm: 1000, lastKm: 10000000 })).r, 'invalid_km')],
+      ['table last_service_km NaN', () => expectRaises(su(`INSERT INTO public.agency_maintenance_items (agency_id, truck_id, name, interval_km, last_service_km) VALUES ($1, $2, $3, 100, 'NaN'::numeric)`, [agencyA, truck, nx('T')]), 'violates check constraint')],
+      ['table service_km NaN', () => expectRaises(su(`INSERT INTO public.agency_maintenance_services (agency_id, item_id, service_km, service_on, idempotency_key) VALUES ($1, $2, 'NaN'::numeric, '2025-06-01', $3)`, [agencyA, item, nx('K')]), 'violates check constraint')],
+    ])
+  })
+
+  await testCase('E100. odometer jump above 5000 km from the previous reading is refused, exactly 5000 is allowed', async () => {
+    await requireSchema()
+    const truck = await seedTruck(agencyA)
+    await fuelFill(ownerA, { truck, odometer: 1000 })
+    const big = await fuelFill(ownerA, { truck, odometer: 6001 })
+    expectResult(big.r, 'odometer_jump_too_large')
+    const edge = await fuelFill(ownerA, { truck, odometer: 6000 })
+    expect(edge.r && edge.r.ok === true, `jump of exactly 5000 refused: ${JSON.stringify(edge.r ?? edge.raised)}`)
+    expect((await totalCount('agency_fuel_fills', agencyA)) >= 2, 'fills missing')
+  })
+
+  await testCase('E101. caller keys starting with svc: are refused by expense_record and fuel_fill_record', async () => {
+    await requireSchema()
+    const truck = await seedTruck(agencyA)
+    const key = `svc:${nx('squat')}`
+    const a = await recordExpense(ownerA, { key })
+    const b = await fuelFill(ownerA, { truck, odometer: 100, key })
+    expectResult(a.r, 'invalid_key')
+    expectResult(b.r, 'invalid_key')
+    expect((await expenseRowsWithKey(agencyA, key)) === 0, 'an svc: key row was created')
+  })
+
+  await testCase('E102. expenses, fills and services are append-only, even for service_role', async () => {
+    await requireSchema()
+    const truck = await seedTruck(agencyA)
+    const exp = await seedExpense({ agencyId: agencyA, truckId: truck, amount: 777 })
+    const fillExp = await seedExpense({ agencyId: agencyA, truckId: truck, amount: 888 })
+    const fill = await seedFill({ agencyId: agencyA, truckId: truck, odometer: 10, expenseId: fillExp })
+    const item = await seedItem({ agencyId: agencyA, truckId: truck, name: nx('AO') })
+    const svcKey = nx('ao-svc')
+    const done = await serviceDone(ownerA, { item, serviceKm: 2000, expectedVersion: 1, cost: 0, key: svcKey })
+    expect(done.r && done.r.ok === true, `service setup failed: ${JSON.stringify(done.r ?? done.raised)}`)
+    const svc = await suOne(`SELECT id FROM public.agency_maintenance_services WHERE agency_id = $1 AND idempotency_key = $2`, [agencyA, svcKey])
+    const checks = [
+      ['expense update', `UPDATE public.agency_expenses SET amount_paise = 1 WHERE id = $1`, exp],
+      ['expense delete', `DELETE FROM public.agency_expenses WHERE id = $1`, exp],
+      ['fill update', `UPDATE public.agency_fuel_fills SET litres = 2 WHERE id = $1`, fill],
+      ['fill delete', `DELETE FROM public.agency_fuel_fills WHERE id = $1`, fill],
+      ['service update', `UPDATE public.agency_maintenance_services SET cost_paise = 5 WHERE id = $1`, svc.id],
+      ['service delete', `DELETE FROM public.agency_maintenance_services WHERE id = $1`, svc.id],
+    ]
+    await gather(
+      checks.map(([label, sql, id]) => [
+        label,
+        async () => {
+          const viaService = await asServiceRole(sql, [id])
+          expect(viaService.error && viaService.error.includes('append_only'), `service_role ${label}: ${JSON.stringify(viaService.error ?? 'succeeded')}`)
+          const viaSuper = await dmlOutcome(ownerA, sql, [id])
+          expect(viaSuper.error !== undefined, `owner ${label} succeeded`)
+        },
+      ])
+    )
+    await gather([
+      ['super update', () => expectRaises(su(`UPDATE public.agency_expenses SET amount_paise = 2 WHERE id = $1`, [exp]), 'append_only')],
+      ['super delete', () => expectRaises(su(`DELETE FROM public.agency_expenses WHERE id = $1`, [exp]), 'append_only')],
+      ['truncate', () => expectRaises(su(`TRUNCATE public.agency_expenses CASCADE`), 'append_only')],
+    ])
+    const row = await suOne(`SELECT amount_paise::int AS a FROM public.agency_expenses WHERE id = $1`, [exp])
+    expect(row && row.a === 777, 'expense amount changed or row removed')
+  })
+
+  await testCase('E103. maintenance items change only through the commands, never directly by service_role', async () => {
+    await requireSchema()
+    const truck = await seedTruck(agencyA)
+    const item = await seedItem({ agencyId: agencyA, truckId: truck, name: nx('CmdOnly') })
+    const upd = await asServiceRole(`UPDATE public.agency_maintenance_items SET interval_km = 1 WHERE id = $1`, [item])
+    const del = await asServiceRole(`DELETE FROM public.agency_maintenance_items WHERE id = $1`, [item])
+    expect(upd.error && upd.error.includes('command_only'), `service_role update: ${JSON.stringify(upd.error ?? 'succeeded')}`)
+    expect(del.error && del.error.includes('command_only'), `service_role delete: ${JSON.stringify(del.error ?? 'succeeded')}`)
+    const done = await serviceDone(ownerA, { item, serviceKm: 1500, expectedVersion: 1, cost: 0 })
+    expect(done.r && done.r.ok === true, `command update blocked by the guard: ${JSON.stringify(done.r ?? done.raised)}`)
+    const up = await upsertItem(ownerA, { truck, name: (await itemRow(item)).name, intervalKm: 5000, expectedVersion: 2 })
+    expect(up.r && up.r.ok === true, `upsert update blocked by the guard: ${JSON.stringify(up.r ?? up.raised)}`)
+    const row = await itemRow(item)
+    expect(row.version === 3 && row.interval_km === 5000, `unexpected item state ${JSON.stringify(row)}`)
+  })
+
+  await testCase('E104. a fuel expense can back at most one fill (expense_id unique)', async () => {
+    await requireSchema()
+    const truck = await seedTruck(agencyA)
+    const exp = await seedExpense({ agencyId: agencyA, truckId: truck })
+    await seedFill({ agencyId: agencyA, truckId: truck, odometer: 1, expenseId: exp })
+    await expectRaises(seedFill({ agencyId: agencyA, truckId: truck, odometer: 2, expenseId: exp }), 'duplicate key value violates unique constraint')
+  })
+
+  await testCase('E105. composite foreign keys keep truck and expense in the same agency', async () => {
+    await requireSchema()
+    const expB = await seedExpense({ agencyId: agencyB, truckId: truckB1 })
+    await gather([
+      ['expense with foreign truck', () => expectRaises(seedExpense({ agencyId: agencyA, truckId: truckB1 }), 'violates foreign key constraint')],
+      ['fill with foreign truck', () => expectRaises(su(`INSERT INTO public.agency_fuel_fills (agency_id, truck_id, odometer_km, litres, full_tank, filled_on) VALUES ($1, $2, 5, 10, true, '2025-06-01')`, [agencyA, truckB1]), 'violates foreign key constraint')],
+      ['fill with foreign expense', () => expectRaises(seedFill({ agencyId: agencyA, truckId: truckA1, odometer: 3, expenseId: expB }), 'violates foreign key constraint')],
+      ['item with foreign truck', () => expectRaises(seedItem({ agencyId: agencyA, truckId: truckB1, name: nx('X') }), 'violates foreign key constraint')],
+      ['service with foreign expense', async () => {
+        const item = await seedItem({ agencyId: agencyA, truckId: truckA1, name: nx('Svc') })
+        await expectRaises(su(`INSERT INTO public.agency_maintenance_services (agency_id, item_id, service_km, service_on, expense_id, idempotency_key) VALUES ($1, $2, 1, '2025-06-01', $3, $4)`, [agencyA, item, expB, nx('fk')]), 'violates foreign key constraint')
+      }],
+    ])
+  })
+
+  await testCase('E106. dates more than five years back are refused as date_too_old by all write commands', async () => {
+    await requireSchema()
+    const truck = await seedTruck(agencyA)
+    const item = await seedItem({ agencyId: agencyA, truckId: truck, name: nx('Old'), lastKm: 10 })
+    const old = new Date(Date.now() - 6 * 365 * 86400000).toISOString().slice(0, 10)
+    await gather([
+      ['expense', async () => expectResult((await recordExpense(ownerA, { spentOn: old })).r, 'date_too_old')],
+      ['fuel', async () => expectResult((await fuelFill(ownerA, { truck, odometer: 100, filledOn: old })).r, 'date_too_old')],
+      ['service', async () => expectResult((await serviceDone(ownerA, { item, serviceKm: 20, serviceOn: old, expectedVersion: 1 })).r, 'date_too_old')],
+    ])
+  })
+
+  await testCase('E107. ON DELETE SET NULL on created_by still works through the append-only guard', async () => {
+    await requireSchema()
+    const creator = await createUser('ex-creator')
+    const exp = await seedExpense({ agencyId: agencyA, truckId: null, category: 'other', createdBy: creator })
+    await su(`DELETE FROM public.users WHERE id = $1`, [creator]).catch(() => {})
+    await su(`DELETE FROM auth.users WHERE id = $1`, [creator])
+    const row = await suOne(`SELECT created_by, amount_paise::int AS a FROM public.agency_expenses WHERE id = $1`, [exp])
+    expect(row && row.created_by === null && row.a === 1000, `created_by not nulled cleanly: ${JSON.stringify(row)}`)
+  })
+
+  // =========================================================================
   // Summary
   // =========================================================================
   const passed = results.filter((r) => r.pass).length

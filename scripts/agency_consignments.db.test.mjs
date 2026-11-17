@@ -1163,6 +1163,162 @@ async function main() {
   })
 
   // =========================================================================
+  // Opus review hardening (C57+)
+  // =========================================================================
+  async function asServiceRole(sql, params) {
+    await db.exec('RESET ROLE')
+    await db.exec('SET ROLE service_role')
+    try {
+      await db.query(sql, params)
+      return true
+    } catch {
+      return false
+    } finally {
+      await actAsService()
+    }
+  }
+  async function suAccepted(sql, params) {
+    try {
+      await su(sql, params)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  await gatedCase('C57. events are append-only: UPDATE and DELETE are refused even for superuser and service_role', async () => {
+    const c = await newConsignment(tenantA)
+    const before = await eventRowCount(c.cid)
+    const failures = []
+    const upd = `UPDATE public.agency_consignment_events SET note = 'x' WHERE consignment_id = $1`
+    const del = `DELETE FROM public.agency_consignment_events WHERE consignment_id = $1`
+    if (await suAccepted(upd, [c.cid])) failures.push('superuser UPDATE accepted')
+    if (await suAccepted(del, [c.cid])) failures.push('superuser DELETE accepted')
+    if (await asServiceRole(upd, [c.cid])) failures.push('service_role UPDATE accepted')
+    if (await asServiceRole(del, [c.cid])) failures.push('service_role DELETE accepted')
+    if ((await eventRowCount(c.cid)) !== before) failures.push('events row count changed')
+    expect(failures.length === 0, failures.join('; '))
+  })
+
+  await gatedCase('C58. gr_number, qr_token, order_id and agency_id are frozen for every role', async () => {
+    const c = await newConsignment(tenantA)
+    const other = await seedOrderTree(agencyA, agrA, siteAPune)
+    const failures = []
+    const attempts = [
+      ['gr_number', `UPDATE public.agency_consignments SET gr_number = 'AGY/2000-01/999999' WHERE id = $1`, [c.cid]],
+      ['qr_token', `UPDATE public.agency_consignments SET qr_token = 'forged' WHERE id = $1`, [c.cid]],
+      ['order_id', `UPDATE public.agency_consignments SET order_id = $2 WHERE id = $1`, [c.cid, other.orderId]],
+      ['agency_id', `UPDATE public.agency_consignments SET agency_id = $2 WHERE id = $1`, [c.cid, agencyB]],
+    ]
+    for (const [label, sql, params] of attempts) {
+      if (await suAccepted(sql, params)) failures.push(`superuser changed ${label}`)
+    }
+    if (await asServiceRole(`UPDATE public.agency_consignments SET gr_number = 'AGY/2000-01/999998' WHERE id = $1`, [c.cid])) {
+      failures.push('service_role changed gr_number')
+    }
+    const row = await consignmentRow(c.cid)
+    if (row.gr_number !== c.gr || row.agency_id !== agencyA || row.order_id !== c.orderId) failures.push('identity changed')
+    const ev = await eventAs(ownerA, c.cid, 'pickup_scanned', 1, nx('c58'))
+    if (!(ev && ev.ok === true)) failures.push('legal status update was blocked: ' + JSON.stringify(ev))
+    expect(failures.length === 0, failures.join('; '))
+  })
+
+  await gatedCase('C59. deleting an agency still cascades through consignments and events despite the guards', async () => {
+    const ownerX = await createUser('c59-owner')
+    const agencyX = await createAgencyRow(ownerX, 'C59 Agency', 'approved')
+    const agrX = await seedAgreement(agencyX, 'C59 Client')
+    await seedSite(agencyX, agrX, 'bill_to', 'HO')
+    const siteX = await seedSite(agencyX, agrX, 'ship_to', 'Depot')
+    const order = await seedOrderTree(agencyX, agrX, siteX)
+    const r = await createAs(ownerX, order.orderId, nx('c59'))
+    expect(r && r.ok === true, 'precondition: create refused ' + JSON.stringify(r))
+    await su(`DELETE FROM public.transport_agencies WHERE id = $1`, [agencyX])
+    expect(Number((await suOne(`SELECT count(*)::int AS n FROM public.agency_consignments WHERE agency_id = $1`, [agencyX])).n) === 0, 'consignments remain')
+    expect(Number((await suOne(`SELECT count(*)::int AS n FROM public.agency_consignment_events WHERE agency_id = $1`, [agencyX])).n) === 0, 'events remain')
+  })
+
+  await gatedCase('C60. qr_token cannot be selected by any authenticated scope, other columns still can', async () => {
+    const c = await newConsignment(tenantA)
+    const failures = []
+    for (const [label, who] of [['owner', ownerA], ['dispatcher', dispatcherA], ['finance', financeA], ['viewer', viewerA]]) {
+      const direct = await dmlOutcome(who, `SELECT qr_token FROM public.agency_consignments WHERE id = $1`, [c.cid])
+      if (direct.error === undefined) failures.push(`${label} read qr_token`)
+      const star = await dmlOutcome(who, `SELECT * FROM public.agency_consignments WHERE id = $1`, [c.cid])
+      if (star.error === undefined) failures.push(`${label} SELECT * succeeded`)
+      const ok = await dmlOutcome(who, `SELECT id, gr_number, status, version FROM public.agency_consignments WHERE id = $1`, [c.cid])
+      if (ok.error !== undefined || ok.rows.length !== 1) failures.push(`${label} lost access to ordinary columns`)
+    }
+    expect(failures.length === 0, failures.join('; '))
+  })
+
+  await gatedCase('C61. agency_consignment_qr returns the token to owner and dispatcher only; others get typed refusals', async () => {
+    const c = await newConsignment(tenantA)
+    const stored = (await suOne(`SELECT qr_token FROM public.agency_consignments WHERE id = $1`, [c.cid])).qr_token
+    const qr = (who, id) =>
+      asActor(who, async () => parseJson((await db.query(`SELECT public.agency_consignment_qr($1::uuid) AS r`, [id])).rows[0].r))
+    const failures = []
+    for (const [label, who] of [['owner', ownerA], ['dispatcher', dispatcherA]]) {
+      const r = await qr(who, c.cid)
+      if (!(r && r.ok === true && r.qr_token === stored)) failures.push(`${label}: ${JSON.stringify(r)}`)
+    }
+    for (const [label, who] of [['fleet_manager', fleetA], ['finance', financeA], ['viewer', viewerA]]) {
+      const r = await qr(who, c.cid)
+      if (!(r && r.ok === false && r.error === 'forbidden_scope')) failures.push(`${label} not forbidden: ${JSON.stringify(r)}`)
+    }
+    const cross = await qr(ownerB, c.cid)
+    if (!(cross && cross.ok === false && cross.error === 'not_found')) failures.push('cross-agency: ' + JSON.stringify(cross))
+    const missing = await qr(ownerA, uid())
+    if (!(missing && missing.ok === false && missing.error === 'not_found')) failures.push('missing: ' + JSON.stringify(missing))
+    if (!(await refusedOrNotOk(qr(revokedA, c.cid)))) failures.push('revoked member was served the token')
+    expect(failures.length === 0, failures.join('; '))
+  })
+
+  await gatedCase('C62. financial year is computed in Asia/Kolkata and the commands pin search_path with pg_temp', async () => {
+    const rows = (await su(
+      `SELECT proname, pg_get_functiondef(oid) AS def, proconfig::text AS cfg FROM pg_proc
+       WHERE pronamespace = 'public'::regnamespace AND proname LIKE 'agency_consignment%'`
+    )).rows
+    const byName = Object.fromEntries(rows.map((r) => [r.proname, r]))
+    const failures = []
+    const createDef = (byName.agency_consignment_create && byName.agency_consignment_create.def) || ''
+    if (!/Asia\/Kolkata/.test(createDef)) failures.push('create does not use Asia/Kolkata')
+    if (/current_date/.test(createDef)) failures.push('create still uses current_date')
+    for (const n of ['agency_consignment_create', 'agency_consignment_event', 'agency_consignment_qr']) {
+      if (!/pg_temp/.test((byName[n] && byName[n].cfg) || '')) failures.push(`${n} search_path lacks pg_temp`)
+    }
+    expect(failures.length === 0, failures.join('; '))
+  })
+
+  await gatedCase('C63. idempotency keys over 200 chars are refused with key_too_long (create and event); 200 is accepted', async () => {
+    const order = await seedOrderTree(agencyA, agrA, siteAPune)
+    const tooLong = 'k'.repeat(201)
+    expectError(await createAs(ownerA, order.orderId, tooLong), 'key_too_long')
+    expect((await consignmentsForOrder(order.orderId)) === 0, 'a consignment was created with an over-long key')
+    const made = await createAs(ownerA, order.orderId, 'k'.repeat(200))
+    expect(made && made.ok === true, 'a 200-char key was refused: ' + JSON.stringify(made))
+    const before = await eventRowCount(made.consignment_id)
+    expectError(await eventAs(ownerA, made.consignment_id, 'pickup_scanned', 1, tooLong), 'key_too_long')
+    expect((await eventRowCount(made.consignment_id)) === before, 'an event was written with an over-long key')
+    await expectUnchanged(made.consignment_id, 'created', 1)
+    const fine = await eventAs(ownerA, made.consignment_id, 'pickup_scanned', 1, 'e'.repeat(200))
+    expect(fine && fine.ok === true, 'a 200-char event key was refused: ' + JSON.stringify(fine))
+  })
+
+  await gatedCase('C64. note is trimmed before storage and before the 500-char limit', async () => {
+    const c = await newConsignment(tenantA)
+    const r1 = await eventAs(ownerA, c.cid, 'pickup_scanned', 1, nx('c64a'), '   loaded at dock 3   ')
+    expect(r1 && r1.ok === true, 'event refused: ' + JSON.stringify(r1))
+    const row = await suOne(
+      `SELECT note FROM public.agency_consignment_events WHERE consignment_id = $1 AND event = 'pickup_scanned'`,
+      [c.cid]
+    )
+    expect(row.note === 'loaded at dock 3', `note stored as ${JSON.stringify(row.note)}`)
+    const r2 = await eventAs(ownerA, c.cid, 'transit_started', 2, nx('c64b'), '   ' + 'n'.repeat(500) + '   ')
+    expect(r2 && r2.ok === true, 'a padded 500-char note was refused: ' + JSON.stringify(r2))
+    expectError(await eventAs(ownerA, c.cid, 'delivery_scanned', 3, nx('c64c'), 'n'.repeat(501)), 'note_too_long')
+  })
+
+  // =========================================================================
   // Summary
   // =========================================================================
   const passed = results.filter((r) => r.pass).length

@@ -54,7 +54,7 @@ RETURNS SETOF uuid
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT d.id FROM public.drivers d WHERE d.user_id = auth.uid();
 $$;
@@ -92,33 +92,39 @@ CREATE OR REPLACE FUNCTION public.tracking_ping_record(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
-  c_rate_limit CONSTANT integer := 120;
+  c_rate_limit CONSTANT integer := 120;   -- pings accepted per job per hour, counted on server created_at
+  c_total_cap CONSTANT integer := 20000;  -- hard lifetime cap of pings per job
   v_driver_id uuid;
   v_job public.agency_jobs%ROWTYPE;
   v_recent integer;
+  v_total integer;
   v_id uuid;
+  v_lat numeric;
+  v_lng numeric;
 BEGIN
   IF auth.uid() IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_assigned');
   END IF;
 
-  SELECT d.id INTO v_driver_id FROM public.drivers d WHERE d.user_id = auth.uid() ORDER BY d.created_at, d.id LIMIT 1;
-  IF v_driver_id IS NULL THEN
+  IF NOT EXISTS (SELECT 1 FROM public.tracking_caller_driver_ids()) THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_assigned');
   END IF;
 
-  SELECT * INTO v_job FROM public.agency_jobs WHERE id = p_job_id;
+  -- Share-lock the job so a concurrent reassignment or status change cannot slip past the checks below.
+  SELECT * INTO v_job FROM public.agency_jobs WHERE id = p_job_id FOR SHARE;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_found');
   END IF;
 
-  -- The job must belong to an agency that currently employs the caller.
+  -- The job must belong to an agency that currently employs one of the caller's driver rows.
   IF NOT EXISTS (
     SELECT 1 FROM public.agency_driver_employment e
-    WHERE e.agency_id = v_job.agency_id AND e.driver_id = v_driver_id AND e.status = 'active'
+    WHERE e.agency_id = v_job.agency_id
+      AND e.status = 'active'
+      AND e.driver_id IN (SELECT public.tracking_caller_driver_ids())
   ) THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_found');
   END IF;
@@ -127,8 +133,18 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'agency_not_operational');
   END IF;
 
-  IF v_job.driver_id IS DISTINCT FROM v_driver_id THEN
+  -- The job's assigned driver must be one of the caller's own driver rows.
+  IF v_job.driver_id IS NULL OR v_job.driver_id NOT IN (SELECT public.tracking_caller_driver_ids()) THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_assigned');
+  END IF;
+  v_driver_id := v_job.driver_id;
+
+  -- The assigned driver row itself must be actively employed by the job's agency.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.agency_driver_employment e
+    WHERE e.agency_id = v_job.agency_id AND e.driver_id = v_driver_id AND e.status = 'active'
+  ) THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'not_found');
   END IF;
 
   IF v_job.status NOT IN ('pending', 'accepted', 'in_transit') THEN
@@ -151,27 +167,50 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'too_old');
   END IF;
 
-  -- Serialise pings of one job so the rate guard and the duplicate check cannot race.
+  -- Serialise pings of one job so the guards and the duplicate check cannot race.
   PERFORM pg_advisory_xact_lock(hashtextextended('tracking_ping:' || p_job_id::text, 0));
 
-  SELECT id INTO v_id FROM public.agency_tracking_pings WHERE job_id = p_job_id AND recorded_at = p_recorded_at;
+  v_lat := round(p_lat, 6);
+  v_lng := round(p_lng, 6);
+
+  SELECT p.id INTO v_id FROM public.agency_tracking_pings p WHERE p.job_id = p_job_id AND p.recorded_at = p_recorded_at;
   IF FOUND THEN
-    RETURN jsonb_build_object('ok', true, 'replay', true, 'ping_id', v_id);
+    -- Same instant: an exact resend is a replay; a different position is a conflict, never a silent replay.
+    IF EXISTS (SELECT 1 FROM public.agency_tracking_pings p WHERE p.id = v_id AND p.lat = v_lat AND p.lng = v_lng) THEN
+      RETURN jsonb_build_object('ok', true, 'replay', true, 'ping_id', v_id);
+    END IF;
+    RETURN jsonb_build_object('ok', false, 'error', 'ping_conflict');
   END IF;
 
-  -- Burst guard: more than 120 pings stored in the last hour around this timestamp (30 minute radius).
+  -- Hard lifetime cap per job (count stops at the cap).
+  SELECT count(*)::int INTO v_total FROM (
+    SELECT 1 FROM public.agency_tracking_pings p WHERE p.job_id = p_job_id LIMIT c_total_cap
+  ) t;
+  IF v_total >= c_total_cap THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'ping_cap_reached');
+  END IF;
+
+  -- Burst guard on SERVER time only: recorded_at is client supplied and must not widen or dodge the window.
   SELECT count(*)::int INTO v_recent
   FROM public.agency_tracking_pings p
   WHERE p.job_id = p_job_id
-    AND p.created_at > now() - interval '1 hour'
-    AND p.recorded_at > p_recorded_at - interval '30 minutes'
-    AND p.recorded_at < p_recorded_at + interval '30 minutes';
+    AND p.created_at > now() - interval '1 hour';
   IF v_recent >= c_rate_limit THEN
     RETURN jsonb_build_object('ok', false, 'error', 'rate_limited');
   END IF;
 
+  -- Minimum spacing (2 seconds) between distinct recorded_at values of one job.
+  IF EXISTS (
+    SELECT 1 FROM public.agency_tracking_pings p
+    WHERE p.job_id = p_job_id
+      AND p.recorded_at > p_recorded_at - interval '2 seconds'
+      AND p.recorded_at < p_recorded_at + interval '2 seconds'
+  ) THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'too_frequent');
+  END IF;
+
   INSERT INTO public.agency_tracking_pings (agency_id, job_id, driver_id, recorded_at, lat, lng, speed_kmph)
-  VALUES (v_job.agency_id, p_job_id, v_driver_id, p_recorded_at, p_lat, p_lng, p_speed_kmph)
+  VALUES (v_job.agency_id, p_job_id, v_driver_id, p_recorded_at, v_lat, v_lng, p_speed_kmph)
   ON CONFLICT (job_id, recorded_at) DO NOTHING
   RETURNING id INTO v_id;
 
@@ -195,14 +234,15 @@ CREATE OR REPLACE FUNCTION public.agency_incident_open(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_agency_id uuid;
   v_key text;
   v_details jsonb;
-  v_existing uuid;
+  v_existing public.agency_incidents%ROWTYPE;
   v_id uuid;
+  v_open integer;
 BEGIN
   v_agency_id := public.resolve_caller_agency_for_scopes(ARRAY['dispatcher', 'fleet_manager']::text[]);
 
@@ -217,6 +257,9 @@ BEGIN
   v_key := btrim(coalesce(p_dedupe_key, ''));
   IF v_key = '' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'dedupe_key_required');
+  END IF;
+  IF char_length(v_key) > 200 THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'dedupe_key_too_long');
   END IF;
 
   v_details := coalesce(p_details, '{}'::jsonb);
@@ -233,9 +276,21 @@ BEGIN
 
   PERFORM pg_advisory_xact_lock(hashtextextended('agency_incident:' || v_agency_id::text || ':' || v_key, 0));
 
-  SELECT id INTO v_existing FROM public.agency_incidents WHERE agency_id = v_agency_id AND dedupe_key = v_key;
+  SELECT * INTO v_existing FROM public.agency_incidents WHERE agency_id = v_agency_id AND dedupe_key = v_key;
   IF FOUND THEN
-    RETURN jsonb_build_object('ok', true, 'replay', true, 'incident_id', v_existing);
+    -- A reused key is a replay only for the very same job and kind.
+    IF v_existing.job_id IS DISTINCT FROM p_job_id OR v_existing.kind IS DISTINCT FROM p_kind THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'idempotency_key_reused');
+    END IF;
+    RETURN jsonb_build_object('ok', true, 'replay', true, 'incident_id', v_existing.id);
+  END IF;
+
+  -- Per-job open-incident limit, serialised per job.
+  PERFORM pg_advisory_xact_lock(hashtextextended('agency_incident_job:' || p_job_id::text, 0));
+  SELECT count(*)::int INTO v_open FROM public.agency_incidents i
+  WHERE i.job_id = p_job_id AND i.agency_id = v_agency_id AND i.status IN ('open', 'acknowledged');
+  IF v_open >= 50 THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'too_many_open_incidents');
   END IF;
 
   INSERT INTO public.agency_incidents (agency_id, job_id, kind, status, dedupe_key, details, created_by)
@@ -255,7 +310,7 @@ CREATE OR REPLACE FUNCTION public.agency_incident_update(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_agency_id uuid;
@@ -319,7 +374,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_agency_id uuid;
@@ -346,8 +401,12 @@ BEGIN
   ORDER BY p.recorded_at DESC
   LIMIT 1;
 
-  SELECT count(*)::int INTO v_count
-  FROM public.agency_tracking_pings p WHERE p.job_id = p_job_id AND p.agency_id = v_agency_id;
+  -- Bounded count: never scans more than 100001 rows.
+  SELECT count(*)::int INTO v_count FROM (
+    SELECT 1 FROM public.agency_tracking_pings p
+    WHERE p.job_id = p_job_id AND p.agency_id = v_agency_id
+    LIMIT 100001
+  ) t;
 
   SELECT count(*)::int INTO v_open
   FROM public.agency_incidents i
@@ -356,6 +415,69 @@ BEGIN
   RETURN jsonb_build_object('ok', true, 'last_ping', v_last, 'ping_count', v_count, 'open_incidents', v_open);
 END;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Immutability: pings are append-only; incidents change only status, version, resolution_note
+-- (and updated_at) through the update command. Applies to every role including service_role.
+-- Referential cascades run as nested triggers (pg_trigger_depth() >= 2) and are allowed.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.tracking_pings_immutable()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF pg_trigger_depth() >= 2 THEN
+    IF TG_OP = 'DELETE' THEN
+      RETURN OLD;
+    END IF;
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'agency_tracking_pings is append-only.' USING ERRCODE = 'restrict_violation';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.agency_incidents_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF pg_trigger_depth() >= 2 THEN
+    IF TG_OP = 'DELETE' THEN
+      RETURN OLD;
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'agency_incidents rows cannot be deleted.' USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.agency_id IS DISTINCT FROM OLD.agency_id
+     OR NEW.job_id IS DISTINCT FROM OLD.job_id
+     OR NEW.kind IS DISTINCT FROM OLD.kind
+     OR NEW.dedupe_key IS DISTINCT FROM OLD.dedupe_key
+     OR NEW.details IS DISTINCT FROM OLD.details
+     OR NEW.created_by IS DISTINCT FROM OLD.created_by
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'agency_incidents: only status, version and resolution_note may change.' USING ERRCODE = 'restrict_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS agency_tracking_pings_immutable ON public.agency_tracking_pings;
+CREATE TRIGGER agency_tracking_pings_immutable
+  BEFORE UPDATE OR DELETE ON public.agency_tracking_pings
+  FOR EACH ROW EXECUTE FUNCTION public.tracking_pings_immutable();
+
+DROP TRIGGER IF EXISTS agency_incidents_guard ON public.agency_incidents;
+CREATE TRIGGER agency_incidents_guard
+  BEFORE UPDATE OR DELETE ON public.agency_incidents
+  FOR EACH ROW EXECUTE FUNCTION public.agency_incidents_guard();
+
+REVOKE ALL ON FUNCTION public.tracking_pings_immutable() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.agency_incidents_guard() FROM PUBLIC, anon, authenticated;
 
 REVOKE ALL ON FUNCTION public.tracking_ping_record(uuid, numeric, numeric, numeric, timestamptz) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.agency_incident_open(uuid, text, jsonb, text) FROM PUBLIC, anon;

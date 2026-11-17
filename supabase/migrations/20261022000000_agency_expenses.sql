@@ -7,12 +7,24 @@
 -- Writes happen ONLY through SECURITY DEFINER commands that take no agency id (the agency comes
 -- from auth.uid() via resolve_caller_agency_for_scopes). Write scopes: owner, fleet_manager and
 -- finance. Every active scope reads. There is deliberately no delete command: expenses are a
--- financial record and are corrected by recording, not by removing.
+-- financial record and are corrected by recording, not by removing. This is ENFORCED, not just
+-- stated: BEFORE UPDATE/DELETE/TRUNCATE triggers make agency_expenses, agency_fuel_fills and
+-- agency_maintenance_services append-only for every role (service_role included); only FK
+-- cascades (pg_trigger_depth() > 1) may remove rows, and only created_by may be nulled that way.
+-- agency_maintenance_items may only change through the commands (never by service_role directly).
+
+-- Composite FK targets: (id, agency_id) lets child rows prove they belong to the same agency.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'agency_trucks_id_agency_id_key' AND conrelid = 'public.agency_trucks'::regclass) THEN
+    ALTER TABLE public.agency_trucks ADD CONSTRAINT agency_trucks_id_agency_id_key UNIQUE (id, agency_id);
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.agency_expenses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   agency_id UUID NOT NULL REFERENCES public.transport_agencies (id) ON DELETE CASCADE,
-  truck_id UUID REFERENCES public.agency_trucks (id) ON DELETE RESTRICT,
+  truck_id UUID,
   category TEXT NOT NULL CHECK (category IN ('fuel', 'toll', 'maintenance', 'driver_allowance', 'insurance', 'permit', 'other')),
   amount_paise BIGINT NOT NULL CHECK (amount_paise > 0),
   spent_on DATE NOT NULL,
@@ -20,48 +32,59 @@ CREATE TABLE IF NOT EXISTS public.agency_expenses (
   idempotency_key TEXT NOT NULL CHECK (btrim(idempotency_key) <> ''),
   created_by UUID REFERENCES auth.users (id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT agency_expenses_idem_key UNIQUE (agency_id, idempotency_key)
+  CONSTRAINT agency_expenses_idem_key UNIQUE (agency_id, idempotency_key),
+  CONSTRAINT agency_expenses_id_agency_key UNIQUE (id, agency_id),
+  CONSTRAINT agency_expenses_truck_agency_fkey FOREIGN KEY (truck_id, agency_id)
+    REFERENCES public.agency_trucks (id, agency_id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS public.agency_fuel_fills (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   agency_id UUID NOT NULL REFERENCES public.transport_agencies (id) ON DELETE CASCADE,
-  truck_id UUID NOT NULL REFERENCES public.agency_trucks (id) ON DELETE RESTRICT,
-  odometer_km NUMERIC NOT NULL CHECK (odometer_km >= 0),
-  litres NUMERIC(8, 2) NOT NULL CHECK (litres >= 1 AND litres <= 1000),
+  truck_id UUID NOT NULL,
+  odometer_km NUMERIC NOT NULL CHECK (odometer_km <> 'NaN' AND odometer_km >= 0 AND odometer_km < 10000000),
+  litres NUMERIC(8, 2) NOT NULL CHECK (litres <> 'NaN' AND litres >= 1 AND litres <= 1000),
   full_tank BOOLEAN NOT NULL DEFAULT TRUE,
-  expense_id UUID REFERENCES public.agency_expenses (id) ON DELETE RESTRICT,
+  expense_id UUID UNIQUE,
   filled_on DATE NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT agency_fuel_fills_truck_agency_fkey FOREIGN KEY (truck_id, agency_id)
+    REFERENCES public.agency_trucks (id, agency_id) ON DELETE RESTRICT,
+  CONSTRAINT agency_fuel_fills_expense_agency_fkey FOREIGN KEY (expense_id, agency_id)
+    REFERENCES public.agency_expenses (id, agency_id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS public.agency_maintenance_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   agency_id UUID NOT NULL REFERENCES public.transport_agencies (id) ON DELETE CASCADE,
-  truck_id UUID NOT NULL REFERENCES public.agency_trucks (id) ON DELETE RESTRICT,
+  truck_id UUID NOT NULL,
   name TEXT NOT NULL CHECK (btrim(name) <> '' AND char_length(name) <= 100),
   interval_km INTEGER CHECK (interval_km IS NULL OR interval_km > 0),
   interval_days INTEGER CHECK (interval_days IS NULL OR interval_days > 0),
-  last_service_km NUMERIC CHECK (last_service_km IS NULL OR last_service_km >= 0),
+  last_service_km NUMERIC CHECK (last_service_km IS NULL OR (last_service_km <> 'NaN' AND last_service_km >= 0 AND last_service_km < 10000000)),
   last_service_on DATE,
   version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT agency_maintenance_items_name_key UNIQUE (agency_id, truck_id, name)
+  CONSTRAINT agency_maintenance_items_name_key UNIQUE (agency_id, truck_id, name),
+  CONSTRAINT agency_maintenance_items_truck_agency_fkey FOREIGN KEY (truck_id, agency_id)
+    REFERENCES public.agency_trucks (id, agency_id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS public.agency_maintenance_services (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   agency_id UUID NOT NULL REFERENCES public.transport_agencies (id) ON DELETE CASCADE,
   item_id UUID NOT NULL REFERENCES public.agency_maintenance_items (id) ON DELETE RESTRICT,
-  service_km NUMERIC NOT NULL CHECK (service_km >= 0),
+  service_km NUMERIC NOT NULL CHECK (service_km <> 'NaN' AND service_km >= 0 AND service_km < 10000000),
   service_on DATE NOT NULL,
   cost_paise BIGINT NOT NULL DEFAULT 0 CHECK (cost_paise >= 0),
-  expense_id UUID REFERENCES public.agency_expenses (id) ON DELETE RESTRICT,
+  expense_id UUID,
   idempotency_key TEXT NOT NULL CHECK (btrim(idempotency_key) <> ''),
   created_by UUID REFERENCES auth.users (id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT agency_maintenance_services_idem_key UNIQUE (agency_id, idempotency_key)
+  CONSTRAINT agency_maintenance_services_idem_key UNIQUE (agency_id, idempotency_key),
+  CONSTRAINT agency_maintenance_services_expense_agency_fkey FOREIGN KEY (expense_id, agency_id)
+    REFERENCES public.agency_expenses (id, agency_id) ON DELETE RESTRICT
 );
 
 CREATE INDEX IF NOT EXISTS agency_expenses_by_date ON public.agency_expenses (agency_id, spent_on);
@@ -103,6 +126,88 @@ GRANT ALL ON public.agency_expenses, public.agency_fuel_fills, public.agency_mai
   public.agency_maintenance_services TO service_role;
 
 -- ---------------------------------------------------------------------------
+-- Mutation guards (append-only financial record)
+-- ---------------------------------------------------------------------------
+-- Not role based, so service_role cannot bypass. A row can leave or change only as the side effect
+-- of a foreign-key action (pg_trigger_depth() > 1): cascade deletes, and ON DELETE SET NULL on
+-- created_by (any other column changing is still refused).
+CREATE OR REPLACE FUNCTION public.agency_expense_append_only_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF TG_OP = 'TRUNCATE' THEN
+    RAISE EXCEPTION 'agency_expenses_append_only: % is append-only', TG_TABLE_NAME USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF pg_trigger_depth() > 1 THEN
+    IF TG_OP = 'DELETE' THEN
+      RETURN OLD;
+    END IF;
+    IF (to_jsonb(NEW) - 'created_by') = (to_jsonb(OLD) - 'created_by') THEN
+      RETURN NEW;
+    END IF;
+  END IF;
+  RAISE EXCEPTION 'agency_expenses_append_only: % is append-only', TG_TABLE_NAME USING ERRCODE = 'restrict_violation';
+END;
+$$;
+
+-- Maintenance items change only through the SECURITY DEFINER commands (which run as the function
+-- owner). API roles, service_role included, cannot update or delete them directly.
+CREATE OR REPLACE FUNCTION public.agency_maintenance_item_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF TG_OP = 'TRUNCATE' THEN
+    RAISE EXCEPTION 'agency_maintenance_items_command_only: items change only through commands' USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF TG_OP = 'DELETE' THEN
+    IF pg_trigger_depth() > 1 THEN
+      RETURN OLD;
+    END IF;
+    RAISE EXCEPTION 'agency_maintenance_items_command_only: items cannot be deleted' USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF current_user IN ('anon', 'authenticated', 'service_role', 'authenticator') THEN
+    RAISE EXCEPTION 'agency_maintenance_items_command_only: items change only through commands' USING ERRCODE = 'restrict_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.agency_expense_append_only_guard() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.agency_maintenance_item_guard() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS agency_expenses_append_only ON public.agency_expenses;
+CREATE TRIGGER agency_expenses_append_only BEFORE UPDATE OR DELETE ON public.agency_expenses
+  FOR EACH ROW EXECUTE FUNCTION public.agency_expense_append_only_guard();
+DROP TRIGGER IF EXISTS agency_expenses_no_truncate ON public.agency_expenses;
+CREATE TRIGGER agency_expenses_no_truncate BEFORE TRUNCATE ON public.agency_expenses
+  FOR EACH STATEMENT EXECUTE FUNCTION public.agency_expense_append_only_guard();
+
+DROP TRIGGER IF EXISTS agency_fuel_fills_append_only ON public.agency_fuel_fills;
+CREATE TRIGGER agency_fuel_fills_append_only BEFORE UPDATE OR DELETE ON public.agency_fuel_fills
+  FOR EACH ROW EXECUTE FUNCTION public.agency_expense_append_only_guard();
+DROP TRIGGER IF EXISTS agency_fuel_fills_no_truncate ON public.agency_fuel_fills;
+CREATE TRIGGER agency_fuel_fills_no_truncate BEFORE TRUNCATE ON public.agency_fuel_fills
+  FOR EACH STATEMENT EXECUTE FUNCTION public.agency_expense_append_only_guard();
+
+DROP TRIGGER IF EXISTS agency_maintenance_services_append_only ON public.agency_maintenance_services;
+CREATE TRIGGER agency_maintenance_services_append_only BEFORE UPDATE OR DELETE ON public.agency_maintenance_services
+  FOR EACH ROW EXECUTE FUNCTION public.agency_expense_append_only_guard();
+DROP TRIGGER IF EXISTS agency_maintenance_services_no_truncate ON public.agency_maintenance_services;
+CREATE TRIGGER agency_maintenance_services_no_truncate BEFORE TRUNCATE ON public.agency_maintenance_services
+  FOR EACH STATEMENT EXECUTE FUNCTION public.agency_expense_append_only_guard();
+
+DROP TRIGGER IF EXISTS agency_maintenance_items_command_only ON public.agency_maintenance_items;
+CREATE TRIGGER agency_maintenance_items_command_only BEFORE UPDATE OR DELETE ON public.agency_maintenance_items
+  FOR EACH ROW EXECUTE FUNCTION public.agency_maintenance_item_guard();
+DROP TRIGGER IF EXISTS agency_maintenance_items_no_truncate ON public.agency_maintenance_items;
+CREATE TRIGGER agency_maintenance_items_no_truncate BEFORE TRUNCATE ON public.agency_maintenance_items
+  FOR EACH STATEMENT EXECUTE FUNCTION public.agency_maintenance_item_guard();
+
+-- ---------------------------------------------------------------------------
 -- agency_expense_record
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.agency_expense_record(
@@ -116,7 +221,7 @@ CREATE OR REPLACE FUNCTION public.agency_expense_record(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_agency_id uuid;
@@ -138,6 +243,9 @@ BEGIN
   v_key := btrim(coalesce(p_idempotency_key, ''));
   IF v_key = '' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'idempotency_key_required');
+  END IF;
+  IF left(v_key, 4) = 'svc:' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'invalid_key');
   END IF;
 
   v_note := nullif(btrim(coalesce(p_note, '')), '');
@@ -167,6 +275,9 @@ BEGIN
   END IF;
   IF p_spent_on IS NULL OR p_spent_on > (now() AT TIME ZONE 'Asia/Kolkata')::date THEN
     RETURN jsonb_build_object('ok', false, 'error', 'future_date');
+  END IF;
+  IF p_spent_on < ((now() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '5 years')::date THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'date_too_old');
   END IF;
   IF v_note IS NOT NULL AND char_length(v_note) > 300 THEN
     RETURN jsonb_build_object('ok', false, 'error', 'note_too_long');
@@ -202,7 +313,7 @@ CREATE OR REPLACE FUNCTION public.agency_fuel_fill_record(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_agency_id uuid;
@@ -229,6 +340,9 @@ BEGIN
   IF v_key = '' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'idempotency_key_required');
   END IF;
+  IF left(v_key, 4) = 'svc:' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'invalid_key');
+  END IF;
 
   v_full := coalesce(p_full_tank, TRUE);
   v_litres := round(p_litres, 2);
@@ -254,7 +368,7 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'idempotency_key_reused');
   END IF;
 
-  IF p_litres IS NULL OR p_litres < 1 OR p_litres > 1000 THEN
+  IF p_litres IS NULL OR p_litres = 'NaN' OR p_litres < 1 OR p_litres > 1000 THEN
     RETURN jsonb_build_object('ok', false, 'error', 'invalid_litres');
   END IF;
   IF p_amount_paise IS NULL OR p_amount_paise <= 0 OR p_amount_paise > 100000000 THEN
@@ -263,14 +377,17 @@ BEGIN
   IF p_filled_on IS NULL OR p_filled_on > (now() AT TIME ZONE 'Asia/Kolkata')::date THEN
     RETURN jsonb_build_object('ok', false, 'error', 'future_date');
   END IF;
-  IF p_odometer_km IS NULL OR p_odometer_km < 0 THEN
+  IF p_filled_on < ((now() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '5 years')::date THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'date_too_old');
+  END IF;
+  IF p_odometer_km IS NULL OR p_odometer_km = 'NaN' OR p_odometer_km < 0 OR p_odometer_km >= 10000000 THEN
     RETURN jsonb_build_object('ok', false, 'error', 'invalid_odometer');
   END IF;
 
   -- Lock the truck row so concurrent fills cannot both pass the odometer check.
   PERFORM 1 FROM public.agency_trucks t
   WHERE t.id = p_truck_id AND t.agency_id = v_agency_id
-  FOR UPDATE;
+  FOR NO KEY UPDATE;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', 'truck_not_found');
   END IF;
@@ -281,6 +398,9 @@ BEGIN
 
   IF v_previous IS NOT NULL AND p_odometer_km <= v_previous THEN
     RETURN jsonb_build_object('ok', false, 'error', 'odometer_not_increasing', 'previous_km', v_previous);
+  END IF;
+  IF v_previous IS NOT NULL AND p_odometer_km - v_previous > 5000 THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'odometer_jump_too_large', 'previous_km', v_previous);
   END IF;
 
   INSERT INTO public.agency_expenses (agency_id, truck_id, category, amount_paise, spent_on, note, idempotency_key, created_by)
@@ -310,7 +430,7 @@ CREATE OR REPLACE FUNCTION public.agency_maintenance_item_upsert(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_agency_id uuid;
@@ -346,7 +466,7 @@ BEGIN
   IF (p_interval_km IS NOT NULL AND p_interval_km <= 0) OR (p_interval_days IS NOT NULL AND p_interval_days <= 0) THEN
     RETURN jsonb_build_object('ok', false, 'error', 'invalid_interval');
   END IF;
-  IF p_last_service_km IS NOT NULL AND p_last_service_km < 0 THEN
+  IF p_last_service_km IS NOT NULL AND (p_last_service_km = 'NaN' OR p_last_service_km < 0 OR p_last_service_km >= 10000000) THEN
     RETURN jsonb_build_object('ok', false, 'error', 'invalid_km');
   END IF;
 
@@ -401,7 +521,7 @@ CREATE OR REPLACE FUNCTION public.agency_maintenance_service_done(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_agency_id uuid;
@@ -455,11 +575,14 @@ BEGIN
   IF v_cost < 0 OR v_cost > 100000000 THEN
     RETURN jsonb_build_object('ok', false, 'error', 'invalid_amount');
   END IF;
-  IF p_service_km IS NULL OR p_service_km < 0 THEN
+  IF p_service_km IS NULL OR p_service_km = 'NaN' OR p_service_km < 0 OR p_service_km >= 10000000 THEN
     RETURN jsonb_build_object('ok', false, 'error', 'invalid_km');
   END IF;
   IF p_service_on IS NULL OR p_service_on > (now() AT TIME ZONE 'Asia/Kolkata')::date THEN
     RETURN jsonb_build_object('ok', false, 'error', 'future_date');
+  END IF;
+  IF p_service_on < ((now() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '5 years')::date THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'date_too_old');
   END IF;
   IF p_expected_version IS NULL OR v_item.version <> p_expected_version THEN
     RETURN jsonb_build_object('ok', false, 'error', 'version_conflict', 'current_version', v_item.version);
@@ -496,7 +619,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_agency_id uuid;
