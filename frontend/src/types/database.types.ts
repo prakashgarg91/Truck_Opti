@@ -1610,6 +1610,108 @@ isOneToOne: false
       referencedColumns: ["id", "agency_id"]
     }
                   ]
+                },"platform_billing_settings": {
+                  Row: {
+                    "address": string | null,"enforcement_enabled": boolean,"gstin": string | null,"legal_name": string | null,"sac_code": string,"state_code": string | null,"updated_at": string,"updated_by": string | null
+                  }
+                  Insert: {
+                    "address"?: string | null,"enforcement_enabled"?: boolean,"gstin"?: string | null,"legal_name"?: string | null,"sac_code"?: string,"state_code"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "address"?: string | null,"enforcement_enabled"?: boolean,"gstin"?: string | null,"legal_name"?: string | null,"sac_code"?: string,"state_code"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"subscription_backfill_conflicts": {
+                  Row: {
+                    "candidate_agency_ids": string[],"chosen_agency_id": string | null,"details": Json,"id": string,"logged_at": string,"reason": string,"subscription_id": string,"user_id": string | null
+                  }
+                  Insert: {
+                    "candidate_agency_ids"?: string[],"chosen_agency_id"?: string | null,"details"?: Json,"id"?: string,"logged_at"?: string,"reason": string,"subscription_id": string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "candidate_agency_ids"?: string[],"chosen_agency_id"?: string | null,"details"?: Json,"id"?: string,"logged_at"?: string,"reason"?: string,"subscription_id"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"subscription_credit_notes": {
+                  Row: {
+                    "agency_id": string,"cgst_paise": number,"credit_note_number": string,"id": string,"igst_paise": number,"invoice_id": string,"issued_at": string,"refund_id": string,"sgst_paise": number,"taxable_paise": number,"total_paise": number
+                  }
+                  Insert: {
+                    "agency_id": string,"cgst_paise"?: number,"credit_note_number": string,"id"?: string,"igst_paise"?: number,"invoice_id": string,"issued_at"?: string,"refund_id": string,"sgst_paise"?: number,"taxable_paise": number,"total_paise": number
+                  }
+                  Update: {
+                    "agency_id"?: string,"cgst_paise"?: number,"credit_note_number"?: string,"id"?: string,"igst_paise"?: number,"invoice_id"?: string,"issued_at"?: string,"refund_id"?: string,"sgst_paise"?: number,"taxable_paise"?: number,"total_paise"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "subscription_credit_notes_invoice_fk"
+      columns: ["invoice_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "subscription_invoices"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
+                },"subscription_invoice_counters": {
+                  Row: {
+                    "fy": string,"last_no": number,"series": string
+                  }
+                  Insert: {
+                    "fy": string,"last_no": number,"series": string
+                  }
+                  Update: {
+                    "fy"?: string,"last_no"?: number,"series"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"subscription_invoices": {
+                  Row: {
+                    "agency_id": string,"cgst_paise": number,"fy": string,"gst_rate_pct": number,"id": string,"igst_paise": number,"invoice_number": string,"issued_at": string,"place_of_supply_state_code": string,"recipient_address": string | null,"recipient_gstin": string | null,"recipient_name": string | null,"sac_code": string,"series": string,"sgst_paise": number,"supplier_address": string | null,"supplier_gstin": string,"supplier_legal_name": string | null,"supplier_state_code": string,"taxable_paise": number,"total_paise": number
+                  }
+                  Insert: {
+                    "agency_id": string,"cgst_paise"?: number,"fy": string,"gst_rate_pct"?: number,"id"?: string,"igst_paise"?: number,"invoice_number": string,"issued_at"?: string,"place_of_supply_state_code": string,"recipient_address"?: string | null,"recipient_gstin"?: string | null,"recipient_name"?: string | null,"sac_code": string,"series"?: string,"sgst_paise"?: number,"supplier_address"?: string | null,"supplier_gstin": string,"supplier_legal_name"?: string | null,"supplier_state_code": string,"taxable_paise": number,"total_paise": number
+                  }
+                  Update: {
+                    "agency_id"?: string,"cgst_paise"?: number,"fy"?: string,"gst_rate_pct"?: number,"id"?: string,"igst_paise"?: number,"invoice_number"?: string,"issued_at"?: string,"place_of_supply_state_code"?: string,"recipient_address"?: string | null,"recipient_gstin"?: string | null,"recipient_name"?: string | null,"sac_code"?: string,"series"?: string,"sgst_paise"?: number,"supplier_address"?: string | null,"supplier_gstin"?: string,"supplier_legal_name"?: string | null,"supplier_state_code"?: string,"taxable_paise"?: number,"total_paise"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "subscription_invoices_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"subscription_trial_claims": {
+                  Row: {
+                    "agency_id": string,"claimed_at": string,"claimed_by": string | null,"gstin_norm": string | null,"id": string,"phone_norm": string | null,"subscription_id": string | null
+                  }
+                  Insert: {
+                    "agency_id": string,"claimed_at"?: string,"claimed_by"?: string | null,"gstin_norm"?: string | null,"id"?: string,"phone_norm"?: string | null,"subscription_id"?: string | null
+                  }
+                  Update: {
+                    "agency_id"?: string,"claimed_at"?: string,"claimed_by"?: string | null,"gstin_norm"?: string | null,"id"?: string,"phone_norm"?: string | null,"subscription_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "subscription_trial_claims_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: true
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "subscription_trial_claims_subscription_fk"
+      columns: ["subscription_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "subscriptions"
+      referencedColumns: ["id", "agency_id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -1880,6 +1982,41 @@ isOneToOne: false
                            },
 "agency_load_plan_weight":
 { Args: { "p_quantity": number,"p_unit": string,"p_weight_per_unit": number }; Returns: number
+                           },
+"agency_subscription_entitlement":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"agency_subscription_start_trial":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"agency_subscription_state":
+{ Args: { "p_agency_id": string }; Returns: Json
+                           },
+"platform_billing_settings_update":
+{ Args: { "p_address": string,"p_enforcement_enabled": boolean,"p_gstin": string,"p_legal_name": string,"p_sac_code": string,"p_state_code": string }; Returns: Json
+                           },
+"subscription_entitlement_snapshot":
+{ Args: { "p_agency_id": string }; Returns: Json
+                           },
+"subscription_next_invoice_number":
+{ Args: { "p_at": string,"p_series": string }; Returns: string
+                           },
+"subscription_place_of_supply":
+{ Args: { "p_agency_state": string,"p_gstin": string }; Returns: string
+                           },
+"subscription_row_for_user":
+{ Args: { "p_statuses": string[],"p_user_id": string,"p_write"?: boolean }; Returns: string
+                           },
+"subscription_tax_checked":
+{ Args: { "p_pos_state": string,"p_supplier_state": string,"p_taxable_paise": number }; Returns: number
+                           },
+"subscription_tax_split":
+{ Args: { "p_pos_state": string,"p_supplier_state": string,"p_taxable_paise": number }; Returns: {
+              "cgst_paise": number,"sgst_paise": number,"igst_paise": number,"total_paise": number
+            }[]
+                           },
+"subscription_usage_visible":
+{ Args: { "p_subscription_id": string }; Returns: boolean
                            }
           }
           Enums: {
