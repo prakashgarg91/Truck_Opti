@@ -339,21 +339,37 @@ async function r6(open) {
   const { agencyId, ownerId } = await freshAgency()
   const truckId = await freshTruck(agencyId)
   const filledOn = dateOffset(-2)
-  // pairs of workers send the SAME odometer; groups rise by 100
-  const odo = (i) => 1000 + 100 * Math.floor(i / 2)
-  const outs = await fireAll(open, ownerId, (c, i) => fuelFill(c, truckId, odo(i), filledOn, `r6-${randomUUID()}`))
+  // 8 distinct rising values (1000..1700) plus 2 extra duplicates of 1300, all fired at once for ONE truck.
+  // Lock order is random, so which values are accepted varies per round: only the invariants are fixed.
+  const values = [1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1300, 1300]
+  const outs = await fireAll(open, ownerId, (c, i) => fuelFill(c, truckId, values[i], filledOn, `r6-${randomUUID()}`), values.length)
   const v = raisedViolations(outs)
-  const accepted = outs.filter((o) => o.kind === 'ok' && !o.value.replay).length
-  const rows = await rowsOf(`SELECT odometer_km FROM public.agency_fuel_fills WHERE truck_id = $1 ORDER BY ctid`, [truckId])
-  if (rows.length !== accepted) v.push(`fill rows ${rows.length} != accepted ${accepted}`)
-  const odos = rows.map((r) => Number(r.odometer_km))
-  for (let i = 1; i < odos.length; i++) {
-    if (odos[i] <= odos[i - 1]) v.push(`accepted odometer ${odos[i]} after ${odos[i - 1]} (not strictly increasing, insertion order)`)
-  }
-  if (new Set(odos).size !== odos.length) v.push(`duplicate odometer accepted: ${odos.join(',')}`)
+  const acceptedIdx = outs.map((o, i) => (o.kind === 'ok' && !o.value.replay ? i : -1)).filter((i) => i >= 0)
+  const acceptedVals = acceptedIdx.map((i) => values[i])
+  if (acceptedIdx.length < 1 || acceptedIdx.length > 8) v.push(`accepted count ${acceptedIdx.length} outside 1..8 (${tally(outs)})`)
+  if (outs.some((o) => o.kind === 'ok' && o.value.replay)) v.push(`unexpected replay with unique keys: ${tally(outs)}`)
   if (outs.some((o) => o.kind === 'typed' && o.code !== 'odometer_not_increasing')) v.push(`unexpected typed error: ${tally(outs)}`)
-  if (accepted < 1) v.push('no fill accepted at all')
-  return { label: tally(outs), violations: v }
+  // heap order of a fresh, append-only table is insertion (commit-serialised) order
+  const rows = await rowsOf(`SELECT odometer_km FROM public.agency_fuel_fills WHERE truck_id = $1 ORDER BY ctid`, [truckId])
+  const odos = rows.map((r) => Number(r.odometer_km))
+  if (odos.length !== acceptedIdx.length) v.push(`fill rows ${odos.length} != accepted ${acceptedIdx.length}`)
+  for (let i = 1; i < odos.length; i++) {
+    if (odos[i] <= odos[i - 1]) v.push(`stored odometer ${odos[i]} after ${odos[i - 1]} (not strictly increasing in creation order)`)
+  }
+  if (new Set(odos).size !== odos.length) v.push(`duplicate odometer stored: ${odos.join(',')}`)
+  // every stored row must be one of the accepted values, and together they are the same multiset
+  if ([...odos].sort((x, y) => x - y).join(',') !== [...acceptedVals].sort((x, y) => x - y).join(',')) {
+    v.push(`stored odometers ${odos.join(',')} differ from accepted values ${acceptedVals.join(',')}`)
+  }
+  // strictly increasing creation order above means each accepted fill exceeded all earlier accepted ones
+  const maxStored = (await oneRow(`SELECT max(odometer_km) AS m FROM public.agency_fuel_fills WHERE truck_id = $1`, [truckId])).m
+  const maxAccepted = acceptedVals.length ? Math.max(...acceptedVals) : null
+  if (maxAccepted === null || Number(maxStored) !== maxAccepted) v.push(`final max odometer ${maxStored} != max accepted ${maxAccepted}`)
+  // a rejected fill with a value above the final max would mean a valid fill was refused
+  for (let i = 0; i < values.length; i++) {
+    if (outs[i].kind === 'typed' && maxAccepted !== null && values[i] > maxAccepted) v.push(`value ${values[i]} rejected although above final max ${maxAccepted}`)
+  }
+  return { label: `${acceptedIdx.length} accepted [${odos.join(',')}]`, violations: v }
 }
 
 async function r7(open) {

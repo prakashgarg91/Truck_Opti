@@ -145,7 +145,9 @@ LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  -- FK cascades (parent agency delete, batch SET NULL, user SET NULL) run at depth > 1.
+  -- Nested (FK action) work runs at depth > 1. Only two things may pass here: the agency-delete cascade
+  -- and the FK SET NULL actions on batch_id / approved_by / created_by. Every other nested statement
+  -- falls through to the same checks as a top-level one, so a nested UPDATE cannot skip the guards.
   IF pg_trigger_depth() > 1 THEN
     IF TG_OP = 'DELETE' THEN
       -- Only the agency-delete cascade may remove a plan: the parent agency row must already be gone.
@@ -155,7 +157,14 @@ BEGIN
       END IF;
       RETURN OLD;
     END IF;
-    RETURN NEW;
+    IF TG_OP = 'UPDATE'
+       AND (NEW.batch_id IS NULL OR NEW.batch_id IS NOT DISTINCT FROM OLD.batch_id)
+       AND (NEW.approved_by IS NULL OR NEW.approved_by IS NOT DISTINCT FROM OLD.approved_by)
+       AND (NEW.created_by IS NULL OR NEW.created_by IS NOT DISTINCT FROM OLD.created_by)
+       AND (to_jsonb(NEW) - 'batch_id' - 'approved_by' - 'created_by')
+           = (to_jsonb(OLD) - 'batch_id' - 'approved_by' - 'created_by') THEN
+      RETURN NEW;
+    END IF;
   END IF;
 
   IF TG_OP = 'DELETE' THEN
@@ -222,7 +231,7 @@ BEGIN
       END IF;
       RETURN OLD;
     END IF;
-    RETURN NEW;
+    -- Nested INSERT/UPDATE are not exempt: they fall through to the freeze checks below.
   END IF;
 
   IF TG_OP = 'DELETE' THEN
@@ -949,6 +958,97 @@ BEGIN
   RETURN jsonb_build_object('ok', true, 'state', 'cancelled', 'version', v_updated.version);
 END;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- agency_vehicle_update: unchanged from 20261012000000_staff_scope_enforcement.sql except that moving a
+-- truck into maintenance is refused with 'truck_in_approved_plan' while it sits in an APPROVED load plan.
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.agency_vehicle_update(
+  p_vehicle_id uuid,
+  p_expected_version integer,
+  p_patch jsonb DEFAULT '{}'::jsonb
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_agency_id uuid;
+  v_owned boolean;
+  v_updated public.agency_trucks%ROWTYPE;
+  v_current_version integer;
+BEGIN
+  v_agency_id := public.resolve_caller_agency_for_scopes(ARRAY['fleet_manager']::text[]);
+
+  IF NOT public.agency_is_operational(v_agency_id) THEN
+    RAISE EXCEPTION 'Agency approval is required.';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.agency_trucks
+    WHERE id = p_vehicle_id AND agency_id = v_agency_id
+  ) INTO v_owned;
+  IF NOT v_owned THEN
+    RAISE EXCEPTION 'Vehicle not found or access denied.';
+  END IF;
+
+  -- Added by the load plan migration: a truck allocated in an APPROVED load plan cannot be moved into
+  -- maintenance until that plan is cancelled. Serialised with plan approval and order cancel.
+  IF p_patch ? 'maintenance_blocked' AND COALESCE((p_patch->>'maintenance_blocked')::boolean, false) THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended('load_plan_approve:' || v_agency_id::text, 0));
+    IF EXISTS (
+      SELECT 1
+      FROM public.agency_load_plan_loads l
+      JOIN public.agency_load_plans p ON p.id = l.plan_id AND p.agency_id = l.agency_id
+      WHERE l.truck_id = p_vehicle_id AND l.agency_id = v_agency_id AND p.status = 'approved'
+    ) THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'truck_in_approved_plan');
+    END IF;
+  END IF;
+
+  -- The version trigger bumps exactly once; the WHERE clause is the atomic
+  -- expected-version check. A zero-row update IS the conflict (no write).
+  UPDATE public.agency_trucks t SET
+    is_available = CASE WHEN p_patch ? 'is_available' THEN COALESCE((p_patch->>'is_available')::boolean, t.is_available) ELSE t.is_available END,
+    notes = CASE WHEN p_patch ? 'notes' THEN p_patch->>'notes' ELSE t.notes END,
+    insurance_expiry = CASE WHEN p_patch ? 'insurance_expiry' THEN (p_patch->>'insurance_expiry')::date ELSE t.insurance_expiry END,
+    fitness_expiry = CASE WHEN p_patch ? 'fitness_expiry' THEN (p_patch->>'fitness_expiry')::date ELSE t.fitness_expiry END,
+    permit_expiry = CASE WHEN p_patch ? 'permit_expiry' THEN (p_patch->>'permit_expiry')::date ELSE t.permit_expiry END,
+    puc_expiry = CASE WHEN p_patch ? 'puc_expiry' THEN (p_patch->>'puc_expiry')::date ELSE t.puc_expiry END,
+    payload_kg = CASE WHEN p_patch ? 'payload_kg' THEN (p_patch->>'payload_kg')::numeric ELSE t.payload_kg END,
+    body_length_m = CASE WHEN p_patch ? 'body_length_m' THEN (p_patch->>'body_length_m')::numeric ELSE t.body_length_m END,
+    body_width_m = CASE WHEN p_patch ? 'body_width_m' THEN (p_patch->>'body_width_m')::numeric ELSE t.body_width_m END,
+    body_height_m = CASE WHEN p_patch ? 'body_height_m' THEN (p_patch->>'body_height_m')::numeric ELSE t.body_height_m END,
+    maintenance_blocked = CASE WHEN p_patch ? 'maintenance_blocked' THEN COALESCE((p_patch->>'maintenance_blocked')::boolean, t.maintenance_blocked) ELSE t.maintenance_blocked END,
+    maintenance_block_reason = CASE WHEN p_patch ? 'maintenance_block_reason' THEN p_patch->>'maintenance_block_reason' ELSE t.maintenance_block_reason END,
+    maintenance_blocked_until = CASE WHEN p_patch ? 'maintenance_blocked_until' THEN (p_patch->>'maintenance_blocked_until')::timestamptz ELSE t.maintenance_blocked_until END
+  WHERE t.id = p_vehicle_id
+    AND t.agency_id = v_agency_id
+    AND t.version = p_expected_version
+  RETURNING * INTO v_updated;
+
+  IF v_updated.id IS NOT NULL THEN
+    RETURN jsonb_build_object(
+      'ok', true,
+      'state', 'updated',
+      'vehicle', to_jsonb(v_updated),
+      'version', v_updated.version
+    );
+  END IF;
+
+  SELECT version INTO v_current_version
+  FROM public.agency_trucks
+  WHERE id = p_vehicle_id;
+
+  RETURN jsonb_build_object(
+    'ok', false,
+    'error', 'version_conflict',
+    'current_version', v_current_version
+  );
+END;
+$$;
+
 
 REVOKE ALL ON FUNCTION public.agency_load_plan_save(text, uuid, jsonb, jsonb, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.agency_load_plan_approve(uuid, integer) FROM PUBLIC, anon;

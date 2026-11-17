@@ -1577,6 +1577,115 @@ async function main() {
     }
   })
 
+  await gatedCase("L99. a truck in an APPROVED load plan cannot be put into maintenance: 'truck_in_approved_plan'; draft and cancelled plans do not block", async () => {
+    const truck = await seedTruck(agencyA, 100)
+    const VUPD = `SELECT public.agency_vehicle_update($1::uuid, $2::int, $3::jsonb) AS r`
+    const verOf = async () => (await suOne(`SELECT version FROM public.agency_trucks WHERE id = $1`, [truck])).version
+    const block = async () =>
+      callAs(fleetA, VUPD, [truck, await verOf(), JSON.stringify({ maintenance_blocked: true, maintenance_block_reason: 'service' })])
+    const o = await seedOrder('A', [[5, 10]])
+    const p = await mustSave(nx('TruckGuard'), [loadOf(truck, [[o.lineIds[0], 5]])])
+    expectOk(await callAs(fleetA, VUPD, [truck, await verOf(), JSON.stringify({ notes: 'ok' })]), 'notes patch on a drafted truck')
+    await mustApprove(p.plan_id, 1)
+    expectErr(await block(), 'truck_in_approved_plan')
+    const t1 = await suOne(`SELECT maintenance_blocked FROM public.agency_trucks WHERE id = $1`, [truck])
+    expect(t1.maintenance_blocked === false, 'truck was blocked despite the approved plan')
+    expectOk(await callAs(fleetA, VUPD, [truck, await verOf(), JSON.stringify({ notes: 'still editable' })]), 'non-maintenance patch on a planned truck')
+    expectOk(await cancelAs(ownerA, p.plan_id, 2), 'cancel plan')
+    expectOk(await block(), 'maintenance block after the plan is cancelled')
+  })
+
+  await gatedCase('L100. a nested UPDATE cannot skip the plan, load, line and unmet immutability guards', async () => {
+    const o = await seedOrder('A', [[5, 10]])
+    const planId = await seedPlanRow({ name: nx('LP-nested') })
+    const loadId = await seedLoadRow(planId, agencyA, truckA100)
+    const lineId = await seedLineRow(planId, loadId, agencyA, o.lineIds[0], 5)
+    const unmetId = uid()
+    await su(`INSERT INTO public.agency_load_plan_unmet (id, plan_id, agency_id, order_line_id, reason) VALUES ($1, $2, $3, $4, 'no_truck')`,
+      [unmetId, planId, agencyA, o.lineIds[0]])
+    await su(`UPDATE public.agency_load_plans SET status = 'approved', approved_by = $2, approved_at = now() WHERE id = $1`, [planId, ownerA])
+    const targets = [
+      ['plan', `UPDATE public.agency_load_plans SET name = 'hacked' WHERE id = '${planId}'`],
+      ['plan status', `UPDATE public.agency_load_plans SET status = 'draft' WHERE id = '${planId}'`],
+      ['load', `UPDATE public.agency_load_plan_loads SET total_kg = 999 WHERE id = '${loadId}'`],
+      ['line', `UPDATE public.agency_load_plan_lines SET quantity = 99 WHERE id = '${lineId}'`],
+      ['unmet', `UPDATE public.agency_load_plan_unmet SET reason = 'x' WHERE id = '${unmetId}'`],
+    ]
+    await su(`CREATE FUNCTION public.lp_nested_probe() RETURNS trigger LANGUAGE plpgsql AS $f$
+      BEGIN EXECUTE TG_ARGV[0]; RETURN NEW; END $f$`)
+    const failures = []
+    try {
+      for (const [label, stmt] of targets) {
+        await su(`DROP TRIGGER IF EXISTS lp_nested_probe ON public.agency_orders`)
+        await su(`CREATE TRIGGER lp_nested_probe AFTER UPDATE ON public.agency_orders
+                  FOR EACH ROW EXECUTE FUNCTION public.lp_nested_probe('${stmt.replace(/'/g, "''")}')`)
+        const err = await insertError(`UPDATE public.agency_orders SET client_order_ref = client_order_ref WHERE id = $1`, [o.orderId])
+        if (err === null) failures.push(`${label}: nested update was accepted`)
+      }
+    } finally {
+      await su(`DROP TRIGGER IF EXISTS lp_nested_probe ON public.agency_orders`)
+      await su(`DROP FUNCTION IF EXISTS public.lp_nested_probe()`)
+    }
+    expect(failures.length === 0, failures.join('; '))
+    const row = await planRow(planId)
+    expect(row.name !== 'hacked' && row.status === 'approved', `plan changed: ${short(row)}`)
+  })
+
+  await gatedCase('L101. FK actions still work: batch/user SET NULL on an approved plan and an agency delete cascade', async () => {
+    const batchId = uid()
+    await su(
+      `INSERT INTO public.agency_order_batches (id, agency_id, agreement_id, file_hash, row_count, created_by, idempotency_key)
+       VALUES ($1, $2, $3, $4, 1, $5, $6)`,
+      [batchId, agencyA, agrA, nx('lp-batch-hash2'), ownerA, nx('lp-batch-key2')]
+    )
+    const planId = await seedPlanRow({ status: 'approved', batchId, name: nx('LP-setnull') })
+    await su(`DELETE FROM public.agency_order_batches WHERE id = $1`, [batchId])
+    const after = await planRow(planId)
+    expect(after && after.batch_id === null && after.status === 'approved', `batch SET NULL failed: ${short(after)}`)
+    const u = await createUser('lp-setnull-user')
+    const pid = uid()
+    await su(
+      `INSERT INTO public.agency_load_plans (id, agency_id, name, status, plan_version, version, idempotency_key, approved_by, approved_at, created_by)
+       VALUES ($1, $2, $3, 'approved', 1, 1, $4, $5, now(), $5)`,
+      [pid, agencyA, nx('LP-usernull'), nx('lp-un-key'), u]
+    )
+    await su(`DELETE FROM public.users WHERE id = $1`, [u])
+    await su(`DELETE FROM auth.users WHERE id = $1`, [u])
+    const un = await planRow(pid)
+    expect(un && un.approved_by === null && un.created_by === null && un.status === 'approved', `user SET NULL failed: ${short(un)}`)
+    const owner = await createUser('lp-cascade-owner')
+    const agency = await createAgencyRow(owner, 'LoadPlan Cascade', 'approved')
+    const agr = await seedAgreement(agency, 'Cascade Client')
+    const site = await seedSite(agency, agr, 'ship_to', 'Cascade Depot')
+    const truck = await seedTruck(agency, 100)
+    const orderId = uid()
+    await su(`INSERT INTO public.agency_orders (id, agency_id, agreement_id, batch_id, client_order_ref, status, version) VALUES ($1, $2, $3, NULL, $4, 'draft', 1)`,
+      [orderId, agency, agr, nx('LP-CAS')])
+    const olId = uid()
+    await su(
+      `INSERT INTO public.agency_order_lines
+         (id, agency_id, order_id, line_no, sku, description, quantity, unit, weight_per_unit_kg, length_m, width_m, height_m,
+          pickup_site_id, drop_site_id, pickup_from, pickup_to, delivery_from, delivery_to)
+       VALUES ($1, $2, $3, 1, 'SKU-LP', 'Load plan line', 5, 'kg', 10, 1, 1, 1, $4, $4, now(), now(), now(), now())`,
+      [olId, agency, orderId, site]
+    )
+    const cp = uid()
+    await su(
+      `INSERT INTO public.agency_load_plans (id, agency_id, name, status, plan_version, version, idempotency_key, approved_by, approved_at, created_by)
+       VALUES ($1, $2, $3, 'draft', 1, 1, $4, NULL, NULL, $5)`,
+      [cp, agency, nx('LP-cascade'), nx('lp-cas-key'), owner]
+    )
+    const cl = await seedLoadRow(cp, agency, truck)
+    await seedLineRow(cp, cl, agency, olId, 5)
+    await su(`UPDATE public.agency_load_plans SET status = 'approved', approved_by = $2, approved_at = now() WHERE id = $1`, [cp, owner])
+    await su(`DELETE FROM public.transport_agencies WHERE id = $1`, [agency])
+    const left = await suOne(
+      `SELECT (SELECT count(*) FROM public.agency_load_plans WHERE agency_id = $1)::int AS p,
+              (SELECT count(*) FROM public.agency_load_plan_loads WHERE agency_id = $1)::int AS l,
+              (SELECT count(*) FROM public.agency_load_plan_lines WHERE agency_id = $1)::int AS n`, [agency])
+    expect(left.p === 0 && left.l === 0 && left.n === 0, `cascade left rows: ${short(left)}`)
+  })
+
   // =========================================================================
   // Summary
   // =========================================================================
