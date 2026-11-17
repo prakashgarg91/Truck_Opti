@@ -66,6 +66,7 @@ const AgencyDriversPage = React.lazy(() => import('./pages/AgencyDriversPage'))
 const AgencyRatesPage = React.lazy(() => import('./pages/AgencyRatesPage'))
 const AgencyTeamPage = React.lazy(() => import('./pages/AgencyTeamPage'))
 const AgencyClientsPage = React.lazy(() => import('./pages/AgencyClientsPage'))
+const AgencyOrderImportPage = React.lazy(() => import('./pages/AgencyOrderImportPage'))
 const AgencyTariffsPage = React.lazy(() => import('./pages/AgencyTariffsPage'))
 const AgencyProfilePage = React.lazy(() => import('./pages/AgencyProfilePage'))
 const NewShipmentPage = React.lazy(() => import('./pages/NewShipmentPage'))
@@ -191,6 +192,7 @@ function AppContent() {
             <Route path="/agency/team" element={<AgencyTeamPage />} />
             <Route path="/agency/clients" element={<AgencyClientsPage />} />
             <Route path="/agency/clients/:agreementId/tariffs" element={<AgencyTariffsPage />} />
+            <Route path="/agency/orders/import" element={<AgencyOrderImportPage />} />
             <Route path="/agency/profile" element={<AgencyProfilePage />} />
           </Route>
 
