@@ -130,5 +130,83 @@ Tests (>= 30 cases, frontend/src/lib/orderImport.test.ts, vitest, no DOM needed)
   check: 'cd frontend && npx vitest run src/lib/orderImport.test.ts',
 })
 
+tasks.push({
+  "id": "z-truck-to145-load-planner",
+  "title": "TO-145 deterministic load planner (pure library)",
+  "kind": "zcode-ui",
+  "priority": 2,
+  "allow": [
+    "frontend/src/lib/loadPlanner.ts",
+    "frontend/src/lib/loadPlanner.test.ts"
+  ],
+  "brief": "PURE TypeScript library: no React, no network, no Supabase, no new npm packages, no Date.now()/Math.random() inside logic (take time/ids as arguments so results are deterministic). Write the vitest tests FIRST (red), then the code. Do NOT touch any other file. Money is integer paise, never floats.\nCreate frontend/src/lib/loadPlanner.ts + loadPlanner.test.ts. planLoads(orders, trucks, options) -> { loads, unmet }.\nInput order line: { orderId, lineNo, weightKg, volumeM3 (optional), pickupSite, dropSite, pickupTo (ISO|null), stackable, fragile }. Truck: { truckId, label, capacityKg, capacityM3 (optional), available (boolean) }.\nRules: group lines by (pickupSite, dropSite); within a group sort by pickupTo ascending (null last) then orderId then lineNo, so output is stable; first-fit-decreasing by weight into available trucks sorted by capacityKg ascending then truckId; never exceed capacityKg or capacityM3 (when both given); a fragile line is never placed with more than its own group's non-stackable weight above it (just: fragile lines go into a load only if the load has no non-stackable heavier line; otherwise a new load); a line heavier than every truck, or with no trucks left, goes to unmet with reason 'too_heavy' | 'no_truck'. Each load returns { truckId, lines, totalKg, utilizationPct (rounded to 1 decimal) , pickupSite, dropSite }. Same input always gives byte-identical output (test with JSON.stringify twice and with shuffled input order). >= 25 cases: empty input, exact fit, overflow, split by route, unmet reasons, fragile rule, determinism, volume limit, unavailable trucks ignored.",
+  "check": "cd frontend && npx vitest run src/lib/loadPlanner.test.ts"
+})
+
+tasks.push({
+  "id": "z-truck-to146-grlr-lib",
+  "title": "TO-146 GR/LR number, QR payload and proof state (pure library)",
+  "kind": "zcode-ui",
+  "priority": 2,
+  "allow": [
+    "frontend/src/lib/grLr.ts",
+    "frontend/src/lib/grLr.test.ts"
+  ],
+  "brief": "PURE TypeScript library: no React, no network, no Supabase, no new npm packages, no Date.now()/Math.random() inside logic (take time/ids as arguments so results are deterministic). Write the vitest tests FIRST (red), then the code. Do NOT touch any other file. Money is integer paise, never floats.\nCreate frontend/src/lib/grLr.ts + grLr.test.ts. Exports: formatGrNumber(prefix, sequence, financialYearStart) -> e.g. 'AGY/2026-27/000123' (Indian financial year April-March; sequence zero-padded to 6; prefix upper-cased, 2-6 letters/digits else throws); financialYear(dateIso) -> '2026-27'; buildQrPayload({grNumber, consignmentId, token}) -> string 'TRKOPT:v1:<grNumber>:<consignmentId>:<token>'; parseQrPayload(text) -> {ok:true,...}|{ok:false,error:'bad_format'|'bad_version'}; nextProofState(current, event) a pure state machine over 'created'|'picked_up'|'in_transit'|'delivered'|'receipt_confirmed'|'disputed' with events 'pickup_scanned'|'transit_started'|'delivery_scanned'|'receipt_signed'|'dispute_raised'; illegal transitions return {ok:false,error:'illegal_transition'}; disputed is reachable from picked_up, in_transit, delivered; receipt_confirmed is terminal. Tests >= 30 incl. FY boundary 31 Mar vs 1 Apr, padding, bad prefix, QR round trip, every legal and illegal transition.",
+  "check": "cd frontend && npx vitest run src/lib/grLr.test.ts"
+})
+
+tasks.push({
+  "id": "z-truck-to148-invoice-calc",
+  "title": "TO-148 freight invoice, GST and UPI link maths (pure library)",
+  "kind": "zcode-ui",
+  "priority": 2,
+  "allow": [
+    "frontend/src/lib/freightInvoice.ts",
+    "frontend/src/lib/freightInvoice.test.ts"
+  ],
+  "brief": "PURE TypeScript library: no React, no network, no Supabase, no new npm packages, no Date.now()/Math.random() inside logic (take time/ids as arguments so results are deterministic). Write the vitest tests FIRST (red), then the code. Do NOT touch any other file. Money is integer paise, never floats.\nCreate frontend/src/lib/freightInvoice.ts + freightInvoice.test.ts. computeInvoice({lines:[{description,quantity,ratePaise}], supplierStateCode, placeOfSupplyStateCode, gstRatePct (0|5|12|18), reverseCharge:boolean, roundOff:boolean}) -> {subtotalPaise, cgstPaise, sgstPaise, igstPaise, roundOffPaise, totalPaise}. Same state -> CGST+SGST each half (CGST must equal SGST exactly: each = round-half-up of subtotal x rate / 200, and IGST = round-half-up of subtotal x rate / 100; round-off absorbs any difference), different state -> IGST; reverseCharge true -> all tax 0 and a flag reverseCharge in the result; line amount = quantity x ratePaise rounded half-up to paise; roundOff rounds the total to the nearest rupee (50 paise rounds up) and reports the difference. Also: buildUpiLink({payeeVpa, payeeName, amountPaise, invoiceNumber}) -> 'upi://pay?pa=...&pn=...&am=1234.50&tn=INV...&cu=INR' with proper URI encoding and amount formatted from paise with 2 decimals (throws on bad VPA 'name@bank' pattern or amount <= 0); allocatePayment(invoiceOutstandingPaise, paymentPaise) -> {appliedPaise, overpaymentPaise, status:'paid'|'partial'}. Platform never holds money: no function here moves funds. Tests >= 30: intra/inter state, odd paise, reverse charge, round-off boundary, each GST rate, UPI encoding of spaces and '&', invalid VPA, allocation edges.",
+  "check": "cd frontend && npx vitest run src/lib/freightInvoice.test.ts"
+})
+
+tasks.push({
+  "id": "z-truck-to149-expense-lib",
+  "title": "TO-149 fuel mileage and maintenance due maths (pure library)",
+  "kind": "zcode-ui",
+  "priority": 2,
+  "allow": [
+    "frontend/src/lib/fleetExpense.ts",
+    "frontend/src/lib/fleetExpense.test.ts"
+  ],
+  "brief": "PURE TypeScript library: no React, no network, no Supabase, no new npm packages, no Date.now()/Math.random() inside logic (take time/ids as arguments so results are deterministic). Write the vitest tests FIRST (red), then the code. Do NOT touch any other file. Money is integer paise, never floats.\nCreate frontend/src/lib/fleetExpense.ts + fleetExpense.test.ts. fuelMileage(fills:[{odometerKm,litres,fullTank:boolean}]) -> {kmPerLitre|null, anomalies:[{index,reason}]} using the full-tank-to-full-tank method (partial fills accumulate litres until the next full tank; first fill only sets the baseline); anomalies: odometer going backwards ('odometer_backwards'), litres <= 0 ('bad_litres'), implied mileage below 1 or above 15 km/l ('implausible_mileage'). maintenanceDue(items:[{name,lastServiceKm,intervalKm,lastServiceDateIso,intervalDays}], currentKm, todayIso) -> items with {dueInKm, dueInDays, status:'ok'|'due_soon'|'overdue'} where due_soon = within 10% of the interval or 14 days, whichever applies first, overdue when either limit passed. expenseSummary(expenses:[{category,amountPaise,dateIso,truckId}], fromIso, toIso) -> per-category and per-truck totals in paise, sorted by total descending then name. Tests >= 30 incl. empty input, partial fills, backwards odometer, boundaries of due_soon, date range inclusivity.",
+  "check": "cd frontend && npx vitest run src/lib/fleetExpense.test.ts"
+})
+
+tasks.push({
+  "id": "z-truck-to150-payroll-lib",
+  "title": "TO-150 driver pay and report aggregation (pure library)",
+  "kind": "zcode-ui",
+  "priority": 2,
+  "allow": [
+    "frontend/src/lib/driverPayroll.ts",
+    "frontend/src/lib/driverPayroll.test.ts"
+  ],
+  "brief": "PURE TypeScript library: no React, no network, no Supabase, no new npm packages, no Date.now()/Math.random() inside logic (take time/ids as arguments so results are deterministic). Write the vitest tests FIRST (red), then the code. Do NOT touch any other file. Money is integer paise, never floats.\nCreate frontend/src/lib/driverPayroll.ts + driverPayroll.test.ts. computeDriverPay({basePaise, trips:[{tripId,distanceKm,loadedKg,dateIso}], perKmPaise, perTonnePaise, advancesPaise, deductions:[{reason,amountPaise}], periodStartIso, periodEndIso}) -> {earningsPaise, deductionsPaise, advancesPaise, netPaise, shortfallPaise, lines:[...]} ; trips outside the period are ignored and reported in 'ignoredTripIds'; per-tonne uses loadedKg/1000 rounded half-up per trip; net never below zero, the shortfall (what advances/deductions exceed earnings) is reported as shortfallPaise and carried, not lost. tripsByDriverReport(trips, groupBy:'driver'|'truck'|'month') -> sorted stable aggregates {key,tripCount,distanceKm,loadedKg}. Tests >= 30 incl. period boundary inclusive, shortfall carry, zero trips, rounding half-up, sort stability.",
+  "check": "cd frontend && npx vitest run src/lib/driverPayroll.test.ts"
+})
+
+tasks.push({
+  "id": "z-truck-to147-tracking-lib",
+  "title": "TO-147 tracking ETA, stale-ping and incident rules (pure library)",
+  "kind": "zcode-ui",
+  "priority": 2,
+  "allow": [
+    "frontend/src/lib/trackingRules.ts",
+    "frontend/src/lib/trackingRules.test.ts"
+  ],
+  "brief": "PURE TypeScript library: no React, no network, no Supabase, no new npm packages, no Date.now()/Math.random() inside logic (take time/ids as arguments so results are deterministic). Write the vitest tests FIRST (red), then the code. Do NOT touch any other file. Money is integer paise, never floats.\nCreate frontend/src/lib/trackingRules.ts + trackingRules.test.ts. haversineKm(a,b); isStalePing(lastPingIso, nowIso, thresholdMinutes=30); estimateEta({currentLatLng, destLatLng, averageSpeedKmph, nowIso}) -> ISO string using straight-line distance x 1.3 road factor, throws if speed <= 0; detectIncidents(pings:[{tsIso,lat,lng,speedKmph}], opts) -> incidents: 'long_halt' (speed 0 for >= haltMinutes, default 60, outside no site), 'overspeed' (> maxKmph default 80), 'route_deviation' (distance from the straight pickup-drop line > deviationKm default 25), each with start index, end index, and a stable key string so the same incident is never reported twice; pings must be sorted, unsorted input throws 'unsorted_pings'. Tests >= 30 incl. antimeridian-free distances against known values (Delhi-Mumbai ~1150 km straight line within 1%), halts that end, overlapping incidents, dedupe keys.",
+  "check": "cd frontend && npx vitest run src/lib/trackingRules.test.ts"
+})
+
 writeFileSync(new URL('./tasks.json', import.meta.url), JSON.stringify(tasks, null, 2))
 console.log(tasks.length, 'tasks written')
