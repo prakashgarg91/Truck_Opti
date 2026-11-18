@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Mail, Phone, MessageCircle, Send, ChevronLeft } from 'lucide-react'
+import { Mail, MessageCircle, Send, ChevronLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
   clearStoredContactState,
@@ -12,10 +12,9 @@ import {
   type ContactInquiryPayload,
   type StoredContactInquiry,
 } from '../services/contactInquiry'
-import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY } from '../config/support'
+import { SUPPORT_EMAIL } from '../config/support'
 
 const SUBJECTS = ['General', 'Support', 'Sales', 'Partnership']
-const SUPPORT_PHONE = SUPPORT_PHONE_DISPLAY
 
 interface ContactPageProps {
   variant?: 'public' | 'authenticated'
@@ -210,15 +209,18 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
         {/* Contact Cards */}
         <div className="mb-6">
 
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-3">
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-3"
+          >
             <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-              <Phone className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <Mail className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Phone</p>
-              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{SUPPORT_PHONE}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Email support</p>
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{SUPPORT_EMAIL}</p>
             </div>
-          </div>
+          </a>
         </div>
 
         {pendingSubmission && (
@@ -303,7 +305,7 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
               type="tel"
               value={form.phone}
               onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-              placeholder="+91 99993 52050"
+              placeholder="+91 98765 43210"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -373,15 +375,6 @@ export default function ContactPage({ variant = 'public' }: ContactPageProps) {
                 <span className="text-sm">
                   <span className="block font-medium text-slate-800 dark:text-slate-200">{'Email'}</span>
                   <span className="block text-xs text-slate-500 dark:text-slate-400">{'Reply within 2–4 hours'}</span>
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <span className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <Phone className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                </span>
-                <span className="text-sm">
-                  <span className="block font-medium text-slate-800 dark:text-slate-200">{'Phone'}</span>
-                  <span className="block text-xs text-slate-500 dark:text-slate-400">{SUPPORT_PHONE}</span>
                 </span>
               </li>
             </ul>

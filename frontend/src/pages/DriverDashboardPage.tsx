@@ -2,11 +2,11 @@
 import {
   Power, Truck, Star, TrendingUp, Clock,
   CheckCircle2, XCircle, AlertTriangle,
-  Wallet, Navigation, PhoneCall, RefreshCw, UserCircle, X, IndianRupee
+  Wallet, Navigation, Mail, RefreshCw, UserCircle, X, IndianRupee
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { driverDashboardApi, driverEarningsApi, driverSupabaseApi } from '../services/supabaseApi'
-import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../config/support'
+import { SUPPORT_EMAIL } from '../config/support'
 import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
@@ -663,11 +663,11 @@ export default function DriverDashboardPage() {
             </p>
           </div>
           <a
-            href={`tel:${SUPPORT_PHONE_TEL}`}
-            aria-label={`Call support ${SUPPORT_PHONE_DISPLAY}`}
+            href={`mailto:${SUPPORT_EMAIL}`}
+            aria-label={`Email support ${SUPPORT_EMAIL}`}
             className={`p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ${FOCUS_RING}`}
           >
-            <PhoneCall size={18} aria-hidden="true" />
+            <Mail size={18} aria-hidden="true" />
           </a>
         </div>
 
@@ -893,11 +893,11 @@ export default function DriverDashboardPage() {
                 View Trip
               </button>
               <a
-                href={`tel:${SUPPORT_PHONE_TEL}`}
-                aria-label={`Call support ${SUPPORT_PHONE_DISPLAY}`}
+                href={`mailto:${SUPPORT_EMAIL}`}
+                aria-label={`Email support ${SUPPORT_EMAIL}`}
                 className={`flex items-center justify-center gap-2 min-h-[48px] py-2.5 bg-blue-600 text-white rounded-xl font-medium text-sm ${FOCUS_RING}`}
               >
-                <PhoneCall size={16} aria-hidden="true" />
+                <Mail size={16} aria-hidden="true" />
                 Support
               </a>
             </div>

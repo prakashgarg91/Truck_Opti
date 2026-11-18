@@ -2,7 +2,7 @@
 
 For the owner's support desk. Messages are quoted from the app code.
 
-**Contact (from `frontend/src/config/support.ts`):** +91 99993 52050, prakashgarg91@gmail.com.
+**Contact (from `frontend/src/config/support.ts`):** email only, prakashgarg91@gmail.com. No support phone number is published; do not give one out.
 **Hours and response times:** [OWNER TO SET]
 
 ---

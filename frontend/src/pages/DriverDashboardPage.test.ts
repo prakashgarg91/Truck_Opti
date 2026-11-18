@@ -361,18 +361,19 @@ describe('DriverDashboardPage refresh a11y and states', () => {
         expect(view.textContent || '').toContain('4.5 rating · 2 trips')
     })
 
-    it('active trip card exposes real tel: support links from the shared config', async () => {
+    it('active trip card exposes real email support links from the shared config (no phone)', async () => {
         h.getByUserId.mockResolvedValue({ ...DRIVER, active_job_id: 'job-42' })
         const view = await mountPage()
 
-        await waitForElement('a[href^="tel:"]', 'support tel link')
-        const telLinks = Array.from(view.querySelectorAll('a[href^="tel:"]'))
+        await waitForElement('a[href^="mailto:"]', 'support email link')
+        const supportLinks = Array.from(view.querySelectorAll('a[href^="mailto:"]'))
         // One in the driver header, one on the active-trip card.
-        expect(telLinks.length).toBeGreaterThanOrEqual(2)
-        for (const link of telLinks) {
-            expect(link.getAttribute('href')).toBe('tel:+919999352050')
-            expect(link.getAttribute('aria-label') || '').toContain('support')
+        expect(supportLinks.length).toBeGreaterThanOrEqual(2)
+        for (const link of supportLinks) {
+            expect(link.getAttribute('href')).toBe('mailto:prakashgarg91@gmail.com')
+            expect(link.getAttribute('aria-label') || '').toContain('Email support')
         }
+        expect(view.querySelector('a[href^="tel:"]')).toBeNull()
     })
 })
 

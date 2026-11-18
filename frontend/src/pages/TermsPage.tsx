@@ -67,7 +67,7 @@ export default function TermsPage() {
             <li>Subscription fees are billed in advance on a monthly or annual basis.</li>
             <li>All prices are in Indian Rupees (INR) and inclusive of applicable taxes.</li>
             <li>We reserve the right to change pricing with 30 days' notice.</li>
-            <li>Refunds are issued at our discretion within 7 days of payment.</li>
+            <li>If you ask for a refund within 7 days of your first purchase, we refund the unused part of that period, pro rata. Renewals are not refundable. A refund ends the subscription.</li>
           </ul>
         </section>
 

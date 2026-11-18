@@ -5,12 +5,12 @@ Status: draft, not legal advice, not yet published. Effective date: [OWNER: effe
 Operator: [OWNER: legal name of the platform company]
 GSTIN: [OWNER: GSTIN]
 Registered address: [OWNER: address]
-Support email: [OWNER: support email]
+Support email: prakashgarg91@gmail.com
 Governing law and courts: [OWNER: jurisdiction, e.g. courts of a named city in India]
 
 ## 1. Plans and prices
 
-Prices are per agency, per month, before GST. GST at 18% is added on top.
+Prices are per agency, per month, before GST. GST is added only while the seller is registered under GST. At present the seller is not registered, so no GST is charged.
 
 | Plan | Monthly (excl. GST) | Yearly (excl. GST) | Trucks | Staff | Drivers | Orders per month |
 |---|---|---|---|---|---|---|
@@ -38,7 +38,7 @@ Prices are per agency, per month, before GST. GST at 18% is added on top.
 - Subscriptions are prepaid. You pay for a period before it starts.
 - Renewal is manual. We do not charge your card again without your action. [OWNER: confirm no auto-debit at launch]
 - Payments are taken through Razorpay, into the platform's own account.
-- Every payment gets a GST tax invoice. Numbers look like TO/26-27/000001 and run in one unbroken series per financial year (April to March).
+- Every payment gets a tax invoice. GST is added only while the seller is registered under GST. At present the seller is not registered, so no GST is charged. Numbers look like TO/26-27/000001 and run in one unbroken series per financial year (April to March).
 - Invoices show the platform's GSTIN and your GSTIN if you give it. Same-state supply shows CGST and SGST; other states show IGST.
 - Invoices are never edited. A correction is made with a credit note (CN/26-27/000001).
 
@@ -53,14 +53,14 @@ Prices are per agency, per month, before GST. GST at 18% is added on top.
 ## 5. Refunds
 
 - If you ask within 7 days of your first purchase, we refund the unused part of that period, pro rata.
-- After 7 days, or for any renewal, there are no refunds. [OWNER: confirm whether renewals are refundable]
+- After 7 days, or for any renewal, there are no refunds.
 - The owner (platform admin) issues the refund through the payment provider. Money returns to the original payment method.
 - A credit note is issued for the refunded amount.
 - A refund ends the subscription at once. The agency moves to the expired state.
 
 ## 6. Cancellation
 
-- You can cancel at any time by asking support. [OWNER: support channel]
+- You can cancel at any time by asking support by email.
 - Cancellation stops renewal. There is no automatic renewal to cancel.
 - Your paid access continues until the end of the paid period. We do not refund the rest of the period on cancellation, except under section 5.
 - Cancelling does not delete your data.
@@ -80,11 +80,9 @@ Prices are per agency, per month, before GST. GST at 18% is added on top.
 ## Open questions for the owner
 
 1. Is Rs 499 / 1,999 / 4,999 final? Landing copy says Starter Rs 500 and Growth covers 5 users; the seed and this draft say 2 and 10 staff. Which is correct?
-2. Are renewals ever refundable, or only the first purchase?
-3. Is GST 18% exclusive (as drafted) for all plans?
-4. Confirm: no auto-debit at launch.
-5. Is the trial limited to one per GSTIN and phone, or also per email?
-6. Who answers support, and within how many days?
-7. Refund pro rata: is there a setup or processing fee to deduct?
-8. Enterprise: keep "on request" only, or publish a price?
-9. Does the TermsPage refund line ("at our discretion within 7 days") need replacing with this policy?
+2. Is GST 18% exclusive (as drafted) for all plans? Answered: GST is added only while the seller is registered under GST. At present no GST is charged.
+3. Confirm: no auto-debit at launch.
+4. Is the trial limited to one per GSTIN and phone, or also per email?
+5. Who answers support, and within how many days?
+6. Refund pro rata: is there a setup or processing fee to deduct?
+7. Enterprise: keep "on request" only, or publish a price?

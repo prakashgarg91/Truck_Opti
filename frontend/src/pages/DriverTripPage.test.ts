@@ -184,15 +184,16 @@ describe('DriverTripPage refresh states and a11y', () => {
         expect(Array.from(view.querySelectorAll('button')).some((b) => /Back to Dashboard/.test(b.textContent || ''))).toBe(true)
     })
 
-    it('the header exposes a labelled back action and the configured support tel link', async () => {
+    it('the header exposes a labelled back action and the email support link (no phone)', async () => {
         const view = await mountPage()
 
         await waitFor(() => (view.textContent || '').includes('Active Trip'), 'trip header')
         const back = view.querySelector('button[aria-label="Back to dashboard"]')
         expect(back).not.toBeNull()
-        const support = view.querySelector('a[href^="tel:"]')
-        expect(support?.getAttribute('href')).toBe('tel:+919999352050')
-        expect(support?.getAttribute('aria-label') || '').toContain('support')
+        const support = view.querySelector('a[href^="mailto:"]')
+        expect(support?.getAttribute('href')).toBe('mailto:prakashgarg91@gmail.com')
+        expect(support?.getAttribute('aria-label') || '').toContain('Email support')
+        expect(view.querySelector('a[href^="tel:"]')).toBeNull()
     })
 
     it('the stepper announces the current step and marks it with aria-current', async () => {

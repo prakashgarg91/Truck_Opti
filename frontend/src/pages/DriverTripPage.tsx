@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Navigation, MapPin, CheckCircle2, Truck, PhoneCall,
+  Navigation, MapPin, CheckCircle2, Truck, Mail,
   KeyRound, Camera, AlertTriangle, RefreshCw, ArrowLeft,
   Package, Flag
 } from 'lucide-react'
@@ -16,7 +16,7 @@ import {
   type JobProgressResult,
 } from '../services/driverTripProgress'
 import { useAuthStore } from '../stores/authStore'
-import { SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../config/support'
+import { SUPPORT_EMAIL } from '../config/support'
 import { useParams, useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
@@ -556,11 +556,11 @@ export default function DriverTripPage() {
           </p>
         </div>
         <a
-          href={`tel:${SUPPORT_PHONE_TEL}`}
-          aria-label={`Call support ${SUPPORT_PHONE_DISPLAY}`}
+          href={`mailto:${SUPPORT_EMAIL}`}
+          aria-label={`Email support ${SUPPORT_EMAIL}`}
           className={`flex items-center gap-1.5 min-h-[44px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-xl text-xs font-semibold ${FOCUS_RING}`}
         >
-          <PhoneCall size={14} aria-hidden="true" />
+          <Mail size={14} aria-hidden="true" />
           Support
         </a>
       </div>

@@ -119,4 +119,4 @@ Tap **Sign out** at the top right of the screen.
 - **GPS or sharing blocked:** allow location for the app or browser in phone settings.
 - **App stuck:** close and reopen it. Offers and your active trip reload from the server.
 
-For anything else, tap the phone button (Call support) on **Home** or the trip page.
+For anything else, tap **Support** on **Home** or the trip page. It opens an email to support.

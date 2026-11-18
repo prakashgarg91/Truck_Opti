@@ -191,4 +191,4 @@ Do not promise these:
 | Phone bottom bar (six tabs) and desktop menu | Agency layout component; confirm tab list before publishing |
 | Support and contact routes | `/support`, `/contact`; `frontend/src/config/support.ts` |
 
-**Open items before publishing:** the ERP plan seed, the support phone number (the older copy had one; confirm it in `support.ts`), the written data-export and expiry terms (`docs/legal/SUBSCRIPTION-POLICY-DRAFT.md`, owner wording pending), and the hosted status in `SALES-CHECKLIST.md`.
+**Open items before publishing:** the ERP plan seed, the written data-export and expiry terms (`docs/legal/SUBSCRIPTION-POLICY-DRAFT.md`, owner wording pending), and the hosted status in `SALES-CHECKLIST.md`.
