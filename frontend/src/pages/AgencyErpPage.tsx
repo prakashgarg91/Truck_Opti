@@ -177,8 +177,48 @@ export default function AgencyErpPage() {
     fetchAll()
   }, [fetchAll])
 
+  // Focus for the inline confirm steps: focus moves to Cancel (the safe choice) and returns to the
+  // row action that opened it when the step closes. This effect is declared before the reveal
+  // effect so that, on a rotate, focus lands on the row action first and the secret panel then
+  // records it as the element to return to.
+  // The row action is unmounted while its confirm step is open, so the return target is recorded
+  // as an id at click time and looked up again when the step closes.
+  const pendingReturnRef = useRef<string | null>(null)
+  const confirmRef = useRef<HTMLDivElement | null>(null)
+  const lastActionRef = useRef<string | null>(null)
+  const openPending = (id: string, action: Action) => {
+    pendingReturnRef.current = `erp-action-${id}-${action}`
+    lastActionRef.current = pendingReturnRef.current
+    setPending({ id, action })
+  }
   useEffect(() => {
-    if (reveal) revealRef.current?.focus()
+    if (pending) {
+      const buttons = confirmRef.current?.querySelectorAll<HTMLButtonElement>('button')
+      buttons?.[buttons.length - 1]?.focus()
+      return
+    }
+    const backId = pendingReturnRef.current
+    pendingReturnRef.current = null
+    if (backId) document.getElementById(backId)?.focus()
+  }, [pending])
+
+  // The secret panel takes focus when it opens and returns it to the control that opened it (or
+  // the page, if that control has gone) when it is dismissed.
+  // The return target is kept as an element id because list rows can be re-rendered while the
+  // panel is open; an element reference could be detached by then.
+  const revealReturnRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (reveal) {
+      const active = document.activeElement
+      // Prefer the focused control; during a rotate the row action can still be disabled at this
+      // point, so fall back to the row action that opened the confirm step.
+      revealReturnRef.current = active instanceof HTMLElement && active !== document.body && active.id ? active.id : lastActionRef.current
+      revealRef.current?.focus()
+      return
+    }
+    const backId = revealReturnRef.current
+    revealReturnRef.current = null
+    if (backId) document.getElementById(backId)?.focus()
   }, [reveal])
 
   const agreementById = useMemo(() => new Map(agreements.map((a) => [a.id, a])), [agreements])
@@ -452,6 +492,7 @@ export default function AgencyErpPage() {
             )}
             <div className="md:col-span-3">
               <button
+                id="erp-create-submit"
                 type="submit"
                 disabled={busy !== null || revealOpen || !erpAllowed}
                 title={gate.erpTitle}
@@ -470,7 +511,7 @@ export default function AgencyErpPage() {
         {connections.length === 0 ? (
           <p data-testid="erp-empty" className="text-sm text-slate-700">No ERP connection has been created yet.</p>
         ) : (
-          <ul className="space-y-3">
+          <ul aria-labelledby="erp-list" className="space-y-3">
             {connections.map((c) => {
               const last = lastEvent.get(c.id)
               const isPending = pending?.id === c.id ? pending.action : null
@@ -516,7 +557,8 @@ export default function AgencyErpPage() {
                       {c.status === 'active' ? (
                         <button
                           type="button"
-                          onClick={() => setPending({ id: c.id, action: 'pause' })}
+                          id={`erp-action-${c.id}-pause`}
+                          onClick={() => openPending(c.id, 'pause')}
                           disabled={busy !== null}
                           aria-label={`Pause ${c.name}`}
                           className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-800 disabled:opacity-60 ${FOCUS_RING}`}
@@ -526,7 +568,8 @@ export default function AgencyErpPage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => setPending({ id: c.id, action: 'resume' })}
+                          id={`erp-action-${c.id}-resume`}
+                          onClick={() => openPending(c.id, 'resume')}
                           disabled={busy !== null}
                           aria-label={`Resume ${c.name}`}
                           className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-800 disabled:opacity-60 ${FOCUS_RING}`}
@@ -536,7 +579,8 @@ export default function AgencyErpPage() {
                       )}
                       <button
                         type="button"
-                        onClick={() => setPending({ id: c.id, action: 'rotate' })}
+                        id={`erp-action-${c.id}-rotate`}
+                        onClick={() => openPending(c.id, 'rotate')}
                         disabled={busy !== null || revealOpen || !erpAllowed}
                         title={gate.erpTitle}
                         aria-label={`Rotate secret for ${c.name}`}
@@ -546,7 +590,8 @@ export default function AgencyErpPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPending({ id: c.id, action: 'revoke' })}
+                        id={`erp-action-${c.id}-revoke`}
+                        onClick={() => openPending(c.id, 'revoke')}
                         disabled={busy !== null}
                         aria-label={`Revoke ${c.name}`}
                         className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl border border-red-300 px-4 text-sm font-semibold text-red-800 disabled:opacity-60 ${FOCUS_RING}`}
@@ -559,7 +604,8 @@ export default function AgencyErpPage() {
 
                   {isPending && (
                     <div
-                      role="group"
+                      ref={confirmRef}
+                      role="alertdialog"
                       aria-label={`Confirm ${ACTION_COPY[isPending].button} for ${c.name}`}
                       data-testid={`erp-confirm-${c.id}`}
                       className={`space-y-2 rounded-xl border p-3 ${isPending === 'revoke' ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50'}`}

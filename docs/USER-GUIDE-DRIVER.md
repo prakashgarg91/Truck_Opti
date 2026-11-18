@@ -2,313 +2,121 @@
 
 This guide is for truck drivers using the TruckOpti driver app on a phone.
 
-You can do everything from your phone browser. You need:
+You need a mobile number, PAN card, driving licence, vehicle RC, bank account and internet.
 
-- A mobile number.
-- Your PAN card.
-- Your driving licence and vehicle RC.
-- A bank account for payouts.
-- Internet on your phone.
-
-The driver app has four tabs at the bottom: **Home**, **Trips** (यात्राएं), **Earnings** (कमाई) and **Profile** (प्रोफाइल).
-Source: `frontend/src/layouts/DriverLayout.tsx`
+Tabs at the bottom: **Home**, **Trips**, **Earnings**, **Profile**.
 
 ---
 
-## 1. Register as a driver
+## 1. Register
 
-Open the app and go to Driver Registration (`/driver/register`).
-
-You must log in first. Driver applications are linked to your login account. Tap **Continue To Driver Login** if you are not logged in.
-Source: `frontend/src/pages/DriverRegisterPage.tsx`
-
-Registration has three steps.
-
-### Step 1 — Personal Details
-
-- Full name, as printed on your Aadhaar card.
-- Mobile number, 10 digits.
-- Last 4 digits of your Aadhaar, optional.
-- PAN number, required. Example: `ABCDE1234F`.
-- Home city, for example Mumbai.
-
-### Step 2 — Vehicle Details
-
-- Select your vehicle type. The options are:
-  - Tata 407 (1 ton)
-  - Eicher 14ft (3 ton)
-  - Eicher 17ft (5 ton)
-  - Ashok Leyland 19ft (7 ton)
-  - BharatBenz 24ft (10 ton)
-  - BharatBenz 32ft (15 ton)
-- RC number, for example `MH01AB1234`.
-- Driving licence number.
-- Photo of your driving licence.
-- Photo of your vehicle RC.
-
-Take clear photos. Keep all four corners of the document in the frame.
-
-### Step 3 — Payment Details
-
-- Bank account number, required.
-- IFSC code, required. Example: `SBIN0001234`.
-- UPI ID, optional.
-
-Your payouts go to this account.
-
-Tap **Submit Application**. Your application status becomes **pending**. The app says the team reviews details within 24 to 48 hours and will inform you on your mobile number.
-Source: `frontend/src/pages/DriverRegisterPage.tsx`
+1. Open the app and sign in.
+2. Open **Driver Registration**.
+3. Step 1: enter your name (as on Aadhaar), mobile number, PAN (example `ABCDE1234F`) and home city.
+4. Step 2: choose your vehicle type, enter RC and licence numbers, and upload photos of your licence and RC.
+5. Step 3: enter your bank account number and IFSC code (example `SBIN0001234`). Payouts go here.
+6. Tap **Submit Application**. Our team reviews it within 24 to 48 hours. Check **Home** for your status.
 
 ---
 
-## 2. Complete your KYC documents
+## 2. Upload KYC documents
 
-After registering, upload four documents. Open **Profile → Documents & KYC** (`/driver/kyc`).
+1. Go to **Profile**, then **Documents & KYC**.
+2. Upload four documents:
+   - **RC Book:** chassis and engine numbers readable.
+   - **Driving Licence:** expiry date visible.
+   - **Aadhaar (combined):** front and back in one photo, 12-digit number readable.
+   - **Truck Photo:** full truck, number plate visible.
+3. Files: JPG, PNG, WEBP or PDF, under 5 MB, originals only. Use even light and no glare. You must be online to upload.
 
-The four documents are:
+Statuses:
 
-1. **RC Book** — chassis and engine numbers must be readable.
-2. **Driving License** — commercial heavy vehicle licence. The expiry date must be visible.
-3. **Aadhaar, combined** — front and back side in one clear photo. The 12-digit number must be readable.
-4. **Truck Photo** — the full truck in frame. The number plate must be clearly visible.
+- **Pending:** not uploaded.
+- **Pending review:** being checked.
+- **Review Needed:** rejected. The reason is shown. Tap **Re-upload**.
+- **Accepted:** approved. No action needed.
+- **Upload failed:** tap **Try again**.
 
-Source: `frontend/src/services/driverKycDocuments.ts`, `frontend/src/pages/DriverKycPage.tsx`
-
-Rules for uploads:
-
-- File types: JPEG, PNG, WebP or PDF.
-- Maximum size: 5 MB per file.
-- Upload the original document only. No photocopies.
-- Use even lighting. No glare.
-
-Each document shows one status:
-
-- **Pending** — not uploaded yet.
-- **Uploading** — the file is being sent.
-- **Pending review** — our verification team is checking it.
-- **Review Needed** — rejected. The reason is shown. Tap **Re-upload** and send a better photo.
-- **Accepted** — approved. No action needed.
-- **Upload failed** — tap **Try again**.
-
-When all four are ready, tap **Submit for verification**. The app says verification usually completes within 24 hours. The page also states that jobs unlock only after all four documents are accepted.
-Source: `frontend/src/pages/DriverKycPage.tsx`
-
-You can replace a document any time before it is accepted. After all four are accepted, your KYC is locked and becomes read-only.
-
-You must be online to upload. The page shows a warning if your internet is off.
+When all four are uploaded, tap **Submit for verification**. Jobs unlock only when all four are accepted.
 
 ---
 
-## 3. Wait for approval
+## 3. Join an agency with an invite link
 
-Your application is checked by the admin team. On Home, your status shows as one of:
-
-- **Verification Pending** — still under review.
-- **Verified** — approved. You can go online and receive jobs.
-- **Application Rejected** — contact support to resolve.
-- **Account Suspended** — contact support.
-
-Source: `frontend/src/pages/DriverDashboardPage.tsx`
+1. Open the invite link from your agency and sign in if asked.
+2. If it says **Driver profile needed**, register as a driver first, using the mobile number the agency invited. Then open the link again.
+3. If it says **Different account**, sign in with the email or phone number the invite was sent to.
+4. When it says **You have joined the agency**, tap **Go to my driver dashboard**.
 
 ---
 
-## 4. Go online
+## 4. Go online and accept a job
 
-When your status is Verified, Home shows an **Online/Offline** switch.
-
-- Tap the switch to go online. It turns green and shows **Online**.
-- Online means customers can see you and you can receive job offers.
-- Tap again to go offline. You will not get offers while offline.
-
-Source: `frontend/src/pages/DriverDashboardPage.tsx`
-
-Keep the app open while you wait. Home shows **Looking for jobs...** when you are online and free.
+1. On **Home**, your status must be **Verified**. Then tap the switch to **Online**.
+2. Keep the app open. An offer shows pickup, drop, load weight, estimated fare and a countdown.
+3. Tap **Accept** or **Decline**. The timer turns red in the last 10 seconds. An expired offer cannot be accepted.
+4. You can hold only one active job at a time.
 
 ---
 
-## 5. Receive and accept a job offer
+## 5. Run the trip
 
-When a customer books a load for your truck, a job offer pops up from the bottom of the screen.
+Tap **View Trip** on **Home**. Steps: Navigate, Pickup OTP, Load Photo, In Transit, Delivery OTP, Proof Photo, Done.
 
-The offer card shows:
+1. **Navigate:** tap **Open in Google Maps**. Tap **Arrived at Pickup**.
+2. **Pickup OTP:** ask the sender for the 4-digit OTP. Type it and tap **Verify OTP**.
+3. **Load Photo:** tap **Take Photo** of the goods. It is required. Tap **Start Journey**.
+4. **In Transit:** tap **Navigate to Destination**. Tap **Arrived at Destination**.
+5. **Delivery OTP:** ask the recipient for their 4-digit OTP. Type it and tap **Verify OTP**.
+6. **Proof Photo:** tap **Take Photo** of the delivered goods. It is required. Tap **Complete Delivery**.
+7. The app shows **Delivery Complete!**
 
-- Pickup location.
-- Drop location.
-- Load weight in kg.
-- Estimated fare in rupees.
-- A countdown timer.
-
-Source: `frontend/src/pages/DriverDashboardPage.tsx`
-
-You have two choices:
-
-- **Accept** — the job becomes your active trip. The app opens the trip page.
-- **Decline** — the offer closes. You stay available for the next offer.
-
-Decide quickly. The timer counts down and the offer expires when it reaches zero. The timer turns red when only 10 seconds remain.
-
-If you accept by mistake or lose internet, the pending offer reappears when you open the app again.
-
-You can hold only one active job at a time.
+You get 5 tries per OTP. After 5 wrong tries, the OTP is locked for 15 minutes.
 
 ---
 
-## 6. Do the trip, step by step
+## 6. Location sharing
 
-Open the active trip from Home (**View Trip**) or directly after accepting (`/driver/trip/:jobId`).
+There are two separate things.
 
-The trip has seven steps, shown as a progress bar at the top.
+**A. Automatic GPS during the journey.** After **Start Journey**, your GPS position is sent to the customer and agency. Keep GPS on.
 
-Source: `frontend/src/pages/DriverTripPage.tsx`
+**B. Share live location with your agency.** This is a switch on the trip page. It is **off** by default.
 
-### Step 1 — Navigate to pickup
-
-- Check the pickup address on the shipment card.
-- Tap **Open in Google Maps** for directions.
-- When you reach, tap **Arrived at Pickup**.
-
-### Step 2 — Pickup OTP
-
-- Ask the sender for the 4-digit OTP shown in their TruckOpti app.
-- Type the 4 digits.
-- Tap **Verify OTP**.
-
-### Step 3 — Loading photo
-
-- Tap **Take Photo** and photograph the goods being loaded.
-- This photo protects you in case of disputes.
-- The loading photo is required. You cannot start the journey without it.
-- Tap **Start Journey**.
-
-### Step 4 — In transit
-
-- Your live GPS location is shared with the customer.
-- Keep GPS on and allow location permission for the app.
-- The page shows the GPS status and the time of the last location sync.
-- Tap **Navigate to Destination** for directions.
-- When you reach, tap **Arrived at Destination**.
-
-### Step 5 — Delivery OTP
-
-- Ask the recipient for their 4-digit OTP.
-- Type the 4 digits.
-- Tap **Verify OTP**.
-
-### Step 6 — Proof of delivery photo
-
-- Tap **Take Photo** and photograph the delivered goods.
-- This photo is your proof of delivery. It is required.
-- Tap **Complete Delivery**.
-
-### Step 7 — Done
-
-The app confirms **Delivery Complete**. The trip amount is added to your wallet, and you return to Home.
-
-### OTP rules
-
-Both OTPs are 4 digits. This is enforced by the app and the database.
-Source: `frontend/src/services/jobOfferOtpContract.test.ts`, `supabase/migrations/20261004000000_trip_transition_integrity.sql`
-
-- You get up to 5 attempts per OTP.
-- After a wrong OTP, the app shows how many attempts remain.
-- After 5 wrong attempts, the OTP locks for 15 minutes.
-- Source: `frontend/src/services/driverTripProgress.ts`
-
-If the customer's OTP does not work, call support from the trip page.
+- Turn it on only if you want to share. Your phone then asks for location permission.
+- It shares your position and speed. Only your agency sees it.
+- It stops when the trip ends, when you tap **Stop**, or when you leave the trip page. Nothing is stored on your phone.
 
 ---
 
-## 7. Check your earnings
+## 7. Earnings
 
-Open the **Earnings** tab (`/driver/earnings`).
+On the **Earnings** tab, choose **This Week**, **This Month** or **All Time**.
 
-Choose a period: **This Week**, **This Month** or **All Time**.
+- **Estimate:** amounts are based on the customer's quote for delivered trips. Your agency sets your actual pay.
+- **Available to withdraw (estimate):** the amount you can request now.
+- **Export:** tap **CSV**, **JSON** or **XLSX** to download trips.
 
-Source: `frontend/src/pages/DriverEarningsPage.tsx`
+**Request a payout:** tap **Withdraw**, enter an amount up to your balance, then tap **Submit Request**. It usually settles in 1 to 2 business days. Status: **Pending**, **Approved**, **Paid** or **Rejected**.
 
-You will see:
+### My pay
 
-- **Wallet Balance** — money available to withdraw now.
-- **Earnings** — total fare of delivered trips in the selected period.
-- **Trips Completed** — delivered trips in the period.
-- **In Process** — withdrawal requests that are pending or approved.
-- **Withdrawn** — payouts already paid to you.
-- **Per-Trip Earnings** — each delivered trip with its route and fare.
-- **Daily Summary** — trips and earnings grouped by date.
-
-The wallet counts the fare of every delivered trip. Money already requested for withdrawal is reduced from the balance.
-
-### Withdraw money
-
-- Tap **Withdraw** on the Earnings page or **Request Withdrawal** on Home.
-- Enter an amount. It cannot be more than your balance.
-- Tap **Submit Request**.
-
-The request is reviewed manually. The app says it usually settles within 1 to 2 business days. Each request shows a status: **Pending**, **Approved**, **Paid** or **Rejected**.
-Source: `frontend/src/pages/DriverEarningsPage.tsx`, `frontend/src/pages/DriverDashboardPage.tsx`
-
-### Export your statement
-
-On the Earnings page, tap **CSV**, **XLSX** or **JSON** to download your trip earnings for the selected period.
+**My pay** shows statements for pay periods your agency has closed. Nothing appears until a period is closed. Each statement shows base pay, trip pay, advances, deductions, any carried-in or carried-forward amounts, and **Net**, the final amount for the period.
 
 ---
 
-## 8. See your trip history
+## 8. Sign out
 
-Open the **Trips** tab (`/driver/history`).
-
-Every job offer you received is listed here. Filter by **All**, **delivered** or **declined**.
-
-Each trip card shows:
-
-- Pickup and drop locations.
-- Load weight.
-- Estimated fare.
-- Date and time of the offer.
-- Status: **Completed**, **Accepted**, **Declined**, **Expired** or **Cancelled**.
-
-Source: `frontend/src/pages/DriverHistoryPage.tsx`
+Tap **Sign out** at the top right of the screen.
 
 ---
 
-## 9. Your profile
+## 9. Common problems
 
-Open the **Profile** tab (`/driver/profile`).
+- **Cannot upload:** check your internet. Files must be JPG, PNG, WEBP or PDF, under 5 MB.
+- **No offers:** check that you are Verified, Online, have all four documents accepted, and have no active job.
+- **OTP rejected:** check the digits with the sender or recipient. Five wrong tries lock it for 15 minutes.
+- **GPS or sharing blocked:** allow location for the app or browser in phone settings.
+- **App stuck:** close and reopen it. Offers and your active trip reload from the server.
 
-Here you can check:
-
-- Your name, vehicle and city.
-- Your document links — driving licence, RC book and more.
-- The **Documents & KYC** card with your current KYC status.
-
-Tap **Sign Out** at the bottom of the menu to log out.
-
-Source: `frontend/src/pages/DriverProfilePage.tsx`, `frontend/src/layouts/DriverLayout.tsx`
-
----
-
-## 10. Common problems
-
-- **Cannot upload KYC documents** — check your internet. Uploads need a working connection. Large files over 5 MB are rejected.
-- **No job offers coming** — check three things: your status is Verified, you are Online, and all four KYC documents are accepted.
-- **OTP not accepted** — confirm the 4 digits with the sender or recipient. Do not guess. Five wrong attempts lock the OTP for 15 minutes.
-- **GPS not working** — allow location permission for the app in your phone settings and keep GPS on.
-- **App seems stuck** — pull the page to refresh or close and reopen the app. Pending offers and active trips are restored from the server.
-
-For any other problem, tap the **Support** button on Home or on the trip page to call support.
-
----
-
-## Where these features live
-
-| Feature | Route | Source file |
-| --- | --- | --- |
-| Driver registration | `/driver/register` | `frontend/src/pages/DriverRegisterPage.tsx` |
-| KYC documents | `/driver/kyc` | `frontend/src/pages/DriverKycPage.tsx` |
-| Home, online toggle, job offers | `/driver/dashboard` | `frontend/src/pages/DriverDashboardPage.tsx` |
-| Active trip, OTPs, photos | `/driver/trip/:jobId` | `frontend/src/pages/DriverTripPage.tsx` |
-| Earnings and withdrawal | `/driver/earnings` | `frontend/src/pages/DriverEarningsPage.tsx` |
-| Trip history | `/driver/history` | `frontend/src/pages/DriverHistoryPage.tsx` |
-| Profile | `/driver/profile` | `frontend/src/pages/DriverProfilePage.tsx` |
-
-Routes are defined in `frontend/src/App.tsx`.
+For anything else, tap the phone button (Call support) on **Home** or the trip page.

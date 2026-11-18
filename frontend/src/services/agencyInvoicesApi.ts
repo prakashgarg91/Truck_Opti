@@ -41,6 +41,8 @@ export interface InvoiceRow {
     paid_paise: number
     version: number
     cancelled_reason: string | null
+    /** The consignment (GR) this invoice bills; null for a free-form invoice. */
+    consignment_id: string | null
     created_at: string
 }
 
@@ -84,6 +86,8 @@ export interface IssueInput {
     reverseCharge: boolean
     roundOff: boolean
     idempotencyKey: string
+    /** Optional: the consignment this invoice bills. At most one live invoice per consignment. */
+    consignmentId?: string | null
 }
 
 export interface PaymentInput {
@@ -109,6 +113,8 @@ export type IssueErrorCode =
     | 'invalid_gst_rate'
     | 'invalid_state_code'
     | 'client_not_found'
+    | 'consignment_not_found'
+    | 'consignment_already_invoiced'
     | 'invalid_line'
     | 'invalid_total'
     | 'unknown'
@@ -137,7 +143,15 @@ export type CancelErrorCode =
 
 export type IssueResult =
     | { ok: true; invoiceId: string; invoiceNumber: string; replay: boolean }
-    | { ok: false; error: IssueErrorCode; message: string; problems: LineProblem[] }
+    | {
+          ok: false
+          error: IssueErrorCode
+          message: string
+          problems: LineProblem[]
+          /** Set with consignment_already_invoiced: the invoice that already bills the consignment. */
+          invoiceId?: string
+          invoiceNumber?: string
+      }
 
 export type PaymentResult =
     | { ok: true; paidPaise: number; status: InvoiceStatus; version: number; replay: boolean }
@@ -155,6 +169,8 @@ export const ISSUE_ERROR_MESSAGES: Readonly<Record<Exclude<IssueErrorCode, 'unkn
     invalid_gst_rate: 'Choose a GST rate of 0, 5, 12 or 18 percent.',
     invalid_state_code: 'Enter two-digit state codes (01 to 38) for the supplier and the place of supply.',
     client_not_found: 'This client could not be found. Reload the page and choose the client again.',
+    consignment_not_found: 'This consignment could not be found. Reload the page and choose it again.',
+    consignment_already_invoiced: 'This consignment already has an invoice. Open it instead of issuing another.',
     invalid_line: 'Some line items were rejected. Fix them and issue the invoice again. Nothing was saved.',
     invalid_total: 'The invoice total must be more than zero.',
 })
@@ -283,7 +299,7 @@ const INVOICEABLE_STATUSES: readonly string[] = ['delivered', 'receipt_confirmed
 
 const CLIENT_COLUMNS = 'id,client_name,status,created_at'
 const INVOICE_COLUMNS =
-    'id,client_id,invoice_number,status,supplier_state_code,place_of_supply_state_code,gst_rate_pct,reverse_charge,subtotal_paise,cgst_paise,sgst_paise,igst_paise,round_off_paise,total_paise,paid_paise,version,cancelled_reason,created_at'
+    'id,client_id,invoice_number,status,supplier_state_code,place_of_supply_state_code,gst_rate_pct,reverse_charge,subtotal_paise,cgst_paise,sgst_paise,igst_paise,round_off_paise,total_paise,paid_paise,version,cancelled_reason,consignment_id,created_at'
 const LINE_COLUMNS = 'id,invoice_id,line_no,description,quantity,rate_paise,amount_paise'
 const PAYMENT_COLUMNS = 'id,invoice_id,amount_paise,method,reference,received_on,created_at'
 
@@ -335,6 +351,7 @@ export const agencyInvoicesApi = {
         const envelope = await callRpc(
             'agency_invoice_issue',
             {
+                ...(input.consignmentId ? { p_consignment_id: input.consignmentId } : {}),
                 p_client_id: input.clientId,
                 p_lines: input.lines.map((l) => ({
                     description: l.description,
@@ -367,6 +384,12 @@ export const agencyInvoicesApi = {
             error: code ?? 'unknown',
             message: code ? ISSUE_ERROR_MESSAGES[code] : fallback,
             problems: code === 'invalid_line' ? toProblems(envelope.problems) : [],
+            ...(code === 'consignment_already_invoiced' && typeof envelope.invoice_id === 'string'
+                ? {
+                      invoiceId: envelope.invoice_id,
+                      ...(typeof envelope.invoice_number === 'string' ? { invoiceNumber: envelope.invoice_number } : {}),
+                  }
+                : {}),
         }
     },
 

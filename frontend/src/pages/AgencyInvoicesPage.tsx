@@ -114,6 +114,8 @@ export default function AgencyInvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([])
   const [grs, setGrs] = useState<InvoiceableGr[]>([])
   const [grNote, setGrNote] = useState<string | null>(null)
+  // The consignment the form in progress bills (set by the GR shortcut). Sent only while the form's client is the GR's client.
+  const [linkedGrId, setLinkedGrId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
@@ -206,6 +208,18 @@ export default function AgencyInvoicesPage() {
   const clientName = useMemo(() => new Map(clients.map((c) => [c.id, c.client_name])), [clients])
   const selected = useMemo(() => invoices.find((i) => i.id === selectedId) ?? null, [invoices, selectedId])
 
+  // The one live (not cancelled) invoice that bills each consignment; a cancelled invoice frees its GR.
+  const invoiceByGr = useMemo(() => {
+    const map = new Map<string, InvoiceRow>()
+    for (const inv of invoices) {
+      if (inv.consignment_id && inv.status !== 'cancelled' && !map.has(inv.consignment_id)) map.set(inv.consignment_id, inv)
+    }
+    return map
+  }, [invoices])
+
+  const linkedGr = linkedGrId ? (grs.find((g) => g.consignmentId === linkedGrId) ?? null) : null
+  const consignmentId = linkedGr && linkedGr.clientId === clientId ? linkedGr.consignmentId : null
+
   // Outstanding per client from the loaded invoices: issued and partly paid only.
   const outstandingRows = useMemo(() => {
     const byClient = new Map<string, number>()
@@ -272,6 +286,11 @@ export default function AgencyInvoicesPage() {
    * client are never overwritten; the shortcut refuses and says why.
    */
   const prefillFromGr = (gr: InvoiceableGr) => {
+    const billedBy = invoiceByGr.get(gr.consignmentId)
+    if (billedBy) {
+      setGrNote(`GR ${gr.grNumber} already has invoice ${billedBy.invoice_number}. Open that invoice instead of issuing another.`)
+      return
+    }
     const description = `Freight for GR ${gr.grNumber}`
     const typed = lines.some((l) => l.description.trim() !== '' || l.rate.trim() !== '')
     if (typed && clientId !== '' && clientId !== gr.clientId) {
@@ -282,9 +301,14 @@ export default function AgencyInvoicesPage() {
       setGrNote(`GR ${gr.grNumber} belongs to a client with no agreement on the Clients page.`)
       return
     }
+    if (consignmentId && consignmentId !== gr.consignmentId) {
+      setGrNote(`One invoice bills one GR. Issue the invoice in progress or clear its lines first, then choose GR ${gr.grNumber} again.`)
+      return
+    }
     setGrNote(null)
     setIssueRefusal(null)
     setClientId(gr.clientId)
+    setLinkedGrId(gr.consignmentId)
     setLines((prev) => {
       if (prev.some((l) => l.description.trim() === description)) return prev
       if (!typed) return [{ id: lineSeq.current++, description, quantity: '1', rate: '' }]
@@ -307,6 +331,7 @@ export default function AgencyInvoicesPage() {
 
   const resetForm = () => {
     setClientId('')
+    setLinkedGrId(null)
     setLines([{ id: lineSeq.current++, description: '', quantity: '1', rate: '' }])
     setGstRate(18)
     setReverseCharge(false)
@@ -326,6 +351,7 @@ export default function AgencyInvoicesPage() {
       gstRatePct: gstRate,
       reverseCharge,
       roundOff,
+      consignmentId,
     }
     const key = intentKey(issueIntent, JSON.stringify(payload))
     setIssuing(true)
@@ -346,7 +372,13 @@ export default function AgencyInvoicesPage() {
       } else {
         if (result.error === 'idempotency_key_reused') issueIntent.current = null
         setIssueRefusal(result)
-        toast.error(result.message)
+        if (result.error === 'consignment_already_invoiced') {
+          // Calm path: the inline notice below is the message, no error toast. Refresh so the GR list shows the invoice that already bills it.
+          issueIntent.current = null
+          await fetchInvoices()
+        } else {
+          toast.error(result.message)
+        }
       }
     } catch (e) {
       logger.error('[AgencyInvoicesPage] issue failed:', e)
@@ -673,8 +705,27 @@ export default function AgencyInvoicesPage() {
           </div>
 
           {issueRefusal && (
-            <div role="alert" data-testid="invoice-issue-refused" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <div
+              role="alert"
+              data-testid="invoice-issue-refused"
+              className={`rounded-xl border p-4 text-sm ${issueRefusal.error === 'consignment_already_invoiced' ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-red-200 bg-red-50 text-red-800'}`}
+            >
               <p className="font-semibold">{issueRefusal.message}</p>
+              {issueRefusal.error === 'consignment_already_invoiced' && issueRefusal.invoiceId && (
+                <button
+                  type="button"
+                  data-testid="open-existing-invoice"
+                  onClick={() => {
+                    const existing = issueRefusal.invoiceId as string
+                    resetForm()
+                    setShowForm(false)
+                    selectInvoice(existing)
+                  }}
+                  className={`mt-2 min-h-[44px] rounded-xl border border-amber-300 px-4 font-semibold underline ${FOCUS_RING}`}
+                >
+                  {`Open invoice ${issueRefusal.invoiceNumber ?? ''}`.trim()}
+                </button>
+              )}
               {issueRefusal.problems.length > 0 && (
                 <ul className="mt-1 list-disc pl-5">
                   {issueRefusal.problems.map((p, i) => (
@@ -714,16 +765,30 @@ export default function AgencyInvoicesPage() {
                     {clientName.get(gr.clientId) ?? 'Client'} · {gr.status === 'receipt_confirmed' ? 'Receipt confirmed' : 'Delivered'}
                   </span>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => prefillFromGr(gr)}
-                  disabled={!gate.canSettle}
-                  title={gate.settleTitle}
-                  aria-label={`Create invoice from consignment ${gr.grNumber}`}
-                  className={`flex items-center justify-center gap-1 ${SECONDARY_BTN}`}
-                >
-                  <Plus size={16} aria-hidden="true" /> Create invoice from consignment
-                </button>
+                {invoiceByGr.get(gr.consignmentId) ? (
+                  <span className="flex flex-wrap items-center gap-2" data-testid="gr-invoiced">
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-900">Invoiced</span>
+                    <button
+                      type="button"
+                      onClick={() => selectInvoice((invoiceByGr.get(gr.consignmentId) as InvoiceRow).id)}
+                      aria-label={`Open invoice ${(invoiceByGr.get(gr.consignmentId) as InvoiceRow).invoice_number} for GR ${gr.grNumber}`}
+                      className={`min-h-[44px] rounded-xl px-3 text-sm font-semibold text-indigo-700 underline ${FOCUS_RING}`}
+                    >
+                      {(invoiceByGr.get(gr.consignmentId) as InvoiceRow).invoice_number}
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => prefillFromGr(gr)}
+                    disabled={!gate.canSettle}
+                    title={gate.settleTitle}
+                    aria-label={`Create invoice from consignment ${gr.grNumber}`}
+                    className={`flex items-center justify-center gap-1 ${SECONDARY_BTN}`}
+                  >
+                    <Plus size={16} aria-hidden="true" /> Create invoice from consignment
+                  </button>
+                )}
               </li>
             ))}
           </ul>

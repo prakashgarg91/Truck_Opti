@@ -611,7 +611,7 @@ function ExpenseList({ expenses, truckLabel }: { expenses: ExpenseRow[]; truckLa
       {expenses.length === 0 ? (
         <Empty testId="expense-list-empty">No expenses recorded in this period yet. Add the first one above.</Empty>
       ) : (
-        <ul className="divide-y divide-slate-100" data-testid="expense-list">
+        <ul aria-labelledby="expense-list-heading" className="divide-y divide-slate-100" data-testid="expense-list">
           {expenses.map((e) => (
             <li key={e.id} className="flex flex-wrap items-start justify-between gap-2 py-2">
               <div className="min-w-0">
@@ -803,7 +803,7 @@ function FuelSection({
         {fills.length === 0 ? (
           <Empty testId="fuel-empty">No fuel fills recorded yet.</Empty>
         ) : (
-          <ul className="divide-y divide-slate-100" data-testid="fuel-list">
+          <ul aria-labelledby="fuel-history-heading" className="divide-y divide-slate-100" data-testid="fuel-list">
             {[...fills]
               .sort((a, b) => (a.filled_on < b.filled_on ? 1 : a.filled_on > b.filled_on ? -1 : b.odometer_km - a.odometer_km))
               .map((f) => (
@@ -1016,7 +1016,7 @@ function MaintenanceSection({
         {rows.length === 0 ? (
           <Empty testId="maint-empty">No maintenance items yet. Add one above to start tracking services.</Empty>
         ) : (
-          <ul className="divide-y divide-slate-100" data-testid="maint-list">
+          <ul aria-labelledby="maint-list-heading" className="divide-y divide-slate-100" data-testid="maint-list">
             {rows.map(({ item, currentKm, due }) => (
               <li key={item.id} className="space-y-2 py-3" data-testid={`maint-item-${item.id}`}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -1043,6 +1043,7 @@ function MaintenanceSection({
                 </div>
                 {serviceFor === item.id && (
                   <form
+                    aria-label={`Service for ${item.name}`}
                     onSubmit={(e) => {
                       e.preventDefault()
                       handleServiceDone(item)

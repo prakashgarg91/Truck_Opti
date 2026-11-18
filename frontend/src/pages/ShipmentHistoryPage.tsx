@@ -8,6 +8,7 @@ import { customerShipmentsApi } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import AdminLoadError from './AdminLoadError'
 
 interface Shipment {
   id: string
@@ -34,18 +35,25 @@ export default function ShipmentHistoryPage() {
   const { user } = useAuthStore()
   const [shipments, setShipments] = useState<Shipment[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [filter, setFilter] = useState<FilterStatus>('all')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
   const fetchShipments = useCallback(async () => {
-    if (!user?.id) return
+    if (!user?.id) {
+      // No signed-in user: stop the spinner instead of hanging on it.
+      setLoading(false)
+      return
+    }
     setLoading(true)
+    setLoadError(false)
     try {
       const shipmentRows = await customerShipmentsApi.getCreatedByUser(user.id)
       setShipments(shipmentRows as unknown as Shipment[])
     } catch (err) {
       logger.error('Failed to load shipments:', err)
+      setLoadError(true)
       toast.error('Failed to load shipment history')
     } finally {
       setLoading(false)
@@ -99,7 +107,7 @@ export default function ShipmentHistoryPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <RefreshCw className="animate-spin text-indigo-600" size={32} />
+        <RefreshCw role="status" aria-label="Loading shipment history" className="animate-spin text-indigo-600" size={32} />
       </div>
     )
   }
@@ -116,6 +124,7 @@ export default function ShipmentHistoryPage() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
+          aria-label="Search shipments by route or ID"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by route or ID..."
@@ -128,8 +137,10 @@ export default function ShipmentHistoryPage() {
         {(['all', 'pending', 'in_transit', 'delivered', 'cancelled'] as FilterStatus[]).map((f) => (
           <button
             key={f}
+            type="button"
+            aria-pressed={filter === f}
             onClick={() => setFilter(f)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filter === f
+            className={`flex-shrink-0 min-h-[44px] px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filter === f
               ? 'bg-indigo-600 text-white'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
               }`}
@@ -140,7 +151,9 @@ export default function ShipmentHistoryPage() {
       </div>
 
       {/* Shipments List */}
-      {filteredShipments.length === 0 ? (
+      {loadError ? (
+        <AdminLoadError what="shipment history" onRetry={fetchShipments} />
+      ) : filteredShipments.length === 0 ? (
         <div className="text-center py-16">
           <Package size={48} className="text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500 dark:text-slate-400 font-medium">No shipments found</p>
@@ -157,8 +170,16 @@ export default function ShipmentHistoryPage() {
             return (
               <div
                 key={shipment.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/tracking?shipment=${shipment.id}`)}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm cursor-pointer"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    navigate(`/tracking?shipment=${shipment.id}`)
+                  }
+                }}
+                className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -226,7 +247,8 @@ export default function ShipmentHistoryPage() {
                 <button
                   onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
                   disabled={currentPage === 1}
-                  className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
+                  type="button"
+                  className="min-h-[44px] min-w-[44px] rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
                 >
                   Previous
                 </button>
@@ -236,7 +258,8 @@ export default function ShipmentHistoryPage() {
                 <button
                   onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
                   disabled={currentPage === totalPages}
-                  className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
+                  type="button"
+                  className="min-h-[44px] min-w-[44px] rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
                 >
                   Next
                 </button>

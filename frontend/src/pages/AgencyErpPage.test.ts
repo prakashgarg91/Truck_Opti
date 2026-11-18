@@ -426,3 +426,33 @@ describe('AgencyErpPage subscription guard', () => {
         expect(button(/Create connection/)!.disabled).toBe(false)
     })
 })
+
+describe('AgencyErpPage accessibility', () => {
+    const nameOf = (el: Element | null) => {
+        const id = el?.getAttribute('aria-labelledby')
+        return (id && document.getElementById(id)?.textContent) || ''
+    }
+
+    it('names the connections list and makes the revoke-style confirm step an alertdialog', async () => {
+        h.listConnections.mockResolvedValue([conn('c-1', 'Tally feed', 'active', 3)])
+        await mountPage()
+        expect(nameOf(q('[data-testid="erp-list"] ul'))).toContain('Connections')
+        await click(button(/Rotate secret for Tally feed/)!)
+        const confirm = q('[data-testid="erp-confirm-c-1"]')
+        expect(confirm?.getAttribute('role')).toBe('alertdialog')
+        expect(confirm?.getAttribute('aria-label')).toContain('Rotate secret')
+    })
+
+    it('moves focus into the confirm step, then into the secret panel, and returns focus to the row action on dismiss', async () => {
+        h.listConnections.mockResolvedValue([conn('c-1', 'Tally feed', 'active', 3)])
+        h.rotateSecret.mockResolvedValue({ ok: true, secret: SECRET, version: 4 })
+        await mountPage()
+        await click(button(/Rotate secret for Tally feed/)!)
+        expect(document.activeElement?.textContent?.trim()).toBe('Cancel')
+        const confirm = q('[data-testid="erp-confirm-c-1"]') as HTMLElement
+        await click(confirm.querySelector('button') as HTMLButtonElement)
+        expect(document.activeElement).toBe(q('[data-testid="erp-secret-panel"]'))
+        await click(button(/I have saved it/)!)
+        expect(document.activeElement).toBe(button(/Rotate secret for Tally feed/))
+    })
+})

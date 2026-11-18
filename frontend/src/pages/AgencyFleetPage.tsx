@@ -217,7 +217,7 @@ export default function AgencyFleetPage() {
       {/* Denied state: a controlled agency denial (approval / profile) is distinct */}
       {denied && (
         <div role="alert" data-testid="fleet-denied" className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-2xl p-4">
-          <ShieldAlert size={18} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <ShieldAlert size={18} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold text-red-700 dark:text-red-300">Action not permitted</p>
             <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{denied}</p>
@@ -331,7 +331,7 @@ export default function AgencyFleetPage() {
       {/* Truck List */}
       {trucks.length === 0 && !showAdd && !loadError && (
         <div className="text-center py-12" data-testid="fleet-empty">
-          <Truck size={48} className="text-slate-300 mx-auto mb-4" />
+          <Truck size={48} className="text-slate-300 mx-auto mb-4" aria-hidden="true" />
           <p className="text-slate-500 dark:text-slate-400 text-sm">
             No vehicles added yet. Add your first truck to get started.
           </p>
@@ -376,20 +376,20 @@ export default function AgencyFleetPage() {
         </p>
       )}
       {visibleTrucks.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-5 items-start">
+        <div role="list" aria-label="Fleet vehicles" className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-5 items-start">
           {visibleTrucks.map(truck => {
         const insuranceStatus = expiryStatus(truck.insurance_expiry)
         const fitnessStatus = expiryStatus(truck.fitness_expiry)
         const hasAlert = insuranceStatus !== 'ok' || fitnessStatus !== 'ok' || expiryStatus(truck.permit_expiry) !== 'ok' || expiryStatus(truck.puc_expiry) !== 'ok'
 
         return (
-          <div key={truck.id} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm" data-testid="fleet-vehicle-card">
+          <div key={truck.id} role="listitem" className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm" data-testid="fleet-vehicle-card">
             <div className="flex items-start gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${truck.is_available && !truck.maintenance_blocked
                 ? 'bg-green-100 dark:bg-green-900/30'
                 : 'bg-amber-100 dark:bg-amber-900/30'
                 }`}>
-                <Truck size={20} className={truck.is_available && !truck.maintenance_blocked ? 'text-green-600' : 'text-amber-600'} />
+                <Truck size={20} aria-hidden="true" className={truck.is_available && !truck.maintenance_blocked ? 'text-green-600' : 'text-amber-600'} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">

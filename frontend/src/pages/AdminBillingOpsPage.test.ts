@@ -5,14 +5,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
     getSweepRuns: vi.fn(),
+    getAgencies: vi.fn(),
+    getEvents: vi.fn(),
+    getAttempts: vi.fn(),
+    getCoupons: vi.fn(),
 }))
 
 vi.mock('../utils/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() } }))
 vi.mock('../services/adminSupabaseApi', () => ({
-    adminBillingOpsApi: { getSweepRuns: h.getSweepRuns },
+    adminBillingOpsApi: {
+        getSweepRuns: h.getSweepRuns,
+        getAgenciesWithoutSubscription: h.getAgencies,
+        getWebhookEvents: h.getEvents,
+        getWebhookAttempts: h.getAttempts,
+        getCoupons: h.getCoupons,
+    },
 }))
 
-import AdminBillingOpsPage, { NOT_AVAILABLE_TEXT } from './AdminBillingOpsPage'
+import AdminBillingOpsPage from './AdminBillingOpsPage'
 
 const RUNS = [
     {
@@ -35,6 +45,23 @@ const RUNS = [
         graceExpired: 3,
         remindersCreated: 0,
     },
+]
+
+const AGENCIES = [
+    { id: 'a1', name: 'Alpha Logistics', createdAt: '2026-11-01T10:00:00Z', ownerUserId: 'owner-uuid-1', ownerEmail: 'alpha@example.com' },
+    { id: 'a2', name: 'Beta Movers', createdAt: '2026-11-02T10:00:00Z', ownerUserId: 'owner-uuid-2', ownerEmail: null },
+]
+const EVENTS = [
+    { receivedAt: '2026-11-18T10:00:00Z', eventId: 'evt_1', eventType: 'payment.captured', result: 'orphan', orderId: 'order_1', paymentId: 'pay_1' },
+    { receivedAt: '2026-11-18T09:00:00Z', eventId: 'evt_2', eventType: 'ping', result: 'ignored', orderId: null, paymentId: null },
+]
+const ATTEMPTS = [
+    { eventId: 'evt_1', attemptNo: 2, sqlstateOrCode: 'P0001', at: '2026-11-18T10:01:00Z' },
+    { eventId: 'evt_1', attemptNo: 1, sqlstateOrCode: '23505', at: '2026-11-18T10:00:30Z' },
+]
+const COUPONS = [
+    { code: 'FOUNDING50', percentOff: 50, maxCycles: 3, monthlyOnly: true, validUntil: null, maxRedemptions: null, redemptionCount: 3 },
+    { code: 'LIMITED10', percentOff: 10, maxCycles: 2, monthlyOnly: false, validUntil: '2031-01-01T00:00:00Z', maxRedemptions: 5, redemptionCount: 1 },
 ]
 
 let root: Root | null = null
@@ -85,6 +112,10 @@ async function typeSearch(value: string) {
 beforeEach(() => {
     vi.clearAllMocks()
     h.getSweepRuns.mockResolvedValue(RUNS)
+    h.getAgencies.mockResolvedValue(AGENCIES)
+    h.getEvents.mockResolvedValue(EVENTS)
+    h.getAttempts.mockResolvedValue(ATTEMPTS)
+    h.getCoupons.mockResolvedValue(COUPONS)
 })
 
 afterEach(async () => {
@@ -159,46 +190,114 @@ describe('AdminBillingOpsPage: sweep runs (live)', () => {
     })
 })
 
-describe('AdminBillingOpsPage: sections an admin cannot read yet', () => {
+describe('AdminBillingOpsPage: the admin read sections (live)', () => {
     it('renders the four section headings in order', async () => {
         await mountPage()
         const headings = qa('section h2').map((h) => h.textContent)
-        expect(headings).toEqual([
-            'Agencies without a live subscription',
-            'Webhook events',
-            'Sweep runs',
-            'Coupons',
-        ])
+        expect(headings).toEqual(['Agencies without a live subscription', 'Webhook events', 'Sweep runs', 'Coupons'])
     })
 
-    it('shows the not-available notice with the exact table names for every unreadable table', async () => {
+    it('no section shows a "not available" notice any more', async () => {
         await mountPage()
-        const notices = qa('[data-testid="ops-not-available"]')
-        expect(notices).toHaveLength(5)
-        const combined = notices.map((n) => n.textContent).join('\n')
-        expect(combined).toContain(NOT_AVAILABLE_TEXT)
-        for (const table of [
-            'subscriptions',
-            'razorpay_webhook_events',
-            'razorpay_webhook_attempts',
-            'subscription_coupons',
-            'subscription_coupon_redemptions',
-        ]) {
-            expect(combined).toContain(table)
-        }
+        expect(q('[data-testid="ops-not-available"]')).toBeNull()
+        expect(text()).not.toContain('Not available yet')
     })
 
-    it('renders the notice text exactly, never an empty table or zero count, for the unreadable sections', async () => {
+    it('requests every section once: 100 events, 100 attempts, 20 sweep runs', async () => {
         await mountPage()
-        const agencies = q('[data-testid="ops-section-ops-agencies-no-subscription"]') as HTMLElement
-        expect(agencies.querySelector('table')).toBeNull()
-        expect(agencies.textContent).toContain('Not available yet: needs an admin read path')
-        expect(agencies.textContent).not.toMatch(/\b0\b/)
+        expect(h.getAgencies).toHaveBeenCalledTimes(1)
+        expect(h.getEvents).toHaveBeenCalledWith(100)
+        expect(h.getAttempts).toHaveBeenCalledWith(100)
+        expect(h.getCoupons).toHaveBeenCalledTimes(1)
+        expect(h.getSweepRuns).toHaveBeenCalledWith(20)
     })
 
-    it('makes no query for the unreadable sections: only the sweep runs are fetched', async () => {
+    it('shows a loading status per section while it is fetched', async () => {
+        h.getAgencies.mockReturnValue(new Promise(() => {}))
+        h.getCoupons.mockReturnValue(new Promise(() => {}))
         await mountPage()
-        expect(h.getSweepRuns).toHaveBeenCalledTimes(1)
+        expect(q('[data-testid="agencies-loading"]')).not.toBeNull()
+        expect(q('[data-testid="coupons-loading"]')).not.toBeNull()
+        expect(q('[data-testid="events-table"]')).not.toBeNull()
+    })
+
+    it('agencies: one row per agency with the owner email, falling back to the owner id', async () => {
+        await mountPage()
+        const rows = qa('[data-testid="agencies-table"] tbody tr')
+        expect(rows).toHaveLength(2)
+        expect(rows[0].textContent).toContain('Alpha Logistics')
+        expect(rows[0].textContent).toContain('alpha@example.com')
+        expect(rows[1].textContent).toContain('owner-uuid-2')
+    })
+
+    it('agencies: an empty list says every approved agency is subscribed, with no table', async () => {
+        h.getAgencies.mockResolvedValue([])
+        await mountPage()
+        expect(q('[data-testid="agencies-empty"]')?.textContent).toContain('Every approved agency has a live subscription.')
+        expect(q('[data-testid="agencies-table"]')).toBeNull()
+    })
+
+    it('webhook events: rows show ids and result, null ids render as a dash, and no payload is shown', async () => {
+        await mountPage()
+        const rows = qa('[data-testid="events-table"] tbody tr')
+        expect(rows).toHaveLength(2)
+        expect(rows[0].textContent).toContain('evt_1')
+        expect(rows[0].textContent).toContain('orphan')
+        expect(rows[0].textContent).toContain('order_1')
+        expect(rows[1].textContent).toContain('-')
+        expect(text().toLowerCase()).not.toContain('payload')
+    })
+
+    it('webhook attempts: rows show event, attempt number and code', async () => {
+        await mountPage()
+        const rows = qa('[data-testid="attempts-table"] tbody tr')
+        expect(rows).toHaveLength(2)
+        expect(rows[0].textContent).toContain('evt_1')
+        expect(rows[0].textContent).toContain('P0001')
+    })
+
+    it('coupons: discount, limit text and expiry are rendered', async () => {
+        await mountPage()
+        const rows = qa('[data-testid="coupons-table"] tbody tr')
+        expect(rows).toHaveLength(2)
+        expect(rows[0].textContent).toContain('FOUNDING50')
+        expect(rows[0].textContent).toContain('50%')
+        expect(rows[0].textContent).toContain('3 (no limit)')
+        expect(rows[0].textContent).toContain('No expiry')
+        expect(rows[1].textContent).toContain('1 of 5')
+    })
+
+    it('empty states: events, attempts and coupons each show their own notice', async () => {
+        h.getEvents.mockResolvedValue([])
+        h.getAttempts.mockResolvedValue([])
+        h.getCoupons.mockResolvedValue([])
+        await mountPage()
+        expect(q('[data-testid="events-empty"]')).not.toBeNull()
+        expect(q('[data-testid="attempts-empty"]')).not.toBeNull()
+        expect(q('[data-testid="coupons-empty"]')).not.toBeNull()
+    })
+
+    it('one failing section shows its own error with Retry and leaves the other sections intact', async () => {
+        h.getEvents.mockRejectedValueOnce(new Error('rpc forbidden')).mockResolvedValueOnce(EVENTS)
+        await mountPage()
+        expect(qa('[data-testid="admin-load-error"]')).toHaveLength(1)
+        expect(text()).toContain('Unable to load webhook events right now. Please try again.')
+        expect(q('[data-testid="events-table"]')).toBeNull()
+        expect(q('[data-testid="events-empty"]')).toBeNull()
+        expect(q('[data-testid="agencies-table"]')).not.toBeNull()
+        expect(q('[data-testid="coupons-table"]')).not.toBeNull()
+        await click(button(/^Retry$/) as HTMLElement)
+        expect(h.getEvents).toHaveBeenCalledTimes(2)
+        expect(qa('[data-testid="events-table"] tbody tr')).toHaveLength(2)
+        expect(q('[data-testid="admin-load-error"]')).toBeNull()
+    })
+
+    it('a refused agencies read (not an admin) is an error, never an empty "all subscribed" list', async () => {
+        h.getAgencies.mockRejectedValue(new Error('forbidden'))
+        await mountPage()
+        expect(q('[data-testid="agencies-empty"]')).toBeNull()
+        expect(q('[data-testid="agencies-table"]')).toBeNull()
+        expect(q('[data-testid="admin-load-error"]')).not.toBeNull()
     })
 
     it('is read-only: the only buttons are Back and Retry, and there is no form', async () => {

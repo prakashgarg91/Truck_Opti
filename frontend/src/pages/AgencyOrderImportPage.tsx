@@ -580,7 +580,7 @@ export default function AgencyOrderImportPage() {
               {orderSearch.trim() !== '' && orders.filter((o) => matchesOrderRef(o, orderSearch)).length === 0 && (
                 <p className="text-sm text-slate-700">No orders match that reference.</p>
               )}
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-slate-100" aria-label="Imported orders">
                 {orders.filter((o) => matchesOrderRef(o, orderSearch)).map((o) => (
                   <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <div className="min-w-0">

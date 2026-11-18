@@ -121,6 +121,17 @@ export default function AgencyConsignmentsPage() {
 
   const [disputeFor, setDisputeFor] = useState<string | null>(null)
   const [disputeNote, setDisputeNote] = useState('')
+  // Focus: opening the dispute step moves focus into its note; closing it returns focus to the
+  // "Raise dispute" button that opened it (the button stays mounted in the same row).
+  const lastDisputeFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (disputeFor) {
+      document.getElementById(`dispute-note-${disputeFor}`)?.focus()
+    } else if (lastDisputeFor.current) {
+      document.getElementById(`dispute-trigger-${lastDisputeFor.current}`)?.focus()
+    }
+    lastDisputeFor.current = disputeFor
+  }, [disputeFor])
 
   const [qr, setQr] = useState<{ id: string; payload: string } | null>(null)
   const [qrBusy, setQrBusy] = useState<string | null>(null)
@@ -333,7 +344,7 @@ export default function AgencyConsignmentsPage() {
             No draft or planned orders are waiting. Import orders first, or all of them already have a GR.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul aria-labelledby="gr-orders" className="divide-y divide-slate-100">
             {orderless.map((o) => {
               const intent = `create:${o.id}`
               return (
@@ -400,7 +411,7 @@ export default function AgencyConsignmentsPage() {
             {visibleConsignments.length === 0 && (
               <p data-testid="consignments-no-match" className="text-sm text-slate-700">No GRs match these filters.</p>
             )}
-          <ul className="space-y-3">
+          <ul aria-labelledby="gr-list" className="space-y-3">
             {visibleConsignments.map((c) => {
               const order = orderById.get(c.order_id)
               const available = nextEvents(c.status)
@@ -438,6 +449,7 @@ export default function AgencyConsignmentsPage() {
                         event === 'dispute_raised' ? (
                           <button
                             key={event}
+                            id={`dispute-trigger-${c.id}`}
                             type="button"
                             onClick={() => setDisputeFor(disputeFor === c.id ? null : c.id)}
                             disabled={busy !== null}
@@ -467,7 +479,7 @@ export default function AgencyConsignmentsPage() {
                   )}
 
                   {disputeFor === c.id && available.includes('dispute_raised') && (
-                    <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-3">
+                    <div role="alertdialog" aria-label={`Raise a dispute for ${c.gr_number}`} className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-3">
                       <label htmlFor={`dispute-note-${c.id}`} className="block text-sm font-medium text-slate-900">
                         What is wrong? <span className="font-normal text-slate-700">(optional, up to 500 characters)</span>
                       </label>
@@ -571,7 +583,7 @@ export default function AgencyConsignmentsPage() {
                       ) : events.length === 0 && !eventsError ? (
                         <p className="text-sm text-slate-700">No history yet.</p>
                       ) : (
-                        <ol className="space-y-2">
+                        <ol aria-label={`Events for ${c.gr_number}`} className="space-y-2">
                           {events.map((ev) => (
                             <li key={ev.id} className="text-sm">
                               <span className="font-medium text-slate-900">{EVENT_HISTORY_LABELS[ev.event] ?? ev.event}</span>

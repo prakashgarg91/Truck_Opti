@@ -210,6 +210,7 @@ export default function AdminUsersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
+            aria-label="Search users by name, email or role"
             placeholder={'Search users...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -306,7 +307,7 @@ export default function AdminUsersPage() {
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center gap-4 text-xs text-slate-400">
                 <span className="flex items-center gap-1">
                   <Calendar size={12} />
-                  {'Joined'}: {new Date(user.created_at).toLocaleDateString('en-IN')}
+                  {'Joined'}: {new Date(user.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
             </div>
@@ -316,11 +317,11 @@ export default function AdminUsersPage() {
 
       {selectedAction && modalCopy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
-          <div className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6">
+          <div role="dialog" aria-modal="true" aria-labelledby="user-action-title" className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 {modalCopy.icon}
-                <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+                <h3 id="user-action-title" className="text-lg font-bold text-slate-800 dark:text-white">
                   {modalCopy.title}
                 </h3>
               </div>

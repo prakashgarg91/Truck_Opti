@@ -17,3 +17,7 @@ All TO-145..152 work is on main (see TASKS.md day-close checkpoint). ZCode plan 
 
 ## 2026-11-18 day close
 Main at 3b6e3816 and later. READY FOR STAGING, NOT READY FOR CUSTOMERS. Run: npm run release:gates (gates 1-6; report in logs/release-gates/), then docs/STAGING-SMOKE-CHECKLIST.md for hosted gates 7-11 once an owner-created staging project exists. Local full journey: RACE_MODULES=D:/tmp/pgrace npm run test:journey (47 passed, 2 hosted-only). Known failing gate locally: test:prod-config (production VITE values: owner/hosted). Owner-only list: TASKS.md 2026-11-18 checkpoint. Next session: open with the owner-pending list, then hosted gates if staging exists.
+
+
+## 2026-11-18 evening close
+See TASKS.md evening checkpoint: landed work, gates, the known-defect list for the next pass, open owner decisions and billing routes. Next session: open with the owner-pending list, then fix the known defects (start with Dashboard.tsx truck-type quote), then the hosted gates if a staging project exists.

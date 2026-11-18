@@ -18,8 +18,33 @@ type AgenciesRequest =
 
 const agencyStatuses: AgencyStatus[] = ['pending', 'approved', 'rejected', 'suspended']
 
+/** Upper bound on rows returned by a list action. Newest first. */
+const LIST_ROW_CAP = 200
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function isAgencyStatus(value: unknown): value is AgencyStatus {
   return typeof value === 'string' && agencyStatuses.includes(value as AgencyStatus)
+}
+
+function isUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUID_PATTERN.test(value)
+}
+
+async function readJsonBody(req: Request): Promise<unknown> {
+  try {
+    return await req.json()
+  } catch {
+    throw new RequestError('A valid admin action is required.')
+  }
+}
+
+function parseAgencyId(value: unknown): string {
+  if (!isUuid(value)) {
+    throw new RequestError('A valid agency id is required.')
+  }
+
+  return value
 }
 
 function parseRequestBody(body: unknown): AgenciesRequest {
@@ -35,23 +60,18 @@ function parseRequestBody(body: unknown): AgenciesRequest {
 
       return { action: 'list', status: body.status }
     case 'approve':
-      if (typeof body.agencyId !== 'string') {
-        throw new RequestError('agencyId is required.')
+      return { action: 'approve', agencyId: parseAgencyId(body.agencyId) }
+    case 'reject': {
+      const agencyId = parseAgencyId(body.agencyId)
+
+      if (typeof body.rejectionReason !== 'string' || body.rejectionReason.trim().length === 0) {
+        throw new RequestError('A rejection reason is required.')
       }
 
-      return { action: 'approve', agencyId: body.agencyId }
-    case 'reject':
-      if (typeof body.agencyId !== 'string' || typeof body.rejectionReason !== 'string') {
-        throw new RequestError('agencyId and rejectionReason are required.')
-      }
-
-      return { action: 'reject', agencyId: body.agencyId, rejectionReason: body.rejectionReason }
+      return { action: 'reject', agencyId, rejectionReason: body.rejectionReason.trim() }
+    }
     case 'suspend':
-      if (typeof body.agencyId !== 'string') {
-        throw new RequestError('agencyId is required.')
-      }
-
-      return { action: 'suspend', agencyId: body.agencyId }
+      return { action: 'suspend', agencyId: parseAgencyId(body.agencyId) }
     default:
       throw new RequestError('Unsupported admin action.')
   }
@@ -77,6 +97,59 @@ async function loadCounts(serviceClient: Awaited<ReturnType<typeof requireAdminC
   }, {} as Record<AgencyStatus, number>)
 }
 
+type ServiceClient = Awaited<ReturnType<typeof requireAdminContext>>['serviceClient']
+
+/**
+ * Moves one agency to a new status. The allowed source statuses are checked on the row that is read,
+ * and the UPDATE is conditional on that same status, so a concurrent change cannot slip through.
+ */
+async function transitionAgency(
+  serviceClient: ServiceClient,
+  agencyId: string,
+  allowedFrom: AgencyStatus[],
+  refusal: string,
+  label: string,
+  buildUpdate: (current: { approved_at: string | null }) => Record<string, unknown>,
+) {
+  const { data: current, error: lookupError } = await serviceClient
+    .from('transport_agencies')
+    .select('id, status, approved_at')
+    .eq('id', agencyId)
+    .maybeSingle<{ id: string; status: AgencyStatus; approved_at: string | null }>()
+
+  if (lookupError) {
+    console.error(`Failed to load agency before ${label}`, lookupError)
+    throw new RequestError(`Unable to ${label} agency.`, 500, false)
+  }
+
+  if (!current) {
+    throw new RequestError('Agency not found.', 404)
+  }
+
+  if (!allowedFrom.includes(current.status)) {
+    throw new RequestError(refusal, 409)
+  }
+
+  const { data, error } = await serviceClient
+    .from('transport_agencies')
+    .update(buildUpdate({ approved_at: current.approved_at }))
+    .eq('id', agencyId)
+    .eq('status', current.status)
+    .select('*')
+    .maybeSingle()
+
+  if (error) {
+    console.error(`Failed to ${label} agency`, error)
+    throw new RequestError(`Unable to ${label} agency.`, 500, false)
+  }
+
+  if (!data) {
+    throw new RequestError('The agency status changed. Refresh and try again.', 409)
+  }
+
+  return data
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -84,7 +157,7 @@ serve(async (req) => {
 
   try {
     const { serviceClient } = await requireAdminContext(req.headers.get('Authorization'))
-    const body = parseRequestBody(await req.json())
+    const body = parseRequestBody(await readJsonBody(req))
 
     if (body.action === 'list') {
       const [agenciesRes, counts] = await Promise.all([
@@ -92,7 +165,8 @@ serve(async (req) => {
           .from('transport_agencies')
           .select('*')
           .eq('status', body.status)
-          .order('created_at', { ascending: false }),
+          .order('created_at', { ascending: false })
+          .limit(LIST_ROW_CAP),
         loadCounts(serviceClient),
       ])
 
@@ -105,57 +179,50 @@ serve(async (req) => {
     }
 
     if (body.action === 'approve') {
-      const { data, error } = await serviceClient
-        .from('transport_agencies')
-        .update({
+      // Approve is also the reinstate path (suspended -> approved) and the re-approve path for rejected agencies.
+      // The first approval time is kept, so a reinstate does not overwrite it.
+      const agency = await transitionAgency(
+        serviceClient,
+        body.agencyId,
+        ['pending', 'rejected', 'suspended'],
+        'Only pending, rejected or suspended agencies can be approved.',
+        'approve',
+        (current) => ({
           status: 'approved',
-          approved_at: new Date().toISOString(),
+          approved_at: current.approved_at ?? new Date().toISOString(),
           rejection_reason: null,
-        })
-        .eq('id', body.agencyId)
-        .select('*')
-        .single()
+        }),
+      )
 
-      if (error) {
-        console.error('Failed to approve agency', error)
-        throw new RequestError('Unable to approve agency.', 500, false)
-      }
-
-      return jsonResponse({ agency: data })
+      return jsonResponse({ agency })
     }
 
     if (body.action === 'reject') {
-      const { data, error } = await serviceClient
-        .from('transport_agencies')
-        .update({
+      const agency = await transitionAgency(
+        serviceClient,
+        body.agencyId,
+        ['pending'],
+        'Only pending agencies can be rejected.',
+        'reject',
+        () => ({
           status: 'rejected',
           rejection_reason: body.rejectionReason,
-        })
-        .eq('id', body.agencyId)
-        .select('*')
-        .single()
+        }),
+      )
 
-      if (error) {
-        console.error('Failed to reject agency', error)
-        throw new RequestError('Unable to reject agency.', 500, false)
-      }
-
-      return jsonResponse({ agency: data })
+      return jsonResponse({ agency })
     }
 
-    const { data, error } = await serviceClient
-      .from('transport_agencies')
-      .update({ status: 'suspended' })
-      .eq('id', body.agencyId)
-      .select('*')
-      .single()
+    const agency = await transitionAgency(
+      serviceClient,
+      body.agencyId,
+      ['approved'],
+      'Only approved agencies can be suspended.',
+      'suspend',
+      () => ({ status: 'suspended' }),
+    )
 
-    if (error) {
-      console.error('Failed to suspend agency', error)
-      throw new RequestError('Unable to suspend agency.', 500, false)
-    }
-
-    return jsonResponse({ agency: data })
+    return jsonResponse({ agency })
   } catch (error) {
     return handleRequestError('admin-portal-agencies', error)
   }

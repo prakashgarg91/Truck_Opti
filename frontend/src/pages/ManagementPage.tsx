@@ -5,6 +5,7 @@ import { useLanguageStore } from '../stores/languageStore'
 import { customerDashboardApi } from '../services/supabaseApi'
 import { logger } from '../utils/logger'
 import toast from 'react-hot-toast'
+import AdminLoadError from './AdminLoadError'
 
 interface ManagementCounts {
   trucks: number
@@ -17,6 +18,7 @@ export default function ManagementPage() {
   const { language } = useLanguageStore()
   const [counts, setCounts] = useState<ManagementCounts>({ trucks: 0, cartons: 0, customers: 0 })
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     fetchCounts()
@@ -29,14 +31,22 @@ export default function ManagementPage() {
   const fetchCounts = async () => {
     try {
       setLoading(true)
+      setLoadError(false)
       const managementCounts = await customerDashboardApi.getManagementCounts()
       setCounts(managementCounts)
     } catch (error) {
       logger.error('Failed to fetch counts:', error)
+      setLoadError(true)
       toast.error('Failed to load management data')
     } finally {
       setLoading(false)
     }
+  }
+
+  const countLabel = (value: number, suffix: string) => {
+    if (loading) return '...'
+    if (loadError) return '—'
+    return `${value} ${suffix}`
   }
 
   const managementCards = [
@@ -46,7 +56,7 @@ export default function ManagementPage() {
       icon: Truck,
       path: '/management/trucks',
       color: 'from-blue-500 to-indigo-600',
-      count: loading ? '...' : `${counts.trucks} Types`
+      count: countLabel(counts.trucks, 'Types')
     },
     {
       title: 'Carton Inventory',
@@ -54,7 +64,7 @@ export default function ManagementPage() {
       icon: Package,
       path: '/management/cartons',
       color: 'from-emerald-500 to-teal-600',
-      count: loading ? '...' : `${counts.cartons} Types`
+      count: countLabel(counts.cartons, 'Types')
     },
     {
       title: 'Customer Directory',
@@ -62,7 +72,7 @@ export default function ManagementPage() {
       icon: Users,
       path: '/management/customers',
       color: 'from-orange-500 to-amber-600',
-      count: loading ? '...' : `${counts.customers} Active`
+      count: countLabel(counts.customers, 'Active')
     }
   ]
 
@@ -79,7 +89,7 @@ export default function ManagementPage() {
         </div>
         <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full">
           {loading ? (
-            <Loader2 className="w-6 h-6 text-primary-600 animate-spin" />
+            <Loader2 role="status" aria-label="Loading management data" className="w-6 h-6 text-primary-600 animate-spin" />
           ) : (
             <Settings className="w-6 h-6 text-primary-600" />
           )}
@@ -90,8 +100,16 @@ export default function ManagementPage() {
         {managementCards.map((card, index) => (
           <div
             key={card.title}
+            role="button"
+            tabIndex={0}
             onClick={() => navigate(card.path)}
-            className="group relative overflow-hidden bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition-all duration-300 animate-fade-in"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                navigate(card.path)
+              }
+            }}
+            className="group relative overflow-hidden bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition-all duration-300 animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className="flex items-start gap-4">
@@ -116,6 +134,10 @@ export default function ManagementPage() {
           </div>
         ))}
       </div>
+
+      {loadError && (
+        <AdminLoadError what="management data" onRetry={fetchCounts} />
+      )}
 
       <div className="mt-8 p-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />

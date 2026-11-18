@@ -375,3 +375,43 @@ describe('AgencyPayrollPage subscription guard', () => {
         expect(button(/Record adjustment/)!.disabled).toBe(true)
     })
 })
+
+describe('AgencyPayrollPage accessibility', () => {
+    const nameOf = (el: Element | null) => {
+        const id = el?.getAttribute('aria-labelledby')
+        return (id && document.getElementById(id)?.textContent) || ''
+    }
+
+    it('names the rate table, the periods list and the adjustments list', async () => {
+        await mountPage()
+        expect(nameOf(q('table'))).toContain('Driver rates')
+        expect(nameOf(q('[data-testid="periods-list"]'))).toContain('Payroll periods')
+        await click(button(/Open period 2026-10-01/)!)
+        expect(q('#adj-amount')?.getAttribute('inputmode')).toBe('decimal')
+        expect(q('#adj-amount')?.getAttribute('aria-describedby')).toBe('adjust-hint')
+        expect(document.getElementById('adjust-hint')?.textContent).toContain('Choose the driver')
+    })
+
+    it('links the rate inputs to the rate hint only while a hint is shown', async () => {
+        await mountPage()
+        await click(button(/Edit rate for/)!)
+        expect(q('#rate-base')?.getAttribute('inputmode')).toBe('decimal')
+        expect(q('#rate-base')?.getAttribute('aria-describedby')).toBeNull()
+        await setValue(q('#rate-base')!, 'abc')
+        expect(q('#rate-base')?.getAttribute('aria-describedby')).toBe('rate-hint')
+        expect(document.getElementById('rate-hint')).not.toBeNull()
+    })
+
+    it('moves focus into the close confirm step and returns it to Close period on Keep open', async () => {
+        await mountPage()
+        await click(button(/Open period 2026-10-01/)!)
+        const trigger = button(/^Close period$/)!
+        await click(trigger)
+        expect(q('[data-testid="close-confirm"]')?.getAttribute('role')).toBe('alertdialog')
+        expect(document.activeElement).toBe(button(/Keep open/))
+        await click(button(/Keep open/)!)
+        // The trigger is re-rendered when the confirm step closes, so compare with the current node.
+        expect(document.activeElement).toBe(button(/^Close period$/))
+        expect(document.activeElement?.textContent).toBe('Close period')
+    })
+})

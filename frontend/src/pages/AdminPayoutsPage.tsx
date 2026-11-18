@@ -23,6 +23,10 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+function formatInr(amount: number | string) {
+  return `₹${Number(amount).toLocaleString('en-IN')}`
+}
+
 export default function AdminPayoutsPage() {
   useEffect(() => {
     document.title = 'Admin Payouts - TruckOpti'
@@ -37,6 +41,7 @@ export default function AdminPayoutsPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState(false)
+  const [markPaidTarget, setMarkPaidTarget] = useState<DriverPayout | null>(null)
 
   const fetchPayouts = useCallback(async () => {
     if (authLoading) return
@@ -182,6 +187,7 @@ export default function AdminPayoutsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
+                aria-label="Search payouts by driver name or phone"
                 placeholder={'Search by name or phone...'}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -234,6 +240,7 @@ export default function AdminPayoutsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
+                <caption className="sr-only">Driver payout requests</caption>
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -269,7 +276,7 @@ export default function AdminPayoutsPage() {
                       </td>
                       <td className="px-4 py-4">
                         <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                          ₹{Number(payout.amount).toLocaleString('en-IN')}
+                          {formatInr(payout.amount)}
                         </span>
                       </td>
                       <td className="px-4 py-4">
@@ -306,9 +313,32 @@ export default function AdminPayoutsPage() {
                             </button>
                           </div>
                         )}
-                        {payout.status === 'approved' && (
+                        {payout.status === 'approved' && markPaidTarget?.id === payout.id && (
+                          <div className="flex flex-col items-end gap-2 text-left max-w-xs ml-auto">
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              {`Record ${formatInr(payout.amount)} as paid to ${payout.drivers?.full_name || 'this driver'}? This is the final step. There is no undo on this screen.`}
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setMarkPaidTarget(null)}
+                                disabled={processingId === payout.id}
+                                className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                              >
+                                {'Cancel'}
+                              </button>
+                              <button
+                                onClick={() => { setMarkPaidTarget(null); void handleMarkPaid(payout.id) }}
+                                disabled={processingId === payout.id}
+                                className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                              >
+                                {'Confirm mark paid'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {payout.status === 'approved' && markPaidTarget?.id !== payout.id && (
                           <button
-                            onClick={() => handleMarkPaid(payout.id)}
+                            onClick={() => setMarkPaidTarget(payout)}
                             disabled={processingId === payout.id}
                             className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                           >
@@ -320,10 +350,11 @@ export default function AdminPayoutsPage() {
                             {'Completed'}
                           </span>
                         )}
-                        {payout.status === 'rejected' && (payout.rejection_note ?? payout.note) && (
-                          <span className="text-sm text-gray-500 dark:text-gray-400" title={payout.rejection_note ?? payout.note ?? undefined}>
-                            <AlertTriangle className="w-4 h-4 inline mr-1" />
-                            {'Reason provided'}
+                        {payout.status === 'rejected' && (
+                          <span className="block text-sm text-gray-600 dark:text-gray-300 text-right max-w-xs ml-auto break-words">
+                            {payout.rejection_note
+                              ? <><AlertTriangle className="w-4 h-4 inline mr-1" aria-hidden="true" />{`Reason: ${payout.rejection_note}`}</>
+                              : 'No reason recorded'}
                           </span>
                         )}
                       </td>
@@ -339,18 +370,22 @@ export default function AdminPayoutsPage() {
       {/* Reject Modal */}
       {rejectModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="payout-reject-title" className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 id="payout-reject-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               {'Reject Payout Request'}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
               {`Are you sure you want to reject the payout request from ${rejectModal.driverName}?`}
             </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {'The payout is marked rejected and the reason you enter is saved with it.'}
+            </p>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="payout-reject-reason" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {'Reason for rejection (required)'}
               </label>
               <textarea
+                id="payout-reject-reason"
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={3}

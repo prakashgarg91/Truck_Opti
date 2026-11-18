@@ -129,6 +129,22 @@ export default function AgencyPayrollPage() {
   const [closeRefusal, setCloseRefusal] = useState<string | null>(null)
   const [closedNote, setClosedNote] = useState<string | null>(null)
   const closeIntent = useRef<{ sig: string; key: string } | null>(null)
+  // Focus: the confirm step takes focus on open (Keep open is the safe action) and returns it to
+  // the Close period trigger when it is dismissed.
+  const closeTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const keepOpenRef = useRef<HTMLButtonElement | null>(null)
+  const confirmWasOpen = useRef(false)
+  useEffect(() => {
+    if (confirmClose) {
+      confirmWasOpen.current = true
+      keepOpenRef.current?.focus()
+      return
+    }
+    if (confirmWasOpen.current) {
+      confirmWasOpen.current = false
+      closeTriggerRef.current?.focus()
+    }
+  }, [confirmClose])
 
   const fetchAll = useCallback(async () => {
     try {
@@ -222,6 +238,7 @@ export default function AgencyPayrollPage() {
     : baseP === null || kmP === null || tonneP === null
       ? 'Enter each rate in rupees (up to 2 decimals), zero or more, at most 10,00,000.'
       : null
+  const rateHintId = rateBlocker && rateBlocker !== 'submitting' ? 'rate-hint' : undefined
 
   const handleSaveRate = async (event: FormEvent) => {
     event.preventDefault()
@@ -334,6 +351,8 @@ export default function AgencyPayrollPage() {
         : adjReasonTrim.length < REASON_MIN || adjReasonTrim.length > REASON_MAX
           ? `Give a reason of ${REASON_MIN} to ${REASON_MAX} characters.`
           : null
+  // Points the amount field at its visible hint only while a hint is shown.
+  const adjHintId = adjBlocker && adjBlocker !== 'submitting' ? 'adjust-hint' : undefined
 
   const handleAdjust = async (event: FormEvent) => {
     event.preventDefault()
@@ -502,7 +521,7 @@ export default function AgencyPayrollPage() {
           <p data-testid="rates-empty" className="text-sm text-slate-700">No drivers yet. Add a driver on the Drivers page to set a rate.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table aria-labelledby="rates-title" className="w-full text-left text-sm">
               <caption className="sr-only">Pay rates per driver</caption>
               <thead>
                 <tr className="border-b border-slate-200 text-slate-700">
@@ -550,18 +569,18 @@ export default function AgencyPayrollPage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
                 <label htmlFor="rate-base" className="block text-sm font-medium text-slate-800">Base per period (₹)</label>
-                <input id="rate-base" inputMode="decimal" value={rateBase} onChange={(e) => setRateBase(e.target.value)} disabled={savingRate} className={INPUT} />
+                <input id="rate-base" inputMode="decimal" value={rateBase} onChange={(e) => setRateBase(e.target.value)} disabled={savingRate} aria-describedby={rateHintId} className={INPUT} />
               </div>
               <div>
                 <label htmlFor="rate-km" className="block text-sm font-medium text-slate-800">Per km (₹)</label>
-                <input id="rate-km" inputMode="decimal" value={ratePerKm} onChange={(e) => setRatePerKm(e.target.value)} disabled={savingRate} className={INPUT} />
+                <input id="rate-km" inputMode="decimal" value={ratePerKm} onChange={(e) => setRatePerKm(e.target.value)} disabled={savingRate} aria-describedby={rateHintId} className={INPUT} />
               </div>
               <div>
                 <label htmlFor="rate-tonne" className="block text-sm font-medium text-slate-800">Per tonne (₹)</label>
-                <input id="rate-tonne" inputMode="decimal" value={ratePerTonne} onChange={(e) => setRatePerTonne(e.target.value)} disabled={savingRate} className={INPUT} />
+                <input id="rate-tonne" inputMode="decimal" value={ratePerTonne} onChange={(e) => setRatePerTonne(e.target.value)} disabled={savingRate} aria-describedby={rateHintId} className={INPUT} />
               </div>
             </div>
-            {rateBlocker && rateBlocker !== 'submitting' && <p data-testid="rate-hint" className="text-sm text-slate-700">{rateBlocker}</p>}
+            {rateBlocker && rateBlocker !== 'submitting' && <p id="rate-hint" data-testid="rate-hint" className="text-sm text-slate-700">{rateBlocker}</p>}
             {rateRefusal && (
               <div role="alert" data-testid="rate-refused" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{rateRefusal}</div>
             )}
@@ -600,7 +619,7 @@ export default function AgencyPayrollPage() {
         {periods.length === 0 ? (
           <p data-testid="periods-empty" className="text-sm text-slate-700">No payroll periods yet. Open one above to record advances and deductions.</p>
         ) : (
-          <ul className="divide-y divide-slate-100" data-testid="periods-list">
+          <ul aria-labelledby="periods-title" className="divide-y divide-slate-100" data-testid="periods-list">
             {periods.map((p) => (
               <li key={p.id}>
                 <button
@@ -667,14 +686,14 @@ export default function AgencyPayrollPage() {
                   </div>
                   <div>
                     <label htmlFor="adj-amount" className="block text-sm font-medium text-slate-800">Amount (₹)</label>
-                    <input id="adj-amount" inputMode="decimal" value={adjAmount} onChange={(e) => setAdjAmount(e.target.value)} disabled={adjusting} className={INPUT} />
+                    <input id="adj-amount" inputMode="decimal" value={adjAmount} onChange={(e) => setAdjAmount(e.target.value)} disabled={adjusting} aria-describedby={adjHintId} className={INPUT} />
                   </div>
                 </div>
                 <div>
                   <label htmlFor="adj-reason" className="block text-sm font-medium text-slate-800">Reason ({REASON_MIN} to {REASON_MAX} characters)</label>
                   <input id="adj-reason" value={adjReason} maxLength={REASON_MAX + 50} onChange={(e) => setAdjReason(e.target.value)} disabled={adjusting} className={INPUT} />
                 </div>
-                {adjBlocker && adjBlocker !== 'submitting' && <p data-testid="adjust-hint" className="text-sm text-slate-700">{adjBlocker}</p>}
+                {adjBlocker && adjBlocker !== 'submitting' && <p id="adjust-hint" data-testid="adjust-hint" className="text-sm text-slate-700">{adjBlocker}</p>}
                 {adjRefusal && (
                   <div role="alert" data-testid="adjust-refused" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{adjRefusal}</div>
                 )}
@@ -682,11 +701,11 @@ export default function AgencyPayrollPage() {
               </form>
 
               <div>
-                <h3 className="text-sm font-semibold text-slate-900">Recorded in this period</h3>
+                <h3 id="adjustments-heading" className="text-sm font-semibold text-slate-900">Recorded in this period</h3>
                 {adjustments.length === 0 ? (
                   <p data-testid="adjustments-empty" className="mt-1 text-sm text-slate-700">No advances or deductions yet.</p>
                 ) : (
-                  <ul className="mt-1 divide-y divide-slate-100 text-sm" data-testid="adjustments-list">
+                  <ul aria-labelledby="adjustments-heading" className="mt-1 divide-y divide-slate-100 text-sm" data-testid="adjustments-list">
                     {adjustments.map((a) => (
                       <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                         <span>{label(a.driver_id)}: {a.kind === 'advance' ? 'Advance' : 'Deduction'}, {a.reason}</span>
@@ -706,7 +725,7 @@ export default function AgencyPayrollPage() {
                   <div role="alert" data-testid="close-refused" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{closeRefusal}</div>
                 )}
                 {!confirmClose ? (
-                  <button type="button" onClick={() => setConfirmClose(true)} disabled={!gate.canSettle} title={gate.settleTitle} className={SECONDARY_BTN}>Close period</button>
+                  <button ref={closeTriggerRef} type="button" onClick={() => setConfirmClose(true)} disabled={!gate.canSettle} title={gate.settleTitle} className={SECONDARY_BTN}>Close period</button>
                 ) : (
                   <div role="alertdialog" aria-labelledby="close-confirm-title" data-testid="close-confirm" className="space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-3">
                     <p id="close-confirm-title" className="text-sm font-semibold text-amber-900">
@@ -716,7 +735,7 @@ export default function AgencyPayrollPage() {
                       <button type="button" onClick={handleClose} disabled={closing || !gate.canSettle} title={gate.settleTitle} className={PRIMARY_BTN}>
                         {closing ? 'Closing…' : 'Confirm close period'}
                       </button>
-                      <button type="button" onClick={() => setConfirmClose(false)} disabled={closing} className={SECONDARY_BTN}>Keep open</button>
+                      <button ref={keepOpenRef} type="button" onClick={() => setConfirmClose(false)} disabled={closing} className={SECONDARY_BTN}>Keep open</button>
                     </div>
                   </div>
                 )}

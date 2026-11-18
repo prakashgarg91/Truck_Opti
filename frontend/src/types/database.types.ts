@@ -1196,13 +1196,13 @@ isOneToOne: false
                   ]
                 },"agency_invoices": {
                   Row: {
-                    "agency_id": string,"cancelled_at": string | null,"cancelled_reason": string | null,"cgst_paise": number,"client_id": string,"created_at": string,"created_by": string | null,"gst_rate_pct": number,"id": string,"idempotency_key": string,"igst_paise": number,"invoice_number": string,"paid_paise": number,"place_of_supply_state_code": string,"request_hash": string | null,"reverse_charge": boolean,"round_off_paise": number,"sgst_paise": number,"status": string,"subtotal_paise": number,"supplier_state_code": string,"total_paise": number,"updated_at": string,"version": number
+                    "agency_id": string,"cancelled_at": string | null,"cancelled_reason": string | null,"cgst_paise": number,"client_id": string,"consignment_id": string | null,"created_at": string,"created_by": string | null,"gst_rate_pct": number,"id": string,"idempotency_key": string,"igst_paise": number,"invoice_number": string,"paid_paise": number,"place_of_supply_state_code": string,"request_hash": string | null,"reverse_charge": boolean,"round_off_paise": number,"sgst_paise": number,"status": string,"subtotal_paise": number,"supplier_state_code": string,"total_paise": number,"updated_at": string,"version": number
                   }
                   Insert: {
-                    "agency_id": string,"cancelled_at"?: string | null,"cancelled_reason"?: string | null,"cgst_paise"?: number,"client_id": string,"created_at"?: string,"created_by"?: string | null,"gst_rate_pct": number,"id"?: string,"idempotency_key": string,"igst_paise"?: number,"invoice_number": string,"paid_paise"?: number,"place_of_supply_state_code": string,"request_hash"?: string | null,"reverse_charge"?: boolean,"round_off_paise"?: number,"sgst_paise"?: number,"status"?: string,"subtotal_paise": number,"supplier_state_code": string,"total_paise": number,"updated_at"?: string,"version"?: number
+                    "agency_id": string,"cancelled_at"?: string | null,"cancelled_reason"?: string | null,"cgst_paise"?: number,"client_id": string,"consignment_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"gst_rate_pct": number,"id"?: string,"idempotency_key": string,"igst_paise"?: number,"invoice_number": string,"paid_paise"?: number,"place_of_supply_state_code": string,"request_hash"?: string | null,"reverse_charge"?: boolean,"round_off_paise"?: number,"sgst_paise"?: number,"status"?: string,"subtotal_paise": number,"supplier_state_code": string,"total_paise": number,"updated_at"?: string,"version"?: number
                   }
                   Update: {
-                    "agency_id"?: string,"cancelled_at"?: string | null,"cancelled_reason"?: string | null,"cgst_paise"?: number,"client_id"?: string,"created_at"?: string,"created_by"?: string | null,"gst_rate_pct"?: number,"id"?: string,"idempotency_key"?: string,"igst_paise"?: number,"invoice_number"?: string,"paid_paise"?: number,"place_of_supply_state_code"?: string,"request_hash"?: string | null,"reverse_charge"?: boolean,"round_off_paise"?: number,"sgst_paise"?: number,"status"?: string,"subtotal_paise"?: number,"supplier_state_code"?: string,"total_paise"?: number,"updated_at"?: string,"version"?: number
+                    "agency_id"?: string,"cancelled_at"?: string | null,"cancelled_reason"?: string | null,"cgst_paise"?: number,"client_id"?: string,"consignment_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"gst_rate_pct"?: number,"id"?: string,"idempotency_key"?: string,"igst_paise"?: number,"invoice_number"?: string,"paid_paise"?: number,"place_of_supply_state_code"?: string,"request_hash"?: string | null,"reverse_charge"?: boolean,"round_off_paise"?: number,"sgst_paise"?: number,"status"?: string,"subtotal_paise"?: number,"supplier_state_code"?: string,"total_paise"?: number,"updated_at"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -1216,6 +1216,12 @@ isOneToOne: false
       columns: ["client_id", "agency_id"]
 isOneToOne: false
       referencedRelation: "agency_client_agreements"
+      referencedColumns: ["id", "agency_id"]
+    },{
+      foreignKeyName: "agency_invoices_consignment_fk"
+      columns: ["consignment_id", "agency_id"]
+isOneToOne: false
+      referencedRelation: "agency_consignments"
       referencedColumns: ["id", "agency_id"]
     }
                   ]
@@ -2046,7 +2052,7 @@ isOneToOne: false
 { Args: { "p_expected_version": number,"p_invoice_id": string,"p_reason": string }; Returns: Json
                            },
 "agency_invoice_issue":
-{ Args: { "p_client_id": string,"p_gst_rate_pct": number,"p_idempotency_key": string,"p_lines": Json,"p_place_of_supply_state": string,"p_reverse_charge": boolean,"p_round_off": boolean,"p_supplier_state": string }; Returns: Json
+{ Args: { "p_client_id": string,"p_consignment_id"?: string,"p_gst_rate_pct": number,"p_idempotency_key": string,"p_lines": Json,"p_place_of_supply_state": string,"p_reverse_charge": boolean,"p_round_off": boolean,"p_supplier_state": string }; Returns: Json
                            },
 "agency_invoice_record_payment":
 { Args: { "p_amount_paise": number,"p_expected_version": number,"p_idempotency_key": string,"p_invoice_id": string,"p_method": string,"p_received_on": string,"p_reference": string }; Returns: Json
@@ -2213,6 +2219,18 @@ isOneToOne: false
                            },
 "driver_trip_agency_job":
 { Args: { "p_offer_id": string }; Returns: Json
+                           },
+"admin_agencies_without_subscription":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"admin_subscription_coupons":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"admin_webhook_attempts":
+{ Args: { "p_limit"?: number }; Returns: Json
+                           },
+"admin_webhook_events":
+{ Args: { "p_limit"?: number }; Returns: Json
                            }
           }
           Enums: {

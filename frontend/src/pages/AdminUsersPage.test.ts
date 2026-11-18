@@ -108,7 +108,7 @@ const CURRENT_ADMIN = { id: 'me-admin', email: 'boss@truckopti.test', name: 'Bos
 // The page formats created_at with toLocaleDateString('en-IN'); computing the
 // expectation through the same call keeps the assertion deterministic in any
 // host timezone while still pinning the format wiring.
-const JOINED_AGENCY = new Date(AGENCY_ROW.created_at).toLocaleDateString('en-IN')
+const JOINED_AGENCY = new Date(AGENCY_ROW.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 
 let root: Root | null = null
 let container: HTMLElement | null = null

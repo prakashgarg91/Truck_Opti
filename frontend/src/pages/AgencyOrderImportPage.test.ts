@@ -312,3 +312,31 @@ describe('AgencyOrderImportPage', () => {
         expect(text()).toContain('No orders match that reference.')
     })
 })
+
+describe('AgencyOrderImportPage accessibility', () => {
+    it('the client, file and order-search fields each have an associated label', async () => {
+        const view = await mountPage()
+        for (const id of ['import-agreement', 'import-file']) {
+            expect(view.querySelector(`label[for="${id}"]`), `label for ${id}`).not.toBeNull()
+            expect(q(`#${id}`), `field ${id}`).not.toBeNull()
+        }
+        const base = { agreement_id: 'ag-1', batch_id: 'b', status: 'draft', version: 1, created_at: '2026-11-10T00:00:00Z', updated_at: '2026-11-10T00:00:00Z' }
+        h.listOrders.mockResolvedValue([{ ...base, id: 'o-1', client_order_ref: 'SO-1001' }])
+        await choose(q('#import-agreement') as HTMLSelectElement, 'ag-1')
+        expect(view.querySelector('label[for="order-history-search"]')).not.toBeNull()
+        expect(q('#order-history-search')).not.toBeNull()
+    })
+
+    it('the template download and the import action are at least 44px high', async () => {
+        await mountPage()
+        expect(button(/Download template/)?.className).toContain('min-h-[44px]')
+        expect(button(/Download template/)?.className).toContain('focus-visible:ring-2')
+    })
+
+    it('the file step is labelled by its heading and the file input is described by its hint', async () => {
+        await mountPage()
+        const section = q('[aria-labelledby="import-step-file"]')
+        expect(section?.querySelector('#import-step-file')?.textContent).toContain('CSV file')
+        expect(q('#import-file')?.getAttribute('aria-describedby')).toBe('import-file-hint')
+    })
+})

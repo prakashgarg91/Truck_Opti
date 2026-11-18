@@ -469,7 +469,7 @@ export default function AgencyLoadPlanPage() {
             There are no draft orders. Import orders first, then come back to plan them.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100" aria-labelledby="lp-orders">
             {orders.map((o) => {
               const count = (linesByOrder.get(o.id) ?? []).length
               return (
@@ -502,7 +502,7 @@ export default function AgencyLoadPlanPage() {
             There are no trucks yet. Add trucks to your fleet first.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100" aria-labelledby="lp-trucks">
             {trucks.map((t) => {
               const reason = truckIneligibleReason(t)
               return (
@@ -553,7 +553,7 @@ export default function AgencyLoadPlanPage() {
               No load could be made from these picks. Check the unplaced lines below, or pick more trucks.
             </p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="space-y-3" aria-labelledby="lp-proposal">
               {proposal.loads.map((load, i) => {
                 const truck = truckById.get(load.truckId)
                 return (
@@ -653,7 +653,7 @@ export default function AgencyLoadPlanPage() {
         {plans.length === 0 ? (
           <p data-testid="loadplan-empty" className="text-sm text-slate-700">No plan has been saved yet.</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-3" aria-labelledby="lp-plans">
             {plans.map((p) => {
               const prior = approvedByName(p)
               const confirming = confirm?.id === p.id ? confirm.kind : null

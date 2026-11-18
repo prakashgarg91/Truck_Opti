@@ -7,6 +7,7 @@ import { customerTrackingApi, shipmentsSupabaseApi, notificationsSupabaseApi, sa
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import MapViewWrapper from '../components/MapViewWrapper'
 import EmptyState from '../components/EmptyState'
+import AdminLoadError from './AdminLoadError'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { shareTrackingLink } from '../utils/whatsappShare'
@@ -316,8 +317,17 @@ export default function TrackingPage() {
     navigate(`/invoice/${shipmentId}`)
   }
 
-  const handleCancelShipment = async (shipment: ShipmentLocation) => {
-    if (!confirm(`Cancel shipment ${shipment.shipment_id}? This cannot be undone.`)) return
+  // Inline confirm dialog: cancel is staged here and confirmed in the dialog at the end of the page.
+  const [pendingCancel, setPendingCancel] = useState<ShipmentLocation | null>(null)
+
+  const handleCancelShipment = (shipment: ShipmentLocation) => {
+    setPendingCancel(shipment)
+  }
+
+  const confirmCancelShipment = async () => {
+    const shipment = pendingCancel
+    if (!shipment) return
+    setPendingCancel(null)
     setUpdatingStatus(shipment.id)
     try {
       await shipmentsSupabaseApi.updateStatus(shipment.id, 'cancelled')
@@ -439,8 +449,10 @@ export default function TrackingPage() {
             return (
               <button
                 key={s}
+                type="button"
+                aria-pressed={statusFilter === s}
                 onClick={() => setStatusFilter(s)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${statusFilter === s
+                className={`flex items-center gap-1.5 min-h-[44px] px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${statusFilter === s
                   ? `${colors[s]} text-white shadow-md`
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                   }`}
@@ -460,6 +472,7 @@ export default function TrackingPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
+                aria-label="Search shipments, drivers or vehicles"
                 placeholder="Search shipment, driver or vehicle..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -504,11 +517,12 @@ export default function TrackingPage() {
             </div>
             <div className="space-y-4 xl:max-h-[760px] xl:overflow-y-auto xl:pr-1">
               {loadError ? (
-                <EmptyState
-                  icon={MapPinOff}
-                  title="Failed to load shipments"
-                  description="Please check your connection and try again"
-                />
+                <AdminLoadError what="shipments" onRetry={() => { void refetch() }} />
+              ) : loading ? (
+                <div role="status" className="flex items-center justify-center gap-2 py-12 text-slate-500 dark:text-slate-400">
+                  <Loader2 className="w-6 h-6 animate-spin" aria-hidden="true" />
+                  <span className="text-sm">Loading shipments...</span>
+                </div>
               ) : filteredShipments.length === 0 ? (
                 <EmptyState
                   icon={MapPinOff}
@@ -591,7 +605,7 @@ export default function TrackingPage() {
                           <button
                             onClick={(e) => { e.stopPropagation(); handleUpdateStatus(s, 'delivered') }}
                             disabled={updatingStatus === s.id}
-                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="w-full min-h-[44px] py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                           >
                             <CheckCircle2 className="w-4 h-4" />
                             {updatingStatus === s.id ? ('Updating...') : ('Mark Delivered')}
@@ -603,7 +617,7 @@ export default function TrackingPage() {
                               e.stopPropagation()
                               handleViewDetails(s)
                             }}
-                            className="flex-1 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
+                            className="flex-1 min-h-[44px] py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-xl text-xs font-bold hover:bg-primary-100 transition-all"
                           >
                             {'View Details'}
                           </button>
@@ -613,7 +627,7 @@ export default function TrackingPage() {
                               handleContactDriver(s.driver_phone || undefined)
                             }}
                             disabled={!s.driver_phone || s.status === 'pending'}
-                            className="flex-1 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 min-h-[44px] py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Phone className="w-3 h-3" />
                             {'Contact'}
@@ -625,7 +639,7 @@ export default function TrackingPage() {
                               e.stopPropagation()
                               handleShareWhatsApp(s)
                             }}
-                            className="flex-1 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 min-h-[44px] py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
                           >
                             <MessageCircle className="w-3 h-3" />
                             {'Share'}
@@ -635,7 +649,7 @@ export default function TrackingPage() {
                               e.stopPropagation()
                               handleGenerateInvoice(s.id)
                             }}
-                            className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 min-h-[44px] py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-bold hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
                           >
                             <FileText className="w-3 h-3" />
                             {'Invoice'}
@@ -645,7 +659,7 @@ export default function TrackingPage() {
                           <button
                             onClick={(e) => { e.stopPropagation(); handleCancelShipment(s) }}
                             disabled={updatingStatus === s.id}
-                            className="w-full py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-200 dark:border-red-800/50 disabled:opacity-50"
+                            className="w-full min-h-[44px] py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 border border-red-200 dark:border-red-800/50 disabled:opacity-50"
                           >
                             <Trash2 className="w-3 h-3" />
                             {'Cancel Shipment'}
@@ -867,6 +881,23 @@ export default function TrackingPage() {
               className="max-w-full max-h-full object-contain rounded-lg"
               onClick={e => e.stopPropagation()}
             />
+          </div>
+        )}
+
+        {pendingCancel && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div role="alertdialog" aria-modal="true" aria-labelledby="cancel-shipment-title" aria-describedby="cancel-shipment-desc" className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-xl">
+              <h2 id="cancel-shipment-title" className="text-lg font-bold text-slate-900 dark:text-white">Cancel this shipment?</h2>
+              <p id="cancel-shipment-desc" className="text-sm text-slate-500 dark:text-slate-400">{`Cancel shipment ${pendingCancel.shipment_id}? This cannot be undone.`}</p>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setPendingCancel(null)} className="flex-1 min-h-[44px] px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+                  Keep shipment
+                </button>
+                <button type="button" onClick={() => { void confirmCancelShipment() }} className="flex-1 min-h-[44px] px-4 py-2.5 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700">
+                  Cancel shipment
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

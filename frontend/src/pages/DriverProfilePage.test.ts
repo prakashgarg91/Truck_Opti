@@ -29,6 +29,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({
     getByUserId: vi.fn(),
     getState: vi.fn(),
+    getDocumentAccessUrl: vi.fn(),
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
     loggerError: vi.fn(),
@@ -39,7 +40,10 @@ const h = vi.hoisted(() => ({
 
 vi.mock('react-hot-toast', () => ({ default: { error: h.toastError, success: h.toastSuccess } }))
 
-vi.mock('../services/driverKycApi', () => ({ getState: h.getState }))
+vi.mock('../services/driverKycApi', () => ({
+    getState: h.getState,
+    getDocumentAccessUrl: h.getDocumentAccessUrl,
+}))
 
 vi.mock('../services/supabaseApi', () => ({ driverSupabaseApi: { getByUserId: h.getByUserId } }))
 
@@ -65,8 +69,8 @@ const PROFILE: DriverProfile = {
     rc_number: 'KA01AB1234',
     license_number: 'KA0120200001234',
     vehicle_capacity: 3000,
-    dl_url: 'https://cdn.example.com/dl.pdf',
-    rc_url: 'https://cdn.example.com/rc.pdf',
+    dl_url: 'user-1/driving_license/raw-path.pdf',
+    rc_url: 'user-1/rc_book/raw-path.pdf',
     insurance_url: null,
     selfie_url: null,
     bank_account: '****4321',
@@ -115,6 +119,7 @@ function kycStateWith(
 
 let root: Root | null = null
 let container: HTMLElement | null = null
+let openSpy: { mockRestore: () => void; mock: { calls: unknown[][] } } | null = null
 
 function LocationProbe() {
     const location = useLocation()
@@ -150,6 +155,8 @@ afterEach(async () => {
     }
     container?.remove()
     container = null
+    openSpy?.mockRestore()
+    openSpy = null
     vi.useRealTimers()
 })
 
@@ -178,6 +185,14 @@ describe('DriverProfilePage', () => {
         h.currentUser = { id: 'user-1', email: 'ravi@example.com', role: 'driver' }
         h.getByUserId.mockResolvedValue(PROFILE)
         h.getState.mockResolvedValue(kycStateWith({}))
+        h.getDocumentAccessUrl.mockResolvedValue({
+            url: 'https://signed.test/driver-docs/short-lived?token=abc',
+            expiresIn: 60,
+            kind: 'driving_license',
+            version: 1,
+            status: 'accepted',
+        })
+        openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
     })
 
     it('loading renders the spinner and no profile content while the fetch is pending', async () => {
@@ -322,19 +337,81 @@ describe('DriverProfilePage', () => {
         expect(cardValue('Profile Health')).toBe('71%')
     })
 
-    it('document links show View hrefs for present documents and Missing for absent ones', async () => {
+    it('documents with no KYC upload show Not uploaded, with no link and no stored path', async () => {
         await mountPage()
-        const links = Array.from((container as HTMLElement).querySelectorAll('a'))
-        expect(links.filter((a) => (a.textContent || '').includes('View'))).toHaveLength(2)
-        const dl = links.find((a) => a.getAttribute('href') === 'https://cdn.example.com/dl.pdf')
-        expect(dl?.getAttribute('target')).toBe('_blank')
-        expect(dl?.getAttribute('rel')).toBe('noreferrer')
-        expect(links.find((a) => a.getAttribute('href') === 'https://cdn.example.com/rc.pdf')).toBeDefined()
-        expect(Array.from((container as HTMLElement).querySelectorAll('span')).filter((s) => s.textContent === 'Missing')).toHaveLength(2)
+        const hrefs = Array.from((container as HTMLElement).querySelectorAll('a')).map((a) => a.getAttribute('href'))
+        expect(hrefs.some((href) => (href ?? '').includes('raw-path'))).toBe(false)
+        expect(hrefs.some((href) => (href ?? '').includes('cdn.example.com'))).toBe(false)
+        expect(text()).not.toContain('raw-path')
+        expect(text()).not.toContain('user-1/')
+        expect(buttons(/^\s*View/)).toHaveLength(0)
+        expect(Array.from((container as HTMLElement).querySelectorAll('span')).filter((s) => s.textContent === 'Not uploaded')).toHaveLength(4)
         expect(text()).toContain('Driving License')
         expect(text()).toContain('RC Book')
         expect(text()).toContain('Insurance')
         expect(text()).toContain('Selfie Verification')
+    })
+
+    it('an uploaded KYC document is opened on click through getDocumentAccessUrl and a signed URL', async () => {
+        h.getState.mockResolvedValue(kycStateWith({ driving_license: 'accepted', rc_book: 'pending_review' }))
+        await mountPage()
+        expect(text()).toContain('Accepted')
+        expect(text()).toContain('Pending review')
+        const viewDl = (container as HTMLElement).querySelector('button[aria-label="View Driving License"]') as HTMLButtonElement
+        expect(viewDl).not.toBeNull()
+        await click(viewDl)
+        expect(h.getDocumentAccessUrl).toHaveBeenCalledTimes(1)
+        expect(h.getDocumentAccessUrl).toHaveBeenCalledWith('driving_license')
+        expect(openSpy).toHaveBeenCalledWith('https://signed.test/driver-docs/short-lived?token=abc', '_blank', 'noopener,noreferrer')
+    })
+
+    it('the RC Book View button opens the rc_book document', async () => {
+        h.getState.mockResolvedValue(kycStateWith({ rc_book: 'rejected' }))
+        await mountPage()
+        expect(text()).toContain('Review needed')
+        await click((container as HTMLElement).querySelector('button[aria-label="View RC Book"]') as HTMLButtonElement)
+        expect(h.getDocumentAccessUrl).toHaveBeenCalledWith('rc_book')
+    })
+
+    it('while the signed URL is being minted the button is disabled and reads Opening', async () => {
+        h.getState.mockResolvedValue(kycStateWith({ driving_license: 'accepted' }))
+        h.getDocumentAccessUrl.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        const viewDl = (container as HTMLElement).querySelector('button[aria-label="View Driving License"]') as HTMLButtonElement
+        await click(viewDl)
+        const busy = (container as HTMLElement).querySelector('button[aria-label="View Driving License"]') as HTMLButtonElement
+        expect(busy.disabled).toBe(true)
+        expect(busy.textContent).toContain('Opening')
+        expect(openSpy).not.toHaveBeenCalled()
+    })
+
+    it('a failed signed-URL request shows an inline alert with Try again and opens nothing', async () => {
+        h.getState.mockResolvedValue(kycStateWith({ driving_license: 'accepted' }))
+        h.getDocumentAccessUrl.mockRejectedValue(new Error('storage down'))
+        await mountPage()
+        await click((container as HTMLElement).querySelector('button[aria-label="View Driving License"]') as HTMLButtonElement)
+        const alert = (container as HTMLElement).querySelector('[role="alert"]')
+        expect(alert?.textContent).toBe('The document could not be opened. Please try again.')
+        expect(openSpy).not.toHaveBeenCalled()
+        expect(text()).toContain('Try again')
+        expect(h.loggerError).toHaveBeenCalledWith('[DriverProfilePage] openDocument', expect.any(Error))
+    })
+
+    it('when the KYC state cannot be loaded the document rows say Could not check, not Not uploaded', async () => {
+        h.getState.mockRejectedValue(new Error('kyc backend unreachable'))
+        await mountPage()
+        expect(Array.from((container as HTMLElement).querySelectorAll('span')).filter((s) => s.textContent === 'Could not check')).toHaveLength(2)
+        // Only the two file-on-record rows (insurance, selfie) may claim "Not uploaded" here.
+        expect(Array.from((container as HTMLElement).querySelectorAll('span')).filter((s) => s.textContent === 'Not uploaded')).toHaveLength(2)
+        expect(buttons(/View/)).toHaveLength(0)
+    })
+
+    it('insurance and selfie report On file or Not uploaded without any link', async () => {
+        h.getByUserId.mockResolvedValue({ ...PROFILE, insurance_url: 'user-1/insurance/policy.pdf', selfie_url: null })
+        await mountPage()
+        expect(text()).toContain('On file')
+        expect(text()).not.toContain('policy.pdf')
+        expect(Array.from((container as HTMLElement).querySelectorAll('a')).some((a) => (a.getAttribute('href') ?? '').includes('policy'))).toBe(false)
     })
 
     it('a rejection reason renders the latest review note', async () => {

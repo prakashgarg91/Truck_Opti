@@ -284,7 +284,7 @@ export default function SubscriptionPage() {
             />
           ) : (
             <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[640px] divide-y divide-slate-200 dark:divide-slate-700">
+              <table aria-labelledby="invoice-heading" className="w-full min-w-[640px] divide-y divide-slate-200 dark:divide-slate-700">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
                     <th scope="col" className="pb-3 pr-4 font-semibold">Invoice</th>

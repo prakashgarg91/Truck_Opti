@@ -374,9 +374,10 @@ export const adminBillingSettingsApi = {
 }
 
 // ============= BILLING OPS (read-only) =============
-// Only tables an admin can read under RLS are queried here. subscription_sweep_runs has an admin SELECT policy
-// (is_admin_user) plus the authenticated grant (20261031000000_subscription_sweeps.sql). Every other ops table
-// is readable by the server-side service account only, so the page shows "not available" for it instead of an empty list.
+// subscription_sweep_runs has an admin SELECT policy (is_admin_user) plus the authenticated grant
+// (20261031000000_subscription_sweeps.sql). Every other ops table is readable by the server-side service account only,
+// so those reads go through four admin-only SECURITY DEFINER functions (20261041000000_admin_billing_ops_read.sql).
+// A failed or refused call throws: the page shows an error with Retry, never an empty list.
 export interface AdminSweepRun {
     id: string
     asOf: string
@@ -388,7 +389,114 @@ export interface AdminSweepRun {
     remindersCreated: number
 }
 
+export interface AdminAgencyWithoutSubscription {
+    id: string
+    name: string
+    createdAt: string
+    ownerUserId: string | null
+    ownerEmail: string | null
+}
+
+export interface AdminWebhookEvent {
+    receivedAt: string
+    eventId: string
+    eventType: string
+    result: string
+    orderId: string | null
+    paymentId: string | null
+}
+
+export interface AdminWebhookAttempt {
+    eventId: string
+    attemptNo: number
+    sqlstateOrCode: string
+    at: string
+}
+
+export interface AdminCoupon {
+    code: string
+    percentOff: number
+    maxCycles: number
+    monthlyOnly: boolean
+    validUntil: string | null
+    maxRedemptions: number | null
+    redemptionCount: number
+}
+
+type OpsReply = { ok?: boolean; error?: string } & Record<string, unknown>
+type OpsRow = Record<string, unknown>
+
+// Calls one admin ops reader and returns the list under `key`. Anything but {ok:true, [key]: array} is a failure.
+async function readOpsList(fn: string, args: Record<string, unknown> | undefined, key: string, failure: string): Promise<OpsRow[]> {
+    const { data, error } = args ? await supabase.rpc(fn as never, args as never) : await supabase.rpc(fn as never)
+    if (error) {
+        reportFunctionFailure(fn, error)
+        throw new UserFacingError(failure)
+    }
+    const reply = (data ?? null) as OpsReply | null
+    const list = reply?.ok === true ? reply[key] : null
+    if (!Array.isArray(list)) {
+        reportFunctionFailure(fn, { message: reply?.error ?? 'unexpected reply' })
+        throw new UserFacingError(failure)
+    }
+    return list as OpsRow[]
+}
+
+const opsStr = (v: unknown): string => (typeof v === 'string' ? v : '')
+const opsStrOrNull = (v: unknown): string | null => (typeof v === 'string' ? v : null)
+const opsNum = (v: unknown): number => (typeof v === 'number' ? v : Number(v) || 0)
+
 export const adminBillingOpsApi = {
+    /** Approved agencies with no trial, active, past-due or grace subscription. Admin-only function. */
+    async getAgenciesWithoutSubscription(): Promise<AdminAgencyWithoutSubscription[]> {
+        const rows = await readOpsList('admin_agencies_without_subscription', undefined, 'agencies', 'Unable to load agencies without a subscription right now. Please try again.')
+        return rows.map((r) => ({
+            id: opsStr(r.id),
+            name: opsStr(r.name),
+            createdAt: opsStr(r.created_at),
+            ownerUserId: opsStrOrNull(r.owner_user_id),
+            ownerEmail: opsStrOrNull(r.owner_email),
+        }))
+    },
+
+    /** Latest webhook events, newest first (the function caps at 500). Never carries the payload. */
+    async getWebhookEvents(limit = 100): Promise<AdminWebhookEvent[]> {
+        const rows = await readOpsList('admin_webhook_events', { p_limit: limit }, 'events', 'Unable to load webhook events right now. Please try again.')
+        return rows.map((r) => ({
+            receivedAt: opsStr(r.received_at),
+            eventId: opsStr(r.event_id),
+            eventType: opsStr(r.event_type),
+            result: opsStr(r.result),
+            orderId: opsStrOrNull(r.order_id),
+            paymentId: opsStrOrNull(r.payment_id),
+        }))
+    },
+
+    /** Latest failed or retried webhook attempts, newest first. */
+    async getWebhookAttempts(limit = 100): Promise<AdminWebhookAttempt[]> {
+        const rows = await readOpsList('admin_webhook_attempts', { p_limit: limit }, 'attempts', 'Unable to load webhook retry attempts right now. Please try again.')
+        return rows.map((r) => ({
+            eventId: opsStr(r.event_id),
+            attemptNo: opsNum(r.attempt_no),
+            sqlstateOrCode: opsStr(r.sqlstate_or_code),
+            at: opsStr(r.at),
+        }))
+    },
+
+    /** Coupons with how many times each was redeemed. */
+    async getCoupons(): Promise<AdminCoupon[]> {
+        const rows = await readOpsList('admin_subscription_coupons', undefined, 'coupons', 'Unable to load coupons right now. Please try again.')
+        return rows.map((r) => ({
+            code: opsStr(r.code),
+            percentOff: opsNum(r.percent_off),
+            maxCycles: opsNum(r.max_cycles),
+            monthlyOnly: r.monthly_only === true,
+            validUntil: opsStrOrNull(r.valid_until),
+            maxRedemptions: r.max_redemptions == null ? null : opsNum(r.max_redemptions),
+            redemptionCount: opsNum(r.redemption_count),
+        }))
+    },
+
     /** Latest sweep runs, newest first. Flat select; no payload or result column is read. */
     async getSweepRuns(limit = 20): Promise<AdminSweepRun[]> {
         const { data, error } = await supabase

@@ -413,3 +413,34 @@ describe('AgencyFleetPage subscription guard', () => {
         })
     })
 })
+
+describe('AgencyFleetPage accessibility', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.listVehicles.mockResolvedValue([VEHICLE])
+    })
+
+    it('the vehicle grid is a named list whose cards are list items', async () => {
+        await mountPage()
+        await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'fleet loaded')
+        const list = queryOne('[role="list"][aria-label="Fleet vehicles"]')
+        expect(list).not.toBeNull()
+        expect(list?.querySelectorAll('[role="listitem"]')).toHaveLength(1)
+    })
+
+    it('the search and status filter fields have associated labels', async () => {
+        const view = await mountPage()
+        await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'fleet loaded')
+        for (const id of ['fleet-search', 'fleet-status-filter']) {
+            expect(queryOne(`#${id}`), `field #${id}`).not.toBeNull()
+            expect(view.querySelector(`label[for="${id}"]`), `label for #${id}`).not.toBeNull()
+        }
+    })
+
+    it('the availability toggle has an accessible name that names the vehicle and RC number', async () => {
+        await mountPage()
+        await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'fleet loaded')
+        const toggle = findButtons(/Mark (Unavailable|Available)/)[0]
+        expect(toggle.getAttribute('aria-label')).toContain(VEHICLE.rc_number)
+    })
+})

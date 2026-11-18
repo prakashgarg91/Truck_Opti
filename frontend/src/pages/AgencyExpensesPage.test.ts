@@ -430,3 +430,37 @@ describe('AgencyExpensesPage subscription guard', () => {
         expect(q('[role="alert"]')?.textContent).toContain('read-only')
     })
 })
+
+describe('AgencyExpensesPage accessibility', () => {
+    // The accessible name of a list or table comes from its aria-labelledby heading.
+    const nameOf = (el: Element | null) => {
+        const id = el?.getAttribute('aria-labelledby')
+        return (id && document.getElementById(id)?.textContent) || ''
+    }
+
+    it('names every list, gives inputs a decimal keyboard and primary actions a 44px target with a focus ring', async () => {
+        h.listExpenses.mockResolvedValue([
+            { id: 'e-1', truck_id: 't-1', category: 'toll', amount_paise: 500050, spent_on: '2026-11-03', note: 'NH48', created_at: '2026-11-03T00:00:00Z' },
+        ])
+        await mountPage()
+        expect(nameOf(q('[data-testid="expense-list"]'))).toContain('Expenses in this period')
+        expect(q('#expense-amount')?.getAttribute('inputmode')).toBe('decimal')
+        const save = button(/Save expense/)!
+        expect(save.className).toContain('min-h-[44px]')
+        expect(save.className).toContain('focus-visible:ring-2')
+        await openTab(/Fuel/)
+        expect(nameOf(q('[data-testid="fuel-list"]'))).toContain('Fuel fills')
+        expect(q('#fuel-odometer')?.getAttribute('aria-describedby')).toBe('fuel-last')
+        expect(q('#fuel-amount')?.getAttribute('inputmode')).toBe('decimal')
+        await openTab(/Maintenance/)
+        expect(nameOf(q('[data-testid="maint-list"]'))).toContain('Service schedule')
+    })
+
+    it('labels the service form and gives the service inputs a decimal keyboard', async () => {
+        await mountPage()
+        await openTab(/Maintenance/)
+        await click(q('[data-testid="maint-item-i-ok"] button'))
+        expect(q('form[aria-label^="Service for"]')).not.toBeNull()
+        expect(q('#svc-km-i-ok')?.getAttribute('inputmode')).toBe('decimal')
+    })
+})

@@ -353,3 +353,25 @@ describe('AgencyBillingPage', () => {
         expect(h.jspdfSave).toHaveBeenCalledWith('TruckOpti-Statement-a1b2c3d4.pdf')
     })
 })
+
+describe('AgencyBillingPage accessibility', () => {
+    it('announces the loading state with a named status region', async () => {
+        h.list.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        expect(container?.querySelector('[role="status"][aria-label="Loading earnings summary"]')).not.toBeNull()
+    })
+
+    it('names the statements list, gives each statement row a listitem and keeps the buttons 44px high with a focus ring', async () => {
+        h.list.mockResolvedValue({ summary: SUMMARY, jobs: [OCTOBER_JOB, SEPTEMBER_JOB] })
+        await mountPage()
+        const list = container?.querySelector('[role="list"]')
+        expect(list?.getAttribute('aria-label')).toBe('Delivered job statements')
+        expect(list?.querySelectorAll('[role="listitem"]').length).toBe(2)
+        const statement = Array.from(container!.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Statement')!
+        expect(statement.className).toContain('min-h-[44px]')
+        expect(statement.className).toContain('focus-visible:ring-2')
+        const csv = Array.from(container!.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Export CSV')!
+        expect(csv.className).toContain('min-h-[44px]')
+        expect(csv.className).toContain('focus-visible:ring-2')
+    })
+})

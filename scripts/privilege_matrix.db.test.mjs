@@ -48,6 +48,7 @@ const AUTHENTICATED_RPC = [
   'agency_client_agreement_create', 'agency_client_agreement_update', 'agency_client_contact_create',
   'agency_client_contact_update', 'agency_client_site_create', 'agency_client_site_update',
   'agency_consignment_create', 'agency_consignment_event', 'agency_consignment_qr',
+  'admin_agencies_without_subscription', 'admin_webhook_events', 'admin_webhook_attempts', 'admin_subscription_coupons',
   'agency_driver_directory', 'agency_identity_update', 'agency_driver_employment_create', 'agency_driver_employment_end',
   'agency_driver_employment_update', 'agency_driver_invitation_accept', 'agency_driver_invitation_create',
   'agency_driver_invitation_revoke', 'agency_driver_payout_request', 'agency_driver_rate_set',

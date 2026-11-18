@@ -188,3 +188,25 @@ Added today: subscription write guards (migration 20261035, 14 more commands, SB
 Gates (all green at 2026-11-18): 35 database suites, edge write guard 23/23, frontend 2218 tests, tsc + eslint clean, edge harness 86, secrets audit PASS, journey 47/0/2, race tests (scripts/race/new_commands + subscription).
 
 Honest status (per Opus): READY FOR STAGING, NOT READY FOR CUSTOMERS. Never run: real Deno, a hosted Supabase (auth/storage/pg_cron/real extensions), Razorpay (test or live), Edge-backed pages (Drivers, dashboard) in a browser. Release gates list: docs/FABLE-RULINGS-2026-11-17-B.md section 3 (items 7-11 are hosted). Owner-only: staging project + db push; Razorpay webhook secret (test key pair in git-ignored .env.proof; old test key expires 2026-11-19 20:24); GSTIN/legal name/address/state/SAC; policy wording; Edge deploy (erp-ingest needs JWT verification off); Sentry; live-money test; enforcement switch (every approved agency needs a trial/plan first); housekeeping approvals (docs/HOUSEKEEPING-INVENTORY.md); ZCode renewal.
+
+## 2026-11-18 evening checkpoint (menu audit and 20-worker pass)
+
+Six read-only menu audits (docs/audit-2026-11-18/) then two waves of parallel Haiku workers under Sonnet/Fable supervision. Landed: agency sign-up path, admin billing settings and billing operations screens (admin read functions 20261041), agency GST identity saved to the agency row (20261038), agency row guard against owner self-edits (20261040), driver trip to agency job link for opt-in location sharing (20261039), one invoice per consignment (20261042), phone navigation (More sheet), staff new-job notifications, signed links for driver documents, admin Edge function guards, accessibility pass on customer, admin and agency pages, role gate on the customer area, prices and feature claims corrected everywhere, new guides (agency, driver, admin, support), glossary, runbook, README, changelog.
+
+Gates at commit: 40 database suites, frontend 2859 tests (133 files), tsc and eslint clean, edge write guard 23/23, edge harness 222 pass + 1 todo, secrets audit PASS, browser journey 46 passed / 0 failed / 3 hosted-only / 0 forbidden requests.
+
+Known defects found by the new tests, NOT fixed yet (next pass):
+- Dashboard.tsx:218-222 changing truck type recalculates with the previous type (wrong quote shown); :94 failed job reported as completed; no local-first branch; plural 'hour'.
+- DriverDashboardPage.tsx:247,250 'Today' uses the UTC date (wrong between 00:00 and 05:30 IST).
+- DriverEarningsPage.tsx:123-152 slow earlier response overwrites a newer one; '-₹0.00' for zero; signed-out page of zeros.
+- DriverTripPage.tsx: toggle text says only the agency sees location while the status line says customer and agency; registration done screen promises SMS that is not sent.
+- driver-kyc Edge function has no method guard (index.ts:329); sign-up uploads may not create the KYC document record (documents show 'Not uploaded').
+- Admin lists capped at 200 rows without paging.
+- scripts/scope_matrix.check.mjs is EXPERIMENTAL (attributes RPCs per page, false positives): not a gate.
+- docs/GLOSSARY.md appendix: 57 label mismatches to rename in a later pass (journey test finds buttons by text).
+
+Owner decisions open: driver consent for the automatic in-transit location write; finance/viewer job bell; not-yet-approved owners reading their portal; free tier and removed landing claims; 'Vehicle' vs 'Truck'; made-up 'System ready' dashboard entry; commission setting, driver document gate, user-delete precheck, revenue definition; support email, phone and hours; refund/cancellation page text; code licence; privacy text legal review.
+
+Billing routes: Pro plan used all day. Claude API key is set at user level but is not workspace-scoped (API refused: needs a workspace-scoped key or the workspace id). ZCode GLM-5.3-Flash: insufficient balance.
+
+Still never run: hosted Supabase, real Deno, Razorpay. Status unchanged: READY FOR STAGING, NOT READY FOR CUSTOMERS.

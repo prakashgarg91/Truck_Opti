@@ -473,3 +473,44 @@ describe('AgencyClientsPage', () => {
         expect(q('[data-testid="clients-list"]')?.textContent).toContain('Sri Balaji Transport')
     })
 })
+
+describe('AgencyClientsPage accessibility', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.listAgreements.mockResolvedValue([ACTIVE, ENDED])
+        h.listSites.mockResolvedValue([BILL_SITE, SHIP_SITE])
+        h.listContacts.mockResolvedValue([CONTACT])
+    })
+
+    it('the client list and the search field have accessible names', async () => {
+        await mountPage()
+        expect(q('ul[aria-label="Client agreements"]')).not.toBeNull()
+        expect(q('input[aria-label="Search clients"]')).not.toBeNull()
+    })
+
+    it('the add-client dialog is a labelled modal and every field has an associated label', async () => {
+        await mountPage()
+        await click(buttons(/Add client/)[0])
+        const dialog = q('[role="dialog"]') as HTMLElement
+        expect(dialog.getAttribute('aria-modal')).toBe('true')
+        const titleId = dialog.getAttribute('aria-labelledby')
+        expect(titleId).toBe('new-client-title')
+        expect(document.getElementById(titleId as string)?.textContent).toContain('Add client agreement')
+        for (const id of ['new-client-name', 'new-client-gstin', 'new-client-terms']) {
+            const label = dialog.querySelector(`label[for="${id}"]`)
+            expect(label, `label for ${id}`).not.toBeNull()
+            expect(dialog.querySelector(`#${id}`), `input ${id}`).not.toBeNull()
+        }
+    })
+
+    it('closing a dialog returns focus to the control that opened it', async () => {
+        await mountPage()
+        const opener = buttons(/Add client/)[0]
+        opener.focus()
+        await click(opener)
+        expect(q('[role="dialog"]')).not.toBeNull()
+        await click(buttons(/^\s*Cancel\s*$/)[0])
+        expect(q('[role="dialog"]')).toBeNull()
+        expect(document.activeElement).toBe(opener)
+    })
+})

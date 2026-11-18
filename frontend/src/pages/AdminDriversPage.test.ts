@@ -491,8 +491,10 @@ describe('AdminDriversPage', () => {
 
             expect(dl.blobs).toHaveLength(1)
             const csv = await blobText(dl.blobs[0])
-            expect(csv.startsWith('"Name","Phone","PAN","Vehicle Type","Home City"')).toBe(true)
-            expect(csv).toContain('"Ramesh Kumar","9876543210","ABCDE1234F","Tata 407 (1T)","Jaipur"')
+            expect(csv.startsWith('"Name","Phone","Vehicle Type","Home City"')).toBe(true)
+            expect(csv).not.toContain('PAN')
+            expect(csv).not.toContain('ABCDE1234F')
+            expect(csv).toContain('"Ramesh Kumar","9876543210","Tata 407 (1T)","Jaipur"')
             expect(csv).toContain('"Sita Devi"')
             expect(csv).toContain('"pending"')
             // audit DR1: no bank, IFSC, UPI or Aadhaar columns or values leave the screen in a CSV

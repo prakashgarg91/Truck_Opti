@@ -316,3 +316,70 @@ describe('DriverDetailPage KYC review (TO-128)', () => {
         expect(bodyText()).not.toContain('Approve Anyway')
     })
 })
+
+const RAW_DL_PATH = 'user-1/driving_license/raw-path.pdf'
+const RAW_RC_PATH = 'user-1/rc_book/raw-path.pdf'
+
+function tile(label: string): HTMLElement | null {
+    return document.querySelector(`button[aria-label="Open ${label}"]`)
+}
+
+describe('DriverDetailPage Documents tiles (private driver-docs bucket)', () => {
+    it('never renders a stored path as a link, even when the profile carries one', async () => {
+        adminApi.getDriverById.mockResolvedValue({ ...DRIVER, dl_url: RAW_DL_PATH, rc_url: RAW_RC_PATH })
+        await renderPage()
+
+        const hrefs = [...document.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? '')
+        expect(hrefs.some((href) => href.includes('raw-path'))).toBe(false)
+        expect(bodyText()).not.toContain('raw-path')
+    })
+
+    it('opens a document through getDocumentAccessUrl with the driver id, never by the stored value', async () => {
+        const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+        try {
+            adminApi.getDriverById.mockResolvedValue({ ...DRIVER, dl_url: RAW_DL_PATH })
+            await renderPage()
+            const driverLicenceTile = tile('Driving License')
+            expect(driverLicenceTile).not.toBeNull()
+            await act(async () => {
+                driverLicenceTile!.click()
+            })
+
+            expect(getDocumentAccessUrlMock).toHaveBeenCalledWith('driving_license', { driverId: DRIVER_ID })
+            expect(openSpy).toHaveBeenCalledWith(SIGNED_URL, '_blank', 'noopener,noreferrer')
+        } finally {
+            openSpy.mockRestore()
+        }
+    })
+
+    it('reports Not uploaded for a KYC document that does not exist, with no button', async () => {
+        getDriverKycStateMock.mockResolvedValue(kycApiState())
+        await renderPage()
+
+        expect(tile('Driving License')).toBeNull()
+        expect(tile('RC Book')).toBeNull()
+        expect(bodyText()).toContain('Driving License: Not uploaded')
+        expect(bodyText()).toContain('RC Book: Not uploaded')
+        expect(bodyText()).toContain('Driver has not uploaded documents yet')
+    })
+
+    it('says Could not check instead of claiming a status when the KYC state fails to load', async () => {
+        getDriverKycStateMock.mockRejectedValue(new UserFacingError('Could not load the driver’s KYC status. Please try again.'))
+        await renderPage()
+
+        expect(bodyText()).toContain('Driving License: Could not check')
+        expect(bodyText()).toContain('RC Book: Could not check')
+        expect(bodyText()).not.toContain('Driver has not uploaded documents yet')
+        expect(tile('Driving License')).toBeNull()
+    })
+
+    it('the Insurance and Selfie tiles show On file without a link to the stored value', async () => {
+        adminApi.getDriverById.mockResolvedValue({ ...DRIVER, insurance_url: 'user-1/insurance/policy.pdf' })
+        await renderPage()
+
+        expect(bodyText()).toContain('Insurance: On file')
+        expect(bodyText()).toContain('Selfie: Not uploaded')
+        expect(bodyText()).not.toContain('policy.pdf')
+        expect([...document.querySelectorAll('a')].some((a) => (a.getAttribute('href') ?? '').includes('policy'))).toBe(false)
+    })
+})

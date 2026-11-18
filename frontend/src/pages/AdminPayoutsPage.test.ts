@@ -403,10 +403,24 @@ describe('AdminPayoutsPage', () => {
         expect((q('textarea') as HTMLTextAreaElement).value).toBe('Wrong amount')
     })
 
-    it('Mark Paid sends the payout id, toasts, and refetches to Completed', async () => {
+    it('Mark Paid asks for an inline confirm with the amount and no undo, and does nothing before confirm', async () => {
+        await mountPage()
+        await click(rowButton('Meena Singh', /Mark Paid/) as HTMLButtonElement)
+        expect(h.markAsPaid).not.toHaveBeenCalled()
+        expect(rowFor('Meena Singh')?.textContent).toContain('Record ₹12,50,000 as paid to Meena Singh?')
+        expect(rowFor('Meena Singh')?.textContent).toContain('There is no undo on this screen.')
+        expect(rowButton('Meena Singh', /Confirm mark paid/)).toBeDefined()
+        // Cancel closes the confirm without calling the API.
+        await click(rowButton('Meena Singh', /^Cancel$/) as HTMLButtonElement)
+        expect(h.markAsPaid).not.toHaveBeenCalled()
+        expect(rowButton('Meena Singh', /Mark Paid/)).toBeDefined()
+    })
+
+    it('Mark Paid sends the payout id after confirm, toasts, and refetches to Completed', async () => {
         h.getAll.mockResolvedValueOnce(LIST).mockResolvedValue(AFTER_PAID)
         await mountPage()
         await click(rowButton('Meena Singh', /Mark Paid/) as HTMLButtonElement)
+        await click(rowButton('Meena Singh', /Confirm mark paid/) as HTMLButtonElement)
         expect(h.markAsPaid).toHaveBeenCalledTimes(1)
         expect(h.markAsPaid).toHaveBeenCalledWith('po-2')
         expect(h.toastSuccess).toHaveBeenCalledTimes(1)
@@ -420,6 +434,7 @@ describe('AdminPayoutsPage', () => {
         h.markAsPaid.mockRejectedValueOnce(new Error('edge down'))
         await mountPage()
         await click(rowButton('Meena Singh', /Mark Paid/) as HTMLButtonElement)
+        await click(rowButton('Meena Singh', /Confirm mark paid/) as HTMLButtonElement)
         expect(h.toastError).toHaveBeenCalledWith('Failed to mark payout as paid')
         expect(h.loggerError).toHaveBeenCalledTimes(1)
         expect(h.toastSuccess).not.toHaveBeenCalled()
@@ -427,22 +442,33 @@ describe('AdminPayoutsPage', () => {
         expect(rowButton('Meena Singh', /Mark Paid/)).toBeDefined()
     })
 
-    it('a rejected payout exposes its note via title and a note-less one shows nothing', async () => {
-        const silentRejected: DriverPayout = {
+    it('a rejected payout shows the admin rejection reason as visible text, never the driver note', async () => {
+        const withReason: DriverPayout = {
             ...REJECTED_PAYOUT,
             id: 'po-5',
             driver_id: 'drv-5',
-            note: null,
+            note: 'Driver asked for urgent transfer',
+            rejection_note: 'Wrong bank details',
             requested_at: '2026-10-10T08:00:00Z',
             processed_at: '2026-10-11T02:00:00Z',
             drivers: { full_name: 'Tia Bose', phone: '9000000003' },
         }
-        h.getAll.mockResolvedValue([...LIST, silentRejected])
+        const noReason: DriverPayout = {
+            ...withReason,
+            id: 'po-6',
+            driver_id: 'drv-6',
+            note: 'Only a driver note',
+            rejection_note: null,
+            drivers: { full_name: 'Joy Das', phone: '9000000004' },
+        }
+        h.getAll.mockResolvedValue([...LIST, withReason, noReason])
         await mountPage()
-        const reason = q('span[title="Duplicate withdrawal request"]')
-        expect(reason?.textContent).toContain('Reason provided')
-        expect((container as HTMLElement).querySelectorAll('span[title]').length).toBe(1)
-        expect(rowFor('Tia Bose')?.textContent).not.toContain('Reason provided')
+        expect(rowFor('Tia Bose')?.textContent).toContain('Reason: Wrong bank details')
+        expect(rowFor('Tia Bose')?.textContent).not.toContain('Driver asked for urgent transfer')
+        expect(rowFor('Joy Das')?.textContent).toContain('No reason recorded')
+        expect(rowFor('Joy Das')?.textContent).not.toContain('Only a driver note')
+        // The reason is readable text, not a hover-only title attribute.
+        expect((container as HTMLElement).querySelectorAll('span[title]').length).toBe(0)
     })
 
     it('the back button is labelled and navigates to /admin', async () => {
@@ -464,6 +490,8 @@ describe('AdminPayoutsPage', () => {
             expect(headers).toContain(header)
         }
         expect(searchInput().getAttribute('placeholder')).toBe('Search by name or phone...')
+        expect(searchInput().getAttribute('aria-label')).toBe('Search payouts by driver name or phone')
+        expect(q('table caption')?.textContent).toBe('Driver payout requests')
         for (const label of ['All', 'Pending', 'Approved', 'Paid', 'Rejected']) {
             expect(tab(label)).toBeTruthy()
         }

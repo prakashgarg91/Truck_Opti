@@ -12,16 +12,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // PAGE_SIZE = 10 and the card-click navigation to /tracking. The clock is
 // pinned so the rendered created_at date stays deterministic.
 //
-// FINDING (bug): when the auth store has no user, fetchShipments returns
-//   before setLoading(false), so the page mounts into an endless full-screen
-//   spinner (same defect as DriverHistoryPage). Reachable through transient
-//   store states such as mid-logout. Deliberately NOT asserted as correct.
-// FINDING (a11y): the loading spinner is a bare SVG — no role="status" and
-//   no aria-busy; the search input has no accessible name beyond its
-//   placeholder; the filter tabs carry no aria-pressed. Only the hooks the
-//   page does expose (document.title, the h1) are pinned.
-// FINDING (ux): the error path has no inline error region and no Retry — it
-//   only toasts and then renders the generic empty state. Pinned as-is.
+// Resilience and a11y (2026-11-18): a missing auth user now stops the spinner
+//   instead of hanging on it; the spinner is announced (role="status"); the
+//   search input has an accessible name; filter tabs expose aria-pressed; the
+//   error path renders an inline alert with Retry (AdminLoadError) instead of
+//   the misleading empty state; cards are keyboard operable.
 
 const h = vi.hoisted(() => ({
     getCreatedByUser: vi.fn(),
@@ -179,22 +174,55 @@ describe('ShipmentHistoryPage', () => {
         expect(text()).toContain('0 shipments')
     })
 
-    it('a fetch failure toasts, logs, stops loading and renders the empty state without retrying', async () => {
+    it('a fetch failure toasts, logs, stops loading and shows an error alert instead of the empty state', async () => {
         h.getCreatedByUser.mockRejectedValueOnce(new Error('history query failed'))
         await mountPage()
         expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Failed to load shipment history')
         expect(h.loggerError).toHaveBeenCalledTimes(1)
         expect(q('.animate-spin')).toBeNull()
-        expect(text()).toContain('No shipments found')
-        // the page has no Retry action: exactly the one mount fetch happened
+        expect(q('[role="alert"]')?.textContent).toContain('Could not load shipment history.')
+        expect(text()).not.toContain('No shipments found')
+        expect(buttons(/Retry/)).toHaveLength(1)
         expect(h.getCreatedByUser).toHaveBeenCalledTimes(1)
     })
 
-    it('a missing auth user never triggers a fetch', async () => {
+    it('Retry refetches after a failure and renders the list on success', async () => {
+        h.getCreatedByUser
+            .mockRejectedValueOnce(new Error('history query failed'))
+            .mockResolvedValueOnce([row()])
+        await mountPage()
+        await click(buttons(/Retry/)[0])
+        expect(h.getCreatedByUser).toHaveBeenCalledTimes(2)
+        expect(q('[role="alert"]')).toBeNull()
+        expect(text()).toContain('#SHP-0001')
+    })
+
+    it('a missing auth user never triggers a fetch and does not hang on the spinner', async () => {
         h.authUser = null
         await mountPage()
         expect(h.getCreatedByUser).not.toHaveBeenCalled()
+        expect(q('.animate-spin')).toBeNull()
+        expect(text()).toContain('No shipments found')
+    })
+
+    it('the search input has an accessible name and filter tabs expose their pressed state', async () => {
+        await mountPage()
+        expect(q('input')?.getAttribute('aria-label')).toBe('Search shipments by route or ID')
+        expect(buttons(/All/)[0].getAttribute('aria-pressed')).toBe('true')
+        expect(buttons(/Pending/)[0].getAttribute('aria-pressed')).toBe('false')
+    })
+
+    it('cards are keyboard operable: Enter navigates to tracking', async () => {
+        h.getCreatedByUser.mockResolvedValue([row({ id: 'ship-key' })])
+        await mountPage()
+        const card = (container as HTMLElement).querySelector('[role="button"]') as HTMLElement
+        expect(card.getAttribute('tabindex')).toBe('0')
+        await act(async () => {
+            card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+            await flushAsyncWork()
+        })
+        expect(q('[data-testid="location-probe"]')?.textContent).toBe('/tracking?shipment=ship-key')
     })
 
     it('renders a shipment card with id suffix, en-IN date, route, vehicle, weight and amount', async () => {

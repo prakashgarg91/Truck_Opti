@@ -93,6 +93,21 @@ export default function AgencyTeamPage() {
   const [confirm, setConfirm] = useState<Confirm | null>(null)
   const [changeTarget, setChangeTarget] = useState<MembershipRow | null>(null)
   const [targetScope, setTargetScope] = useState<MembershipScope>('dispatcher')
+  // Dialogs return focus to the control that opened them.
+  const lastOutsideFocus = useRef<HTMLElement | null>(null)
+  const dialogOpen = showInvite || confirm !== null || changeTarget !== null
+  const wasDialogOpen = useRef(false)
+  useEffect(() => {
+    const remember = (e: FocusEvent) => {
+      if (e.target instanceof HTMLElement && !e.target.closest('[role="dialog"]')) lastOutsideFocus.current = e.target
+    }
+    document.addEventListener('focusin', remember)
+    return () => document.removeEventListener('focusin', remember)
+  }, [])
+  useEffect(() => {
+    if (wasDialogOpen.current && !dialogOpen) lastOutsideFocus.current?.focus()
+    wasDialogOpen.current = dialogOpen
+  }, [dialogOpen])
 
   const fetchData = useCallback(async () => {
     try {
@@ -310,7 +325,7 @@ export default function AgencyTeamPage() {
 
       <section aria-labelledby="members-heading" data-testid="team-members" className="rounded-2xl border border-slate-200 bg-white">
         <h2 id="members-heading" className="px-4 pt-4 text-base font-bold text-slate-900">Members</h2>
-        <ul className="divide-y divide-slate-100 p-2">
+        <ul className="divide-y divide-slate-100 p-2" aria-labelledby="members-heading">
           <li className="flex flex-wrap items-center justify-between gap-2 px-2 py-3">
             <span className="font-medium text-slate-900">Owner <span className="text-slate-600">(you)</span></span>
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">Full access</span>
@@ -364,7 +379,7 @@ export default function AgencyTeamPage() {
 
       <section aria-labelledby="invitations-heading" data-testid="team-invitations" className="rounded-2xl border border-slate-200 bg-white">
         <h2 id="invitations-heading" className="px-4 pt-4 text-base font-bold text-slate-900">Pending invitations</h2>
-        <ul className="divide-y divide-slate-100 p-2">
+        <ul className="divide-y divide-slate-100 p-2" aria-labelledby="invitations-heading">
           {pending.length === 0 && <li className="px-2 py-6 text-center text-sm text-slate-600">No pending invitations.</li>}
           {pending.map((i) => {
             const left = daysLeft(i.expires_at)

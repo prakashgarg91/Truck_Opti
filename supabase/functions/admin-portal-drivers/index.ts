@@ -19,8 +19,33 @@ type DriversRequest =
 
 const driverStatuses: DriverStatus[] = ['pending', 'approved', 'rejected', 'suspended']
 
+/** Upper bound on rows returned by the list action. Newest first. */
+const LIST_ROW_CAP = 200
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function isDriverStatus(value: unknown): value is DriverStatus {
   return typeof value === 'string' && driverStatuses.includes(value as DriverStatus)
+}
+
+function isUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUID_PATTERN.test(value)
+}
+
+async function readJsonBody(req: Request): Promise<unknown> {
+  try {
+    return await req.json()
+  } catch {
+    throw new RequestError('A valid admin action is required.')
+  }
+}
+
+function parseDriverId(value: unknown): string {
+  if (!isUuid(value)) {
+    throw new RequestError('A valid driver id is required.')
+  }
+
+  return value
 }
 
 function parseRequestBody(body: unknown): DriversRequest {
@@ -36,29 +61,20 @@ function parseRequestBody(body: unknown): DriversRequest {
 
       return { action: 'list', status: body.status }
     case 'get':
-      if (typeof body.driverId !== 'string') {
-        throw new RequestError('driverId is required.')
-      }
-
-      return { action: 'get', driverId: body.driverId }
+      return { action: 'get', driverId: parseDriverId(body.driverId) }
     case 'approve':
-      if (typeof body.driverId !== 'string') {
-        throw new RequestError('driverId is required.')
+      return { action: 'approve', driverId: parseDriverId(body.driverId) }
+    case 'reject': {
+      const driverId = parseDriverId(body.driverId)
+
+      if (typeof body.rejectionReason !== 'string' || body.rejectionReason.trim().length === 0) {
+        throw new RequestError('A rejection reason is required.')
       }
 
-      return { action: 'approve', driverId: body.driverId }
-    case 'reject':
-      if (typeof body.driverId !== 'string' || typeof body.rejectionReason !== 'string') {
-        throw new RequestError('driverId and rejectionReason are required.')
-      }
-
-      return { action: 'reject', driverId: body.driverId, rejectionReason: body.rejectionReason }
+      return { action: 'reject', driverId, rejectionReason: body.rejectionReason.trim() }
+    }
     case 'suspend':
-      if (typeof body.driverId !== 'string') {
-        throw new RequestError('driverId is required.')
-      }
-
-      return { action: 'suspend', driverId: body.driverId }
+      return { action: 'suspend', driverId: parseDriverId(body.driverId) }
     default:
       throw new RequestError('Unsupported admin action.')
   }
@@ -71,7 +87,7 @@ serve(async (req) => {
 
   try {
     const { caller, serviceClient } = await requireAdminContext(req.headers.get('Authorization'))
-    const body = parseRequestBody(await req.json())
+    const body = parseRequestBody(await readJsonBody(req))
 
     if (body.action === 'list') {
       const { data, error } = await serviceClient
@@ -79,6 +95,7 @@ serve(async (req) => {
         .select('*')
         .eq('status', body.status)
         .order('created_at', { ascending: false })
+        .limit(LIST_ROW_CAP)
 
       if (error) {
         console.error('Failed to load drivers', error)
@@ -114,11 +131,15 @@ serve(async (req) => {
         })
         .eq('id', body.driverId)
         .select('*')
-        .single()
+        .maybeSingle()
 
       if (error) {
         console.error('Failed to approve driver', error)
         throw new RequestError('Unable to approve driver.', 500, false)
+      }
+
+      if (!data) {
+        throw new RequestError('Driver not found.', 404)
       }
 
       return jsonResponse({ driver: data })
@@ -133,11 +154,15 @@ serve(async (req) => {
         })
         .eq('id', body.driverId)
         .select('*')
-        .single()
+        .maybeSingle()
 
       if (error) {
         console.error('Failed to reject driver', error)
         throw new RequestError('Unable to reject driver.', 500, false)
+      }
+
+      if (!data) {
+        throw new RequestError('Driver not found.', 404)
       }
 
       return jsonResponse({ driver: data })
@@ -148,11 +173,15 @@ serve(async (req) => {
       .update({ status: 'suspended' })
       .eq('id', body.driverId)
       .select('*')
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Failed to suspend driver', error)
       throw new RequestError('Unable to suspend driver.', 500, false)
+    }
+
+    if (!data) {
+      throw new RequestError('Driver not found.', 404)
     }
 
     return jsonResponse({ driver: data })

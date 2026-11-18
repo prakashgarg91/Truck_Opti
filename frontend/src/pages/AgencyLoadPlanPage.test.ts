@@ -392,3 +392,30 @@ describe('AgencyLoadPlanPage', () => {
         expect(text()).not.toMatch(/Order line [0-9a-f]{8}/)
     })
 })
+
+describe('AgencyLoadPlanPage accessibility', () => {
+    it('the order, truck and saved-plan lists are named by their section headings', async () => {
+        await mountPage()
+        expect(q('ul[aria-labelledby="lp-orders"]')).not.toBeNull()
+        expect(q('ul[aria-labelledby="lp-trucks"]')).not.toBeNull()
+        expect(document.getElementById('lp-orders')?.textContent).toContain('Draft orders to plan')
+        expect(document.getElementById('lp-trucks')?.textContent).toContain('Trucks to use')
+    })
+
+    it('the plan name field is labelled and its hint is linked', async () => {
+        await mountPage()
+        await pickAndPropose()
+        const input = q('#plan-name') as HTMLInputElement
+        expect(input).not.toBeNull()
+        expect(document.querySelector('label[for="plan-name"]')).not.toBeNull()
+        expect(input.getAttribute('aria-describedby')).toBe('plan-name-hint')
+    })
+
+    it('the capacity meter exposes its value as text, not colour alone', async () => {
+        await mountPage()
+        await pickAndPropose()
+        const meter = q('[role="meter"]') as HTMLElement
+        expect(meter).not.toBeNull()
+        expect(meter.getAttribute('aria-valuetext')).toMatch(/% full$/)
+    })
+})

@@ -120,3 +120,28 @@ describe('SubscriptionPage invoice history', () => {
         expect(written).not.toContain('₹')
     })
 })
+
+describe('SubscriptionPage accessibility', () => {
+    beforeEach(() => {
+        ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+        vi.clearAllMocks()
+        container = document.createElement('div')
+        document.body.appendChild(container)
+        root = createRoot(container)
+    })
+    afterEach(() => {
+        act(() => root.unmount())
+        container.remove()
+    })
+
+    it('names the invoice table and keeps Download buttons 44px high with a focus ring', async () => {
+        h.list.mockResolvedValue([INVOICE])
+        await render()
+        const table = container.querySelector('table')
+        expect(table?.getAttribute('aria-labelledby')).toBe('invoice-heading')
+        expect(document.getElementById('invoice-heading')?.textContent).toBe('Invoice history')
+        const download = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Download')!
+        expect(download.className).toContain('min-h-[44px]')
+        expect(download.className).toContain('focus-visible:ring-2')
+    })
+})

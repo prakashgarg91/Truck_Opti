@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Truck, Plus, Edit2, Trash2, ChevronLeft, Search, X, Save, Database } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
+import AdminLoadError from './AdminLoadError'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { trucksLocalApi } from '../services/localApi'
@@ -123,7 +124,8 @@ export default function TrucksPage() {
   const {
     data: trucks = [],
     isLoading: loading,
-    isError: loadError
+    isError: loadError,
+    refetch
   } = useQuery({
     queryKey: ['trucks'],
     queryFn: trucksLocalApi.getAll,
@@ -291,10 +293,17 @@ export default function TrucksPage() {
     }
   }
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this truck type?')) {
-      deleteMutation.mutate(id)
-    }
+  // Inline confirm (no native window.confirm): delete is staged, then confirmed in the dialog below.
+  const [pendingDelete, setPendingDelete] = useState<TruckType | null>(null)
+
+  const handleDelete = (truck: TruckType) => {
+    setPendingDelete(truck)
+  }
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return
+    deleteMutation.mutate(pendingDelete.id)
+    setPendingDelete(null)
   }
 
   const filteredTrucks = trucks.filter((t: TruckType) =>
@@ -313,7 +322,7 @@ export default function TrucksPage() {
       <div className="flex items-center gap-4">
         <button aria-label="Back to management"
           onClick={() => navigate('/management')}
-          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+          className="min-h-[44px] min-w-[44px] p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
@@ -382,18 +391,12 @@ export default function TrucksPage() {
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div role="status" className="flex flex-col items-center justify-center py-12 space-y-4">
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-500">Loading fleet data...</p>
         </div>
       ) : loadError ? (
-        <EmptyState
-          icon={Truck}
-          title={'Failed to load trucks'}
-          description={'Please check your connection and try again'}
-          actionLabel={'Add Truck'}
-          onAction={() => handleOpenModal()}
-        />
+        <AdminLoadError what="truck types" onRetry={() => { void refetch() }} />
       ) : filteredTrucks.length === 0 ? (
         <EmptyState
           icon={Truck}
@@ -427,14 +430,14 @@ export default function TrucksPage() {
                   <button aria-label={`Edit ${truck.name}`}
                     onClick={() => handleOpenModal(truck)}
                     disabled={isMutating}
-                    className="p-2 text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
+                    className="min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button aria-label={`Delete ${truck.name}`}
-                    onClick={() => handleDelete(truck.id)}
+                    onClick={() => handleDelete(truck)}
                     disabled={deleteMutation.isPending}
-                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                    className="min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -464,13 +467,31 @@ export default function TrucksPage() {
         </div>
       )}
 
+      {/* Delete confirmation */}
+      {pendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div role="alertdialog" aria-modal="true" aria-labelledby="delete-truck-title" aria-describedby="delete-truck-desc" className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-xl">
+            <h2 id="delete-truck-title" className="text-lg font-bold">Delete this truck type?</h2>
+            <p id="delete-truck-desc" className="text-sm text-slate-500 dark:text-slate-400">{`"${pendingDelete.name}" will be removed from the truck list.`}</p>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setPendingDelete(null)} className="flex-1 min-h-[44px] px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+                Cancel
+              </button>
+              <button type="button" onClick={confirmDelete} className="flex-1 min-h-[44px] px-4 py-2.5 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
+          <div role="dialog" aria-modal="true" aria-labelledby="truck-dialog-title" className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <h2 className="text-xl font-bold">{editingTruck ? 'Edit Truck' : 'Add New Truck'}</h2>
-              <button aria-label="Close truck dialog" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
+              <h2 id="truck-dialog-title" className="text-xl font-bold">{editingTruck ? 'Edit Truck' : 'Add New Truck'}</h2>
+              <button aria-label="Close truck dialog" onClick={() => setIsModalOpen(false)} className="min-h-[44px] min-w-[44px] p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -558,15 +579,17 @@ export default function TrucksPage() {
 
             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3">
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                className="flex-1 min-h-[44px] px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={createMutation.isPending || updateMutation.isPending}
-                className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                className="flex-1 min-h-[44px] px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
               >
                 {(createMutation.isPending || updateMutation.isPending) ? (
                   <div className="spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

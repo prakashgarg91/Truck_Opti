@@ -6,6 +6,65 @@ This file follows the [Keep a Changelog](https://keepachangelog.com/) style. The
 
 Scope note (facts only): the database work in the 2026-09 to 2026-11 entries was proven on the local PGlite tier only. Hosted rollout, `supabase db push`, real-money payment execution and production deploy remain owner-gated, as recorded in `TASKS.md` under "Known owner gates".
 
+## 2026-11-18
+
+### Added
+
+- Agency menu sheet for phone navigation, with error and retry states on the driver and admin pages (commit `b4e62559`).
+- Driver live location sharing, opt-in per trip, and a driver trip link to the agency job (migration `20261039`).
+- Admin billing settings screen for the invoice issuer: legal name, GSTIN, registered address, state code and SAC (`/admin/billing-settings`).
+- Local browser journey test (`npm run test:journey`) and a release gates runner (`npm run release:gates`) with a staging smoke checklist for the hosted gates.
+- Node harness that type-checks and runs the Razorpay, ERP and portal Edge functions without Deno (86 tests).
+
+### Changed
+
+- Subscription write guards added to 14 more database commands (record add, settle, ERP and the ERP plan flag) with matching frontend wiring (migration `20261035`).
+- Agency dashboard, jobs, billing and rates pages show an error state with a Retry button when the Edge call fails, instead of the misleading "No Agency Profile Found".
+
+### Fixed
+
+- Active agency staff (dispatcher, finance, viewer) can enter the agency area; before this only owners could (found by the local journey test).
+- Agency pages show the scope-aware buttons and navigation for each staff role.
+
+### Security
+
+- Agency owners could edit their own rating and approval fields and delete their agency row directly. Closed by the agency row guard (migration `20261040`, 50 test cases).
+- Least-privilege hardening: trigger-function execute rights and anonymous data-change grants revoked (migration `20261036`); privilege matrix 15 of 15.
+- Driver CSV export no longer includes bank or Aadhaar details.
+- Secrets audit of the source and the built bundle: pass.
+
+## 2026-11-17
+
+### Added
+
+- Orders and load plans: normalised orders, an atomic CSV order import with row validation, and load plans with versioned approval (TO-145).
+- Consignments with goods receipts and lorry receipts (TO-146), tracking with ping rules (TO-147), freight invoices (record only, no payment flow) (TO-148), expenses, fuel and maintenance records (TO-149), payroll (TO-150) and an ERP connector with an ingest Edge function (TO-151).
+- Agency-level subscriptions with a plan limit guard on nine commands, GST invoicing for subscription payments, activation, refunds and credit notes, an expiry sweep with reminders, and a Razorpay webhook (TO-152). Enforcement is off by default.
+- Subscription billing screens: trial, past due, grace, expired and limit states, a trial panel and entitlement gating across agency pages. Admin subscriptions use the agency model.
+
+### Changed
+
+- Review fixes on the consignment, tracking and expense work: append-only history, a ping rate guard, odometer bounds and the Indian financial year (IST) for expense totals.
+- Plan approval marks orders as planned, and cancelling returns them.
+
+### Fixed
+
+- ERP receiver, invitation acceptance, staff access on portal functions, invoice read path and usage-count parity (contract audit, `docs/CONTRACT-AUDIT-2026-11-17.md`).
+- Legacy payment verification endpoint now returns 410 Gone; the Razorpay flow uses the server-side activation path.
+- Truck-maintenance guard for approved plans and a stronger odometer race check.
+
+### Security
+
+- Order amounts for subscription payments are set by the server, never taken from the client, and webhook events are deduplicated by event id (checked by the local Edge harness; not run against Razorpay).
+- Subscription money and limit commands were tested against real PostgreSQL race scenarios (8 scenarios, no bug found).
+
+### Not yet verified
+
+- Hosted Supabase (auth, storage, pg_cron, migrations on a hosted project).
+- Real Deno runs of the Edge functions (never executed in Deno).
+- Real Razorpay runs, in test or live mode.
+- The new 2026-11-17 screens have not been viewed in a browser.
+
 ## 2026-11-07
 
 ### Added

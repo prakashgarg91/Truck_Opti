@@ -223,3 +223,50 @@ describe('agencyInvoicesApi', () => {
         })
     })
 })
+
+describe('agencyInvoicesApi consignment link', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('sends p_consignment_id only when a consignment is given', async () => {
+        rpcMock.mockResolvedValue({ data: { ok: true, invoice_id: 'i-1', invoice_number: 'N' }, error: null })
+        await agencyInvoicesApi.issueInvoice({ ...issueInput, consignmentId: 'g-1' })
+        expect(rpcMock).toHaveBeenLastCalledWith('agency_invoice_issue', expect.objectContaining({ p_consignment_id: 'g-1', p_idempotency_key: 'k-1' }))
+        await agencyInvoicesApi.issueInvoice(issueInput)
+        expect(Object.keys(rpcMock.mock.calls[1][1])).not.toContain('p_consignment_id')
+        await agencyInvoicesApi.issueInvoice({ ...issueInput, consignmentId: null })
+        expect(Object.keys(rpcMock.mock.calls[2][1])).not.toContain('p_consignment_id')
+    })
+
+    it('maps consignment_already_invoiced to a typed refusal carrying the existing invoice', async () => {
+        rpcMock.mockResolvedValue({ data: { ok: false, error: 'consignment_already_invoiced', invoice_id: 'i-9', invoice_number: 'INV/2026-27/000009' }, error: null })
+        const result = await agencyInvoicesApi.issueInvoice({ ...issueInput, consignmentId: 'g-1' })
+        expect(result).toEqual({
+            ok: false,
+            error: 'consignment_already_invoiced',
+            message: ISSUE_ERROR_MESSAGES.consignment_already_invoiced,
+            problems: [],
+            invoiceId: 'i-9',
+            invoiceNumber: 'INV/2026-27/000009',
+        })
+    })
+
+    it('maps consignment_not_found to its message without invoice fields', async () => {
+        rpcMock.mockResolvedValue({ data: { ok: false, error: 'consignment_not_found', invoice_id: 'leak' }, error: null })
+        const result = await agencyInvoicesApi.issueInvoice({ ...issueInput, consignmentId: 'g-1' })
+        expect(result).toEqual({ ok: false, error: 'consignment_not_found', message: ISSUE_ERROR_MESSAGES.consignment_not_found, problems: [] })
+    })
+
+    it('ignores a non-string invoice id on an already-invoiced refusal', async () => {
+        rpcMock.mockResolvedValue({ data: { ok: false, error: 'consignment_already_invoiced', invoice_id: 42 }, error: null })
+        const result = await agencyInvoicesApi.issueInvoice({ ...issueInput, consignmentId: 'g-1' })
+        expect(result.ok === false && result.invoiceId).toBeUndefined()
+    })
+
+    it('reads consignment_id with the invoice list columns', async () => {
+        const { select } = mockOrdered([])
+        await agencyInvoicesApi.listInvoices()
+        expect(String(select.mock.calls[0][0])).toContain('consignment_id')
+    })
+})

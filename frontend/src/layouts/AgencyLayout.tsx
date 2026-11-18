@@ -39,11 +39,41 @@ const MORE_NAV = [
 
 const MORE_SHEET_ID = 'agency-more-sheet'
 
+// Staff scopes that may work with jobs (the new-job bell). The owner always
+// qualifies. Finance and viewer staff do not get the bell.
+const NEW_JOB_BELL_SCOPES: readonly string[] = ['dispatcher', 'fleet_manager']
+
+/**
+ * The agency whose new jobs the bell should count. Owners are found by
+ * transport_agencies.user_id; staff by their own active agency_memberships row
+ * whose scope may work jobs. Returns null when there is nothing to subscribe to.
+ */
+async function resolveBellAgencyId(userId: string, isStaff: boolean): Promise<string | null> {
+  if (!isStaff) {
+    const { data } = await supabase
+      .from('transport_agencies')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle()
+    return data?.id ?? null
+  }
+  const { data } = await supabase
+    .from('agency_memberships')
+    .select('agency_id, scope')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+  const row = (data ?? []).find((membership) => NEW_JOB_BELL_SCOPES.includes(membership.scope))
+  return row?.agency_id ?? null
+}
+
 export default function AgencyLayout() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
   const access = useAgencyAccess()
+  const isStaff = access.isStaff
+  // Boolean, not the access object: the object is rebuilt on every scope change, which would resubscribe.
+  const canSeeNewJobs = access.hasScope(NEW_JOB_BELL_SCOPES as ('dispatcher' | 'fleet_manager')[])
   // Staff only see what their scopes can read (the database enforces the same lists via RLS).
   const nav = NAV.filter((item) => access.canRead(item.to))
   const moreNav = MORE_NAV.filter((item) => access.canRead(item.to))
@@ -96,29 +126,27 @@ export default function AgencyLayout() {
   // Subscribe to new jobs for this agency. Only meaningful against a
   // configured cloud backend: in local-first mode the placeholder client
   // would otherwise open a WebSocket to an unresolvable host on every page.
+  // Owners resolve the agency through transport_agencies.user_id; active staff
+  // resolve it through their own agency_memberships row (the same rows
+  // resolveAppAccess reads). Finance and viewer staff never subscribe.
   useEffect(() => {
-    if (!isSupabaseConfigured || !user?.id) return
+    if (!isSupabaseConfigured || !user?.id || !canSeeNewJobs) return
 
+    const userId = user.id
     let cancelled = false
     let channel: ReturnType<typeof supabase.channel> | null = null
 
     const subscribeToJobs = async () => {
-      // Get agency ID
-      const { data: agency } = await supabase
-        .from('transport_agencies')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle()
+      const agencyId = await resolveBellAgencyId(userId, isStaff)
+      if (cancelled || !agencyId) return
 
-      if (cancelled || !agency?.id) return
-
-      // Subscribe to new jobs for this agency
+      // One channel per mounted layout: it is removed on unmount and on user change.
       channel = supabase.channel('agency-new-jobs')
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
           table: 'agency_jobs',
-          filter: `agency_id=eq.${agency.id}`
+          filter: `agency_id=eq.${agencyId}`
         }, () => {
           setNewJobCount(c => c + 1)
         })
@@ -133,7 +161,7 @@ export default function AgencyLayout() {
         supabase.removeChannel(channel)
       }
     }
-  }, [user?.id])
+  }, [user?.id, isStaff, canSeeNewJobs])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

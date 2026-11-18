@@ -285,7 +285,7 @@ describe('AdminDashboardPage', () => {
         const rows = Array.from(container!.querySelectorAll('tbody tr'))
         expect(rows).toHaveLength(2)
         const cells = Array.from(rows[0].querySelectorAll('td')).map((td) => td.textContent)
-        expect(cells).toEqual(['agency', 'Sharma Transport', 'Mumbai → Pune', '₹18,500', '15 Oct'])
+        expect(cells).toEqual(['agency', 'Sharma Transport', 'Mumbai → Pune', '₹18,500', '15 Oct 2026'])
     })
 
     it('route fallback: missing origin/destination render em-dashes', async () => {
@@ -293,7 +293,7 @@ describe('AdminDashboardPage', () => {
 
         const row = container!.querySelectorAll('tbody tr')[1]
         const cells = Array.from(row.querySelectorAll('td')).map((td) => td.textContent)
-        expect(cells).toEqual(['driver', 'Ravi Kumar', '— → —', '₹2,400', '14 Oct'])
+        expect(cells).toEqual(['driver', 'Ravi Kumar', '— → —', '₹2,400', '14 Oct 2026'])
     })
 
     it('empty state: zero counters and every section empty message, no jobs table', async () => {
@@ -301,8 +301,11 @@ describe('AdminDashboardPage', () => {
         await renderPage()
 
         expect(text()).toContain('No revenue activity yet')
-        expect(text()).toContain('No revenue data yet')
-        expect(text()).toContain('No delivered driver trips yet')
+        // Trend and leaderboard are not computed by the snapshot yet: say so, never imply zero.
+        expect(text()).toContain('Revenue trend is not available in this view yet.')
+        expect(text()).toContain('Driver earnings breakdown is not available in this view yet.')
+        expect(text()).not.toContain('No revenue data yet')
+        expect(text()).not.toContain('No delivered driver trips yet')
         expect(text()).toContain('₹0')
         expect(q('table')).toBeNull()
     })

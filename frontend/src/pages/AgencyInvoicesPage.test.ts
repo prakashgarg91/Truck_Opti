@@ -429,3 +429,98 @@ describe('AgencyInvoicesPage GR shortcut, outstanding by client and CSV export',
         expect(button(/Export CSV/)!.disabled).toBe(true)
     })
 })
+
+describe('AgencyInvoicesPage consignment link', () => {
+    const GR_A = { consignmentId: 'g-1', grNumber: 'AGY/2026-27/000001', status: 'delivered', clientId: 'c-1' }
+    const GR_C = { consignmentId: 'g-3', grNumber: 'AGY/2026-27/000003', status: 'delivered', clientId: 'c-1' }
+
+    async function startFromGr(gr: typeof GR_A) {
+        await click(button(new RegExp(`Create invoice from consignment ${gr.grNumber.replace(/\//g, '\\/')}`))!)
+        await setValue(q('[data-testid="invoice-line-0"]')!.querySelectorAll('input')[2], '1,000')
+        await setValue(q('#inv-supplier')!, '27')
+        await setValue(q('#inv-place')!, '27')
+    }
+
+    it('the shortcut sends the consignment id with the issue request', async () => {
+        h.listInvoiceableGrs.mockResolvedValue([GR_A])
+        h.issueInvoice.mockResolvedValue({ ok: true, invoiceId: 'i-2', invoiceNumber: 'INV/2', replay: false })
+        await mountPage()
+        await startFromGr(GR_A)
+        await submit(q('[data-testid="invoice-form"]')!)
+        expect(h.issueInvoice.mock.calls[0][0]).toMatchObject({ clientId: 'c-1', consignmentId: 'g-1' })
+    })
+
+    it('a free-form invoice sends no consignment id', async () => {
+        h.listInvoiceableGrs.mockResolvedValue([GR_A])
+        h.issueInvoice.mockResolvedValue({ ok: true, invoiceId: 'i-2', invoiceNumber: 'INV/2', replay: false })
+        await mountPage()
+        await fillValidForm()
+        await submit(q('[data-testid="invoice-form"]')!)
+        expect(h.issueInvoice.mock.calls[0][0].consignmentId ?? null).toBeNull()
+    })
+
+    it('a GR that already has a live invoice is marked Invoiced with a link and no create button', async () => {
+        h.listInvoiceableGrs.mockResolvedValue([GR_A])
+        h.listInvoices.mockResolvedValue([invoice({ id: 'i-7', invoice_number: 'INV/2026-27/000007', consignment_id: 'g-1' })])
+        await mountPage()
+        expect(q('[data-testid="gr-invoiced"]')?.textContent).toContain('Invoiced')
+        expect(q('[data-testid="gr-invoiced"]')?.textContent).toContain('INV/2026-27/000007')
+        expect(button(/Create invoice from consignment AGY/)).toBeUndefined()
+        await click(button(/Open invoice INV\/2026-27\/000007 for GR/)!)
+        expect(h.getInvoiceDetail).toHaveBeenCalledWith('i-7')
+    })
+
+    it('a cancelled invoice frees the GR: the create button is back', async () => {
+        h.listInvoiceableGrs.mockResolvedValue([GR_A])
+        h.listInvoices.mockResolvedValue([invoice({ status: 'cancelled', consignment_id: 'g-1' })])
+        await mountPage()
+        expect(q('[data-testid="gr-invoiced"]')).toBeNull()
+        expect(button(/Create invoice from consignment AGY/)).toBeDefined()
+    })
+
+    it('consignment_already_invoiced shows a calm notice with a link to the existing invoice, not an error toast', async () => {
+        h.listInvoiceableGrs.mockResolvedValue([GR_A])
+        h.issueInvoice.mockResolvedValue({
+            ok: false, error: 'consignment_already_invoiced', message: 'This consignment already has an invoice. Open it instead of issuing another.',
+            problems: [], invoiceId: 'i-7', invoiceNumber: 'INV/2026-27/000007',
+        })
+        h.listInvoices.mockResolvedValueOnce([]).mockResolvedValue([invoice({ id: 'i-7', invoice_number: 'INV/2026-27/000007', consignment_id: 'g-1' })])
+        await mountPage()
+        await startFromGr(GR_A)
+        await submit(q('[data-testid="invoice-form"]')!)
+        expect(q('[data-testid="invoice-issue-refused"]')?.textContent).toContain('already has an invoice')
+        expect(h.toastError).not.toHaveBeenCalled()
+        expect(q('[data-testid="gr-invoiced"]')).not.toBeNull()
+        await click(q('[data-testid="open-existing-invoice"]') as HTMLButtonElement)
+        expect(h.getInvoiceDetail).toHaveBeenCalledWith('i-7')
+        expect(q('[data-testid="invoice-form"]')).toBeNull()
+    })
+
+    it('other refusals still use the error toast', async () => {
+        h.listInvoiceableGrs.mockResolvedValue([GR_A])
+        h.issueInvoice.mockResolvedValue({ ok: false, error: 'consignment_not_found', message: 'This consignment could not be found. Reload the page and choose it again.', problems: [] })
+        await mountPage()
+        await startFromGr(GR_A)
+        await submit(q('[data-testid="invoice-form"]')!)
+        expect(h.toastError).toHaveBeenCalledWith('This consignment could not be found. Reload the page and choose it again.')
+    })
+
+    it('one invoice bills one GR: a second GR is refused while the first is linked', async () => {
+        h.listInvoiceableGrs.mockResolvedValue([GR_A, GR_C])
+        await mountPage()
+        await click(button(/Create invoice from consignment AGY\/2026-27\/000001/)!)
+        await click(button(/Create invoice from consignment AGY\/2026-27\/000003/)!)
+        expect(q('[data-testid="invoice-from-gr-note"]')?.textContent).toContain('One invoice bills one GR')
+    })
+
+    it('the link is dropped when the client is changed away from the GR client', async () => {
+        h.listClients.mockResolvedValue([CLIENT, { id: 'c-2', client_name: 'Other Client', status: 'active' }])
+        h.listInvoiceableGrs.mockResolvedValue([GR_A])
+        h.issueInvoice.mockResolvedValue({ ok: true, invoiceId: 'i-2', invoiceNumber: 'INV/2', replay: false })
+        await mountPage()
+        await startFromGr(GR_A)
+        await setValue(q('#inv-client')!, 'c-2')
+        await submit(q('[data-testid="invoice-form"]')!)
+        expect(h.issueInvoice.mock.calls[0][0].consignmentId ?? null).toBeNull()
+    })
+})

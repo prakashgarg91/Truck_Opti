@@ -10,6 +10,17 @@ import {
 
 type DashboardRequest = { action: 'snapshot'; limit?: number }
 
+/** Upper bound on recent-activity rows, so a large client limit cannot pull unbounded data. */
+const MAX_RECENT_ROWS = 200
+
+async function readJsonBody(req: Request): Promise<unknown> {
+  try {
+    return await req.json()
+  } catch {
+    throw new RequestError('A valid admin action is required.')
+  }
+}
+
 function parseRequestBody(body: unknown): DashboardRequest {
   if (!isRecord(body) || body.action !== 'snapshot') {
     throw new RequestError('A valid admin action is required.')
@@ -21,7 +32,7 @@ function parseRequestBody(body: unknown): DashboardRequest {
 
   return {
     action: 'snapshot',
-    limit: typeof body.limit === 'number' ? Math.floor(body.limit) : undefined,
+    limit: typeof body.limit === 'number' ? Math.min(Math.floor(body.limit), MAX_RECENT_ROWS) : undefined,
   }
 }
 
@@ -32,7 +43,7 @@ serve(async (req) => {
 
   try {
     const { serviceClient } = await requireAdminContext(req.headers.get('Authorization'))
-    const { limit = 20 } = parseRequestBody(await req.json())
+    const { limit = 20 } = parseRequestBody(await readJsonBody(req))
 
     const [agencyJobsRes, agencyShipmentRefsRes, driverJobsRes, directBookingCandidatesRes, agenciesRes, driversRes, shipmentsRes, recentAgencyJobsRes, recentDriverJobsRes] = await Promise.all([
       serviceClient

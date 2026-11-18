@@ -129,12 +129,19 @@ export default function AdminAgenciesPage() {
       {/* Reject Modal */}
       {rejectModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-2">Reject Agency</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="agency-reject-title" className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 id="agency-reject-title" className="font-bold text-slate-800 dark:text-slate-100 mb-2">Reject Agency</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
               Rejecting <strong>{rejectModal.name}</strong>. Provide a reason:
             </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              {'The agency moves to the Rejected tab and the reason is saved with the record.'}
+            </p>
+            <label htmlFor="agency-reject-reason" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {'Reason for rejection (required)'}
+            </label>
             <textarea
+              id="agency-reject-reason"
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-800 dark:text-slate-100 resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -211,6 +218,7 @@ export default function AdminAgenciesPage() {
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
+              aria-label="Search agencies by company, phone or city"
               placeholder="Search by company, phone, city..."
               className="flex-1 bg-transparent text-sm text-slate-700 dark:text-slate-200 placeholder-slate-400 outline-none"
             />

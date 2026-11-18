@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Briefcase, CheckCircle2, XCircle, AlertTriangle,
   RefreshCw, MapPin, Truck, UserPlus, X, UserCheck
@@ -110,6 +110,21 @@ export default function AgencyJobsPage() {
   const [showTrackModal, setShowTrackModal] = useState(false)
   const [trackingJob, setTrackingJob] = useState<AgencyJob | null>(null)
   const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null)
+  // Dialogs return focus to the control that opened them.
+  const lastOutsideFocus = useRef<HTMLElement | null>(null)
+  const dialogOpen = showAssignModal || showTrackModal
+  const wasDialogOpen = useRef(false)
+  useEffect(() => {
+    const remember = (e: FocusEvent) => {
+      if (e.target instanceof HTMLElement && !e.target.closest('[role="dialog"]')) lastOutsideFocus.current = e.target
+    }
+    document.addEventListener('focusin', remember)
+    return () => document.removeEventListener('focusin', remember)
+  }, [])
+  useEffect(() => {
+    if (wasDialogOpen.current && !dialogOpen) lastOutsideFocus.current?.focus()
+    wasDialogOpen.current = dialogOpen
+  }, [dialogOpen])
 
   // Customer authorizations (TO-143-D1): the consent-gated job-creation
   // command source. Rendered as shipment uuid + grant date only — the agency
@@ -353,7 +368,7 @@ export default function AgencyJobsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <RefreshCw className="animate-spin text-indigo-600" size={32} />
+        <RefreshCw className="animate-spin text-indigo-600" size={32} aria-hidden="true" />
       </div>
     )
   }
@@ -381,12 +396,13 @@ export default function AgencyJobsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div role="group" aria-label="Filter jobs by status" className="flex gap-2 overflow-x-auto pb-1">
         {(['all', 'pending', 'accepted', 'in_transit', 'delivered', 'cancelled'] as JobFilter[]).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filter === f
+            aria-pressed={filter === f}
+            className={`flex-shrink-0 min-h-[44px] px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${FOCUS_RING} ${filter === f
               ? 'bg-indigo-600 text-white'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
               }`}
@@ -436,13 +452,13 @@ export default function AgencyJobsPage() {
                     placeholder="Fare ₹"
                     value={jobFares[auth.shipment_id] ?? ''}
                     onChange={(e) => setJobFares(prev => ({ ...prev, [auth.shipment_id]: e.target.value }))}
-                    className="w-24 px-2.5 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg"
+                    className={`w-24 px-2.5 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg ${FOCUS_RING}`}
                     disabled={creatingJobFor === auth.shipment_id}
                   />
                   <button
                     onClick={() => handleCreateJob(auth)}
                     disabled={creatingJobFor === auth.shipment_id}
-                    className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50 whitespace-nowrap"
+                    className={`min-h-[44px] px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50 whitespace-nowrap ${FOCUS_RING}`}
                   >
                     {creatingJobFor === auth.shipment_id ? 'Creating...' : 'Create Job'}
                   </button>
@@ -471,7 +487,7 @@ export default function AgencyJobsPage() {
 
       {filteredJobs.length === 0 && !loadError && (
         <div className="text-center py-16">
-          <Briefcase size={48} className="text-slate-300 mx-auto mb-4" />
+          <Briefcase size={48} className="text-slate-300 mx-auto mb-4" aria-hidden="true" />
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">No jobs found</p>
           <p className="text-slate-400 text-xs mt-1">
             Jobs will appear here once you start receiving bookings.
@@ -487,7 +503,7 @@ export default function AgencyJobsPage() {
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                  <Truck size={16} className="text-indigo-600 dark:text-indigo-400" />
+                  <Truck size={16} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -520,7 +536,7 @@ export default function AgencyJobsPage() {
               {job.vehicle_type && (
                 <>
                   <span className="flex items-center gap-1">
-                    <Truck size={10} />
+                    <Truck size={10} aria-hidden="true" />
                     {vehicleTypeLabel(job.vehicle_type)}
                   </span>
                   <span>•</span>
@@ -541,17 +557,17 @@ export default function AgencyJobsPage() {
                 <button
                   onClick={() => handleAccept(job)}
                   disabled={processingJobId === job.id}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-green-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50"
+                  className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 bg-green-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50 ${FOCUS_RING}`}
                 >
-                  <CheckCircle2 size={14} />
+                  <CheckCircle2 size={14} aria-hidden="true" />
                   Accept
                 </button>
                 <button
                   onClick={() => handleDecline(job)}
                   disabled={processingJobId === job.id}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold disabled:opacity-50"
+                  className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold disabled:opacity-50 ${FOCUS_RING}`}
                 >
-                  <XCircle size={14} />
+                  <XCircle size={14} aria-hidden="true" />
                   Decline
                 </button>
               </div>
@@ -563,9 +579,9 @@ export default function AgencyJobsPage() {
                 onClick={() => openAssignModal(job)}
                 disabled={!gate.canDispatch}
                 title={gate.dispatchTitle}
-                className="w-full mt-3 flex items-center justify-center gap-1.5 py-2.5 min-h-[44px] bg-indigo-600 text-white rounded-xl text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                className={`w-full mt-3 flex items-center justify-center gap-1.5 py-2.5 min-h-[44px] bg-indigo-600 text-white rounded-xl text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
               >
-                <UserPlus size={14} />
+                <UserPlus size={14} aria-hidden="true" />
                 Assign Driver
               </button>
             )}
@@ -573,7 +589,7 @@ export default function AgencyJobsPage() {
             {/* Accepted with driver assigned - show driver name */}
             {job.status === 'accepted' && job.driver_id && (
               <div className="mt-3 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-xs flex items-center gap-2">
-                <UserCheck size={14} className="text-indigo-600 dark:text-indigo-400" />
+                <UserCheck size={14} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                 <span className="text-indigo-600 dark:text-indigo-400">
                   Assigned: {job.driver_name || 'Driver assigned'}
                 </span>
@@ -585,17 +601,17 @@ export default function AgencyJobsPage() {
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => openTrackModal(job)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold"
+                  className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold ${FOCUS_RING}`}
                 >
-                  <MapPin size={14} />
+                  <MapPin size={14} aria-hidden="true" />
                   Track Live
                 </button>
                 <button
                   onClick={() => confirmDelivery(job)}
                   disabled={processingJobId === job.id}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50"
+                  className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold disabled:opacity-50 ${FOCUS_RING}`}
                 >
-                  <CheckCircle2 size={14} />
+                  <CheckCircle2 size={14} aria-hidden="true" />
                   Confirm Delivery
                 </button>
               </div>
@@ -607,14 +623,14 @@ export default function AgencyJobsPage() {
       {/* Assign Driver Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/50 flex items-end z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-h-[80vh] overflow-hidden">
+          <div role="dialog" aria-modal="true" aria-labelledby="assign-driver-title" className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-h-[80vh] overflow-hidden">
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Assign Driver</h2>
+              <h2 id="assign-driver-title" className="text-lg font-bold text-slate-800 dark:text-slate-100">Assign Driver</h2>
               <button aria-label="Close assign driver dialog"
                 onClick={() => { setShowAssignModal(false); setSelectedJob(null) }}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl"
+                className={`min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl ${FOCUS_RING}`}
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
 
@@ -636,7 +652,7 @@ export default function AgencyJobsPage() {
                       onClick={() => handleAssignDriver(driver)}
                       disabled={assigning || !gate.canDispatch}
                       title={gate.dispatchTitle}
-                      className="w-full p-4 text-left bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                      className={`w-full min-h-[44px] p-4 text-left bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors ${FOCUS_RING}`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -661,19 +677,19 @@ export default function AgencyJobsPage() {
       {/* Track Live Modal */}
       {showTrackModal && trackingJob && (
         <div className="fixed inset-0 bg-black/50 flex items-end z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-h-[85vh] overflow-hidden">
+          <div role="dialog" aria-modal="true" aria-labelledby="track-live-title" className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-h-[85vh] overflow-hidden">
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Live Tracking</h2>
+                <h2 id="track-live-title" className="text-lg font-bold text-slate-800 dark:text-slate-100">Live Tracking</h2>
                 <p className="text-xs text-slate-500">
                   {trackingJob.origin} → {trackingJob.destination}
                 </p>
               </div>
               <button aria-label="Close tracking dialog"
                 onClick={() => { setShowTrackModal(false); setTrackingJob(null) }}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl"
+                className={`min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl ${FOCUS_RING}`}
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
 
@@ -712,7 +728,7 @@ export default function AgencyJobsPage() {
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center">
-                    <RefreshCw className="w-8 h-8 text-slate-400 animate-spin mx-auto mb-2" />
+                    <RefreshCw className="w-8 h-8 text-slate-400 animate-spin mx-auto mb-2" aria-hidden="true" />
                     <p className="text-sm text-slate-500">
                       Waiting for driver location...
                     </p>

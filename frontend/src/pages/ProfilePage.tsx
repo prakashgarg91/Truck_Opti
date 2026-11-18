@@ -242,6 +242,8 @@ export default function ProfilePage() {
                   </div>
                 )}
                 <button
+                  type="button"
+                  aria-label="Change profile photo"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploadingAvatar}
                   className="absolute bottom-0 right-0 w-8 h-8 bg-white dark:bg-slate-700 rounded-full shadow-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
@@ -255,6 +257,7 @@ export default function ProfilePage() {
                   type="file"
                   accept="image/*"
                   className="hidden"
+                  aria-label="Upload profile photo"
                   onChange={handleAvatarUpload}
                 />
               </div>

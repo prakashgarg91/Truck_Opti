@@ -125,6 +125,22 @@ export default function AgencyClientsPage() {
 
   const [confirm, setConfirm] = useState<Confirm | null>(null)
 
+  // Dialogs return focus to the control that opened them.
+  const lastOutsideFocus = useRef<HTMLElement | null>(null)
+  const dialogOpen = showNewClient || showEdit || showAddSite || showAddContact || confirm !== null
+  const wasDialogOpen = useRef(false)
+  useEffect(() => {
+    const remember = (e: FocusEvent) => {
+      if (e.target instanceof HTMLElement && !e.target.closest('[role="dialog"]')) lastOutsideFocus.current = e.target
+    }
+    document.addEventListener('focusin', remember)
+    return () => document.removeEventListener('focusin', remember)
+  }, [])
+  useEffect(() => {
+    if (wasDialogOpen.current && !dialogOpen) lastOutsideFocus.current?.focus()
+    wasDialogOpen.current = dialogOpen
+  }, [dialogOpen])
+
   const fetchAgreements = useCallback(async () => {
     try {
       setError(null)
@@ -625,7 +641,7 @@ export default function AgencyClientsPage() {
                 className={`w-full min-h-[44px] rounded-xl border border-slate-300 pl-9 pr-3 ${FOCUS_RING}`}
               />
             </div>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100" aria-label="Client agreements">
               {agreements.length === 0 && (
                 <li className="py-8 text-center text-sm text-slate-600">
                   <MapPin className="mx-auto mb-2 text-slate-400" size={24} aria-hidden="true" />
@@ -792,7 +808,7 @@ export default function AgencyClientsPage() {
                           <h3 id="bill-to-heading" className="text-base font-bold text-slate-900">Bill-to sites</h3>
                           <p className="text-xs text-slate-600">Only one active bill-to site per client.</p>
                         </div>
-                        <ul className="divide-y divide-slate-100 p-2">
+                        <ul className="divide-y divide-slate-100 p-2" aria-labelledby="bill-to-heading">
                           {billToSites.length === 0 && <li className="px-2 py-4 text-center text-sm text-slate-600">No bill-to sites yet.</li>}
                           {billToSites.map(renderSiteRow)}
                         </ul>
@@ -801,7 +817,7 @@ export default function AgencyClientsPage() {
                         <div className="px-4 pt-4">
                           <h3 id="ship-to-heading" className="text-base font-bold text-slate-900">Ship-to sites</h3>
                         </div>
-                        <ul className="divide-y divide-slate-100 p-2">
+                        <ul className="divide-y divide-slate-100 p-2" aria-labelledby="ship-to-heading">
                           {shipToSites.length === 0 && <li className="px-2 py-4 text-center text-sm text-slate-600">No ship-to sites yet.</li>}
                           {shipToSites.map(renderSiteRow)}
                         </ul>
@@ -829,7 +845,7 @@ export default function AgencyClientsPage() {
                   ) : (
                     <section aria-labelledby="contacts-heading" className="rounded-2xl border border-slate-200 bg-white">
                       <h3 id="contacts-heading" className="px-4 pt-4 text-base font-bold text-slate-900">Contacts</h3>
-                      <ul className="divide-y divide-slate-100 p-2">{contacts.map(renderContactRow)}</ul>
+                      <ul className="divide-y divide-slate-100 p-2" aria-labelledby="contacts-heading">{contacts.map(renderContactRow)}</ul>
                     </section>
                   )}
                 </div>

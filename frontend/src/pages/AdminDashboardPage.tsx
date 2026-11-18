@@ -223,7 +223,7 @@ export default function AdminDashboardPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Building2 className="w-4 h-4 text-indigo-500" />
-            <span className="text-xs font-medium text-slate-500">Agencies</span>
+            <span className="text-xs font-medium text-slate-500">Total agencies</span>
           </div>
           <p className="text-xl font-bold text-slate-900 dark:text-white">{analytics.totalAgencies}</p>
         </div>
@@ -231,7 +231,7 @@ export default function AdminDashboardPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Truck className="w-4 h-4 text-blue-500" />
-            <span className="text-xs font-medium text-slate-500">Drivers</span>
+            <span className="text-xs font-medium text-slate-500">Total drivers</span>
           </div>
           <p className="text-xl font-bold text-slate-900 dark:text-white">{analytics.totalDrivers}</p>
         </div>
@@ -297,7 +297,7 @@ export default function AdminDashboardPage() {
             })}
           </div>
         ) : (
-          <div className="h-32 flex items-center justify-center text-slate-400 text-sm">No revenue data yet</div>
+          <div className="h-32 flex items-center justify-center text-slate-400 text-sm text-center px-4">Revenue trend is not available in this view yet. It is not zero.</div>
         )}
       </div>
 
@@ -309,7 +309,7 @@ export default function AdminDashboardPage() {
           </h2>
         </div>
         {driverLeaderboard.length === 0 ? (
-          <div className="text-center py-10 text-sm text-slate-400">No delivered driver trips yet</div>
+          <div className="text-center py-10 text-sm text-slate-400 px-4">Driver earnings breakdown is not available in this view yet. It is not zero.</div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
             {driverLeaderboard.map((driver) => (
@@ -354,6 +354,7 @@ export default function AdminDashboardPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
+              <caption className="sr-only">Recent revenue activity</caption>
               <thead className="bg-slate-50 dark:bg-slate-700/50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500">Source</th>
@@ -373,7 +374,7 @@ export default function AdminDashboardPage() {
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold text-green-600 text-right">{formatCurrency(job.amount)}</td>
                     <td className="px-4 py-3 text-sm text-slate-400 text-right">
-                      {new Date(job.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                      {new Date(job.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                   </tr>
                 ))}

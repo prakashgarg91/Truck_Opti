@@ -1,123 +1,169 @@
 # TruckOpti Agency Guide
 
-This guide is for the owner and staff of a transport agency using TruckOpti. It explains, in plain words, what you can do today in the Agency Portal and what is still planned. Every screen mentioned here exists in the application (`frontend/src/App.tsx`).
+For owners and staff of a transport agency. It describes the Agency Portal as built on 18 November 2026. Items marked **available after launch** need the hosted launch first.
 
-TruckOpti connects three sides: **customers** who book shipments, **drivers** who carry them, and **your agency** which supplies the trucks and drivers. Your agency works in its own portal, separate from the customer and driver apps.
+## 1. Getting started
 
-## Before you start
+1. **Create a login**, then open the agency register page. Use `/login?mode=agency` to sign in.
+2. **Register your agency** in four steps:
+   - Company details: company name, transport licence number and PAN are required. GSTIN is optional here.
+   - Contact and address: contact person, 10-digit phone, city and state are required.
+   - Bank details: account number and IFSC are required.
+   - Press **Submit Application**.
+3. **Wait for approval.** Your Home screen shows Verification Pending, Verified, Application Rejected or Account Suspended. Live jobs and payouts open after approval.
+4. **Add GSTIN and phone.** Open **Profile** in the top bar, then **Open Company Settings**. Enter GSTIN and phone, the owner also enters state, then press **Save Company Profile**.
+5. **Start the 14-day free trial.** The owner opens **Subscription** and presses **Start your 14-day free trial**. No card is needed.
 
-- You need an account on TruckOpti. Log in at `/login`; for agency use the login page opens in agency mode. Agency features need a connected cloud account — in device-only (offline) mode the portal shows only your local truck and carton counts (`/agency/dashboard`).
-- On a phone, the bottom bar has six tabs: Home, Fleet, Drivers, Jobs, Billing, Rates. On a computer the left menu also shows Team and Clients; on a phone open these two by their web address (`/agency/team`, `/agency/clients`).
-- The bell icon at the top counts new incoming jobs and takes you to the Jobs screen (`/agency/jobs`).
+## 2. Roles
 
-## 1. Register your agency and get approved (route `/agency/register`)
+The owner can do everything. The server enforces these limits, not only the menu.
 
-Registration is a short four-step form. You must log in first, because the registration is tied to your account.
+| Role | Can do |
+|---|---|
+| Owner | Everything, including Team, company profile and subscription. |
+| Dispatcher | Jobs, order import and cancel, load plans, consignments, tracking, ERP. |
+| Fleet manager | Fleet, driver employment and invitations, expenses, maintenance, tracking. |
+| Finance | Clients and tariffs, freight invoices, expenses, payroll, driver payments. |
+| Viewer | Read-only on operations pages. |
 
-1. **Business details** — company name, transport licence number and PAN (both compulsory), and GSTIN if you have one.
-2. **Contact and address** — contact person, 10-digit mobile number, city and state (compulsory); email, address, pincode, fleet size and operating routes are optional.
-3. **Bank details** — bank account number and IFSC code. Job payments are credited to this account.
-4. **Done** — the application is submitted for review. The screen tells you that approval usually comes within 2–3 business days.
+## 3. Inviting staff and drivers
 
-Your application then goes to the TruckOpti platform team for approval. Until it is approved you will see one of these statuses on your Home screen: **Verification Pending**, **Verified**, **Application Rejected** or **Account Suspended**. Most fleet, driver and billing actions need the **Verified** status; until then the portal clearly says "Action not permitted" and asks you to wait for approval.
+**Staff (owner, Team page):** press **Invite team member**, enter the email, choose a scope and the days valid (default 7). Press **Create invitation**. The code is shown **once**, so press **Copy link** or share on WhatsApp straight away. The staff member opens `/invite/<token>` and signs in with that email. **Revoke access** removes a member.
 
-## 2. Home (route `/agency/dashboard`)
+**Drivers (Drivers page, owner or fleet manager):** under **Driver invitations**, enter the driver's mobile number and press **Create invitation**. Copy the link or send it on WhatsApp. The driver signs in with that phone number and opens the link. Accepted drivers join the driver roster. Use **Assign Truck** to give a driver a vehicle. **End Employment** closes a record.
 
-Home gives you the day at a glance:
+## 4. Fleet and jobs
 
-- a status banner if your agency is not yet approved;
-- your company card with city and GSTIN;
-- four counters — **Active Jobs**, **Jobs Today**, **Pending**, and **Last 30 Days** revenue with jobs completed;
-- a fleet line showing how many vehicles are registered;
-- quick buttons for Jobs, Fleet, Billing and Rate Cards;
-- your total jobs completed and rating, once you have completed jobs.
+- **Fleet:** press **Add Truck**, choose the vehicle type and enter the RC number. The page warns when a document has expired or expires within 30 days.
+- **Jobs:** enter the fare on an authorized shipment and press **Create Job**. Press **Accept** or **Decline** on pending jobs, then **Assign Driver**. Use **Track Live** or **Confirm Delivery** for jobs in transit.
 
-If no agency profile is linked to your account, Home asks you to register first.
+## 5. Clients and tariffs
 
-## 3. Fleet — your vehicles (route `/agency/fleet`)
+**Clients:** press **Add client agreement** and enter the name, GSTIN and payment terms (0 to 365 days). Add **sites** (bill-to for invoices, ship-to for loading and drop points) and **contacts**. **End agreement** makes it read-only. **Reactivate** undoes it.
 
-This is your vehicle register. For each truck you keep the RC book entry and statutory dates in one place.
+**Tariffs:** open a client's tariffs, choose the lane and vehicle type, then the basis (**Per trip**, **Per tonne** or **Per km**), amount and dates. Press **Publish rate**.
 
-- **Add Truck** — pick the vehicle type (Tata Ace 750 kg, Tata 407 1T, Eicher 14 ft 3T, Eicher 17 ft 5T, Ashok Leyland 19 ft 7T, BharatBenz 24 ft 10T, BharatBenz 32 ft 15T, Volvo 40 ft container 25T), enter the RC number, and optionally the expiry dates of insurance, fitness, permit and PUC.
-- **Availability** — every vehicle can be marked available or unavailable (for example, when it goes for maintenance).
-- **Document alerts** — the page warns you by name when insurance, fitness, permit or PUC has expired or expires within 30 days, so renewals are not missed.
-- If a vehicle record was changed from another device, the page shows one message with the latest version instead of overwriting anyone.
+## 6. Importing orders by CSV
 
-## 4. Drivers — employment and invitations (route `/agency/drivers`)
+1. Choose the **Client**. Its agreement must be active.
+2. Press **Download template** for the correct column names.
+3. Choose your file (up to 5 MB and 2,000 lines).
+4. Review each row: **Ready**, **Warning** or **Error**.
+5. Fix every Error row. Press **Download errors CSV**, correct the file and upload it again.
+6. Press **Import N lines**. Ready rows become draft orders.
 
-The Drivers screen has four parts:
+**Required columns:** `client_order_ref`, `line_no`, `sku`, `quantity`, `unit`, `pickup_site`, `drop_site`.
 
-- **Assigned drivers** — name, phone with a Call button, online/offline status, home city, rating, trips done, and whether the driver is on a trip or available. From each card you can **Assign Truck** or **Unassign Truck**, and **Pay** to record a payment to the driver (minimum ₹1, with an optional note). The payment is recorded and goes to the platform team for review — no money moves by itself.
-- **Unassigned trucks** — an amber panel lists trucks that have no driver attached, so no vehicle is forgotten.
-- **Driver invitations** — invite a driver by mobile number. A one-time invitation code is shown **only once**; copy it or share it on WhatsApp immediately. The panel lists invitations as Pending, Accepted or Expired, and you can revoke a pending one. A driver signs in with that phone number and the code.
-- **Employment records** — the official record of each driver's employment with your agency, showing the driving licence number, licence class, contact number and licence expiry (with a warning inside 30 days). **End Employment** closes a record; if the driver still has an active assignment, the app asks you to release it first.
+**Optional columns:** `description`, `weight_per_unit`, `weight_unit`, `length`, `width`, `height`, `dim_unit`, `pickup_from`, `pickup_to`, `delivery_from`, `delivery_to`, `stackable`, `fragile`.
 
-## 5. Jobs and offers (route `/agency/jobs`)
+**Rules:** `unit` is kg, tonne, piece or carton. Dates look like `2026-11-12`. Site names must match the client's sites exactly, and drop sites must be ship-to. An import is all or nothing.
 
-Work reaches your agency in two steps:
+## 7. Load plan and approval
 
-- **Authorized Shipments** — when a customer authorizes your agency (they share their shipment with you and grant consent), that shipment appears here with its reference and the date of authorization. You enter the fare you will charge and press **Create Job**. The app refuses a duplicate job for the same shipment.
-- **Job list** — every job shows origin and destination, weight, fare and status. Filter by All, Pending, Accepted, In Transit, Delivered or Cancelled.
+1. Tick the draft orders and the trucks to use.
+2. Press **Propose plan**. Lines that do not fit are listed as unplaced and saved as unmet demand.
+3. Name the plan (1 to 80 characters) and press **Save draft**.
+4. Press **Confirm approval**. A newer approved version with the same name replaces the older one.
+5. To stop a plan, press **Confirm cancel**. A cancelled plan cannot be approved again.
 
-Actions on a job:
+Approval locks the plan's order lines to it. Orders in an approved plan cannot be cancelled, and their trucks cannot go to maintenance. Approval does not change order status.
 
-- **Pending** — **Accept** or **Decline**.
-- **Accepted** — **Assign Driver**: choose from the available driver-and-truck pairs shown in the window.
-- **In Transit** — **Track Live** opens a map with the driver's latest position, refreshed every 15 seconds, and **Confirm Delivery** closes the job when the goods reach the destination.
+## 8. Consignments (GR and proof)
 
-## 6. Clients and tariffs
+1. Under **Orders waiting for a GR**, press **Create GR**. The GR gets a number such as `AGY/2026-27/000123`.
+2. Record steps in order: **Mark picked up**, **Start transit**, **Mark delivered**, **Confirm receipt**.
+3. **Raise dispute** is allowed from pickup until receipt. A note of up to 500 characters is optional.
+4. **Show QR** displays and copies the QR payload. A QR image is not built yet.
+5. **Show history** lists every step.
 
-**Clients (route `/agency/clients`)** keeps one record per business customer. You can add a client with name, GSTIN and payment terms (0–365 days); edit the details; or end the agreement (an ended agreement becomes read-only until reactivated). Under each client you maintain:
+## 9. Tracking and incidents
 
-- **Sites** — billing addresses (bill-to) and loading points (ship-to), each with label, address, city, state and 6-digit pincode. A site can be deactivated.
-- **Contacts** — persons at the client with phone, email and the site they belong to.
+**Driver side (opt-in):** the driver turns on **Share live location with your agency** on the trip page. It runs only during the trip.
 
-The list is searchable by client name or GSTIN.
+> **Check before training drivers:** the switch text says only your agency can see the location, but the status line on the same page says the customer and agency see it. Confirm which is correct.
 
-**Tariffs (route `/agency/clients/<agreement>/tariffs`)** holds the rate agreement for one client, lane by lane (origin to destination, with vehicle type). You publish a rate by choosing the basis — **per trip, per tonne or per km** — the amount, and the effective from/to dates. The page groups rates into **Current**, **Upcoming** and **Past**, and lets you revise a lane by publishing a new version. If the client agreement is inactive, rates are read-only.
+**Agency side:** each active job shows Reporting, No pings or Stale ping (no position for 30 minutes). To log an incident, choose a type (Long halt, Overspeed, Route deviation, Breakdown, Accident or Other), enter 3 to 500 characters and press **Open incident**. Then **Acknowledge** it, and **Confirm resolved** with a note of 3 to 500 characters.
 
-## 7. Team and access scopes (route `/agency/team`)
+## 10. Freight invoices
 
-Only the agency owner can open this screen; staff members see a polite notice instead.
+TruckOpti never holds or moves freight money. Clients pay your own account. This page issues invoices and records what you received.
 
-- **Invite staff** — enter an email, pick an access scope and an expiry (default 7 days). A one-time code is shown once; copy it or send it on WhatsApp. You can revoke an invitation or a member's access at any time, and change a member's scope later.
-- The four scopes are:
-  - **Dispatcher** — reserve vehicles and drivers, manage jobs.
-  - **Fleet manager** — manage vehicles, drivers and driver invitations.
-  - **Finance** — manage clients and publish tariffs.
-  - **Viewer** — view only.
+1. Press **New invoice**. Choose the client and fill in each line (description, quantity, rate). Press **Add line** for more.
+2. Enter the GST rate and the supplier and place-of-supply state codes. Same codes give CGST and SGST (half the rate each). Different codes give IGST.
+3. Press **Issue invoice**. The server recalculates the final amounts.
+4. Or, under **Delivered GRs ready to invoice**, press **Create invoice from consignment**.
+5. **Record payment** takes the amount, method (UPI, Bank transfer, Cash or Cheque), optional reference and date. Nothing is charged.
+6. For a UPI link, enter your UPI ID and payee name, then **Copy pay link** or **Open in UPI app**.
+7. **Cancel invoice** works only while no payment is recorded. Enter a reason, then press **Confirm cancel invoice**.
 
-These scopes are enforced by the server, not just hidden in the menu.
+**Statement or tax invoice:** the Earnings page makes a **Statement** PDF per delivered job. It is marked "Not a tax invoice". Create GST invoices on this page.
 
-## 8. Billing (route `/agency/billing`)
+## 11. Earnings and GST reports
 
-Billing summarises your earnings from delivered jobs:
+Earnings shows totals and GST Due (5%). GST reports for the last three months export as CSV, Excel or JSON, at 5% of the fare. Confirm with your accountant before filing. A full GSTR-1 export is **not built yet**.
 
-- four cards — **This Month**, **In Progress Value**, **Total Paid** and **GST Due (5%)**;
-- the list of delivered jobs with route, fare and date;
-- **Invoice** — generates a simple PDF tax invoice for any delivered job (invoice number, date, route, subtotal, GST at 5%, total);
-- **GST Reports** — for each of the last three months (GSTR-1 style) you can export the delivered jobs with taxable value, GST and invoice total as CSV, Excel (xlsx) or JSON; an all-delivered export is also available.
+## 12. Expenses, fuel and maintenance
 
-Freight GST is calculated in the app at 5% of the fare; please confirm the final figures with your accountant before filing.
+Set the period and press **Apply period**. Three tabs follow:
 
-## 9. Agency profile (route `/agency/profile`)
+- **Expenses:** category (Fuel, Toll, Maintenance, Driver allowance, Insurance, Permit, Other) and amount. Fuel, toll, maintenance and driver allowance need a truck. Press **Save expense**.
+- **Fuel:** in **Add fuel fill**, enter truck, date, odometer, litres (1 to 1,000) and cost, then press **Save fuel fill**.
+- **Maintenance:** press **Add item** with a truck, name and interval in km or days. Each item shows OK, Due soon or Overdue. Press **Service done** after a service.
 
-Your profile page repeats your agency details and approval status, shows a profile completion percentage (company name, city, GSTIN, fleet size, email) and your key numbers. It is a view of the same record the platform team approved — corrections go through support.
+## 13. Payroll (finance only)
 
-## 10. What is planned but not built yet
+1. **Driver rates:** press **Set rate** or **Edit**. Enter base, per km and per tonne rates, then **Save rate**.
+2. **Open period:** enter first and last day, then **Open period**.
+3. **Advances and deductions:** choose the driver and type (**Advance (already given)** or **Deduction**), then **Record adjustment**.
+4. **Close period:** only after the last day has passed. The server works out earnings from delivered jobs.
 
-To be fully transparent, these modules from the project plan (`TASKS.md`) are **not yet available**:
+**Closing is final.** Lines cannot change afterwards. Download CSV first if you need a copy. If deductions exceed earnings, the net is zero and the gap shows as **Shortfall**. On the Drivers page, **Pay** only records a request for platform review. No money moves through TruckOpti.
 
-- **Sales-order import and load planning** with client approval — planned (TO-145).
-- **GR/LR receipts with QR and material-receipt proof** — planned (TO-146).
-- **Full trip tracking** — stoppages, breakdown and emergency handling — planned (TO-147). (Basic live driver location on the Jobs screen is already available.)
-- **Freight invoice book, private documents and collections** — planned (TO-148). (The simple PDF invoice and the GST exports above exist today.)
-- **Expenses, fuel, advances and maintenance records** — planned (TO-149).
-- **Driver salary and payroll settlement** — planned (TO-150). (The Pay button on the Drivers screen records payments for review; full payroll is not built.)
-- **Direct ERP connector with your client's systems** — planned (TO-151).
+## 14. ERP connector (Growth plan and above)
 
-If a screen asks for something you cannot find, it is most likely one of the planned modules above.
+Available after launch: the live receiving address needs the hosted launch.
 
-## 11. Getting help
+1. On **ERP**, under **New connection**, choose the client agreement, a name and a type (**Webhook** or **CSV drop**). Press **Create connection**.
+2. The secret is shown **once**. Save it before you close the panel.
+3. Your system POSTs a JSON body to `SUPABASE_URL/functions/v1/erp-ingest` with `connection_id`, `external_event_id` and `lines`. Send the secret in `Authorization: Bearer` or the `x-truckopti-secret` header.
+4. Use a new `external_event_id` per batch. A repeat is recorded as a duplicate.
+5. Batches are accepted or rejected whole. **Pause**, **Resume**, **Rotate secret** and **Revoke** manage a connection. Revoke is permanent.
 
-Signed-in users can open **Support** (`/support`) to contact the TruckOpti team. For approval questions, quote your company name and registration date.
+## 15. Subscription and billing
+
+Plans, per month excluding GST (GST at 18% is added): **Starter ₹499**, **Growth ₹1,999**, **Professional ₹4,999**. Yearly costs 10 months. Each plan sets limits for trucks, drivers, staff and orders per month. See **Usage against your plan** on the Subscription page. Online payment is **available after launch**.
+
+| Status | Works | Blocked |
+|---|---|---|
+| Trial, active, past due | Everything. | Nothing. |
+| Grace (read-only) | Viewing, exports, dispatch, payroll close, payments, trips, tracking. | New trucks, drivers, staff, orders and imports. |
+| Expired or cancelled | Viewing, payments, trips, tracking, order cancel. | New records, dispatch, payroll close. |
+
+Limits and locks are enforced only once the platform team switches enforcement on at launch.
+
+## 16. Using it on a phone
+
+The bottom bar has Home, Fleet, Drivers, Jobs and Earnings. **More** holds the other pages. Staff see only their pages.
+
+## 17. Troubleshooting
+
+| What the screen says | What to do |
+|---|---|
+| "Plan limit reached... Upgrade your plan to add more." | Ask the owner to upgrade, or remove an unused item. |
+| "Your account is read-only... Renew to continue." | Owner presses **Renew**. |
+| "Read-only grace period: N days left." | Renew before grace ends. |
+| "Dispatch is locked... Renew to resume dispatch." | Owner presses **Renew**. |
+| "Not included in your plan. The ERP connector is included from the Growth plan." | Upgrade to Growth or above. |
+| "Your staff role (...) cannot do this." | Ask the owner to change your access. |
+| "Agency approval is required." | Wait for approval. |
+| "Add your GSTIN and phone in Company Settings first." | Fill both in under Profile, then Open Company Settings. |
+| "This client agreement is not active." | Owner presses **Reactivate** on Clients. |
+| "Some order references already exist... Nothing was imported." | Change the references or remove those rows. |
+| "Some lines were rejected by the server. Nothing was imported." | Fix the lines and upload again. |
+| "This order is in an approved load plan. Cancel the plan first." | Cancel the plan, then the order. |
+| "This invoice has recorded payments, so it cannot be cancelled." | Keep the invoice. |
+| "This invoice changed since you opened it. Reload to continue." | Reload and try again. |
+
+## 18. Getting help
+
+Open **Support** (`/support`). For approval questions, quote your company name and registration date.

@@ -16,14 +16,18 @@ import {
   Wallet,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { getState } from '../services/driverKycApi'
+import { getDocumentAccessUrl, getState } from '../services/driverKycApi'
 import {
   kycProfileSummary,
+  type KycDocKind,
+  type KycDocStatus,
   type KycProfileSummary,
+  type KycSubmissionState,
 } from '../services/driverKycDocuments'
 import { driverSupabaseApi, type DriverProfile } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
+import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import { maskBankAccount, maskUpi } from '../lib/maskPayout'
 
 const VEHICLE_LABELS: Record<string, string> = {
@@ -76,22 +80,82 @@ function InfoCard({
   )
 }
 
-function DocumentLink({ label, url }: { label: string; url: string | null }) {
+/** Human labels for the server-reported review states of an uploaded document. */
+const KYC_DOC_STATUS_LABEL: Partial<Record<KycDocStatus, string>> = {
+  pending_review: 'Pending review',
+  accepted: 'Accepted',
+  rejected: 'Review needed',
+}
+
+/**
+ * One KYC-backed document row. Documents live in the private driver-docs
+ * bucket, so the row never renders a stored path or link: "View" mints a
+ * short-lived signed URL through the driver-kyc function on each click.
+ * `status` is null when the KYC state could not be loaded.
+ */
+function KycDocumentRow({ label, kind, status }: { label: string; kind: KycDocKind; status: KycDocStatus | null }) {
+  const [opening, setOpening] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const open = async () => {
+    setOpening(true)
+    setError(null)
+    try {
+      const access = await getDocumentAccessUrl(kind)
+      window.open(access.url, '_blank', 'noopener,noreferrer')
+    } catch (caught) {
+      logger.error('[DriverProfilePage] openDocument', caught)
+      setError(toUserFacingErrorMessage(caught, 'The document could not be opened. Please try again.'))
+    } finally {
+      setOpening(false)
+    }
+  }
+
+  let trailing: React.ReactNode
+  if (status === null) {
+    trailing = <span className="text-slate-400">Could not check</span>
+  } else if (status === 'pending') {
+    trailing = <span className="text-slate-400">Not uploaded</span>
+  } else {
+    trailing = (
+      <div className="flex items-center gap-3">
+        {KYC_DOC_STATUS_LABEL[status] && (
+          <span className="text-xs text-slate-500 dark:text-slate-400">{KYC_DOC_STATUS_LABEL[status]}</span>
+        )}
+        <button
+          type="button"
+          onClick={() => void open()}
+          disabled={opening}
+          aria-label={`View ${label}`}
+          className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 disabled:opacity-50 dark:text-primary-300"
+        >
+          {opening ? 'Opening…' : error ? 'Try again' : 'View'} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/60">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-medium text-slate-700 dark:text-slate-200">{label}</span>
+        {trailing}
+      </div>
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** Legacy profile attachments with no KYC equivalent: presence only, never a link. */
+function FileOnRecordRow({ label, present }: { label: string; present: boolean }) {
   return (
     <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/60">
       <span className="font-medium text-slate-700 dark:text-slate-200">{label}</span>
-      {url ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 dark:text-primary-300"
-        >
-          View <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      ) : (
-        <span className="text-slate-400">Missing</span>
-      )}
+      <span className="text-slate-400">{present ? 'On file' : 'Not uploaded'}</span>
     </div>
   )
 }
@@ -102,6 +166,8 @@ export default function DriverProfilePage() {
   const [profile, setProfile] = useState<DriverProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [kycSummary, setKycSummary] = useState<KycProfileSummary | null>(null)
+  // Server-computed per-document status; null when the KYC state is unavailable.
+  const [kycState, setKycState] = useState<KycSubmissionState | null>(null)
 
   useEffect(() => {
     document.title = 'Driver Profile - TruckOpti'
@@ -113,15 +179,20 @@ export default function DriverProfilePage() {
   useEffect(() => {
     if (!user?.id) {
       setKycSummary(null)
+      setKycState(null)
       return
     }
     let active = true
     getState()
       .then((state) => {
-        if (active) setKycSummary(kycProfileSummary(state))
+        if (!active) return
+        setKycState(state)
+        setKycSummary(kycProfileSummary(state))
       })
       .catch(() => {
-        if (active) setKycSummary(null)
+        if (!active) return
+        setKycState(null)
+        setKycSummary(null)
       })
     return () => {
       active = false
@@ -357,10 +428,18 @@ export default function DriverProfilePage() {
                   <ChevronRight className="h-5 w-5 shrink-0 text-primary-600 dark:text-primary-300" />
                 </button>
                 <div className="mt-5 space-y-3">
-                <DocumentLink label="Driving License" url={profile.dl_url} />
-                <DocumentLink label="RC Book" url={profile.rc_url} />
-                <DocumentLink label="Insurance" url={profile.insurance_url} />
-                <DocumentLink label="Selfie Verification" url={profile.selfie_url} />
+                <KycDocumentRow
+                  label="Driving License"
+                  kind="driving_license"
+                  status={kycState ? kycState.docs.driving_license.status : null}
+                />
+                <KycDocumentRow
+                  label="RC Book"
+                  kind="rc_book"
+                  status={kycState ? kycState.docs.rc_book.status : null}
+                />
+                <FileOnRecordRow label="Insurance" present={Boolean(profile.insurance_url)} />
+                <FileOnRecordRow label="Selfie Verification" present={Boolean(profile.selfie_url)} />
               </div>
               {profile.rejection_reason && (
                 <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">

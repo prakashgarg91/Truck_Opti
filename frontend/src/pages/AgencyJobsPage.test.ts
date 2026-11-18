@@ -607,3 +607,55 @@ describe('AgencyJobsPage', () => {
     })
 
 })
+
+describe('AgencyJobsPage accessibility', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.listAuthorizations.mockResolvedValue([])
+        h.getAssignableDrivers.mockResolvedValue([TRUCK_RAVI])
+    })
+
+    it('the status filter is a named group whose active tab is exposed as pressed', async () => {
+        h.list.mockResolvedValue([row({ id: 'job-a', status: 'pending' })])
+        await mountPage()
+        const group = q('[role="group"][aria-label="Filter jobs by status"]')
+        expect(group).not.toBeNull()
+        const pressed = Array.from(group!.querySelectorAll('button')).filter((b) => b.getAttribute('aria-pressed') === 'true')
+        expect(pressed.map((b) => b.textContent?.trim())).toEqual(['All'])
+        await click(buttons(/^Pending/)[0])
+        const nowPressed = Array.from(group!.querySelectorAll('button')).filter((b) => b.getAttribute('aria-pressed') === 'true')
+        expect(nowPressed.map((b) => b.textContent?.trim())).toEqual(['Pending(1)'])
+    })
+
+    it('Assign Driver is a labelled modal dialog, and closing it returns focus to the opener', async () => {
+        h.list.mockResolvedValue([row({ id: 'job-a', status: 'accepted' })])
+        await mountPage()
+        const opener = buttons(/Assign Driver/)[0]
+        opener.focus()
+        await click(opener)
+        const dialog = q('[role="dialog"]') as HTMLElement
+        expect(dialog).not.toBeNull()
+        expect(dialog.getAttribute('aria-modal')).toBe('true')
+        expect(document.getElementById(dialog.getAttribute('aria-labelledby') as string)?.textContent).toBe('Assign Driver')
+        await click(q('button[aria-label="Close assign driver dialog"]') as HTMLButtonElement)
+        expect(q('[role="dialog"]')).toBeNull()
+        expect(document.activeElement).toBe(opener)
+    })
+
+    it('Live Tracking is a labelled modal dialog', async () => {
+        h.list.mockResolvedValue([row({ id: 'job-t', status: 'in_transit', driver_id: 'driver-1' })])
+        await mountPage()
+        await click(buttons(/Track Live/)[0])
+        const dialog = q('[role="dialog"]') as HTMLElement
+        expect(dialog.getAttribute('aria-modal')).toBe('true')
+        expect(document.getElementById(dialog.getAttribute('aria-labelledby') as string)?.textContent).toBe('Live Tracking')
+    })
+
+    it('action buttons on job cards are at least 44px high', async () => {
+        h.list.mockResolvedValue([row({ id: 'job-p', status: 'pending' })])
+        await mountPage()
+        for (const label of [/^Accept/, /^Decline/]) {
+            expect(buttons(label)[0].className).toContain('min-h-[44px]')
+        }
+    })
+})

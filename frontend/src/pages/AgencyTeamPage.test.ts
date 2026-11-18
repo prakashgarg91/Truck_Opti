@@ -398,3 +398,42 @@ describe('AgencyTeamPage', () => {
     })
 
 })
+
+describe('AgencyTeamPage accessibility', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.listMembers.mockResolvedValue([MEMBER])
+        h.listInvitations.mockResolvedValue([ACCEPTED_INVITATION, PENDING])
+    })
+
+    it('the members and pending invitation lists are named by their headings', async () => {
+        await mountPage()
+        const members = q('ul[aria-labelledby="members-heading"]')
+        const invitations = q('ul[aria-labelledby="invitations-heading"]')
+        expect(members?.textContent).toContain('ravi@example.com')
+        expect(invitations?.textContent).toContain('meena@example.com')
+    })
+
+    it('the invite dialog is a labelled modal whose fields have associated labels', async () => {
+        await mountPage()
+        await click(buttons(/Invite team member/)[0])
+        const dialog = q('[role="dialog"]') as HTMLElement
+        expect(dialog.getAttribute('aria-modal')).toBe('true')
+        expect(document.getElementById(dialog.getAttribute('aria-labelledby') as string)?.textContent).toBe('Invite team member')
+        for (const id of ['invite-email', 'invite-scope', 'invite-days']) {
+            expect(dialog.querySelector(`label[for="${id}"]`), `label for ${id}`).not.toBeNull()
+            expect(dialog.querySelector(`#${id}`), `field ${id}`).not.toBeNull()
+        }
+    })
+
+    it('closing the invite dialog returns focus to the Invite button', async () => {
+        await mountPage()
+        const opener = buttons(/Invite team member/)[0]
+        opener.focus()
+        await click(opener)
+        expect(q('[role="dialog"]')).not.toBeNull()
+        await click(buttons(/^\s*Cancel\s*$/)[0])
+        expect(q('[role="dialog"]')).toBeNull()
+        expect(document.activeElement).toBe(opener)
+    })
+})

@@ -8,6 +8,11 @@ const corsHeaders = {
 
 const DISABLE_DURATION = '876000h'
 
+/** Upper bound on profile rows returned by the list action. Newest first. */
+const LIST_ROW_CAP = 200
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 type PortalUserRow = {
   id: string
   email: string | null
@@ -101,6 +106,18 @@ function serializePortalUser(profile: PortalUserRow, authUser?: AuthUser | null)
   }
 }
 
+function isUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUID_PATTERN.test(value)
+}
+
+async function readJsonBody(req: Request): Promise<unknown> {
+  try {
+    return await req.json()
+  } catch {
+    throw new RequestError('A valid admin action is required.')
+  }
+}
+
 function parseRequestBody(body: unknown): AdminRequest {
   if (!isRecord(body) || typeof body.action !== 'string') {
     throw new RequestError('A valid admin action is required.')
@@ -110,7 +127,7 @@ function parseRequestBody(body: unknown): AdminRequest {
     case 'list':
       return { action: 'list' }
     case 'set-disabled':
-      if (typeof body.userId !== 'string' || typeof body.disabled !== 'boolean') {
+      if (!isUuid(body.userId) || typeof body.disabled !== 'boolean') {
         throw new RequestError('A valid user action payload is required.')
       }
 
@@ -120,7 +137,7 @@ function parseRequestBody(body: unknown): AdminRequest {
         disabled: body.disabled,
       }
     case 'delete':
-      if (typeof body.userId !== 'string') {
+      if (!isUuid(body.userId)) {
         throw new RequestError('A valid user action payload is required.')
       }
 
@@ -246,7 +263,7 @@ serve(async (req) => {
   try {
     const authorization = req.headers.get('Authorization')
     const accessToken = getBearerToken(authorization)
-    const body = parseRequestBody(await req.json())
+    const body = parseRequestBody(await readJsonBody(req))
 
     const supabaseUrl = getRequiredEnv('SUPABASE_URL')
     const supabaseAnonKey = getRequiredEnv('SUPABASE_ANON_KEY')
@@ -266,7 +283,8 @@ serve(async (req) => {
         serviceClient
           .from('users')
           .select('id, email, role, created_at, updated_at, name, phone')
-          .order('created_at', { ascending: false }),
+          .order('created_at', { ascending: false })
+          .limit(LIST_ROW_CAP),
       ])
 
       if (profileError) {

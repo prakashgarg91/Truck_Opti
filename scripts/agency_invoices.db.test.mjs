@@ -1226,7 +1226,7 @@ async function main() {
     expect(info.rows.length === 1, `expected 1 agency_invoice_issue definition, found ${info.rows.length}`)
     const { args, prosecdef, proconfig, res } = info.rows[0]
     const failures = []
-    if (args !== 'p_client_id uuid, p_lines jsonb, p_supplier_state text, p_place_of_supply_state text, p_gst_rate_pct integer, p_reverse_charge boolean, p_round_off boolean, p_idempotency_key text') failures.push(`arguments: ${args}`)
+    if (args !== 'p_client_id uuid, p_lines jsonb, p_supplier_state text, p_place_of_supply_state text, p_gst_rate_pct integer, p_reverse_charge boolean, p_round_off boolean, p_idempotency_key text, p_consignment_id uuid') failures.push(`arguments: ${args}`)
     if (/agency/i.test(args)) failures.push('an argument names an agency')
     if (res !== 'jsonb') failures.push(`return type ${res}`)
     if (prosecdef !== true) failures.push('not SECURITY DEFINER')

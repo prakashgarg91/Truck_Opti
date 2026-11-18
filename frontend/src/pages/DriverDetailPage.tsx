@@ -64,21 +64,62 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
-function DocBadge({ label, url }: { label: string; url: string | null }) {
+/**
+ * Document tile for the legacy Documents grid. Documents are private: a tile
+ * never links to a stored path. `onOpen` mints a short-lived signed URL via
+ * the driver-kyc function; tiles without a KYC equivalent are presence-only.
+ * `unknown` means the KYC state could not be loaded, so nothing is claimed.
+ */
+function DocBadge({
+  label,
+  present,
+  unknown = false,
+  onOpen,
+  busy = false,
+}: {
+  label: string
+  present: boolean
+  unknown?: boolean
+  onOpen?: () => void
+  busy?: boolean
+}) {
+  const base = 'flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border'
+  if (unknown) {
+    return (
+      <div className={`${base} bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700`}>
+        <AlertTriangle size={12} />
+        {label}: Could not check
+      </div>
+    )
+  }
+  if (!present) {
+    return (
+      <div className={`${base} bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700`}>
+        <XCircle size={12} />
+        {label}: Not uploaded
+      </div>
+    )
+  }
+  if (onOpen) {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        disabled={busy}
+        aria-label={`Open ${label}`}
+        className={`${base} bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/40 disabled:opacity-50 text-left`}
+      >
+        <CheckCircle2 size={12} />
+        {label}
+        <span className="text-green-500">{busy ? 'Opening…' : 'Open ↗'}</span>
+      </button>
+    )
+  }
   return (
-    <a
-      href={url || undefined}
-      target={url ? '_blank' : undefined}
-      rel="noopener noreferrer"
-      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${url
-        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/40'
-        : 'bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
-        }`}
-    >
-      {url ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-      {label}
-      {url && <span className="text-green-500">↗</span>}
-    </a>
+    <div className={`${base} bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/40`}>
+      <CheckCircle2 size={12} />
+      {label}: On file
+    </div>
   )
 }
 
@@ -723,12 +764,24 @@ export default function DriverDetailPage() {
             Documents
           </h3>
           <div className="grid grid-cols-2 gap-2">
-            <DocBadge label="Driving License" url={driver.dl_url} />
-            <DocBadge label="RC Book" url={driver.rc_url} />
-            <DocBadge label="Insurance" url={driver.insurance_url} />
-            <DocBadge label="Selfie" url={driver.selfie_url} />
+            <DocBadge
+              label="Driving License"
+              unknown={!kycState}
+              present={kycState ? kycState.docs.driving_license.status !== 'pending' : false}
+              onOpen={() => void handleKycOpenPdf('driving_license')}
+              busy={previewBusy === 'driving_license'}
+            />
+            <DocBadge
+              label="RC Book"
+              unknown={!kycState}
+              present={kycState ? kycState.docs.rc_book.status !== 'pending' : false}
+              onOpen={() => void handleKycOpenPdf('rc_book')}
+              busy={previewBusy === 'rc_book'}
+            />
+            <DocBadge label="Insurance" present={Boolean(driver.insurance_url)} />
+            <DocBadge label="Selfie" present={Boolean(driver.selfie_url)} />
           </div>
-          {!(driver.dl_url || driver.rc_url || driver.insurance_url) && (
+          {kycState && !(kycState.docs.driving_license.status !== 'pending' || kycState.docs.rc_book.status !== 'pending' || driver.insurance_url) && (
             <p className="text-xs text-amber-600 dark:text-amber-400 mt-3 flex items-center gap-1.5">
               <AlertTriangle size={12} />
               Driver has not uploaded documents yet

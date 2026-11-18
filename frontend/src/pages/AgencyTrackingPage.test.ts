@@ -392,3 +392,23 @@ describe('AgencyTrackingPage', () => {
         }
     })
 })
+
+describe('AgencyTrackingPage accessibility', () => {
+    it('the active job list is named by its heading and each job is a list item', async () => {
+        await mountPage()
+        const list = q('ul[aria-labelledby="trk-jobs"]')
+        expect(list).not.toBeNull()
+        expect(list?.querySelector('[data-testid="tracking-job-j-1111111111"]')).not.toBeNull()
+        expect(document.getElementById('trk-jobs')?.textContent).toBe('Active jobs')
+    })
+
+    it('status badges carry text, not colour alone', async () => {
+        await mountPage()
+        const row = q('[data-testid="tracking-job-j-1111111111"]')!
+        const badges = Array.from(row.querySelectorAll('span')).filter((s) => s.className.includes('rounded-full'))
+        expect(badges.length).toBeGreaterThan(0)
+        for (const badge of badges) {
+            expect((badge.textContent || '').trim().length).toBeGreaterThan(0)
+        }
+    })
+})

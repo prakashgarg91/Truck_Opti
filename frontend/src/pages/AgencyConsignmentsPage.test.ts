@@ -354,3 +354,29 @@ describe('AgencyConsignmentsPage client, route and order link', () => {
         expect(button(/Create GR for SO-2/)).toBeTruthy()
     })
 })
+
+describe('AgencyConsignmentsPage accessibility', () => {
+    const nameOf = (el: Element | null) => {
+        const id = el?.getAttribute('aria-labelledby')
+        return (id && document.getElementById(id)?.textContent) || ''
+    }
+
+    it('names the order and consignment lists', async () => {
+        h.listOrders.mockResolvedValue([order('o-2', 'SO-2')])
+        h.listConsignments.mockResolvedValue([consignment('c-1', 'o-1', 'in_transit')])
+        await mountPage()
+        expect(nameOf(q('[data-testid="consignments-orders"] ul'))).toContain('Orders waiting for a GR')
+        expect(nameOf(q('[data-testid="consignments-list"] ul'))).toContain('Consignments')
+    })
+
+    it('moves focus into the dispute note on open and back to Raise dispute on Keep as is', async () => {
+        h.listConsignments.mockResolvedValue([consignment('c-1', 'o-1', 'in_transit')])
+        await mountPage()
+        const trigger = button(/^Raise dispute/)!
+        await click(trigger)
+        expect(q('[role="alertdialog"]')?.getAttribute('aria-label')).toContain('Raise a dispute for')
+        expect(document.activeElement).toBe(q('#dispute-note-c-1'))
+        await click(button(/Keep as is/)!)
+        expect(document.activeElement).toBe(trigger)
+    })
+})

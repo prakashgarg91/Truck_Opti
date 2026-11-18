@@ -145,11 +145,11 @@ export default function AdminDriversPage() {
   )
 
   const exportCSV = () => {
-    const headers = ['Name', 'Phone', 'PAN', 'Vehicle Type', 'Home City', 'RC Number', 'License Number', 'Status', 'Rating', 'Total Trips', 'Registered On']
+    // PAN is deliberately not exported: the list does not need tax IDs and the file leaves the screen.
+    const headers = ['Name', 'Phone', 'Vehicle Type', 'Home City', 'RC Number', 'License Number', 'Status', 'Rating', 'Total Trips', 'Registered On']
     const rows = filtered.map(d => [
       d.full_name,
       d.phone,
-      d.pan_number ?? '',
       vehicleLabel(d.vehicle_type),
       d.home_city ?? '',
       d.rc_number ?? '',
@@ -220,6 +220,7 @@ export default function AdminDriversPage() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input value={search} onChange={e => setSearch(e.target.value)}
+          aria-label="Search drivers by name, phone or city"
           placeholder="Search by name, phone, city..."
           className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary-500 outline-none text-sm" />
       </div>
@@ -333,10 +334,13 @@ export default function AdminDriversPage() {
       {/* Reject Modal */}
       {rejectModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Reject Application</h3>
-            <p className="text-sm text-slate-500 mb-4">Provide a reason for rejecting <strong>{rejectModal.name}</strong></p>
+          <div role="dialog" aria-modal="true" aria-labelledby="driver-reject-title" className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6">
+            <h3 id="driver-reject-title" className="text-lg font-bold text-slate-900 dark:text-white mb-1">Reject Application</h3>
+            <p className="text-sm text-slate-500 mb-1">Provide a reason for rejecting <strong>{rejectModal.name}</strong></p>
+            <p className="text-xs text-slate-500 mb-4">The application moves to the Rejected tab and the reason is shown on the driver's record.</p>
+            <label htmlFor="driver-reject-reason" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Reason for rejection (required)</label>
             <textarea
+              id="driver-reject-reason"
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               placeholder="e.g. Invalid documents, duplicate application..."

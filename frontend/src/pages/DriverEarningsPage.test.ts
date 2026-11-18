@@ -7,18 +7,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // driver resolution, balance snapshot maths, per-period trip list, withdrawal
 // dialog and exports. The page uses no router hooks, so it is mounted bare.
 
-// FINDING: the page has no "no driver profile" state. When
-// driverTripsApi.getDriverIdByUserId() resolves null (or the auth user is
-// missing) neither getDeliveredTrips nor getBalanceSnapshot is ever called,
-// `loading` stays true and the user sees the spinner forever with no message.
-// The fetch-suppression side is pinned below ("does not fetch..."); the
-// endless spinner itself is NOT asserted as correct.
-// FINDING: the "Amount (₹)" <label> in the withdrawal dialog has no htmlFor/id
-// and the input is not nested inside it, so the label is not programmatically
-// associated with the field (screen readers will not announce it). The visible
-// label text is pinned below; the missing association is not asserted correct.
-// FINDING (cosmetic): the withdrawal amount input className contains "pr4"
-// instead of "pr-4", so the intended right padding never applies.
+// Re-checked 2026-11-18 against DriverEarningsPage.tsx. Fixed since the
+// earlier findings, and pinned below: the "No driver profile yet" state
+// (noProfile branch), the withdrawal "Amount (₹)" label linked to its input
+// via htmlFor/id, and the "pr-4" padding class on the amount input.
+//
+// Open findings. These are NOT asserted as correct; each is reported with
+// file:line in the worker report:
+// - Overlapping period fetches are unguarded: a slower earlier response can
+//   overwrite the selected period's trip list (page lines 123-152).
+// - Advances and deductions rows render "-₹0.00" when the amount is zero
+//   (page lines 403-404).
+// - With no signed-in user, fetchDriverId() ends loading with neither an error
+//   nor a "no profile" state, so the page shows zeroed values (page lines 78-81).
 
 const h = vi.hoisted(() => ({
     useAuthStore: vi.fn(),
@@ -66,6 +67,7 @@ vi.mock('../utils/dataExport', () => ({
 
 import DriverEarningsPage from './DriverEarningsPage'
 import { formatCurrency } from '../utils/formatters'
+import { formatPaise } from '../lib/rupees'
 
 // React 18 act() support (this project has no vitest setupFiles doing it).
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
@@ -582,3 +584,169 @@ describe('DriverEarningsPage', () => {
         })
     })
 })
+
+describe('DriverEarningsPage: pay statements, periods and edge states', () => {
+    const SHORTFALL_LINE = {
+        periodId: 'p2',
+        periodStart: '2026-09-01',
+        periodEnd: '2026-09-30',
+        basePaise: 1000000,
+        tripsPaise: 0,
+        advancesPaise: 0,
+        deductionsPaise: 0,
+        netPaise: 0,
+        shortfallPaise: 120000,
+        carriedInPaise: 50000,
+        tripCount: 1,
+    }
+    const PLAIN_LINE = {
+        periodId: 'p3',
+        periodStart: '2026-08-01',
+        periodEnd: '2026-08-31',
+        basePaise: 100000,
+        tripsPaise: 200000,
+        advancesPaise: 0,
+        deductionsPaise: 0,
+        netPaise: 300000,
+        shortfallPaise: 0,
+        carriedInPaise: 0,
+        tripCount: 1,
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.useFakeTimers({ toFake: ['Date'] })
+        vi.setSystemTime(PINNED_NOW)
+        h.useAuthStore.mockReturnValue({ user: { id: 'user-1' } })
+        h.getDriverIdByUserId.mockResolvedValue('driver-1')
+        h.getBalanceSnapshot.mockResolvedValue(SNAPSHOT)
+        h.getDeliveredTrips.mockResolvedValue([TRIP_A, TRIP_B, TRIP_C])
+        h.requestPayout.mockResolvedValue(undefined)
+        h.listMyLines.mockResolvedValue([])
+    })
+
+    it('shows the carried-in and carried-forward (shortfall) rows when they are non-zero', async () => {
+        h.listMyLines.mockResolvedValue([SHORTFALL_LINE])
+        await mountPage()
+        const txt = text()
+        expect(txt).toContain('Carried in')
+        expect(txt).toContain(formatPaise(50000)) // ₹500.00
+        expect(txt).toContain('Carried forward')
+        expect(txt).toContain(formatPaise(120000)) // ₹1,200.00
+        expect(txt).toContain('1 trip') // singular label
+    })
+
+    it('hides the carried-in and carried-forward rows when they are zero', async () => {
+        h.listMyLines.mockResolvedValue([PLAIN_LINE])
+        await mountPage()
+        expect(text()).not.toContain('Carried in')
+        expect(text()).not.toContain('Carried forward')
+        expect(text()).toContain('Net ₹3,000.00')
+    })
+
+    it('renders several closed statements in the order the server returned them', async () => {
+        h.listMyLines.mockResolvedValue([SHORTFALL_LINE, PLAIN_LINE])
+        await mountPage()
+        const txt = text()
+        const sep = txt.indexOf(formatPeriodLabel('2026-09-01'))
+        const aug = txt.indexOf(formatPeriodLabel('2026-08-01'))
+        expect(sep).toBeGreaterThan(-1)
+        expect(aug).toBeGreaterThan(sep)
+    })
+
+    it('shows a spinner in My pay while statements are still loading', async () => {
+        h.listMyLines.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        const status = Array.from(container!.querySelectorAll('[role="status"]'))
+        expect(status.some((el) => el.textContent?.includes('Loading pay statements'))).toBe(true)
+        expect(text()).not.toContain('No pay statements yet')
+    })
+
+    it('a pay statement failure leaves the wallet and trip list intact', async () => {
+        h.listMyLines.mockRejectedValue(new Error('rpc failed'))
+        await mountPage()
+        expect(text()).toContain('Could not load your pay statements')
+        expect(text()).toContain('Available to withdraw (estimate)')
+        expect(text()).toContain('Mumbai → Pune')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('My pay is not shown when the user has no driver profile, but statements are still requested', async () => {
+        h.getDriverIdByUserId.mockResolvedValue(null)
+        await mountPage()
+        expect(h.listMyLines).toHaveBeenCalledTimes(1)
+        expect(text()).toContain('No driver profile yet')
+        expect(text()).not.toContain('My pay')
+    })
+
+    it('the period tabs stay visible and in place while trips are loading', async () => {
+        h.getDeliveredTrips.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        const tabs = buttons(/This Week|This Month|All Time/)
+        expect(tabs).toHaveLength(3)
+        expect(tabs.every((b) => b.tagName === 'BUTTON' && b.className.includes('min-h-[44px]'))).toBe(true)
+    })
+
+    it('aria-pressed moves to the newly selected period tab', async () => {
+        await mountPage()
+        await click(buttons(/All Time/)[0])
+        expect(buttons(/All Time/)[0].getAttribute('aria-pressed')).toBe('true')
+        expect(buttons(/This Week/)[0].getAttribute('aria-pressed')).toBe('false')
+        expect(buttons(/This Month/)[0].getAttribute('aria-pressed')).toBe('false')
+    })
+
+    it('the withdrawal close button meets the 44px target', async () => {
+        await mountPage()
+        await click(buttons(/^Withdraw$/)[0])
+        const close = q('button[aria-label="Close withdrawal dialog"]') as HTMLButtonElement
+        expect(close.className).toContain('min-h-[44px]')
+        expect(close.className).toContain('min-w-[44px]')
+    })
+
+    it('a withdrawal for exactly the available balance is allowed', async () => {
+        await mountPage()
+        await click(buttons(/^Withdraw$/)[0])
+        await typeAmount('2500') // available is 2500
+        await click(buttons(/Submit Request/)[0])
+        expect(h.toastError).not.toHaveBeenCalledWith('Amount exceeds available balance')
+        expect(h.requestPayout).toHaveBeenCalledWith('driver-1', 2500)
+    })
+
+    it('the wallet and trip labels say these are estimates and customer quotes, not final pay', async () => {
+        await mountPage()
+        const txt = text()
+        expect(txt).toContain('Available to withdraw (estimate)')
+        expect(txt).toContain('Based on customer quotes for your delivered trips')
+        expect(txt).toContain('Customer quote total')
+        expect(txt).toContain('Delivered trips (customer quote)')
+    })
+
+    it('the Daily Summary shows at most ten days while the trip list keeps every trip', async () => {
+        const trips = Array.from({ length: 12 }, (_, i) => ({
+            id: `trip-day-${i}`,
+            delivered_at: `2026-11-${String(i + 1).padStart(2, '0')}T12:00:00.000Z`,
+            status: 'delivered',
+            shipments: { shipment_id: `SHP-${3000 + i}`, origin: `Origin ${i}`, destination: `Dest ${i}`, estimated_cost: 100 },
+        }))
+        h.getDeliveredTrips.mockResolvedValue(trips)
+        await mountPage()
+        const dayRows = Array.from(container!.querySelectorAll('p')).filter((p) => p.textContent === '1 trip')
+        expect(dayRows).toHaveLength(10)
+        expect(text()).toContain('Origin 11 → Dest 11') // the last trip is still listed
+    })
+
+    it('after switching to This Month, the list shows only that period response', async () => {
+        h.getDeliveredTrips.mockImplementation((_id: string, period: string) =>
+            Promise.resolve(period === 'month' ? [TRIP_C] : [TRIP_A, TRIP_B, TRIP_C]),
+        )
+        await mountPage()
+        await click(buttons(/This Month/)[0])
+        expect(text()).toContain('Pune → Nashik')
+        expect(text()).not.toContain('Mumbai → Pune')
+        expect(text()).toContain('Trips Completed')
+    })
+})
+
+function formatPeriodLabel(iso: string): string {
+    return new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}

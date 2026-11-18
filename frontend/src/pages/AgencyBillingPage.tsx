@@ -161,8 +161,8 @@ export default function AgencyBillingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <RefreshCw className="animate-spin text-indigo-600" size={32} />
+      <div role="status" aria-label="Loading earnings summary" className="min-h-screen flex items-center justify-center">
+        <RefreshCw className="animate-spin text-indigo-600" size={32} aria-hidden="true" />
       </div>
     )
   }
@@ -176,6 +176,7 @@ export default function AgencyBillingPage() {
           <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">We couldn't load your billing data.</p>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Check your connection and try again.</p>
           <button
+            type="button"
             onClick={fetchBilling}
             className={`mt-4 inline-flex items-center gap-2 min-h-[44px] px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold ${FOCUS_RING}`}
           >
@@ -193,7 +194,7 @@ export default function AgencyBillingPage() {
         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Earnings summary</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">Revenue overview from delivered jobs</p>
         <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-          <Link to="/agency/invoices" className="text-indigo-600 dark:text-indigo-400 underline underline-offset-2">Not a tax invoice. Create GST invoices under Invoices.</Link>
+          <Link to="/agency/invoices" className={`rounded text-indigo-600 dark:text-indigo-400 underline underline-offset-2 ${FOCUS_RING}`}>Not a tax invoice. Create GST invoices under Invoices.</Link>
         </p>
       </div>
 
@@ -227,10 +228,11 @@ export default function AgencyBillingPage() {
                 {(['csv', 'xlsx', 'json'] as const).map((format) => (
                   <button
                     key={`${report.key}-${format}`}
-                    className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium"
+                    type="button"
+                    className={`flex min-h-[44px] items-center gap-1 rounded px-2 text-xs text-blue-600 dark:text-blue-400 font-medium ${FOCUS_RING}`}
                     onClick={() => void handleExport(format, report.key)}
                   >
-                    <Download size={12} />
+                    <Download size={12} aria-hidden="true" />
                     {format.toUpperCase()}
                   </button>
                 ))}
@@ -255,18 +257,19 @@ export default function AgencyBillingPage() {
               {(['csv', 'xlsx', 'json'] as const).map((format) => (
                 <button
                   key={`all-${format}`}
+                  type="button"
                   onClick={() => void handleExport(format)}
-                  className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className={`flex min-h-[44px] items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${FOCUS_RING}`}
                 >
-                  <Download size={12} />
+                  <Download size={12} aria-hidden="true" />
                   Export {format.toUpperCase()}
                 </button>
               ))}
             </div>
           </div>
-          <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+          <div role="list" aria-label="Delivered job statements" className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {deliveredJobs.map(job => (
-              <div key={job.id} className="px-4 py-3 flex items-center justify-between">
+              <div key={job.id} role="listitem" className="px-4 py-3 flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
                     {job.origin} → {job.destination}
@@ -282,10 +285,11 @@ export default function AgencyBillingPage() {
                     {formatCurrency(job.fare)}
                   </span>
                   <button
+                    type="button"
                     onClick={() => generateInvoice(job)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                    className={`flex min-h-[44px] items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors ${FOCUS_RING}`}
                   >
-                    <Download size={12} />
+                    <Download size={12} aria-hidden="true" />
                     Statement
                   </button>
                 </div>

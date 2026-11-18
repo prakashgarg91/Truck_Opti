@@ -1,103 +1,162 @@
 # TruckOpti Sales and Pilot-Onboarding Checklist
 
-This checklist is for a TruckOpti salesperson talking to an Indian goods-transport agency. It covers how to qualify the agency, run a 10-minute demo on the real app, collect onboarding data, agree pilot success measures, and answer objections honestly.
+For a TruckOpti salesperson talking to an Indian goods-transport agency. It covers qualifying the agency, a 10-step demo on the real menus, the data to collect, pricing, objections, what is not built, and the launch status.
 
-Every feature named here exists in the repository today; the file or route is given in brackets. Section 7 lists what is **not** built yet — never promise those items. Facts are taken from `docs/USER-GUIDE-AGENCY.md`, `docs/USER-GUIDE-DRIVER.md`, `docs/PRODUCT_ROADMAP.md`, `docs/DEPLOYMENT-RUNBOOK.md`, `frontend/src/App.tsx` and `TASKS.md`.
+Every feature named here is built in the repository unless it is in section 7. Routes come from `frontend/src/App.tsx`. Launch status (section 8) comes from the 2026-11-17 and 2026-11-18 checkpoints in `TASKS.md`.
 
-The app runs at `https://www.truckopti.in` (canonical production URL, `docs/DEPLOYMENT-RUNBOOK.md`). It works in a phone or computer browser; there is no app-store install.
+The app runs at `https://www.truckopti.in` once hosting is live (`docs/DEPLOYMENT-RUNBOOK.md`). Do not quote that address as live to a prospect until section 8 shows the hosted items as done. It works in a phone or computer browser; there is no app-store install.
 
 ## 1. Qualify the agency (before the demo)
 
-The pilot scope in the product plan is 1–2 agencies with 5–10 trucks each (`docs/PRODUCT_ROADMAP.md`). Ask these questions and note the answers:
+Ask and note the answers:
 
-1. **Fleet size and ownership.** How many trucks, and are they owned or hired? Owned fleets fit today; hired-vehicle records are planned (Section 7).
-2. **Work type and lanes.** FTL or LTL? Which origin–destination lanes do you run weekly, and how many trips?
-3. **Clients and rates.** Who are your contracted clients? Do you already have written lane rates — per trip, per tonne or per km? (Tariffs are stored lane by lane, `/agency/clients`.)
-4. **Statutory details.** Do you have your transport licence number, PAN and a bank account with IFSC? GSTIN is optional at registration but useful for billing. (`/agency/register`.)
-5. **Staff roles.** Who will dispatch, who will manage vehicles and drivers, and who will handle billing? (Staff access scopes: Dispatcher, Fleet manager, Finance, Viewer — `/agency/team`.)
-6. **Driver readiness.** Do your drivers carry Android phones with internet? The driver app runs in the phone browser.
-7. **Current system and pain.** Paper registers, Excel, Tally or other software? What hurts most — missed document renewals, fare disputes, slow billing, or driver payout records?
+1. **Fleet size and ownership.** How many trucks, and are they owned or hired? Owned trucks are supported. Hired-vehicle records are not built (section 7).
+2. **Work type and lanes.** Which origin-destination lanes do you run each week, and how many trips?
+3. **Clients and rates.** Who are your contracted clients? Do you have written rates per trip, per tonne or per km?
+4. **Statutory details.** Do you have your transport licence number, PAN and a bank account with IFSC? GSTIN is optional at registration and needed for GST invoices.
+5. **Order source.** Do orders come as a CSV file, by phone or by email? CSV import is built. Excel (.xlsx) import is not.
+6. **Staff roles.** Who dispatches, who manages trucks and drivers, and who handles billing? Scopes: Dispatcher, Fleet manager, Finance, Viewer.
+7. **Driver phones.** Do drivers have Android phones with internet? The driver screens run in the phone browser.
+8. **Current system.** Paper registers, Excel, Tally or other software? What hurts most?
 
-**Qualify out honestly.** An agency that needs a nationwide load marketplace, automatic tender bidding, live ERP auto-sync, or continuous engine-off GPS tracking today is not a fit yet (Section 7).
+**Qualify out honestly.** An agency that needs a load marketplace, automatic tender bidding, live engine-off GPS, stoppage or breakdown handling, Excel order import, or Tally sync today is not a fit yet (section 7).
 
-## 2. The 10-minute demo script (real routes)
+## 2. The 10-step demo
 
-Ask the platform team for a demo agency login and a demo customer login before the meeting. Run the agency portal on a laptop and the driver screens on a phone. All routes below are defined in `frontend/src/App.tsx`.
+Get a demo agency login and a demo customer login from the platform team before the meeting. Run the agency portal on a laptop and show the driver screens on a phone. Menu names are the labels in the agency menu; routes are in brackets.
 
-- **Minute 0–1, Registration and approval.** Open `/agency/register`. Four steps: business details (company name, transport licence number, PAN compulsory; GSTIN optional), contact and address (10-digit mobile, city, state), bank details (account number and IFSC — job payments are credited to this account), then submit. Tell them approval usually comes within 2–3 business days from the platform team, and until the status shows **Verified**, most fleet, driver and billing actions stay locked.
-- **Minute 1–2, Home.** `/agency/dashboard` — Active Jobs, Jobs Today, Pending, and Last 30 Days revenue with jobs completed; registered vehicle count; quick buttons.
-- **Minute 2–4, Fleet and documents.** `/agency/fleet` — add a truck by vehicle type (catalog runs from Tata Ace 750 kg and Tata 407 1T up to Eicher 14 ft/17 ft, Ashok Leyland 19 ft, BharatBenz 24 ft/32 ft and Volvo 40 ft 25T container), enter the RC number and the insurance, fitness, permit and PUC expiry dates; mark a vehicle available or unavailable. Show the named warning that appears when a document has expired or expires within 30 days.
-- **Minute 4–5, Drivers.** `/agency/drivers` — assigned drivers with a Call button, online status, home city, rating and trips; Assign Truck / Unassign Truck; the **Pay** button records a driver payment for platform review (no money moves by itself); invite a driver by mobile number with a one-time code shown only once; employment records hold licence number, class and expiry with a 30-day warning.
-- **Minute 5–7, Jobs — the heart of the demo.** `/agency/jobs` — a customer books at `/booking/new` and authorizes your agency; the shipment appears under **Authorized Shipments**; you enter the fare and press **Create Job** (duplicates are refused); **Accept**; **Assign Driver** from the available driver-and-truck pairs; **Track Live** shows the driver's position refreshed every 15 seconds; **Confirm Delivery** closes the job.
-- **Minute 7–8, Driver side, on the phone.** `/driver/dashboard` — online switch and job offers with a countdown timer. `/driver/trip/:jobId` — seven steps: arrive at pickup, 4-digit pickup OTP from the sender, compulsory loading photo, transit with live GPS, delivery OTP, delivery photo, done. Five wrong OTP attempts lock the OTP for 15 minutes. Earnings wallet at `/driver/earnings` with manual withdrawal, usually settled in 1–2 business days.
-- **Minute 8–9, Clients and tariffs.** `/agency/clients` — one record per business client with GSTIN and payment terms (0–365 days); under it, sites (bill-to and ship-to with 6-digit pincode) and contacts. `/agency/clients/<agreement>/tariffs` — publish a lane rate choosing the basis (per trip, per tonne or per km), amount and effective dates; rates group into Current, Upcoming and Past.
-- **Minute 9, Team access.** `/agency/team` — invite staff by email with a scope (Dispatcher, Fleet manager, Finance, Viewer) and an expiry; scopes are enforced by the server, not just hidden in the menu.
-- **Minute 10, Billing and close.** `/agency/billing` — This Month, In Progress Value, Total Paid and GST Due (5%) cards; one-click PDF tax invoice for any delivered job; GSTR-1-style monthly exports in CSV, Excel and JSON. Close with Support at `/support`.
+1. **Register and approval (1 minute).** Open `/agency/register`. Walk through the four steps: business details (company name, transport licence number and PAN are compulsory; GSTIN optional), contact and address, bank account with IFSC, submit. Say that the TruckOpti team approves the application, and that most fleet, driver and billing actions wait for approval.
+2. **Home (1 minute).** `/agency/dashboard`. Active jobs, jobs today, pending work and last 30 days revenue.
+3. **Fleet and documents (1 minute).** `/agency/fleet`. Add a truck by type, enter the RC number and the insurance, fitness, permit and PUC dates. Show the named warning for a document that has expired or expires within 30 days. Mark a truck unavailable.
+4. **Orders and load plan (1 minute).** `/agency/orders/import`: show the CSV template, upload a file, and point to the row-by-row status and the error download. `/agency/orders/plan`: group orders into a load and show the capacity check against the chosen truck.
+5. **Drivers (1 minute).** `/agency/drivers`. Invite a driver by mobile number and show the one-time code (it is shown once). Show the Call button, the truck assign and unassign actions, and the licence expiry warning.
+6. **Jobs and consignments (1 minute).** `/agency/jobs`: enter the fare on an authorised shipment and create the job; accept it; assign a free driver and truck; confirm delivery when it is done. Then `/agency/consignments`: create a GR for a planned order and step it through pickup, transit, delivery and receipt.
+7. **Driver screens, on the phone (1 minute).** Open the driver dashboard, then a trip. Show the trip steps (pickup OTP, loading photo, transit, delivery OTP, delivery photo) and the opt-in location sharing switch. Say that nothing is shared until the driver turns it on.
+8. **Tracking (30 seconds).** `/agency/tracking`: show the latest shared location for a trip and the link that opens it in Google Maps. Say the app has no map of its own.
+9. **Clients, rates and team (1 minute).** `/agency/clients` for GSTIN, payment terms, sites and contacts; `/agency/clients/<agreement>/tariffs` for a lane rate with dates; `/agency/team` for staff invitations with a scope and an expiry. Say the server enforces scopes.
+10. **Money (1 minute).** `/agency/invoices`: create a GST freight invoice for a delivered job and record a payment. `/agency/billing`: this month, GST and the monthly exports. `/agency/expenses` and `/agency/payroll` if time allows. Close with Support at `/support`.
+
+Length: about 12 minutes. Cut step 4 or step 8 if the meeting is short.
 
 ## 3. Data the agency must provide
 
-Collect this at the meeting; onboarding cannot finish without it.
+**Agency registration** (`/agency/register`): company name; transport licence number; PAN; GSTIN if registered; contact person and 10-digit mobile; city and state; bank account number and IFSC.
 
-**Agency registration** (`/agency/register`): company name; transport licence number; PAN; GSTIN if registered; contact person and 10-digit mobile; city and state; email, address, pincode, fleet size and operating routes (optional); bank account number and IFSC.
+**Per truck** (`/agency/fleet`): vehicle type; RC number; insurance, fitness, permit and PUC expiry dates.
 
-**Per truck** (`/agency/fleet`): vehicle type from the catalog; RC number; insurance, fitness, permit and PUC expiry dates.
+**Per driver** (`/agency/drivers`): full name; mobile number; driving licence number, class and expiry.
 
-**Per driver** (`/agency/drivers`): full name; mobile number; driving licence number, licence class and expiry date.
+**Per client** (`/agency/clients`): name; GSTIN; payment terms in days (0 to 365); sites with label, address, city, state and 6-digit pincode; contacts with phone and email.
 
-**Per client** (`/agency/clients`): client name; GSTIN; payment terms in days; sites — billing addresses and loading points with label, address, city, state, pincode; contact persons with phone and email.
+**Per tariff lane** (`/agency/clients/<agreement>/tariffs`): origin; destination; vehicle type; basis (per trip, per tonne or per km); amount; effective from and to dates.
 
-**Per tariff lane** (`/agency/clients/<agreement>/tariffs`): origin and destination; vehicle type; rate basis (per trip, per tonne, per km); amount; effective from and to dates.
+**Orders** (`/agency/orders/import`): a CSV in the template format.
 
-## 4. Pilot terms and pricing — say this exactly
+## 4. Pricing: say this exactly
 
-The app's pricing page carries these plans, all excluding GST (GST at 18% is added): Starter ₹499 per month (₹4,990 a year) for 3 trucks and 2 staff; Growth ₹1,999 (₹19,990 a year) for 20 trucks and 10 staff; Professional ₹4,999 (₹49,990 a year) for 50 trucks and 25 staff. Drivers allowed are twice the trucks. The owner's seat is not counted in staff. The ERP connector is included from Growth, but it is still planned, not live (Section 7). Every agency gets a 14-day free trial with no card, started by the agency owner after approval. Enterprise is by quote only ("contact us"). Source: `frontend/src/config/pricing.ts`.
+All prices exclude GST. GST at 18% is added to the subscription.
 
-Online subscription payment is **not live yet** — Razorpay activation is an owner-gated step (`TASKS.md`, task TO-152). So for every pilot: the platform owner confirms the commercial terms in writing; you do not collect money through the app, and you do not promise auto-renewal or platform-issued subscription invoices.
+- **Starter:** ₹499 per month, or ₹4,990 per year. Up to 3 trucks and 2 staff.
+- **Growth:** ₹1,999 per month, or ₹19,990 per year. Up to 20 trucks and 10 staff. The ERP connector is included from Growth.
+- **Professional:** ₹4,999 per month, or ₹49,990 per year. Up to 50 trucks and 25 staff.
+- **Enterprise:** by quote only.
 
-One more point that wins trust: **the platform never pools the agency's freight money.** The client pays freight to the agency's own account; TruckOpti only records and reports it (`TASKS.md`, advisor ruling of 2026-11-04).
+Yearly price is 10 times the monthly price. Every agency gets a 14-day free trial with no card, with Starter limits. The agency owner starts it after approval.
+
+Online subscription payment is **not switched on yet** (section 8). For a pilot, the TruckOpti team confirms the plan and the terms in writing. Do not collect money through the app, and do not promise auto-renewal or platform-issued subscription invoices.
+
+**The platform never holds freight money.** Clients pay the agency's own bank account. TruckOpti records receipts and payments only.
+
+Source: `frontend/src/config/pricing.ts`.
 
 ## 5. Pilot success measures (agree on day one, review after 30 days)
 
-Taken from the product plan's pilot targets and honest-demo list (`docs/PRODUCT_ROADMAP.md`):
+- Application submitted and approved.
+- Every truck entered with its RC number and four document dates; every driver entered with licence details; staff invited with scopes; at least one driver invitation used.
+- At least one client with sites, contacts and a current tariff lane.
+- One full job on live work: order in (CSV or entered), job with fare, accepted, driver and truck assigned, GR issued, driver trip completed with delivery confirmed, freight invoice created, payment recorded.
+- At least one document-expiry warning seen on `/agency/fleet`.
 
-- Agency application submitted and status **Verified** (usually 2–3 business days).
-- Every truck entered with RC number and the four statutory dates; every driver entered with licence details; staff invited with scopes; at least one driver invitation accepted.
-- At least one client with sites, contacts and current tariff lanes published.
-- The full flow completed on live work: authorized shipment → job with fare → accepted → driver assigned → pickup OTP and loading photo → live tracking → delivery OTP and proof photo → Confirm Delivery → PDF invoice → monthly GST export.
-- At least one document-expiry warning seen working on `/agency/fleet`.
+Platform reliability targets are measured internally. Do not quote them to the customer as commitments.
 
-Platform-side reliability targets (backup recovery point within 24 hours, recovery time within 4 hours, a 7-day uptime rehearsal) are measured internally by the engineering team during the pilot — do not quote them as commitments to the customer.
+## 6. Objections and answers
 
-## 6. Objections and honest answers
+- **"Who owns our data?"** Your agency owns it. It sits in your own portal, separate from other agencies, and the server checks access on every request. You can export GST and order data as CSV, Excel or JSON. Get the written data-export and deletion terms from the platform team before signing.
+- **"Will you hold our freight money?"** No. Clients pay your bank account directly. The app records the money; it does not collect, pool or hold it.
+- **"What happens when our plan expires?"** The app tracks plan dates and sends reminders. Blocking work after expiry is a switch the team turns on per agency and is not on for every agency yet. Ask the team to confirm the exact behaviour for your account in writing.
+- **"Who helps us when something breaks?"** Support at `/support` after sign-in, or `/contact`. Written service levels come with the pilot terms. Do not quote an uptime figure.
+- **"Our drivers are not tech-savvy."** You invite them by mobile number with a one-time code. The trip screen walks them through each step.
+- **"We already run Tally or Excel."** Data comes in by CSV and goes out as CSV, Excel and JSON exports. Excel import and a direct Tally sync are not built. An ERP connector is built for Growth and above, but confirm its current status with the platform team before promising it.
+- **"Does it make our GST invoice?"** It calculates freight GST, lets you choose the rate, records payments and gives GSTR-1 style exports. Server-made invoice PDFs are not built. Your accountant confirms the figures before filing.
+- **"Do the drivers' location and our tracking use Google Maps?"** The app links the latest point to Google Maps. It does not have its own map. Drivers share location only when they switch it on.
+- **"Do you use AI?"** Nothing in the product is sold as AI. Do not describe any feature as AI-powered.
 
-- **"Other agencies will see my rates and clients."** Each agency works in its own portal with server-enforced isolation and access scopes; staff scopes are enforced by the server, not just hidden in menus (`/agency/team`, `docs/USER-GUIDE-AGENCY.md` §7).
-- **"You will hold our freight money."** No. Freight is collected by the agency into its own account; the platform only records it (`TASKS.md`, 2026-11-04 ruling).
-- **"Our drivers are not tech-savvy."** The driver app opens in a phone browser with Hindi-labelled tabs and a step-by-step trip screen; the agency invites drivers by mobile number with a one-time code (`/driver/dashboard`, `docs/USER-GUIDE-DRIVER.md`).
-- **"We already run Tally/Excel."** Today data moves by manual entry and CSV/Excel/JSON exports (`/agency/billing`). A direct ERP connector for the first client is planned (Section 7).
-- **"Will OTP messages cost us SMS charges?"** The core journey needs no SMS. Login uses password auth and trip OTPs are shown inside the customer's app (`docs/USER-GUIDE-DRIVER.md`, `docs/PRODUCT_ROADMAP.md` §7).
-- **"Does it do our GST invoice?"** It generates a PDF tax invoice per delivered job with freight GST at 5% and GSTR-1-style monthly exports; the final figures must be confirmed by the agency's accountant before filing (`/agency/billing`).
-- **"What happens when documents expire?"** The fleet screen warns by name 30 days before insurance, fitness, permit or PUC expiry (`/agency/fleet`).
-- **"What does it cost?"** Quote the launch tiers in Section 4 and add that written pilot terms come from the platform owner; online payment is not switched on yet.
+## 7. Not built yet: never promise these
 
-## 7. What is NOT available yet — never promise it
+- Excel (.xlsx) order import.
+- Maps inside the app.
+- QR images on GRs (a text token is shown).
+- WhatsApp messages sent from the app.
+- Automatic debit and auto-renewal.
+- Server-generated invoice PDFs.
+- Trip stoppages, breakdown and emergency handling.
+- Hired (non-owned) vehicle records.
+- Online subscription payment (Razorpay), until the owner activates it (section 8).
+- Any AI feature.
 
-From `docs/USER-GUIDE-AGENCY.md` §10 and `TASKS.md` (tasks TO-145 to TO-153):
+Also keep these honest: route distance figures are estimates, not road routing or ETA; hired vehicles are not supported.
 
-- **Sales-order import and load planning with client approval** — planned (TO-145).
-- **GR/LR receipts with QR and material-receipt proof** — planned (TO-146).
-- **Full trip tracking** — stoppages, breakdown and emergency handling — planned (TO-147). Basic live driver location on `/agency/jobs` exists today.
-- **Freight invoice book, private document vault and collections/receivables** — planned (TO-148). Today's billing has the PDF invoice and GST exports only.
-- **Expenses, fuel, advances and maintenance records** — planned (TO-149).
-- **Driver salary and payroll settlement** — planned (TO-150). The Pay button only records payments for review.
-- **Direct ERP connector with client systems** — planned (TO-151).
-- **Online subscription billing (Razorpay) and tenant onboarding console** — planned, owner-gated (TO-152).
-- **Final hosted selling acceptance** — staging restore rehearsal, error monitoring and full hosted end-to-end proof remain to be completed (TO-153, `docs/DEPLOYMENT-RUNBOOK.md`).
+## 8. Launch status (from TASKS.md, 2026-11-18 checkpoint)
 
-Also keep these honest: route distance figures are straight-line estimates with fixed average costs, not guaranteed road routing or ETA (`/routes`, `docs/PRODUCT_ROADMAP.md` §4); in device-only offline mode the agency portal shows only local truck and carton counts (`/agency/dashboard`); hired (non-owned) vehicle records are not supported yet.
+Status key: **DONE** = built and checked locally in this repository; **NEEDS OWNER** = an owner decision, key or document is required; **NEEDS HOSTING** = needs a hosted Supabase, Edge deploy or staging environment, which has not been run.
 
-## 8. After the meeting
+The 2026-11-18 checkpoint says: ready for staging, **not ready for customers**.
 
-1. Help the agency submit `/agency/register` the same day; approvals usually arrive in 2–3 business days.
-2. Send the Section 3 data checklist and fix one staff member as the onboarding contact.
-3. Route questions through Support (`/support`); for approval queries, quote the company name and registration date.
-4. Note in your pipeline which Section 7 items the agency needs on day one. If they cannot start without expenses, payroll or ERP sync, say the platform will confirm delivery dates — never commit a date yourself.
+### Features built (TO-145 to TO-152)
+
+| Item | Status |
+|---|---|
+| CSV order import, load planning, consignments (GR/LR), trip tracking, opt-in driver location | DONE (local tests; hosted not run) |
+| Freight invoices (record only) and expenses, fuel, maintenance | DONE (local tests; hosted not run) |
+| Driver payroll | DONE (local tests; hosted not run) |
+| ERP connector and `erp-ingest` function | DONE in code; the Edge deploy is NEEDS HOSTING |
+| Agency subscriptions, plan limit guard, GST invoicing, activation, refund and credit notes | DONE in code; live enforcement is NEEDS OWNER |
+| Razorpay webhook and billing UI | DONE in code; webhook secret and registration are NEEDS OWNER and NEEDS HOSTING |
+| Expiry sweep and reminders, staff invitation acceptance, entitlement gating | DONE (local tests; hosted not run) |
+
+### Local gates (all green on 2026-11-18)
+
+| Gate | Status |
+|---|---|
+| 35 database suites, privilege matrix 15/15 | DONE |
+| Edge write guard 23/23; edge harness 86 tests | DONE |
+| Frontend tests (2218), `tsc` and `eslint` | DONE |
+| Secrets audit (source and built bundle) | DONE |
+| Local full-journey browser test: 47 passed, 0 failed, 2 hosted-only; mobile 375 px pass | DONE |
+| Race tests (new commands, subscription) | DONE |
+
+### Owner and hosting items still open
+
+| Item | Status |
+|---|---|
+| Staging Supabase project and `db push` approval | NEEDS OWNER and NEEDS HOSTING |
+| Hosted auth, storage, `pg_cron` and extensions run | NEEDS HOSTING |
+| Razorpay test webhook secret and registration (old test key expires 2026-11-19 20:24) | NEEDS OWNER |
+| Edge deploy of `erp-ingest` (JWT verification off) | NEEDS HOSTING |
+| Release gates 7 to 11 (hosted) in `docs/FABLE-RULINGS-2026-11-17-B.md` section 3 | NEEDS HOSTING |
+| Sentry key and error monitoring | NEEDS OWNER |
+| GSTIN, legal name, address, state and SAC confirmation | NEEDS OWNER |
+| Terms and refund wording (`docs/legal/SUBSCRIPTION-POLICY-DRAFT.md`) | NEEDS OWNER |
+| Enforcement switch (every approved agency needs a trial or plan first) | NEEDS OWNER |
+| Live-money test approval | NEEDS OWNER |
+| Housekeeping approvals (`docs/HOUSEKEEPING-INVENTORY.md`) | NEEDS OWNER |
+| ZCode renewal | NEEDS OWNER |
+
+Until every NEEDS item above is DONE, do not present TruckOpti to a customer as live, do not take payment through the app, and do not give a date for a hosted service.
+
+## 9. After the meeting
+
+1. Send the registration link `/agency/register` and the section 3 data list the same day.
+2. Name one staff member as the onboarding contact.
+3. Route questions through Support (`/support`). For approval questions, quote the company name and registration date.
+4. Record which section 7 items the agency needs on day one. If they cannot start without one of them, tell them the platform team will confirm the date. Never commit a date yourself.

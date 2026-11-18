@@ -1,121 +1,194 @@
-# TruckOpti — Landing Page Copy (Agency Subscription)
+# TruckOpti: Landing Page Copy (Agency Subscription)
 
-Ready-to-use copy for the agency landing page. Audience: owners of small Indian goods-transport agencies running 5–10 trucks. Every feature claimed below exists in the app today; items still being built are marked **coming soon**. The verification map at the end cites the file or route for every claim.
+Copy for the agency landing page. Audience: owners of small Indian goods-transport agencies with 5 to 10 trucks.
+
+Rule for this copy: every feature below is built in the app today. Anything not built is listed under "Not built yet" and must not be presented as available. The verification map at the end names the file or route behind each claim. Prices and limits follow `frontend/src/config/pricing.ts`.
 
 ---
 
 ## Headline
 
-**Run your transport agency from one place — trucks, drivers, jobs and billing.**
+**Run your transport agency from one place: orders, trucks, drivers, trips and billing.**
 
 ## Subheadline
 
-TruckOpti is subscription software for small Indian transport agencies. Register your fleet, invite your drivers, take jobs from your clients, track trips live on a map, and raise GST-ready invoices — all without thick registers, missed renewal dates and end-of-day phone calls.
+TruckOpti is subscription software for small Indian transport agencies. Import orders from a CSV file, plan loads against truck capacity, issue consignment notes with GR/LR numbers, track trips with your drivers' opt-in location, record freight invoices and payments, and keep expenses, fuel, maintenance and driver payroll in the same app.
 
-TruckOpti connects three sides: your **customers** book shipments and authorise your agency, your **drivers** carry them, and **you** run the fleet from your own Agency Portal.
-
----
-
-## Six reasons agencies subscribe
-
-### 1. Every truck and every document in one register
-
-Keep the RC number, insurance, fitness, permit and PUC dates of each vehicle in one place. Choose from the built-in Indian catalogue — Tata Ace (750 kg), Tata 407 (1T), Eicher 14 ft (3T), Eicher 17 ft (5T), Ashok Leyland 19 ft (7T), BharatBenz 24 ft (10T), BharatBenz 32 ft (15T) and Volvo 40 ft container (25T). The page warns you by name when a document has expired or expires within 30 days, so renewals are never missed. Mark a truck unavailable when it goes for maintenance. (Route: `/agency/fleet`)
-
-### 2. Your drivers, on board in minutes
-
-Invite a driver by mobile number — a one-time invitation code is shown once, which you copy or share on WhatsApp. Your driver list shows phone with a Call button, online/offline status, rating, trips done, and who is on a trip. Assign or unassign a truck from the card, and record payments to a driver with a note. Employment records keep the driving licence number, class and expiry (with a warning inside 30 days). An amber panel lists trucks that still have no driver, so no vehicle is forgotten. (Route: `/agency/drivers`)
-
-### 3. Jobs from authorisation to delivery, without phone-tag
-
-When a customer authorises your agency, the shipment appears under Authorised Shipments. You enter your fare and create the job — duplicates are refused. Accept or decline, assign an available driver-and-truck pair, press Track Live to see the driver's latest position on a map refreshed every 15 seconds, and Confirm Delivery to close the job. Filter the job list by Pending, Accepted, In Transit, Delivered or Cancelled. (Route: `/agency/jobs`)
-
-### 4. Client rates on record, not on WhatsApp
-
-Keep one record per business client with GSTIN and payment terms (0–365 days), their billing addresses and loading points with pincodes, and your contacts there. Publish lane-by-lane rates — per trip, per tonne or per km — with effective from/to dates. Rates group into Current, Upcoming and Past, and you revise a lane by publishing a new version. (Routes: `/agency/clients`, `/agency/clients/<agreement>/tariffs`)
-
-### 5. Billing and GST, ready every month
-
-The Billing screen shows This Month earnings, In-Progress value, Total Paid and GST Due (5%). Generate a simple PDF tax invoice for any delivered job — invoice number, date, route, subtotal, GST at 5% and total. For each of the last three months, export delivered jobs in GSTR-1 style as CSV, Excel or JSON, plus an all-delivered export. Please confirm final figures with your accountant before filing. (Route: `/agency/billing`)
-
-### 6. Your staff, with exactly the right access
-
-Invite staff by email with one of four access scopes — Dispatcher (reserve vehicles and drivers, manage jobs), Fleet manager (vehicles, drivers, invitations), Finance (clients and tariffs) or Viewer (view only) — with an expiry (default 7 days). Revoke an invitation or a member's access at any time, and change a scope later. These scopes are enforced by the server, not just hidden in the menu. (Route: `/agency/team`, owner only)
+TruckOpti works with three sides: your **clients** send orders, your **drivers** carry them on the driver screens, and **you** run the agency from the Agency Portal.
 
 ---
 
-## How it works — four steps
+## What an agency can do today
 
-**Step 1: Register your agency and get verified.** Log in and complete the four-step form — business details (company name, transport licence number and PAN are compulsory; GSTIN optional), contact and address, and your bank account with IFSC (job payments are credited to this account). The TruckOpti platform team reviews your application; approval usually comes within 2–3 business days. (Route: `/agency/register`)
+### 1. Orders by CSV import
 
-**Step 2: Add your fleet and drivers.** Enter each truck with its RC number and document dates, and mark availability. Invite drivers by mobile number with a one-time code, and record their licence details. (Routes: `/agency/fleet`, `/agency/drivers`)
+Download the order template, fill it in, and upload the CSV. The app shows each row's status before anything is saved, and you can download a file of the rows that failed. Excel (.xlsx) files are not accepted yet. (Route: `/agency/orders/import`)
 
-**Step 3: Add your clients and publish rates.** Create each client with GSTIN and payment terms, add their sites and contacts, and publish lane rates with effective dates. (Route: `/agency/clients`)
+### 2. Load planning against truck capacity
 
-**Step 4: Run jobs and get paid.** Your Home screen shows Active Jobs, Jobs Today, Pending and Last 30 Days revenue at a glance. Accept authorised shipments, assign drivers, track live, confirm delivery — then invoice and export your GST reports. (Routes: `/agency/dashboard`, `/agency/jobs`, `/agency/billing`)
+Group orders into load plans. The planner checks each plan against the capacity of the truck you pick and lists the problems it finds. (Route: `/agency/orders/plan`)
+
+### 3. Consignment notes with GR/LR numbers
+
+Create a GR for a planned order. Each GR moves through set steps: pickup scanned, transit started, delivery scanned, receipt signed, or dispute raised. Only the steps that are legal for the current state can be chosen. The GR/LR token is shown as text for the dispatcher or owner. Printed QR images are not produced yet. (Route: `/agency/consignments`)
+
+### 4. Fleet and documents
+
+Keep each truck's RC number and its insurance, fitness, permit and PUC expiry dates in one register. The page warns by name when a document has expired or expires within 30 days. Mark a truck unavailable when it goes for maintenance. (Route: `/agency/fleet`)
+
+### 5. Drivers
+
+Invite a driver by mobile number. The one-time invitation code is shown once, so copy it and pass it on. The driver list shows each driver's phone with a Call button, whether they are online, and any trip in progress. Assign or unassign a truck from the driver card. Driver records keep the licence number, class and expiry, with a warning inside 30 days. (Route: `/agency/drivers`)
+
+### 6. Jobs and trip tracking
+
+Each authorised shipment becomes a job once you enter the fare. You can accept or decline a job, assign a driver and truck that are free, and confirm delivery. The Tracking screen shows the latest location the driver has shared for each trip, with a link to open that point in Google Maps. The driver chooses whether to share location from the trip screen; nothing is shared without that opt-in. Location updates appear on screen as they arrive, and the Jobs list refreshes every 15 seconds. (Routes: `/agency/jobs`, `/agency/tracking`)
+
+The Tracking screen does not draw a map inside the app. Trip stoppages, breakdown handling and emergency alerts are not built yet.
+
+### 7. Clients and rates
+
+Keep one record per business client with GSTIN and payment terms (0 to 365 days), their billing addresses and loading points with pincodes, and their contacts. Publish lane rates per trip, per tonne or per km, with effective from and to dates. Rates are grouped as Current, Upcoming and Past. (Routes: `/agency/clients`, `/agency/clients/<agreement>/tariffs`, `/agency/rates`)
+
+### 8. Freight invoices and payments
+
+Create a GST freight invoice for a delivered job. The app works out the GST, lets you pick the rate, and records payments by UPI, bank transfer, cash or cheque. A job's payment status is calculated from what you have recorded. The freight money goes to your own bank account. TruckOpti records the figures and does not collect or hold that money. (Route: `/agency/invoices`)
+
+Billing screen: this month's earnings, the value of jobs in progress, total paid, GST due and the GSTR-1 style exports (CSV, Excel, JSON). Please confirm final figures with your accountant before filing. (Route: `/agency/billing`)
+
+### 9. Expenses, fuel and maintenance
+
+Record expenses by category, including fuel and maintenance, against a truck or job. (Route: `/agency/expenses`)
+
+### 10. Driver payroll
+
+Build a payroll period, review each driver's line, and track approval. An approved agency gets the payroll screen; payroll amounts are recorded in the app and paid by you outside it. (Route: `/agency/payroll`)
+
+### 11. Staff with the right access
+
+Invite staff by email with one of four scopes:
+
+- **Dispatcher**: orders, load plans, consignments, jobs, ERP connections.
+- **Fleet manager**: trucks, driver records and invitations, expenses and maintenance.
+- **Finance**: clients, tariffs, invoices, expenses, payroll and driver rates.
+- **Viewer**: read-only access to the scoped screens.
+
+The server checks each request against the scope. Hiding a menu item is not the only protection. (Route: `/agency/team`, owner only)
+
+### 12. ERP connector (Growth plan and above)
+
+Growth and Professional agencies can set up a connection for a client's ERP system. Each connection has its own secret. You can pause a connection, resume it, or rotate the secret. The ERP system sends orders to the `erp-ingest` service. Confirm the live status with the platform team before promising it to a client. (Route: `/agency/erp`)
+
+### 13. Phone and computer
+
+The Agency Portal runs in a phone browser or on a computer. On a phone the bottom bar has six tabs: Home, Fleet, Drivers, Jobs, Billing and Rates. On a computer the left menu shows all the screens. There is no app-store install.
 
 ---
 
-## Frequently asked questions
+## How an agency starts
 
-**1. What do I need to register?**
-An account on TruckOpti, your company name, transport licence number and PAN (compulsory), GSTIN if you have one, a 10-digit mobile number with city and state, and your bank account number with IFSC. Approval usually comes within 2–3 business days; your Home screen shows the status (Verification Pending, Verified, Rejected or Suspended) while you wait.
+**Step 1: Register and wait for approval.** Complete the four-step form: business details (company name, transport licence number and PAN are compulsory; GSTIN is optional), contact and address, bank account with IFSC, then submit. The TruckOpti team reviews the application. Your Home screen shows the status until it is approved. (Route: `/agency/register`)
 
-**2. Does it work on my phone?**
-Yes. On a phone the portal has a bottom bar with six tabs — Home, Fleet, Drivers, Jobs, Billing and Rates. On a computer the left menu additionally shows Team and Clients. The bell icon counts new incoming jobs.
+**Step 2: Add trucks and drivers.** Enter each truck with its RC number and document dates. Invite drivers by mobile number and record their licence details. (Routes: `/agency/fleet`, `/agency/drivers`)
 
-**3. Do my drivers need to install anything?**
-No separate setup. A driver signs in on the same TruckOpti app with the phone number you invited and the one-time code. The driver side shows their trips, document upload (KYC) and earnings.
+**Step 3: Add clients and publish rates.** Create each client with GSTIN and payment terms, add sites and contacts, and publish lane rates with effective dates. (Route: `/agency/clients`)
 
-**4. Is my agency's data safe from other agencies?**
-Each agency works in its own portal, separate from customers, drivers and other agencies. Access is checked on the server for every request — including staff scopes — so a staff member simply cannot open what their scope does not permit.
+**Step 4: Run orders to delivery and bill.** Import or enter orders, plan loads, issue GRs, assign drivers, track trips, confirm delivery, then raise freight invoices and record payments.
 
-**5. What about GST?**
-The app calculates freight GST at 5% of the fare, prints it on the PDF tax invoice, and gives GSTR-1 style monthly exports. This is the freight GST your agency charges its clients. It is separate from TruckOpti's own subscription fee, which carries 18% GST. Please confirm the final figures with your accountant before filing.
+---
 
-**6. How do my earnings reach me?**
-Job payments are credited to the bank account you give at registration. Driver payments you record from the Drivers screen go to the platform team for review — no money moves by itself.
+## Plans and prices
 
-**7. What does it cost?**
-Transport agencies get a 14-day free trial with no card required. The trial has Starter limits, and the agency owner starts it after the registration is approved. Paid plans, excluding GST: Starter ₹499 per month (₹4,990 a year) for up to 3 trucks and 2 staff; Growth ₹1,999 per month (₹19,990 a year) for up to 20 trucks and 10 staff; Professional ₹4,999 per month (₹49,990 a year) for up to 50 trucks and 25 staff. GST at 18% is added to the subscription. Enterprise is by quote. For a 5–10 truck agency, Growth is the plan that fits. Current prices are always on the pricing page (`/pricing`); pilot agencies are set up personally by the TruckOpti team.
+All prices exclude GST. GST at 18% is added to the subscription.
 
-**8. What is coming soon?**
-Being fully transparent, these modules are planned but not built yet: sales-order import and load planning; GR/LR receipts with QR and material-receipt proof; full trip tracking with stoppages, breakdown and emergency handling (basic live driver location already works today); freight invoice book and collections (the simple PDF invoice and GST exports above exist today); expenses, fuel, advances and maintenance records; driver salary and payroll settlement; and a direct ERP connector for your clients.
+| Plan | Per month | Per year (10 x monthly) | Trucks | Staff |
+|---|---|---|---|---|
+| Starter | ₹499 | ₹4,990 | 3 | 2 |
+| Growth | ₹1,999 | ₹19,990 | 20 | 10 |
+| Professional | ₹4,999 | ₹49,990 | 50 | 25 |
+| Enterprise | Quote | Quote | More | More |
+
+- **Free trial:** 14 days, no card required. The trial has Starter limits. The agency owner starts it after approval.
+- **For a 5 to 10 truck agency,** Growth is the plan that fits.
+- **Paying online:** the subscription checkout is built, but online payment is not switched on yet. Until it is, the TruckOpti team confirms plan terms in writing.
+
+---
+
+## Objections and answers
+
+**"Who owns our data?"**
+Your agency owns its data. It is kept in its own portal, separate from other agencies, and the server checks access on every request. You can export your GST and order data as CSV, Excel or JSON. If you stop using TruckOpti, ask the team for your data in writing; the export and deletion steps are part of the subscription terms still being finalised.
+
+**"Do you hold our freight money?"**
+No. Clients pay the freight into your own bank account. TruckOpti records receipts and payments for your books. It does not collect, pool or hold freight money.
+
+**"What happens when my plan expires?"**
+Your plan dates are tracked and the app sends renewal reminders. Blocking new work after expiry is a switch the TruckOpti team turns on for each agency, and it is not switched on for every agency yet. Ask the team to confirm in writing what applies to your account before you sign.
+
+**"What if the app goes down, or we need help?"**
+Use Support at `/support` after you sign in, or the contact page at `/contact`. The team answers during working hours. Written service levels are part of the pilot terms; do not rely on a promised uptime figure until they are given to you in writing.
+
+**"Can my drivers use it?"**
+Yes. A driver signs in with the mobile number you invited and the one-time code. The driver screens show trips, the seven-step trip flow (pickup OTP, loading photo, live location, delivery OTP, delivery photo), document upload and earnings.
+
+**"Do you do our GST invoice?"**
+The app calculates freight GST, lets you choose the rate, records payments and gives GSTR-1 style exports. Invoice PDFs created on the server are not built yet. Your accountant confirms the final figures before filing.
+
+**"Do you connect to Tally or our ERP?"**
+Not directly with Tally. Growth and Professional agencies can connect a client ERP that can send orders to the TruckOpti ERP endpoint. Ask for the current status before you rely on it.
+
+---
+
+## Not built yet
+
+Do not promise these:
+
+- Excel (.xlsx) order import.
+- Maps inside the app (the Tracking screen links out to Google Maps).
+- Printed QR codes or QR images on GRs.
+- WhatsApp messages sent by the app.
+- Automatic debit or auto-renewal payments.
+- Server-generated invoice PDFs.
+- Automatic AI features of any kind.
+- Trip stoppage, breakdown and emergency handling.
+- Hired (non-owned) vehicle records.
 
 ---
 
 ## Call to action
 
-**Register your agency today — and take the diary out of your operations.**
+**Register your agency and move the registers into one app.**
 
-The four-step form takes about ten minutes. Approval usually comes within 2–3 business days, and your fleet, drivers and billing are ready before your next trip.
-
-- **Register now:** `/agency/register` (log in first; the page opens in agency mode)
-- **Talk to us:** `/contact`, or Support at `/support` after signing in — phone +91 99993 52050
-- **See plans and prices:** `/pricing` — 14-day free trial for agencies, no card required
-
-TruckOpti — planning, dispatch and live trip visibility for modern logistics operations.
+- **Register now:** `/agency/register`
+- **Plans and prices:** `/pricing`
+- **Talk to us:** `/contact`, or Support at `/support` after you sign in
 
 ---
 
-## Verification map (for the team — not for publication)
+## Verification map (for the team, not for publication)
 
 | Claim | Verified in |
 |---|---|
-| Agency registration steps, compulsory fields, 2–3 business-day approval, statuses | `docs/USER-GUIDE-AGENCY.md` §1; route `/agency/register` (`frontend/src/App.tsx:113`) |
-| Fleet register, 8-type vehicle catalogue, 30-day expiry warnings, availability | `docs/USER-GUIDE-AGENCY.md` §3; catalogue labels in `frontend/src/pages/AgencyFleetPage.tsx:14-21`; route `/agency/fleet` |
-| Driver invitations (one-time code, WhatsApp share), Call button, Pay (min ₹1), employment/licence expiry, unassigned-trucks panel | `docs/USER-GUIDE-AGENCY.md` §4; route `/agency/drivers` |
-| Authorised shipments, fare + Create Job, duplicate refusal, Accept/Decline, Assign Driver, Track Live 15-second refresh, Confirm Delivery, status filters | `docs/USER-GUIDE-AGENCY.md` §5; refresh interval `frontend/src/pages/AgencyJobsPage.tsx:313`; route `/agency/jobs` |
-| Clients (GSTIN, payment terms 0–365 days, bill-to/ship-to sites, contacts), tariffs per trip/tonne/km with effective dates and Current/Upcoming/Past | `docs/USER-GUIDE-AGENCY.md` §6; routes `/agency/clients`, `/agency/clients/<agreement>/tariffs` (Wave 1 UI, `TASKS.md` day close 2026-11-06) |
-| Billing cards, PDF tax invoice, GST 5%, GSTR-1 style CSV/Excel/JSON exports | `docs/USER-GUIDE-AGENCY.md` §8; route `/agency/billing` |
-| Team scopes (Dispatcher/Fleet manager/Finance/Viewer), server enforcement, 7-day expiry, revoke, change scope | `docs/USER-GUIDE-AGENCY.md` §7; route `/agency/team` |
-| Home counters (Active Jobs, Jobs Today, Pending, Last 30 Days) | `docs/USER-GUIDE-AGENCY.md` §2; route `/agency/dashboard` |
-| Phone bottom bar (6 tabs), desktop menu, bell icon | `docs/USER-GUIDE-AGENCY.md` "Before you start" |
-| Driver sign-in with phone + code; driver trips/KYC/earnings | `docs/USER-GUIDE-AGENCY.md` §4; routes `/driver/dashboard`, `/driver/kyc`, `/driver/earnings` |
-| Agency data isolation, server-side scope checks | `docs/USER-GUIDE-AGENCY.md` §7 ("enforced by the server"); tenant-authority proofs in `agent-results/032-result.md` |
-| Plans/prices (14-day agency trial, no card; Starter ₹499/mo, Growth ₹1,999/mo for 20 trucks/10 staff, Professional ₹4,999/mo for 50 trucks/25 staff; yearly = 10x monthly; GST 18% extra) | `frontend/src/config/pricing.ts` (PRICING_TIERS, TRIAL_CONFIG); rendered on `/pricing` (`frontend/src/pages/PricingPage.tsx`; fallback tiers) |
-| Payment credit to registered bank account; driver payments reviewed, no money moves by itself | `docs/USER-GUIDE-AGENCY.md` §1, §4 |
-| Coming-soon list (TO-145…TO-151) | `docs/USER-GUIDE-AGENCY.md` §10; `TASKS.md` pilot queue |
-| Support phone/routes | `frontend/src/config/support.ts` (owner-configured contact); routes `/contact`, `/support` |
+| CSV-only order import, template, row errors | `frontend/src/pages/AgencyOrderImportPage.tsx` (accept `.csv`, template download); route `/agency/orders/import` |
+| Load plans against truck capacity | `frontend/src/pages/AgencyLoadPlanPage.tsx`; route `/agency/orders/plan` |
+| GR/LR, proof states and events, text QR token, no QR image | `frontend/src/pages/AgencyConsignmentsPage.tsx` (comment: "no QR image library is used yet"); `frontend/src/lib/grLr.ts`; route `/agency/consignments` |
+| Fleet register, document expiry warnings | `frontend/src/pages/AgencyFleetPage.tsx`; route `/agency/fleet` |
+| Driver invitations, Call button, assign/unassign, licence expiry | `frontend/src/pages/AgencyDriversPage.tsx`; route `/agency/drivers` |
+| Jobs, fare, accept, assign, confirm delivery, 15-second refresh | `frontend/src/pages/AgencyJobsPage.tsx`; route `/agency/jobs` |
+| Trip tracking, latest location, Google Maps link | `frontend/src/pages/AgencyTrackingPage.tsx`; route `/agency/tracking` |
+| Driver opt-in location sharing | `frontend/src/pages/DriverTripPage.tsx`, `frontend/src/lib/tripLocationSharing.ts`, `frontend/src/lib/useTripLocationSharing.ts`; permission-denied message in `tripLocationSharing.ts` |
+| Clients, tariffs, rates | `frontend/src/pages/AgencyClientsPage.tsx`, `AgencyTariffsPage.tsx`, `AgencyRatesPage.tsx`; routes `/agency/clients`, `/agency/clients/:agreementId/tariffs`, `/agency/rates` |
+| Freight invoices, record-only, UPI/bank/cash/cheque, GST rates 0/5/12/18 | `frontend/src/pages/AgencyInvoicesPage.tsx`; `frontend/src/lib/freightInvoice.ts`; route `/agency/invoices` |
+| Billing cards, GSTR-1 style CSV/Excel/JSON | `frontend/src/pages/AgencyBillingPage.tsx`; route `/agency/billing` |
+| Expenses, fuel, maintenance | `frontend/src/pages/AgencyExpensesPage.tsx`; route `/agency/expenses` |
+| Payroll periods and lines | `frontend/src/pages/AgencyPayrollPage.tsx`; route `/agency/payroll` |
+| Staff scopes (dispatcher, fleet manager, finance, viewer), server-side | `frontend/src/lib/agencyAccess.ts`; `frontend/src/pages/AgencyTeamPage.tsx`; route `/agency/team` |
+| ERP connections, pause/resume, secret rotation | `frontend/src/pages/AgencyErpPage.tsx`; route `/agency/erp`; ingest in `TASKS.md` 2026-11-17 checkpoint |
+| ERP plan gate (Growth and above) | Brief from owner; the gate is enforced by `SB004 SUBSCRIPTION_FEATURE_NOT_IN_PLAN` in `supabase/migrations/20261035000000_subscription_write_guards.sql`. Confirm the plan seed before publishing |
+| Plans, prices, trucks and staff limits, trial | `frontend/src/config/pricing.ts` (`TRIAL_CONFIG`: 14 days, Starter limits, no card) |
+| Plan limits not enforced by default | `TASKS.md` 2026-11-17 checkpoint ("enforcement OFF by default") and 2026-11-18 checkpoint (owner enforcement switch) |
+| Online payment not switched on | `TASKS.md` 2026-11-18 checkpoint (Razorpay test and live not run; owner-only) |
+| Phone bottom bar (six tabs) and desktop menu | Agency layout component; confirm tab list before publishing |
+| Support and contact routes | `/support`, `/contact`; `frontend/src/config/support.ts` |
 
-**Honesty notes for whoever publishes this:** the hosted rollout and online payment gateway are still pilot-stage (owner-gated per `TASKS.md`), so this copy deliberately avoids promising live online payments or a hosted uptime guarantee; subscription checkout screens exist in the app (`/checkout`, `/subscription`) and pilot onboarding is done personally by the team. Prices are the launch prices configured in the repository — re-check `frontend/src/config/pricing.ts` (or the database-backed plans the pricing page loads) before publishing.
+**Open items before publishing:** the ERP plan seed, the support phone number (the older copy had one; confirm it in `support.ts`), the written data-export and expiry terms (`docs/legal/SUBSCRIPTION-POLICY-DRAFT.md`, owner wording pending), and the hosted status in `SALES-CHECKLIST.md`.

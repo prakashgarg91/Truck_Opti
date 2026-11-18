@@ -423,7 +423,7 @@ export default function AgencyTrackingPage() {
             No jobs are active right now. Jobs appear here while they are pending, accepted or in transit.
           </p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-3" aria-labelledby="trk-jobs">
             {jobs.map((j) => {
               const state = live.get(j.id)
               const last = state?.kind === 'ok' ? state.data.lastPing : null
@@ -529,7 +529,7 @@ export default function AgencyTrackingPage() {
                             {pings.length === 0 ? (
                               <p data-testid="tracking-no-pings" className="text-sm text-slate-700">No locations have been reported for this job yet.</p>
                             ) : (
-                              <ol className="space-y-2">
+                              <ol className="space-y-2" aria-label="Recent locations">
                                 {pings.map((p) => (
                                   <li key={p.id} className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white p-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                                     <div className="min-w-0">
@@ -561,7 +561,7 @@ export default function AgencyTrackingPage() {
                             {incidents.length === 0 ? (
                               <p data-testid="tracking-no-incidents" className="text-sm text-slate-700">No incidents have been recorded for this job.</p>
                             ) : (
-                              <ul className="space-y-2">
+                              <ul className="space-y-2" aria-label="Incidents">
                                 {incidents.map((inc) => {
                                   const style = INCIDENT_STYLE[inc.status]
                                   const note = incidentNote(inc.details)
