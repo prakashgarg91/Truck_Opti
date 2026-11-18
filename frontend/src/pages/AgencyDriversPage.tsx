@@ -1,4 +1,5 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react'
+﻿import { useAgencyAccess } from '../hooks/useAgencyAccess'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Users, Truck, Star, RefreshCw, AlertTriangle,
   Phone, MapPin, CheckCircle2, XCircle, Wallet, ShieldAlert, FileText
@@ -40,6 +41,9 @@ const VEHICLE_LABELS: Record<string, string> = {
 }
 
 export default function AgencyDriversPage() {
+  const access = useAgencyAccess()
+  const canManageFleet = access.hasScope(['fleet_manager'])
+  const canPay = access.hasScope(['finance'])
   useEffect(() => {
     document.title = 'Agency Drivers - TruckOpti'
   }, [])
@@ -390,27 +394,33 @@ export default function AgencyDriversPage() {
                 Call
               </a>
               <button
+                disabled={!canPay}
+                title={canPay ? undefined : access.deniedTitle}
                 onClick={() => {
                   payIdempotencyKeyRef.current = crypto.randomUUID()
                   setPayModal({ driverId: driver.id, driverName: driver.full_name })
                 }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-xs font-medium"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-xs font-medium disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Wallet size={12} />
                 {'Pay'}
               </button>
               {driver.truck_id ? (
                 <button
+                  disabled={!canManageFleet}
+                  title={canManageFleet ? undefined : access.deniedTitle}
                   onClick={() => handleUnassign(driver.truck_id!, driver.full_name)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium disabled:opacity-60"
                 >
                   <XCircle size={12} />
                   Unassign Truck
                 </button>
               ) : (
                 <button
+                  disabled={!canManageFleet}
+                  title={canManageFleet ? undefined : access.deniedTitle}
                   onClick={() => setAssignModal({ driverId: driver.id, driverName: driver.full_name })}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-xl text-xs font-medium"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-xl text-xs font-medium disabled:opacity-60"
                 >
                   <CheckCircle2 size={12} />
                   Assign Truck
@@ -487,7 +497,8 @@ export default function AgencyDriversPage() {
                 </div>
                 <button
                   onClick={() => handleEndEmployment(emp)}
-                  disabled={endingId === emp.id}
+                  disabled={endingId === emp.id || !canManageFleet}
+                  title={canManageFleet ? undefined : access.deniedTitle}
                   aria-label={`End employment record ${emp.licence_number || emp.id}`}
                   className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium disabled:opacity-60"
                 >

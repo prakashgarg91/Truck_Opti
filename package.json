@@ -17,6 +17,7 @@
     "test:frontend-smoke": "node scripts/frontend_launch_smoke.mjs",
     "test:server-routing": "node --test scripts/test-server-routing.mjs",
     "types:drift": "node scripts/db_types_drift.check.mjs",
+    "test:journey": "node scripts/harness/run.mjs",
     "test:race": "node scripts/race/postgres_race.test.mjs",
     "test:edge-writes": "node scripts/edge_write_paths.test.mjs",
     "test:edge-harness": "node scripts/edge-harness/typecheck.mjs && node --test \"scripts/edge-harness/*.test.mjs\"",

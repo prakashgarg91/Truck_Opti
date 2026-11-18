@@ -1,3 +1,4 @@
+import { useAgencyAccess } from '../hooks/useAgencyAccess'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
@@ -68,6 +69,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function AgencyClientsPage() {
+  const access = useAgencyAccess()
+  const canAct = access.canAct('/agency/clients')
+  const deniedTitle = canAct ? undefined : access.deniedTitle
   useEffect(() => {
     document.title = 'Clients - TruckOpti'
   }, [])
@@ -530,14 +534,17 @@ export default function AgencyClientsPage() {
           {s.status === 'active' ? (
             <button
               onClick={() => setConfirm({ kind: 'deactivate-site', site: s })}
-              className={`min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-red-800 ${FOCUS_RING}`}
+              disabled={!canAct}
+              title={deniedTitle}
+              className={`disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-red-800 ${FOCUS_RING}`}
             >
               Deactivate
             </button>
           ) : (
             <button
               onClick={() => handleToggleSite(s)}
-              disabled={busy}
+              disabled={busy || !canAct}
+              title={deniedTitle}
               className={`min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 disabled:opacity-60 ${FOCUS_RING}`}
             >
               Activate
@@ -564,7 +571,8 @@ export default function AgencyClientsPage() {
       {!ended && (
         <button
           onClick={() => handleToggleContact(c)}
-          disabled={busy}
+          disabled={busy || !canAct}
+          title={deniedTitle}
           className={`min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 disabled:opacity-60 ${FOCUS_RING}`}
         >
           {c.status === 'active' ? 'Deactivate' : 'Activate'}
@@ -598,7 +606,9 @@ export default function AgencyClientsPage() {
               <h2 id="clients-heading" className="text-base font-bold text-slate-900">Client agreements</h2>
               <button
                 onClick={openNewClient}
-                className={`flex items-center gap-1 min-h-[44px] bg-indigo-600 text-white px-3 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
+                disabled={!canAct}
+                title={deniedTitle}
+                className={`disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1 min-h-[44px] bg-indigo-600 text-white px-3 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
               >
                 <Plus size={16} aria-hidden="true" /> Add client
               </button>
@@ -685,13 +695,17 @@ export default function AgencyClientsPage() {
                     <>
                       <button
                         onClick={openEdit}
-                        className={`flex items-center gap-1 min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 ${FOCUS_RING}`}
+                        disabled={!canAct}
+                        title={deniedTitle}
+                        className={`disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1 min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 ${FOCUS_RING}`}
                       >
                         <Pencil size={14} aria-hidden="true" /> Edit details
                       </button>
                       <button
                         onClick={() => setConfirm({ kind: 'end-agreement' })}
-                        className={`min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-red-800 ${FOCUS_RING}`}
+                        disabled={!canAct}
+                        title={deniedTitle}
+                        className={`disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-red-800 ${FOCUS_RING}`}
                       >
                         End agreement
                       </button>
@@ -699,7 +713,8 @@ export default function AgencyClientsPage() {
                   ) : (
                     <button
                       onClick={handleReactivate}
-                      disabled={busy}
+                      disabled={busy || !canAct}
+                      title={deniedTitle}
                       className={`min-h-[44px] rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white disabled:opacity-60 ${FOCUS_RING}`}
                     >
                       Reactivate
@@ -758,7 +773,9 @@ export default function AgencyClientsPage() {
                   {!ended && (
                     <button
                       onClick={openAddSite}
-                      className={`flex items-center gap-1 min-h-[44px] bg-indigo-600 text-white px-3 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
+                      disabled={!canAct}
+                      title={deniedTitle}
+                      className={`disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1 min-h-[44px] bg-indigo-600 text-white px-3 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
                     >
                       <Plus size={16} aria-hidden="true" /> Add site
                     </button>
@@ -797,7 +814,9 @@ export default function AgencyClientsPage() {
                   {!ended && (
                     <button
                       onClick={openAddContact}
-                      className={`flex items-center gap-1 min-h-[44px] bg-indigo-600 text-white px-3 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
+                      disabled={!canAct}
+                      title={deniedTitle}
+                      className={`disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1 min-h-[44px] bg-indigo-600 text-white px-3 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
                     >
                       <Phone size={16} aria-hidden="true" /> Add contact
                     </button>

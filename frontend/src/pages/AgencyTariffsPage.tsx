@@ -1,3 +1,4 @@
+import { useAgencyAccess } from '../hooks/useAgencyAccess'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
@@ -99,6 +100,9 @@ function groupLanes(rows: TariffRow[], today: string): Lane[] {
 const vehicleLabel = (vehicleType: string | null): string => vehicleType ?? 'Any vehicle'
 
 export default function AgencyTariffsPage() {
+  const access = useAgencyAccess()
+  const canAct = access.canAct('/agency/clients/tariffs')
+  const deniedTitle = canAct ? undefined : access.deniedTitle
   const { agreementId } = useParams<{ agreementId: string }>()
 
   useEffect(() => {
@@ -318,7 +322,9 @@ export default function AgencyTariffsPage() {
         </div>
         <button
           onClick={openPublish}
-          className={`flex items-center gap-2 min-h-[44px] bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
+          disabled={!canAct}
+          title={deniedTitle}
+          className={`disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-h-[44px] bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold ${FOCUS_RING}`}
         >
           <Plus size={16} aria-hidden="true" /> Publish rate
         </button>
@@ -467,7 +473,9 @@ export default function AgencyTariffsPage() {
                     {chip !== 'past' && (
                       <button
                         onClick={() => openRevise(lane, row)}
-                        className={`flex items-center gap-1 min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold ${FOCUS_RING}`}
+                        disabled={!canAct}
+                        title={deniedTitle}
+                        className={`disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1 min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold ${FOCUS_RING}`}
                       >
                         <RefreshCw size={14} aria-hidden="true" /> Revise rate
                       </button>

@@ -77,10 +77,32 @@ export function deriveBillingGate(
   }
 }
 
+/**
+ * Staff-scope restriction layered over the billing gate: the agency layout passes it when the signed-in
+ * staff member's scopes can never use this page's primary actions (the database refuses them anyway).
+ * It wins over the subscription titles because renewing cannot grant a scope.
+ */
+export function applyStaffRestriction(gate: BillingGate, deniedTitle: string | null | undefined): BillingGate {
+  if (!deniedTitle) return gate
+  return {
+    ...gate,
+    canWrite: false,
+    canSettle: false,
+    canDispatch: false,
+    writeTitle: deniedTitle,
+    settleTitle: deniedTitle,
+    dispatchTitle: deniedTitle,
+    erpTitle: deniedTitle,
+  }
+}
+
 /** Mount once in the agency layout; it is the only place that reads the entitlement for gating. */
-export function BillingGateProvider({ children }: { children: ReactNode }) {
+export function BillingGateProvider({ children, staffDeniedTitle }: { children: ReactNode; staffDeniedTitle?: string | null }) {
   const { entitlement, view, isLoading } = useEntitlement()
-  const value = useMemo(() => deriveBillingGate(entitlement, view, isLoading), [entitlement, view, isLoading])
+  const value = useMemo(
+    () => applyStaffRestriction(deriveBillingGate(entitlement, view, isLoading), staffDeniedTitle),
+    [entitlement, view, isLoading, staffDeniedTitle],
+  )
   return <BillingGateContext.Provider value={value}>{children}</BillingGateContext.Provider>
 }
 

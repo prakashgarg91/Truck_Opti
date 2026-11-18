@@ -1,3 +1,4 @@
+import { useAgencyAccess } from '../hooks/useAgencyAccess'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { AlertTriangle, ExternalLink, MapPin, RefreshCw, ShieldAlert } from 'lucide-react'
@@ -83,6 +84,9 @@ function Badge({ tone, children }: { tone: string; children: string }) {
 }
 
 export default function AgencyTrackingPage() {
+  const access = useAgencyAccess()
+  const canAct = access.canAct('/agency/tracking')
+  const deniedTitle = canAct ? undefined : access.deniedTitle
   useEffect(() => {
     document.title = 'Trip tracking - TruckOpti'
   }, [])
@@ -516,7 +520,8 @@ export default function AgencyTrackingPage() {
                                             <button
                                               type="button"
                                               onClick={() => handleUpdate(inc, 'acknowledged')}
-                                              disabled={busy !== null}
+                                              disabled={busy !== null || !canAct}
+                                              title={deniedTitle}
                                               className={`min-h-[44px] rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white disabled:opacity-60 ${FOCUS_RING}`}
                                             >
                                               {busy === `update:${inc.id}:acknowledged:${inc.version}` ? 'Saving…' : 'Acknowledge'}
@@ -529,7 +534,8 @@ export default function AgencyTrackingPage() {
                                               setResolveNote('')
                                               setIncidentMessage(null)
                                             }}
-                                            disabled={busy !== null}
+                                            disabled={busy !== null || !canAct}
+                                            title={deniedTitle}
                                             aria-expanded={resolveFor === inc.id}
                                             className={`min-h-[44px] rounded-xl border border-emerald-300 px-4 text-sm font-semibold text-emerald-900 disabled:opacity-60 ${FOCUS_RING}`}
                                           >

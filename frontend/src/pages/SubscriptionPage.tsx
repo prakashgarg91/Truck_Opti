@@ -21,6 +21,7 @@ import { gstInvoicesApi, type SubscriptionInvoice } from '../services/subscripti
 import { formatInr } from '../lib/invoiceMoney'
 import { buildInvoiceCopyRows } from '../lib/subscriptionInvoiceCopy'
 import { useAuthStore } from '../stores/authStore'
+import { useAgencyAccess } from '../hooks/useAgencyAccess'
 import { logger } from '../utils/logger'
 
 const dateFormatter = new Intl.DateTimeFormat('en-IN', {
@@ -88,6 +89,9 @@ const CARD = 'rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-sm dark
 export default function SubscriptionPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const access = useAgencyAccess()
+  // Staff see the entitlement read-only; only the agency owner can start a trial, pick a plan or pay.
+  const staffReadOnly = access.isStaff
   const { entitlement, view, isLoading, isError, refetch } = useEntitlement()
 
   const {
@@ -176,7 +180,13 @@ export default function SubscriptionPage() {
                   </span>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row md:flex-col md:items-end">
-                  <button type="button" onClick={goPricing} className={BTN_PRIMARY}>
+                  <button
+                    type="button"
+                    onClick={goPricing}
+                    disabled={staffReadOnly}
+                    title={staffReadOnly ? 'Only the agency owner can change the plan.' : undefined}
+                    className={`${BTN_PRIMARY} disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
                     <CreditCard className="h-4 w-4" aria-hidden="true" />
                     {view.needsPlan ? 'Choose a plan' : view.banner === 'expired' ? 'Renew' : 'Change plan'}
                   </button>

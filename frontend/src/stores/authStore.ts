@@ -71,6 +71,10 @@ interface AuthState {
   pendingPhone: string | null
   /** 'local' = device-held agency profile (offline-first, no backend). Supabase flows untouched. */
   authMode: 'supabase' | 'local'
+  /** Agency owner (every scope). Staff members are false; non-agency identities keep the default. */
+  isAgencyOwner: boolean
+  /** Active staff scopes of a non-owner agency member (dispatcher, fleet_manager, finance, viewer). */
+  agencyScopes: string[]
 
   // Actions
   initialize: () => Promise<void>
@@ -84,9 +88,26 @@ interface AuthState {
   setIsLoading: (loading: boolean) => void
 }
 
-async function resolveAppRole(authUser: Session['user']): Promise<string> {
+export interface AppAccess {
+  role: string
+  /** true for the agency owner (and for every non-agency identity, where it is not consulted). */
+  isAgencyOwner: boolean
+  /** Active staff scopes of a non-owner member; empty for an owner (owner = every scope). */
+  agencyScopes: string[]
+}
+
+/**
+ * Resolve the app role and agency access of a signed-in user.
+ *
+ * 'agency' is granted to the agency OWNER (transport_agencies.user_id) and to an
+ * ACTIVE staff member of an operational agency (public.agency_memberships). RLS
+ * (agency_memberships_select, 20261011000000) returns a member only their own
+ * ACTIVE row while the agency is operational, so a revoked member or a member of
+ * a suspended agency reads nothing here and falls through to a plain user.
+ */
+export async function resolveAppAccess(authUser: Session['user']): Promise<AppAccess> {
   try {
-    const [roleResult, agencyResult, driverResult] = await Promise.all([
+    const [roleResult, agencyResult, driverResult, memberResult] = await Promise.all([
       supabase
         .from('users')
         .select('role, login_id')
@@ -102,31 +123,45 @@ async function resolveAppRole(authUser: Session['user']): Promise<string> {
         .select('id')
         .eq('user_id', authUser.id)
         .maybeSingle(),
+      supabase
+        .from('agency_memberships')
+        .select('scope')
+        .eq('user_id', authUser.id)
+        .eq('status', 'active'),
     ])
 
     if (roleResult.data?.role === 'admin') {
-      return 'admin'
+      return { role: 'admin', isAgencyOwner: true, agencyScopes: [] }
     }
 
     if (agencyResult.data?.id) {
-      return 'agency'
+      return { role: 'agency', isAgencyOwner: true, agencyScopes: [] }
+    }
+
+    const scopes = Array.isArray(memberResult?.data)
+      ? Array.from(new Set((memberResult.data as Array<{ scope?: unknown }>)
+        .map((row) => row.scope)
+        .filter((scope): scope is string => typeof scope === 'string' && scope.length > 0)))
+      : []
+    if (scopes.length > 0) {
+      return { role: 'agency', isAgencyOwner: false, agencyScopes: scopes }
     }
 
     if (driverResult.data?.id || roleResult.data?.role === 'driver') {
-      return 'driver'
+      return { role: 'driver', isAgencyOwner: true, agencyScopes: [] }
     }
   } catch (err) {
     logger.error('Error resolving app role:', err)
   }
 
-  return 'user'
+  return { role: 'user', isAgencyOwner: true, agencyScopes: [] }
 }
 
 /**
  * Sync user profile to public.users table
  * Called on auth state change to ensure profile exists
  */
-async function syncUserProfile(session: Session | null): Promise<AppUser | null> {
+async function syncUserProfile(session: Session | null): Promise<{ user: AppUser; access: AppAccess } | null> {
   if (!session?.user) return null
 
   const authUser = session.user
@@ -177,7 +212,7 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
     logger.error('Error loading user login ID:', err)
   }
 
-  const role = await resolveAppRole(authUser)
+  const access = await resolveAppAccess(authUser)
 
   const userData = {
     id: authUser.id,
@@ -189,10 +224,10 @@ async function syncUserProfile(session: Session | null): Promise<AppUser | null>
     google_linked: !!isGoogleAuth,
     profile_picture: metadata.avatar_url || metadata.picture || null,
     user_metadata: metadata,
-    role
+    role: access.role
   }
 
-  return userData
+  return { user: userData, access }
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -204,6 +239,8 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       pendingPhone: null,
       authMode: 'supabase',
+      isAgencyOwner: true,
+      agencyScopes: [],
 
       initialize: async () => {
         try {
@@ -220,11 +257,13 @@ export const useAuthStore = create<AuthState>()(
 
           if (session) {
             // Sync user profile and get app user data
-            const appUser = await syncUserProfile(session)
+            const synced = await syncUserProfile(session)
 
-            if (appUser) {
+            if (synced) {
               set({
-                user: appUser,
+                user: synced.user,
+                isAgencyOwner: synced.access.isAgencyOwner,
+                agencyScopes: synced.access.agencyScopes,
                 session,
                 isAuthenticated: true,
                 isLoading: false
@@ -251,10 +290,12 @@ export const useAuthStore = create<AuthState>()(
 
                 if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                   if (session) {
-                    const appUser = await syncUserProfile(session)
-                    if (appUser) {
+                    const synced = await syncUserProfile(session)
+                    if (synced) {
                       set({
-                        user: appUser,
+                        user: synced.user,
+                        isAgencyOwner: synced.access.isAgencyOwner,
+                        agencyScopes: synced.access.agencyScopes,
                         session,
                         authMode: 'supabase',
                         isAuthenticated: true,
@@ -272,6 +313,8 @@ export const useAuthStore = create<AuthState>()(
                     set({
                       user: null,
                       session: null,
+                      isAgencyOwner: true,
+                      agencyScopes: [],
                       authMode: 'supabase',
                       isAuthenticated: false,
                       isLoading: false,
@@ -298,6 +341,8 @@ export const useAuthStore = create<AuthState>()(
       login: (user, session) => set({
         user,
         session,
+        isAgencyOwner: true,
+        agencyScopes: [],
         authMode: 'supabase',
         isAuthenticated: true,
         pendingPhone: null,
@@ -317,6 +362,8 @@ export const useAuthStore = create<AuthState>()(
           user_metadata: { company: { name: profile.company_name } },
         },
         session: null,
+        isAgencyOwner: true,
+        agencyScopes: [],
         authMode: 'local',
         isAuthenticated: true,
         pendingPhone: null,
@@ -327,6 +374,8 @@ export const useAuthStore = create<AuthState>()(
         const clear = () => set({
           user: null,
           session: null,
+          isAgencyOwner: true,
+          agencyScopes: [],
           authMode: 'supabase',
           isAuthenticated: false,
           isLoading: false,
@@ -361,6 +410,8 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         session: state.session,
         authMode: state.authMode,
+        isAgencyOwner: state.isAgencyOwner,
+        agencyScopes: state.agencyScopes,
         // isAuthenticated intentionally excluded: hydrated as false on cold boot, set only after initialize() validates session
         pendingPhone: state.pendingPhone
       })

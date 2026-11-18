@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Truck, Briefcase,
   LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign, UserCog, Handshake, PackagePlus, FileText, Receipt, Wallet, MapPin, Banknote, Plug, ClipboardList, CreditCard
@@ -10,6 +10,9 @@ import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
 import { BillingGateProvider } from '../components/billing/BillingGate'
 import AgencyBillingBanner from '../components/billing/AgencyBillingBanner'
+import PermissionDeniedState from '../components/PermissionDeniedState'
+import { useAgencyAccess } from '../hooks/useAgencyAccess'
+import { describeScopes } from '../lib/agencyAccess'
 
 const NAV = [
   { to: '/agency/dashboard', icon: LayoutDashboard, label: 'Home' },
@@ -38,6 +41,13 @@ const MORE_NAV = [
 export default function AgencyLayout() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
+  const access = useAgencyAccess()
+  // Staff only see what their scopes can read (the database enforces the same lists via RLS).
+  const nav = NAV.filter((item) => access.canRead(item.to))
+  const moreNav = MORE_NAV.filter((item) => access.canRead(item.to))
+  const pageAllowed = access.canRead(location.pathname)
+  const actionsAllowed = access.canAct(location.pathname)
   const [newJobCount, setNewJobCount] = useState(0)
 
   // `user_metadata.company` can be a string or `{ name }` (device-local
@@ -138,7 +148,7 @@ export default function AgencyLayout() {
         {/* Nav */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-3">Menu</p>
-          {[...NAV, ...MORE_NAV].map(({ to, icon: Icon, label }) => (
+          {[...nav, ...moreNav].map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -225,16 +235,33 @@ export default function AgencyLayout() {
 
       {/* ── Main content ─────────────────────────────────────── */}
       <main className="flex-1 pb-24 md:pb-8 md:ml-64">
-        <BillingGateProvider>
+        <BillingGateProvider staffDeniedTitle={access.isStaff && pageAllowed && !actionsAllowed ? access.deniedTitle : null}>
           <AgencyBillingBanner />
-          <Outlet />
+          {access.isStaff && pageAllowed && !actionsAllowed && (
+            <p
+              role="note"
+              data-testid="staff-read-only-note"
+              className="mx-4 mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 md:mx-8"
+            >
+              Read-only for your staff role ({describeScopes(access.agencyScopes)}). Actions on this page are limited to other roles.
+            </p>
+          )}
+          {pageAllowed ? (
+            <Outlet />
+          ) : (
+            <PermissionDeniedState
+              attemptedPath={location.pathname}
+              allowedRoles={['agency owner or a staff role with access']}
+              homePath="/agency/dashboard"
+            />
+          )}
         </BillingGateProvider>
       </main>
 
       {/* ── Mobile Bottom Navigation (hidden on lg+) ─────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-50 safe-area-bottom">
         <div className="flex items-center justify-around px-2 py-1">
-          {NAV.map(({ to, icon: Icon, label }) => (
+          {nav.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}

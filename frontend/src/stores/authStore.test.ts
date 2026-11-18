@@ -14,11 +14,15 @@ const h = vi.hoisted(() => {
     const supabase = {
         auth,
         from: (table: string) => ({
-            select: () => ({
-                eq: () => ({
+            select: () => {
+                // Chainable .eq().eq(): a list when awaited, one row via maybeSingle().
+                const chain: Record<string, unknown> = {
+                    eq: () => chain,
                     maybeSingle: async () => ({ data: tableData[table] ?? null, error: null }),
-                }),
-            }),
+                    then: (resolve: (v: unknown) => unknown) => resolve({ data: tableData[table] ?? [], error: null }),
+                }
+                return chain
+            },
             upsert: async () => ({ error: null }),
         }),
     }
@@ -180,6 +184,67 @@ describe('authStore', () => {
             await store.getState().initialize()
 
             expect(store.getState().user?.role).toBe('user')
+        })
+
+        describe('agency role resolution', () => {
+            async function signInAs() {
+                h.auth.getSession.mockResolvedValue({ data: { session: makeSession() }, error: null })
+                const store = await freshStore()
+                await store.getState().initialize()
+                return store.getState()
+            }
+
+            it('the agency owner is an agency user with every scope (owner)', async () => {
+                h.tableData['transport_agencies'] = { id: 'a-1' }
+                const state = await signInAs()
+                expect(state.user?.role).toBe('agency')
+                expect(state.isAgencyOwner).toBe(true)
+                expect(state.agencyScopes).toEqual([])
+            })
+
+            it('an active staff member resolves to the agency role with their scopes', async () => {
+                h.tableData['agency_memberships'] = [{ scope: 'dispatcher' }]
+                const state = await signInAs()
+                expect(state.user?.role).toBe('agency')
+                expect(state.isAgencyOwner).toBe(false)
+                expect(state.agencyScopes).toEqual(['dispatcher'])
+            })
+
+            it('de-duplicates scopes and ignores malformed rows', async () => {
+                h.tableData['agency_memberships'] = [{ scope: 'finance' }, { scope: 'finance' }, { scope: null }, {}]
+                const state = await signInAs()
+                expect(state.agencyScopes).toEqual(['finance'])
+            })
+
+            it('a revoked member or a member of a suspended agency reads no membership row (RLS) and stays a plain user', async () => {
+                h.tableData['agency_memberships'] = []
+                const state = await signInAs()
+                expect(state.user?.role).toBe('user')
+                expect(state.agencyScopes).toEqual([])
+            })
+
+            it('a user with no agency at all stays a plain user', async () => {
+                const state = await signInAs()
+                expect(state.user?.role).toBe('user')
+            })
+
+            it('the owner wins over a staff row, and an admin wins over both', async () => {
+                h.tableData['transport_agencies'] = { id: 'a-1' }
+                h.tableData['agency_memberships'] = [{ scope: 'viewer' }]
+                expect((await signInAs()).isAgencyOwner).toBe(true)
+                h.tableData['users'] = { role: 'admin' }
+                expect((await signInAs()).user?.role).toBe('admin')
+            })
+
+            it('logout resets the staff scopes', async () => {
+                h.tableData['agency_memberships'] = [{ scope: 'viewer' }]
+                h.auth.getSession.mockResolvedValue({ data: { session: makeSession() }, error: null })
+                const store = await freshStore()
+                await store.getState().initialize()
+                await store.getState().logout()
+                expect(store.getState().agencyScopes).toEqual([])
+                expect(store.getState().isAgencyOwner).toBe(true)
+            })
         })
 
         it('login marks the identity as cloud', async () => {
