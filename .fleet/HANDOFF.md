@@ -21,3 +21,11 @@ Main at 3b6e3816 and later. READY FOR STAGING, NOT READY FOR CUSTOMERS. Run: npm
 
 ## 2026-11-18 evening close
 See TASKS.md evening checkpoint: landed work, gates, the known-defect list for the next pass, open owner decisions and billing routes. Next session: open with the owner-pending list, then fix the known defects (start with Dashboard.tsx truck-type quote), then the hosted gates if a staging project exists.
+
+## 2026-11-18 late: in flight
+- Staging Supabase project created (free): name truckopti-staging, ref ydkhgclfjdksicpwqzmw, region ap-south-1. Old production project jbxncejtcbpcronndqlx is paused and must not be touched.
+- Owner answers: seller is NOT GST-registered (build a no-GST selling mode); refunds as drafted (first purchase only, 7 days, pro rata); support = email only, hide phone.
+- Next: push 73 migrations and Edge functions to staging, then hosted checks; Razorpay webhook needs the owner to type the secret.
+- Day closed 2026-11-18 late. Last verified code on GitHub main: c63c0a91 (all local gates green). Supabase CLI is logged in (npx supabase 3.2.0); supabase/.temp/project-ref still points at PRODUCTION: link to ydkhgclfjdksicpwqzmw and confirm the ref before any db push.
+- UNCOMMITTED and UNVERIFIED in the working tree (builders were mid-run at close): migration 20261043 (no-GST mode) with battery scripts/subscription_no_gst.db.test.mjs, 7-arg settings update in older batteries, support phone removal, refund wording, ContactPage/TermsPage tests. Design: docs/FABLE-RULINGS-2026-11-18-C.md. Next session: run full gates on this tree, review, then commit; then the no-GST screens (ruling section 2); then push migrations and Edge functions to staging.
+- Claude API key still "not scoped to a workspace"; ZCode still "Insufficient Balance" (checked 2026-11-18 evening).
