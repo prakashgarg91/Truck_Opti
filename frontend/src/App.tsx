@@ -63,7 +63,6 @@ const AgencyFleetPage = React.lazy(() => import('./pages/AgencyFleetPage'))
 const AgencyJobsPage = React.lazy(() => import('./pages/AgencyJobsPage'))
 const AgencyBillingPage = React.lazy(() => import('./pages/AgencyBillingPage'))
 const AgencyDriversPage = React.lazy(() => import('./pages/AgencyDriversPage'))
-const AgencyRatesPage = React.lazy(() => import('./pages/AgencyRatesPage'))
 const AgencyTeamPage = React.lazy(() => import('./pages/AgencyTeamPage'))
 const AgencyClientsPage = React.lazy(() => import('./pages/AgencyClientsPage'))
 const AgencyOrderImportPage = React.lazy(() => import('./pages/AgencyOrderImportPage'))
@@ -82,6 +81,8 @@ const ContactPage = React.lazy(() => import('./pages/ContactPage'))
 const AdminContactPage = React.lazy(() => import('./pages/AdminContactPage'))
 const AdminUsersPage = React.lazy(() => import('./pages/AdminUsersPage'))
 const AdminSubscriptionsPage = React.lazy(() => import('./pages/AdminSubscriptionsPage'))
+const AdminBillingSettingsPage = React.lazy(() => import('./pages/AdminBillingSettingsPage'))
+const AdminBillingOpsPage = React.lazy(() => import('./pages/AdminBillingOpsPage'))
 const AcceptInvitePage = React.lazy(() => import('./pages/AcceptInvitePage'))
 const LandingPage = React.lazy(() => import('./pages/LandingPage'))
 const LocalSetupPage = React.lazy(() => import('./pages/LocalSetupPage'))
@@ -92,6 +93,23 @@ function RoleHome() {
   if (isLoading) return <PageSkeleton />
   if (!user) return <LandingPage />
   return <Navigate to={getDefaultHomePathForRole(user.role)} replace />
+}
+
+// Roles that may open the customer shell (MobileLayout). Other signed-in roles are
+// sent to their own home instead of seeing customer pages.
+const CUSTOMER_ROLES = ['user', 'admin']
+
+// Role gate for individual routes inside a shared shell. Unlisted roles are redirected
+// to their own home (the same mapping RoleHome uses), not shown a permission screen.
+export function RoleGate({ roles, children }: { roles: string[]; children: React.ReactNode }) {
+  const { user } = useAuthStore()
+  if (!user) return <Navigate to="/" replace />
+  if (!roles.includes(user.role)) return <Navigate to={getDefaultHomePathForRole(user.role)} replace />
+  return <>{children}</>
+}
+
+function gate(roles: string[], page: React.ReactElement) {
+  return <RoleGate roles={roles}>{page}</RoleGate>
 }
 
 function AppContent() {
@@ -112,7 +130,8 @@ function AppContent() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
           <Route path="/payment/callback" element={<PaymentCallbackPage />} />
-          <Route path="/payment/success" element={<PaymentCallbackPage />} />
+          {/* No in-app link or provider callback targets this path; send it to subscriptions. */}
+          <Route path="/payment/success" element={<Navigate to="/subscription" replace />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/contact" element={<ContactPage />} />
@@ -141,20 +160,22 @@ function AppContent() {
               <MobileLayout />
             </ProtectedRoute>
           }>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/packing" element={<PackingPage />} />
-            <Route path="/routes" element={<RoutesPage />} />
-            <Route path="/tracking" element={<TrackingPage />} />
-            <Route path="/booking/new" element={<NewShipmentPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/management" element={<ManagementPage />} />
-            <Route path="/management/trucks" element={<TrucksPage />} />
-            <Route path="/management/cartons" element={<CartonsPage />} />
-            <Route path="/management/customers" element={<CustomersPage />} />
-            <Route path="/sale-orders" element={<SaleOrdersPage />} />
-            <Route path="/invoice/:shipmentId" element={<InvoicePage />} />
-            <Route path="/settings/company" element={<CompanyProfilePage />} />
-            <Route path="/history" element={<ShipmentHistoryPage />} />
+            {/* Customer-shell roles. Exceptions: driver and agency pages link to /profile, /management/trucks,
+                /management/cartons and /settings/company, so those keep the extra role. */}
+            <Route path="/dashboard" element={gate(CUSTOMER_ROLES, <Dashboard />)} />
+            <Route path="/packing" element={gate(CUSTOMER_ROLES, <PackingPage />)} />
+            <Route path="/routes" element={gate(CUSTOMER_ROLES, <RoutesPage />)} />
+            <Route path="/tracking" element={gate(CUSTOMER_ROLES, <TrackingPage />)} />
+            <Route path="/booking/new" element={gate(CUSTOMER_ROLES, <NewShipmentPage />)} />
+            <Route path="/profile" element={gate([...CUSTOMER_ROLES, 'driver'], <ProfilePage />)} />
+            <Route path="/management" element={gate(CUSTOMER_ROLES, <ManagementPage />)} />
+            <Route path="/management/trucks" element={gate([...CUSTOMER_ROLES, 'agency'], <TrucksPage />)} />
+            <Route path="/management/cartons" element={gate([...CUSTOMER_ROLES, 'agency'], <CartonsPage />)} />
+            <Route path="/management/customers" element={gate(CUSTOMER_ROLES, <CustomersPage />)} />
+            <Route path="/sale-orders" element={gate(CUSTOMER_ROLES, <SaleOrdersPage />)} />
+            <Route path="/invoice/:shipmentId" element={gate(CUSTOMER_ROLES, <InvoicePage />)} />
+            <Route path="/settings/company" element={gate([...CUSTOMER_ROLES, 'agency'], <CompanyProfilePage />)} />
+            <Route path="/history" element={gate(CUSTOMER_ROLES, <ShipmentHistoryPage />)} />
           </Route>
 
           <Route element={
@@ -170,6 +191,8 @@ function AppContent() {
             <Route path="/admin/contact" element={<AdminContactPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+            <Route path="/admin/billing-settings" element={<AdminBillingSettingsPage />} />
+            <Route path="/admin/billing-ops" element={<AdminBillingOpsPage />} />
           </Route>
 
           {/* Driver Portal — separate layout with driver bottom nav */}
@@ -197,7 +220,8 @@ function AppContent() {
             <Route path="/agency/jobs" element={<AgencyJobsPage />} />
             <Route path="/agency/billing" element={<AgencyBillingPage />} />
             <Route path="/agency/drivers" element={<AgencyDriversPage />} />
-            <Route path="/agency/rates" element={<AgencyRatesPage />} />
+            {/* The old Rates page read agency_rate_cards, which no migration creates. Per-client tariffs live under Clients. */}
+            <Route path="/agency/rates" element={<Navigate to="/agency/clients" replace />} />
             <Route path="/agency/team" element={<AgencyTeamPage />} />
             <Route path="/agency/clients" element={<AgencyClientsPage />} />
             <Route path="/agency/clients/:agreementId/tariffs" element={<AgencyTariffsPage />} />

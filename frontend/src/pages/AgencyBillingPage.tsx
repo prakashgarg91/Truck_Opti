@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { FileText, TrendingUp, Download, Clock, RefreshCw, AlertTriangle } from 'lucide-react'
 import { formatCurrency } from '../utils/formatters'
 import { downloadCsv, downloadJson, downloadXlsx, type ExportColumn } from '../utils/dataExport'
@@ -39,7 +40,7 @@ const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visibl
 
 export default function AgencyBillingPage() {
   useEffect(() => {
-    document.title = 'Billing & Invoices - TruckOpti'
+    document.title = 'Earnings summary - TruckOpti'
   }, [])
 
   const [summary, setSummary] = useState<BillingSummary>({ thisMonth: 0, pending: 0, totalPaid: 0, gstDue: 0 })
@@ -135,16 +136,16 @@ export default function AgencyBillingPage() {
     // Dynamic import to reduce initial bundle size
     const { default: jsPDF } = await import('jspdf')
     const doc = new jsPDF()
-    const invoiceNum = `TRK-${job.id.slice(0, 8).toUpperCase()}`
+    const reference = `TRK-${job.id.slice(0, 8).toUpperCase()}`
     const date = new Date(job.updated_at).toLocaleDateString('en-IN')
     const gstAmount = job.fare * GST_RATE
     const total = job.fare * (1 + GST_RATE)
 
     doc.setFontSize(20)
-    doc.text('TruckOpti Tax Invoice', 20, 30)
+    doc.text('TruckOpti Statement', 20, 30)
 
     doc.setFontSize(12)
-    doc.text(`Invoice #: ${invoiceNum}`, 20, 50)
+    doc.text(`Reference: ${reference}`, 20, 50)
     doc.text(`Date: ${date}`, 20, 60)
     doc.text(`Route: ${job.origin} → ${job.destination}`, 20, 70)
     doc.text(`Subtotal: ₹${job.fare.toLocaleString('en-IN')}`, 20, 85)
@@ -152,9 +153,10 @@ export default function AgencyBillingPage() {
     doc.text(`Total: ₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 20, 110)
 
     doc.setFontSize(10)
-    doc.text('Thank you for using TruckOpti!', 20, 130)
+    doc.text('Not a tax invoice. Create GST invoices under Invoices.', 20, 130)
+    doc.text('Thank you for using TruckOpti!', 20, 140)
 
-    doc.save(`TruckOpti-Invoice-${job.id.slice(0, 8)}.pdf`)
+    doc.save(`TruckOpti-Statement-${job.id.slice(0, 8)}.pdf`)
   }
 
   if (loading) {
@@ -168,7 +170,7 @@ export default function AgencyBillingPage() {
   if (loadError) {
     return (
       <div className="p-4 md:p-8 space-y-4 max-w-7xl mx-auto">
-        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Billing & Invoices</h1>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Earnings summary</h1>
         <div role="alert" data-testid="billing-error" className="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl border border-red-200 dark:border-red-800/40">
           <AlertTriangle size={36} className="text-red-400 mx-auto mb-3" aria-hidden="true" />
           <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">We couldn't load your billing data.</p>
@@ -188,8 +190,11 @@ export default function AgencyBillingPage() {
   return (
     <div className="p-4 md:p-8 space-y-4 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Billing & Invoices</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Revenue overview and invoice management</p>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Earnings summary</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Revenue overview from delivered jobs</p>
+        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+          <Link to="/agency/invoices" className="text-indigo-600 dark:text-indigo-400 underline underline-offset-2">Not a tax invoice. Create GST invoices under Invoices.</Link>
+        </p>
       </div>
 
       {/* Summary Cards */}
@@ -244,7 +249,7 @@ export default function AgencyBillingPage() {
           <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <FileText size={16} className="text-green-500" />
-              Invoices ({deliveredJobs.length})
+              Statements ({deliveredJobs.length})
             </h3>
             <div className="flex flex-wrap gap-2">
               {(['csv', 'xlsx', 'json'] as const).map((format) => (
@@ -281,7 +286,7 @@ export default function AgencyBillingPage() {
                     className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
                   >
                     <Download size={12} />
-                    Invoice
+                    Statement
                   </button>
                 </div>
               </div>
@@ -291,9 +296,9 @@ export default function AgencyBillingPage() {
       ) : (
         <div className="text-center py-8">
           <FileText size={40} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">No invoices yet</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">No statements yet</p>
           <p className="text-xs text-slate-400 mt-1">
-            Invoices will appear here once you complete your first job
+            Statements will appear here once you complete your first job
           </p>
         </div>
       )}

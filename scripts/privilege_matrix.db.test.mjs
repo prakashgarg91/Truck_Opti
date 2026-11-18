@@ -48,7 +48,7 @@ const AUTHENTICATED_RPC = [
   'agency_client_agreement_create', 'agency_client_agreement_update', 'agency_client_contact_create',
   'agency_client_contact_update', 'agency_client_site_create', 'agency_client_site_update',
   'agency_consignment_create', 'agency_consignment_event', 'agency_consignment_qr',
-  'agency_driver_directory', 'agency_driver_employment_create', 'agency_driver_employment_end',
+  'agency_driver_directory', 'agency_identity_update', 'agency_driver_employment_create', 'agency_driver_employment_end',
   'agency_driver_employment_update', 'agency_driver_invitation_accept', 'agency_driver_invitation_create',
   'agency_driver_invitation_revoke', 'agency_driver_payout_request', 'agency_driver_rate_set',
   'agency_erp_connection_create', 'agency_erp_connection_rotate_secret', 'agency_erp_connection_set_status',
@@ -62,7 +62,7 @@ const AUTHENTICATED_RPC = [
   'agency_subscription_entitlement', 'agency_subscription_invoices', 'agency_subscription_start_trial',
   'agency_tariff_version_publish', 'agency_trip_live', 'agency_truck_assign_driver',
   'agency_truck_unassign_driver', 'agency_vehicle_create', 'agency_vehicle_update', 'release_fleet_assignment',
-  'reserve_fleet_assignment', 'tracking_ping_record', 'platform_billing_settings_update',
+  'reserve_fleet_assignment', 'tracking_ping_record', 'platform_billing_settings_update', 'driver_trip_agency_job',
   // caller-bound usage / plan RPCs (each raises 42501 unless p_user_id = auth.uid())
   'check_usage_limit', 'get_user_plan', 'has_active_subscription', 'increment_usage', 'subscription_usage_visible',
   // RLS and caller-resolution helpers (policies evaluate them as the caller)
@@ -97,7 +97,7 @@ const TRIGGER_FN = [
   'platform_billing_settings_no_delete', 'prevent_agency_tariff_mutation', 'release_fleet_reservations_on_job_cancel',
   'release_fleet_reservations_on_offer_transition', 'subscription_append_only_guard', 'subscription_credit_note_guard',
   'subscription_invoice_counters_guard', 'subscription_ledger_append_only', 'subscription_ledger_number_guard',
-  'subscriptions_guard_update', 'tracking_pings_immutable',
+  'subscriptions_guard_update', 'tracking_pings_immutable', 'guard_transport_agency_rows',
 ]
 
 /** Internal, no grant to any API role at all. */

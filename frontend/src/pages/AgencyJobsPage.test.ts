@@ -37,6 +37,9 @@ const h = vi.hoisted(() => ({
     // Direct RLS client (../services/agencySupabaseApi)
     listAuthorizations: vi.fn(),
     createJob: vi.fn(),
+    listJobTruckTypes: vi.fn(),
+    // Driver directory (../services/agencyPayrollApi)
+    listDriverDirectory: vi.fn(),
     // react-hot-toast
     toastPlain: vi.fn(),
     toastError: vi.fn(),
@@ -62,6 +65,13 @@ vi.mock('../services/agencySupabaseApi', () => ({
     agencyJobsApi: {
         listAuthorizations: h.listAuthorizations,
         createJob: h.createJob,
+        listJobTruckTypes: h.listJobTruckTypes,
+    },
+}))
+
+vi.mock('../services/agencyPayrollApi', () => ({
+    agencyPayrollApi: {
+        listDriverDirectory: h.listDriverDirectory,
     },
 }))
 
@@ -121,21 +131,21 @@ const row = (over: Row = {}): Row => ({
 
 const TRUCK_RAVI: Row = {
     id: 'truck-1',
-    vehicle_type: 'Open Truck',
+    vehicle_type: 'eicher_14ft',
     rc_number: 'RC-123',
     driver_id: 'driver-1',
     drivers: { id: 'driver-1', full_name: 'Ravi Kumar', phone: '9876543210', rating: 4.9 },
 }
 const TRUCK_MEENA: Row = {
     id: 'truck-2',
-    vehicle_type: 'Pickup',
+    vehicle_type: 'tata_407',
     rc_number: 'RC-456',
     driver_id: 'driver-2',
     drivers: { id: 'driver-2', full_name: 'Meena Singh', phone: '9812345678', rating: 0 },
 }
 const TRUCK_UNSTAFFED: Row = {
     id: 'truck-3',
-    vehicle_type: 'Tempo',
+    vehicle_type: 'tata_ace',
     rc_number: 'RC-789',
     driver_id: null,
     drivers: null,
@@ -180,6 +190,8 @@ beforeEach(() => {
     h.getAssignableDrivers.mockResolvedValue([])
     h.getDriverLatestLocation.mockResolvedValue(null)
     h.createJob.mockResolvedValue({ job: null, alreadyExists: false })
+    h.listJobTruckTypes.mockResolvedValue({})
+    h.listDriverDirectory.mockResolvedValue([])
 })
 
 afterEach(async () => {
@@ -286,7 +298,7 @@ describe('AgencyJobsPage', () => {
         await mountPage()
         expect(document.title).toBe('Agency Jobs - TruckOpti')
         expect(text()).toContain('5 jobs shown')
-        expect(text()).toContain('#' + JOB_SHIPMENT_ID.slice(-8))
+        expect(text()).toContain('SHIP-REF-1')
         expect(text()).toContain('Mumbai')
         expect(text()).toContain('Pune')
         expect(text()).toContain('1200 kg')
@@ -309,7 +321,9 @@ describe('AgencyJobsPage', () => {
     it('mapping fallbacks: a row without shipment join shows em-dash route, 0 kg and no fare', async () => {
         h.list.mockResolvedValue([row({ shipments: null, fare: null })])
         await mountPage()
-        expect(text()).toContain('#' + JOB_SHIPMENT_ID.slice(-8))
+        expect(text()).toContain('Shipment')
+        expect(text()).not.toContain('SHIP-REF-1')
+        expect(text()).not.toContain(JOB_SHIPMENT_ID.slice(-8))
         expect(text()).toContain('—')
         expect(text()).toContain('0 kg')
         expect(text()).not.toContain('₹')
@@ -388,6 +402,31 @@ describe('AgencyJobsPage', () => {
         expect(accept.disabled).toBe(false)
     })
 
+    it('job cards show the truck type label and the assigned driver name from the directory', async () => {
+        h.list.mockResolvedValue([
+            row({ id: 'job-t', status: 'accepted', driver_id: 'driver-1' }),
+            row({ id: 'job-u', status: 'pending', shipments: { shipment_id: 'SHIP-U', origin: 'A', destination: 'B', total_weight: 1, estimated_cost: 1 } }),
+        ])
+        h.listJobTruckTypes.mockResolvedValue({ 'job-t': 'volvo_40ft' })
+        h.listDriverDirectory.mockResolvedValue([{ driver_id: 'driver-1', name: 'Ravi Kumar', phone_last4: '4321' }])
+        await mountPage()
+        expect(text()).toContain('Volvo 40ft Container (25T)')
+        expect(text()).not.toContain('volvo_40ft')
+        expect(text()).toContain('Assigned: Ravi Kumar')
+        expect(text()).not.toContain('Assigned: Driver assigned')
+        expect(text()).not.toContain('driver-1')
+    })
+
+    it('a failed directory or truck-type lookup keeps the board: generic driver copy and no truck chip', async () => {
+        h.list.mockResolvedValue([row({ id: 'job-f', status: 'accepted', driver_id: 'driver-1' })])
+        h.listDriverDirectory.mockRejectedValue(new Error('down'))
+        h.listJobTruckTypes.mockRejectedValue(new Error('down'))
+        await mountPage()
+        expect(text()).toContain('Assigned: Driver assigned')
+        expect(text()).not.toContain('Truck type not set')
+        expect(text()).not.toContain('Other truck type')
+    })
+
     it('Assign Driver opens the modal, lists staffed trucks only, with ratings when present', async () => {
         h.list.mockResolvedValue([row({ id: 'job-a', status: 'accepted' })])
         h.getAssignableDrivers.mockResolvedValue([TRUCK_RAVI, TRUCK_MEENA, TRUCK_UNSTAFFED])
@@ -395,11 +434,11 @@ describe('AgencyJobsPage', () => {
         await click(buttons(/Assign Driver/)[0])
         expect(h.getAssignableDrivers).toHaveBeenCalledTimes(1)
         expect(text()).toContain('Ravi Kumar')
-        expect(text()).toContain('Open Truck • RC-123')
+        expect(text()).toContain('Eicher 14ft (3T) • RC-123')
         expect(text()).toContain('⭐ 4.9')
         expect(text()).toContain('Meena Singh')
         expect(text()).not.toContain('⭐ 0.0')
-        expect(text()).not.toContain('Tempo')
+        expect(text()).not.toContain('Tata Ace (mini truck)')
         expect(text()).not.toContain('RC-789')
     })
 
@@ -489,7 +528,7 @@ describe('AgencyJobsPage', () => {
     it('Create Job validates the fare: empty and zero fares toast and never call createJob', async () => {
         h.listAuthorizations.mockResolvedValue([AUTHORIZATION])
         await mountPage()
-        expect(text()).toContain(AUTH_SHIPMENT_ID)
+        expect(text()).toContain('Shipment ···' + AUTH_SHIPMENT_ID.slice(-8))
         expect(text()).toContain('Authorized ' + fmtAuthStamp(AUTH_AT))
         await click(buttons(/Create Job/)[0])
         expect(h.toastError).toHaveBeenCalledTimes(1)

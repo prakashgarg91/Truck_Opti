@@ -21,9 +21,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // initial loading state forever — `loading` starts true and only
 // fetchUsers() clears it, while the effect skips non-admin roles. Masked
 // today by the admin-only route guard in App.tsx.
-// FINDING (cosmetic): every row renders a Mail + green CheckCircle pair
-// unconditionally; there is no verification data behind the checkmark, and
-// updated_at / banned_until from the API are never surfaced.
+// FIXED (audit U2): the unconditional Mail + green check pair is gone; updated_at /
+// banned_until from the API are still not surfaced.
 
 const h = vi.hoisted(() => ({
     getAdminUsers: vi.fn(),
@@ -202,12 +201,13 @@ describe('AdminUsersPage', () => {
         expect(text()).not.toContain('No users found')
     })
 
-    it('a rejected list call surfaces its user-facing message via toast and shows the empty list', async () => {
+    it('a rejected list call surfaces its user-facing message via toast and shows an error state with Retry', async () => {
         h.getAdminUsers.mockRejectedValue(new UserFacingError('Unable to load users right now. Please try again.'))
         await mountPage()
         expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Unable to load users right now. Please try again.')
-        expect(text()).toContain('No users found')
+        expect(q('[data-testid="admin-load-error"]')).not.toBeNull()
+        expect(text()).not.toContain('No users found')
     })
 
     it('a raw transport error falls back to the page message and leaks nothing', async () => {
@@ -229,6 +229,11 @@ describe('AdminUsersPage', () => {
         expect(h.getAdminUsers).toHaveBeenCalledTimes(2)
         expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(text()).toContain('meena@example.com')
+    })
+
+    it('does not render an unconditional green verified check next to each user (audit U2)', async () => {
+        await mountPage()
+        expect(q('svg.text-green-500')).toBeNull()
     })
 
     it('empty state: zero users renders the no-users message and a zero counter', async () => {

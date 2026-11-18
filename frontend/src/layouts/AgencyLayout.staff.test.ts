@@ -97,7 +97,7 @@ describe('AgencyLayout for staff', () => {
     const labels = linkLabels()
     expect(labels).toContain('Fleet')
     expect(labels).toContain('Invoices')
-    for (const hidden of ['Payroll', 'ERP', 'Team', 'Billing', 'Rates']) expect(labels).not.toContain(hidden)
+    for (const hidden of ['Payroll', 'ERP', 'Team', 'Earnings', 'Rates']) expect(labels).not.toContain(hidden)
   })
 
   it('a page the scope cannot read shows permission denied instead of the page', async () => {
@@ -117,7 +117,8 @@ describe('AgencyLayout for staff', () => {
     setAuth('agency', true, [])
     await renderAt('/agency/team')
     const labels = linkLabels()
-    for (const shown of ['Team', 'Payroll', 'ERP', 'Rates', 'Billing', 'Subscription']) expect(labels).toContain(shown)
+    for (const shown of ['Team', 'Payroll', 'ERP', 'Earnings', 'Subscription']) expect(labels).toContain(shown)
+    expect(labels).not.toContain('Rates')
     expect(container.querySelector('[data-testid="staff-read-only-note"]')).toBeNull()
     expect(text()).toContain('TEAM PAGE')
   })

@@ -69,8 +69,8 @@ export default function AgencyTrialPanel({ onStarted }: Props) {
         <div role="alert" className="max-w-md text-sm text-red-700 dark:text-red-300">
           <p>{trialErrorMessage(errorCode)}</p>
           {errorCode === 'identity_required' && (
-            <Link to="/agency/profile" className={`mt-1 inline-flex min-h-[44px] items-center font-semibold underline ${FOCUS_RING}`}>
-              Open agency profile
+            <Link to="/settings/company" className={`mt-1 inline-flex min-h-[44px] items-center font-semibold underline ${FOCUS_RING}`}>
+              Open company settings
             </Link>
           )}
         </div>

@@ -2207,6 +2207,12 @@ isOneToOne: false
                            },
 "resolve_caller_agency_id":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"agency_identity_update":
+{ Args: { "p_address": string,"p_city"?: string,"p_expected_updated_at"?: string,"p_gstin": string,"p_legal_name": string,"p_phone": string,"p_pincode"?: string,"p_state": string }; Returns: Json
+                           },
+"driver_trip_agency_job":
+{ Args: { "p_offer_id": string }; Returns: Json
                            }
           }
           Enums: {

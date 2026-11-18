@@ -22,6 +22,9 @@ import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { resolveTripPhotoUrl } from '../services/tripPhotoUrl'
+import { driverTrackingApi } from '../services/driverTrackingApi'
+import { useTripLocationSharing } from '../lib/useTripLocationSharing'
+import { isTripActiveForSharing } from '../lib/tripLocationSharing'
 
 interface ShipmentInfo {
   shipment_id: string
@@ -94,6 +97,8 @@ export default function DriverTripPage() {
   const [job, setJob] = useState<TripJob | null>(null)
   const [driver, setDriver] = useState<DriverRecord | null>(null)
   const [loading, setLoading] = useState(true)
+  // A failed load is its own state (with Retry); it must never read as "Trip Not Found".
+  const [loadError, setLoadError] = useState(false)
   const [step, setStep] = useState<TripStep>('navigate')
   const [otpInput, setOtpInput] = useState('')
   const [otpError, setOtpError] = useState('')
@@ -118,29 +123,44 @@ export default function DriverTripPage() {
   const photoInputRef = useRef<HTMLInputElement | null>(null)
 
   const fetchTrip = useCallback(async () => {
-    if (!jobId || !user?.id) return
-    const driverData = await driverSupabaseApi.getByUserId(user.id)
-    if (!driverData) return // no driver profile yet
-    setDriver({
-      id: driverData.id,
-      full_name: driverData.full_name,
-      active_job_id: null,
-      total_trips: driverData.total_trips,
-    })
-
-    const jobData = await driverTripsApi.getTripByIdForDriver(jobId, driverData.id)
-    if (jobData) {
-      const safeJob = {
-        ...jobData,
-        shipments: Array.isArray(jobData.shipments)
-          ? (jobData.shipments[0] as ShipmentInfo) || null
-          : (jobData.shipments as unknown as ShipmentInfo) || null,
-      }
-      setJob(safeJob as TripJob)
-      setStep(statusToStep(String((jobData as Record<string, unknown>).status ?? 'accepted')))
+    if (!jobId || !user?.id) {
+      setLoading(false)
+      return
     }
-    setLoading(false)
+    setLoadError(false)
+    try {
+      const driverData = await driverSupabaseApi.getByUserId(user.id)
+      if (!driverData) return // no driver profile yet: renders the not-found state
+      setDriver({
+        id: driverData.id,
+        full_name: driverData.full_name,
+        active_job_id: null,
+        total_trips: driverData.total_trips,
+      })
+
+      const jobData = await driverTripsApi.getTripByIdForDriver(jobId, driverData.id)
+      if (jobData) {
+        const safeJob = {
+          ...jobData,
+          shipments: Array.isArray(jobData.shipments)
+            ? (jobData.shipments[0] as ShipmentInfo) || null
+            : (jobData.shipments as unknown as ShipmentInfo) || null,
+        }
+        setJob(safeJob as TripJob)
+        setStep(statusToStep(String((jobData as Record<string, unknown>).status ?? 'accepted')))
+      }
+    } catch (error) {
+      logger.error('[DriverTripPage] trip load failed', error)
+      setLoadError(true)
+    } finally {
+      setLoading(false)
+    }
   }, [jobId, user?.id])
+
+  const retryLoad = () => {
+    setLoading(true)
+    void fetchTrip()
+  }
 
   useEffect(() => {
     fetchTrip()
@@ -161,6 +181,14 @@ export default function DriverTripPage() {
       active = false
     }
   }, [job?.photo_loading_url, job?.photo_delivery_url])
+
+  // Opt-in sharing of position and speed with the agency (tracking_ping_record).
+  // OFF by default; browser permission is asked only when the driver turns it on.
+  const sharing = useTripLocationSharing({
+    active: isTripActiveForSharing(job?.status) && step !== 'complete',
+    resolveJobId: () => (jobId ? driverTrackingApi.resolveAgencyJobId(jobId) : Promise.resolve(null)),
+    send: driverTrackingApi.sendPing,
+  })
 
   const upsertDriverLocation = useCallback(async (position: GeolocationPosition) => {
     if (!driver?.id) {
@@ -351,7 +379,7 @@ export default function DriverTripPage() {
     })
     if (isJobProgressOk(result)) {
       setStep('in_transit')
-      toast.success('Journey started — GPS tracking active')
+      toast.success('Journey started')
     } else {
       handleProgressRejection(result, 'pickup_otp')
     }
@@ -461,6 +489,32 @@ export default function DriverTripPage() {
       <div role="status" aria-busy="true" className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <RefreshCw className="animate-spin text-blue-600" size={32} aria-hidden="true" />
         <span className="sr-only">Loading trip…</span>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-50 dark:bg-slate-900">
+        <AlertTriangle size={48} className="text-amber-400 mb-4" aria-hidden="true" />
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Could not load this trip</h2>
+        <p role="alert" className="text-slate-500 dark:text-slate-400 mb-6 text-sm">
+          Check your internet connection and try again.
+        </p>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <button
+            onClick={retryLoad}
+            className={`min-h-[44px] bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold ${FOCUS_RING}`}
+          >
+            Retry
+          </button>
+          <button
+            onClick={() => navigate('/driver/dashboard')}
+            className={`min-h-[44px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 px-6 py-3 rounded-xl font-semibold ${FOCUS_RING}`}
+          >
+            Back to Dashboard
+          </button>
+        </div>
       </div>
     )
   }
@@ -586,6 +640,70 @@ export default function DriverTripPage() {
             )}
           </div>
         </div>
+
+        {/* ====== Agency location sharing (opt-in, active trip only) ====== */}
+        {step !== 'complete' && (
+          <section
+            aria-labelledby="share-location-heading"
+            className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 id="share-location-heading" className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  Share live location with your agency
+                </h2>
+                <p id="share-location-help" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Shares your position and speed, only during this trip, and only your agency can see it.
+                  It stops when the trip ends or you close this page. Nothing is stored on your phone.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={sharing.isSharing}
+                aria-labelledby="share-location-heading"
+                aria-describedby="share-location-help"
+                disabled={sharing.status === 'starting'}
+                onClick={() => (sharing.isSharing ? sharing.stop() : void sharing.start())}
+                className={`relative flex-shrink-0 min-h-[44px] min-w-[56px] rounded-full px-1 disabled:opacity-60 ${FOCUS_RING}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`block h-7 w-12 rounded-full transition-colors ${sharing.isSharing ? 'bg-green-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                />
+                <span
+                  aria-hidden="true"
+                  className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-white shadow transition-all ${sharing.isSharing ? 'left-7' : 'left-2'}`}
+                />
+              </button>
+            </div>
+            {sharing.isSharing && (
+              <div role="status" className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-green-50 dark:bg-green-900/20 px-3 py-2">
+                <p className="flex items-center gap-2 text-sm font-semibold text-green-800 dark:text-green-300">
+                  <span className="h-2 w-2 rounded-full bg-green-600 animate-pulse" aria-hidden="true" />
+                  Sharing location
+                </p>
+                <button
+                  type="button"
+                  onClick={sharing.stop}
+                  className={`min-h-[44px] px-4 rounded-xl bg-white dark:bg-slate-800 border border-green-300 dark:border-green-700 text-sm font-semibold text-green-800 dark:text-green-300 ${FOCUS_RING}`}
+                >
+                  Stop
+                </button>
+              </div>
+            )}
+            {sharing.isSharing && sharing.lastSentAt && (
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Last shared: {new Date(sharing.lastSentAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+            {sharing.message && (
+              <p role="status" className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                {sharing.message}
+              </p>
+            )}
+          </section>
+        )}
 
         {/* ====== STEP: Navigate to Pickup ====== */}
         {step === 'navigate' && (
@@ -747,7 +865,7 @@ export default function DriverTripPage() {
               </div>
               <h3 className="text-lg font-bold text-green-800 dark:text-green-300 mb-1">Journey in Progress</h3>
               <p className="text-sm text-green-700 dark:text-green-400">
-                GPS location is being shared with the customer in real-time.
+                Your location is shared with the customer while the journey is in progress.
               </p>
             </div>
             <div className={`rounded-2xl border p-4 ${gpsStatus === 'error'

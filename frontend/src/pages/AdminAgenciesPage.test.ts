@@ -220,14 +220,15 @@ describe('AdminAgenciesPage', () => {
         expect(text()).toContain('No pending agencies')
     })
 
-    it('a load failure toasts, logs, and falls back to the empty state', async () => {
+    it('a load failure toasts, logs, and shows an error state with Retry, not an empty queue', async () => {
         h.getSnapshot.mockRejectedValueOnce(new Error('edge function unreachable'))
         await mountPage()
         expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Failed to load agencies')
         expect(h.logError).toHaveBeenCalledTimes(1)
         expect(h.logError.mock.calls[0][0]).toBe('[AdminAgencies] Load error:')
-        expect(text()).toContain('No pending agencies')
+        expect(q('[data-testid="admin-load-error"]')).not.toBeNull()
+        expect(text()).not.toContain('No pending agencies')
     })
 
     it('the Refresh button re-fetches and recovers after a failure', async () => {

@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import type { ReactElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Driver Trip Detail refresh (591699f3 → screen 98648447, 2026-10-24): the
 // 7-step journey page must expose a labelled back action, an aria-live step
@@ -20,6 +20,8 @@ const h = vi.hoisted(() => ({
     resolveTripPhotoUrl: vi.fn(async () => null),
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
+    resolveAgencyJobId: vi.fn(),
+    sendPing: vi.fn(),
 }))
 
 vi.mock('react-hot-toast', () => ({
@@ -50,6 +52,13 @@ vi.mock('../services/supabaseApi', () => ({
 vi.mock('../services/driverTripProgress', async (importOriginal) => ({
     ...(await importOriginal<object>()),
     persistDriverJobProgressRpc: h.persistRpc,
+}))
+
+vi.mock('../services/driverTrackingApi', () => ({
+    driverTrackingApi: {
+        resolveAgencyJobId: h.resolveAgencyJobId,
+        sendPing: h.sendPing,
+    },
 }))
 
 vi.mock('../services/tripPhotoUrl', () => ({
@@ -412,5 +421,261 @@ describe('DriverTripPage delivery and proof sub-flow', () => {
         expect(h.persistRpc).toHaveBeenCalledTimes(2)
         expect(h.persistRpc.mock.calls[1][0].newStatus).toBe('delivered')
         expect(h.persistRpc.mock.calls[1][0].extra.delivery_otp).toBe('1234')
+    })
+})
+
+// Load failures: a thrown or rejected load must never leave the spinner or read
+// as "Trip Not Found"; it gets its own error state with Retry.
+describe('DriverTripPage load error state', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.getByUserId.mockResolvedValue(DRIVER)
+        h.persistRpc.mockResolvedValue({ data: null, error: null })
+    })
+
+    it('a failed trip fetch shows an error with Retry, not Trip Not Found, and Retry recovers', async () => {
+        h.getTripByIdForDriver.mockRejectedValueOnce(new Error('network down')).mockResolvedValue(jobRow('accepted'))
+        const view = await mountPage()
+
+        await waitFor(() => (view.textContent || '').includes('Could not load this trip'), 'error state')
+        expect(view.textContent || '').not.toContain('Trip Not Found')
+        expect(view.querySelector('[role="status"][aria-busy="true"]')).toBeNull()
+
+        await clickButton(/^Retry$/)
+        await waitFor(() => (view.textContent || '').includes('Navigate to Pickup'), 'trip after retry')
+        expect(h.getTripByIdForDriver).toHaveBeenCalledTimes(2)
+    })
+
+    it('a failed driver lookup also ends in the error state instead of spinning forever', async () => {
+        h.getByUserId.mockRejectedValue(new Error('profile lookup failed'))
+        const view = await mountPage()
+
+        await waitFor(() => (view.textContent || '').includes('Could not load this trip'), 'error state')
+        expect(h.getTripByIdForDriver).not.toHaveBeenCalled()
+    })
+
+    it('a user without a driver profile stops loading and shows the not-found state', async () => {
+        h.getByUserId.mockResolvedValue(null)
+        const view = await mountPage()
+
+        await waitFor(() => (view.textContent || '').includes('Trip Not Found'), 'not found')
+        expect(view.querySelector('[role="status"][aria-busy="true"]')).toBeNull()
+    })
+})
+
+// Opt-in agency location sharing with a mocked Geolocation.
+describe('DriverTripPage agency location sharing', () => {
+    type PositionCb = (p: unknown) => void
+    type ErrorCb = (e: { code: number }) => void
+    let onPosition: PositionCb | null = null
+    let onError: ErrorCb | null = null
+    const watchPosition = vi.fn()
+    const clearWatch = vi.fn()
+
+    const position = (ts: number, speed: number | null = 10) => ({
+        coords: { latitude: 19.07, longitude: 72.87, speed, accuracy: 5, heading: null },
+        timestamp: ts,
+    })
+
+    const toggle = () => (container as HTMLElement).querySelector('[role="switch"]') as HTMLButtonElement
+
+    async function turnOn(view: HTMLElement): Promise<void> {
+        await waitFor(() => !!view.querySelector('[role="switch"]'), 'sharing toggle')
+        await act(async () => {
+            toggle().dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+    }
+
+    function setGeolocation(value: unknown) {
+        Object.defineProperty(navigator, 'geolocation', { configurable: true, value })
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        onPosition = null
+        onError = null
+        watchPosition.mockImplementation((ok: PositionCb, err: ErrorCb) => {
+            onPosition = ok
+            onError = err
+            return 7
+        })
+        setGeolocation({ watchPosition, clearWatch, getCurrentPosition: vi.fn() })
+        h.getByUserId.mockResolvedValue(DRIVER)
+        h.getTripByIdForDriver.mockResolvedValue(jobRow('accepted'))
+        h.persistRpc.mockResolvedValue({ data: null, error: null })
+        h.resolveAgencyJobId.mockResolvedValue('agency-job-1')
+        h.sendPing.mockResolvedValue({ kind: 'ok' })
+    })
+
+    afterEach(async () => {
+        if (root) {
+            await act(async () => root!.unmount())
+            root = null
+        }
+        container?.remove()
+        container = null
+        // Restore the jsdom default (no geolocation) for the other suites.
+        delete (navigator as unknown as Record<string, unknown>).geolocation
+    })
+
+    it('is OFF by default, explains what is shared, and never touches geolocation on load', async () => {
+        const view = await mountPage()
+        await waitFor(() => (view.textContent || '').includes('Share live location with your agency'), 'sharing card')
+
+        expect(toggle().getAttribute('aria-checked')).toBe('false')
+        expect(toggle().className).toContain('min-h-[44px]')
+        const text = view.textContent || ''
+        expect(text).toContain('position and speed')
+        expect(text).toContain('only during this trip')
+        expect(text).toContain('only your agency can see it')
+        expect(text).not.toContain('Sharing location')
+        expect(watchPosition).not.toHaveBeenCalled()
+        expect(h.resolveAgencyJobId).not.toHaveBeenCalled()
+        expect(h.sendPing).not.toHaveBeenCalled()
+    })
+
+    it('turning it on asks for location, shows the indicator and Stop, and sends the position with its own timestamp', async () => {
+        const view = await mountPage()
+        await turnOn(view)
+
+        expect(h.resolveAgencyJobId).toHaveBeenCalledWith('job-1')
+        expect(watchPosition).toHaveBeenCalledTimes(1)
+        expect(toggle().getAttribute('aria-checked')).toBe('true')
+        expect(view.textContent || '').toContain('Sharing location')
+        expect(Array.from(view.querySelectorAll('button')).some((b) => /^Stop$/.test(b.textContent || ''))).toBe(true)
+
+        const ts = Date.UTC(2026, 10, 18, 6, 30, 0)
+        await act(async () => {
+            onPosition!(position(ts, 10))
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(h.sendPing).toHaveBeenCalledTimes(1)
+        expect(h.sendPing).toHaveBeenCalledWith('agency-job-1', {
+            lat: 19.07,
+            lng: 72.87,
+            speedKmph: 36,
+            recordedAt: '2026-11-18T06:30:00.000Z',
+        })
+    })
+
+    it('sends at most one ping per minute however often the position changes', async () => {
+        const view = await mountPage()
+        await turnOn(view)
+        const base = Date.UTC(2026, 10, 18, 6, 30, 0)
+        for (let i = 0; i < 5; i++) {
+            await act(async () => {
+                onPosition!(position(base + i * 3000))
+                await new Promise((resolve) => setTimeout(resolve, 0))
+            })
+        }
+        expect(h.sendPing).toHaveBeenCalledTimes(1)
+    })
+
+    it('Stop ends sharing, clears the watch and hides the indicator', async () => {
+        const view = await mountPage()
+        await turnOn(view)
+        await clickButton(/^Stop$/)
+
+        expect(clearWatch).toHaveBeenCalledWith(7)
+        expect(toggle().getAttribute('aria-checked')).toBe('false')
+        expect(view.textContent || '').not.toContain('Sharing location')
+    })
+
+    it('leaving the page stops the watch', async () => {
+        const view = await mountPage()
+        await turnOn(view)
+        expect(view).toBeTruthy()
+        await act(async () => root!.unmount())
+        root = null
+        expect(clearWatch).toHaveBeenCalledWith(7)
+    })
+
+    it('a blocked permission ends sharing calmly with a plain message', async () => {
+        const view = await mountPage()
+        await turnOn(view)
+        await act(async () => {
+            onError!({ code: 1 })
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(view.textContent || '').toContain('Location permission is blocked')
+        expect(toggle().getAttribute('aria-checked')).toBe('false')
+        expect(h.sendPing).not.toHaveBeenCalled()
+        expect(clearWatch).toHaveBeenCalled()
+    })
+
+    it('a timeout or unavailable position keeps sharing and shows a calm note', async () => {
+        const view = await mountPage()
+        await turnOn(view)
+        await act(async () => {
+            onError!({ code: 3 })
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(view.textContent || '').toContain('Still waiting for a GPS signal')
+        expect(toggle().getAttribute('aria-checked')).toBe('true')
+        await act(async () => {
+            onError!({ code: 2 })
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(view.textContent || '').toContain('Your location is not available right now')
+        expect(toggle().getAttribute('aria-checked')).toBe('true')
+    })
+
+    it('when the agency job cannot be resolved the driver is never prompted for location', async () => {
+        h.resolveAgencyJobId.mockResolvedValue(null)
+        const view = await mountPage()
+        await turnOn(view)
+        await waitFor(() => (view.textContent || '').includes('not available for this trip'), 'unavailable message')
+        expect(watchPosition).not.toHaveBeenCalled()
+        expect(toggle().getAttribute('aria-checked')).toBe('false')
+    })
+
+    it('a browser without geolocation says so and does not start', async () => {
+        setGeolocation(undefined)
+        const view = await mountPage()
+        await turnOn(view)
+        expect(view.textContent || '').toContain('cannot share location')
+        expect(h.resolveAgencyJobId).not.toHaveBeenCalled()
+    })
+
+    it('stops by itself when the server says the job is no longer active', async () => {
+        h.sendPing.mockResolvedValue({ kind: 'refused', code: 'job_not_active' })
+        const view = await mountPage()
+        await turnOn(view)
+        await act(async () => {
+            onPosition!(position(Date.UTC(2026, 10, 18, 6, 30, 0)))
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        expect(view.textContent || '').toContain('no longer active')
+        expect(toggle().getAttribute('aria-checked')).toBe('false')
+        expect(clearWatch).toHaveBeenCalledWith(7)
+    })
+
+    it('stops by itself when the trip ends', async () => {
+        const photo = 'https://localhost.invalid/storage/v1/object/sign/trip-photos/d.jpg'
+        h.persistRpc.mockResolvedValue({
+            data: {
+                job_offer_id: 'job-1', status: 'delivered',
+                pickup_arrived_at: null, journey_started_at: null, delivery_arrived_at: null,
+                delivered_at: '2026-11-18T07:00:00Z', photo_loading_url: null,
+                photo_delivery_url: photo,
+                total_trips: 3, result_code: 'OK', otp_attempts_remaining: null,
+            },
+            error: null,
+        })
+        h.getTripByIdForDriver.mockResolvedValue(jobRow('delivery_arrived', { photo_delivery_url: photo }))
+        const view = await mountPage()
+        await turnOn(view)
+        await waitFor(() => (view.textContent || '').includes('Enter Delivery OTP'), 'delivery otp step')
+        await act(async () => {
+            setInputValue(view.querySelector('#delivery-otp-input') as HTMLInputElement, '1234')
+            await new Promise((resolve) => setTimeout(resolve, 0))
+        })
+        await clickButton(/Verify OTP/)
+        await waitFor(() => (view.textContent || '').includes('Proof of Delivery'), 'delivery photo step')
+        await clickButton(/Complete Delivery/)
+
+        await waitFor(() => (container as HTMLElement).querySelector('[data-testid="dashboard-probe"]') !== null, 'navigation after delivery')
+        expect(clearWatch).toHaveBeenCalledWith(7)
     })
 })

@@ -11,16 +11,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // with exact toast messages, submit error + manual re-submit (retry path),
 // pending-submit disabled state, and the aria-label="Go back" hook.
 //
-// FINDING (real page bug — NOT fixed, NOT asserted as correct):
-// frontend/src/pages/AgencyRegisterPage.tsx line 76 validates the GSTIN
-// against a regex that only accepts uppercase letters, but tests `form.gstin`
-// RAW. The input is displayed uppercase (style textTransform: 'uppercase')
-// and the submit payload normalizes it (`form.gstin.toUpperCase().trim()`),
-// and PAN (line 80) and IFSC (line 92) are both uppercased before their
-// regex test — GSTIN is not. A user who types the GSTIN in lowercase sees it
-// rendered uppercase in the box yet is rejected with "Enter a valid 15-digit
-// GSTIN". These tests use canonical uppercase GSTINs and deliberately avoid
-// pinning the strict lowercase rejection as correct behaviour.
+// GSTIN is normalised (trim + uppercase) before validation, matching the save
+// path, so a lowercase or padded GSTIN is accepted and stored in uppercase.
+// The database CHECK regex (agency_members_clients_tariffs migration) expects uppercase.
 
 const h = vi.hoisted(() => ({
     user: null as { id: string; email: string; name: string } | null,
@@ -165,17 +158,26 @@ describe('AgencyRegisterPage', () => {
     it('logged-out visitors get the login gate instead of the form', async () => {
         h.user = null
         await mountPage()
-        expect(text()).toContain('Log In To Register Your Agency')
-        expect(buttons(/^Continue To Agency Login$/)).toHaveLength(1)
+        expect(text()).toContain('Create A Login To Register Your Agency')
+        expect(buttons(/^Create Login To Continue$/)).toHaveLength(1)
+        expect(buttons(/^I Already Have A Login$/)).toHaveLength(1)
         expect(text()).not.toContain('Business Details')
         expect(h.register).not.toHaveBeenCalled()
         expect(h.updateUser).not.toHaveBeenCalled()
     })
 
-    it('the login gate stores the return-to path and routes to agency login', async () => {
+    it('the gate sends a new visitor to sign-up with the return-to path (no loop back to agency login)', async () => {
         h.user = null
         await mountPage()
-        await click(buttons(/^Continue To Agency Login$/)[0])
+        await click(buttons(/^Create Login To Continue$/)[0])
+        expect(h.storeAuthReturnTo).toHaveBeenCalledWith('/agency/register')
+        expect(probe()).toBe('/signup')
+    })
+
+    it('the gate keeps a path for existing agency logins', async () => {
+        h.user = null
+        await mountPage()
+        await click(buttons(/^I Already Have A Login$/)[0])
         expect(h.storeAuthReturnTo).toHaveBeenCalledWith('/agency/register')
         expect(probe()).toBe('/login?mode=agency')
     })
@@ -232,6 +234,14 @@ describe('AgencyRegisterPage', () => {
         await advance()
         expect(h.toastError).toHaveBeenCalledWith('Enter transport license number')
         expect(text()).toContain('Business Details')
+    })
+
+    it('step 1 accepts a lowercase, padded GSTIN because validation normalizes it', async () => {
+        await mountPage()
+        await fillStep1({ gstin: ' 22aaaaa0000a1z5 ' })
+        await advance()
+        expect(h.toastError).not.toHaveBeenCalled()
+        expect(text()).toContain('Contact & Address')
     })
 
     it('step 1 blocks a malformed GSTIN', async () => {
@@ -295,7 +305,7 @@ describe('AgencyRegisterPage', () => {
 
     it('a full form submits the exact normalized payload', async () => {
         await mountPage()
-        await fillStep1({ company: '  Sharma Transport Co.  ', gstin: '22AAAAA0000A1Z5', pan: ' abcde1234f ' })
+        await fillStep1({ company: '  Sharma Transport Co.  ', gstin: ' 22aaaaa0000a1z5 ', pan: ' abcde1234f ' })
         await advance()
         await fillStep2({
             contact: '  Ramesh Sharma  ', email: '  agency@example.com  ',
@@ -368,6 +378,10 @@ describe('AgencyRegisterPage', () => {
         expect(h.updateUser).toHaveBeenCalledWith({ role: 'agency' })
         expect(text()).toContain('Registration Submitted!')
         expect(text()).toContain('under review')
+        // what happens next: approval first, then the 14-day trial started by the owner
+        expect(text()).toContain('What happens next')
+        expect(text()).toContain('Approval:')
+        expect(text()).toContain('once approved, the agency owner starts your 14-day free trial from the Subscription page')
         // step 4 hides the wizard chrome
         expect(buttons(/^Continue$/)).toHaveLength(0)
         expect(buttons(/^Back$/)).toHaveLength(0)

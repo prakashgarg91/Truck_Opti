@@ -52,10 +52,15 @@ function formatRupees(paise: number | null) {
 }
 
 export default function AdminSubscriptionsPage() {
+  useEffect(() => {
+    document.title = 'Admin Subscriptions - TruckOpti'
+  }, [])
   const navigate = useNavigate()
   const { user: currentUser } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [snapshot, setSnapshot] = useState<AdminSubscriptionsSnapshot>(EMPTY_SNAPSHOT)
+  const [loadedOnce, setLoadedOnce] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [agencyQuery, setAgencyQuery] = useState('')
   const [reopenTarget, setReopenTarget] = useState<Subscription | null>(null)
@@ -66,10 +71,14 @@ export default function AdminSubscriptionsPage() {
     setLoading(true)
     try {
       setSnapshot(await adminSupabaseApi.getAdminSubscriptions())
+      setLoadedOnce(true)
+      setLoadError(null)
     } catch (error) {
       logger.error('[AdminSubscriptions] fetch:', error)
-      toast.error(toUserFacingErrorMessage(error, 'Failed to load subscriptions'))
-      setSnapshot(EMPTY_SNAPSHOT)
+      const message = toUserFacingErrorMessage(error, 'Failed to load subscriptions')
+      toast.error(message)
+      // Keep the last good data; a failed load must never look like a clean queue.
+      setLoadError(message)
     } finally {
       setLoading(false)
     }
@@ -152,6 +161,34 @@ export default function AdminSubscriptionsPage() {
     )
   }
 
+  if (loadError && !loadedOnce) {
+    return (
+      <div className="p-4 md:p-8 space-y-4 max-w-4xl md:max-w-6xl mx-auto pb-8 md:pb-10">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/admin')}
+            className="min-h-[44px] min-w-[44px] p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+            aria-label="Back to admin dashboard"
+          >
+            <ChevronLeft className="w-4 h-4 text-slate-500 dark:text-slate-400 mx-auto" />
+          </button>
+          <CreditCard className="w-5 h-5 text-purple-600" />
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{'Subscriptions'}</h1>
+        </div>
+        <div role="alert" data-testid="subscriptions-load-error" className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center space-y-3">
+          <p className="text-slate-800 dark:text-slate-100 font-medium">{loadError}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{'The subscription list could not be loaded, so nothing here is confirmed.'}</p>
+          <button
+            onClick={fetchSubscriptions}
+            className="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          >
+            {'Retry'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const { refusedPayments, refundExceptions } = snapshot.opsAttention
   const opsCount = refusedPayments.length + refundExceptions.length
   const count = (...statuses: string[]) => subscriptions.filter((s) => statuses.includes(s.status)).length
@@ -180,6 +217,18 @@ export default function AdminSubscriptionsPage() {
           <RefreshCw className="w-4 h-4 text-slate-500" />
         </button>
       </div>
+
+      {loadError && (
+        <div role="alert" data-testid="subscriptions-stale-error" className="flex flex-wrap items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-3 text-sm text-red-800 dark:text-red-200">
+          <span className="flex-1">{`${loadError} Showing the last list that loaded, which may be out of date.`}</span>
+          <button
+            onClick={fetchSubscriptions}
+            className="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          >
+            {'Retry'}
+          </button>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -212,7 +261,9 @@ export default function AdminSubscriptionsPage() {
           {'Ops attention'}
           <span className="text-xs font-normal text-slate-500">{`(${opsCount})`}</span>
         </h2>
-        {opsCount === 0 ? (
+        {loadError ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">{'Not confirmed: the last refresh failed.'}</p>
+        ) : opsCount === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">{'Nothing needs attention.'}</p>
         ) : (
           <>

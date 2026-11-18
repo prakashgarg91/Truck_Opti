@@ -8,6 +8,7 @@ import { adminPayoutsApi, type DriverPayout } from '../services/adminSupabaseApi
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import AdminLoadError from './AdminLoadError'
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'paid' | 'rejected'
 
@@ -23,6 +24,9 @@ function formatDate(iso: string) {
 }
 
 export default function AdminPayoutsPage() {
+  useEffect(() => {
+    document.title = 'Admin Payouts - TruckOpti'
+  }, [])
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuthStore()
   const [payouts, setPayouts] = useState<DriverPayout[]>([])
@@ -32,6 +36,7 @@ export default function AdminPayoutsPage() {
   const [rejectModal, setRejectModal] = useState<{ payoutId: string; driverName: string } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState(false)
 
   const fetchPayouts = useCallback(async () => {
     if (authLoading) return
@@ -45,9 +50,11 @@ export default function AdminPayoutsPage() {
     try {
       const payouts = await adminPayoutsApi.getAll()
       setPayouts(payouts)
+      setLoadError(false)
     } catch (error) {
       logger.error('[AdminPayouts] Fetch error:', error)
       toast.error('Failed to load payouts')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -119,6 +126,9 @@ export default function AdminPayoutsPage() {
       await adminPayoutsApi.markAsPaid(payoutId)
       toast.success('Marked as paid')
       fetchPayouts()
+    } catch (error) {
+      logger.error('[AdminPayouts] Mark paid error:', error)
+      toast.error('Failed to mark payout as paid')
     } finally {
       setProcessingId(null)
     }
@@ -214,6 +224,8 @@ export default function AdminPayoutsPage() {
               <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" />
               {'Loading payouts...'}
             </div>
+          ) : loadError ? (
+            <AdminLoadError what="payouts" onRetry={fetchPayouts} />
           ) : filteredPayouts.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />

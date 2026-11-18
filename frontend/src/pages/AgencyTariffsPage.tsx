@@ -13,6 +13,7 @@ import {
   type RateBasis,
   type TariffRow,
 } from '../services/agencyOrganizationApi'
+import { VEHICLE_TYPES, vehicleTypeLabel } from '../lib/vehicleLabels'
 
 // TO-144-D2 Tariff Versions (Stitch screen 20944736a6414) for one client
 // agreement. The server (RLS + agency_tariff_version_publish) is the
@@ -97,7 +98,8 @@ function groupLanes(rows: TariffRow[], today: string): Lane[] {
   )
 }
 
-const vehicleLabel = (vehicleType: string | null): string => vehicleType ?? 'Any vehicle'
+// Null means the rate applies to any vehicle; otherwise the human label, never the raw code.
+const vehicleLabel = (vehicleType: string | null): string => (vehicleType ? vehicleTypeLabel(vehicleType) : 'Any vehicle')
 
 export default function AgencyTariffsPage() {
   const access = useAgencyAccess()
@@ -163,10 +165,7 @@ export default function AgencyTariffsPage() {
   const lanes = useMemo(() => groupLanes(rows, todayStr()), [rows])
   const agreement = agreements.find((a) => a.id === agreementId)
   const clientName = agreement?.client_name ?? 'Client'
-  const vehicleCodes = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.vehicle_type).filter((v): v is string => v != null))).sort(),
-    [rows]
-  )
+  // Every catalog vehicle type, priced or not, so a first rate can be published for any of them.
   const currentLanes = lanes.filter((l) => l.current)
   const upcomingCount = lanes.reduce((n, l) => n + l.upcoming.length, 0)
   const pastCount = lanes.reduce((n, l) => n + l.past.length, 0)
@@ -382,8 +381,8 @@ export default function AgencyTariffsPage() {
             className={`mt-1 min-h-[44px] rounded-xl border border-slate-300 px-3 ${FOCUS_RING}`}
           >
             <option value="">All vehicles</option>
-            {vehicleCodes.map((code) => (
-              <option key={code} value={code}>{code}</option>
+            {VEHICLE_TYPES.map((v) => (
+              <option key={v.code} value={v.code}>{v.label}</option>
             ))}
           </select>
         </div>
@@ -579,8 +578,8 @@ export default function AgencyTariffsPage() {
                 className={`mt-1 w-full min-h-[44px] rounded-xl border border-slate-300 px-3 ${FOCUS_RING}`}
               >
                 <option value="">Any vehicle</option>
-                {vehicleCodes.map((code) => (
-                  <option key={code} value={code}>{code}</option>
+                {VEHICLE_TYPES.map((v) => (
+                  <option key={v.code} value={v.code}>{v.label}</option>
                 ))}
               </select>
             </div>

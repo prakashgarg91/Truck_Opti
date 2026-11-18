@@ -101,7 +101,7 @@ describe('AgencyTrialPanel', () => {
     })
 
     it.each([
-        ['identity_required', 'Add your GSTIN and phone to the agency profile first'],
+        ['identity_required', 'Add your GSTIN and phone in Company Settings first'],
         ['trial_already_claimed', 'free trial has already been used'],
         ['forbidden_scope', 'Only the agency owner can start the free trial'],
     ])('shows a typed message for %s and does not refetch', async (code, expected) => {
@@ -112,11 +112,11 @@ describe('AgencyTrialPanel', () => {
         expect(onStarted).not.toHaveBeenCalled()
     })
 
-    it('links to the agency profile when identity is missing', async () => {
+    it('links to company settings when identity is missing', async () => {
         h.startTrial.mockRejectedValue(new TrialError('identity_required', 'identity_required'))
         await mount()
         await clickStart()
-        expect(container!.querySelector('a[href="/agency/profile"]')).not.toBeNull()
+        expect(container!.querySelector('a[href="/settings/company"]')).not.toBeNull()
     })
 
     it('shows a generic calm message for an unknown failure', async () => {

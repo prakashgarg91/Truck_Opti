@@ -18,6 +18,8 @@ const h = vi.hoisted(() => ({
     getTripHistory: vi.fn(async () => []),
     getPayoutHistory: vi.fn(async () => []),
     respondToJobOffer: vi.fn(),
+    getBalanceSnapshot: vi.fn(),
+    requestPayout: vi.fn(),
     setDriverOnlineStatus: vi.fn(async () => undefined),
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
@@ -39,7 +41,10 @@ vi.mock('../services/supabaseApi', () => ({
         respondToJobOffer: h.respondToJobOffer,
         setDriverOnlineStatus: h.setDriverOnlineStatus,
     },
-    driverEarningsApi: {},
+    driverEarningsApi: {
+        getBalanceSnapshot: h.getBalanceSnapshot,
+        requestPayout: h.requestPayout,
+    },
     driverSupabaseApi: {
         getByUserId: h.getByUserId,
     },
@@ -368,5 +373,89 @@ describe('DriverDashboardPage refresh a11y and states', () => {
             expect(link.getAttribute('href')).toBe('tel:+919999352050')
             expect(link.getAttribute('aria-label') || '').toContain('support')
         }
+    })
+})
+
+// Wallet honesty: the numbers come from the complete balance snapshot (not the
+// 10-trip / 5-payout recent lists), are labelled as customer-quote estimates,
+// and a failed withdrawal is surfaced instead of becoming an unhandled rejection.
+describe('DriverDashboardPage wallet and copy', () => {
+    const SNAPSHOT = {
+        paid: 4000,
+        approved: 1000,
+        pending: 500,
+        totalDelivered: 25000,
+        payouts: [
+            { amount: 4000, status: 'paid' },
+            { amount: 1000, status: 'approved' },
+            { amount: 500, status: 'pending' },
+            { amount: 900, status: 'rejected' },
+        ],
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.getByUserId.mockResolvedValue(DRIVER)
+        h.getPendingOffer.mockResolvedValue(null)
+        h.getTripHistory.mockResolvedValue([])
+        h.getPayoutHistory.mockResolvedValue([])
+        h.getBalanceSnapshot.mockResolvedValue(SNAPSHOT)
+        h.requestPayout.mockResolvedValue(undefined)
+    })
+
+    it('computes the wallet from the complete snapshot, not from the recent lists, with honest labels', async () => {
+        // Recent lists hold a single small trip; the snapshot is the truth.
+        h.getTripHistory.mockResolvedValue([
+            { id: 't1', offered_at: '2026-11-01T00:00:00Z', responded_at: null, delivered_at: '2026-11-01T10:00:00Z', status: 'delivered', shipments: { origin: 'A', destination: 'B', estimated_cost: 100 } },
+        ] as never)
+        const view = await mountPage()
+        await waitFor(() => (view.textContent || '').includes('Available to withdraw (estimate)'), 'wallet card')
+        const txt = view.textContent || ''
+        expect(txt).toContain('₹19,500') // 25000 - (4000 + 1000 + 500); the rejected payout is not reserved
+        expect(txt).toContain('₹25,000')
+        expect(txt).toContain('Delivered trips (customer quote)')
+        expect(txt).toContain('Your agency sets your actual pay')
+        expect(txt).not.toContain('Available Balance')
+        expect(txt).not.toContain('Total Earned')
+        expect(h.getBalanceSnapshot).toHaveBeenCalledWith('driver-1')
+    })
+
+    it('hides the wallet numbers instead of guessing when the snapshot cannot be loaded', async () => {
+        h.getBalanceSnapshot.mockRejectedValue(new Error('payouts unavailable'))
+        const view = await mountPage()
+        await waitFor(() => (view.textContent || '').includes('Could not load your totals right now.'), 'unavailable note')
+        expect(view.textContent || '').not.toContain('₹19,500')
+    })
+
+    it('a failed withdrawal request shows an error toast and re-enables the form', async () => {
+        h.requestPayout.mockRejectedValue(new UserFacingError('Failed to submit withdrawal request'))
+        const view = await mountPage()
+        await waitFor(() => (view.textContent || '').includes('Request Withdrawal'), 'wallet card')
+        await clickButton(/Request Withdrawal/)
+        const input = (container as HTMLElement).querySelector('#driver-withdrawal-amount') as HTMLInputElement
+        expect(input).not.toBeNull()
+        expect((container as HTMLElement).querySelector('label[for="driver-withdrawal-amount"]')).not.toBeNull()
+        await act(async () => {
+            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+            setter?.call(input, '1000')
+            input.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        await clickButton(/Submit Request/)
+        await waitFor(() => h.toastError.mock.calls.some((c) => c[0] === 'Failed to submit withdrawal request'), 'error toast')
+        expect(h.requestPayout).toHaveBeenCalledWith('driver-1', 1000)
+        expect(findButton(/Submit Request/).disabled).toBe(false)
+    })
+
+    it('shows readable trip status labels and no unbacked promises', async () => {
+        h.getTripHistory.mockResolvedValue([
+            { id: 't2', offered_at: '2026-11-01T00:00:00Z', responded_at: null, delivered_at: null, status: 'pickup_arrived', shipments: { origin: 'A', destination: 'B', estimated_cost: 100 } },
+        ] as never)
+        const view = await mountPage()
+        await waitFor(() => (view.textContent || '').includes('Recent Trips'), 'recent trips')
+        const txt = view.textContent || ''
+        expect(txt).toContain('At pickup')
+        expect(txt).not.toContain('pickup_arrived')
+        expect(txt).not.toContain('near you')
+        expect(txt).not.toContain('visible to customers')
     })
 })

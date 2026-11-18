@@ -29,11 +29,12 @@ const SCOPES: ReadonlyArray<{ value: MembershipScope; label: string }> = [
   { value: 'viewer', label: 'Viewer' },
 ]
 const SCOPE_LABEL: Record<string, string> = Object.fromEntries(SCOPES.map((s) => [s.value, s.label]))
+/** One-line capability summary per staff scope, worded after the scope sets in lib/agencyAccess.ts. */
 const SCOPE_HELP: Record<MembershipScope, string> = {
-  dispatcher: 'Reserve vehicles and drivers, manage jobs',
-  fleet_manager: 'Manage vehicles, drivers and driver invitations',
-  finance: 'Manage clients and publish tariffs',
-  viewer: 'View only',
+  dispatcher: 'Jobs, order import and cancel, load plans, consignments and ERP.',
+  fleet_manager: 'Trucks, driver employment and invitations, expenses and maintenance.',
+  finance: 'Clients, tariffs, invoices, expenses, payroll, driver rates and payouts.',
+  viewer: 'Read-only access to operations pages. Cannot make changes.',
 }
 
 const DENIAL_MESSAGES = new Set(['Agency approval is required.', 'Sign-in is required.'])
@@ -120,7 +121,7 @@ export default function AgencyTeamPage() {
   const expiringSoon = pending.filter((i) => daysLeft(i.expires_at) <= 2 && daysLeft(i.expires_at) > 0)
 
   const memberName = (m: MembershipRow) =>
-    (m.invitation_id && emailByInvitation.get(m.invitation_id)) || `Team member ${m.user_id.slice(0, 6)}`
+    (m.invitation_id && emailByInvitation.get(m.invitation_id)) || 'Team member'
 
   const handleInvite = async (event: FormEvent) => {
     event.preventDefault()
@@ -325,6 +326,11 @@ export default function AgencyTeamPage() {
               <div>
                 <p className="font-medium text-slate-900">{memberName(m)}</p>
                 <p className="text-xs text-slate-600">Joined {formatDate(m.granted_at)}</p>
+                {SCOPE_HELP[m.scope as MembershipScope] && (
+                  <p className="text-xs text-slate-600" data-testid="team-scope-help">
+                    {SCOPE_HELP[m.scope as MembershipScope]}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-semibold text-indigo-900">

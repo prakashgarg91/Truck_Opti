@@ -289,13 +289,14 @@ describe('AdminDriversPage', () => {
         expect(text()).toContain('New applications will appear here')
     })
 
-    it('a fetch failure toasts, logs and shows the empty state; Refresh recovers', async () => {
+    it('a fetch failure toasts, logs and shows an error state with Retry; Refresh recovers', async () => {
         h.getDriversByStatus.mockRejectedValueOnce(new Error('network down'))
         await mountPage()
         expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Failed to load drivers.')
         expect(h.loggerError).toHaveBeenCalledTimes(1)
-        expect(text()).toContain('No pending drivers')
+        expect(q('[data-testid="admin-load-error"]')).not.toBeNull()
+        expect(text()).not.toContain('No pending drivers')
 
         await click(refreshButton())
         expect(h.getDriversByStatus).toHaveBeenCalledTimes(2)
@@ -494,6 +495,9 @@ describe('AdminDriversPage', () => {
             expect(csv).toContain('"Ramesh Kumar","9876543210","ABCDE1234F","Tata 407 (1T)","Jaipur"')
             expect(csv).toContain('"Sita Devi"')
             expect(csv).toContain('"pending"')
+            // audit DR1: no bank, IFSC, UPI or Aadhaar columns or values leave the screen in a CSV
+            expect(csv).not.toMatch(/Bank Account|IFSC|UPI|Aadhaar/)
+            expect(csv).not.toContain('1234567890')
             expect(h.toastSuccess).toHaveBeenCalledTimes(1)
             expect(h.toastSuccess).toHaveBeenCalledWith('Exported 2 drivers')
             const anchor = dl.getAnchor()

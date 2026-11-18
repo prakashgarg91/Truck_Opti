@@ -167,14 +167,14 @@ export default function ResetPasswordPage() {
                 )}
 
                 <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    <label htmlFor="resetpassword-field-1" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                         New Password
                     </label>
                     <div className="relative">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                             <Lock className="w-5 h-5" />
                         </div>
-                        <input
+                        <input id="resetpassword-field-1"
                             type={isPasswordVisible ? 'text' : 'password'}
                             value={password}
                             onChange={(event) => {
@@ -188,6 +188,7 @@ export default function ResetPasswordPage() {
                         <button
                             type="button"
                             onClick={() => setIsPasswordVisible((current) => !current)}
+                            aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
                             className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                         >
                             {isPasswordVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -196,14 +197,14 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div className="animate-slide-up" style={{ animationDelay: '150ms' }}>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    <label htmlFor="resetpassword-field-2" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                         Confirm Password
                     </label>
                     <div className="relative">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                             <Lock className="w-5 h-5" />
                         </div>
-                        <input
+                        <input id="resetpassword-field-2"
                             type={isConfirmVisible ? 'text' : 'password'}
                             value={confirmPassword}
                             onChange={(event) => {
@@ -216,6 +217,7 @@ export default function ResetPasswordPage() {
                         <button
                             type="button"
                             onClick={() => setIsConfirmVisible((current) => !current)}
+                            aria-label={isConfirmVisible ? 'Hide password' : 'Show password'}
                             className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                         >
                             {isConfirmVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}

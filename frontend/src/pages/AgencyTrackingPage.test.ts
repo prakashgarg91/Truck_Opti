@@ -15,6 +15,8 @@ const h = vi.hoisted(() => ({
     getTripLive: vi.fn(),
     openIncident: vi.fn(),
     updateIncident: vi.fn(),
+    jobsList: vi.fn(),
+    listDriverDirectory: vi.fn(),
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
 }))
@@ -36,6 +38,8 @@ vi.mock('../services/agencyTrackingApi', async () => {
     }
 })
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
+vi.mock('../services/agencyPortalApi', () => ({ agencyJobsApi: { list: h.jobsList } }))
+vi.mock('../services/agencyPayrollApi', () => ({ agencyPayrollApi: { listDriverDirectory: h.listDriverDirectory } }))
 
 import AgencyTrackingPage from './AgencyTrackingPage'
 import { UserFacingError } from '../utils/userFacingError'
@@ -78,6 +82,8 @@ beforeEach(() => {
     h.getTripLive.mockResolvedValue(liveOk(recent(), 1))
     h.listPings.mockResolvedValue([ping('p-1')])
     h.listIncidents.mockResolvedValue([])
+    h.jobsList.mockResolvedValue([])
+    h.listDriverDirectory.mockResolvedValue([])
 })
 
 afterEach(async () => {
@@ -118,7 +124,7 @@ async function submit(form: HTMLFormElement) {
 }
 
 async function openDetail() {
-    await click(button(/View details for job/)!)
+    await click(button(/View details for /)!)
 }
 
 describe('AgencyTrackingPage', () => {
@@ -333,9 +339,56 @@ describe('AgencyTrackingPage', () => {
 
     it('uses 44px targets and a focus ring on the buttons', async () => {
         await mountPage()
-        const b = button(/View details for job/)!
+        const b = button(/View details for /)!
         expect(b.className).toContain('min-h-[44px]')
         expect(b.className).toContain('focus-visible:ring-2')
         expect(b.getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('names each job by its route and driver instead of an id fragment', async () => {
+        h.jobsList.mockResolvedValue([{ id: 'j-1111111111', shipments: { origin: 'Mumbai', destination: 'Pune' } }])
+        h.listDriverDirectory.mockResolvedValue([{ driver_id: 'd-1', name: 'Ravi Kumar', phone_last4: '1234' }])
+        await mountPage()
+        const card = q('[data-testid="tracking-job-j-1111111111"]')!
+        expect(card.textContent).toContain('Mumbai → Pune · In transit')
+        expect(card.textContent).toContain('Ravi Kumar')
+        expect(card.textContent).not.toContain('j-1111')
+        expect(button(/View details for Mumbai → Pune/)).not.toBeNull()
+    })
+
+    it('falls back to Trip and Driver assigned when the route and directory lookups fail', async () => {
+        h.jobsList.mockRejectedValue(new Error('down'))
+        h.listDriverDirectory.mockRejectedValue(new Error('down'))
+        await mountPage()
+        const card = q('[data-testid="tracking-job-j-1111111111"]')!
+        expect(card.textContent).toContain('Trip · In transit')
+        expect(card.textContent).toContain('Driver assigned')
+        expect(card.textContent).not.toContain('j-1111')
+    })
+
+    it('refreshes the job list and open details every 15 seconds', async () => {
+        vi.useFakeTimers()
+        try {
+            container = document.createElement('div')
+            document.body.appendChild(container)
+            root = createRoot(container)
+            await act(async () => {
+                root!.render(createElement(AgencyTrackingPage))
+                await vi.advanceTimersByTimeAsync(0)
+            })
+            expect(h.listActiveJobs).toHaveBeenCalledTimes(1)
+            await act(async () => {
+                ;(q('[data-testid="tracking-job-j-1111111111"] button[aria-expanded]') as HTMLButtonElement).click()
+                await vi.advanceTimersByTimeAsync(0)
+            })
+            expect(h.listPings).toHaveBeenCalledTimes(1)
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(15000)
+            })
+            expect(h.listActiveJobs).toHaveBeenCalledTimes(2)
+            expect(h.listPings).toHaveBeenCalledTimes(2)
+        } finally {
+            vi.useRealTimers()
+        }
     })
 })

@@ -10,6 +10,7 @@ import DriverInvitationsPanel from '../components/DriverInvitationsPanel'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
+import { vehicleTypeLabel } from '../lib/vehicleLabels'
 
 interface AssignedDriver {
   id: string
@@ -31,14 +32,7 @@ interface AgencyTruck {
   rc_number: string
 }
 
-const VEHICLE_LABELS: Record<string, string> = {
-  tata_407: 'Tata 407 (1T)',
-  eicher_14ft: 'Eicher 14ft (3T)',
-  eicher_17ft: 'Eicher 17ft (5T)',
-  ashok_19ft: 'Ashok Leyland 19ft (7T)',
-  bharatbenz_24ft: 'BharatBenz 24ft (10T)',
-  bharatbenz_32ft: 'BharatBenz 32ft (15T)',
-}
+type DriverStatusFilter = 'all' | 'online' | 'offline' | 'on_trip'
 
 export default function AgencyDriversPage() {
   const access = useAgencyAccess()
@@ -60,7 +54,20 @@ export default function AgencyDriversPage() {
   const [payModal, setPayModal] = useState<{ driverId: string; driverName: string } | null>(null)
   const [payAmount, setPayAmount] = useState('')
   const [payNote, setPayNote] = useState('')
+  const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<DriverStatusFilter>('all')
   const [selectedTruckId, setSelectedTruckId] = useState('')
+  const needle = query.trim().toLowerCase()
+  const visibleDrivers = drivers.filter(driver =>
+    (statusFilter === 'all'
+      || (statusFilter === 'online' && driver.is_online)
+      || (statusFilter === 'offline' && !driver.is_online)
+      || (statusFilter === 'on_trip' && !!driver.active_job_id)) &&
+    (needle === ''
+      || driver.full_name.toLowerCase().includes(needle)
+      || driver.phone.toLowerCase().includes(needle)
+      || (driver.home_city ?? '').toLowerCase().includes(needle))
+  )
   const [saving, setSaving] = useState(false)
   // One idempotency key per open pay dialog: created when the dialog opens,
   // kept across failed retries (so a retry is safe), cleared when the dialog
@@ -249,7 +256,7 @@ export default function AgencyDriversPage() {
               <option value="">— Select a truck —</option>
               {trucks.map(t => (
                 <option key={t.id} value={t.id}>
-                  {VEHICLE_LABELS[t.vehicle_type] || t.vehicle_type} · {t.rc_number}
+                  {vehicleTypeLabel(t.vehicle_type)} · {t.rc_number}
                 </option>
               ))}
             </select>
@@ -339,7 +346,42 @@ export default function AgencyDriversPage() {
         </div>
       </div>
 
+      {/* Search and status filter: the roster can grow past one screen */}
+      {drivers.length > 0 && (
+        <div className="flex flex-wrap items-end gap-3" data-testid="drivers-filters">
+          <div className="flex-1 min-w-[12rem]">
+            <label htmlFor="drivers-search" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Search by name, phone or city</label>
+            <input
+              id="drivers-search"
+              type="search"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="drivers-status-filter" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Status</label>
+            <select
+              id="drivers-status-filter"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value as DriverStatusFilter)}
+              className="min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm"
+            >
+              <option value="all">All drivers</option>
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+              <option value="on_trip">On trip</option>
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* Assigned Drivers */}
+      {drivers.length > 0 && visibleDrivers.length === 0 && (
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-6" data-testid="drivers-no-matches">
+          No drivers match these filters.
+        </p>
+      )}
       {drivers.length === 0 ? (
         <div className="text-center py-12">
           <Users size={48} className="text-slate-300 mx-auto mb-4" />
@@ -347,7 +389,7 @@ export default function AgencyDriversPage() {
           <p className="text-slate-400 text-xs mt-1">Assigned drivers will appear here once onboarding and truck linking are complete.</p>
         </div>
       ) : (
-        drivers.map(driver => (
+        visibleDrivers.map(driver => (
           <div key={driver.id} className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
@@ -440,7 +482,7 @@ export default function AgencyDriversPage() {
           </div>
           {trucks.filter(t => !drivers.find(d => d.truck_id === t.id)).map(t => (
             <div key={t.id} className="flex items-center justify-between py-1.5 text-sm text-amber-700 dark:text-amber-400">
-              <span>{VEHICLE_LABELS[t.vehicle_type] || t.vehicle_type} · {t.rc_number}</span>
+              <span>{vehicleTypeLabel(t.vehicle_type)} · {t.rc_number}</span>
               <span className="text-xs">No driver</span>
             </div>
           ))}
@@ -499,7 +541,7 @@ export default function AgencyDriversPage() {
                   onClick={() => handleEndEmployment(emp)}
                   disabled={endingId === emp.id || !canManageFleet}
                   title={canManageFleet ? undefined : access.deniedTitle}
-                  aria-label={`End employment record ${emp.licence_number || emp.id}`}
+                  aria-label={emp.licence_number ? `End employment record ${emp.licence_number}` : 'End employment record'}
                   className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium disabled:opacity-60"
                 >
                   <XCircle size={12} />

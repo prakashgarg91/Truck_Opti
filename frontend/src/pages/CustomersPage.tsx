@@ -218,7 +218,7 @@ export default function CustomersPage() {
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
+          <input aria-label={'Search customers...'}
             type="text"
             placeholder={'Search customers...'}
             value={search}
@@ -340,10 +340,10 @@ export default function CustomersPage() {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="customers-field-1" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {'Full Name'}
                 </label>
-                <input
+                <input id="customers-field-1"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -355,10 +355,10 @@ export default function CustomersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="customers-field-2" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'Phone'}
                   </label>
-                  <input
+                  <input id="customers-field-2"
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -368,10 +368,10 @@ export default function CustomersPage() {
                   {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="customers-field-3" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'Email'}
                   </label>
-                  <input
+                  <input id="customers-field-3"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -384,10 +384,10 @@ export default function CustomersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="customers-field-4" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'City'}
                   </label>
-                  <input
+                  <input id="customers-field-4"
                     type="text"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
@@ -397,10 +397,10 @@ export default function CustomersPage() {
                   {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="customers-field-5" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'State'}
                   </label>
-                  <input
+                  <input id="customers-field-5"
                     type="text"
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
@@ -413,10 +413,10 @@ export default function CustomersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="customers-field-6" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'Pincode'}
                   </label>
-                  <input
+                  <input id="customers-field-6"
                     type="text"
                     value={formData.pincode}
                     onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
@@ -426,10 +426,10 @@ export default function CustomersPage() {
                   {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="customers-field-7" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'PAN Number'}
                   </label>
-                  <input
+                  <input id="customers-field-7"
                     type="text"
                     value={formData.pan_number}
                     onChange={(e) => setFormData({ ...formData, pan_number: e.target.value.toUpperCase() })}
@@ -442,10 +442,10 @@ export default function CustomersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="customers-field-8" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {'GSTIN (Optional)'}
                 </label>
-                <input
+                <input id="customers-field-8"
                   type="text"
                   value={formData.gst_number}
                   onChange={(e) => setFormData({ ...formData, gst_number: e.target.value })}
@@ -456,10 +456,10 @@ export default function CustomersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="customers-field-9" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {'Full Address'}
                 </label>
-                <textarea
+                <textarea id="customers-field-9"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   rows={3}

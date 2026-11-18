@@ -223,7 +223,7 @@ describe('AdminDashboardPage', () => {
         expect(text()).toContain('Platform Analytics')
     })
 
-    it('error state: a failed snapshot toasts, logs and falls back to the zeroed dashboard', async () => {
+    it('error state: a failed snapshot toasts, logs and shows an error state with Retry instead of zeros', async () => {
         h.getSnapshot.mockRejectedValueOnce(new Error('supabase down'))
         await renderPage()
 
@@ -231,11 +231,11 @@ describe('AdminDashboardPage', () => {
         expect(h.toastError).toHaveBeenCalledWith('Failed to load analytics')
         expect(h.loggerError).toHaveBeenCalledTimes(1)
         expect(h.loggerError.mock.calls[0][0]).toBe('Failed to fetch analytics:')
-        // loading cleared, dashboard renders with initial zeroed state
         expect(q('.animate-spin')).toBeNull()
         expect(text()).toContain('Platform Analytics')
-        expect(text()).toContain('No revenue activity yet')
-        expect(text()).toContain('₹0')
+        expect(q('[data-testid="admin-load-error"]')).not.toBeNull()
+        expect(text()).not.toContain('No revenue activity yet')
+        expect(text()).not.toContain('₹0')
     })
 
     it('refresh is the recovery path: after an error it refetches and renders the data', async () => {
@@ -243,7 +243,7 @@ describe('AdminDashboardPage', () => {
         await renderPage()
         expect(h.toastError).toHaveBeenCalled()
 
-        await click(q('button[aria-label="Refresh analytics"]') as HTMLButtonElement)
+        await click(buttons(/^Retry$/)[0])
 
         expect(h.getSnapshot).toHaveBeenCalledTimes(2)
         expect(h.getSnapshot).toHaveBeenLastCalledWith(20)
@@ -269,7 +269,7 @@ describe('AdminDashboardPage', () => {
         // platform fee hero card uses its own size class
         expect(q('.text-3xl')?.textContent).toBe('₹1,25,000')
         expect(text()).toContain('Est. value ₹2,20,000')
-        expect(text()).toContain('Estimated Platform Revenue (10%)')
+        expect(text()).toContain('Estimated Platform Revenue (illustrative 10% rate)')
     })
 
     it('recent jobs: table lists source, owner, route, formatted amount and localized date', async () => {
@@ -307,13 +307,10 @@ describe('AdminDashboardPage', () => {
         expect(q('table')).toBeNull()
     })
 
-    it('export surface: CSV/XLSX/JSON render enabled after load and no download util fires', async () => {
+    it('export surface: with no export rows the CSV/XLSX/JSON buttons are not offered and no download util fires', async () => {
         await renderPage()
 
-        const exportButtons = buttons(/^(CSV|XLSX|JSON)$/)
-        expect(exportButtons).toHaveLength(3)
-        expect(exportButtons.map((b) => b.textContent)).toEqual(['CSV', 'XLSX', 'JSON'])
-        expect(exportButtons.every((b) => !b.disabled)).toBe(true)
+        expect(buttons(/^(CSV|XLSX|JSON)$/)).toHaveLength(0)
         // FINDING 1: with exportRows always reset to [] the download utils are
         // unreachable; loading data must not trigger any export side effect.
         expect(h.downloadCsv).not.toHaveBeenCalled()

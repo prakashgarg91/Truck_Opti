@@ -8,6 +8,9 @@ import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
 import BackupSection from '../components/BackupSection'
+import { agencyIdentityApi, type AgencyIdentity } from '../services/agencyIdentityApi'
+import { agencyDashboardApi } from '../services/agencyPortalApi'
+import { toUserFacingErrorMessage } from '../utils/userFacingError'
 
 interface CompanyData {
   name: string
@@ -46,7 +49,11 @@ export default function CompanyProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const { user } = useAuthStore()
+  const [identity, setIdentity] = useState<AgencyIdentity | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const { user, isAgencyOwner } = useAuthStore()
+  // Only an explicit `false` marks a staff member; the owner keeps the editable profile.
+  const isStaff = isAgencyOwner === false
 
   useEffect(() => {
     loadProfile()
@@ -56,12 +63,50 @@ export default function CompanyProfilePage() {
 
   const loadProfile = async () => {
     setLoading(true)
-    try {
-      if (user?.user_metadata?.company) {
-        setForm({ ...EMPTY, ...user.user_metadata.company })
+    setLoadError(null)
+    if (isStaff) {
+      // Staff cannot read the owner's identity row; the dashboard snapshot is the agency identity they may see.
+      try {
+        const snapshot = await agencyDashboardApi.getSnapshot()
+        setForm({
+          ...EMPTY,
+          name: snapshot.agency?.company_name ?? '',
+          gstin: snapshot.agency?.gstin ?? '',
+          city: snapshot.agency?.city ?? '',
+        })
+      } catch (err: unknown) {
+        logger.error('[CompanyProfilePage] staff load', err)
+        setLoadError(toUserFacingErrorMessage(err, 'Failed to load company details'))
+      } finally {
+        setLoading(false)
       }
-    } catch {
-      toast.error('Failed to load company profile')
+      return
+    }
+    // Personal / non-agency fields (PAN, email, address line 2) stay in the login metadata.
+    let next: CompanyData = { ...EMPTY, ...(user?.user_metadata?.company ?? {}) }
+    try {
+      // GST identity of an agency owner comes from the agency row: that is what the trial claim,
+      // subscription invoices and freight invoices read.
+      const row = user?.id ? await agencyIdentityApi.load(user.id) : null
+      setIdentity(row)
+      if (row) {
+        next = {
+          ...next,
+          name: row.legalName,
+          gstin: row.gstin,
+          phone: row.phone,
+          address_line1: row.address,
+          address_line2: '',
+          state: row.state,
+          city: row.city || next.city,
+          pincode: row.pincode || next.pincode,
+        }
+      }
+      setForm(next)
+    } catch (err: unknown) {
+      logger.error('[CompanyProfilePage] load', err)
+      setForm(next)
+      setLoadError(toUserFacingErrorMessage(err, 'Failed to load company details'))
     } finally {
       setLoading(false)
     }
@@ -86,9 +131,36 @@ export default function CompanyProfilePage() {
       toast.error('Invalid PAN format (e.g. AAAPZ1234C)'); return
     }
 
+    if (identity) {
+      if (form.phone.replace(/\D/g, '').length < 10) {
+        toast.error('Enter a phone number with at least 10 digits'); return
+      }
+      if (!form.state) { toast.error('Choose your state'); return }
+    }
+
     setSaving(true)
     setSaved(false)
     try {
+      if (identity) {
+        const result = await agencyIdentityApi.save({
+          legalName: form.name,
+          gstin: form.gstin,
+          phone: form.phone,
+          address: [form.address_line1, form.address_line2].map(v => v.trim()).filter(Boolean).join(', '),
+          state: form.state,
+          city: form.city,
+          pincode: form.pincode,
+          expectedUpdatedAt: identity.updatedAt,
+        })
+        if (!result.ok) {
+          toast.error(result.message)
+          return
+        }
+        setIdentity({ ...identity, updatedAt: result.identity.updatedAt })
+        setForm(prev => ({ ...prev, gstin: result.identity.gstin, phone: result.identity.phone }))
+      }
+      // Login metadata keeps PAN, email and the older readers of the company block; for an agency owner
+      // it is a mirror, never the source of the GST identity.
       const { error } = await supabase.auth.updateUser({
         data: {
           company: {
@@ -98,13 +170,16 @@ export default function CompanyProfilePage() {
           }
         }
       })
-      if (error) throw error
+      if (error) {
+        if (!identity) throw error
+        logger.error('[CompanyProfilePage] metadata mirror', error)
+      }
       setSaved(true)
       toast.success('Company profile saved!')
       setTimeout(() => setSaved(false), 3000)
     } catch (err: unknown) {
       logger.error('[CompanyProfilePage]', err)
-      toast.error('Profile update failed.')
+      toast.error(toUserFacingErrorMessage(err, 'Profile update failed.'))
     } finally {
       setSaving(false)
     }
@@ -118,6 +193,40 @@ export default function CompanyProfilePage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (isStaff) {
+    const staffRows: [string, string][] = [
+      ['Company / business name', form.name],
+      ['GSTIN', form.gstin],
+      ['City', form.city],
+    ]
+    return (
+      <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8 pb-8 md:pb-12 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Building2 className="w-6 h-6 text-primary-500" /> Company Profile
+          </h1>
+        </div>
+        {loadError && (
+          <div role="alert" className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-red-700 dark:text-red-300">{loadError}</p>
+            <button onClick={loadProfile} className="px-4 py-2 min-h-[44px] rounded-xl bg-red-600 text-white text-sm font-semibold">Retry</button>
+          </div>
+        )}
+        <p role="note" data-testid="staff-readonly-note" className="text-sm text-slate-600 dark:text-slate-300">
+          Only the agency owner can change these details.
+        </p>
+        <dl className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 grid gap-4 sm:grid-cols-2">
+          {staffRows.map(([label, value]) => (
+            <div key={label}>
+              <dt className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</dt>
+              <dd className="text-sm text-slate-900 dark:text-slate-100 break-words">{value.trim() || 'Not set'}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     )
   }
@@ -146,6 +255,18 @@ export default function CompanyProfilePage() {
           )}
         </button>
       </div>
+
+      {loadError && (
+        <div role="alert" className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-red-700 dark:text-red-300">{loadError}</p>
+          <button onClick={loadProfile} className="px-4 py-2 min-h-[44px] rounded-xl bg-red-600 text-white text-sm font-semibold">Retry</button>
+        </div>
+      )}
+      {identity && (
+        <p className="text-xs text-slate-500" data-testid="agency-identity-note">
+          Name, GSTIN, phone, address and state are saved to your agency record and used for your free trial and GST invoices.
+        </p>
+      )}
 
       {/* Completion Banner */}
       {completionPct < 100 && (

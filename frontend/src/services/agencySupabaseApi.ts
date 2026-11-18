@@ -183,6 +183,30 @@ export const agencyJobsApi = {
     },
 
     /**
+     * Catalog vehicle code (agency_trucks.vehicle_type) for every job that already
+     * has a truck, keyed by agency_jobs.id. Direct RLS read; the agency-portal-jobs
+     * list payload does not carry the truck, so the Jobs page joins it here.
+     */
+    async listJobTruckTypes(): Promise<Record<string, string>> {
+        const { data, error } = await supabase
+            .from('agency_jobs')
+            .select('id, agency_trucks(vehicle_type)')
+            .not('truck_id', 'is', null)
+
+        if (error) {
+            throw new UserFacingError('Failed to load truck types')
+        }
+
+        type Row = { id: string; agency_trucks: { vehicle_type?: string | null } | Array<{ vehicle_type?: string | null }> | null }
+        const types: Record<string, string> = {}
+        for (const row of (data ?? []) as unknown as Row[]) {
+            const truck = Array.isArray(row.agency_trucks) ? row.agency_trucks[0] : row.agency_trucks
+            if (truck?.vehicle_type) types[row.id] = truck.vehicle_type
+        }
+        return types
+    },
+
+    /**
      * Creates the agency's dispatch job for ONE authorized shipment through
      * the direct RLS INSERT (TO-143-D1) — NOT the agency-portal-jobs Edge
      * function. The caller's own agency id is resolved here (permitted by

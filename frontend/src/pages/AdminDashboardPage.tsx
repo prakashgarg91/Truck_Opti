@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { formatCurrency } from '../utils/formatters'
 import { downloadCsv, downloadJson, downloadXlsx, type ExportColumn } from '../utils/dataExport'
 import { logger } from '../utils/logger'
+import AdminLoadError from './AdminLoadError'
 
 interface Analytics {
   totalRevenue: number
@@ -61,6 +62,9 @@ const adminExportColumns: ExportColumn<AdminExportRow>[] = [
 ]
 
 export default function AdminDashboardPage() {
+  useEffect(() => {
+    document.title = 'Admin Dashboard - TruckOpti'
+  }, [])
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -79,6 +83,7 @@ export default function AdminDashboardPage() {
   })
   const [recentJobs, setRecentJobs] = useState<RevenueEvent[]>([])
   const [driverLeaderboard, setDriverLeaderboard] = useState<DriverLeaderboardRow[]>([])
+  const [loadError, setLoadError] = useState(false)
   const [exportRows, setExportRows] = useState<AdminExportRow[]>([])
   const [revenueTrend, setRevenueTrend] = useState<{ month: string; revenue: number }[]>([])
 
@@ -87,6 +92,7 @@ export default function AdminDashboardPage() {
     try {
       const snapshot = await adminDashboardApi.getSnapshot(20)
 
+      setLoadError(false)
       setAnalytics(snapshot.analytics)
       setRecentJobs(snapshot.recentJobs)
 
@@ -98,6 +104,7 @@ export default function AdminDashboardPage() {
     } catch (err) {
       logger.error('Failed to fetch analytics:', err)
       toast.error('Failed to load analytics')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -140,6 +147,18 @@ export default function AdminDashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <RefreshCw className="animate-spin text-indigo-600" size={32} />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-4xl md:max-w-7xl mx-auto p-4 md:p-8 pb-8 md:pb-12 space-y-5">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <TrendingUp className="w-6 h-6 text-primary-500" />
+          Platform Analytics
+        </h1>
+        <AdminLoadError what="platform analytics" onRetry={fetchAnalytics} message="Could not load platform analytics. The figures are not zero; they are unknown." />
       </div>
     )
   }
@@ -240,7 +259,7 @@ export default function AdminDashboardPage() {
       <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl p-5 shadow-lg">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-emerald-100 text-sm font-medium">Estimated Platform Revenue (10%)</p>
+            <p className="text-emerald-100 text-sm font-medium">Estimated Platform Revenue (illustrative 10% rate)</p>
             <p className="text-3xl font-bold text-white mt-1">{formatCurrency(analytics.platformFee)}</p>
             <p className="text-emerald-100/80 text-xs mt-2">Calculated on delivered revenue across agency and driver channels.</p>
           </div>
@@ -313,7 +332,7 @@ export default function AdminDashboardPage() {
             Recent Revenue Activity
           </h2>
           <div className="flex flex-wrap gap-2">
-            {(['csv', 'xlsx', 'json'] as const).map((format) => (
+            {exportRows.length > 0 && (['csv', 'xlsx', 'json'] as const).map((format) => (
               <button
                 key={format}
                 onClick={() => void handleExport(format)}

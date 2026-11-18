@@ -25,7 +25,8 @@ import {
   History,
   Users,
   DollarSign,
-  MessageSquare
+  MessageSquare,
+  Activity
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
@@ -52,6 +53,8 @@ const adminNavItems = [
   { path: '/admin/users', icon: Users, label: 'Users' },
   { path: '/admin/payouts', icon: DollarSign, label: 'Payouts' },
   { path: '/admin/subscriptions', icon: CreditCard, label: 'Subscriptions' },
+  { path: '/admin/billing-settings', icon: FileText, label: 'Billing Settings' },
+  { path: '/admin/billing-ops', icon: Activity, label: 'Billing Ops' },
   { path: '/admin/contact', icon: MessageSquare, label: 'Contact' },
 ]
 

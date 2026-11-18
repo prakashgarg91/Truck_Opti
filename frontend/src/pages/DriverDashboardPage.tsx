@@ -2,7 +2,7 @@
 import {
   Power, Truck, Star, TrendingUp, Clock,
   CheckCircle2, XCircle, AlertTriangle,
-  Wallet, Navigation, PhoneCall, RefreshCw, UserCircle, X, DollarSign
+  Wallet, Navigation, PhoneCall, RefreshCw, UserCircle, X, IndianRupee
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { driverDashboardApi, driverEarningsApi, driverSupabaseApi } from '../services/supabaseApi'
@@ -99,10 +99,30 @@ function calculateWalletBalance(total: number, payouts: { amount: number; status
     return reservedStatuses.has(payout.status) ? sum + payout.amount : sum
   }, 0)
 
-  return total - alreadyReserved
+  return Math.max(0, total - alreadyReserved)
+}
+
+/** Readable labels for the trip status chip; never show the raw status code. */
+const TRIP_STATUS_LABELS: Record<string, string> = {
+  pending: 'Offered',
+  accepted: 'Accepted',
+  pickup_arrived: 'At pickup',
+  in_transit: 'In transit',
+  delivery_arrived: 'At destination',
+  delivered: 'Delivered',
+  declined: 'Declined',
+  expired: 'Expired',
+  cancelled: 'Cancelled',
+}
+
+function tripStatusLabel(status: string): string {
+  return TRIP_STATUS_LABELS[status] ?? 'Updated'
 }
 
 export default function DriverDashboardPage() {
+  useEffect(() => {
+    document.title = 'Driver Dashboard - TruckOpti'
+  }, [])
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [driver, setDriver] = useState<DriverRecord | null>(null)
@@ -119,6 +139,10 @@ export default function DriverDashboardPage() {
   const [respondingJob, setRespondingJob] = useState(false)
   const [walletBalance, setWalletBalance] = useState(0)
   const [totalEarned, setTotalEarned] = useState(0)
+  // The wallet numbers come from the complete balance snapshot (all delivered
+  // trips and all payouts), not from the 10-trip recent list. When that read
+  // fails the numbers are hidden instead of guessed.
+  const [balanceUnavailable, setBalanceUnavailable] = useState(false)
   const [completedTrips, setCompletedTrips] = useState<TripHistory[]>([])
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false)
   const [withdrawalAmount, setWithdrawalAmount] = useState('')
@@ -228,19 +252,24 @@ export default function DriverDashboardPage() {
       setTodayTrips(todayDelivered.length)
       setTodayEarnings(todayDelivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0))
 
-      // Calculate wallet earnings from delivered trips
-      const total = delivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0)
-      setTotalEarned(total)
       setCompletedTrips(delivered.slice(0, 5))
 
       const payouts = await driverDashboardApi.getPayoutHistory(driverId)
       setPayoutHistory(payouts || [])
-
-      // Wallet balance = total earned minus already-requested payouts
-      setWalletBalance(calculateWalletBalance(total, payouts || []))
     } catch (_error) {
       toast.error('Failed to load trip history')
-      return
+    }
+
+    // Complete aggregate (no row limits) shared with the Earnings page. No
+    // server-side balance RPC exists yet; the value is a customer-quote
+    // estimate and is labelled as such.
+    try {
+      const snapshot = await driverEarningsApi.getBalanceSnapshot(driverId)
+      setTotalEarned(snapshot.totalDelivered)
+      setWalletBalance(calculateWalletBalance(snapshot.totalDelivered, snapshot.payouts))
+      setBalanceUnavailable(false)
+    } catch (_error) {
+      setBalanceUnavailable(true)
     }
   }, [])
 
@@ -249,6 +278,10 @@ export default function DriverDashboardPage() {
     const amount = parseFloat(withdrawalAmount)
     if (isNaN(amount) || amount <= 0) {
       toast.error('Please enter a valid amount')
+      return
+    }
+    if (balanceUnavailable) {
+      toast.error('Your amount could not be checked. Please try again later.')
       return
     }
     if (amount > walletBalance) {
@@ -262,6 +295,8 @@ export default function DriverDashboardPage() {
       setShowWithdrawalModal(false)
       setWithdrawalAmount('')
       await fetchHistory(driver.id)
+    } catch (error) {
+      toast.error(toUserFacingErrorMessage(error, 'Failed to submit withdrawal request'))
     } finally {
       setWithdrawing(false)
     }
@@ -490,22 +525,24 @@ export default function DriverDashboardPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="driver-withdrawal-amount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {'Amount (₹)'}
                 </label>
                 <div className="relative">
-                  <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <IndianRupee size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                   <input
+                    id="driver-withdrawal-amount"
                     type="number"
+                    inputMode="decimal"
                     value={withdrawalAmount}
                     onChange={(e) => setWithdrawalAmount(e.target.value)}
                     placeholder="0"
-                    max={walletBalance}
+                    max={balanceUnavailable ? undefined : walletBalance}
                     className="w-full pl-9 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  {'Available:'} {formatCurrency(walletBalance)}
+                  {'Available:'} {balanceUnavailable ? '—' : formatCurrency(walletBalance)}
                 </p>
               </div>
               <button
@@ -596,7 +633,7 @@ export default function DriverDashboardPage() {
                 disabled={respondingJob}
                 onClick={() => respondToJob(true)}
                 aria-label="Accept job offer"
-                className={`flex-2 flex-1 flex items-center justify-center gap-2 min-h-[48px] py-3 rounded-xl bg-green-600 text-white font-semibold disabled:opacity-50 ${FOCUS_RING}`}
+                className={`flex-1 flex items-center justify-center gap-2 min-h-[48px] py-3 rounded-xl bg-green-600 text-white font-semibold disabled:opacity-50 ${FOCUS_RING}`}
               >
                 <CheckCircle2 size={18} aria-hidden="true" />
                 Accept
@@ -643,7 +680,7 @@ export default function DriverDashboardPage() {
                 <p className="font-semibold">{statusInfo.label}</p>
                 <p className="text-sm mt-1 opacity-80">
                   {driver.status === 'pending'
-                    ? 'Your application is under review. We\'ll notify you within 24-48 hours.'
+                    ? 'Your application is under review. Contact support if you need an update.'
                     : driver.status === 'rejected'
                       ? 'Contact support to reapply or resolve issues.'
                       : 'Contact support for more information.'}
@@ -665,7 +702,7 @@ export default function DriverDashboardPage() {
                   {togglingOnline
                     ? 'Updating status…'
                     : driver.is_online
-                      ? 'You are visible to customers and can receive jobs'
+                      ? 'You can receive job offers'
                       : 'Go online to start receiving job offers'}
                 </p>
               </div>
@@ -719,7 +756,7 @@ export default function DriverDashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Wallet size={24} className="text-white" />
-                <h3 className="text-lg font-bold text-white">My Wallet</h3>
+                <h3 className="text-lg font-bold text-white">Payout estimate</h3>
               </div>
               <button
                 onClick={() => setShowWithdrawalModal(true)}
@@ -730,14 +767,19 @@ export default function DriverDashboardPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-emerald-100 text-sm">Available Balance</p>
-                <p className="text-2xl font-bold text-white">{formatCurrency(walletBalance)}</p>
+                <p className="text-emerald-100 text-sm">Available to withdraw (estimate)</p>
+                <p className="text-2xl font-bold text-white">{balanceUnavailable ? '—' : formatCurrency(walletBalance)}</p>
               </div>
               <div>
-                <p className="text-emerald-100 text-sm">Total Earned</p>
-                <p className="text-2xl font-bold text-white">{formatCurrency(totalEarned)}</p>
+                <p className="text-emerald-100 text-sm">Delivered trips (customer quote)</p>
+                <p className="text-2xl font-bold text-white">{balanceUnavailable ? '—' : formatCurrency(totalEarned)}</p>
               </div>
             </div>
+            <p className="mt-3 text-xs text-emerald-100">
+              {balanceUnavailable
+                ? 'Could not load your totals right now.'
+                : 'Based on customer quotes for all your delivered trips. Your agency sets your actual pay.'}
+            </p>
           </div>
         )}
 
@@ -747,7 +789,7 @@ export default function DriverDashboardPage() {
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
               <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Wallet size={16} className="text-green-500" />
-                Recent Earnings
+                Recent delivered trips (customer quote)
               </h3>
             </div>
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
@@ -757,7 +799,7 @@ export default function DriverDashboardPage() {
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
                       {trip.shipments?.origin
                         ? `${trip.shipments.origin} → ${trip.shipments.destination}`
-                        : 'Trip completed'}
+                        : 'Delivered trip'}
                     </p>
                     <p className="text-xs text-slate-400">
                       {new Date(trip.offered_at).toLocaleDateString('en-IN', {
@@ -766,7 +808,7 @@ export default function DriverDashboardPage() {
                     </p>
                   </div>
                   <span className="text-sm font-bold text-green-600">
-                    +{formatCurrency(trip.estimated_fare)}
+                    {formatCurrency(trip.estimated_fare)}
                   </span>
                 </div>
               ))}
@@ -779,8 +821,8 @@ export default function DriverDashboardPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
               <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <DollarSign size={16} className="text-amber-500" />
-                {'Payout Requests'}
+                <IndianRupee size={16} className="text-amber-500" />
+                {'Recent payout requests'}
               </h3>
             </div>
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
@@ -872,7 +914,7 @@ export default function DriverDashboardPage() {
             </div>
             <p className="font-semibold text-blue-800 dark:text-blue-300">Looking for jobs...</p>
             <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-              You'll receive notifications when a job is available near you
+              Job offers appear here while this page is open
             </p>
           </div>
         )}
@@ -914,7 +956,7 @@ export default function DriverDashboardPage() {
                       return (
                         <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${chip.classes}`}>
                           <ChipIcon size={12} aria-hidden="true" />
-                          {trip.status}
+                          {tripStatusLabel(trip.status)}
                         </span>
                       )
                     })()}

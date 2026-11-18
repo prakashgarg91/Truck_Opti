@@ -1,8 +1,5 @@
-// FINDING: AdminPayoutsPage.handleMarkPaid (frontend/src/pages/AdminPayoutsPage.tsx)
-// wraps adminPayoutsApi.markAsPaid in try/finally with NO catch: when the call
-// rejects there is no error toast, no logger.error entry, and the rejection
-// propagates unhandled (silent failure for the admin). Recorded per task rules;
-// not fixed here, and deliberately not asserted as correct by any test below.
+// FIXED (audit P1): handleMarkPaid now catches a failed markAsPaid, logs it and
+// toasts 'Failed to mark payout as paid' (covered below).
 //
 // Regression suite for AdminPayoutsPage: pins the CURRENT behaviour of the
 // admin payouts console over adminPayoutsApi — auth gating, load/empty/error
@@ -236,7 +233,8 @@ describe('AdminPayoutsPage', () => {
         expect(h.toastError).toHaveBeenCalledWith('Failed to load payouts')
         expect(h.loggerError).toHaveBeenCalledTimes(1)
         expect(h.loggerError.mock.calls[0][0]).toBe('[AdminPayouts] Fetch error:')
-        expect(text()).toContain('No payouts found')
+        expect(q('[data-testid="admin-load-error"]')).not.toBeNull()
+        expect(text()).not.toContain('No payouts found')
 
         await click(buttons(/^Refresh$/)[0])
         expect(h.getAll).toHaveBeenCalledTimes(2)
@@ -416,6 +414,17 @@ describe('AdminPayoutsPage', () => {
         expect(h.getAll).toHaveBeenCalledTimes(2)
         expect(rowFor('Meena Singh')?.textContent).toContain('Completed')
         expect(rowButton('Meena Singh', /Mark Paid/)).toBeUndefined()
+    })
+
+    it('a failed Mark Paid logs, toasts the failure, does not claim success and does not refetch', async () => {
+        h.markAsPaid.mockRejectedValueOnce(new Error('edge down'))
+        await mountPage()
+        await click(rowButton('Meena Singh', /Mark Paid/) as HTMLButtonElement)
+        expect(h.toastError).toHaveBeenCalledWith('Failed to mark payout as paid')
+        expect(h.loggerError).toHaveBeenCalledTimes(1)
+        expect(h.toastSuccess).not.toHaveBeenCalled()
+        expect(h.getAll).toHaveBeenCalledTimes(1)
+        expect(rowButton('Meena Singh', /Mark Paid/)).toBeDefined()
     })
 
     it('a rejected payout exposes its note via title and a note-less one shows nothing', async () => {

@@ -53,7 +53,7 @@ const line = (id: string, orderId: string, lineNo: number, quantity: number, wpu
     stackable: true, fragile: false,
 })
 const truck = (id: string, rc: string, payload: number | null, extra: Record<string, unknown> = {}) => ({
-    id, vehicle_type: 'Tata 407', rc_number: rc, payload_kg: payload, is_available: true, maintenance_blocked: false, ...extra,
+    id, vehicle_type: 'tata_407', rc_number: rc, payload_kg: payload, is_available: true, maintenance_blocked: false, ...extra,
 })
 const plan = (id: string, name: string, status: string, planVersion: number, version = 1) => ({
     id, name, status, plan_version: planVersion, version, approved_at: null, created_at: '2026-11-11T00:00:00Z',
@@ -380,4 +380,15 @@ describe('AgencyLoadPlanPage', () => {
         expect(b.title).toContain('dispatch is locked')
     })
 
+
+    it('truck choices and proposal loads show the vehicle label with the RC number, never the raw code or a site id', async () => {
+        await mountPage()
+        expect(text()).toContain('Tata 407 (1T) · MH01-1')
+        expect(text()).not.toContain('tata_407')
+        await pickAndPropose(['o-1'], ['t-2'])
+        const load = q('[data-testid="loadplan-load-t-2"]')!
+        expect(load.textContent).toContain('Tata 407 (1T) · MH01-2')
+        expect(text()).not.toMatch(/Site [0-9a-f]{8}/)
+        expect(text()).not.toMatch(/Order line [0-9a-f]{8}/)
+    })
 })

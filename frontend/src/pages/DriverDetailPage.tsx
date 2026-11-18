@@ -83,6 +83,9 @@ function DocBadge({ label, url }: { label: string; url: string | null }) {
 }
 
 export default function DriverDetailPage() {
+  useEffect(() => {
+    document.title = 'Driver Details - TruckOpti'
+  }, [])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [driver, setDriver] = useState<DriverProfile | null>(null)

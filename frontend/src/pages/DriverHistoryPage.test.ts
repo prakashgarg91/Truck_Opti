@@ -180,16 +180,39 @@ describe('DriverHistoryPage', () => {
         expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Failed to load driver profile')
         expect(h.getHistory).not.toHaveBeenCalled()
-        expect(text()).toContain('No trips found')
+        // A failure is an error state with Retry, never the empty state.
+        expect(text()).toContain('Could not load your trips')
+        expect(text()).not.toContain('No trips found')
+        expect(buttons(/Retry/)[0]).toBeTruthy()
     })
 
-    it('history failure toasts and falls back to the empty state', async () => {
+    it('history failure toasts and shows an error state with Retry', async () => {
         h.getHistory.mockRejectedValue(new Error('history query failed'))
         await mountPage()
         expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Failed to load trip history')
         expect(q('.animate-spin')).toBeNull()
-        expect(text()).toContain('No trips found')
+        expect(text()).toContain('Could not load your trips')
+        expect(text()).not.toContain('No trips found')
+        expect(q('[role="alert"]')).toBeTruthy()
+    })
+
+    it('Retry after a history failure refetches and renders the trips', async () => {
+        h.getHistory.mockRejectedValueOnce(new Error('history query failed')).mockResolvedValue([tripRow({ id: 'again' })])
+        await mountPage()
+        expect(text()).toContain('Could not load your trips')
+        await click(buttons(/Retry/)[0])
+        expect(h.getHistory).toHaveBeenCalledTimes(2)
+        expect(text()).toContain('Mumbai Yard')
+        expect(text()).not.toContain('Could not load your trips')
+    })
+
+    it('filter chips are at least 44px tall and expose their pressed state', async () => {
+        await mountPage()
+        const all = buttons(/All/)[0]
+        expect(all.className).toContain('min-h-[44px]')
+        expect(all.getAttribute('aria-pressed')).toBe('true')
+        expect(buttons(/declined/)[0].getAttribute('aria-pressed')).toBe('false')
     })
 
     it('renders a delivered trip with route, weight, INR amount and formatted offer date', async () => {

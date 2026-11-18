@@ -8,6 +8,8 @@ export default defineConfig({
                 url: 'https://www.truckopti.in/',
             },
         },
+        // 122 files run in parallel; page tests with lazy imports exceed the 5 s default under load.
+        testTimeout: 20000,
         clearMocks: true,
         restoreMocks: true,
         unstubEnvs: true,

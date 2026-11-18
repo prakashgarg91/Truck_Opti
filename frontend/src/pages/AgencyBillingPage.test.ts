@@ -1,6 +1,7 @@
 import { act } from 'react'
 import { createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Regression pin for AgencyBillingPage over agencyBillingApi.list(): the fetch
@@ -89,7 +90,7 @@ async function mountPage(): Promise<HTMLElement> {
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(AgencyBillingPage))
+        root!.render(createElement(MemoryRouter, { initialEntries: ['/agency/billing'] }, createElement(AgencyBillingPage)))
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -162,7 +163,7 @@ describe('AgencyBillingPage', () => {
 
     it('sets the browser tab title on mount', async () => {
         await mountPage()
-        expect(document.title).toBe('Billing & Invoices - TruckOpti')
+        expect(document.title).toBe('Earnings summary - TruckOpti')
     })
 
     it('fetches billing data exactly once on mount', async () => {
@@ -179,7 +180,7 @@ describe('AgencyBillingPage', () => {
         expect(h.logError).toHaveBeenCalledWith('[AgencyBillingPage] fetchBilling failed:', expect.any(Error))
         expect(q('[data-testid="billing-error"]')).not.toBeNull()
         expect(text()).toContain("We couldn't load your billing data.")
-        expect(text()).not.toContain('No invoices yet')
+        expect(text()).not.toContain('No statements yet')
         expect(text()).not.toContain(formatCurrency(0))
         const retry = buttons(/Retry/)
         expect(retry).toHaveLength(1)
@@ -193,21 +194,23 @@ describe('AgencyBillingPage', () => {
         await click(buttons(/Retry/)[0])
         expect(h.list).toHaveBeenCalledTimes(2)
         expect(q('[data-testid="billing-error"]')).toBeNull()
-        expect(text()).toContain('Invoices (2)')
+        expect(text()).toContain('Statements (2)')
     })
 
     it('empty state shows the invoice placeholder and no export-all buttons', async () => {
         h.list.mockResolvedValue({ summary: { thisMonth: 0, pending: 0, totalPaid: 0, gstDue: 0 }, jobs: [] })
         await mountPage()
-        expect(text()).toContain('No invoices yet')
-        expect(text()).toContain('Invoices will appear here once you complete your first job')
+        expect(text()).toContain('No statements yet')
+        expect(text()).toContain('Statements will appear here once you complete your first job')
         expect(buttons(/Export CSV|Export XLSX|Export JSON/)).toHaveLength(0)
     })
 
     it('renders the four summary cards with formatted values', async () => {
         await mountPage()
-        expect(text()).toContain('Billing & Invoices')
-        expect(text()).toContain('Revenue overview and invoice management')
+        expect(text()).toContain('Earnings summary')
+        expect(text()).toContain('Revenue overview from delivered jobs')
+        expect(text()).toContain('Not a tax invoice. Create GST invoices under Invoices.')
+        expect(q('a[href="/agency/invoices"]')?.textContent).toBe('Not a tax invoice. Create GST invoices under Invoices.')
         expect(text()).toContain('This Month')
         expect(text()).toContain('In Progress Value')
         expect(text()).toContain('Total Paid')
@@ -220,7 +223,7 @@ describe('AgencyBillingPage', () => {
 
     it('lists delivered jobs with route, date, shipment tail and fare', async () => {
         await mountPage()
-        expect(text()).toContain('Invoices (2)')
+        expect(text()).toContain('Statements (2)')
         expect(text()).toContain('Mumbai → Delhi')
         expect(text()).toContain('18 Oct 2026')
         expect(text()).toContain('#' + OCTOBER_JOB.shipment_id.slice(-8))
@@ -236,10 +239,10 @@ describe('AgencyBillingPage', () => {
 
     it('uses one heading per section (h1 title, h3 reports, h3 invoices)', async () => {
         await mountPage()
-        expect(q('h1')?.textContent).toBe('Billing & Invoices')
+        expect(q('h1')?.textContent).toBe('Earnings summary')
         const h3s = Array.from((container as HTMLElement).querySelectorAll('h3')).map((el) => el.textContent)
         expect(h3s).toContain('GST Reports')
-        expect(h3s).toContain('Invoices (2)')
+        expect(h3s).toContain('Statements (2)')
     })
 
     it('offers the three previous calendar months as GSTR-1 reports (pinned clock)', async () => {
@@ -332,19 +335,21 @@ describe('AgencyBillingPage', () => {
         expect(h.logError).toHaveBeenCalledWith('[AgencyBillingPage] export failed:', expect.any(Error))
     })
 
-    it('the Invoice button generates a PDF with the invoice number, route and GST lines', async () => {
+    it('the Statement button generates a non-tax PDF that points to Invoices for GST invoices', async () => {
         await mountPage()
-        await click(buttons(/^Invoice$/)[0])
+        await click(buttons(/^Statement$/)[0])
         expect(h.jsPdfCtor).toHaveBeenCalledTimes(1)
         const lines = h.jspdfText.mock.calls.map((call) => call[0])
-        expect(lines).toContain('TruckOpti Tax Invoice')
-        expect(lines).toContain('Invoice #: TRK-A1B2C3D4')
+        expect(lines).toContain('TruckOpti Statement')
+        expect(lines).toContain('Reference: TRK-A1B2C3D4')
+        expect(lines).toContain('Not a tax invoice. Create GST invoices under Invoices.')
+        expect(lines).not.toContain('TruckOpti Tax Invoice')
         expect(lines).toContain('Date: 18/10/2026')
         expect(lines).toContain('Route: Mumbai → Delhi')
         expect(lines).toContain('Subtotal: ₹1,234.56')
         expect(lines).toContain('GST (5%): ₹61.728')
         expect(lines).toContain('Total: ₹1,296.288')
         expect(lines).toContain('Thank you for using TruckOpti!')
-        expect(h.jspdfSave).toHaveBeenCalledWith('TruckOpti-Invoice-a1b2c3d4.pdf')
+        expect(h.jspdfSave).toHaveBeenCalledWith('TruckOpti-Statement-a1b2c3d4.pdf')
     })
 })

@@ -372,7 +372,7 @@ export type TrialErrorCode =
   | 'plan_unavailable'
 
 const TRIAL_MESSAGES: Record<TrialErrorCode, string> = {
-  identity_required: 'Add your GSTIN and phone to the agency profile first, then start your trial.',
+  identity_required: 'Add your GSTIN and phone in Company Settings first, then start your trial.',
   trial_already_claimed: 'A free trial has already been used for this agency, GSTIN or phone number. Choose a plan to continue.',
   forbidden_scope: 'Only the agency owner can start the free trial.',
   subscription_exists: 'This agency already has a subscription, so a free trial is not needed. Open Billing to see your plan.',

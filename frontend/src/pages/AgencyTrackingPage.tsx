@@ -16,6 +16,11 @@ import {
   type TripLive,
 } from '../services/agencyTrackingApi'
 import { estimateEta, isStalePing } from '../lib/trackingRules'
+import { agencyJobsApi } from '../services/agencyPortalApi'
+import { agencyPayrollApi } from '../services/agencyPayrollApi'
+
+// Active jobs and open details refresh on this cadence, matching the Jobs page.
+const LIVE_REFRESH_MS = 15000
 
 // TO-147 Trip tracking and incidents. Active jobs with the last ping time, a
 // stale-ping badge, an ETA and the open incident count. Job detail lists the
@@ -59,6 +64,20 @@ const INCIDENT_STYLE: Record<IncidentStatus, { label: string; tone: string }> = 
 
 type LiveState = { kind: 'ok'; data: TripLive } | { kind: 'unavailable'; message: string }
 
+// Human-readable job heading: route from the jobs list (shipments are owner-only over RLS,
+// so the route comes from agency-portal-jobs) and the driver's display name.
+type JobHeading = { route: string | null; driverName: string | null }
+
+function routeFromJobsRow(raw: unknown): { id: string; route: string | null } | null {
+  if (!raw || typeof raw !== 'object') return null
+  const row = raw as { id?: unknown; shipments?: unknown }
+  if (typeof row.id !== 'string') return null
+  const s = (Array.isArray(row.shipments) ? row.shipments[0] : row.shipments) as { origin?: unknown; destination?: unknown } | null
+  const origin = typeof s?.origin === 'string' ? s.origin : ''
+  const destination = typeof s?.destination === 'string' ? s.destination : ''
+  return { id: row.id, route: origin && destination ? `${origin} → ${destination}` : null }
+}
+
 function formatWhen(iso: string): string {
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString()
@@ -92,6 +111,7 @@ export default function AgencyTrackingPage() {
   }, [])
 
   const [jobs, setJobs] = useState<ActiveJobRow[]>([])
+  const [headings, setHeadings] = useState<Map<string, JobHeading>>(new Map())
   const [live, setLive] = useState<Map<string, LiveState>>(new Map())
   const [nowIso, setNowIso] = useState(() => new Date().toISOString())
   const [loading, setLoading] = useState(true)
@@ -149,6 +169,24 @@ export default function AgencyTrackingPage() {
         setDenied(true)
         return
       }
+      // Headings are non-fatal: if either lookup fails the card falls back to "Trip" and "Driver assigned".
+      const [jobsList, directory] = await Promise.allSettled([agencyJobsApi.list(), agencyPayrollApi.listDriverDirectory()])
+      const routes = new Map<string, string | null>()
+      if (jobsList.status === 'fulfilled') {
+        for (const raw of jobsList.value as unknown as unknown[]) {
+          const parsed = routeFromJobsRow(raw)
+          if (parsed) routes.set(parsed.id, parsed.route)
+        }
+      }
+      const names = new Map<string, string>(directory.status === 'fulfilled' ? directory.value.map((d) => [d.driver_id, d.name]) : [])
+      const nextHeadings = new Map<string, JobHeading>()
+      for (const r of rows) {
+        nextHeadings.set(r.id, {
+          route: routes.get(r.id) ?? null,
+          driverName: r.driver_id ? names.get(r.driver_id) ?? null : null,
+        })
+      }
+      setHeadings(nextHeadings)
       setJobs(rows)
       setLive(next)
       setNowIso(new Date().toISOString())
@@ -181,6 +219,30 @@ export default function AgencyTrackingPage() {
   useEffect(() => {
     fetchAll()
   }, [fetchAll])
+
+  // Quiet detail reload: keeps the last good pings and incidents if a poll fails.
+  const refreshDetailQuietly = useCallback(async (jobId: string) => {
+    try {
+      const [p, i] = await Promise.all([agencyTrackingApi.listPings(jobId), agencyTrackingApi.listIncidents(jobId)])
+      setPings(p)
+      setIncidents(i)
+    } catch (e) {
+      logger.error('[AgencyTrackingPage] quiet detail refresh failed:', e)
+    }
+  }, [])
+
+  const selectedRef = useRef<string | null>(null)
+  useEffect(() => {
+    selectedRef.current = selected
+  }, [selected])
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void fetchAll()
+      if (selectedRef.current) void refreshDetailQuietly(selectedRef.current)
+    }, LIVE_REFRESH_MS)
+    return () => window.clearInterval(intervalId)
+  }, [fetchAll, refreshDetailQuietly])
 
   const selectedJob = useMemo(() => jobs.find((j) => j.id === selected) ?? null, [jobs, selected])
 
@@ -368,13 +430,17 @@ export default function AgencyTrackingPage() {
               const stale = staleFor(state)
               const eta = etaFor(j.id, state)
               const open = state?.kind === 'ok' ? state.data.openIncidents : null
+              const heading = headings.get(j.id)
+              const title = heading?.route ?? 'Trip'
+              const driverLine = j.driver_id ? heading?.driverName ?? 'Driver assigned' : 'No driver assigned'
               return (
                 <li key={j.id} data-testid={`tracking-job-${j.id}`} className="rounded-xl border border-slate-200 p-3 space-y-2">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 space-y-1">
                       <p className="font-semibold text-slate-900 break-words">
-                        Job {j.id.slice(0, 8)} · {JOB_STATUS_LABELS[j.status]}
+                        {title} · {JOB_STATUS_LABELS[j.status]}
                       </p>
+                      <p className="text-xs text-slate-700 break-words">{driverLine}</p>
                       {j.notes && <p className="text-xs text-slate-600 break-words">{j.notes}</p>}
                       <p className="text-sm text-slate-800" data-testid={`tracking-last-${j.id}`}>
                         {state?.kind === 'unavailable'
@@ -402,7 +468,7 @@ export default function AgencyTrackingPage() {
                     type="button"
                     onClick={() => openDetail(j.id)}
                     aria-expanded={selected === j.id}
-                    aria-label={`${selected === j.id ? 'Hide' : 'View'} details for job ${j.id.slice(0, 8)}`}
+                    aria-label={`${selected === j.id ? 'Hide' : 'View'} details for ${title} (${driverLine})`}
                     className={`min-h-[44px] w-full rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-800 sm:w-auto ${FOCUS_RING}`}
                   >
                     {selected === j.id ? 'Hide details' : 'View details'}

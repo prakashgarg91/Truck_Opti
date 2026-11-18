@@ -147,6 +147,21 @@ describe('AgencyTeamPage', () => {
         expect(pending).not.toContain('ravi@example.com')
     })
 
+    it('each member shows the scope label with a one-line description of what the role can do', async () => {
+        await mountPage()
+        const help = q('[data-testid="team-scope-help"]')?.textContent || ''
+        expect(help).toBe('Jobs, order import and cancel, load plans, consignments and ERP.')
+        expect(q('[data-testid="team-members"]')?.textContent || '').toContain('Dispatcher')
+    })
+
+    it('a member without an invitation email is named "Team member" and never shows a user id fragment', async () => {
+        h.listMembers.mockResolvedValue([{ ...MEMBER, id: 'mem-7', user_id: 'a1b2c3d4-user', invitation_id: null }])
+        await mountPage()
+        const members = q('[data-testid="team-members"]')?.textContent || ''
+        expect(members).toContain('Team member')
+        expect(members).not.toContain('a1b2c3')
+    })
+
     it('empty state invites the first member', async () => {
         h.listMembers.mockResolvedValue([])
         h.listInvitations.mockResolvedValue([])
@@ -262,10 +277,10 @@ describe('AgencyTeamPage', () => {
         const select = q('select[name="change-scope"]') as HTMLSelectElement
         expect(Array.from(select.options).map((o) => o.value)).toEqual(['dispatcher', 'fleet_manager', 'finance', 'viewer'])
         expect(select.value).toBe('dispatcher')
-        expect(dialog.textContent).toContain('Reserve vehicles and drivers, manage jobs')
+        expect(dialog.textContent).toContain('Jobs, order import and cancel, load plans, consignments and ERP.')
         await type(select, 'finance')
-        expect(dialog.textContent).toContain('Manage clients and publish tariffs')
-        expect(dialog.textContent).not.toContain('Reserve vehicles and drivers, manage jobs')
+        expect(dialog.textContent).toContain('Clients, tariffs, invoices, expenses, payroll, driver rates and payouts.')
+        expect(dialog.textContent).not.toContain('Jobs, order import and cancel, load plans, consignments and ERP.')
     })
 
     it('Save stays disabled until a different scope is chosen; Keep and Escape close without calling', async () => {

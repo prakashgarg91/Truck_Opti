@@ -7,6 +7,7 @@ import { adminSupabaseApi } from '../services/adminSupabaseApi'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import AdminLoadError from './AdminLoadError'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 
 interface Driver {
@@ -60,6 +61,9 @@ function vehicleLabel(type: string) {
 }
 
 export default function AdminDriversPage() {
+  useEffect(() => {
+    document.title = 'Admin Drivers - TruckOpti'
+  }, [])
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('pending')
   const [drivers, setDrivers] = useState<Driver[]>([])
@@ -68,15 +72,18 @@ export default function AdminDriversPage() {
   const [rejectModal, setRejectModal] = useState<{ driverId: string; name: string } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState(false)
 
   const fetchDrivers = useCallback(async () => {
     setLoading(true)
     try {
       const driverData = await adminSupabaseApi.getDriversByStatus(tab)
       setDrivers(driverData as Driver[])
+      setLoadError(false)
     } catch (err: unknown) {
       logger.error('[AdminDriversPage]', err)
       toast.error('Failed to load drivers.')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -138,7 +145,7 @@ export default function AdminDriversPage() {
   )
 
   const exportCSV = () => {
-    const headers = ['Name', 'Phone', 'PAN', 'Vehicle Type', 'Home City', 'RC Number', 'License Number', 'Aadhaar Last4', 'Bank Account', 'IFSC', 'UPI', 'Status', 'Rating', 'Total Trips', 'Registered On']
+    const headers = ['Name', 'Phone', 'PAN', 'Vehicle Type', 'Home City', 'RC Number', 'License Number', 'Status', 'Rating', 'Total Trips', 'Registered On']
     const rows = filtered.map(d => [
       d.full_name,
       d.phone,
@@ -147,10 +154,6 @@ export default function AdminDriversPage() {
       d.home_city ?? '',
       d.rc_number ?? '',
       d.license_number ?? '',
-      d.aadhaar_last4 ?? '',
-      d.bank_account ?? '',
-      d.ifsc_code ?? '',
-      d.upi_id ?? '',
       d.status,
       d.rating?.toString() ?? '',
       d.total_trips?.toString() ?? '',
@@ -226,6 +229,8 @@ export default function AdminDriversPage() {
         <div className="flex items-center justify-center h-48">
           <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : loadError ? (
+        <AdminLoadError what="drivers" onRetry={fetchDrivers} />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
           <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" />

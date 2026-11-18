@@ -100,7 +100,7 @@ export default function ForgotPasswordPage() {
                             setIdentifier(event.target.value)
                             if (identifierError) setIdentifierError('')
                         }}
-                        placeholder="your@email.com or demo.driver"
+                        placeholder="your@email.com"
                         className={`input text-lg font-medium ${identifierError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
                         aria-invalid={!!identifierError}
                         autoFocus
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
                     ) : (
                         <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
                             <Shield className="w-3 h-3" />
-                            Reset links work for seeded email addresses and login IDs.
+                            Enter the email address on your account. We will send a reset link if password sign-in is enabled for it.
                         </p>
                     )}
                 </div>

@@ -293,10 +293,10 @@ export default function ProfilePage() {
                   {'Edit Profile'}
                 </h2>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="profile-field-1" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'Full Name'}
                   </label>
-                  <input
+                  <input id="profile-field-1"
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
@@ -305,12 +305,12 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="profile-field-2" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'Phone Number'}
                   </label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-slate-500 font-medium">+91</span>
-                    <input
+                    <input id="profile-field-2"
                       type="tel"
                       inputMode="numeric"
                       value={editPhone}
@@ -546,10 +546,10 @@ export default function ProfilePage() {
               {isEditingCompany && (
                 <div className="p-4 grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    <label htmlFor="profile-field-3" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       {t.companyName}
                     </label>
-                    <input
+                    <input id="profile-field-3"
                       type="text"
                       value={editCompanyName}
                       onChange={(e) => setEditCompanyName(e.target.value)}
@@ -558,10 +558,10 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    <label htmlFor="profile-field-4" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       {t.gstin}
                     </label>
-                    <input
+                    <input id="profile-field-4"
                       type="text"
                       value={editGstin}
                       onChange={(e) => setEditGstin(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15))}
@@ -571,10 +571,10 @@ export default function ProfilePage() {
                     <p className="text-xs text-slate-500 mt-1">15 characters (e.g., 27AABCU9603R1ZX)</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    <label htmlFor="profile-field-5" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       {'PAN Number'}
                     </label>
-                    <input
+                    <input id="profile-field-5"
                       type="text"
                       value={editPan}
                       onChange={(e) => setEditPan(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10))}
@@ -584,10 +584,10 @@ export default function ProfilePage() {
                     <p className="text-xs text-slate-500 mt-1">10 characters (e.g., ABCDE1234F)</p>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    <label htmlFor="profile-field-6" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       {t.companyAddress}
                     </label>
-                    <textarea
+                    <textarea id="profile-field-6"
                       value={editCompanyAddress}
                       onChange={(e) => setEditCompanyAddress(e.target.value)}
                       className="input w-full"

@@ -200,7 +200,7 @@ describe('DriverProfilePage', () => {
         h.getByUserId.mockResolvedValue(null)
         await mountPage()
         expect(text()).toContain('Driver profile not found')
-        expect(text()).toContain('does not have a linked driver record yet')
+        expect(text()).toContain('not linked to a driver profile yet')
         expect(buttons(/Back To Driver Dashboard/)).toHaveLength(1)
         expect(buttons(/Open Account Center/)).toHaveLength(1)
     })
@@ -290,7 +290,7 @@ describe('DriverProfilePage', () => {
         await mountPage()
         expect(cardValue('Trips Completed')).toBe('42')
         expect(cardValue('Rating')).toBe('4.3')
-        expect(cardValue('Payment Setup')).toBe('ravi@upi')
+        expect(cardValue('Payment Setup')).toBe('ra***@upi')
     })
 
     it('null trips and rating render 0 and New; a missing payout renders Pending', async () => {
@@ -299,6 +299,15 @@ describe('DriverProfilePage', () => {
         expect(cardValue('Trips Completed')).toBe('0')
         expect(cardValue('Rating')).toBe('New')
         expect(cardValue('Payment Setup')).toBe('Pending')
+    })
+
+    it('never prints the full UPI id or bank account in the payout details', async () => {
+        h.getByUserId.mockResolvedValue({ ...PROFILE, upi_id: 'ravikumar@okbank', bank_account: '123456784321' })
+        await mountPage()
+        expect(text()).toContain('UPI: ra***@okbank')
+        expect(text()).toContain('Bank: ****4321')
+        expect(text()).not.toContain('ravikumar')
+        expect(text()).not.toContain('123456784321')
     })
 
     it('a bank account without UPI renders Bank linked', async () => {

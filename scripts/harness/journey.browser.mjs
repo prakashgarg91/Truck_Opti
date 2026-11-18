@@ -115,7 +115,7 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
   async function signIn(rec, who) {
     const { page } = rec
     await go(page, '/login?mode=agency')
-    await page.getByPlaceholder('your@email.com or demo.driver').fill(who.email, { timeout: TIMEOUT })
+    await page.getByPlaceholder('your@email.com or login ID').fill(who.email, { timeout: TIMEOUT })
     await page.getByPlaceholder('Enter your password').fill(who.password)
     await page.getByRole('button', { name: /sign in with password/i }).click()
     await page.waitForURL(/\/agency\//, { timeout: TIMEOUT })
@@ -125,7 +125,7 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
   async function signInAnyRole(rec, who) {
     const { page } = rec
     await go(page, '/login?mode=agency')
-    await page.getByPlaceholder('your@email.com or demo.driver').fill(who.email, { timeout: TIMEOUT })
+    await page.getByPlaceholder('your@email.com or login ID').fill(who.email, { timeout: TIMEOUT })
     await page.getByPlaceholder('Enter your password').fill(who.password)
     await page.getByRole('button', { name: /sign in with password/i }).click()
     await page.waitForURL((u) => !/\/(login|auth\/callback)(\/|$)/.test(u.pathname), { timeout: 20000 }).catch(() => {})

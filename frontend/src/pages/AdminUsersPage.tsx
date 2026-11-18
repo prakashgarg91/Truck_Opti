@@ -5,12 +5,10 @@ import {
   RefreshCw,
   Shield,
   Trash2,
-  Mail,
   Phone,
   Calendar,
   ChevronLeft,
   X,
-  CheckCircle,
   AlertTriangle,
   UserCheck,
   UserX,
@@ -20,6 +18,7 @@ import { adminSupabaseApi, type AdminUser as UserRecord } from '../services/admi
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
+import AdminLoadError from './AdminLoadError'
 
 type UserAction = 'disable' | 'enable' | 'delete'
 
@@ -71,10 +70,14 @@ function getActionCopy(action: UserAction, user: UserRecord) {
 }
 
 export default function AdminUsersPage() {
+  useEffect(() => {
+    document.title = 'Admin Users - TruckOpti'
+  }, [])
   const navigate = useNavigate()
   const { user: currentUser } = useAuthStore()
   const [users, setUsers] = useState<UserRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [selectedAction, setSelectedAction] = useState<{ user: UserRecord; action: UserAction } | null>(null)
@@ -93,8 +96,10 @@ export default function AdminUsersPage() {
     try {
       const nextUsers = await adminSupabaseApi.getAdminUsers()
       setUsers(nextUsers)
+      setLoadError(false)
     } catch (error) {
       toast.error(toUserFacingErrorMessage(error, 'Failed to load users'))
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -232,6 +237,8 @@ export default function AdminUsersPage() {
         <div className="flex justify-center py-12">
           <RefreshCw size={24} className="animate-spin text-indigo-600" />
         </div>
+      ) : loadError ? (
+        <AdminLoadError what="users" onRetry={fetchUsers} />
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-12">
           <Users size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
@@ -300,10 +307,6 @@ export default function AdminUsersPage() {
                 <span className="flex items-center gap-1">
                   <Calendar size={12} />
                   {'Joined'}: {new Date(user.created_at).toLocaleDateString('en-IN')}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Mail size={12} />
-                  <CheckCircle size={12} className="text-green-500" />
                 </span>
               </div>
             </div>

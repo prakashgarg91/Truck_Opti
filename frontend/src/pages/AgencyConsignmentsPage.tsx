@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, Copy, FilePlus2, QrCode, RefreshCw, ShieldAlert } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Link } from 'react-router-dom'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import {
   agencyConsignmentsApi,
   type ConsignmentEventRow,
   type ConsignmentRow,
+  type OrderRoute,
   type OrderRow,
 } from '../services/agencyConsignmentsApi'
 import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
@@ -74,6 +76,14 @@ function formatWhen(iso: string): string {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString()
 }
 
+/** "Client · Pickup → Drop" for one order; missing parts are named, never guessed. */
+function routeText(route: OrderRoute | undefined): string {
+  const client = route?.clientName ?? 'Client unknown'
+  const pickup = route && route.pickupLabels.length > 0 ? route.pickupLabels.join(', ') : 'pickup not set'
+  const drop = route && route.dropLabels.length > 0 ? route.dropLabels.join(', ') : 'drop not set'
+  return `${client} · ${pickup} → ${drop}`
+}
+
 export default function AgencyConsignmentsPage() {
   useEffect(() => {
     document.title = 'Consignments - TruckOpti'
@@ -81,6 +91,7 @@ export default function AgencyConsignmentsPage() {
 
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [consignments, setConsignments] = useState<ConsignmentRow[]>([])
+  const [routeByOrder, setRouteByOrder] = useState<Map<string, OrderRoute>>(new Map())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
@@ -118,9 +129,14 @@ export default function AgencyConsignmentsPage() {
   const fetchAll = useCallback(async () => {
     try {
       setError(null)
-      const [o, c] = await Promise.all([agencyConsignmentsApi.listOrders(), agencyConsignmentsApi.listConsignments()])
+      const [o, c, r] = await Promise.all([
+        agencyConsignmentsApi.listOrders(),
+        agencyConsignmentsApi.listConsignments(),
+        agencyConsignmentsApi.listOrderRoutes(),
+      ])
       setOrders(o)
       setConsignments(c)
+      setRouteByOrder(new Map(r.map((route) => [route.orderId, route])))
       setDenied(false)
     } catch (e) {
       logger.error('[AgencyConsignmentsPage] load failed:', e)
@@ -150,6 +166,17 @@ export default function AgencyConsignmentsPage() {
   }, [fetchAll])
 
   const orderById = useMemo(() => new Map(orders.map((o) => [o.id, o])), [orders])
+  const [grSearch, setGrSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<ProofState | ''>('')
+  const visibleConsignments = useMemo(() => {
+    const q = grSearch.trim().toLowerCase()
+    return consignments.filter((c) => {
+      if (statusFilter && c.status !== statusFilter) return false
+      if (!q) return true
+      const orderRef = orderById.get(c.order_id)?.client_order_ref ?? ''
+      return c.gr_number.toLowerCase().includes(q) || orderRef.toLowerCase().includes(q)
+    })
+  }, [consignments, orderById, grSearch, statusFilter])
   const orderless = useMemo(() => {
     const withGr = new Set(consignments.map((c) => c.order_id))
     return orders.filter((o) => (o.status === 'draft' || o.status === 'planned') && !withGr.has(o.id))
@@ -343,8 +370,38 @@ export default function AgencyConsignmentsPage() {
         {consignments.length === 0 ? (
           <p data-testid="consignments-empty" className="text-sm text-slate-700">No GR has been created yet.</p>
         ) : (
+          <>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <label htmlFor="gr-search" className="block text-xs font-medium text-slate-700">Search by GR or order reference</label>
+                <input
+                  id="gr-search"
+                  type="search"
+                  value={grSearch}
+                  onChange={(e) => setGrSearch(e.target.value)}
+                  className={`mt-1 min-h-[44px] w-full rounded-xl border border-slate-300 px-3 ${FOCUS_RING}`}
+                />
+              </div>
+              <div>
+                <label htmlFor="gr-status-filter" className="block text-xs font-medium text-slate-700">Status</label>
+                <select
+                  id="gr-status-filter"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as ProofState | '')}
+                  className={`mt-1 min-h-[44px] w-full rounded-xl border border-slate-300 px-3 sm:w-auto ${FOCUS_RING}`}
+                >
+                  <option value="">All statuses</option>
+                  {(Object.keys(STATUS_STYLE) as ProofState[]).map((s) => (
+                    <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {visibleConsignments.length === 0 && (
+              <p data-testid="consignments-no-match" className="text-sm text-slate-700">No GRs match these filters.</p>
+            )}
           <ul className="space-y-3">
-            {consignments.map((c) => {
+            {visibleConsignments.map((c) => {
               const order = orderById.get(c.order_id)
               const available = nextEvents(c.status)
               const showQr = qr?.id === c.id
@@ -353,8 +410,23 @@ export default function AgencyConsignmentsPage() {
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="font-semibold text-slate-900 break-all">{c.gr_number}</p>
+                      <p className="text-sm text-slate-800 break-words" data-testid={`consignment-route-${c.id}`}>
+                        {routeText(routeByOrder.get(c.order_id))}
+                      </p>
                       <p className="text-xs text-slate-600 break-words">
-                        Order {order?.client_order_ref ?? 'unknown'} · updated {formatWhen(c.updated_at)}
+                        Order{' '}
+                        {order ? (
+                          <Link
+                            to="/agency/orders/import"
+                            data-testid={`consignment-order-link-${c.id}`}
+                            className={`font-semibold text-indigo-700 underline rounded ${FOCUS_RING}`}
+                          >
+                            {order.client_order_ref}
+                          </Link>
+                        ) : (
+                          'unknown'
+                        )}{' '}
+                        · updated {formatWhen(c.updated_at)}
                       </p>
                     </div>
                     <StatusChip status={c.status} />
@@ -515,6 +587,7 @@ export default function AgencyConsignmentsPage() {
               )
             })}
           </ul>
+          </>
         )}
       </section>
     </div>

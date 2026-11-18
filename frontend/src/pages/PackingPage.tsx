@@ -844,7 +844,7 @@ export default function PackingPage() {
                   <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-4 animate-fade-in">
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="col-span-2">
-                        <input
+                        <input aria-label={text.itemName}
                           type="text"
                           placeholder={text.itemName}
                           value={newItem.name}
@@ -856,7 +856,7 @@ export default function PackingPage() {
                         )}
                       </div>
                       <div>
-                        <input
+                        <input aria-label={text.length}
                           type="number"
                           placeholder={text.length}
                           value={newItem.length || ''}
@@ -868,7 +868,7 @@ export default function PackingPage() {
                         )}
                       </div>
                       <div>
-                        <input
+                        <input aria-label={text.width}
                           type="number"
                           placeholder={text.width}
                           value={newItem.width || ''}
@@ -880,7 +880,7 @@ export default function PackingPage() {
                         )}
                       </div>
                       <div>
-                        <input
+                        <input aria-label={text.height}
                           type="number"
                           placeholder={text.height}
                           value={newItem.height || ''}
@@ -892,7 +892,7 @@ export default function PackingPage() {
                         )}
                       </div>
                       <div>
-                        <input
+                        <input aria-label={text.weight}
                           type="number"
                           placeholder={text.weight}
                           value={newItem.weight || ''}
@@ -904,7 +904,7 @@ export default function PackingPage() {
                         )}
                       </div>
                       <div>
-                        <input
+                        <input aria-label={text.qty}
                           type="number"
                           placeholder={text.qty}
                           value={newItem.quantity || ''}
@@ -1212,10 +1212,10 @@ export default function PackingPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="packing-field-1" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Select Customer
                 </label>
-                <select
+                <select id="packing-field-1"
                   value={bookForm.customerId}
                   onChange={e => setBookForm(prev => ({ ...prev, customerId: e.target.value }))}
                   className="input w-full"
@@ -1228,10 +1228,10 @@ export default function PackingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="packing-field-2" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Origin
                 </label>
-                <input
+                <input id="packing-field-2"
                   type="text"
                   value={bookForm.origin}
                   onChange={e => setBookForm(prev => ({ ...prev, origin: e.target.value }))}
@@ -1241,10 +1241,10 @@ export default function PackingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="packing-field-3" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Destination
                 </label>
-                <input
+                <input id="packing-field-3"
                   type="text"
                   value={bookForm.destination}
                   onChange={e => setBookForm(prev => ({ ...prev, destination: e.target.value }))}

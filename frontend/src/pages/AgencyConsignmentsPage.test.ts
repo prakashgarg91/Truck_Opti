@@ -11,6 +11,7 @@ const h = vi.hoisted(() => ({
     listOrders: vi.fn(),
     listConsignments: vi.fn(),
     listEvents: vi.fn(),
+    listOrderRoutes: vi.fn(),
     createConsignment: vi.fn(),
     recordEvent: vi.fn(),
     getQrToken: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('../services/agencyConsignmentsApi', () => ({
         listOrders: h.listOrders,
         listConsignments: h.listConsignments,
         listEvents: h.listEvents,
+        listOrderRoutes: h.listOrderRoutes,
         createConsignment: h.createConsignment,
         recordEvent: h.recordEvent,
         getQrToken: h.getQrToken,
@@ -35,6 +37,7 @@ import AgencyConsignmentsPage from './AgencyConsignmentsPage'
 import { UserFacingError } from '../utils/userFacingError'
 import { withGate, gateFor, sbError, SB002_ERROR } from '../components/billing/testGate'
 import type { BillingGate } from '../components/billing/BillingGate'
+import { MemoryRouter } from 'react-router-dom'
 
 const order = (id: string, ref: string, status = 'draft') => ({
     id, agreement_id: 'ag-1', client_order_ref: ref, status, version: 1, created_at: '2026-11-10T00:00:00Z',
@@ -46,6 +49,14 @@ const consignment = (id: string, orderId: string, status: string, version = 1) =
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 
+async function type(input: HTMLInputElement | HTMLSelectElement, value: string) {
+    await act(async () => {
+        const proto = input instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype
+        Object.getOwnPropertyDescriptor(proto, 'value')?.set?.call(input, value)
+        input.dispatchEvent(new Event(input instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }))
+    })
+}
+
 let root: Root | null = null
 let container: HTMLElement | null = null
 
@@ -54,7 +65,13 @@ async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(gate ? withGate(createElement(AgencyConsignmentsPage), gate) : createElement(AgencyConsignmentsPage))
+        root!.render(
+            createElement(
+                MemoryRouter,
+                null,
+                gate ? withGate(createElement(AgencyConsignmentsPage), gate) : createElement(AgencyConsignmentsPage)
+            )
+        )
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -65,6 +82,7 @@ beforeEach(() => {
     h.listOrders.mockResolvedValue([order('o-1', 'SO-1'), order('o-2', 'SO-2', 'planned'), order('o-3', 'SO-3', 'cancelled')])
     h.listConsignments.mockResolvedValue([])
     h.listEvents.mockResolvedValue([])
+    h.listOrderRoutes.mockResolvedValue([])
 })
 
 afterEach(async () => {
@@ -289,5 +307,50 @@ describe('AgencyConsignmentsPage subscription guard', () => {
         await mountPage(gateFor('expired'))
         expect(button(/Mark picked up/)!.disabled).toBe(false)
         expect(button(/QR/)!.disabled).toBe(false)
+    })
+
+    it('filters the GR list by status and by GR or order reference, with a no-match message', async () => {
+        h.listConsignments.mockResolvedValue([consignment('c-1', 'o-1', 'created'), consignment('c-2', 'o-2', 'delivered')])
+        await mountPage()
+        expect(q('[data-testid="consignment-c-1"]')).not.toBeNull()
+        expect(q('[data-testid="consignment-c-2"]')).not.toBeNull()
+
+        await type(q('#gr-status-filter') as HTMLSelectElement, 'delivered')
+        expect(q('[data-testid="consignment-c-1"]')).toBeNull()
+        expect(q('[data-testid="consignment-c-2"]')).not.toBeNull()
+
+        await type(q('#gr-status-filter') as HTMLSelectElement, '')
+        await type(q('#gr-search') as HTMLInputElement, 'SO-1')
+        expect(q('[data-testid="consignment-c-1"]')).not.toBeNull()
+        expect(q('[data-testid="consignment-c-2"]')).toBeNull()
+
+        await type(q('#gr-search') as HTMLInputElement, 'nothing-matches')
+        expect(q('[data-testid="consignments-no-match"]')).not.toBeNull()
+    })
+})
+
+describe('AgencyConsignmentsPage client, route and order link', () => {
+    it('shows Client · Pickup → Drop on each consignment row', async () => {
+        h.listOrderRoutes.mockResolvedValue([
+            { orderId: 'o-1', clientName: 'Sri Balaji Transport', pickupLabels: ['Pune Depot'], dropLabels: ['Delhi Store'] },
+        ])
+        h.listConsignments.mockResolvedValue([consignment('c-1', 'o-1', 'created')])
+        await mountPage()
+        expect(q('[data-testid="consignment-route-c-1"]')?.textContent).toBe('Sri Balaji Transport · Pune Depot → Delhi Store')
+    })
+
+    it('names the missing client and sites instead of guessing them', async () => {
+        h.listConsignments.mockResolvedValue([consignment('c-2', 'o-2', 'created')])
+        await mountPage()
+        expect(q('[data-testid="consignment-route-c-2"]')?.textContent).toBe('Client unknown · pickup not set → drop not set')
+    })
+
+    it('links each order reference to the orders page and keeps Create GR for orders without a GR', async () => {
+        h.listConsignments.mockResolvedValue([consignment('c-1', 'o-1', 'created')])
+        await mountPage()
+        const link = q('[data-testid="consignment-order-link-c-1"]') as HTMLAnchorElement | null
+        expect(link?.getAttribute('href')).toBe('/agency/orders/import')
+        expect(link?.textContent).toBe('SO-1')
+        expect(button(/Create GR for SO-2/)).toBeTruthy()
     })
 })

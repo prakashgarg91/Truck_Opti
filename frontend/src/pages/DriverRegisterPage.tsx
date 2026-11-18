@@ -87,11 +87,9 @@ export default function DriverRegisterPage() {
 
       if (uploadError) throw uploadError
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('driver-docs')
-        .getPublicUrl(path)
-
-      setForm(prev => ({ ...prev, [field]: publicUrl }))
+      // driver-docs is a private bucket (20261003000000_private_kyc_documents.sql), so a public URL
+      // would be dead. Store the storage path; the photo is not previewed from a link.
+      setForm(prev => ({ ...prev, [field]: path }))
       toast.success(isLicence ? 'Driving licence uploaded' : 'RC uploaded')
     } catch (err) {
       logger.error('Upload error:', err)
@@ -350,7 +348,7 @@ export default function DriverRegisterPage() {
                     </label>
                     {form.dl_url ? (
                       <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                        <img src={form.dl_url} alt="Licence" className="w-12 h-12 object-cover rounded-lg" />
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" aria-hidden="true" />
                         <span className="text-xs text-green-700 dark:text-green-400 flex-1">Uploaded</span>
                         <button aria-label="Remove driving licence photo" type="button" onClick={() => removeFile('dl_url')} className="p-1 text-red-500">
                           <X className="w-4 h-4" />
@@ -391,7 +389,7 @@ export default function DriverRegisterPage() {
                     </label>
                     {form.rc_url ? (
                       <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                        <img src={form.rc_url} alt="RC" className="w-12 h-12 object-cover rounded-lg" />
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" aria-hidden="true" />
                         <span className="text-xs text-green-700 dark:text-green-400 flex-1">Uploaded</span>
                         <button aria-label="Remove RC photo" type="button" onClick={() => removeFile('rc_url')} className="p-1 text-red-500">
                           <X className="w-4 h-4" />

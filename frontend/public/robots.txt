@@ -1,6 +1,13 @@
 User-agent: *
 Allow: /
+Allow: /agency/register
+Allow: /driver/register
 Disallow: /api/
 Disallow: /auth/
+Disallow: /admin
+Disallow: /agency
+Disallow: /driver
+Disallow: /settings
+Disallow: /invite
 
 Sitemap: https://www.truckopti.in/sitemap.xml

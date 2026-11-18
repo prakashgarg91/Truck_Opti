@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Check, Zap, Crown, Building2, Rocket, Star, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { PRICING_TIERS, type PricingTier } from '../config/pricing'
+import { PRICING_TIERS, featureLabel, supportLevelLabel, type PricingTier } from '../config/pricing'
 import { subscriptionPlansApi } from '../services/subscriptionApi'
 import { useAuthStore } from '../stores/authStore'
 import { useSubscription } from '../hooks/useSubscription'
@@ -50,12 +50,12 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
     return data.map((plan) => ({
       id: plan.tier, name: plan.name,
       monthlyPrice: plan.price_monthly / 100, yearlyPrice: plan.price_yearly / 100,
-      features: normalizePlanFeatures(plan.features),
+      features: normalizePlanFeatures(plan.features).map(featureLabel),
       limits: {
         users: plan.users_limit || 1,
         trucksManaged: plan.trucks_limit || 1,
         shipmentsPerMonth: plan.shipments_monthly || 0,
-        packingOptimizations: plan.shipments_monthly || 0,
+        packingOptimizations: 0, // no packing column in the database; the row is not shown
         routeOptimizations: plan.maps_requests_monthly || 0,
         storageGB: plan.storage_gb || 1,
         apiCallsPerMonth: plan.api_calls_monthly || 0,
@@ -73,28 +73,28 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
 const LABELS = {
   eyebrow: 'Plans & Billing',
   title: 'Choose Your Plan', subtitle: 'Smart logistics optimization for every business size',
-  planNote: 'Start free, switch billing cadence when you need to, and move enterprise fleets to tailored onboarding only when scale demands it.',
+  planNote: 'Transport agencies can start a 14-day free trial. Switch billing cadence when you need to, and talk to us for enterprise fleets.',
   businessModelEyebrow: 'Business Model',
   businessModelTitle: 'TruckOpti is subscription software for logistics operations.',
   businessModelBody: 'Transporters, fleet owners, dispatch teams, and agencies subscribe to TruckOpti on monthly or yearly plans to use 3D load planning, route optimization, live tracking, customer management, dispatch workflows, and billing tools. Enterprise rollouts are handled through the on-site contact flow.',
   summaryEyebrow: 'What changes by plan',
   summaryTitle: 'Capacity grows with your users, trucks, and shipment volume.',
   summarySubtitle: 'Every tier keeps the same core workflow: packing, dispatch, tracking, and billing. Upgrade only when usage expands.',
-  highlightFree: 'Free trial, no card required',
+  highlightFree: '14-day free trial for transport agencies, no card required',
   highlightBilling: 'Monthly and yearly billing available',
   highlightScale: 'Enterprise rollout support for larger fleets',
   monthly: 'Monthly', yearly: 'Yearly', saveTag: 'Two months free',
   perMonth: '/mo', perYear: '/yr',
-  getStarted: 'Get Started', contactSales: 'Contact Sales', startFree: 'Start Free →',
+  getStarted: 'Get Started', contactSales: 'Contact Sales', startFree: 'Start your free agency trial →',
   mostPopular: 'Most Popular', currentPlan: 'Your Plan',
   upgrade: 'Upgrade', downgrade: 'Downgrade',
   users: 'Users', trucks: 'Trucks', shipments: 'Shipments/mo',
-  packing: 'Packing Opts', routes: 'Route Opts',
+  routes: 'Route Opts',
   storage: 'Storage', apiCalls: 'API Calls/mo', sms: 'SMS OTP/mo',
-  support: 'Support', unlimited: 'Unlimited',
+  support: 'Support', unlimited: 'Unlimited', moreFeatures: 'more',
   compareTitle: 'Full Feature Comparison',
   compareNote: 'Compare the limits before you lock a billing cycle.',
-  freeForever: 'Start for Free', freeDesc: 'Try TruckOpti free. No credit card required to start your trial.',
+  freeForever: '14-day agency trial', freeDesc: 'Transport agencies get 14 days free with Starter limits. No credit card required. The agency owner starts the trial after registration is approved.',
   enterprise: 'Need a custom plan?',
   enterpriseDesc: 'Large fleet or multiple locations? Get a tailored quote from our team.',
   talkToUs: 'Talk to Our Team',
@@ -114,7 +114,7 @@ const fmtINR = (n: number) =>
 
 const fmtLimit = (v: number | string, unlimited: string) => {
   if (typeof v === 'string') return v
-  if (v === -1 || v === 0) return unlimited
+  if (v === -1) return unlimited
   if (v >= 1000) return `${(v / 1000).toFixed(0)}K`
   return String(v)
 }
@@ -221,7 +221,6 @@ function PricingCard({ tier, isYearly, L, isCurrent, isUpgrade, isDowngrade, cla
           {([
             [L.trucks, tier.limits.trucksManaged],
             [L.shipments, tier.limits.shipmentsPerMonth],
-            [L.packing, tier.limits.packingOptimizations],
             [L.users, tier.limits.users],
           ] as [string, number][]).map(([label, val]) => (
             <div key={label} className="flex items-center justify-between text-sm">
@@ -241,6 +240,11 @@ function PricingCard({ tier, isYearly, L, isCurrent, isUpgrade, isDowngrade, cla
                   <span className="leading-snug">{f}</span>
                 </li>
               ))}
+              {tier.features.length > 5 && (
+                <li className="pl-6 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  +{tier.features.length - 5} {L.moreFeatures}
+                </li>
+              )}
             </ul>
           </div>
         )}
@@ -274,7 +278,8 @@ export default function PricingPage() {
 
   const { data: tiers = FALLBACK_TIERS, isLoading } = useQuery<PricingTier[]>({
     queryKey: ['pricing-plans-v2'], queryFn: fetchPricingPlans,
-    staleTime: 1000 * 60 * 5, initialData: FALLBACK_TIERS,
+    // placeholderData (not initialData): initialData marks the fallback as fresh, so the database plans never fetched.
+    staleTime: 1000 * 60 * 5, placeholderData: FALLBACK_TIERS,
   })
 
   // Determine current tier index (based on price order - lowest first)
@@ -312,7 +317,6 @@ export default function PricingPage() {
     { label: L.users, key: 'users' },
     { label: L.trucks, key: 'trucksManaged' },
     { label: L.shipments, key: 'shipmentsPerMonth' },
-    { label: L.packing, key: 'packingOptimizations' },
     { label: L.routes, key: 'routeOptimizations' },
     { label: L.storage, key: 'storageGB' },
     { label: L.apiCalls, key: 'apiCallsPerMonth' },
@@ -321,6 +325,7 @@ export default function PricingPage() {
   ]
 
   const planHighlights = [L.highlightFree, L.highlightBilling, L.highlightScale]
+  const startAgencyTrial = () => navigate('/agency/register')
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#eef4ff_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_transparent_28%),linear-gradient(180deg,#020617_0%,#0f172a_45%,#111827_100%)]">
@@ -426,7 +431,7 @@ export default function PricingPage() {
                 <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{L.compareNote}</p>
               </div>
               <button
-                onClick={() => navigate('/signup')}
+                onClick={startAgencyTrial}
                 className="shrink-0 rounded-2xl bg-primary-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary-700 active:scale-95"
               >{L.startFree}</button>
             </div>
@@ -546,9 +551,12 @@ export default function PricingPage() {
                       <td className="py-3 px-5 text-slate-600 dark:text-slate-400 font-medium">{row.label}</td>
                       {tiers.map((tier) => {
                         const val = tier.limits[row.key]
+                        const display = row.key === 'supportLevel'
+                          ? supportLevelLabel(String(val))
+                          : fmtLimit(val as number | string, L.unlimited)
                         return (
                           <td key={tier.id} className="py-3 px-3 text-center font-semibold text-slate-900 dark:text-white">
-                            {fmtLimit(val as number | string, L.unlimited)}
+                            {display}
                           </td>
                         )
                       })}

@@ -1,4 +1,5 @@
-﻿import { Link } from 'react-router-dom'
+﻿import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Package, Route, MapPin, Building2,
   ArrowRight, Truck, Shield, Clock, CheckCircle2
@@ -8,12 +9,12 @@ const FEATURES = [
   {
     icon: Package,
     title: '3D Bin Packing',
-    desc: 'AI-powered cargo optimization'
+    desc: '3D bin packing with three optimisation methods'
   },
   {
     icon: Route,
     title: 'Route Optimization',
-    desc: 'Smart routing with toll costs'
+    desc: 'Straight-line routes with estimated toll costs'
   },
   {
     icon: MapPin,
@@ -28,16 +29,27 @@ const FEATURES = [
 ]
 
 
+const NAV_LINKS = [
+  { to: '#features', label: 'Features', anchor: true },
+  { to: '#how-it-works', label: 'How It Works', anchor: true },
+  { to: '/driver/register', label: 'Drivers', anchor: false },
+  { to: '/agency/register', label: 'Agencies', anchor: false },
+  { to: '/pricing', label: 'Pricing', anchor: false },
+] as const
+
 export default function LandingPage() {
+  useEffect(() => {
+    document.title = 'TruckOpti - Smart Logistics'
+  }, [])
 
   const t = {
     heroBadge: 'Built for high-volume Indian logistics teams',
     heroTitle: 'Smart Logistics Control for Indian Fleets',
-    heroSubtitle: 'AI-powered 3D packing, route optimization, live GPS tracking, and agency dispatch for India logistics.',
+    heroSubtitle: '3D bin packing, route planning, live GPS tracking, and agency dispatch for Indian logistics.',
     heroPanelEyebrow: 'Operator Snapshot',
     heroPanelTitle: 'Plan loads, dispatch trucks, and track movement without hopping between tools.',
     heroPanelSubtitle: 'TruckOpti keeps packing intelligence, route decisions, and live field visibility in one workflow.',
-    ctaStart: 'Start Free',
+    ctaStart: 'Start your free agency trial',
     ctaPricing: 'View Pricing',
     features: 'Features',
     featuresEyebrow: 'Platform',
@@ -47,14 +59,15 @@ export default function LandingPage() {
     ctaEyebrow: 'Launch Faster',
     contact: 'Contact Us',
     whyChoose: 'Why Choose TruckOpti',
+    whyChooseEyebrow: 'Why TruckOpti',
     whyChooseSubtitle: 'The platform is tuned for the daily realities of Indian fleet, dispatch, and warehouse operations.',
     footerTagline: 'Planning, dispatch, and live shipment visibility for modern logistics operations.'
   }
 
   const heroStats = [
     {
-      value: 'Toll-aware',
-      label: 'Route planning',
+      value: 'Estimated',
+      label: 'Route costs',
     },
     {
       value: '3D',
@@ -68,7 +81,7 @@ export default function LandingPage() {
 
   const heroChecklist = [
     '3D load plans before dispatch',
-    'Rate-aware routes with toll logic',
+    'Route costs estimated from straight-line distance',
     'Live trip and driver visibility',
   ]
 
@@ -93,21 +106,6 @@ export default function LandingPage() {
       description: 'Move from a single team to multi-branch agency dispatch without rebuilding the flow.',
       accent: 'text-saffron dark:text-orange-300',
       bg: 'bg-orange-50 dark:bg-orange-950/30',
-    },
-  ]
-
-  const outcomeStats = [
-    {
-      value: 'Plan',
-      label: 'Before Loading',
-    },
-    {
-      value: 'Dispatch',
-      label: 'In One Flow',
-    },
-    {
-      value: 'Track',
-      label: 'During Trips',
     },
   ]
 
@@ -183,6 +181,21 @@ export default function LandingPage() {
         </div>
       </header>
 
+      {/* Mobile navigation: the desktop links above are hidden below md */}
+      <nav aria-label="Mobile" className="relative flex gap-1 overflow-x-auto border-b border-slate-200/80 bg-white/80 px-4 py-2 md:hidden dark:border-slate-800 dark:bg-slate-950/80">
+        {NAV_LINKS.map((link) => (
+          link.anchor ? (
+            <a key={link.label} href={link.to} className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 dark:text-slate-300 dark:hover:bg-slate-800">
+              {link.label}
+            </a>
+          ) : (
+            <Link key={link.label} to={link.to} className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 dark:text-slate-300 dark:hover:bg-slate-800">
+              {link.label}
+            </Link>
+          )
+        ))}
+      </nav>
+
       {/* Hero Section */}
       <section className="relative px-4 pb-14 pt-14 sm:pt-20 lg:pb-20 lg:pt-24">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,1.1fr)_380px] lg:items-center">
@@ -199,7 +212,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
-                to="/signup"
+                to="/agency/register"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-600 px-8 py-4 text-lg font-black text-white shadow-xl shadow-primary-600/20 transition-colors hover:bg-primary-700 sm:w-auto"
               >
                 {t.ctaStart}
@@ -333,7 +346,7 @@ export default function LandingPage() {
       <section className="px-4 py-6 lg:py-10">
         <div className="mx-auto overflow-hidden rounded-[32px] bg-slate-900 px-6 py-10 shadow-2xl dark:bg-slate-950 lg:max-w-7xl lg:px-12 lg:py-12">
           <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary-300">Operational Gains</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary-300">{t.whyChooseEyebrow}</p>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
               {t.whyChoose}
             </h2>
@@ -342,14 +355,6 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {outcomeStats.map((stat) => (
-              <div key={stat.label} className="rounded-[24px] bg-white/5 p-6 ring-1 ring-white/10 backdrop-blur-sm">
-                <div className="text-4xl font-black tracking-tight text-white">{stat.value}</div>
-                <p className="mt-3 text-sm font-medium text-slate-300">{stat.label}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -364,7 +369,7 @@ export default function LandingPage() {
               {'Get started in 3 simple steps'}
             </h2>
             <p className="mt-4 text-base text-slate-600 dark:text-slate-400">
-              No complex setup. Book your first truck in minutes.
+              Create a login, register your agency or driver profile, then plan your first shipment.
             </p>
           </div>
           <div className="grid gap-8 md:grid-cols-3">
@@ -375,7 +380,7 @@ export default function LandingPage() {
                 color: 'text-primary-600 dark:text-primary-400',
                 bg: 'bg-primary-50 dark:bg-primary-950/40',
                 title: 'Create your account',
-                desc: 'Sign up as a business, agency, or driver. Takes under 2 minutes.'
+                desc: 'Create a login, then register your agency or driver profile.'
               },
               {
                 step: '02',
@@ -383,7 +388,7 @@ export default function LandingPage() {
                 color: 'text-emerald-600 dark:text-emerald-400',
                 bg: 'bg-emerald-50 dark:bg-emerald-950/40',
                 title: 'Plan your shipment',
-                desc: 'Add cargo details and get AI-optimized 3D packing and route in seconds.'
+                desc: 'Add cargo details and get a 3D packing plan and a route estimate.'
               },
               {
                 step: '03',
@@ -433,7 +438,7 @@ export default function LandingPage() {
 
             <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
               <Link
-                to="/signup"
+                to="/agency/register"
                 className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-base font-bold text-slate-900 transition-colors hover:bg-slate-100"
               >
                 {t.ctaStart}

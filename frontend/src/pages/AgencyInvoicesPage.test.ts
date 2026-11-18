@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({
     listClients: vi.fn(),
     listInvoices: vi.fn(),
+    listInvoiceableGrs: vi.fn(),
     getInvoiceDetail: vi.fn(),
     issueInvoice: vi.fn(),
     recordPayment: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('../services/agencyInvoicesApi', () => ({
     agencyInvoicesApi: {
         listClients: h.listClients,
         listInvoices: h.listInvoices,
+        listInvoiceableGrs: h.listInvoiceableGrs,
         getInvoiceDetail: h.getInvoiceDetail,
         issueInvoice: h.issueInvoice,
         recordPayment: h.recordPayment,
@@ -73,6 +75,7 @@ beforeEach(() => {
     vi.clearAllMocks()
     h.listClients.mockResolvedValue([CLIENT])
     h.listInvoices.mockResolvedValue([invoice()])
+    h.listInvoiceableGrs.mockResolvedValue([])
     h.getInvoiceDetail.mockResolvedValue(DETAIL)
 })
 
@@ -343,5 +346,86 @@ describe('AgencyInvoicesPage subscription guard', () => {
         await openInvoice()
         expect(q('[data-testid="payment-form"]')).not.toBeNull()
         expect(button(/^Cancel invoice/)!.disabled).toBe(false)
+    })
+})
+
+describe('AgencyInvoicesPage GR shortcut, outstanding by client and CSV export', () => {
+    const OTHER = { id: 'c-2', client_name: 'Other Client', status: 'active' }
+    const GR_A = { consignmentId: 'g-1', grNumber: 'AGY/2026-27/000001', status: 'delivered', clientId: 'c-1' }
+    const GR_B = { consignmentId: 'g-2', grNumber: 'AGY/2026-27/000002', status: 'receipt_confirmed', clientId: 'c-2' }
+    const lineInputs = () => Array.from((container as HTMLElement).querySelectorAll('[data-testid="invoice-line-0"] input')) as HTMLInputElement[]
+
+    it('opens the form for the GR client with a Freight line and leaves the rate for the user', async () => {
+        h.listInvoiceableGrs.mockResolvedValue([GR_A])
+        await mountPage()
+        await click(button(/Create invoice from consignment AGY\/2026-27\/000001/)!)
+        expect(q('[data-testid="invoice-form"]')).not.toBeNull()
+        expect((q('#inv-client') as HTMLSelectElement).value).toBe('c-1')
+        expect(lineInputs()[0].value).toBe('Freight for GR AGY/2026-27/000001')
+        expect(lineInputs()[1].value).toBe('1')
+        expect(lineInputs()[2].value).toBe('')
+    })
+
+    it('refuses to replace typed lines with a GR for another client', async () => {
+        h.listClients.mockResolvedValue([CLIENT, OTHER])
+        h.listInvoiceableGrs.mockResolvedValue([GR_A, GR_B])
+        await mountPage()
+        await click(button(/Create invoice from consignment AGY\/2026-27\/000001/)!)
+        await click(button(/Create invoice from consignment AGY\/2026-27\/000002/)!)
+        expect(q('[data-testid="invoice-from-gr-note"]')?.textContent).toContain('another client')
+        expect((q('#inv-client') as HTMLSelectElement).value).toBe('c-1')
+    })
+
+    it('shows outstanding per client from issued and partly paid invoices only, in rupees', async () => {
+        h.listClients.mockResolvedValue([CLIENT, OTHER])
+        h.listInvoices.mockResolvedValue([
+            invoice({ id: 'i-1', client_id: 'c-1', invoice_number: 'INV/1', status: 'issued', total_paise: 118000, paid_paise: 0 }),
+            invoice({ id: 'i-2', client_id: 'c-1', invoice_number: 'INV/2', status: 'partly_paid', total_paise: 50000, paid_paise: 20000 }),
+            invoice({ id: 'i-3', client_id: 'c-1', invoice_number: 'INV/3', status: 'paid', total_paise: 10000, paid_paise: 10000 }),
+            invoice({ id: 'i-4', client_id: 'c-2', invoice_number: 'INV/4', status: 'cancelled', total_paise: 99900, paid_paise: 0 }),
+            invoice({ id: 'i-5', client_id: 'c-2', invoice_number: 'INV/5', status: 'issued', total_paise: 200000, paid_paise: 0 }),
+        ])
+        await mountPage()
+        const box = q('[data-testid="outstanding-by-client"]') as HTMLElement
+        const rows = Array.from(box.querySelectorAll('li')).map((li) => li.textContent)
+        expect(rows).toEqual(['Other Client₹2,000.00', 'Sri Balaji Transport₹1,480.00'])
+        expect(q('[data-testid="outstanding-total"]')?.textContent).toBe('₹3,480.00')
+    })
+
+    it('exports the visible invoice list as CSV with formula cells guarded', async () => {
+        h.listClients.mockResolvedValue([CLIENT, { id: 'c-3', client_name: '=2+3 Logistics', status: 'active' }])
+        h.listInvoices.mockResolvedValue([
+            invoice({ client_id: 'c-3', invoice_number: 'INV/2026-27/000001', status: 'issued', total_paise: 118000, paid_paise: 0 }),
+        ])
+        const createUrl = vi.fn((_blob: Blob) => 'blob:csv')
+        const urlApi = URL as unknown as Record<string, unknown>
+        urlApi.createObjectURL = createUrl
+        urlApi.revokeObjectURL = vi.fn()
+        const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+        try {
+            await mountPage()
+            await click(button(/Export CSV/)!)
+            expect(clickSpy).toHaveBeenCalled()
+            const blob = createUrl.mock.calls[0][0] as Blob
+            const csv = (await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve(String(reader.result))
+                reader.onerror = () => reject(reader.error)
+                reader.readAsText(blob)
+            })).replace(String.fromCharCode(0xfeff), '')
+            const lines = csv.trimEnd().split('\r\n')
+            expect(lines[0]).toBe('Invoice,Client,Status,Issued on,Total (INR),Received (INR),Outstanding (INR)')
+            expect(lines[1]).toBe("INV/2026-27/000001,'=2+3 Logistics,Issued,2026-11-10,1180.00,0.00,1180.00")
+        } finally {
+            clickSpy.mockRestore()
+            delete urlApi.createObjectURL
+            delete urlApi.revokeObjectURL
+        }
+    })
+
+    it('disables the CSV export when there are no invoices', async () => {
+        h.listInvoices.mockResolvedValue([])
+        await mountPage()
+        expect(button(/Export CSV/)!.disabled).toBe(true)
     })
 })

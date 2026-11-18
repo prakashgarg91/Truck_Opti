@@ -177,4 +177,44 @@ describe('agencyConsignmentsApi', () => {
             await expect(agencyConsignmentsApi.listConsignments()).rejects.toThrow('Failed to load consignments')
         })
     })
+
+    describe('listOrderRoutes', () => {
+        it('joins client name and pickup and drop labels by id from flat reads', async () => {
+            const tables: Record<string, unknown[]> = {
+                agency_orders: [
+                    { id: 'o-1', agreement_id: 'ag-1' },
+                    { id: 'o-2', agreement_id: 'ag-x' },
+                ],
+                agency_client_agreements: [{ id: 'ag-1', client_name: 'Sri Balaji Transport' }],
+                agency_client_sites: [
+                    { id: 's-1', label: 'Pune Depot' },
+                    { id: 's-2', label: 'Delhi Store' },
+                ],
+                agency_order_lines: [
+                    { order_id: 'o-1', pickup_site_id: 's-1', drop_site_id: 's-2' },
+                    { order_id: 'o-1', pickup_site_id: 's-1', drop_site_id: null },
+                ],
+            }
+            fromMock.mockImplementation((table: string) => {
+                const rows = tables[table] ?? []
+                const order = vi.fn().mockResolvedValue({ data: rows, error: null })
+                return { select: vi.fn().mockReturnValue({ order }) }
+            })
+            expect(await agencyConsignmentsApi.listOrderRoutes()).toEqual([
+                { orderId: 'o-1', clientName: 'Sri Balaji Transport', pickupLabels: ['Pune Depot'], dropLabels: ['Delhi Store'] },
+                { orderId: 'o-2', clientName: null, pickupLabels: [], dropLabels: [] },
+            ])
+            expect(fromMock).toHaveBeenCalledWith('agency_order_lines')
+        })
+
+        it('throws the fallback when one of the reads fails', async () => {
+            fromMock.mockImplementation((table: string) => {
+                const order = vi.fn().mockResolvedValue(
+                    table === 'agency_client_sites' ? { data: null, error: { message: 'raw detail' } } : { data: [], error: null }
+                )
+                return { select: vi.fn().mockReturnValue({ order }) }
+            })
+            await expect(agencyConsignmentsApi.listOrderRoutes()).rejects.toThrow('Failed to load routes')
+        })
+    })
 })

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { adminSupabaseApi, type ContactInquiry as Inquiry } from '../services/adminSupabaseApi'
 import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
+import AdminLoadError from './AdminLoadError'
 
 export default function AdminContactPage() {
   const navigate = useNavigate()
@@ -13,6 +14,7 @@ export default function AdminContactPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved'>('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     document.title = 'Contact Inquiries - Admin'
@@ -23,9 +25,11 @@ export default function AdminContactPage() {
     try {
       const inquiryData = await adminSupabaseApi.getContactInquiries()
       setInquiries(inquiryData)
+      setLoadError(false)
     } catch (error) {
       logger.error('[AdminContactPage] fetchInquiries', error)
       toast.error('Failed to load contact inquiries.')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -102,6 +106,8 @@ export default function AdminContactPage() {
         <div className="flex justify-center py-12">
           <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : loadError ? (
+        <AdminLoadError what="contact inquiries" onRetry={fetchInquiries} />
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-slate-500 dark:text-slate-400">
           {'No inquiries found'}

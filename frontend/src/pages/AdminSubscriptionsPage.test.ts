@@ -234,12 +234,40 @@ describe('AdminSubscriptionsPage', () => {
         expect(text()).not.toContain('No subscriptions yet')
     })
 
-    it('a rejected list call surfaces its user-facing message via toast and falls back to the empty list', async () => {
+    it('a rejected list call toasts its user-facing message and shows an error state with Retry, never an empty queue', async () => {
         h.getAdminSubscriptions.mockRejectedValue(new UserFacingError('Unable to load subscriptions right now. Please try again.'))
         await mountPage()
         expect(h.toastError).toHaveBeenCalledWith('Unable to load subscriptions right now. Please try again.')
-        expect(text()).toContain('No subscriptions yet')
-        expect(cardTexts()).toEqual(['Total0', 'Active0', 'Trial0', 'Past due / Grace0', 'Expired / Cancelled0'])
+        expect(q('[data-testid="subscriptions-load-error"]')).not.toBeNull()
+        expect(text()).toContain('Unable to load subscriptions right now. Please try again.')
+        expect(buttonByText('Retry')).toBeTruthy()
+        expect(text()).not.toContain('No subscriptions yet')
+        expect(text()).not.toContain('Nothing needs attention')
+    })
+
+    it('Retry after a first failed load shows the list', async () => {
+        h.getAdminSubscriptions
+            .mockRejectedValueOnce(new UserFacingError('Unable to load subscriptions right now. Please try again.'))
+            .mockResolvedValueOnce(snap(SUBS))
+        await mountPage()
+        await click(buttonByText('Retry'))
+        await flush()
+        expect(h.getAdminSubscriptions).toHaveBeenCalledTimes(2)
+        expect(q('[data-testid="subscriptions-load-error"]')).toBeNull()
+        expect(text()).toContain('Fast Movers')
+    })
+
+    it('a failed refresh keeps the last good data, warns it may be stale, and does not claim a clean ops queue', async () => {
+        h.getAdminSubscriptions
+            .mockResolvedValueOnce(snap(SUBS, [REFUSED]))
+            .mockRejectedValueOnce(new UserFacingError('Unable to load subscriptions right now. Please try again.'))
+        await mountPage()
+        await click(refreshButton())
+        await flush()
+        expect(q('[data-testid="subscriptions-stale-error"]')).not.toBeNull()
+        expect(text()).toContain('Fast Movers')
+        expect(text()).not.toContain('Nothing needs attention')
+        expect(text()).toContain('Not confirmed')
     })
 
     it('a raw transport error falls back to the page message and leaks nothing', async () => {
@@ -254,8 +282,8 @@ describe('AdminSubscriptionsPage', () => {
             .mockRejectedValueOnce(new UserFacingError('Unable to load subscriptions right now. Please try again.'))
             .mockResolvedValueOnce(snap(SUBS))
         await mountPage()
-        expect(text()).toContain('No subscriptions yet')
-        await click(refreshButton())
+        expect(q('[data-testid="subscriptions-load-error"]')).not.toBeNull()
+        await click(buttonByText('Retry'))
         await flush()
         expect(h.getAdminSubscriptions).toHaveBeenCalledTimes(2)
         expect(text()).toContain('Fast Movers')

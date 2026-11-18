@@ -48,6 +48,37 @@ describe('agencyInvoicesApi', () => {
         vi.clearAllMocks()
     })
 
+    describe('listInvoiceableGrs', () => {
+        it('keeps delivered and receipt-confirmed GRs and maps each to its order client', async () => {
+            const tables: Record<string, unknown[]> = {
+                agency_consignments: [
+                    { id: 'g-1', order_id: 'o-1', gr_number: 'AGY/1', status: 'delivered' },
+                    { id: 'g-2', order_id: 'o-2', gr_number: 'AGY/2', status: 'receipt_confirmed' },
+                    { id: 'g-3', order_id: 'o-1', gr_number: 'AGY/3', status: 'in_transit' },
+                    { id: 'g-4', order_id: 'o-missing', gr_number: 'AGY/4', status: 'delivered' },
+                    { id: 'g-5', order_id: 'o-1', gr_number: 'AGY/5', status: 'disputed' },
+                ],
+                agency_orders: [
+                    { id: 'o-1', agreement_id: 'ag-1' },
+                    { id: 'o-2', agreement_id: 'ag-2' },
+                ],
+            }
+            fromMock.mockImplementation((table: string) => {
+                const order = vi.fn().mockResolvedValue({ data: tables[table] ?? [], error: null })
+                return { select: vi.fn().mockReturnValue({ order }) }
+            })
+            expect(await agencyInvoicesApi.listInvoiceableGrs()).toEqual([
+                { consignmentId: 'g-1', grNumber: 'AGY/1', status: 'delivered', clientId: 'ag-1' },
+                { consignmentId: 'g-2', grNumber: 'AGY/2', status: 'receipt_confirmed', clientId: 'ag-2' },
+            ])
+        })
+
+        it('throws the fallback when a read fails', async () => {
+            mockOrdered([], { message: 'raw detail' })
+            await expect(agencyInvoicesApi.listInvoiceableGrs()).rejects.toThrow('Failed to load GRs')
+        })
+    })
+
     describe('issueInvoice', () => {
         it('sends the exact RPC arguments with snake_case lines and returns the number', async () => {
             rpcMock.mockResolvedValue({ data: { ok: true, invoice_id: 'i-1', invoice_number: 'INV/2026-27/000001' }, error: null })

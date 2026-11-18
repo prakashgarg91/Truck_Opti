@@ -16,7 +16,7 @@ export interface PricingTier {
     storageGB: number
     apiCallsPerMonth: number
     smsOtpPerMonth: number
-    supportLevel: 'community' | 'email' | 'priority' | 'dedicated'
+    supportLevel: 'community' | 'email' | 'chat' | 'priority' | 'dedicated'
   }
   targetAudience: string
 }
@@ -128,16 +128,16 @@ export const PRICING_TIERS: PricingTier[] = [
     yearlyPrice: 4990, // Launch pricing
     features: [
       '3D Bin Packing Optimization',
-      'Basic Truck Catalog (8 types)',
+      'Truck catalogue (7 types)',
       'Manual Route Planning',
       'Email Support',
       'Mobile App Access',
       'Basic Reports',
-      'Hindi/English UI',
+      'English UI',
     ],
     limits: {
       users: 2,
-      trucksManaged: 5,
+      trucksManaged: 3,
       shipmentsPerMonth: 50,
       packingOptimizations: 100,
       routeOptimizations: 20,
@@ -152,29 +152,29 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'growth',
     name: 'Growth',
     monthlyPrice: 1999, // Cost ₹4,225 × 1.6 = ₹6,760, but priced competitively
-    yearlyPrice: 19990, // ~17% discount
+    yearlyPrice: 19990, // 10 x monthly (two months free)
     features: [
       'Everything in Starter +',
       'Smart Truck Recommendation AI',
-      'Full Indian Truck Catalog (17+ types)',
-      'Route Optimization with Tolls',
+      'Full Indian truck catalogue',
+      'Route planning with estimated fuel and toll costs',
       'Real-time GPS Tracking',
       'Customer Management (CRM)',
       'GST Invoice Generation',
-      'Priority Email Support',
+      'Chat support',
       'Advanced Analytics Dashboard',
       'CSV/Excel Import-Export',
     ],
     limits: {
-      users: 5,
+      users: 10,
       trucksManaged: 20,
-      shipmentsPerMonth: 200,
+      shipmentsPerMonth: 500, // matches subscription_plans seed
       packingOptimizations: 500,
       routeOptimizations: 100,
       storageGB: 5,
       apiCallsPerMonth: 10000,
       smsOtpPerMonth: 500,
-      supportLevel: 'email',
+      supportLevel: 'chat',
     },
     targetAudience: 'Growing logistics companies, fleet owners (5-20 trucks)',
   },
@@ -182,24 +182,21 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'professional',
     name: 'Professional',
     monthlyPrice: 4999, // Cost ₹5,784 × 1.6 = ₹9,254
-    yearlyPrice: 49990, // ~17% discount
+    yearlyPrice: 49990, // 10 x monthly (two months free)
     features: [
       'Everything in Growth +',
       'Multi-location Support',
-      'Advanced 3D Algorithms (10 types)',
+      'Three 3D packing methods',
       'Live Location Sharing with Customers',
-      'WhatsApp OTP & Notifications',
       'Driver Mobile App',
       'Fuel Cost Optimization',
-      'Priority Phone Support',
+      'Priority support',
       'Custom Branding',
-      'API Access for Integrations',
-      'Multi-language Support',
     ],
     limits: {
-      users: 15,
+      users: 25,
       trucksManaged: 50,
-      shipmentsPerMonth: 500,
+      shipmentsPerMonth: 2000, // matches subscription_plans seed
       packingOptimizations: 2000,
       routeOptimizations: 500,
       storageGB: 20,
@@ -212,8 +209,8 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    monthlyPrice: 14999, // Cost ₹71,222 × 1.6 = ₹113,955, but volume pricing
-    yearlyPrice: 149990, // ~17% discount
+    monthlyPrice: 0, // Contact us: no list price (quote only)
+    yearlyPrice: 0, // Contact us: no list price (quote only)
     features: [
       'Everything in Professional +',
       'Unlimited Users',
@@ -329,12 +326,11 @@ export const COMPETITIVE_PRICING = {
     { name: 'FarEye', segment: 'Enterprise', priceRange: '₹30,000-₹3,00,000/month' },
     { name: 'LogiNext', segment: 'Mid-Large', priceRange: '₹20,000-₹2,00,000/month' },
     { name: 'Shipsy', segment: 'SMB-Mid', priceRange: '₹5,000-₹50,000/month' },
-    { name: 'TruckOpti', segment: 'SMB-Enterprise', priceRange: '₹499-₹14,999/month' },
+    { name: 'TruckOpti', segment: 'SMB-Enterprise', priceRange: '₹499/month and up, excl. GST; Enterprise by quote' },
   ],
   uniqueSellingPoints: [
     '3D Bin Packing AI - Unique feature not offered by competitors',
-    'Indian Truck Catalog - 17+ truck types with accurate dimensions',
-    'Hindi Language Support - First in segment',
+    'Indian truck catalogue with standard truck sizes',
     'Affordable Entry Point - ₹499/month vs ₹5,000+ competitors',
     'Offline-capable PWA - installable web app experience',
   ],
@@ -343,8 +339,8 @@ export const COMPETITIVE_PRICING = {
 // ============= DISCOUNT STRATEGIES =============
 export const DISCOUNTS = {
   annual: {
-    percentage: 17, // ~2 months free
-    description: 'Pay yearly, save 17%',
+    percentage: 16.7, // 10 x monthly = two months free
+    description: 'Pay yearly, two months free',
   },
   referral: {
     referrerCredit: 500, // ₹500 credit
@@ -368,35 +364,70 @@ export const DISCOUNTS = {
   },
 }
 
-// ============= TRIAL & FREEMIUM =============
+// ============= FREE TRIAL =============
+// Only transport agencies get the trial, started by the agency owner. No card, no free-forever tier.
 export const TRIAL_CONFIG = {
   freeTrial: {
     duration: 14, // days
-    tier: 'growth', // Full Growth features
+    tier: 'starter', // The trial has Starter limits
     creditCardRequired: false,
-    features: 'Full Growth plan features for 14 days',
+    features: 'Starter limits for 14 days',
   },
-  freemium: {
-    name: 'Free Forever',
-    limits: {
-      users: 1,
-      trucksManaged: 2,
-      shipmentsPerMonth: 10,
-      packingOptimizations: 20,
-      routeOptimizations: 5,
-      storageGB: 0.1,
-      apiCallsPerMonth: 100,
-      smsOtpPerMonth: 0, // No SMS in free tier
-      supportLevel: 'community' as const,
-    },
-    features: [
-      'Basic 3D Packing (1 algorithm)',
-      '2 Truck Types',
-      'Manual Data Entry Only',
-      'Community Support',
-      'TruckOpti Branding',
-    ],
-  },
+}
+
+// ============= HUMAN LABELS FOR DATABASE FEATURE SLUGS =============
+// subscription_plans.features holds machine slugs (see the seed migrations).
+// Every known slug is mapped here; unknown slugs fall back to a title-cased label.
+export const FEATURE_LABELS: Readonly<Record<string, string>> = {
+  basic_3d_packing: '3D bin packing',
+  advanced_3d_packing: 'Advanced 3D packing',
+  route_planning: 'Route planning',
+  multi_stop_optimization: 'Multi-stop route optimisation',
+  shipment_tracking: 'Shipment tracking',
+  live_tracking: 'Live GPS tracking',
+  basic_reports: 'Basic reports',
+  analytics_dashboard: 'Analytics dashboard',
+  advanced_analytics: 'Advanced analytics',
+  export_reports: 'Report export',
+  api_access: 'API access',
+  enterprise_algorithms: 'Enterprise packing algorithms',
+  fleet_management: 'Fleet management',
+  custom_branding: 'Custom branding',
+  webhook_integrations: 'Webhook integrations',
+  sla_guarantee: 'SLA guarantee',
+  unlimited_everything: 'Unlimited usage',
+  white_label: 'White-label',
+  custom_integrations: 'Custom integrations',
+  dedicated_support: 'Dedicated support',
+  on_premise_option: 'On-premise option',
+  custom_sla: 'Custom SLA',
+}
+
+/** Human label for a feature slug. Unknown slugs are title-cased with underscores and dashes removed. */
+export function featureLabel(slug: string): string {
+  const key = slug.trim()
+  if (Object.prototype.hasOwnProperty.call(FEATURE_LABELS, key)) return FEATURE_LABELS[key]
+  return key
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+// ============= HUMAN LABELS FOR SUPPORT LEVELS =============
+export const SUPPORT_LEVEL_LABELS: Readonly<Record<string, string>> = {
+  community: 'Community support',
+  email: 'Email support',
+  chat: 'Chat support',
+  priority: 'Priority support',
+  dedicated: 'Dedicated account manager',
+}
+
+export function supportLevelLabel(level: string): string {
+  return SUPPORT_LEVEL_LABELS[level] ?? featureLabel(level)
 }
 
 export default PRICING_TIERS

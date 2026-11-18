@@ -9,6 +9,7 @@ import { adminAgenciesApi, type Agency } from '../services/adminSupabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import AdminLoadError from './AdminLoadError'
 
 type Tab = 'pending' | 'approved' | 'rejected' | 'suspended'
 
@@ -31,11 +32,15 @@ function formatDate(iso: string) {
 }
 
 export default function AdminAgenciesPage() {
+  useEffect(() => {
+    document.title = 'Admin Agencies - TruckOpti'
+  }, [])
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const [tab, setTab] = useState<Tab>('pending')
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [search, setSearch] = useState('')
   const [rejectModal, setRejectModal] = useState<{ agencyId: string; name: string } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
@@ -48,9 +53,11 @@ export default function AdminAgenciesPage() {
       const snapshot = await adminAgenciesApi.getSnapshot(tab)
       setAgencies(snapshot.agencies)
       setCounts(snapshot.counts)
+      setLoadError(false)
     } catch (error) {
       logger.error('[AdminAgencies] Load error:', error)
       toast.error('Failed to load agencies')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -217,6 +224,8 @@ export default function AdminAgenciesPage() {
           <div className="flex items-center justify-center py-12">
             <RefreshCw size={24} className="animate-spin text-blue-600" />
           </div>
+        ) : loadError ? (
+          <AdminLoadError what="agencies" onRetry={fetchSnapshot} />
         ) : filtered.length === 0 ? (
           <div className="text-center py-12">
             <Users size={40} className="text-slate-200 dark:text-slate-700 mx-auto mb-3" />

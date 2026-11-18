@@ -17,7 +17,12 @@ export default function DriverLayout() {
   const navigate = useNavigate()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      toast.error('Could not sign out. Check your connection and try again.')
+      return
+    }
     navigate('/login')
     toast.success('Signed out')
   }
@@ -89,9 +94,15 @@ export default function DriverLayout() {
             <p className="text-xs text-slate-500 dark:text-slate-400">TruckOpti Driver</p>
           </div>
         </div>
-        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">
-          🚛 Driver Portal
-        </span>
+        <button
+          type="button"
+          onClick={handleLogout}
+          aria-label="Sign out"
+          className="flex min-h-[44px] items-center gap-2 rounded-xl px-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+        >
+          <LogOut size={18} aria-hidden="true" />
+          Sign out
+        </button>
       </header>
 
       {/* ── Main Content ─────────────────────────────────────── */}

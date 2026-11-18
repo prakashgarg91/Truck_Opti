@@ -79,6 +79,12 @@ function readFileText(file: File): Promise<string> {
 
 type FileState = { name: string; text: string; hash: string }
 
+/** Client-side filter for the order history: case-insensitive match on the client's order reference. */
+function matchesOrderRef(order: { client_order_ref: string }, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  return q === '' || order.client_order_ref.toLowerCase().includes(q)
+}
+
 export default function AgencyOrderImportPage() {
   useEffect(() => {
     document.title = 'Order import - TruckOpti'
@@ -105,6 +111,7 @@ export default function AgencyOrderImportPage() {
 
   const [batches, setBatches] = useState<OrderBatchRow[]>([])
   const [orders, setOrders] = useState<OrderRow[]>([])
+  const [orderSearch, setOrderSearch] = useState('')
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyError, setHistoryError] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState<string | null>(null)
@@ -559,8 +566,22 @@ export default function AgencyOrderImportPage() {
           ) : (
             <>
               <p className="text-xs text-slate-600">{batches.length} import{batches.length === 1 ? '' : 's'} on record.</p>
+              <div>
+                <label htmlFor="order-history-search" className="block text-xs font-medium text-slate-700">Search by order reference</label>
+                <input
+                  id="order-history-search"
+                  type="search"
+                  value={orderSearch}
+                  onChange={(e) => setOrderSearch(e.target.value)}
+                  placeholder="Order reference"
+                  className={`mt-1 min-h-[44px] w-full rounded-xl border border-slate-300 px-3 sm:max-w-xs ${FOCUS_RING}`}
+                />
+              </div>
+              {orderSearch.trim() !== '' && orders.filter((o) => matchesOrderRef(o, orderSearch)).length === 0 && (
+                <p className="text-sm text-slate-700">No orders match that reference.</p>
+              )}
               <ul className="divide-y divide-slate-100">
-                {orders.map((o) => (
+                {orders.filter((o) => matchesOrderRef(o, orderSearch)).map((o) => (
                   <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <div className="min-w-0">
                       <p className="font-medium text-slate-900 break-words">{o.client_order_ref}</p>

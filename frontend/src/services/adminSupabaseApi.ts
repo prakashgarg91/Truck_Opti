@@ -272,6 +272,147 @@ export const adminDashboardApi = {
     },
 }
 
+// ============= PLATFORM BILLING SETTINGS =============
+// Read: RLS select (admin only, platform_billing_settings_admin_select). Write: the SECURITY DEFINER RPC
+// platform_billing_settings_update, called with the admin's own JWT. The RPC also takes the enforcement flag;
+// this version never changes it: the flag is re-read right before each save and passed through unchanged.
+export interface PlatformBillingSettings {
+    legalName: string | null
+    gstin: string | null
+    address: string | null
+    stateCode: string | null
+    sacCode: string
+    enforcementEnabled: boolean
+    updatedAt: string | null
+}
+
+export interface PlatformBillingSettingsInput {
+    legalName: string
+    gstin: string
+    address: string
+    stateCode: string
+    sacCode: string
+}
+
+export const BILLING_SETTINGS_ERROR_MESSAGES: Readonly<Record<string, string>> = Object.freeze({
+    forbidden: 'Only an admin can change billing settings.',
+    invalid_legal_name: 'Enter the legal name of the business that issues the invoices.',
+    invalid_gstin: 'This is not a valid GSTIN. It has 15 characters, for example 27AAAAA0000A1Z5.',
+    invalid_address: 'Enter the registered address that appears on the invoices.',
+    invalid_state_code: 'Enter a valid two-digit GST state code between 01 and 38.',
+    gstin_state_mismatch: 'The state code must match the first two digits of the GSTIN.',
+    invalid_sac_code: 'The SAC must be 6 to 8 digits.',
+    invalid_enforcement_enabled: 'The enforcement setting could not be read. Reload the page and try again.',
+})
+const BILLING_SETTINGS_UNKNOWN = 'Billing settings could not be saved. Please try again.'
+
+function billingSettingsErrorMessage(error: unknown): string {
+    const raw = `${(error as { message?: string } | null)?.message ?? ''} ${(error as { code?: string } | null)?.code ?? ''}`
+    for (const code of Object.keys(BILLING_SETTINGS_ERROR_MESSAGES)) {
+        if (raw.includes(code)) return BILLING_SETTINGS_ERROR_MESSAGES[code]
+    }
+    if (raw.includes('42501')) return BILLING_SETTINGS_ERROR_MESSAGES.forbidden
+    return BILLING_SETTINGS_UNKNOWN
+}
+
+async function readBillingSettings(): Promise<PlatformBillingSettings | null> {
+    const { data, error } = await supabase
+        .from('platform_billing_settings')
+        .select('legal_name, gstin, address, state_code, sac_code, enforcement_enabled, updated_at')
+        .limit(1)
+        .maybeSingle()
+    if (error) {
+        reportFunctionFailure('platform_billing_settings', error)
+        throw new UserFacingError('Unable to load billing settings right now. Please try again.')
+    }
+    if (!data) return null
+    return {
+        legalName: data.legal_name ?? null,
+        gstin: data.gstin ?? null,
+        address: data.address ?? null,
+        stateCode: data.state_code ?? null,
+        sacCode: data.sac_code ?? '997331',
+        enforcementEnabled: data.enforcement_enabled === true,
+        updatedAt: data.updated_at ?? null,
+    }
+}
+
+export const adminBillingSettingsApi = {
+    getSettings: readBillingSettings,
+
+    async updateSettings(input: PlatformBillingSettingsInput): Promise<void> {
+        // Re-read so a flag changed elsewhere (for example from the database) is never overwritten by this form.
+        const current = await readBillingSettings()
+        if (!current) throw new UserFacingError('Unable to load billing settings right now. Please try again.')
+        const { error } = await supabase.rpc('platform_billing_settings_update', {
+            p_legal_name: input.legalName,
+            p_gstin: input.gstin,
+            p_address: input.address,
+            p_state_code: input.stateCode,
+            p_sac_code: input.sacCode,
+            p_enforcement_enabled: current.enforcementEnabled,
+        })
+        if (error) {
+            reportFunctionFailure('platform_billing_settings_update', error)
+            throw new UserFacingError(billingSettingsErrorMessage(error))
+        }
+    },
+
+    /** Approved agencies with no trial, active, past-due or grace subscription (read-only; null when unknown). */
+    async countApprovedAgenciesWithoutLiveSubscription(): Promise<number> {
+        const [approved, subs] = await Promise.all([
+            adminAgenciesApi.getSnapshot('approved'),
+            adminSupabaseApi.getAdminSubscriptions(),
+        ])
+        const live = new Set(
+            subs.subscriptions
+                .filter((s) => ['trial', 'active', 'past_due', 'grace'].includes(s.status) && s.agency_id)
+                .map((s) => s.agency_id as string),
+        )
+        return approved.agencies.filter((a) => !live.has(a.id)).length
+    },
+}
+
+// ============= BILLING OPS (read-only) =============
+// Only tables an admin can read under RLS are queried here. subscription_sweep_runs has an admin SELECT policy
+// (is_admin_user) plus the authenticated grant (20261031000000_subscription_sweeps.sql). Every other ops table
+// is readable by the server-side service account only, so the page shows "not available" for it instead of an empty list.
+export interface AdminSweepRun {
+    id: string
+    asOf: string
+    startedAt: string
+    finishedAt: string | null
+    trialsExpired: number
+    graceStarted: number
+    graceExpired: number
+    remindersCreated: number
+}
+
+export const adminBillingOpsApi = {
+    /** Latest sweep runs, newest first. Flat select; no payload or result column is read. */
+    async getSweepRuns(limit = 20): Promise<AdminSweepRun[]> {
+        const { data, error } = await supabase
+            .from('subscription_sweep_runs')
+            .select('id, as_of, started_at, finished_at, trials_expired, grace_started, grace_expired, reminders_created')
+            .order('started_at', { ascending: false })
+            .limit(limit)
+        if (error) {
+            reportFunctionFailure('subscription_sweep_runs', error)
+            throw new UserFacingError('Unable to load sweep runs right now. Please try again.')
+        }
+        return (data ?? []).map((row) => ({
+            id: row.id,
+            asOf: row.as_of,
+            startedAt: row.started_at,
+            finishedAt: row.finished_at ?? null,
+            trialsExpired: row.trials_expired ?? 0,
+            graceStarted: row.grace_started ?? 0,
+            graceExpired: row.grace_expired ?? 0,
+            remindersCreated: row.reminders_created ?? 0,
+        }))
+    },
+}
+
 // ============= CONSOLIDATED ADMIN API =============
 export const adminSupabaseApi = {
     async getAdminDashboardData(): Promise<AdminDashboardData> {

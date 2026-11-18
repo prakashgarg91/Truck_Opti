@@ -47,7 +47,7 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupIntro: "Don't have an account?",
     signupAction: 'Create Account',
     supportText: null,
-    passwordHint: 'Password sign-in accepts your seeded email address or login ID.',
+    passwordHint: 'Password sign-in accepts your registered email address or login ID.',
     showTrustBadges: true,
   },
   driver: {
@@ -60,7 +60,7 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupIntro: 'Need to join as a driver?',
     signupAction: 'Register Driver',
     supportText: null,
-    passwordHint: 'Password sign-in accepts your seeded driver email address or login ID when enabled.',
+    passwordHint: 'Password sign-in accepts your registered driver email address or login ID when enabled.',
     showTrustBadges: true,
   },
   agency: {
@@ -73,7 +73,7 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupIntro: 'New transport agency?',
     signupAction: 'Register Agency',
     supportText: null,
-    passwordHint: 'Password sign-in accepts your seeded agency email address or login ID when enabled.',
+    passwordHint: 'Password sign-in accepts your registered agency email address or login ID when enabled.',
     showTrustBadges: true,
   },
   office: {
@@ -85,8 +85,8 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupHref: null,
     signupIntro: '',
     signupAction: '',
-    supportText: 'Office, reviewer, and demo accounts are provisioned by TruckOpti admins. Use your seeded email address or login ID once the account is ready.',
-    passwordHint: 'Password sign-in accepts your seeded office, reviewer, or demo email address or login ID.',
+    supportText: 'Office, reviewer, and demo accounts are provisioned by TruckOpti admins. Use your registered email address or login ID once the account is ready.',
+    passwordHint: 'Password sign-in accepts your registered office, reviewer, or demo email address or login ID.',
     showTrustBadges: false,
   },
   partner: {
@@ -98,7 +98,7 @@ const SURFACE_CONFIG: Record<LoginSurfaceMode, SurfaceConfig> = {
     signupHref: null,
     signupIntro: '',
     signupAction: '',
-    supportText: 'Partner accounts are provisioned by TruckOpti. Use your seeded email address or login ID when the account is ready.',
+    supportText: 'Partner accounts are provisioned by TruckOpti. Use your registered email address or login ID when the account is ready.',
     passwordHint: 'Password sign-in accepts your partner or reviewer email address or login ID.',
     showTrustBadges: false,
   },
@@ -471,7 +471,7 @@ export default function LoginPage() {
                   }}
                   onFocus={() => setFocusedField('password-email')}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="your@email.com or demo.driver"
+                  placeholder="your@email.com or login ID"
                   className={`input text-lg tracking-wide font-medium ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
                   autoFocus
                   aria-invalid={!!emailError}
@@ -486,7 +486,7 @@ export default function LoginPage() {
               ) : (
                 <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
                   <Shield className="w-3 h-3" />
-                  Use the seeded mailbox or assigned login ID connected to your TruckOpti account.
+                  Use the registered email address or assigned login ID connected to your TruckOpti account.
                 </p>
               )}
             </div>

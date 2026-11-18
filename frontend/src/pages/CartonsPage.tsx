@@ -196,7 +196,7 @@ export default function CartonsPage() {
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
+          <input aria-label={'Search cartons...'}
             type="text"
             placeholder={'Search cartons...'}
             value={search}
@@ -322,10 +322,10 @@ export default function CartonsPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="cartons-field-1" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {'Name'}
                 </label>
-                <input
+                <input id="cartons-field-1"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -337,10 +337,10 @@ export default function CartonsPage() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="cartons-field-2" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'Length (cm)'}
                   </label>
-                  <input
+                  <input id="cartons-field-2"
                     type="number"
                     value={formData.length || ''}
                     onChange={(e) => setFormData({ ...formData, length: Number(e.target.value) })}
@@ -349,10 +349,10 @@ export default function CartonsPage() {
                   {errors.length && <p className="mt-1 text-xs text-red-500">{errors.length}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="cartons-field-3" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'Width (cm)'}
                   </label>
-                  <input
+                  <input id="cartons-field-3"
                     type="number"
                     value={formData.width || ''}
                     onChange={(e) => setFormData({ ...formData, width: Number(e.target.value) })}
@@ -361,10 +361,10 @@ export default function CartonsPage() {
                   {errors.width && <p className="mt-1 text-xs text-red-500">{errors.width}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="cartons-field-4" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     {'Height (cm)'}
                   </label>
-                  <input
+                  <input id="cartons-field-4"
                     type="number"
                     value={formData.height || ''}
                     onChange={(e) => setFormData({ ...formData, height: Number(e.target.value) })}
@@ -375,10 +375,10 @@ export default function CartonsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor="cartons-field-5" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {'Weight (kg)'}
                 </label>
-                <input
+                <input id="cartons-field-5"
                   type="number"
                   value={formData.weight || ''}
                   onChange={(e) => setFormData({ ...formData, weight: Number(e.target.value) })}

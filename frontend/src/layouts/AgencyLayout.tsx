@@ -1,13 +1,13 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Truck, Briefcase,
-  LogOut, Building2, ChevronRight, Users, Tag, Bell, User, DollarSign, UserCog, Handshake, PackagePlus, FileText, Receipt, Wallet, MapPin, Banknote, Plug, ClipboardList, CreditCard
+  LogOut, Building2, ChevronRight, Users, Bell, User, DollarSign, UserCog, Handshake, PackagePlus, FileText, Receipt, Wallet, MapPin, Banknote, Plug, ClipboardList, CreditCard, MoreHorizontal
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { toDisplayName } from '../utils/displayName'
 import toast from 'react-hot-toast'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { BillingGateProvider } from '../components/billing/BillingGate'
 import AgencyBillingBanner from '../components/billing/AgencyBillingBanner'
 import PermissionDeniedState from '../components/PermissionDeniedState'
@@ -19,8 +19,7 @@ const NAV = [
   { to: '/agency/fleet', icon: Truck, label: 'Fleet' },
   { to: '/agency/drivers', icon: Users, label: 'Drivers' },
   { to: '/agency/jobs', icon: Briefcase, label: 'Jobs' },
-  { to: '/agency/billing', icon: DollarSign, label: 'Billing' },
-  { to: '/agency/rates', icon: Tag, label: 'Rates' },
+  { to: '/agency/billing', icon: DollarSign, label: 'Earnings' },
 ]
 
 // Desktop sidebar only: the six-item bottom bar has no room for more tabs at 390px.
@@ -38,6 +37,8 @@ const MORE_NAV = [
   { to: '/subscription', icon: CreditCard, label: 'Subscription' },
 ]
 
+const MORE_SHEET_ID = 'agency-more-sheet'
+
 export default function AgencyLayout() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
@@ -49,6 +50,43 @@ export default function AgencyLayout() {
   const pageAllowed = access.canRead(location.pathname)
   const actionsAllowed = access.canAct(location.pathname)
   const [newJobCount, setNewJobCount] = useState(0)
+
+  // Phone "More" sheet: the bottom bar cannot hold every MORE_NAV page.
+  const [moreOpen, setMoreOpen] = useState(false)
+  const moreButtonRef = useRef<HTMLButtonElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const moreActive = moreNav.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
+
+  // Closing always returns focus to the More button, so keyboard users keep their place.
+  const closeMore = () => {
+    setMoreOpen(false)
+    moreButtonRef.current?.focus()
+  }
+
+  useEffect(() => {
+    if (moreOpen) sheetRef.current?.querySelector<HTMLElement>('a[href]')?.focus()
+  }, [moreOpen])
+
+  const onSheetKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeMore()
+      return
+    }
+    if (event.key !== 'Tab') return
+    // Keep Tab inside the modal sheet while it is open.
+    const links = Array.from(sheetRef.current?.querySelectorAll<HTMLElement>('a[href]') ?? [])
+    if (links.length === 0) return
+    const first = links[0]
+    const last = links[links.length - 1]
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
 
   // `user_metadata.company` can be a string or `{ name }` (device-local
   // profile). Normalize before rendering — rendering the object directly
@@ -258,24 +296,86 @@ export default function AgencyLayout() {
         </BillingGateProvider>
       </main>
 
+      {/* ── Mobile More sheet (hidden on lg+) ────────────────── */}
+      {moreNav.length > 0 && (
+        <>
+          {moreOpen && (
+            <div
+              aria-hidden="true"
+              data-testid="agency-more-backdrop"
+              onClick={closeMore}
+              className="md:hidden fixed inset-0 z-40 bg-slate-900/40"
+            />
+          )}
+          <div
+            id={MORE_SHEET_ID}
+            ref={sheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="More agency pages"
+            hidden={!moreOpen}
+            onKeyDown={onSheetKeyDown}
+            className="md:hidden fixed inset-x-0 bottom-16 z-50 max-h-[70vh] overflow-y-auto rounded-t-2xl border-t border-slate-200 bg-white p-2 shadow-2xl dark:border-slate-700 dark:bg-slate-800"
+          >
+            <p className="px-4 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-slate-400">More</p>
+            <nav aria-label="More pages">
+              {moreNav.map(({ to, icon: Icon, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={closeMore}
+                  className={({ isActive }) =>
+                    `flex min-h-[44px] items-center gap-3 rounded-xl px-4 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isActive
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'
+                    }`
+                  }
+                >
+                  <Icon size={20} aria-hidden="true" />
+                  <span className="font-medium">{label}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+        </>
+      )}
+
       {/* ── Mobile Bottom Navigation (hidden on lg+) ─────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-50 safe-area-bottom">
-        <div className="flex items-center justify-around px-2 py-1">
+      <nav aria-label="Agency main" className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-50 safe-area-bottom">
+        <div className="flex items-stretch px-2 py-1">
           {nav.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
+              onClick={() => setMoreOpen(false)}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-colors ${isActive
+                `flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isActive
                   ? 'text-indigo-600 dark:text-indigo-400'
                   : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                 }`
               }
             >
-              <Icon size={22} />
-              <span className="text-[10px] font-medium">{label}</span>
+              <Icon size={22} aria-hidden="true" />
+              <span className="max-w-full truncate text-[10px] font-medium">{label}</span>
             </NavLink>
           ))}
+          {moreNav.length > 0 && (
+            <button
+              ref={moreButtonRef}
+              type="button"
+              onClick={() => (moreOpen ? closeMore() : setMoreOpen(true))}
+              aria-haspopup="dialog"
+              aria-expanded={moreOpen}
+              aria-controls={MORE_SHEET_ID}
+              className={`flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${moreOpen || moreActive
+                ? 'text-indigo-600 dark:text-indigo-400'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+              }`}
+            >
+              <MoreHorizontal size={22} aria-hidden="true" />
+              <span className="max-w-full truncate text-[10px] font-medium">More</span>
+            </button>
+          )}
         </div>
       </nav>
     </div>

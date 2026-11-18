@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Clock, MapPin, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react'
+import { Clock, MapPin, CheckCircle2, XCircle, AlertCircle, AlertTriangle, RefreshCw } from 'lucide-react'
 import { driverTripsApi } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
@@ -27,26 +27,33 @@ const STATUS_CONFIG = {
 }
 
 export default function DriverHistoryPage() {
+  useEffect(() => {
+    document.title = 'Driver Trip History - TruckOpti'
+  }, [])
   const { user } = useAuthStore()
   const [driverId, setDriverId] = useState<string | null>(null)
   const [trips, setTrips] = useState<TripRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [filter, setFilter] = useState<'all' | 'delivered' | 'declined'>('all')
 
   const fetchDriverId = useCallback(async () => {
     if (!user?.id) return
+    setLoadError(false)
     try {
       const driverId = await driverTripsApi.getDriverIdByUserId(user.id)
       if (driverId) setDriverId(driverId)
       else setLoading(false)
     } catch (_error) {
       toast.error('Failed to load driver profile')
+      setLoadError(true)
       setLoading(false)
     }
   }, [user?.id])
 
   const fetchTrips = useCallback(async (drId: string) => {
     setLoading(true)
+    setLoadError(false)
     try {
       const data = await driverTripsApi.getHistory(drId, filter)
       setTrips(((data ?? []) as Record<string, unknown>[]).map((trip) => {
@@ -68,9 +75,18 @@ export default function DriverHistoryPage() {
       }))
     } catch (_error) {
       toast.error('Failed to load trip history')
+      setLoadError(true)
     }
     setLoading(false)
   }, [filter])
+
+  const retry = () => {
+    if (driverId) void fetchTrips(driverId)
+    else {
+      setLoading(true)
+      void fetchDriverId()
+    }
+  }
 
   useEffect(() => { fetchDriverId() }, [fetchDriverId])
   useEffect(() => { if (driverId) fetchTrips(driverId) }, [driverId, fetchTrips])
@@ -94,7 +110,8 @@ export default function DriverHistoryPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${filter === f
+              aria-pressed={filter === f}
+              className={`min-h-[44px] px-4 py-2 rounded-full text-sm font-medium capitalize transition-colors ${filter === f
                 ? 'bg-blue-600 text-white'
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                 }`}
@@ -109,6 +126,19 @@ export default function DriverHistoryPage() {
         {loading ? (
           <div className="flex justify-center py-12">
             <RefreshCw size={24} className="animate-spin text-blue-600" />
+          </div>
+        ) : loadError ? (
+          <div role="alert" className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
+            <AlertTriangle size={36} className="text-amber-400 mx-auto mb-2" aria-hidden="true" />
+            <p className="text-slate-700 dark:text-slate-200 text-sm font-medium">Could not load your trips</p>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Check your internet connection and try again.</p>
+            <button
+              type="button"
+              onClick={retry}
+              className="mt-4 min-h-[44px] px-6 rounded-xl bg-blue-600 text-white text-sm font-semibold"
+            >
+              Retry
+            </button>
           </div>
         ) : trips.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">

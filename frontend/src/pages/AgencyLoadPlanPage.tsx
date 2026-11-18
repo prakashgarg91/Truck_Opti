@@ -5,6 +5,7 @@ import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
 import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { vehicleTypeLabel } from '../lib/vehicleLabels'
 import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import {
   agencyLoadPlansApi,
@@ -68,7 +69,7 @@ function lineWeightKg(line: OrderLineRow): number | null {
   return null
 }
 
-const truckLabel = (t: TruckRow) => `${t.vehicle_type} · ${t.rc_number}`
+const truckLabel = (t: TruckRow) => `${vehicleTypeLabel(t.vehicle_type)} · ${t.rc_number}`
 
 function truckIneligibleReason(t: TruckRow): string | null {
   if (t.maintenance_blocked) return 'Blocked for maintenance'
@@ -77,7 +78,8 @@ function truckIneligibleReason(t: TruckRow): string | null {
   return null
 }
 
-const siteLabel = (id: string | null) => (id ? `Site ${id.slice(0, 8)}` : 'No site set')
+// Site names are not loaded on this page, so a site id never shows as text.
+const siteLabel = (id: string | null) => (id ? 'Unnamed site' : 'No site set')
 
 interface Proposal {
   id: number
@@ -848,7 +850,7 @@ export default function AgencyLoadPlanPage() {
                                         .filter((x) => x.load_id === l.id)
                                         .map((x) => (
                                           <li key={x.id} className="break-words">
-                                            {lineById.has(x.order_line_id) ? lineName(x.order_line_id) : `Order line ${x.order_line_id.slice(0, 8)}`} · quantity {x.quantity}
+                                            {lineById.has(x.order_line_id) ? lineName(x.order_line_id) : 'Order line not loaded'} · quantity {x.quantity}
                                           </li>
                                         ))}
                                     </ul>
@@ -862,7 +864,7 @@ export default function AgencyLoadPlanPage() {
                                 <ul className="list-disc pl-5">
                                   {detail.unmet.map((u) => (
                                     <li key={u.id}>
-                                      {lineById.has(u.order_line_id) ? lineName(u.order_line_id) : `Order line ${u.order_line_id.slice(0, 8)}`}: {UNMET_TEXT[u.reason]}.
+                                      {lineById.has(u.order_line_id) ? lineName(u.order_line_id) : 'Order line not loaded'}: {UNMET_TEXT[u.reason]}.
                                     </li>
                                   ))}
                                 </ul>

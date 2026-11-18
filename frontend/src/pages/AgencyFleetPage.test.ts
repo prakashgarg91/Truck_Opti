@@ -326,4 +326,90 @@ describe('AgencyFleetPage subscription guard', () => {
     })
 })
 
+    describe('shared vehicle labels, search and status filter', () => {
+        const FLEET = [
+            { ...VEHICLE, id: 'veh-a', vehicle_type: 'volvo_40ft', rc_number: 'KA05EK1111', is_available: true, maintenance_blocked: false },
+            { ...VEHICLE, id: 'veh-b', vehicle_type: 'eicher_14ft', rc_number: 'MH12ZZ9999', is_available: false, maintenance_blocked: false },
+            { ...VEHICLE, id: 'veh-c', vehicle_type: 'tata_ace', rc_number: 'TN01QQ0001', is_available: true, maintenance_blocked: true },
+            { ...VEHICLE, id: 'veh-d', vehicle_type: 'mystery_code', rc_number: 'GJ01XX0002', is_available: true, maintenance_blocked: false },
+        ]
+
+        const cards = () => Array.from(container?.querySelectorAll('[data-testid="fleet-vehicle-card"]') ?? [])
+        const cardTexts = () => cards().map((c) => c.textContent || '')
+
+        async function mountFleet(): Promise<void> {
+            h.listVehicles.mockResolvedValue(FLEET)
+            await mountPage()
+            await waitFor(() => cards().length === 4, 'four vehicle cards')
+        }
+
+        function selectStatus(value: string): void {
+            const select = queryOne('#fleet-status-filter') as HTMLSelectElement
+            const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
+            setter?.call(select, value)
+            act(() => {
+                select.dispatchEvent(new Event('change', { bubbles: true }))
+            })
+        }
+
+        it('shows catalogue labels, never a raw vehicle code, and the add form lists the shared catalogue', async () => {
+            await mountFleet()
+            const text = container?.textContent || ''
+            expect(text).toContain('Volvo 40ft Container (25T)')
+            expect(text).toContain('Eicher 14ft (3T)')
+            expect(text).toContain('Tata Ace (mini truck)')
+            expect(text).toContain('Other truck type')
+            for (const raw of ['volvo_40ft', 'eicher_14ft', 'tata_ace', 'mystery_code']) {
+                expect(text).not.toContain(raw)
+                expect(container?.innerHTML || '').not.toContain(`aria-label="Mark ${raw}`)
+            }
+            const mark = Array.from(container?.querySelectorAll('button[aria-label]') ?? [])
+                .map((b) => b.getAttribute('aria-label') || '')
+            expect(mark.some((label) => label.includes('Volvo 40ft Container (25T) (KA05EK1111)'))).toBe(true)
+
+            await clickButton(findButtons(/^Add Truck$/)[0])
+            const optionTexts = Array.from(queryOne('#fleet-vehicle-type')?.querySelectorAll('option') ?? [])
+                .map((o) => o.textContent || '')
+            expect(optionTexts).toContain('Tata Ace (mini truck)')
+            expect(optionTexts).toContain('Volvo 40ft Container (25T)')
+            expect(optionTexts.some((t) => t.includes('volvo_40ft'))).toBe(false)
+        })
+
+        it('search matches the RC number or the vehicle label, case-insensitively, and reports no matches', async () => {
+            await mountFleet()
+            const input = queryOne('#fleet-search') as HTMLInputElement
+            await act(async () => { setInputValue(input, 'eicher') })
+            expect(cards()).toHaveLength(1)
+            expect(cardTexts()[0]).toContain('MH12ZZ9999')
+
+            await act(async () => { setInputValue(input, 'gj01') })
+            expect(cards()).toHaveLength(1)
+            expect(cardTexts()[0]).toContain('GJ01XX0002')
+
+            await act(async () => { setInputValue(input, 'zzz-none') })
+            expect(cards()).toHaveLength(0)
+            expect(queryOne('[data-testid="fleet-no-matches"]')).not.toBeNull()
+
+            await act(async () => { setInputValue(input, '') })
+            expect(cards()).toHaveLength(4)
+            expect(queryOne('[data-testid="fleet-no-matches"]')).toBeNull()
+        })
+
+        it('the status filter narrows the list to available, on-trip or maintenance trucks', async () => {
+            await mountFleet()
+            selectStatus('maintenance')
+            expect(cards()).toHaveLength(1)
+            expect(cardTexts()[0]).toContain('Tata Ace (mini truck)')
+
+            selectStatus('on_trip')
+            expect(cards()).toHaveLength(1)
+            expect(cardTexts()[0]).toContain('MH12ZZ9999')
+
+            selectStatus('available')
+            expect(cards()).toHaveLength(2)
+
+            selectStatus('all')
+            expect(cards()).toHaveLength(4)
+        })
+    })
 })

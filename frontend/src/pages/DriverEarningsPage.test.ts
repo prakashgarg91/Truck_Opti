@@ -26,6 +26,7 @@ const h = vi.hoisted(() => ({
     getDeliveredTrips: vi.fn(),
     getBalanceSnapshot: vi.fn(),
     requestPayout: vi.fn(),
+    listMyLines: vi.fn(),
     downloadCsv: vi.fn(),
     downloadJson: vi.fn(),
     downloadXlsx: vi.fn(),
@@ -45,6 +46,10 @@ vi.mock('../services/supabaseApi', () => ({
         getDriverIdByUserId: h.getDriverIdByUserId,
         getDeliveredTrips: h.getDeliveredTrips,
     },
+}))
+
+vi.mock('../services/driverPayrollApi', () => ({
+    driverPayrollApi: { listMyLines: h.listMyLines },
 }))
 
 vi.mock('../stores/authStore', () => ({ useAuthStore: h.useAuthStore }))
@@ -171,6 +176,7 @@ describe('DriverEarningsPage', () => {
         h.getBalanceSnapshot.mockResolvedValue(SNAPSHOT)
         h.getDeliveredTrips.mockResolvedValue([TRIP_A, TRIP_B, TRIP_C])
         h.requestPayout.mockResolvedValue(undefined)
+        h.listMyLines.mockResolvedValue([])
         h.downloadCsv.mockReturnValue(undefined)
         h.downloadJson.mockReturnValue(undefined)
         h.downloadXlsx.mockResolvedValue(undefined)
@@ -190,7 +196,7 @@ describe('DriverEarningsPage', () => {
         h.getDeliveredTrips.mockReturnValue(new Promise(() => {}))
         await mountPage()
         expect(q('.animate-spin')).toBeTruthy()
-        expect(text()).not.toContain('Wallet Balance')
+        expect(text()).not.toContain('Available to withdraw')
         expect(text()).not.toContain('Trips Completed')
         expect(text()).toContain('Earnings')
     })
@@ -198,7 +204,9 @@ describe('DriverEarningsPage', () => {
     it('renders the wallet balance with pending/approved chips and all four summary cards', async () => {
         await mountPage()
         const txt = text()
-        expect(txt).toContain('Wallet Balance')
+        expect(txt).toContain('Available to withdraw (estimate)')
+        expect(txt).not.toContain('Wallet Balance')
+        expect(txt).toContain('Based on customer quotes')
         expect(txt).toContain(inr(2500)) // 9000 delivered − (4500 paid + 1500 approved + 500 pending)
         expect(txt).toContain(`Pending: ${inr(500)}`)
         expect(txt).toContain(`Approved: ${inr(1500)}`)
@@ -222,7 +230,7 @@ describe('DriverEarningsPage', () => {
         expect(txt).toContain(formatCurrency(2600))
         expect(txt).toContain(enInDate(NOV5))
         expect(txt).toContain(enInDate(NOV4))
-        expect(txt).toContain('Per-Trip Earnings')
+        expect(txt).toContain('Delivered trips (customer quote)')
     })
 
     it('groups the daily summary by day with plural and singular trip counts', async () => {
@@ -281,7 +289,7 @@ describe('DriverEarningsPage', () => {
         h.getBalanceSnapshot.mockRejectedValue(new Error('payouts table unavailable'))
         await mountPage()
         expect(h.toastError).toHaveBeenCalledWith('Failed to load balance')
-        expect(h.loggerError.mock.calls[0]?.[0]).toBe('[DriverEarnings] balance:')
+        expect(h.loggerError.mock.calls.map((c) => c[0])).toContain('[DriverEarnings] balance:')
         expect(text()).toContain('Mumbai → Pune')
         expect(text()).toContain(inr(0)) // wallet falls back to zero and Withdraw is disabled
         expect(buttons(/^Withdraw$/)[0].disabled).toBe(true)
@@ -402,22 +410,20 @@ describe('DriverEarningsPage', () => {
         const [rows, cols, filename] = h.downloadCsv.mock.calls[0]
         expect(filename).toBe('driver-earnings-week-2026-11-06.csv')
         expect(cols.map((c: { label: string }) => c.label)).toEqual([
-            'Trip ID',
             'Shipment Ref',
             'Route',
             'Delivered On',
-            'Earning (INR)',
+            'Customer quote (INR)',
         ])
         expect(rows).toHaveLength(3)
-        const first = rows.find((r: { tripId: string }) => r.tripId === 'trip-aaaa1111')
+        const first = rows.find((r: { shipmentRef: string }) => r.shipmentRef === 'SHP-1001')
         expect(first).toEqual({
-            tripId: 'trip-aaaa1111',
             shipmentRef: 'SHP-1001',
             route: 'Mumbai → Pune',
             deliveredOn: enInDate(NOV5),
             earning: 1500,
         })
-        const earningCol = cols.find((c: { label: string }) => c.label === 'Earning (INR)')
+        const earningCol = cols.find((c: { label: string }) => c.label === 'Customer quote (INR)')
         expect(earningCol.value(first)).toBe(1500)
         expect(h.toastSuccess).toHaveBeenCalledWith('CSV export ready')
     })
@@ -439,7 +445,7 @@ describe('DriverEarningsPage', () => {
         const [rows, cols, filename, sheet] = h.downloadXlsx.mock.calls[0]
         expect(filename).toBe('driver-earnings-week-2026-11-06.xlsx')
         expect(sheet).toBe('Trip Earnings')
-        expect(cols).toHaveLength(5)
+        expect(cols).toHaveLength(4)
         expect(rows).toHaveLength(3)
         expect(h.toastSuccess).toHaveBeenCalledWith('XLSX export ready')
     })
@@ -449,7 +455,7 @@ describe('DriverEarningsPage', () => {
         await mountPage()
         await click(buttons(/^XLSX$/)[0])
         expect(h.toastError).toHaveBeenCalledWith('Failed to export trip earnings')
-        expect(h.loggerError.mock.calls[0]?.[0]).toBe('[DriverEarnings] export failed:')
+        expect(h.loggerError.mock.calls.map((c) => c[0])).toContain('[DriverEarnings] export failed:')
     })
 
     it('uses only the first shipment when the job embeds shipments as an array', async () => {
@@ -472,23 +478,107 @@ describe('DriverEarningsPage', () => {
         expect(txt).not.toContain(formatCurrency(9999))
     })
 
-    it('a job without shipment data falls back to placeholder route, id-based ref and the current date', async () => {
+    it('a job without shipment data falls back to the placeholder route, hides the raw id and uses the current date', async () => {
         h.getDeliveredTrips.mockResolvedValue([
             { id: 'job-no-ship-ABCD1234', delivered_at: null, status: 'delivered' },
         ])
         await mountPage()
         const txt = text()
         expect(txt).toContain('— → —')
-        expect(txt).toContain('#ABCD1234') // last 8 chars of the job id, uppercased
+        expect(txt).not.toContain('ABCD1234') // raw ids are never shown to the driver
         expect(txt).toContain(enInDate(PINNED_NOW.getTime())) // null delivered_at pins to "now"
         expect(txt).toContain(formatCurrency(0))
         expect(txt).toContain('Trips Completed')
     })
 
-    it('does not fetch earnings when the user has no driver profile', async () => {
+    it('does not fetch earnings when the user has no driver profile, and shows an empty state instead of a spinner', async () => {
         h.getDriverIdByUserId.mockResolvedValue(null)
         await mountPage()
         expect(h.getDeliveredTrips).not.toHaveBeenCalled()
         expect(h.getBalanceSnapshot).not.toHaveBeenCalled()
+        expect(q('.animate-spin')).toBeNull()
+        expect(text()).toContain('No driver profile yet')
+    })
+
+    it('a failed driver lookup clears the spinner and shows an error with Retry that recovers', async () => {
+        h.getDriverIdByUserId.mockRejectedValueOnce(new Error('network down')).mockResolvedValue('driver-1')
+        await mountPage()
+        expect(q('.animate-spin')).toBeNull()
+        expect(text()).toContain('Could not load your earnings')
+        expect(q('[role="alert"]')).toBeTruthy()
+        await click(buttons(/^Retry$/)[0])
+        expect(h.getDeliveredTrips).toHaveBeenCalledWith('driver-1', 'week')
+        expect(text()).toContain('Mumbai → Pune')
+        expect(text()).not.toContain('Could not load your earnings')
+    })
+
+    it('a failed trip fetch shows a Retry banner while keeping the page usable', async () => {
+        h.getDeliveredTrips.mockRejectedValueOnce(new Error('job_offers unavailable')).mockResolvedValue([TRIP_A])
+        await mountPage()
+        expect(text()).toContain('Could not load your trips')
+        await click(buttons(/^Retry$/)[0])
+        expect(h.getDeliveredTrips).toHaveBeenCalledTimes(2)
+        expect(text()).not.toContain('Could not load your trips')
+        expect(text()).toContain('Mumbai → Pune')
+    })
+
+    it('period tabs are 44px targets and expose the selected state', async () => {
+        await mountPage()
+        const week = buttons(/This Week/)[0]
+        expect(week.className).toContain('min-h-[44px]')
+        expect(week.getAttribute('aria-pressed')).toBe('true')
+        expect(buttons(/This Month/)[0].getAttribute('aria-pressed')).toBe('false')
+    })
+
+    it('the withdrawal amount label is associated with its input', async () => {
+        await mountPage()
+        await click(buttons(/^Withdraw$/)[0])
+        const label = q('label[for="withdraw-amount"]')
+        expect(label?.textContent).toContain('Amount')
+        expect(q('#withdraw-amount')).toBe(q('input[type="number"]'))
+        expect(q('[role="dialog"]')).toBeTruthy()
+    })
+
+    describe('My pay (agency payroll statements)', () => {
+        const LINE = {
+            periodId: 'p1',
+            periodStart: '2026-10-01',
+            periodEnd: '2026-10-31',
+            basePaise: 1500000,
+            tripsPaise: 420050,
+            advancesPaise: 200000,
+            deductionsPaise: 5000,
+            netPaise: 1715050,
+            shortfallPaise: 0,
+            carriedInPaise: 0,
+            tripCount: 7,
+        }
+
+        it('shows the closed pay lines with net and the breakdown in rupees', async () => {
+            h.listMyLines.mockResolvedValue([LINE])
+            await mountPage()
+            const txt = text()
+            expect(txt).toContain('My pay')
+            expect(txt).toContain('7 trips')
+            expect(txt).toContain('Net ₹17,150.50')
+            expect(txt).toContain('₹15,000.00') // base
+            expect(txt).toContain('₹4,200.50') // trips
+            expect(txt).toContain('-₹2,000.00') // advances
+            expect(txt).toContain('-₹50.00') // deductions
+        })
+
+        it('shows a calm empty state when no period has been closed', async () => {
+            await mountPage()
+            expect(text()).toContain('No pay statements yet')
+        })
+
+        it('shows an error with Retry when the statements cannot be loaded, and recovers', async () => {
+            h.listMyLines.mockRejectedValueOnce(new Error('rpc failed')).mockResolvedValue([LINE])
+            await mountPage()
+            expect(text()).toContain('Could not load your pay statements')
+            await click(buttons(/^Retry$/)[0])
+            expect(h.listMyLines).toHaveBeenCalledTimes(2)
+            expect(text()).toContain('Net ₹17,150.50')
+        })
     })
 })

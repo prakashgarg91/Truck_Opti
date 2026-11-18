@@ -300,16 +300,17 @@ describe('DriverRegisterPage', () => {
         expect(h.register).not.toHaveBeenCalled()
     })
 
-    it('licence upload stores under <user>/licence.<ext> with upsert and shows the public preview', async () => {
+    it('licence upload stores under <user>/licence.<ext> with upsert and shows an Uploaded state, never a public link', async () => {
         await gotoStep2()
         const file = new File(['dl-bytes'], 'licence.png', { type: 'image/png' })
         await pickFile(fileInputs()[0], file)
         expect(h.storageFrom).toHaveBeenCalledWith('driver-docs')
         expect(h.upload).toHaveBeenCalledTimes(1)
         expect(h.upload).toHaveBeenCalledWith(`${USER_ID}/licence.png`, file, { upsert: true })
-        expect(h.getPublicUrl).toHaveBeenCalledWith(`${USER_ID}/licence.png`)
+        expect(h.getPublicUrl).not.toHaveBeenCalled()
         expect(h.toastSuccess).toHaveBeenCalledWith('Driving licence uploaded')
-        expect(q('img[alt="Licence"]')?.getAttribute('src')).toBe(`https://cdn.test/${USER_ID}/licence.png`)
+        expect(q('img[alt="Licence"]')).toBeNull()
+        expect(q('button[aria-label="Remove driving licence photo"]')).not.toBeNull()
         expect(text()).toContain('Uploaded')
     })
 
@@ -319,7 +320,8 @@ describe('DriverRegisterPage', () => {
         await pickFile(fileInputs()[1], file)
         expect(h.upload).toHaveBeenCalledWith(`${USER_ID}/rc.jpg`, file, { upsert: true })
         expect(h.toastSuccess).toHaveBeenCalledWith('RC uploaded')
-        expect(q('img[alt="RC"]')?.getAttribute('src')).toBe(`https://cdn.test/${USER_ID}/rc.jpg`)
+        expect(q('img[alt="RC"]')).toBeNull()
+        expect(q('button[aria-label="Remove RC photo"]')).not.toBeNull()
     })
 
     it('a failed upload toasts, logs, and keeps the upload button', async () => {
@@ -328,7 +330,7 @@ describe('DriverRegisterPage', () => {
         await pickFile(fileInputs()[0], new File(['x'], 'licence.png', { type: 'image/png' }))
         expect(h.toastError).toHaveBeenCalledWith('Failed to upload document')
         expect(h.loggerError).toHaveBeenCalled()
-        expect(q('img[alt="Licence"]')).toBeNull()
+        expect(q('button[aria-label="Remove driving licence photo"]')).toBeNull()
         expect(buttons(/Upload Driving Licence/)).toHaveLength(1)
     })
 
@@ -345,7 +347,7 @@ describe('DriverRegisterPage', () => {
             settle({ error: null })
             await new Promise((r) => setTimeout(r, 0))
         })
-        expect(q('img[alt="Licence"]')).not.toBeNull()
+        expect(q('button[aria-label="Remove driving licence photo"]')).not.toBeNull()
     })
 
     it('removing an uploaded licence restores the upload button', async () => {
@@ -353,8 +355,29 @@ describe('DriverRegisterPage', () => {
         await pickFile(fileInputs()[0], new File(['x'], 'licence.png', { type: 'image/png' }))
         expect(q('button[aria-label="Remove driving licence photo"]')).not.toBeNull()
         await click(q('button[aria-label="Remove driving licence photo"]') as HTMLButtonElement)
-        expect(q('img[alt="Licence"]')).toBeNull()
+        expect(q('button[aria-label="Remove driving licence photo"]')).toBeNull()
         expect(buttons(/Upload Driving Licence/)).toHaveLength(1)
+    })
+
+    it('submission sends the licence storage path, not a public URL, in dl_url', async () => {
+        await mountPage()
+        await type(f.name(), 'Ravi Kumar')
+        await type(f.phone(), '9876543210')
+        await type(f.aadhaar(), '1234')
+        await type(f.pan(), 'ABCDE1234F')
+        await type(f.city(), 'Mumbai')
+        await click(nextButton())
+        await type(vehicleSelect(), 'tata_407')
+        await type(f.rc(), 'MH01AB1234')
+        await type(f.license(), 'MH0120220001234')
+        await pickFile(fileInputs()[0], new File(['dl-bytes'], 'licence.png', { type: 'image/png' }))
+        await click(nextButton())
+        await type(f.bank(), '123456789012')
+        await type(f.ifsc(), 'SBIN0001234')
+        await click(nextButton())
+
+        expect(h.register).toHaveBeenCalledTimes(1)
+        expect(h.register.mock.calls[0][0].dl_url).toBe(`${USER_ID}/licence.png`)
     })
 
     it('step 3 requires a bank account number', async () => {

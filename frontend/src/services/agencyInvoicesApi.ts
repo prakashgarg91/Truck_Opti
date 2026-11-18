@@ -266,6 +266,21 @@ async function readOrdered<T>(
 const eq = (column: string, value: string) => (q: unknown) =>
     (q as { eq: (c: string, v: string) => unknown }).eq(column, value)
 
+/** A delivered or receipt-confirmed GR, with the client it bills to (for the invoice shortcut). */
+export interface InvoiceableGr {
+    consignmentId: string
+    grNumber: string
+    status: 'delivered' | 'receipt_confirmed'
+    clientId: string
+}
+
+interface GrRow { id: string; order_id: string; gr_number: string; status: string }
+interface GrOrderClient { id: string; agreement_id: string }
+
+const GR_COLUMNS = 'id,order_id,gr_number,status'
+const GR_ORDER_COLUMNS = 'id,agreement_id'
+const INVOICEABLE_STATUSES: readonly string[] = ['delivered', 'receipt_confirmed']
+
 const CLIENT_COLUMNS = 'id,client_name,status,created_at'
 const INVOICE_COLUMNS =
     'id,client_id,invoice_number,status,supplier_state_code,place_of_supply_state_code,gst_rate_pct,reverse_charge,subtotal_paise,cgst_paise,sgst_paise,igst_paise,round_off_paise,total_paise,paid_paise,version,cancelled_reason,created_at'
@@ -278,6 +293,30 @@ export const agencyInvoicesApi = {
 
     listInvoices: () =>
         readOrdered<InvoiceRow>('agency_invoices', INVOICE_COLUMNS, 'Failed to load invoices', 'created_at', false),
+
+    /**
+     * Delivered or receipt-confirmed GRs and the client each one bills to (its order's
+     * agreement). Two flat reads joined by id here; GRs whose order cannot be read are left out.
+     */
+    async listInvoiceableGrs(): Promise<InvoiceableGr[]> {
+        const [grs, orders] = await Promise.all([
+            readOrdered<GrRow>('agency_consignments', GR_COLUMNS, 'Failed to load GRs', 'created_at', false),
+            readOrdered<GrOrderClient>('agency_orders', GR_ORDER_COLUMNS, 'Failed to load GRs', 'created_at', false),
+        ])
+        const clientByOrder = new Map(orders.map((o) => [o.id, o.agreement_id]))
+        const out: InvoiceableGr[] = []
+        for (const gr of grs) {
+            const clientId = clientByOrder.get(gr.order_id)
+            if (!clientId || !INVOICEABLE_STATUSES.includes(gr.status)) continue
+            out.push({
+                consignmentId: gr.id,
+                grNumber: gr.gr_number,
+                status: gr.status as InvoiceableGr['status'],
+                clientId,
+            })
+        }
+        return out
+    },
 
     async getInvoiceDetail(invoiceId: string): Promise<InvoiceDetail> {
         const [lines, payments] = await Promise.all([

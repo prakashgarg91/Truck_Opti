@@ -289,4 +289,26 @@ describe('AgencyOrderImportPage', () => {
         expect(b.title).toContain('read-only')
     })
 
+    it('filters the recent-orders history by order reference, client-side', async () => {
+        const base = { agreement_id: 'ag-1', batch_id: 'b', status: 'draft', version: 1, created_at: '2026-11-10T00:00:00Z', updated_at: '2026-11-10T00:00:00Z' }
+        h.listOrders.mockResolvedValue([
+            { ...base, id: 'o-1', client_order_ref: 'SO-1001' },
+            { ...base, id: 'o-2', client_order_ref: 'PO-7' },
+        ])
+        await mountPage()
+        await choose(q('#import-agreement') as HTMLSelectElement, 'ag-1')
+        expect(q('#order-history-search')).not.toBeNull()
+        const search = q('#order-history-search') as HTMLInputElement
+        await act(async () => {
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(search, 'so-10')
+            search.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        expect(text()).toContain('SO-1001')
+        expect(text()).not.toContain('PO-7')
+        await act(async () => {
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(search, 'zzz')
+            search.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        expect(text()).toContain('No orders match that reference.')
+    })
 })

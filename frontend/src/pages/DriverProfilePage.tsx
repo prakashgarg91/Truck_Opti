@@ -24,6 +24,7 @@ import {
 import { driverSupabaseApi, type DriverProfile } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
+import { maskBankAccount, maskUpi } from '../lib/maskPayout'
 
 const VEHICLE_LABELS: Record<string, string> = {
   tata_407: 'Tata 407 (1T)',
@@ -179,7 +180,7 @@ export default function DriverProfilePage() {
             <div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Driver profile not found</h1>
               <p className="mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-400">
-                This route now has dedicated driver ownership. Your account does not have a linked driver record yet.
+                Your account is not linked to a driver profile yet. Register as a driver, or contact support if you already did.
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <button
@@ -253,7 +254,7 @@ export default function DriverProfilePage() {
             />
             <InfoCard
               title="Payment Setup"
-              value={profile.upi_id || (profile.bank_account ? 'Bank linked' : 'Pending')}
+              value={profile.upi_id ? maskUpi(profile.upi_id) : (profile.bank_account ? 'Bank linked' : 'Pending')}
               subtitle="Withdrawals use your linked payout method"
               icon={Wallet}
             />
@@ -275,7 +276,7 @@ export default function DriverProfilePage() {
                   className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left hover:border-primary-300 hover:bg-primary-50/40 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-primary-500/40"
                 >
                   <p className="font-semibold text-slate-900 dark:text-white">Account Center</p>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Identity, avatar and notifications</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Your account details</p>
                   <ChevronRight className="mt-4 h-4 w-4 text-slate-400" />
                 </button>
                 <button
@@ -313,8 +314,8 @@ export default function DriverProfilePage() {
                   <div className="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
                     <p>{VEHICLE_LABELS[profile.vehicle_type] || profile.vehicle_type}</p>
                     <p>RC: {profile.rc_number || 'Missing'}</p>
-                    <p>UPI: {profile.upi_id || 'Missing'}</p>
-                    <p>Bank: {profile.bank_account || 'Missing'}</p>
+                    <p>UPI: {profile.upi_id ? maskUpi(profile.upi_id) : 'Missing'}</p>
+                    <p>Bank: {profile.bank_account ? maskBankAccount(profile.bank_account) : 'Missing'}</p>
                   </div>
                 </div>
               </div>

@@ -147,15 +147,29 @@ async function readOrdered<T>(
     table: string,
     columns: string,
     fallback: string,
-    filter?: (query: unknown) => unknown
+    filter?: (query: unknown) => unknown,
+    order: { column: string; ascending: boolean } = { column: 'created_at', ascending: false }
 ): Promise<T[]> {
     const client = supabase as unknown as { from: (name: string) => { select: (cols: string) => unknown } }
     let query = client.from(table).select(columns)
     if (filter) query = filter(query)
-    const { data, error } = await (query as Orderable).order('created_at', { ascending: false })
+    const { data, error } = await (query as Orderable).order(order.column, { ascending: order.ascending })
     if (error) throw new UserFacingError(fallback)
     return (data ?? []) as T[]
 }
+
+/** Client and site labels for one order, joined client-side (flat reads only). */
+export interface OrderRoute {
+    orderId: string
+    clientName: string | null
+    pickupLabels: string[]
+    dropLabels: string[]
+}
+
+interface AgreementName { id: string; client_name: string }
+interface SiteLabel { id: string; label: string }
+interface OrderLineSites { order_id: string; pickup_site_id: string | null; drop_site_id: string | null }
+interface OrderClient { id: string; agreement_id: string }
 
 const eq = (column: string, value: string) => (q: unknown) =>
     (q as { eq: (c: string, v: string) => unknown }).eq(column, value)
@@ -164,6 +178,10 @@ const eq = (column: string, value: string) => (q: unknown) =>
 const ORDER_COLUMNS = 'id,agreement_id,client_order_ref,status,version,created_at'
 const CONSIGNMENT_COLUMNS = 'id,order_id,gr_number,status,version,created_at,updated_at'
 const EVENT_COLUMNS = 'id,consignment_id,event,from_status,to_status,note,version_after,created_at'
+const ORDER_CLIENT_COLUMNS = 'id,agreement_id'
+const AGREEMENT_NAME_COLUMNS = 'id,client_name'
+const SITE_LABEL_COLUMNS = 'id,label'
+const ORDER_LINE_SITE_COLUMNS = 'order_id,pickup_site_id,drop_site_id'
 
 export const agencyConsignmentsApi = {
     listOrders: () => readOrdered<OrderRow>('agency_orders', ORDER_COLUMNS, 'Failed to load orders'),
@@ -178,6 +196,46 @@ export const agencyConsignmentsApi = {
             'Failed to load delivery history',
             eq('consignment_id', consignmentId)
         ),
+
+    /**
+     * Client name and pickup / drop site labels per order. Five flat reads over RLS
+     * (the same scopes as the orders list); the join happens here by id, never with
+     * embedded selects. A site or agreement that cannot be read is simply left out.
+     */
+    async listOrderRoutes(): Promise<OrderRoute[]> {
+        const [orders, agreements, sites, lines] = await Promise.all([
+            readOrdered<OrderClient>('agency_orders', ORDER_CLIENT_COLUMNS, 'Failed to load routes'),
+            readOrdered<AgreementName>('agency_client_agreements', AGREEMENT_NAME_COLUMNS, 'Failed to load routes'),
+            readOrdered<SiteLabel>('agency_client_sites', SITE_LABEL_COLUMNS, 'Failed to load routes'),
+            readOrdered<OrderLineSites>('agency_order_lines', ORDER_LINE_SITE_COLUMNS, 'Failed to load routes', undefined, {
+                column: 'order_id',
+                ascending: true,
+            }),
+        ])
+        const clientName = new Map(agreements.map((a) => [a.id, a.client_name]))
+        const siteLabel = new Map(sites.map((s) => [s.id, s.label]))
+        const sitesByOrder = new Map<string, { pickup: Set<string>; drop: Set<string> }>()
+        for (const line of lines) {
+            let entry = sitesByOrder.get(line.order_id)
+            if (!entry) {
+                entry = { pickup: new Set<string>(), drop: new Set<string>() }
+                sitesByOrder.set(line.order_id, entry)
+            }
+            const pickup = line.pickup_site_id ? siteLabel.get(line.pickup_site_id) : undefined
+            const drop = line.drop_site_id ? siteLabel.get(line.drop_site_id) : undefined
+            if (pickup) entry.pickup.add(pickup)
+            if (drop) entry.drop.add(drop)
+        }
+        return orders.map((o) => {
+            const entry = sitesByOrder.get(o.id)
+            return {
+                orderId: o.id,
+                clientName: clientName.get(o.agreement_id) ?? null,
+                pickupLabels: entry ? [...entry.pickup] : [],
+                dropLabels: entry ? [...entry.drop] : [],
+            }
+        })
+    },
 
     async createConsignment(orderId: string, idempotencyKey: string): Promise<CreateResult> {
         const fallback = 'Failed to create GR'

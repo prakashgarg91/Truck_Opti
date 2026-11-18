@@ -164,8 +164,8 @@ export default function AgencyRatesPage() {
           <h3 className="font-semibold text-slate-800 dark:text-slate-100">New Rate Card</h3>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Vehicle Type</label>
-            <select
+            <label htmlFor="agencyrates-field-1" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Vehicle Type</label>
+            <select id="agencyrates-field-1"
               value={form.vehicle_type}
               onChange={e => setForm(f => ({ ...f, vehicle_type: e.target.value }))}
               className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
@@ -178,8 +178,8 @@ export default function AgencyRatesPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Origin City *</label>
-              <input
+              <label htmlFor="agencyrates-field-2" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Origin City *</label>
+              <input id="agencyrates-field-2"
                 placeholder="Mumbai"
                 value={form.origin_city}
                 onChange={e => setForm(f => ({ ...f, origin_city: e.target.value }))}
@@ -187,8 +187,8 @@ export default function AgencyRatesPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Destination *</label>
-              <input
+              <label htmlFor="agencyrates-field-3" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Destination *</label>
+              <input id="agencyrates-field-3"
                 placeholder="Pune"
                 value={form.dest_city}
                 onChange={e => setForm(f => ({ ...f, dest_city: e.target.value }))}
@@ -199,8 +199,8 @@ export default function AgencyRatesPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Rate per km (₹)</label>
-              <input
+              <label htmlFor="agencyrates-field-4" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Rate per km (₹)</label>
+              <input id="agencyrates-field-4"
                 type="number"
                 placeholder="25"
                 value={form.rate_per_km}
@@ -209,8 +209,8 @@ export default function AgencyRatesPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Flat Rate (₹)</label>
-              <input
+              <label htmlFor="agencyrates-field-5" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Flat Rate (₹)</label>
+              <input id="agencyrates-field-5"
                 type="number"
                 placeholder="8000"
                 value={form.flat_rate}
@@ -222,8 +222,8 @@ export default function AgencyRatesPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Min Weight (kg)</label>
-              <input
+              <label htmlFor="agencyrates-field-6" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Min Weight (kg)</label>
+              <input id="agencyrates-field-6"
                 type="number"
                 placeholder="0"
                 value={form.min_weight_kg}
@@ -232,8 +232,8 @@ export default function AgencyRatesPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Max Weight (kg)</label>
-              <input
+              <label htmlFor="agencyrates-field-7" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Max Weight (kg)</label>
+              <input id="agencyrates-field-7"
                 type="number"
                 placeholder="3000"
                 value={form.max_weight_kg}
@@ -244,8 +244,8 @@ export default function AgencyRatesPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Valid Until</label>
-            <input
+            <label htmlFor="agencyrates-field-8" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Valid Until</label>
+            <input id="agencyrates-field-8"
               type="date"
               value={form.valid_until}
               onChange={e => setForm(f => ({ ...f, valid_until: e.target.value }))}
@@ -254,8 +254,8 @@ export default function AgencyRatesPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Notes (optional)</label>
-            <input
+            <label htmlFor="agencyrates-field-9" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Notes (optional)</label>
+            <input id="agencyrates-field-9"
               placeholder="e.g. Includes tolls, AC vehicle only"
               value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}

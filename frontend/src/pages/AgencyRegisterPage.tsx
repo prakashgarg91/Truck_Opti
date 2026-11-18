@@ -73,7 +73,9 @@ export default function AgencyRegisterPage() {
   const validateStep = (): boolean => {
     if (step === 1) {
       if (!form.company_name.trim()) { toast.error('Enter company name'); return false }
-      if (form.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstin)) {
+      // Normalise like the save path (handleSubmit) so a lowercase or padded GSTIN is accepted.
+      const gstin = form.gstin.toUpperCase().trim()
+      if (gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstin)) {
         toast.error('Enter a valid 15-digit GSTIN'); return false
       }
       if (!form.transport_license.trim()) { toast.error('Enter transport license number'); return false }
@@ -151,18 +153,28 @@ export default function AgencyRegisterPage() {
           <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
             <Building2 size={28} className="text-blue-600 dark:text-blue-400" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">Log In To Register Your Agency</h1>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">Create A Login To Register Your Agency</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
             Agency registrations must be tied to your account so approvals, fleet access, jobs, and billing stay scoped to the correct owner.
+            New to TruckOpti? Create your login first, then you will come back here to register. Already have a login? Log in instead.
           </p>
+          <button
+            onClick={() => {
+              storeAuthReturnTo('/agency/register')
+              navigate('/signup')
+            }}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold"
+          >
+            Create Login To Continue
+          </button>
           <button
             onClick={() => {
               storeAuthReturnTo('/agency/register')
               navigate('/login?mode=agency')
             }}
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold"
+            className="mt-3 w-full border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-semibold"
           >
-            Continue To Agency Login
+            I Already Have A Login
           </button>
         </div>
       </div>
@@ -213,20 +225,20 @@ export default function AgencyRegisterPage() {
               Business Details
             </h2>
             <div>
-              <label className={labelCls}>Company Name *</label>
-              <input value={form.company_name} onChange={set('company_name')} className={inputCls} placeholder="Sharma Transport Co." />
+              <label htmlFor="agencyregister-field-1" className={labelCls}>Company Name *</label>
+              <input id="agencyregister-field-1" value={form.company_name} onChange={set('company_name')} className={inputCls} placeholder="Sharma Transport Co." />
             </div>
             <div>
-              <label className={labelCls}>GSTIN <span className="text-slate-400 font-normal">(optional)</span></label>
-              <input value={form.gstin} onChange={set('gstin')} className={inputCls} placeholder="22AAAAA0000A1Z5" maxLength={15} style={{ textTransform: 'uppercase' }} />
+              <label htmlFor="agencyregister-field-2" className={labelCls}>GSTIN <span className="text-slate-400 font-normal">(optional)</span></label>
+              <input id="agencyregister-field-2" value={form.gstin} onChange={set('gstin')} className={inputCls} placeholder="22AAAAA0000A1Z5" maxLength={15} style={{ textTransform: 'uppercase' }} />
             </div>
             <div>
-              <label className={labelCls}>Transport License Number *</label>
-              <input value={form.transport_license} onChange={set('transport_license')} className={inputCls} placeholder="TR/2024/12345" />
+              <label htmlFor="agencyregister-field-3" className={labelCls}>Transport License Number *</label>
+              <input id="agencyregister-field-3" value={form.transport_license} onChange={set('transport_license')} className={inputCls} placeholder="TR/2024/12345" />
             </div>
             <div>
-              <label className={labelCls}>PAN Number *</label>
-              <input value={form.pan_number} onChange={set('pan_number')} className={inputCls} placeholder="ABCDE1234F" maxLength={10} style={{ textTransform: 'uppercase' }} />
+              <label htmlFor="agencyregister-field-4" className={labelCls}>PAN Number *</label>
+              <input id="agencyregister-field-4" value={form.pan_number} onChange={set('pan_number')} className={inputCls} placeholder="ABCDE1234F" maxLength={10} style={{ textTransform: 'uppercase' }} />
               <p className="text-xs text-slate-400 mt-1">Required before your agency can be approved for live jobs and payouts.</p>
             </div>
           </div>
@@ -241,43 +253,43 @@ export default function AgencyRegisterPage() {
             </h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className={labelCls}>Contact Person *</label>
-                <input value={form.contact_name} onChange={set('contact_name')} className={inputCls} placeholder="Ramesh Sharma" />
+                <label htmlFor="agencyregister-field-5" className={labelCls}>Contact Person *</label>
+                <input id="agencyregister-field-5" value={form.contact_name} onChange={set('contact_name')} className={inputCls} placeholder="Ramesh Sharma" />
               </div>
               <div className="col-span-2">
-                <label className={labelCls}>Phone *</label>
-                <input value={form.contact_phone} onChange={set('contact_phone')} className={inputCls} placeholder="9876543210" maxLength={10} inputMode="numeric" />
+                <label htmlFor="agencyregister-field-6" className={labelCls}>Phone *</label>
+                <input id="agencyregister-field-6" value={form.contact_phone} onChange={set('contact_phone')} className={inputCls} placeholder="9876543210" maxLength={10} inputMode="numeric" />
               </div>
               <div className="col-span-2">
-                <label className={labelCls}>Email <span className="text-slate-400 font-normal">(optional)</span></label>
-                <input type="email" value={form.contact_email} onChange={set('contact_email')} className={inputCls} placeholder="agency@example.com" />
+                <label htmlFor="agencyregister-field-7" className={labelCls}>Email <span className="text-slate-400 font-normal">(optional)</span></label>
+                <input id="agencyregister-field-7" type="email" value={form.contact_email} onChange={set('contact_email')} className={inputCls} placeholder="agency@example.com" />
               </div>
               <div className="col-span-2">
-                <label className={labelCls}>Address</label>
-                <input value={form.address} onChange={set('address')} className={inputCls} placeholder="123 Transport Nagar" />
+                <label htmlFor="agencyregister-field-8" className={labelCls}>Address</label>
+                <input id="agencyregister-field-8" value={form.address} onChange={set('address')} className={inputCls} placeholder="123 Transport Nagar" />
               </div>
               <div>
-                <label className={labelCls}>City *</label>
-                <input value={form.city} onChange={set('city')} className={inputCls} placeholder="Mumbai" />
+                <label htmlFor="agencyregister-field-9" className={labelCls}>City *</label>
+                <input id="agencyregister-field-9" value={form.city} onChange={set('city')} className={inputCls} placeholder="Mumbai" />
               </div>
               <div>
-                <label className={labelCls}>Pincode</label>
-                <input value={form.pincode} onChange={set('pincode')} className={inputCls} placeholder="400001" maxLength={6} inputMode="numeric" />
+                <label htmlFor="agencyregister-field-10" className={labelCls}>Pincode</label>
+                <input id="agencyregister-field-10" value={form.pincode} onChange={set('pincode')} className={inputCls} placeholder="400001" maxLength={6} inputMode="numeric" />
               </div>
               <div className="col-span-2">
-                <label className={labelCls}>State *</label>
-                <select value={form.state} onChange={set('state')} className={inputCls}>
+                <label htmlFor="agencyregister-field-11" className={labelCls}>State *</label>
+                <select id="agencyregister-field-11" value={form.state} onChange={set('state')} className={inputCls}>
                   <option value="">Select state</option>
                   {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>Fleet Size</label>
-                <input type="number" min="0" value={form.fleet_size} onChange={set('fleet_size')} className={inputCls} placeholder="10" />
+                <label htmlFor="agencyregister-field-12" className={labelCls}>Fleet Size</label>
+                <input id="agencyregister-field-12" type="number" min="0" value={form.fleet_size} onChange={set('fleet_size')} className={inputCls} placeholder="10" />
               </div>
               <div className="col-span-2">
-                <label className={labelCls}>Operating Routes <span className="text-slate-400 font-normal">(optional)</span></label>
-                <input value={form.operating_routes} onChange={set('operating_routes')} className={inputCls} placeholder="Mumbai–Pune, Delhi–Agra" />
+                <label htmlFor="agencyregister-field-13" className={labelCls}>Operating Routes <span className="text-slate-400 font-normal">(optional)</span></label>
+                <input id="agencyregister-field-13" value={form.operating_routes} onChange={set('operating_routes')} className={inputCls} placeholder="Mumbai–Pune, Delhi–Agra" />
               </div>
             </div>
           </div>
@@ -294,12 +306,12 @@ export default function AgencyRegisterPage() {
               Payments will be credited to this account after each completed job.
             </p>
             <div>
-              <label className={labelCls}>Bank Account Number *</label>
-              <input value={form.bank_account} onChange={set('bank_account')} className={inputCls} placeholder="123456789012" inputMode="numeric" />
+              <label htmlFor="agencyregister-field-14" className={labelCls}>Bank Account Number *</label>
+              <input id="agencyregister-field-14" value={form.bank_account} onChange={set('bank_account')} className={inputCls} placeholder="123456789012" inputMode="numeric" />
             </div>
             <div>
-              <label className={labelCls}>IFSC Code *</label>
-              <input value={form.ifsc_code} onChange={set('ifsc_code')} className={inputCls} placeholder="SBIN0001234" maxLength={11} style={{ textTransform: 'uppercase' }} />
+              <label htmlFor="agencyregister-field-15" className={labelCls}>IFSC Code *</label>
+              <input id="agencyregister-field-15" value={form.ifsc_code} onChange={set('ifsc_code')} className={inputCls} placeholder="SBIN0001234" maxLength={11} style={{ textTransform: 'uppercase' }} />
               <p className="text-xs text-slate-400 mt-1">11-character code (e.g. SBIN0001234)</p>
             </div>
           </div>
@@ -315,6 +327,11 @@ export default function AgencyRegisterPage() {
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
               Your agency registration is under review. You'll be notified within 2-3 business days once approved.
             </p>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-2 text-left">What happens next</h3>
+            <ol className="text-left text-sm text-slate-600 dark:text-slate-300 space-y-3 mb-6 list-decimal list-inside">
+              <li><span className="font-semibold">Approval:</span> our team reviews your agency details. Live jobs and payouts open after approval.</li>
+              <li><span className="font-semibold">Free trial:</span> once approved, the agency owner starts your 14-day free trial from the Subscription page. No card is needed for the trial.</li>
+            </ol>
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300 mb-6">
               📧 Check your email for confirmation and next steps.
             </div>

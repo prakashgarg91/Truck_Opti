@@ -50,7 +50,7 @@ Collect this at the meeting; onboarding cannot finish without it.
 
 ## 4. Pilot terms and pricing — say this exactly
 
-The app's pricing page carries launch tiers from `frontend/src/config/pricing.ts`: Starter ₹500 per month (₹5,000 a year), Growth ₹1,999 (₹19,999), Professional ₹4,999 (₹49,999) and Enterprise ₹14,999 (₹1,49,999).
+The app's pricing page carries these plans, all excluding GST (GST at 18% is added): Starter ₹499 per month (₹4,990 a year) for 3 trucks and 2 staff; Growth ₹1,999 (₹19,990 a year) for 20 trucks and 10 staff; Professional ₹4,999 (₹49,990 a year) for 50 trucks and 25 staff. Drivers allowed are twice the trucks. The owner's seat is not counted in staff. The ERP connector is included from Growth, but it is still planned, not live (Section 7). Every agency gets a 14-day free trial with no card, started by the agency owner after approval. Enterprise is by quote only ("contact us"). Source: `frontend/src/config/pricing.ts`.
 
 Online subscription payment is **not live yet** — Razorpay activation is an owner-gated step (`TASKS.md`, task TO-152). So for every pilot: the platform owner confirms the commercial terms in writing; you do not collect money through the app, and you do not promise auto-renewal or platform-issued subscription invoices.
 

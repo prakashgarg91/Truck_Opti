@@ -17,6 +17,8 @@ import { agencyJobsApi } from '../services/agencyPortalApi'
 // silently reaches the Edge function and never performs the direct-RLS insert.
 import { agencyJobsApi as agencyJobsDirectApi } from '../services/agencySupabaseApi'
 import type { AgencyShipmentAuthorization } from '../services/agencySupabaseApi'
+import { agencyPayrollApi, type DriverDirectoryEntry } from '../services/agencyPayrollApi'
+import { vehicleTypeLabel } from '../lib/vehicleLabels'
 
 type JobFilter = 'all' | 'in_transit' | 'pending' | 'accepted' | 'delivered' | 'cancelled'
 
@@ -164,8 +166,21 @@ export default function AgencyJobsPage() {
       const jobs = await agencyJobsApi.list()
 
       const rows = (jobs ?? []) as unknown as AgencyPortalJobRow[]
+
+      // Names and truck types are joined here. Both lookups are non-fatal: if
+      // either fails the board still loads and the card omits that detail.
+      const [directoryResult, truckTypesResult] = await Promise.allSettled([
+        agencyPayrollApi.listDriverDirectory(),
+        agencyJobsDirectApi.listJobTruckTypes(),
+      ])
+      const directory = new Map<string, DriverDirectoryEntry>(
+        directoryResult.status === 'fulfilled' ? directoryResult.value.map((d) => [d.driver_id, d]) : []
+      )
+      const truckTypes: Record<string, string> = truckTypesResult.status === 'fulfilled' ? truckTypesResult.value : {}
+
       const mapped: AgencyJob[] = rows.map((j) => {
         const s = (Array.isArray(j.shipments) ? j.shipments[0] : j.shipments) as AgencyPortalJobRow['shipments']
+        const driver = j.driver_id ? directory.get(j.driver_id) : undefined
         return {
           id: j.id,
           shipment_id: j.shipment_id ?? '',
@@ -173,14 +188,14 @@ export default function AgencyJobsPage() {
           status: j.status,
           origin: s?.origin ?? '—',
           destination: s?.destination ?? '—',
-          vehicle_type: '—',
+          vehicle_type: truckTypes[j.id] ?? '',
           offered_at: j.created_at,
           completed_at: j.status === 'delivered' ? j.updated_at : null,
           weight_kg: Number(s?.total_weight ?? 0),
           estimated_fare: Number(j.fare ?? s?.estimated_cost ?? 0),
           driver_id: j.driver_id ?? undefined,
-          driver_name: undefined,
-          driver_phone: undefined,
+          driver_name: driver?.name,
+          driver_phone: driver?.phone_last4 ? `Phone ending ${driver.phone_last4}` : undefined,
         }
       })
       setJobs(mapped)
@@ -406,7 +421,7 @@ export default function AgencyJobsPage() {
               <div key={auth.shipment_id} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-mono font-medium text-slate-700 dark:text-slate-200 truncate" title={auth.shipment_id}>
-                    {auth.shipment_id}
+                    Shipment ···{auth.shipment_id.slice(-8)}
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-400">
                     Authorized {new Date(auth.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
@@ -476,7 +491,7 @@ export default function AgencyJobsPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    #{job.shipment_id.slice(-8)}
+                    {job.shipment_ref || 'Shipment'}
                   </p>
                   <p className="text-xs text-slate-400">
                     {new Date(job.offered_at).toLocaleDateString('en-IN', {
@@ -502,11 +517,15 @@ export default function AgencyJobsPage() {
             </div>
 
             <div className="flex items-center gap-3 text-xs text-slate-400">
-              <span className="flex items-center gap-1">
-                <Truck size={10} />
-                {job.vehicle_type}
-              </span>
-              <span>•</span>
+              {job.vehicle_type && (
+                <>
+                  <span className="flex items-center gap-1">
+                    <Truck size={10} />
+                    {vehicleTypeLabel(job.vehicle_type)}
+                  </span>
+                  <span>•</span>
+                </>
+              )}
               <span>{job.weight_kg} kg</span>
               {job.estimated_fare > 0 && (
                 <>
@@ -622,7 +641,7 @@ export default function AgencyJobsPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold text-slate-800 dark:text-slate-100">{driver.driver_name}</p>
-                          <p className="text-xs text-slate-500">{driver.vehicle_type} • {driver.rc_number}</p>
+                          <p className="text-xs text-slate-500">{vehicleTypeLabel(driver.vehicle_type)} • {driver.rc_number}</p>
                         </div>
                         {driver.rating > 0 && (
                           <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded-full">

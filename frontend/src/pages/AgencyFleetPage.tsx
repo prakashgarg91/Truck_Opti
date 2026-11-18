@@ -12,16 +12,14 @@ import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
 import type { SubscriptionErrorInfo } from '../lib/billingState'
 import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
+import { VEHICLE_TYPES, vehicleTypeLabel } from '../lib/vehicleLabels'
 
-const VEHICLE_LABELS: Record<string, string> = {
-  tata_ace: 'Tata Ace (750kg)',
-  tata_407: 'Tata 407 (1T)',
-  eicher_14ft: 'Eicher 14ft (3T)',
-  eicher_17ft: 'Eicher 17ft (5T)',
-  ashok_19ft: 'Ashok Leyland 19ft (7T)',
-  bharatbenz_24ft: 'BharatBenz 24ft (10T)',
-  bharatbenz_32ft: 'BharatBenz 32ft (15T)',
-  volvo_40ft: 'Volvo 40ft Container (25T)',
+type FleetStatusFilter = 'all' | 'available' | 'on_trip' | 'maintenance'
+
+/** Same precedence the status chip uses: maintenance block wins, then availability. */
+function truckStatus(truck: FleetVehicle): Exclude<FleetStatusFilter, 'all'> {
+  if (truck.maintenance_blocked) return 'maintenance'
+  return truck.is_available ? 'available' : 'on_trip'
 }
 
 /** Shared keyboard-focus styling for every interactive control (2f54d59c refresh). */
@@ -74,7 +72,16 @@ export default function AgencyFleetPage() {
   const [denied, setDenied] = useState<string | null>(null)
   const gate = useBillingGate()
   const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
+  const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<FleetStatusFilter>('all')
   const [showAdd, setShowAdd] = useState(false)
+  const needle = query.trim().toLowerCase()
+  const visibleTrucks = trucks.filter(truck =>
+    (statusFilter === 'all' || truckStatus(truck) === statusFilter) &&
+    (needle === '' ||
+      truck.rc_number.toLowerCase().includes(needle) ||
+      vehicleTypeLabel(truck.vehicle_type).toLowerCase().includes(needle))
+  )
   const [addForm, setAddForm] = useState({
     vehicle_type: 'eicher_14ft',
     rc_number: '',
@@ -246,7 +253,7 @@ export default function AgencyFleetPage() {
               onChange={e => setAddForm(f => ({ ...f, vehicle_type: e.target.value }))}
               className={`w-full min-h-[44px] border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${FOCUS_RING}`}
             >
-              {Object.entries(VEHICLE_LABELS).map(([val, label]) => (
+              {VEHICLE_TYPES.map(({ code: val, label }) => (
                 <option key={val} value={val}>{label}</option>
               ))}
             </select>
@@ -331,10 +338,46 @@ export default function AgencyFleetPage() {
         </div>
       )}
 
-      {/* Fleet grid: 2 columns on wide desktop, single column below (2f54d59c refresh) */}
+      {/* Search and status filter: the fleet can grow past one screen */}
       {trucks.length > 0 && (
+        <div className="flex flex-wrap items-end gap-3" data-testid="fleet-filters">
+          <div className="flex-1 min-w-[12rem]">
+            <label htmlFor="fleet-search" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Search by vehicle or RC number</label>
+            <input
+              id="fleet-search"
+              type="search"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="e.g. Eicher or KA05"
+              className={`w-full min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm ${FOCUS_RING}`}
+            />
+          </div>
+          <div>
+            <label htmlFor="fleet-status-filter" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Status</label>
+            <select
+              id="fleet-status-filter"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value as FleetStatusFilter)}
+              className={`min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm ${FOCUS_RING}`}
+            >
+              <option value="all">All statuses</option>
+              <option value="available">Available</option>
+              <option value="on_trip">On Trip</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Fleet grid: 2 columns on wide desktop, single column below (2f54d59c refresh) */}
+      {trucks.length > 0 && visibleTrucks.length === 0 && (
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8" data-testid="fleet-no-matches">
+          No vehicles match these filters.
+        </p>
+      )}
+      {visibleTrucks.length > 0 && (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-5 items-start">
-          {trucks.map(truck => {
+          {visibleTrucks.map(truck => {
         const insuranceStatus = expiryStatus(truck.insurance_expiry)
         const fitnessStatus = expiryStatus(truck.fitness_expiry)
         const hasAlert = insuranceStatus !== 'ok' || fitnessStatus !== 'ok' || expiryStatus(truck.permit_expiry) !== 'ok' || expiryStatus(truck.puc_expiry) !== 'ok'
@@ -351,7 +394,7 @@ export default function AgencyFleetPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate">
-                    {VEHICLE_LABELS[truck.vehicle_type] || truck.vehicle_type}
+                    {vehicleTypeLabel(truck.vehicle_type)}
                   </p>
                   {(() => {
                     const chip = truck.maintenance_blocked ? STATUS_CHIPS.maintenance : truck.is_available ? STATUS_CHIPS.available : STATUS_CHIPS.onTrip
@@ -412,7 +455,7 @@ export default function AgencyFleetPage() {
               <button
                 onClick={() => handleToggleAvailability(truck)}
                 disabled={togglingId === truck.id}
-                aria-label={`${truck.is_available ? 'Mark' : 'Mark'} ${VEHICLE_LABELS[truck.vehicle_type] || truck.vehicle_type} (${truck.rc_number}) ${truck.is_available ? 'unavailable' : 'available'}`}
+                aria-label={`${truck.is_available ? 'Mark' : 'Mark'} ${vehicleTypeLabel(truck.vehicle_type)} (${truck.rc_number}) ${truck.is_available ? 'unavailable' : 'available'}`}
                 className={`flex-1 flex items-center justify-center gap-1.5 min-h-[44px] py-2 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium disabled:opacity-60 ${FOCUS_RING}`}
               >
                 <RefreshCw size={12} aria-hidden="true" className={togglingId === truck.id ? 'animate-spin' : ''} />

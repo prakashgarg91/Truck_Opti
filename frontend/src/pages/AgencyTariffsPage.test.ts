@@ -60,21 +60,21 @@ const A_PAST = tariff({
     effective_from: '2026-09-01',
     effective_to: '2026-09-30',
 })
-// Lane "Mumbai → Pune", 32ft_sxl: only an upcoming version.
+// Lane "Mumbai → Pune", bharatbenz_32ft: only an upcoming version.
 const B_UPCOMING = tariff({
     id: 'tv-b1',
     origin_label: 'Mumbai',
     destination_label: 'Pune',
-    vehicle_type: '32ft_sxl',
+    vehicle_type: 'bharatbenz_32ft',
     rate_amount: 62000,
     effective_from: '2026-12-01',
 })
-// Lane "Chennai → Jaipur", 20ft: only a past version.
+// Lane "Chennai → Jaipur", eicher_14ft: only a past version.
 const C_PAST = tariff({
     id: 'tv-c1',
     origin_label: 'Chennai',
     destination_label: 'Jaipur',
-    vehicle_type: '20ft',
+    vehicle_type: 'eicher_14ft',
     rate_basis: 'per_km',
     rate_amount: 15.5,
     effective_from: '2026-08-01',
@@ -193,7 +193,7 @@ async function type(input: HTMLInputElement | HTMLSelectElement, value: string) 
 async function fillPublishForm(overrides?: { amount?: string }) {
     await type(q('input[name="tariff-origin"]') as HTMLInputElement, 'Nashik')
     await type(q('input[name="tariff-destination"]') as HTMLInputElement, 'Shirdi')
-    await type(q('select[name="tariff-vehicle"]') as HTMLSelectElement, '20ft')
+    await type(q('select[name="tariff-vehicle"]') as HTMLSelectElement, 'eicher_14ft')
     await type(q('select[name="tariff-basis"]') as HTMLSelectElement, 'per_tonne')
     await type(q('input[name="tariff-amount"]') as HTMLInputElement, overrides?.amount ?? '1250.50')
     await type(q('input[name="tariff-from"]') as HTMLInputElement, '2026-11-15')
@@ -236,7 +236,8 @@ describe('AgencyTariffsPage', () => {
         await mountPage()
         await click(buttons(/Upcoming/)[0])
         expect(text()).toContain('Mumbai → Pune')
-        expect(text()).toContain('32ft_sxl')
+        expect(text()).toContain('BharatBenz 32ft (15T)')
+        expect(text()).not.toContain('bharatbenz_32ft')
         expect(text()).toContain('Starts')
         expect(text()).toContain('Goa → Hubli')
         expect(text()).toContain('₹22,500.00')
@@ -296,7 +297,7 @@ describe('AgencyTariffsPage', () => {
     it('the vehicle filter narrows lanes by vehicle code', async () => {
         await mountPage()
         await click(buttons(/Past/)[0])
-        await type(q('select[name="tariff-vehicle-filter"]') as HTMLSelectElement, '20ft')
+        await type(q('select[name="tariff-vehicle-filter"]') as HTMLSelectElement, 'eicher_14ft')
         expect(text()).toContain('Chennai → Jaipur')
         expect(text()).toContain('Superseded')
         expect(text()).not.toContain('Delhi → Jaipur')
@@ -349,7 +350,7 @@ describe('AgencyTariffsPage', () => {
             agreementId: 'agr-1',
             origin: 'Nashik',
             destination: 'Shirdi',
-            vehicleType: '20ft',
+            vehicleType: 'eicher_14ft',
             rateBasis: 'per_tonne',
             rateAmount: 1250.5,
             effectiveFrom: '2026-11-15',
@@ -435,5 +436,35 @@ describe('AgencyTariffsPage', () => {
         expect(h.publish.mock.calls[1][0].idempotencyKey).toBe(first)
         expect(first.length).toBeGreaterThan(8)
         expect(h.toastSuccess).toHaveBeenCalledWith('Rate published')
+    })
+
+    it('publish form offers the full catalog of vehicle types, not only the codes already priced', async () => {
+        await mountPage()
+        await click(buttons(/Publish rate/)[0])
+        const select = q('select[name="tariff-vehicle"]') as HTMLSelectElement
+        expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
+            'Any vehicle',
+            'Tata Ace (mini truck)',
+            'Tata 407 (1T)',
+            'Eicher 14ft (3T)',
+            'Eicher 17ft (5T)',
+            'Ashok Leyland 19ft (7T)',
+            'BharatBenz 24ft (10T)',
+            'BharatBenz 32ft (15T)',
+            'Volvo 40ft Container (25T)',
+        ])
+        expect(Array.from(select.options).map((o) => o.value)).toContain('tata_ace')
+    })
+
+    it('search and the vehicle filter match human labels and never show raw codes', async () => {
+        await mountPage()
+        await click(buttons(/Upcoming/)[0])
+        await type(q('#tariff-search') as HTMLInputElement, 'BharatBenz')
+        expect(text()).toContain('Mumbai → Pune')
+        expect(text()).not.toContain('Goa → Hubli')
+        expect(text()).not.toContain('bharatbenz_32ft')
+        const filter = q('select[name="tariff-vehicle-filter"]') as HTMLSelectElement
+        expect(Array.from(filter.options).map((o) => o.textContent)).toContain('Eicher 14ft (3T)')
+        expect(Array.from(filter.options).every((o) => !/^[a-z0-9_]+$/.test(o.textContent ?? ''))).toBe(true)
     })
 })

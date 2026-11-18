@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { CheckCircle2, Copy, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react'
+import { CheckCircle2, Copy, Download, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import {
   agencyInvoicesApi,
+  type InvoiceableGr,
   type InvoiceClient,
   type InvoiceDetail,
   type InvoiceRow,
@@ -18,6 +19,7 @@ import type { SubscriptionErrorInfo } from '../lib/billingState'
 import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import { allocatePayment, buildUpiLink, computeInvoice, type GstRatePct } from '../lib/freightInvoice'
 import { STATE_CODE_PATTERN, formatInr, parseQuantity, rupeesToPaise } from '../lib/invoiceMoney'
+import { csvCell, paiseToPlain } from '../lib/payrollCsv'
 
 // TO-148 Freight Invoices (RECORD-ONLY). The platform never holds freight
 // money: the agency collects into its own account and records receipts here.
@@ -51,6 +53,24 @@ function StatusChip({ status }: { status: InvoiceStatus }) {
 }
 
 const outstandingOf = (inv: InvoiceRow) => (inv.status === 'cancelled' ? 0 : inv.total_paise - inv.paid_paise)
+
+const CSV_HEADER = ['Invoice', 'Client', 'Status', 'Issued on', 'Total (INR)', 'Received (INR)', 'Outstanding (INR)']
+
+/** CSV of the invoice list as shown. Every cell goes through csvCell (formula-injection guard). */
+function invoicesCsv(rows: InvoiceRow[], clientName: ReadonlyMap<string, string>): string {
+  const body = rows.map((inv) =>
+    [
+      inv.invoice_number,
+      clientName.get(inv.client_id) ?? 'Client',
+      STATUS_STYLE[inv.status].label,
+      inv.created_at.slice(0, 10),
+      paiseToPlain(inv.total_paise),
+      paiseToPlain(inv.paid_paise),
+      paiseToPlain(outstandingOf(inv)),
+    ].map(csvCell).join(',')
+  )
+  return [CSV_HEADER.map(csvCell).join(','), ...body].join('\r\n') + '\r\n'
+}
 
 function todayLocal(): string {
   const d = new Date()
@@ -92,6 +112,8 @@ export default function AgencyInvoicesPage() {
 
   const [clients, setClients] = useState<InvoiceClient[]>([])
   const [invoices, setInvoices] = useState<InvoiceRow[]>([])
+  const [grs, setGrs] = useState<InvoiceableGr[]>([])
+  const [grNote, setGrNote] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
@@ -141,9 +163,14 @@ export default function AgencyInvoicesPage() {
   const fetchInvoices = useCallback(async () => {
     try {
       setError(null)
-      const [c, i] = await Promise.all([agencyInvoicesApi.listClients(), agencyInvoicesApi.listInvoices()])
+      const [c, i, g] = await Promise.all([
+        agencyInvoicesApi.listClients(),
+        agencyInvoicesApi.listInvoices(),
+        agencyInvoicesApi.listInvoiceableGrs(),
+      ])
       setClients(c)
       setInvoices(i)
+      setGrs(g)
       setDenied(false)
     } catch (e) {
       logger.error('[AgencyInvoicesPage] load failed:', e)
@@ -178,6 +205,19 @@ export default function AgencyInvoicesPage() {
 
   const clientName = useMemo(() => new Map(clients.map((c) => [c.id, c.client_name])), [clients])
   const selected = useMemo(() => invoices.find((i) => i.id === selectedId) ?? null, [invoices, selectedId])
+
+  // Outstanding per client from the loaded invoices: issued and partly paid only.
+  const outstandingRows = useMemo(() => {
+    const byClient = new Map<string, number>()
+    for (const inv of invoices) {
+      if (inv.status !== 'issued' && inv.status !== 'partly_paid') continue
+      byClient.set(inv.client_id, (byClient.get(inv.client_id) ?? 0) + (inv.total_paise - inv.paid_paise))
+    }
+    return [...byClient.entries()]
+      .map(([id, paise]) => ({ id, name: clientName.get(id) ?? 'Client', paise }))
+      .sort((a, b) => b.paise - a.paise)
+  }, [invoices, clientName])
+  const outstandingTotal = outstandingRows.reduce((sum, r) => sum + r.paise, 0)
 
   // ---- Form parsing and live preview -------------------------------------
   const parsedLines = useMemo(
@@ -225,6 +265,45 @@ export default function AgencyInvoicesPage() {
     setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)))
   const addLine = () => setLines((prev) => [...prev, { id: lineSeq.current++, description: '', quantity: '1', rate: '' }])
   const removeLine = (id: number) => setLines((prev) => (prev.length > 1 ? prev.filter((l) => l.id !== id) : prev))
+
+  /**
+   * Shortcut from a delivered or receipt-confirmed GR: opens the form with its client and
+   * one "Freight for GR" line. The amount stays empty for the user. Typed lines for another
+   * client are never overwritten; the shortcut refuses and says why.
+   */
+  const prefillFromGr = (gr: InvoiceableGr) => {
+    const description = `Freight for GR ${gr.grNumber}`
+    const typed = lines.some((l) => l.description.trim() !== '' || l.rate.trim() !== '')
+    if (typed && clientId !== '' && clientId !== gr.clientId) {
+      setGrNote(`The invoice in progress is for another client. Issue it or clear its lines first, then choose GR ${gr.grNumber} again.`)
+      return
+    }
+    if (!clients.some((c) => c.id === gr.clientId)) {
+      setGrNote(`GR ${gr.grNumber} belongs to a client with no agreement on the Clients page.`)
+      return
+    }
+    setGrNote(null)
+    setIssueRefusal(null)
+    setClientId(gr.clientId)
+    setLines((prev) => {
+      if (prev.some((l) => l.description.trim() === description)) return prev
+      if (!typed) return [{ id: lineSeq.current++, description, quantity: '1', rate: '' }]
+      return prev.length < MAX_LINES ? [...prev, { id: lineSeq.current++, description, quantity: '1', rate: '' }] : prev
+    })
+    setShowForm(true)
+  }
+
+  const handleExportCsv = () => {
+    // A UTF-8 byte order mark lets spreadsheets read non-ASCII client names correctly.
+    const url = URL.createObjectURL(new Blob([String.fromCharCode(0xfeff), invoicesCsv(invoices, clientName)], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `freight-invoices-${todayLocal()}.csv`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 0)
+  }
 
   const resetForm = () => {
     setClientId('')
@@ -617,8 +696,75 @@ export default function AgencyInvoicesPage() {
         </form>
       )}
 
+      {grs.length > 0 && (
+        <section aria-labelledby="gr-ready-title" className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3" data-testid="invoice-from-gr">
+          <h2 id="gr-ready-title" className="text-base font-bold text-slate-900">Delivered GRs ready to invoice</h2>
+          <p className="text-xs text-slate-600">
+            Opens the New invoice form with the client and a Freight line for the GR. You type the rate; nothing is priced for you.
+          </p>
+          {grNote && (
+            <p role="alert" data-testid="invoice-from-gr-note" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{grNote}</p>
+          )}
+          <ul className="divide-y divide-slate-100">
+            {grs.map((gr) => (
+              <li key={gr.consignmentId} className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="min-w-0">
+                  <span className="block font-medium text-slate-900 break-all">{gr.grNumber}</span>
+                  <span className="block text-xs text-slate-600">
+                    {clientName.get(gr.clientId) ?? 'Client'} · {gr.status === 'receipt_confirmed' ? 'Receipt confirmed' : 'Delivered'}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => prefillFromGr(gr)}
+                  disabled={!gate.canSettle}
+                  title={gate.settleTitle}
+                  aria-label={`Create invoice from consignment ${gr.grNumber}`}
+                  className={`flex items-center justify-center gap-1 ${SECONDARY_BTN}`}
+                >
+                  <Plus size={16} aria-hidden="true" /> Create invoice from consignment
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section aria-labelledby="invoice-list-title" className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3" data-testid="invoice-list">
-        <h2 id="invoice-list-title" className="text-base font-bold text-slate-900">Invoices</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="invoice-list-title" className="text-base font-bold text-slate-900">Invoices</h2>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={invoices.length === 0}
+            className={`flex items-center gap-1 ${SECONDARY_BTN}`}
+          >
+            <Download size={16} aria-hidden="true" /> Export CSV
+          </button>
+        </div>
+        {invoices.length > 0 && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3" data-testid="outstanding-by-client">
+            <h3 className="text-sm font-semibold text-slate-900">Outstanding by client</h3>
+            {outstandingRows.length === 0 ? (
+              <p className="mt-1 text-sm text-slate-700">Nothing is outstanding.</p>
+            ) : (
+              <>
+                <ul className="mt-1 space-y-1">
+                  {outstandingRows.map((r) => (
+                    <li key={r.id} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="break-words text-slate-900">{r.name}</span>
+                      <span className="font-semibold text-slate-900">{formatInr(r.paise)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 flex items-center justify-between gap-3 border-t border-slate-200 pt-2 text-sm font-bold text-slate-900">
+                  <span>Total outstanding</span>
+                  <span data-testid="outstanding-total">{formatInr(outstandingTotal)}</span>
+                </p>
+              </>
+            )}
+          </div>
+        )}
         {invoices.length === 0 && !error ? (
           <p data-testid="invoices-empty" className="text-sm text-slate-700">No invoices yet. Choose New invoice to issue the first one.</p>
         ) : (

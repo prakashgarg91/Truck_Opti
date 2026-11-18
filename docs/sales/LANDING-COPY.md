@@ -71,13 +71,13 @@ No separate setup. A driver signs in on the same TruckOpti app with the phone nu
 Each agency works in its own portal, separate from customers, drivers and other agencies. Access is checked on the server for every request — including staff scopes — so a staff member simply cannot open what their scope does not permit.
 
 **5. What about GST?**
-The app calculates freight GST at 5% of the fare, prints it on the PDF tax invoice, and gives GSTR-1 style monthly exports. Please confirm the final figures with your accountant before filing.
+The app calculates freight GST at 5% of the fare, prints it on the PDF tax invoice, and gives GSTR-1 style monthly exports. This is the freight GST your agency charges its clients. It is separate from TruckOpti's own subscription fee, which carries 18% GST. Please confirm the final figures with your accountant before filing.
 
 **6. How do my earnings reach me?**
 Job payments are credited to the bank account you give at registration. Driver payments you record from the Drivers screen go to the platform team for review — no money moves by itself.
 
 **7. What does it cost?**
-Start on the free tier — no card required. Paid plans begin at ₹500/month (Starter, launch price). For a 5–10 truck agency with a small office team, the Growth plan at ₹1,999/month (launch price; ₹19,999/year, about 17% saved) covers up to 20 trucks and 5 users. Current prices are always on the pricing page (`/pricing`); pilot agencies are set up personally by the TruckOpti team.
+Transport agencies get a 14-day free trial with no card required. The trial has Starter limits, and the agency owner starts it after the registration is approved. Paid plans, excluding GST: Starter ₹499 per month (₹4,990 a year) for up to 3 trucks and 2 staff; Growth ₹1,999 per month (₹19,990 a year) for up to 20 trucks and 10 staff; Professional ₹4,999 per month (₹49,990 a year) for up to 50 trucks and 25 staff. GST at 18% is added to the subscription. Enterprise is by quote. For a 5–10 truck agency, Growth is the plan that fits. Current prices are always on the pricing page (`/pricing`); pilot agencies are set up personally by the TruckOpti team.
 
 **8. What is coming soon?**
 Being fully transparent, these modules are planned but not built yet: sales-order import and load planning; GR/LR receipts with QR and material-receipt proof; full trip tracking with stoppages, breakdown and emergency handling (basic live driver location already works today); freight invoice book and collections (the simple PDF invoice and GST exports above exist today); expenses, fuel, advances and maintenance records; driver salary and payroll settlement; and a direct ERP connector for your clients.
@@ -92,7 +92,7 @@ The four-step form takes about ten minutes. Approval usually comes within 2–3 
 
 - **Register now:** `/agency/register` (log in first; the page opens in agency mode)
 - **Talk to us:** `/contact`, or Support at `/support` after signing in — phone +91 99993 52050
-- **See plans and prices:** `/pricing` — start free, no card required
+- **See plans and prices:** `/pricing` — 14-day free trial for agencies, no card required
 
 TruckOpti — planning, dispatch and live trip visibility for modern logistics operations.
 
@@ -113,7 +113,7 @@ TruckOpti — planning, dispatch and live trip visibility for modern logistics o
 | Phone bottom bar (6 tabs), desktop menu, bell icon | `docs/USER-GUIDE-AGENCY.md` "Before you start" |
 | Driver sign-in with phone + code; driver trips/KYC/earnings | `docs/USER-GUIDE-AGENCY.md` §4; routes `/driver/dashboard`, `/driver/kyc`, `/driver/earnings` |
 | Agency data isolation, server-side scope checks | `docs/USER-GUIDE-AGENCY.md` §7 ("enforced by the server"); tenant-authority proofs in `agent-results/032-result.md` |
-| Plans/prices (free tier no card, Starter ₹500/mo, Growth ₹1,999/mo covering 20 trucks/5 users, ~17% yearly saving) | `frontend/src/config/pricing.ts` (PRICING_TIERS, TRIAL_CONFIG); rendered on `/pricing` (`frontend/src/pages/PricingPage.tsx`; fallback tiers) |
+| Plans/prices (14-day agency trial, no card; Starter ₹499/mo, Growth ₹1,999/mo for 20 trucks/10 staff, Professional ₹4,999/mo for 50 trucks/25 staff; yearly = 10x monthly; GST 18% extra) | `frontend/src/config/pricing.ts` (PRICING_TIERS, TRIAL_CONFIG); rendered on `/pricing` (`frontend/src/pages/PricingPage.tsx`; fallback tiers) |
 | Payment credit to registered bank account; driver payments reviewed, no money moves by itself | `docs/USER-GUIDE-AGENCY.md` §1, §4 |
 | Coming-soon list (TO-145…TO-151) | `docs/USER-GUIDE-AGENCY.md` §10; `TASKS.md` pilot queue |
 | Support phone/routes | `frontend/src/config/support.ts` (owner-configured contact); routes `/contact`, `/support` |
