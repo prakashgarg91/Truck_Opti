@@ -630,6 +630,50 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
     return `payment ₹1,000 recorded on ${invoiceB} while expired`
   })
 
+  // assign driver under SB003 (rpc-level) ---------------------------------------------------------------------
+  // The Jobs page needs the agency-portal-jobs Edge function (501 locally), so the assignment is NOT driven through
+  // the UI: it is the agency_job_assign_driver RPC over the shim with the DISPATCHER's token (resolve scope: dispatcher).
+  // The job is a fresh SQL fixture with NO driver (an already-assigned driver returns 'unchanged' before the guard).
+  const assignJobId = '7a000000-0000-4000-8000-000000009012'
+  const assignShipmentId = '7a000000-0000-4000-8000-000000009011'
+  let dispatcherToken = ''
+  const markRpcLevel = (entry) => {
+    entry.level = 'rpc-level'
+    entry.name = `${entry.name} [rpc-level, not UI]`
+  }
+  const assignEntryA = await step('19c expired: agency_job_assign_driver (dispatcher token, rpc over the shim) is refused with SB003 + DETAIL JSON', dispatcher, async () => {
+    await pg.admin.query(
+      `INSERT INTO public.shipments (id, shipment_id, customer_id, created_by, origin, destination, status, total_weight, estimated_cost, vehicle_type, pickup_date, goods_description, estimated_value)
+       VALUES ($1, 'JRNY-FIXTURE-2', '7a000000-0000-4000-8000-000000009003', $2, 'Pune', 'Nashik', 'pending', 900, 12000, 'eicher_14ft', '2026-11-22', 'Cement', 40000) ON CONFLICT DO NOTHING`,
+      [assignShipmentId, seed.users.admin.id]
+    ).catch((e) => { throw new Error(`fixture shipment insert: ${e.message} ${e.detail ?? ''} ${e.where ?? ''}`) })
+    await pg.admin.query(
+      // The pooled admin connection can carry an empty request.jwt.claims left behind by a shim request; the job trigger
+      // parses it as json, so reset it for this one statement (is_local) before the row is inserted.
+      `WITH c AS (SELECT set_config('request.jwt.claims', '{}', true))
+       INSERT INTO public.agency_jobs (id, agency_id, shipment_id, fare, status, driver_id, truck_id)
+       SELECT $1, $2, $3, 12000, 'pending', NULL, NULL FROM c ON CONFLICT DO NOTHING`,
+      [assignJobId, seed.agencyId, assignShipmentId]
+    ).catch((e) => { throw new Error(`fixture job insert: ${e.message} ${e.detail ?? ''} ${e.where ?? ''}`) })
+    dispatcherToken = await tokenOf(seed.users.dispatcher)
+    const r = await rpcAs(dispatcherToken, 'agency_job_assign_driver', { p_job_id: assignJobId, p_driver_id: seed.driverId })
+    notes.push(`19c raw refusal: HTTP ${r.status} ${JSON.stringify(r.body).slice(0, 300)}`)
+    if (r.status < 400) throw new Error(`assignment was NOT refused while expired: HTTP ${r.status} ${JSON.stringify(r.body)}`)
+    const b = r.body ?? {}
+    const msg = String(b.message ?? '')
+    const code = String(b.code ?? '')
+    if (code !== 'SB003' && !msg.startsWith('SB003')) throw new Error(`refusal is not SB003: HTTP ${r.status} ${JSON.stringify(b)}`)
+    let detail = b.details ?? b.detail
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail) } catch { throw new Error(`DETAIL is not JSON: ${JSON.stringify(b)}`) }
+    }
+    if (!detail || detail.code !== 'SB003') throw new Error(`DETAIL JSON missing code SB003: ${JSON.stringify(b)}`)
+    const row = await scalar(`SELECT driver_id FROM public.agency_jobs WHERE id = $1`, [assignJobId])
+    if (row?.driver_id) throw new Error('the refused assignment still set a driver')
+    return `HTTP ${r.status} code ${code || '(none)'} message "${msg.slice(0, 40)}" DETAIL.code ${detail.code}; job still has no driver`
+  }, { shot: false })
+  markRpcLevel(assignEntryA)
+
   // paid activation (SQL) ------------------------------------------------------------------------------------
   await step('21 paid plan activated through subscription_create_order + subscription_activate_payment (SQL path; Razorpay Edge is hosted-only): banners clear, creates and dispatch work', owner, async () => {
     const { amount } = await buyPlan('growth')
@@ -651,6 +695,16 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
     await see(planCard.getByText('Approved', { exact: true }), TIMEOUT)
     return `activated growth (₹${(Number(amount) / 100).toFixed(2)} paid): status active, no banner, truck added, plan B approved`
   })
+
+  const assignEntryB = await step('21b paid: the same agency_job_assign_driver call is no longer SB003 and assigns the driver', dispatcher, async () => {
+    const r = await rpcAs(dispatcherToken, 'agency_job_assign_driver', { p_job_id: assignJobId, p_driver_id: seed.driverId })
+    const b = r.body ?? {}
+    if (String(b.code ?? '') === 'SB003' || String(b.message ?? '').startsWith('SB003')) throw new Error(`still SB003 after paid activation: ${JSON.stringify(b)}`)
+    if (r.status !== 200) throw new Error(`unexpected refusal after activation: HTTP ${r.status} ${JSON.stringify(b)}`)
+    const typed = b.ok === true ? `ok state ${b.state}` : `typed result ${JSON.stringify(b)}`
+    return `HTTP 200 ${typed}`
+  }, { shot: false })
+  markRpcLevel(assignEntryB)
 
   // grace ------------------------------------------------------------------------------------------------------
   await go(op, '/agency/fleet')

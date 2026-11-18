@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Tag, Plus, RefreshCw, Trash2, ToggleLeft, ToggleRight
+  Tag, Plus, RefreshCw, AlertTriangle, Trash2, ToggleLeft, ToggleRight
 } from 'lucide-react'
 import { formatCurrency } from '../utils/formatters'
 import toast from 'react-hot-toast'
@@ -44,6 +44,8 @@ const EMPTY_FORM = {
   notes: '',
 }
 
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900'
+
 export default function AgencyRatesPage() {
   useEffect(() => {
     document.title = 'Rate Cards - TruckOpti'
@@ -51,17 +53,20 @@ export default function AgencyRatesPage() {
 
   const [rates, setRates] = useState<RateCard[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
 
   const fetchData = useCallback(async () => {
+    setLoadError(false)
     try {
       const rates = await agencyRatesApi.list()
       setRates((rates ?? []) as RateCard[])
     } catch (e) {
       logger.error('[AgencyRatesPage]', e)
       toast.error('Failed to load rate cards')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -277,7 +282,22 @@ export default function AgencyRatesPage() {
       )}
 
       {/* Rate Cards List */}
-      {rates.length === 0 && !showAdd && (
+      {loadError && (
+        <div role="alert" data-testid="rates-error" className="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl border border-red-200 dark:border-red-800/40">
+          <AlertTriangle size={36} className="text-red-400 mx-auto mb-3" aria-hidden="true" />
+          <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">We couldn't load your rate cards.</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Check your connection and try again.</p>
+          <button
+            onClick={fetchData}
+            className={`mt-4 inline-flex items-center gap-2 min-h-[44px] px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold ${FOCUS_RING}`}
+          >
+            <RefreshCw size={14} aria-hidden="true" />
+            Retry
+          </button>
+        </div>
+      )}
+
+      {rates.length === 0 && !showAdd && !loadError && (
         <div className="text-center py-12">
           <Tag size={48} className="text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">No rate cards yet</p>

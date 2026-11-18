@@ -39,6 +39,8 @@ interface JobSummary {
   thirtyDayJobs: number
 }
 
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900'
+
 export default function AgencyDashboardPage() {
   useEffect(() => {
     document.title = 'Agency Dashboard - TruckOpti'
@@ -48,6 +50,7 @@ export default function AgencyDashboardPage() {
   const navigate = useNavigate()
   const [agency, setAgency] = useState<AgencyRecord | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [summary, setSummary] = useState<JobSummary>({
     active: 0, today: 0, pending: 0, thirtyDayRevenue: 0, thirtyDayJobs: 0
   })
@@ -57,6 +60,7 @@ export default function AgencyDashboardPage() {
     if (!user?.id) return
 
     setLoading(true)
+    setLoadError(false)
 
     // Device-local (no cloud backend): the agency portal's edge data does not
     // exist here. Show the workspace that DOES exist on this device instead of
@@ -95,6 +99,9 @@ export default function AgencyDashboardPage() {
     } catch (error) {
       logger.error('[AgencyDashboardPage] fetchSnapshot', error)
       toast.error('Failed to load dashboard summary')
+      // A failed call is NOT "no agency": keep it distinct so the user gets a
+      // retryable error state instead of the registration prompt.
+      setLoadError(true)
       setAgency(null)
       setSummary({
         active: 0,
@@ -205,6 +212,29 @@ export default function AgencyDashboardPage() {
               Manage Cartons
             </button>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <div role="alert" data-testid="agency-dashboard-error" className="flex flex-col items-center">
+          <AlertTriangle size={48} className="text-red-400 mb-4" aria-hidden="true" />
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+            We could not load your dashboard. Try again.
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">
+            Check your connection and try again.
+          </p>
+          <button
+            onClick={fetchSnapshot}
+            className={`inline-flex items-center gap-2 min-h-[44px] px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold ${FOCUS_RING}`}
+          >
+            <RefreshCw size={16} aria-hidden="true" />
+            Retry
+          </button>
         </div>
       </div>
     )

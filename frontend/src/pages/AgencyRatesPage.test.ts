@@ -196,7 +196,7 @@ describe('AgencyRatesPage', () => {
         expect(cards()).toHaveLength(0)
     })
 
-    it('a failed load toasts, logs once and falls through to the empty list', async () => {
+    it('a failed load toasts, logs once and shows an error state with Retry, not the empty list', async () => {
         h.list.mockRejectedValueOnce(new Error('network down'))
         await mountPage()
 
@@ -205,9 +205,24 @@ describe('AgencyRatesPage', () => {
         expect(h.toastError).toHaveBeenCalledWith('Failed to load rate cards')
         expect(h.loggerError).toHaveBeenCalledTimes(1)
         expect(h.loggerError.mock.calls[0][0]).toBe('[AgencyRatesPage]')
-        // No error banner or Retry exists: loading ends and the empty list shows.
         expect(text()).toContain('Rate Cards')
-        expect(text()).toContain('No rate cards yet')
+        expect(q('[data-testid="rates-error"]')).not.toBeNull()
+        expect(text()).toContain("We couldn't load your rate cards.")
+        expect(text()).not.toContain('No rate cards yet')
+        const retry = buttons(/Retry/)
+        expect(retry).toHaveLength(1)
+        expect(retry[0].className).toContain('min-h-[44px]')
+        expect(retry[0].className).toContain('focus-visible:ring-2')
+    })
+
+    it('Retry refetches and a successful answer replaces the error state with the rate cards', async () => {
+        h.list.mockRejectedValueOnce(new Error('network down'))
+        await mountPage()
+        h.list.mockResolvedValueOnce([RATE_ACTIVE])
+        await click(buttons(/Retry/)[0])
+        expect(h.list).toHaveBeenCalledTimes(2)
+        expect(q('[data-testid="rates-error"]')).toBeNull()
+        expect(text()).toContain('Mumbai')
     })
 
     it('an active card renders route, vehicle label, both rate chips, weight range, validity and notes', async () => {

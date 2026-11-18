@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, TrendingUp, Download, Clock, RefreshCw } from 'lucide-react'
+import { FileText, TrendingUp, Download, Clock, RefreshCw, AlertTriangle } from 'lucide-react'
 import { formatCurrency } from '../utils/formatters'
 import { downloadCsv, downloadJson, downloadXlsx, type ExportColumn } from '../utils/dataExport'
 import { logger } from '../utils/logger'
@@ -35,6 +35,8 @@ interface AgencyExportRow {
 // GST on freight: 5% of taxable value
 const GST_RATE = 0.05
 
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900'
+
 export default function AgencyBillingPage() {
   useEffect(() => {
     document.title = 'Billing & Invoices - TruckOpti'
@@ -42,6 +44,7 @@ export default function AgencyBillingPage() {
 
   const [summary, setSummary] = useState<BillingSummary>({ thisMonth: 0, pending: 0, totalPaid: 0, gstDue: 0 })
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [deliveredJobs, setDeliveredJobs] = useState<DeliveredJob[]>([])
 
   const monthlyReports = Array.from({ length: 3 }, (_, index) => {
@@ -55,6 +58,7 @@ export default function AgencyBillingPage() {
   })
 
   const fetchBilling = useCallback(async () => {
+    setLoadError(false)
     try {
       const { summary, jobs } = await agencyBillingApi.list()
       setDeliveredJobs(jobs)
@@ -62,6 +66,7 @@ export default function AgencyBillingPage() {
     } catch (e) {
       logger.error('[AgencyBillingPage] fetchBilling failed:', e)
       toast.error('Failed to load billing data')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -156,6 +161,26 @@ export default function AgencyBillingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <RefreshCw className="animate-spin text-indigo-600" size={32} />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:p-8 space-y-4 max-w-7xl mx-auto">
+        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Billing & Invoices</h1>
+        <div role="alert" data-testid="billing-error" className="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl border border-red-200 dark:border-red-800/40">
+          <AlertTriangle size={36} className="text-red-400 mx-auto mb-3" aria-hidden="true" />
+          <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">We couldn't load your billing data.</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Check your connection and try again.</p>
+          <button
+            onClick={fetchBilling}
+            className={`mt-4 inline-flex items-center gap-2 min-h-[44px] px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold ${FOCUS_RING}`}
+          >
+            <RefreshCw size={14} aria-hidden="true" />
+            Retry
+          </button>
+        </div>
       </div>
     )
   }

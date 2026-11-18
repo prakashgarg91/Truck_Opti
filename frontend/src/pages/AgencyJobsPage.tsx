@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Briefcase, CheckCircle2, XCircle,
+  Briefcase, CheckCircle2, XCircle, AlertTriangle,
   RefreshCw, MapPin, Truck, UserPlus, X, UserCheck
 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
@@ -82,6 +82,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 }
 
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900'
+
 export default function AgencyJobsPage() {
   useEffect(() => {
     document.title = 'Agency Jobs - TruckOpti'
@@ -91,6 +93,7 @@ export default function AgencyJobsPage() {
   const [jobs, setJobs] = useState<AgencyJob[]>([])
   const [filter, setFilter] = useState<JobFilter>('all')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [processingJobId, setProcessingJobId] = useState<string | null>(null)
 
   // Assign Driver Modal State
@@ -156,6 +159,7 @@ export default function AgencyJobsPage() {
 
   const fetchAgency = useCallback(async () => {
     if (!user?.id) return
+    setLoadError(false)
     try {
       const jobs = await agencyJobsApi.list()
 
@@ -183,6 +187,7 @@ export default function AgencyJobsPage() {
     } catch (e) {
       logger.error('[AgencyJobsPage] fetchAgency failed:', e)
       toast.error('Failed to load jobs')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -434,7 +439,22 @@ export default function AgencyJobsPage() {
       </div>
 
       {/* Jobs List */}
-      {filteredJobs.length === 0 && (
+      {loadError && (
+        <div role="alert" data-testid="jobs-error" className="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl border border-red-200 dark:border-red-800/40">
+          <AlertTriangle size={36} className="text-red-400 mx-auto mb-3" aria-hidden="true" />
+          <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">We couldn't load your jobs.</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Check your connection and try again.</p>
+          <button
+            onClick={fetchAgency}
+            className={`mt-4 inline-flex items-center gap-2 min-h-[44px] px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold ${FOCUS_RING}`}
+          >
+            <RefreshCw size={14} aria-hidden="true" />
+            Retry
+          </button>
+        </div>
+      )}
+
+      {filteredJobs.length === 0 && !loadError && (
         <div className="text-center py-16">
           <Briefcase size={48} className="text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">No jobs found</p>

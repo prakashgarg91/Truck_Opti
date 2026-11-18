@@ -171,15 +171,29 @@ describe('AgencyBillingPage', () => {
         expect(h.list).toHaveBeenCalledWith()
     })
 
-    it('a fetch failure shows the error toast, logs, and renders the zeroed empty page (no Retry exists)', async () => {
+    it('a fetch failure shows the toast, logs, and renders an error state with Retry instead of zeroed figures', async () => {
         h.list.mockRejectedValueOnce(new Error('edge function down'))
         await mountPage()
         expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Failed to load billing data')
         expect(h.logError).toHaveBeenCalledWith('[AgencyBillingPage] fetchBilling failed:', expect.any(Error))
-        expect(text()).toContain('No invoices yet')
-        expect(text()).toContain(formatCurrency(0))
-        expect(buttons(/Retry/)).toHaveLength(0)
+        expect(q('[data-testid="billing-error"]')).not.toBeNull()
+        expect(text()).toContain("We couldn't load your billing data.")
+        expect(text()).not.toContain('No invoices yet')
+        expect(text()).not.toContain(formatCurrency(0))
+        const retry = buttons(/Retry/)
+        expect(retry).toHaveLength(1)
+        expect(retry[0].className).toContain('min-h-[44px]')
+        expect(retry[0].className).toContain('focus-visible:ring-2')
+    })
+
+    it('Retry refetches and a successful answer replaces the error state with the page', async () => {
+        h.list.mockRejectedValueOnce(new Error('edge function down'))
+        await mountPage()
+        await click(buttons(/Retry/)[0])
+        expect(h.list).toHaveBeenCalledTimes(2)
+        expect(q('[data-testid="billing-error"]')).toBeNull()
+        expect(text()).toContain('Invoices (2)')
     })
 
     it('empty state shows the invoice placeholder and no export-all buttons', async () => {

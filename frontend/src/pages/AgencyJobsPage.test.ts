@@ -236,14 +236,32 @@ describe('AgencyJobsPage', () => {
         expect(buttons(/^(Accept|Decline|Assign Driver|Track Live|Confirm Delivery)$/)).toHaveLength(0)
     })
 
-    it('list failure shows one error toast, falls back to the empty board, and offers no Retry button', async () => {
+    it('list failure shows one toast and a calm error state with a 44px Retry, not the empty board', async () => {
         h.list.mockRejectedValueOnce(new Error('edge function down'))
         await mountPage()
         expect(h.toastError).toHaveBeenCalledTimes(1)
         expect(h.toastError).toHaveBeenCalledWith('Failed to load jobs')
         expect(q('h1')).not.toBeNull()
-        expect(text()).toContain('No jobs found')
-        expect(buttons(/Retry/)).toHaveLength(0)
+        expect(q('[data-testid="jobs-error"]')).not.toBeNull()
+        expect(text()).toContain("We couldn't load your jobs.")
+        expect(text()).not.toContain('No jobs found')
+        const retry = buttons(/Retry/)
+        expect(retry).toHaveLength(1)
+        expect(retry[0].className).toContain('min-h-[44px]')
+        expect(retry[0].className).toContain('focus-visible:ring-2')
+    })
+
+    it('Retry refetches once and a successful answer replaces the error state with the jobs', async () => {
+        h.list.mockRejectedValueOnce(new Error('edge function down'))
+        await mountPage()
+        h.list.mockResolvedValueOnce([row()])
+        await act(async () => {
+            buttons(/Retry/)[0].dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+            await new Promise((r) => setTimeout(r, 0))
+        })
+        expect(h.list).toHaveBeenCalledTimes(2)
+        expect(q('[data-testid="jobs-error"]')).toBeNull()
+        expect(text()).toContain('1 jobs shown')
     })
 
     it('authorizations failure renders the role=alert retry copy while jobs still load', async () => {
