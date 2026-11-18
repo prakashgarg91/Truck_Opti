@@ -45,7 +45,6 @@ npm run test:journey   # local full browser journey (desktop and 375 px); writes
 | Driver user guide | [docs/USER-GUIDE-DRIVER.md](docs/USER-GUIDE-DRIVER.md) |
 | Admin guide | [docs/ADMIN-GUIDE.md](docs/ADMIN-GUIDE.md) |
 | Support | [docs/SUPPORT.md](docs/SUPPORT.md) |
-| Admin guide | Not written yet. |
 | Audits (2026-11-18) | [docs/audit-2026-11-18/](docs/audit-2026-11-18/) |
 | Subscription and billing rulings (TO-152) | [docs/TO-152-rulings.md](docs/TO-152-rulings.md), runbook [docs/TO-152-runbook.md](docs/TO-152-runbook.md) |
 | Release rulings and gates | [docs/FABLE-RULINGS-2026-11-17-B.md](docs/FABLE-RULINGS-2026-11-17-B.md) |
