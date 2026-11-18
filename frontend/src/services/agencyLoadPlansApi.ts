@@ -208,12 +208,21 @@ type RpcClient = {
     rpc: (name: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: unknown } | null }>
 }
 
+/**
+ * Commands guarded server-side by agency_subscription_assert (rulings B 1). Only these map
+ * SB001-SB004 to a typed subscription error; commands that must stay open never do.
+ */
+const SUBSCRIPTION_GUARDED: ReadonlySet<string> = new Set([
+    'agency_load_plan_save',
+    'agency_load_plan_approve',
+])
+
 async function callRpc(name: string, args: Record<string, unknown>, fallback: string): Promise<Envelope> {
     // Call as a method: the client's rpc() relies on `this`; a detached call crashes.
     const client = supabase as unknown as RpcClient
     const { data, error } = await client.rpc(name, args)
     if (error) {
-        throwIfSubscriptionError(error)
+        if (SUBSCRIPTION_GUARDED.has(name)) throwIfSubscriptionError(error)
         const message = error.message
         throw new UserFacingError(typeof message === 'string' && CONTROLLED_EXCEPTIONS.has(message) ? message : fallback)
     }

@@ -13,7 +13,7 @@ const ACTION_LABEL: Record<SubscriptionErrorInfo['action'], string> = {
   renew: 'Renew',
 }
 
-/** Prompt built from a parsed SB001/SB002/SB003 error (parseSubscriptionError). */
+/** Prompt built from a parsed SB001/SB002/SB003/SB004 error (parseSubscriptionError). */
 export default function LimitPrompt({ info, onAction, onDismiss }: Props) {
   return (
     <div role="alert" className="rounded-2xl border border-red-300 bg-red-50 p-4 text-red-900 dark:border-red-700 dark:bg-red-900/20 dark:text-red-100">

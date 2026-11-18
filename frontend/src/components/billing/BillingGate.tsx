@@ -7,24 +7,37 @@ import type { BillingView, Entitlement, SubscriptionErrorInfo } from '../../lib/
 export interface BillingGate {
   /** false only when the server entitlement says new records are locked. */
   canWrite: boolean
+  /** false only when the server entitlement says settlement actions are locked (open in grace). */
+  canSettle: boolean
+  /** false only when the server entitlement says the plan does not include the ERP connector. */
+  erpIncluded: boolean
   /** false only when the server entitlement says dispatch is locked. */
   canDispatch: boolean
   /** Explanatory title for a disabled create button (undefined when enabled). */
   writeTitle: string | undefined
   dispatchTitle: string | undefined
+  settleTitle: string | undefined
+  /** Create/rotate on the ERP page: write lock first (as the server does), then the plan feature. */
+  erpTitle: string | undefined
   loading: boolean
   entitlement: Entitlement | undefined
   view: BillingView | null
 }
 
 export const WRITE_LOCKED_TITLE = 'Your subscription is read-only, so new orders, trucks, drivers and team members cannot be added. Renew to continue.'
+export const SETTLE_LOCKED_TITLE = 'Your subscription has expired, so this action is locked. Renew to continue.'
+export const ERP_NOT_IN_PLAN_TITLE = 'The ERP connector is included from the Growth plan. Upgrade your plan to use it.'
 export const DISPATCH_LOCKED_TITLE = 'Your subscription has expired, so dispatch is locked. Renew to continue.'
 
 const OPEN_GATE: BillingGate = {
   canWrite: true,
+  canSettle: true,
+  erpIncluded: true,
   canDispatch: true,
   writeTitle: undefined,
   dispatchTitle: undefined,
+  settleTitle: undefined,
+  erpTitle: undefined,
   loading: false,
   entitlement: undefined,
   view: null,
@@ -46,12 +59,18 @@ export function deriveBillingGate(
   const known =
     entitlement !== undefined && entitlement.ok && entitlement.status !== 'none' && entitlement.enforcementEnabled !== false
   const canWrite = !known || entitlement.canWrite
+  const canSettle = !known || entitlement.canSettle
+  const erpIncluded = !known || entitlement.features.erp !== false
   const canDispatch = !known || entitlement.canDispatch
   return {
     canWrite,
+    canSettle,
+    erpIncluded,
     canDispatch,
     writeTitle: canWrite ? undefined : WRITE_LOCKED_TITLE,
     dispatchTitle: canDispatch ? undefined : DISPATCH_LOCKED_TITLE,
+    settleTitle: canSettle ? undefined : SETTLE_LOCKED_TITLE,
+    erpTitle: !canWrite ? WRITE_LOCKED_TITLE : erpIncluded ? undefined : ERP_NOT_IN_PLAN_TITLE,
     loading,
     entitlement,
     view,

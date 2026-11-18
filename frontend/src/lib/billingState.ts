@@ -30,6 +30,11 @@ export interface EntitlementUsage {
   orders_month: number
 }
 
+export interface EntitlementFeatures {
+  /** The ERP connector is included in the plan (Growth and above). */
+  erp: boolean | null
+}
+
 /** Shape returned by the agency_subscription_entitlement() RPC, normalised. */
 export interface Entitlement {
   ok: boolean
@@ -40,7 +45,14 @@ export interface Entitlement {
   graceEnd: string | null
   trialEnd: string | null
   canWrite: boolean
+  /**
+   * Settlement actions (issue invoice, close payroll, adjust, service done) stay open in grace so an
+   * agency can still collect and close its books; blocked in expired, cancelled and none.
+   */
+  canSettle: boolean
   canDispatch: boolean
+  /** Plan features from the snapshot; null when the server did not report one (never block on null). */
+  features: EntitlementFeatures
   /** Server flag (platform_billing_settings.enforcement_enabled); undefined when the server did not report it. */
   enforcementEnabled?: boolean
   limits: EntitlementLimits
@@ -73,20 +85,25 @@ export function parseEntitlement(raw: unknown): Entitlement {
   const r = asRecord(raw)
   const limits = asRecord(r.limits)
   const usage = asRecord(r.usage)
+  const features = asRecord(r.features)
   const status = (KNOWN_STATUSES as readonly unknown[]).includes(r.status)
     ? (r.status as BillingStatus)
     : 'none'
 
+  const ok = r.ok === true
+  const canWrite = ok && r.can_write === true
   return {
-    ok: r.ok === true,
+    ok,
     agencyId: asStringOrNull(r.agency_id),
     status,
     planTier: asStringOrNull(r.plan_tier),
     periodEnd: asStringOrNull(r.period_end),
     graceEnd: asStringOrNull(r.grace_end),
     trialEnd: asStringOrNull(r.trial_end),
-    canWrite: r.ok === true && r.can_write === true,
-    canDispatch: r.ok === true && r.can_dispatch === true,
+    canWrite,
+    canSettle: ok && (canWrite || status === 'grace'),
+    canDispatch: ok && r.can_dispatch === true,
+    features: { erp: typeof features.erp === 'boolean' ? features.erp : null },
     ...(typeof r.enforcement_enabled === 'boolean' ? { enforcementEnabled: r.enforcement_enabled } : {}),
     limits: {
       trucks: asLimit(limits.trucks),
@@ -123,6 +140,8 @@ export interface BillingView {
   daysLeft: number | null
   /** Create buttons must be disabled when false (server still enforces). */
   canCreate: boolean
+  /** Settlement actions are allowed (open in grace; see Entitlement.canSettle). */
+  canSettle: boolean
   /** Dispatch actions are locked (expired). */
   dispatchLocked: boolean
   /** The agency has never had a subscription: offer the trial. */
@@ -144,6 +163,7 @@ export function deriveBillingView(ent: Entitlement, now: Date = new Date()): Bil
   const statusLabel = STATUS_LABELS[ent.status]
   const base = {
     canCreate: ent.canWrite,
+    canSettle: ent.canSettle,
     dispatchLocked: ent.status === 'expired' || ent.status === 'cancelled' || !ent.canDispatch,
     needsPlan: ent.status === 'none',
     statusLabel,
@@ -208,11 +228,11 @@ export function buildUsageRows(ent: Entitlement): UsageRow[] {
 
 // ------------------------------------------------------- limit-guard errors
 
-export type SubscriptionErrorCode = 'SB001' | 'SB002' | 'SB003'
+export type SubscriptionErrorCode = 'SB001' | 'SB002' | 'SB003' | 'SB004'
 
 export interface SubscriptionErrorInfo {
   code: SubscriptionErrorCode
-  kind: 'limit_reached' | 'read_only' | 'dispatch_locked'
+  kind: 'limit_reached' | 'read_only' | 'dispatch_locked' | 'feature_not_in_plan'
   resource: string | null
   limit: number | null
   used: number | null
@@ -255,15 +275,15 @@ function tryParseJson(text: unknown): Record<string, unknown> {
 
 function detectCode(err: Record<string, unknown>): SubscriptionErrorCode | null {
   const message = typeof err.message === 'string' ? err.message : ''
-  const prefix = /^\s*(SB00[123])\b/.exec(message)?.[1]
+  const prefix = /^\s*(SB00[1234])\b/.exec(message)?.[1]
   if (prefix) return prefix as SubscriptionErrorCode
-  if (err.code === 'SB001' || err.code === 'SB002' || err.code === 'SB003') return err.code
+  if (err.code === 'SB001' || err.code === 'SB002' || err.code === 'SB003' || err.code === 'SB004') return err.code
   return null
 }
 
 /**
  * Turn a Supabase/PostgREST error from a guarded command into a prompt, or
- * return null when it is not a subscription error. SQLSTATE SB001/SB002/SB003,
+ * return null when it is not a subscription error. SQLSTATE SB001/SB002/SB003/SB004,
  * MESSAGE starts with the code, DETAIL is JSON {code,resource,limit,used,plan,status}.
  */
 export function parseSubscriptionError(err: unknown): SubscriptionErrorInfo | null {
@@ -310,6 +330,21 @@ export function parseSubscriptionError(err: unknown): SubscriptionErrorInfo | nu
       // The server never raises SB002 for past_due (those writes stay allowed), so there is no payment-due branch.
       message: 'Your subscription is read-only, so new orders, trucks, drivers and team members cannot be added. Renew to continue. Your data stays visible.',
       action: 'renew',
+    }
+  }
+
+  if (code === 'SB004') {
+    return {
+      code,
+      kind: 'feature_not_in_plan',
+      resource,
+      limit,
+      used,
+      plan,
+      status,
+      title: 'Not included in your plan',
+      message: 'The ERP connector is included from the Growth plan.',
+      action: 'upgrade',
     }
   }
 

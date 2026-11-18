@@ -134,6 +134,21 @@ describe('parseSubscriptionError', () => {
   it('parses SB003', () => {
     expect(parseSubscriptionError({ message: 'SB003 SUBSCRIPTION_DISPATCH_LOCKED' })).toMatchObject({ kind: 'dispatch_locked', action: 'renew' })
   })
+  it('parses SB004 as a plan feature refusal with the Growth plan message and an upgrade action', () => {
+    const byMessage = parseSubscriptionError({
+      message: 'SB004 SUBSCRIPTION_FEATURE_NOT_IN_PLAN',
+      details: JSON.stringify({ code: 'SB004', resource: 'erp', plan: 'starter', status: 'active' }),
+    })
+    expect(byMessage).toMatchObject({
+      code: 'SB004',
+      kind: 'feature_not_in_plan',
+      action: 'upgrade',
+      resource: 'erp',
+      plan: 'starter',
+      message: 'The ERP connector is included from the Growth plan.',
+    })
+    expect(parseSubscriptionError({ message: 'x', code: 'SB004' })?.code).toBe('SB004')
+  })
   it('falls back to the SQLSTATE code and tolerates bad DETAIL', () => {
     const info = parseSubscriptionError({ message: 'something', code: 'SB001', details: '{not json' })
     expect(info?.code).toBe('SB001')
@@ -219,5 +234,37 @@ describe('formatPlanPrice', () => {
     expect(formatPlanPrice(49_900)).toBe('₹499')
     expect(formatPlanPrice(499_900)).toBe('₹4,999')
     expect(formatPlanPrice(1_999_000)).toBe('₹19,990')
+  })
+})
+
+describe('canSettle and features (rulings B 1)', () => {
+  // Settle is open in grace; blocked in expired, cancelled and none; follows can_write elsewhere.
+  const matrix: ReadonlyArray<[string, boolean, boolean]> = [
+    // status, server can_write, expected canSettle
+    ['trial', true, true],
+    ['active', true, true],
+    ['past_due', true, true],
+    ['grace', false, true],
+    ['expired', false, false],
+    ['cancelled', false, false],
+    ['none', false, false],
+  ]
+  for (const [status, canWrite, expected] of matrix) {
+    it(`status ${status}: canWrite ${canWrite}, canSettle ${expected}`, () => {
+      const ent = parseEntitlement(raw({ status, can_write: canWrite }))
+      expect(ent.canWrite).toBe(canWrite)
+      expect(ent.canSettle).toBe(expected)
+      expect(deriveBillingView(ent).canSettle).toBe(expected)
+    })
+  }
+  it('is closed when the RPC reports not ok or garbage', () => {
+    expect(parseEntitlement(raw({ ok: false, status: 'grace' })).canSettle).toBe(false)
+    expect(parseEntitlement(null).canSettle).toBe(false)
+  })
+  it('reads features.erp and reports null when the server did not', () => {
+    expect(parseEntitlement(raw({ features: { erp: true } })).features.erp).toBe(true)
+    expect(parseEntitlement(raw({ features: { erp: false } })).features.erp).toBe(false)
+    expect(parseEntitlement(raw()).features.erp).toBeNull()
+    expect(parseEntitlement(raw({ features: { erp: 'yes' } })).features.erp).toBeNull()
   })
 })

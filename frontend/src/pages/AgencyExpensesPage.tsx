@@ -15,6 +15,9 @@ import {
   type SummaryResult,
   type TruckRow,
 } from '../services/agencyExpensesApi'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import { fuelMileage, maintenanceDue, type FuelAnomalyReason, type MaintenanceStatus } from '../lib/fleetExpense'
 import { formatPaise, optionalRupeesToPaise, rupeesToPaise } from '../lib/rupees'
 
@@ -145,6 +148,7 @@ export default function AgencyExpensesPage() {
   const [denied, setDenied] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
 
   const fetchAll = useCallback(async (rangeFrom: string, rangeTo: string) => {
     try {
@@ -216,6 +220,7 @@ export default function AgencyExpensesPage() {
     onRefusal: (r: Refusal) => void
   ): Promise<boolean> => {
     setSubmitting(true)
+    setLimitInfo(null)
     try {
       const result = await run()
       if (result.ok) {
@@ -229,6 +234,11 @@ export default function AgencyExpensesPage() {
       return false
     } catch (e) {
       logger.error('[AgencyExpensesPage] command failed:', e)
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setLimitInfo(limit)
+        return false
+      }
       toast.error(toUserFacingErrorMessage(e, fallback))
       return false
     } finally {
@@ -278,6 +288,8 @@ export default function AgencyExpensesPage() {
           Record what each truck costs, track mileage and keep services on schedule. Entries cannot be deleted; record a correction instead.
         </p>
       </div>
+
+      {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
@@ -414,6 +426,7 @@ function TruckSelect({
 }
 
 function ExpenseForm({ trucks, today, submitting, runCommand }: SectionProps) {
+  const gate = useBillingGate()
   const [category, setCategory] = useState<ExpenseCategory>('fuel')
   const [truckId, setTruckId] = useState('')
   const [amount, setAmount] = useState('')
@@ -530,7 +543,7 @@ function ExpenseForm({ trucks, today, submitting, runCommand }: SectionProps) {
           />
         </div>
         <FormError message={formError} />
-        <button type="submit" disabled={submitting} className={PRIMARY_BUTTON}>
+        <button type="submit" disabled={submitting || !gate.canWrite} title={gate.writeTitle} className={PRIMARY_BUTTON}>
           {submitting ? 'Saving…' : 'Save expense'}
         </button>
       </form>
@@ -625,6 +638,7 @@ function FuelSection({
   runCommand,
   truckLabel,
 }: SectionProps & { fills: FuelFillRow[] }) {
+  const gate = useBillingGate()
   const [truckId, setTruckId] = useState('')
   const [odometer, setOdometer] = useState('')
   const [litres, setLitres] = useState('')
@@ -777,7 +791,7 @@ function FuelSection({
             )}
 
             <FormError message={formError} />
-            <button type="submit" disabled={submitting} className={PRIMARY_BUTTON}>
+            <button type="submit" disabled={submitting || !gate.canWrite} title={gate.writeTitle} className={PRIMARY_BUTTON}>
               {submitting ? 'Saving…' : 'Save fuel fill'}
             </button>
           </form>
@@ -818,6 +832,7 @@ function MaintenanceSection({
   runCommand,
   truckLabel,
 }: SectionProps & { items: MaintenanceItemRow[]; fills: FuelFillRow[] }) {
+  const gate = useBillingGate()
   const [truckId, setTruckId] = useState('')
   const [name, setName] = useState('')
   const [intervalKm, setIntervalKm] = useState('')
@@ -987,7 +1002,7 @@ function MaintenanceSection({
               </div>
             </div>
             <FormError message={formError} />
-            <button type="submit" disabled={submitting} className={PRIMARY_BUTTON}>
+            <button type="submit" disabled={submitting || !gate.canWrite} title={gate.writeTitle} className={PRIMARY_BUTTON}>
               {submitting ? 'Saving…' : 'Add item'}
             </button>
           </form>
@@ -1018,6 +1033,8 @@ function MaintenanceSection({
                       type="button"
                       onClick={() => openService(item, currentKm)}
                       aria-label={`Service done for ${item.name}`}
+                      disabled={!gate.canSettle}
+                      title={gate.settleTitle}
                       className={SECONDARY_BUTTON}
                     >
                       Service done
@@ -1049,7 +1066,7 @@ function MaintenanceSection({
                     </div>
                     <FormError message={svcError} />
                     <div className="flex flex-wrap gap-2">
-                      <button type="submit" disabled={submitting} className={PRIMARY_BUTTON}>
+                      <button type="submit" disabled={submitting || !gate.canSettle} title={gate.settleTitle} className={PRIMARY_BUTTON}>
                         {submitting ? 'Saving…' : 'Save service'}
                       </button>
                       <button type="button" disabled={submitting} onClick={() => setServiceFor(null)} className={SECONDARY_BUTTON}>

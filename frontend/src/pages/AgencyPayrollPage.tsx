@@ -14,6 +14,9 @@ import {
   type PayrollPeriodRow,
   type PeriodStatus,
 } from '../services/agencyPayrollApi'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import { formatInr, rupeesToPaise } from '../lib/invoiceMoney'
 import { buildPayrollCsv } from '../lib/payrollCsv'
 
@@ -87,6 +90,8 @@ export default function AgencyPayrollPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
+  const gate = useBillingGate()
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
 
   // Rate editing
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -223,6 +228,7 @@ export default function AgencyPayrollPage() {
     if (rateBlocker !== null || !editingId || baseP === null || kmP === null || tonneP === null) return
     setSavingRate(true)
     setRateRefusal(null)
+    setLimitInfo(null)
     try {
       const result = await agencyPayrollApi.setRate({
         driverId: editingId,
@@ -242,6 +248,11 @@ export default function AgencyPayrollPage() {
       await fetchAll()
     } catch (e) {
       logger.error('[AgencyPayrollPage] rate save failed:', e)
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setLimitInfo(limit)
+        return
+      }
       toast.error(toUserFacingErrorMessage(e, 'Failed to save the rate'))
     } finally {
       setSavingRate(false)
@@ -263,6 +274,7 @@ export default function AgencyPayrollPage() {
     const key = intentKey(openIntent, `${newStart}|${newEnd}`)
     setOpening(true)
     setOpenRefusal(null)
+    setLimitInfo(null)
     try {
       const result = await agencyPayrollApi.openPeriod({ periodStart: newStart, periodEnd: newEnd, idempotencyKey: key })
       if (result.ok) {
@@ -280,6 +292,11 @@ export default function AgencyPayrollPage() {
       await fetchAll()
     } catch (e) {
       logger.error('[AgencyPayrollPage] open period failed:', e)
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setLimitInfo(limit)
+        return
+      }
       toast.error(toUserFacingErrorMessage(e, 'Failed to open the payroll period'))
     } finally {
       setOpening(false)
@@ -342,6 +359,11 @@ export default function AgencyPayrollPage() {
       await Promise.all([fetchAll(), fetchDetail(selected)])
     } catch (e) {
       logger.error('[AgencyPayrollPage] adjustment failed:', e)
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setLimitInfo(limit)
+        return
+      }
       toast.error(toUserFacingErrorMessage(e, 'Failed to record the adjustment'))
     } finally {
       setAdjusting(false)
@@ -378,6 +400,11 @@ export default function AgencyPayrollPage() {
       await fetchAll()
     } catch (e) {
       logger.error('[AgencyPayrollPage] close failed:', e)
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setLimitInfo(limit)
+        return
+      }
       toast.error(toUserFacingErrorMessage(e, 'Failed to close the payroll period'))
     } finally {
       setClosing(false)
@@ -451,6 +478,8 @@ export default function AgencyPayrollPage() {
         </p>
       </div>
 
+      {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
+
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           <span>{error}</span>
@@ -500,6 +529,8 @@ export default function AgencyPayrollPage() {
                           type="button"
                           onClick={() => startEdit(id)}
                           aria-label={`Edit rate for ${label(id)}`}
+                          disabled={!gate.canWrite}
+                          title={gate.writeTitle}
                           className={`inline-flex items-center gap-1 ${SECONDARY_BTN}`}
                         >
                           <Pencil size={14} aria-hidden="true" /> {r ? 'Edit' : 'Set rate'}
@@ -535,7 +566,7 @@ export default function AgencyPayrollPage() {
               <div role="alert" data-testid="rate-refused" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{rateRefusal}</div>
             )}
             <div className="flex flex-col gap-2 sm:flex-row">
-              <button type="submit" disabled={rateBlocker !== null} className={PRIMARY_BTN}>{savingRate ? 'Saving…' : 'Save rate'}</button>
+              <button type="submit" disabled={rateBlocker !== null || !gate.canWrite} title={gate.writeTitle} className={PRIMARY_BTN}>{savingRate ? 'Saving…' : 'Save rate'}</button>
               <button type="button" onClick={() => setEditingId(null)} disabled={savingRate} className={SECONDARY_BTN}>Cancel</button>
             </div>
           </form>
@@ -555,7 +586,7 @@ export default function AgencyPayrollPage() {
             <label htmlFor="period-end" className="block text-sm font-medium text-slate-800">Last day</label>
             <input id="period-end" type="date" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} disabled={opening} className={INPUT} />
           </div>
-          <button type="submit" disabled={openBlocker !== null} className={`flex items-center justify-center gap-1 ${PRIMARY_BTN}`}>
+          <button type="submit" disabled={openBlocker !== null || !gate.canWrite} title={gate.writeTitle} className={`flex items-center justify-center gap-1 ${PRIMARY_BTN}`}>
             <Plus size={16} aria-hidden="true" /> {opening ? 'Opening…' : 'Open period'}
           </button>
         </form>
@@ -647,7 +678,7 @@ export default function AgencyPayrollPage() {
                 {adjRefusal && (
                   <div role="alert" data-testid="adjust-refused" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{adjRefusal}</div>
                 )}
-                <button type="submit" disabled={adjBlocker !== null} className={PRIMARY_BTN}>{adjusting ? 'Recording…' : 'Record adjustment'}</button>
+                <button type="submit" disabled={adjBlocker !== null || !gate.canSettle} title={gate.settleTitle} className={PRIMARY_BTN}>{adjusting ? 'Recording…' : 'Record adjustment'}</button>
               </form>
 
               <div>
@@ -675,14 +706,14 @@ export default function AgencyPayrollPage() {
                   <div role="alert" data-testid="close-refused" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{closeRefusal}</div>
                 )}
                 {!confirmClose ? (
-                  <button type="button" onClick={() => setConfirmClose(true)} className={SECONDARY_BTN}>Close period</button>
+                  <button type="button" onClick={() => setConfirmClose(true)} disabled={!gate.canSettle} title={gate.settleTitle} className={SECONDARY_BTN}>Close period</button>
                 ) : (
                   <div role="alertdialog" aria-labelledby="close-confirm-title" data-testid="close-confirm" className="space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-3">
                     <p id="close-confirm-title" className="text-sm font-semibold text-amber-900">
                       Closing is final. Lines, advances and deductions can never be changed afterwards.
                     </p>
                     <div className="flex flex-col gap-2 sm:flex-row">
-                      <button type="button" onClick={handleClose} disabled={closing} className={PRIMARY_BTN}>
+                      <button type="button" onClick={handleClose} disabled={closing || !gate.canSettle} title={gate.settleTitle} className={PRIMARY_BTN}>
                         {closing ? 'Closing…' : 'Confirm close period'}
                       </button>
                       <button type="button" onClick={() => setConfirmClose(false)} disabled={closing} className={SECONDARY_BTN}>Keep open</button>

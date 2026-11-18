@@ -44,6 +44,8 @@ vi.mock('../services/agencyExpensesApi', async () => {
 
 import AgencyExpensesPage from './AgencyExpensesPage'
 import { UserFacingError } from '../utils/userFacingError'
+import { withGate, gateFor, sbError, SB002_ERROR } from '../components/billing/testGate'
+import type { BillingGate } from '../components/billing/BillingGate'
 import { formatPaise, optionalRupeesToPaise, rupeesToPaise } from '../lib/rupees'
 
 const isoDaysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
@@ -74,12 +76,12 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let root: Root | null = null
 let container: HTMLElement | null = null
 
-async function mountPage(): Promise<HTMLElement> {
+async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(AgencyExpensesPage))
+        root!.render(gate ? withGate(createElement(AgencyExpensesPage), gate) : createElement(AgencyExpensesPage))
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -380,5 +382,51 @@ describe('AgencyExpensesPage', () => {
         expect(h.upsertMaintenanceItem).toHaveBeenCalledWith({
             truckId: 't-2', name: 'Air filter', intervalKm: 15000, intervalDays: null, lastServiceKm: null, lastServiceOn: null, expectedVersion: null,
         })
+    })
+})
+
+describe('AgencyExpensesPage subscription guard', () => {
+    it('shows the read-only prompt when an expense is refused with SB002', async () => {
+        h.recordExpense.mockRejectedValue(sbError(SB002_ERROR))
+        await mountPage()
+        await setValue(q('#expense-category'), 'toll')
+        await setValue(q('#expense-truck'), 't-1')
+        await setValue(q('#expense-amount'), '19.99')
+        await click(button(/Save expense/))
+        expect(q('[role="alert"]')?.textContent).toContain('read-only')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('record_add: expense, fuel and maintenance saves are disabled with a title when writes are locked', async () => {
+        await mountPage(gateFor('grace'))
+        expect(button(/Save expense/)!.disabled).toBe(true)
+        expect(button(/Save expense/)!.title).toContain('read-only')
+        await openTab(/Fuel/)
+        expect(button(/Save fuel fill/)!.disabled).toBe(true)
+        await openTab(/Maintenance/)
+        expect(button(/Add item/)!.disabled).toBe(true)
+        expect(button(/Add item/)!.title).toContain('read-only')
+    })
+
+    it('settle: Service done stays open in grace and locks in expired', async () => {
+        await mountPage(gateFor('grace'))
+        await openTab(/Maintenance/)
+        expect((q('[data-testid="maint-item-i-ok"] button') as HTMLButtonElement).disabled).toBe(false)
+        await act(async () => root!.unmount())
+        container?.remove()
+        await mountPage(gateFor('expired'))
+        await openTab(/Maintenance/)
+        const b = q('[data-testid="maint-item-i-ok"] button') as HTMLButtonElement
+        expect(b.disabled).toBe(true)
+        expect(b.title).toContain('expired')
+    })
+
+    it('shows the prompt when Service done is refused with SB002', async () => {
+        h.markServiceDone.mockRejectedValue(sbError(SB002_ERROR))
+        await mountPage()
+        await openTab(/Maintenance/)
+        await click(q('[data-testid="maint-item-i-ok"] button'))
+        await click(button(/Save service/))
+        expect(q('[role="alert"]')?.textContent).toContain('read-only')
     })
 })

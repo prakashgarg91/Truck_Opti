@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Copy, KeyRound, PauseCircle, PlayCircle, Plug, RefreshCw, ShieldAlert, ShieldOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import {
   agencyErpApi,
@@ -108,6 +111,9 @@ export default function AgencyErpPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
+  const gate = useBillingGate()
+  const erpAllowed = gate.canWrite && gate.erpIncluded
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
 
   // The ONLY place the plaintext secret is held. Cleared on dismiss.
   const [reveal, setReveal] = useState<Reveal | null>(null)
@@ -195,6 +201,7 @@ export default function AgencyErpPage() {
     setFormError(null)
     if (!createKey.current) createKey.current = crypto.randomUUID()
     setBusy('create')
+    setLimitInfo(null)
     try {
       const result = await agencyErpApi.createConnection({ agreementId, name: trimmed, kind, idempotencyKey: createKey.current })
       createKey.current = null
@@ -214,6 +221,11 @@ export default function AgencyErpPage() {
       }
     } catch (err) {
       logger.error('[AgencyErpPage] create failed:', err)
+      const limit = subscriptionInfoFromError(err)
+      if (limit) {
+        setLimitInfo(limit)
+        return
+      }
       const message = toUserFacingErrorMessage(err, 'Failed to create the connection')
       setFormError(message)
       toast.error(message)
@@ -226,6 +238,7 @@ export default function AgencyErpPage() {
     const intent = `${action}:${c.id}`
     setBusy(intent)
     setRowMessage(null)
+    setLimitInfo(null)
     try {
       if (action === 'rotate') {
         const result = await agencyErpApi.rotateSecret(c.id, c.version)
@@ -249,6 +262,12 @@ export default function AgencyErpPage() {
       await fetchAll()
     } catch (err) {
       logger.error('[AgencyErpPage] action failed:', action, err)
+      const limit = action === 'rotate' ? subscriptionInfoFromError(err) : null
+      if (limit) {
+        setPending(null)
+        setLimitInfo(limit)
+        return
+      }
       const message = toUserFacingErrorMessage(err, action === 'rotate' ? 'Failed to rotate the secret' : 'Failed to change the connection')
       setRowMessage({ id: c.id, text: message })
       toast.error(message)
@@ -317,6 +336,8 @@ export default function AgencyErpPage() {
           Let a client&apos;s ERP system send orders straight into TruckOpti with a connection id and a secret.
         </p>
       </div>
+
+      {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
@@ -432,7 +453,8 @@ export default function AgencyErpPage() {
             <div className="md:col-span-3">
               <button
                 type="submit"
-                disabled={busy !== null || revealOpen}
+                disabled={busy !== null || revealOpen || !erpAllowed}
+                title={gate.erpTitle}
                 className={`flex min-h-[44px] w-full items-center justify-center gap-1 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white disabled:opacity-60 sm:w-auto ${FOCUS_RING}`}
               >
                 <Plug size={16} aria-hidden="true" />
@@ -515,7 +537,8 @@ export default function AgencyErpPage() {
                       <button
                         type="button"
                         onClick={() => setPending({ id: c.id, action: 'rotate' })}
-                        disabled={busy !== null || revealOpen}
+                        disabled={busy !== null || revealOpen || !erpAllowed}
+                        title={gate.erpTitle}
                         aria-label={`Rotate secret for ${c.name}`}
                         className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-800 disabled:opacity-60 ${FOCUS_RING}`}
                       >
@@ -546,7 +569,8 @@ export default function AgencyErpPage() {
                         <button
                           type="button"
                           onClick={() => handleConfirm(c, isPending)}
-                          disabled={busy !== null}
+                          disabled={busy !== null || (isPending === 'rotate' && !erpAllowed)}
+                          title={isPending === 'rotate' ? gate.erpTitle : undefined}
                           className={`min-h-[44px] rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-60 ${isPending === 'revoke' ? 'bg-red-700' : 'bg-indigo-600'} ${FOCUS_RING}`}
                         >
                           {busy === `${isPending}:${c.id}` ? ACTION_COPY[isPending].busy : ACTION_COPY[isPending].confirm}

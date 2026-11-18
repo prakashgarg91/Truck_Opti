@@ -33,6 +33,8 @@ vi.mock('../services/agencyConsignmentsApi', () => ({
 
 import AgencyConsignmentsPage from './AgencyConsignmentsPage'
 import { UserFacingError } from '../utils/userFacingError'
+import { withGate, gateFor, sbError, SB002_ERROR } from '../components/billing/testGate'
+import type { BillingGate } from '../components/billing/BillingGate'
 
 const order = (id: string, ref: string, status = 'draft') => ({
     id, agreement_id: 'ag-1', client_order_ref: ref, status, version: 1, created_at: '2026-11-10T00:00:00Z',
@@ -47,12 +49,12 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let root: Root | null = null
 let container: HTMLElement | null = null
 
-async function mountPage(): Promise<HTMLElement> {
+async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(AgencyConsignmentsPage))
+        root!.render(gate ? withGate(createElement(AgencyConsignmentsPage), gate) : createElement(AgencyConsignmentsPage))
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -253,5 +255,39 @@ describe('AgencyConsignmentsPage', () => {
             release({ ok: true, replay: false, consignmentId: 'c-1', grNumber: 'G', status: 'created', version: 1 })
             await new Promise((r) => setTimeout(r, 0))
         })
+    })
+})
+
+describe('AgencyConsignmentsPage subscription guard', () => {
+    it('shows the read-only prompt (not a generic failure) when create is refused with SB002', async () => {
+        h.createConsignment.mockRejectedValue(sbError(SB002_ERROR))
+        await mountPage()
+        await click(button(/Create GR for SO-1/)!)
+        expect(q('[role="alert"]')?.textContent).toContain('read-only')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('disables Create GR with the explanation when writes are locked, but not when active or unknown', async () => {
+        for (const status of ['grace', 'expired', 'cancelled'] as const) {
+            await mountPage(gateFor(status))
+            const b = button(/Create GR for SO-1/)!
+            expect(b.disabled).toBe(true)
+            expect(b.title).toContain('read-only')
+            await act(async () => root!.unmount())
+        container?.remove()
+        }
+        await mountPage(gateFor('active'))
+        expect(button(/Create GR for SO-1/)!.disabled).toBe(false)
+        await act(async () => root!.unmount())
+        container?.remove()
+        await mountPage(gateFor('none'))
+        expect(button(/Create GR for SO-1/)!.disabled).toBe(false)
+    })
+
+    it('keeps event and QR actions open when writes are locked', async () => {
+        h.listConsignments.mockResolvedValue([consignment('c-1', 'o-1', 'created')])
+        await mountPage(gateFor('expired'))
+        expect(button(/Mark picked up/)!.disabled).toBe(false)
+        expect(button(/QR/)!.disabled).toBe(false)
     })
 })

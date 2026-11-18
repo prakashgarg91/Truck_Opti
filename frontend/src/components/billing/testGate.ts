@@ -20,7 +20,16 @@ export const SB003_ERROR = {
   details: JSON.stringify({ code: 'SB003', resource: 'dispatch', plan: 'starter', status: 'expired' }),
 }
 
-export function gateFor(status: 'grace' | 'expired' | 'active' | 'none'): BillingGate {
+export const SB004_ERROR = {
+  code: 'SB004',
+  message: 'SB004 SUBSCRIPTION_FEATURE_NOT_IN_PLAN',
+  details: JSON.stringify({ code: 'SB004', resource: 'erp', plan: 'starter', status: 'active' }),
+}
+
+export function gateFor(
+  status: 'grace' | 'expired' | 'active' | 'none' | 'cancelled',
+  extra: Record<string, unknown> = {}
+): BillingGate {
   const ent = parseEntitlement({
     ok: true,
     agency_id: 'a',
@@ -28,6 +37,7 @@ export function gateFor(status: 'grace' | 'expired' | 'active' | 'none'): Billin
     plan_tier: 'starter',
     can_write: status === 'active',
     can_dispatch: status === 'active' || status === 'grace',
+    ...extra,
   })
   return deriveBillingGate(ent, deriveBillingView(ent), false)
 }

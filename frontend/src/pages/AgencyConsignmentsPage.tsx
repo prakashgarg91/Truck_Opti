@@ -9,6 +9,9 @@ import {
   type ConsignmentRow,
   type OrderRow,
 } from '../services/agencyConsignmentsApi'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import { buildQrPayload, nextProofState, type ProofEvent, type ProofState } from '../lib/grLr'
 
 // TO-146 Consignments (GR/LR). Create a GR for a draft or planned order, then
@@ -81,6 +84,8 @@ export default function AgencyConsignmentsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
+  const gate = useBillingGate()
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
 
   // One idempotency key per intent (create for an order, one event at one
   // version). A failed request is retried with the same key; a completed one
@@ -154,6 +159,7 @@ export default function AgencyConsignmentsPage() {
     const intent = `create:${order.id}`
     setBusy(intent)
     setFormMessage(null)
+    setLimitInfo(null)
     try {
       const result = await agencyConsignmentsApi.createConsignment(order.id, keyFor(intent))
       keys.current.delete(intent)
@@ -165,6 +171,11 @@ export default function AgencyConsignmentsPage() {
       await fetchAll()
     } catch (e) {
       logger.error('[AgencyConsignmentsPage] create failed:', e)
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setLimitInfo(limit)
+        return
+      }
       const message = toUserFacingErrorMessage(e, 'Failed to create GR')
       setFormMessage({ id: order.id, text: message })
       toast.error(message)
@@ -271,6 +282,8 @@ export default function AgencyConsignmentsPage() {
         </p>
       </div>
 
+      {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
+
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           <span>{error}</span>
@@ -310,7 +323,8 @@ export default function AgencyConsignmentsPage() {
                   <button
                     type="button"
                     onClick={() => handleCreate(o)}
-                    disabled={busy !== null}
+                    disabled={busy !== null || !gate.canWrite}
+                    title={gate.writeTitle}
                     aria-label={`Create GR for ${o.client_order_ref}`}
                     className={`flex min-h-[44px] w-full items-center justify-center gap-1 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white disabled:opacity-60 sm:w-auto ${FOCUS_RING}`}
                   >

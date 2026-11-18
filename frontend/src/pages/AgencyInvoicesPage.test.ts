@@ -33,6 +33,8 @@ vi.mock('../services/agencyInvoicesApi', () => ({
 }))
 
 import AgencyInvoicesPage from './AgencyInvoicesPage'
+import { withGate, gateFor, sbError, SB002_ERROR } from '../components/billing/testGate'
+import type { BillingGate } from '../components/billing/BillingGate'
 import { UserFacingError } from '../utils/userFacingError'
 
 const CLIENT = { id: 'c-1', client_name: 'Sri Balaji Transport', status: 'active' }
@@ -56,12 +58,12 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let root: Root | null = null
 let container: HTMLElement | null = null
 
-async function mountPage(): Promise<HTMLElement> {
+async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(AgencyInvoicesPage))
+        root!.render(gate ? withGate(createElement(AgencyInvoicesPage), gate) : createElement(AgencyInvoicesPage))
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -306,5 +308,40 @@ describe('AgencyInvoicesPage', () => {
         await openInvoice()
         expect(q('[data-testid="payment-form"]')).toBeNull()
         expect(q('[data-testid="cancel-section"]')).toBeNull()
+    })
+})
+
+describe('AgencyInvoicesPage subscription guard', () => {
+    it('shows the read-only prompt when issue is refused with SB002', async () => {
+        h.issueInvoice.mockRejectedValue(sbError(SB002_ERROR))
+        await mountPage()
+        await fillValidForm()
+        await submit(q('[data-testid="invoice-form"]')!)
+        expect(q('[role="alert"]')?.textContent).toContain('read-only')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('settle semantics: New invoice stays open in grace, locks in expired and cancelled', async () => {
+        await mountPage(gateFor('grace'))
+        expect(button(/New invoice/)!.disabled).toBe(false)
+        await act(async () => root!.unmount())
+        container?.remove()
+        for (const status of ['expired', 'cancelled'] as const) {
+            await mountPage(gateFor(status))
+            const b = button(/New invoice/)!
+            expect(b.disabled).toBe(true)
+            expect(b.title).toContain('expired')
+            await act(async () => root!.unmount())
+        container?.remove()
+        }
+        await mountPage(gateFor('none'))
+        expect(button(/New invoice/)!.disabled).toBe(false)
+    })
+
+    it('keeps record payment and cancel invoice open when settlement is locked', async () => {
+        await mountPage(gateFor('expired'))
+        await openInvoice()
+        expect(q('[data-testid="payment-form"]')).not.toBeNull()
+        expect(button(/^Cancel invoice/)!.disabled).toBe(false)
     })
 })

@@ -96,3 +96,6 @@ proof-output/
 
 # TypeScript incremental build artifacts
 frontend/*.tsbuildinfo
+
+# Journey harness evidence (screenshots, report.json)
+evidence/journey/

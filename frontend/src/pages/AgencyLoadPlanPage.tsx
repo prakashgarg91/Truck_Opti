@@ -301,6 +301,7 @@ export default function AgencyLoadPlanPage() {
     const intent = `save:${proposal.id}:${name}`
     setBusy(intent)
     setSaveMessage(null)
+    setLimitInfo(null)
     try {
       const result = await agencyLoadPlansApi.savePlan({
         name,
@@ -331,6 +332,11 @@ export default function AgencyLoadPlanPage() {
       await fetchAll()
     } catch (e) {
       logger.error('[AgencyLoadPlanPage] save failed:', e)
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setLimitInfo(limit)
+        return
+      }
       const message = toUserFacingErrorMessage(e, 'Failed to save the plan')
       setSaveMessage({ text: message, problems: [] })
       toast.error(message)
@@ -618,7 +624,8 @@ export default function AgencyLoadPlanPage() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={busy !== null || proposal.loads.length === 0 || planName.trim() === ''}
+              disabled={busy !== null || proposal.loads.length === 0 || planName.trim() === '' || !gate.canWrite}
+              title={gate.writeTitle}
               className={`min-h-[44px] w-full rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white disabled:opacity-60 sm:w-auto ${FOCUS_RING}`}
             >
               {busy?.startsWith('save:') ? 'Saving…' : 'Save draft'}

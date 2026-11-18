@@ -13,6 +13,9 @@ import {
   type IssueResult,
   type PaymentMethod,
 } from '../services/agencyInvoicesApi'
+import { subscriptionInfoFromError } from '../lib/subscriptionGuard'
+import type { SubscriptionErrorInfo } from '../lib/billingState'
+import { SubscriptionLimitPrompt, useBillingGate } from '../components/billing/BillingGate'
 import { allocatePayment, buildUpiLink, computeInvoice, type GstRatePct } from '../lib/freightInvoice'
 import { STATE_CODE_PATTERN, formatInr, parseQuantity, rupeesToPaise } from '../lib/invoiceMoney'
 
@@ -92,6 +95,8 @@ export default function AgencyInvoicesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
+  const gate = useBillingGate()
+  const [limitInfo, setLimitInfo] = useState<SubscriptionErrorInfo | null>(null)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detail, setDetail] = useState<InvoiceDetail | null>(null)
@@ -247,6 +252,7 @@ export default function AgencyInvoicesPage() {
     setIssuing(true)
     setIssueRefusal(null)
     setIssued(null)
+    setLimitInfo(null)
     try {
       const result = await agencyInvoicesApi.issueInvoice({ ...payload, idempotencyKey: key })
       if (result.ok) {
@@ -265,6 +271,11 @@ export default function AgencyInvoicesPage() {
       }
     } catch (e) {
       logger.error('[AgencyInvoicesPage] issue failed:', e)
+      const limit = subscriptionInfoFromError(e)
+      if (limit) {
+        setLimitInfo(limit)
+        return
+      }
       toast.error(toUserFacingErrorMessage(e, 'Failed to issue invoice'))
     } finally {
       setIssuing(false)
@@ -435,11 +446,15 @@ export default function AgencyInvoicesPage() {
           onClick={() => setShowForm((v) => !v)}
           aria-expanded={showForm}
           aria-controls="new-invoice-form"
+          disabled={!showForm && !gate.canSettle}
+          title={showForm ? undefined : gate.settleTitle}
           className={`flex items-center gap-1 ${PRIMARY_BTN}`}
         >
           <Plus size={16} aria-hidden="true" /> {showForm ? 'Close form' : 'New invoice'}
         </button>
       </div>
+
+      {limitInfo && <SubscriptionLimitPrompt info={limitInfo} onDismiss={() => setLimitInfo(null)} />}
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">

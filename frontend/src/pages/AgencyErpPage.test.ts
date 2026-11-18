@@ -36,6 +36,8 @@ vi.mock('../services/agencyErpApi', () => ({
 
 import AgencyErpPage from './AgencyErpPage'
 import { UserFacingError } from '../utils/userFacingError'
+import { withGate, gateFor, sbError, SB004_ERROR } from '../components/billing/testGate'
+import type { BillingGate } from '../components/billing/BillingGate'
 
 const SECRET = 'erpk_0123456789abcdef0123456789abcdef'
 
@@ -53,12 +55,12 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let root: Root | null = null
 let container: HTMLElement | null = null
 
-async function mountPage(): Promise<HTMLElement> {
+async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(AgencyErpPage))
+        root!.render(gate ? withGate(createElement(AgencyErpPage), gate) : createElement(AgencyErpPage))
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -376,5 +378,51 @@ describe('AgencyErpPage', () => {
             release({ ok: true, status: 'paused', version: 2 })
             await new Promise((r) => setTimeout(r, 0))
         })
+    })
+})
+
+describe('AgencyErpPage subscription guard', () => {
+    const erpGate = (erp: boolean, status: 'active' | 'expired' = 'active') => gateFor(status, { features: { erp } })
+
+    it('shows the plan prompt with an upgrade action when create is refused with SB004', async () => {
+        h.createConnection.mockRejectedValue(sbError(SB004_ERROR))
+        await mountPage()
+        await fillAndSubmit()
+        const alert = q('[role="alert"]')
+        expect(alert?.textContent).toContain('ERP connector is included from the Growth plan')
+        expect(alert?.textContent).toContain('Upgrade plan')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('shows the prompt when rotate is refused with SB004', async () => {
+        h.listConnections.mockResolvedValue([conn('c-1', 'Tally feed')])
+        h.rotateSecret.mockRejectedValue(sbError(SB004_ERROR))
+        await mountPage()
+        await click(button(/Rotate secret for Tally feed/)!)
+        await click(button(/^Rotate secret$/)!)
+        expect(q('[role="alert"]')?.textContent).toContain('Growth plan')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('disables create and rotate with the upgrade hint when the plan has no ERP, and leaves pause and revoke open', async () => {
+        h.listConnections.mockResolvedValue([conn('c-1', 'Tally feed')])
+        await mountPage(erpGate(false))
+        const create = button(/Create connection/)!
+        expect(create.disabled).toBe(true)
+        expect(create.title).toContain('Growth plan')
+        const rotate = button(/Rotate secret for Tally feed/)!
+        expect(rotate.disabled).toBe(true)
+        expect(rotate.title).toContain('Growth plan')
+        expect(button(/Pause/)!.disabled).toBe(false)
+        expect(button(/Revoke/)!.disabled).toBe(false)
+    })
+
+    it('uses the write-lock title first when expired, and stays open when the plan includes ERP', async () => {
+        await mountPage(erpGate(false, 'expired'))
+        expect(button(/Create connection/)!.title).toContain('read-only')
+        await act(async () => root!.unmount())
+        container?.remove()
+        await mountPage(erpGate(true))
+        expect(button(/Create connection/)!.disabled).toBe(false)
     })
 })

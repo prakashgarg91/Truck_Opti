@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import AgencyBillingBanner from './AgencyBillingBanner'
-import { BillingGateContext, deriveBillingGate, WRITE_LOCKED_TITLE, DISPATCH_LOCKED_TITLE } from './BillingGate'
+import { BillingGateContext, deriveBillingGate, WRITE_LOCKED_TITLE, DISPATCH_LOCKED_TITLE, SETTLE_LOCKED_TITLE, ERP_NOT_IN_PLAN_TITLE } from './BillingGate'
 import { gateFor } from './testGate'
 import { deriveBillingView, parseEntitlement } from '../../lib/billingState'
 import { SubscriptionLimitError, subscriptionInfoFromError, throwIfSubscriptionError } from '../../lib/subscriptionGuard'
@@ -108,5 +108,36 @@ describe('subscriptionGuard', () => {
         } catch (e) {
             expect(subscriptionInfoFromError(e)?.message).toContain('drivers')
         }
+    })
+})
+
+describe('deriveBillingGate settle and erp', () => {
+    it('settle is open in grace and locked in expired and cancelled; write is locked in all three', () => {
+        expect(gateFor('grace')).toMatchObject({ canWrite: false, canSettle: true, settleTitle: undefined })
+        for (const status of ['expired', 'cancelled'] as const) {
+            expect(gateFor(status)).toMatchObject({ canWrite: false, canSettle: false, settleTitle: SETTLE_LOCKED_TITLE })
+        }
+    })
+
+    it('settle fails open while loading, on error, for none and while enforcement is off', () => {
+        for (const g of [deriveBillingGate(undefined, null, true), deriveBillingGate(undefined, null, false), gateFor('none')]) {
+            expect(g.canSettle).toBe(true)
+            expect(g.erpIncluded).toBe(true)
+            expect(g.erpTitle).toBeUndefined()
+        }
+        const off = ent({ status: 'expired', can_write: false, can_dispatch: false, enforcement_enabled: false, features: { erp: false } })
+        const gate = deriveBillingGate(off, deriveBillingView(off), false)
+        expect(gate).toMatchObject({ canSettle: true, erpIncluded: true, erpTitle: undefined })
+    })
+
+    it('erp: blocked with the upgrade hint only when the server says the plan lacks it', () => {
+        expect(gateFor('active', { features: { erp: false } })).toMatchObject({ erpIncluded: false, erpTitle: ERP_NOT_IN_PLAN_TITLE })
+        expect(gateFor('active', { features: { erp: true } })).toMatchObject({ erpIncluded: true, erpTitle: undefined })
+        // Not reported: never block.
+        expect(gateFor('active')).toMatchObject({ erpIncluded: true, erpTitle: undefined })
+    })
+
+    it('erp: the write lock wins over the plan hint, as on the server', () => {
+        expect(gateFor('expired', { features: { erp: false } }).erpTitle).toBe(WRITE_LOCKED_TITLE)
     })
 })

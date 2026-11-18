@@ -42,6 +42,8 @@ vi.mock('../services/agencyPayrollApi', () => ({
 import AgencyPayrollPage from './AgencyPayrollPage'
 import { buildPayrollCsv, csvCell, paiseToPlain } from '../lib/payrollCsv'
 import { UserFacingError } from '../utils/userFacingError'
+import { withGate, gateFor, sbError, SB002_ERROR } from '../components/billing/testGate'
+import type { BillingGate } from '../components/billing/BillingGate'
 
 const D1 = 'aaaaaaaa-1111-1111-1111-111111111111'
 const RATE = { driver_id: D1, base_paise: 1500000, per_km_paise: 1250, per_tonne_paise: 40000, version: 2, updated_at: '2026-10-01T00:00:00Z' }
@@ -58,12 +60,12 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let root: Root | null = null
 let container: HTMLElement | null = null
 
-async function mountPage(): Promise<HTMLElement> {
+async function mountPage(gate?: BillingGate): Promise<HTMLElement> {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-        root!.render(createElement(AgencyPayrollPage))
+        root!.render(gate ? withGate(createElement(AgencyPayrollPage), gate) : createElement(AgencyPayrollPage))
         await new Promise((r) => setTimeout(r, 0))
     })
     return container
@@ -321,5 +323,55 @@ describe('AgencyPayrollPage driver names', () => {
         h.listDriverDirectory.mockResolvedValue([{ driver_id: 'other', name: 'Someone Else', phone_last4: '0000' }])
         await mountPage()
         expect(text()).toContain('Driver aaaaaaaa (+91 90000 11111)')
+    })
+})
+
+describe('AgencyPayrollPage subscription guard', () => {
+    const fillPeriod = async () => {
+        await setValue(q('#period-start')!, '2026-11-01')
+        await setValue(q('#period-end')!, '2026-11-15')
+    }
+
+    it('shows the read-only prompt when open period is refused with SB002', async () => {
+        h.openPeriod.mockRejectedValue(sbError(SB002_ERROR))
+        await mountPage()
+        await fillPeriod()
+        await submit(q('[data-testid="open-period-form"]')!)
+        expect(q('[role="alert"]')?.textContent).toContain('read-only')
+        expect(h.toastError).not.toHaveBeenCalled()
+    })
+
+    it('shows the prompt when close period is refused with SB002', async () => {
+        h.closePeriod.mockRejectedValue(sbError(SB002_ERROR))
+        await mountPage()
+        await click(button(/Open period 2026-10-01/)!)
+        await click(button(/^Close period$/)!)
+        await click(button(/Confirm close period/)!)
+        expect(q('[role="alert"]')?.textContent).toContain('read-only')
+    })
+
+    it('record_add: open period and rate set are disabled in grace', async () => {
+        await mountPage(gateFor('grace'))
+        const open = q('[data-testid="open-period-form"] button[type="submit"]') as HTMLButtonElement
+        expect(open.title).toContain('read-only')
+        await fillPeriod()
+        expect(open.disabled).toBe(true)
+        const edit = button(/Edit rate for/)!
+        expect(edit.disabled).toBe(true)
+        expect(edit.title).toContain('read-only')
+    })
+
+    it('settle: close and adjust stay open in grace and lock in expired', async () => {
+        await mountPage(gateFor('grace'))
+        await click(button(/Open period 2026-10-01/)!)
+        expect(button(/^Close period$/)!.disabled).toBe(false)
+        expect(button(/Record adjustment/)!.title).toBe('')
+        await act(async () => root!.unmount())
+        container?.remove()
+        await mountPage(gateFor('expired'))
+        await click(button(/Open period 2026-10-01/)!)
+        expect(button(/^Close period$/)!.disabled).toBe(true)
+        expect(button(/^Close period$/)!.title).toContain('expired')
+        expect(button(/Record adjustment/)!.disabled).toBe(true)
     })
 })
