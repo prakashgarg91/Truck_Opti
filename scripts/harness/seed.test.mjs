@@ -76,12 +76,12 @@ describe('seed contents and idempotency', () => {
     assert.deepEqual(await snapshot(), snapshotBefore)
   })
 
-  test('expected counts: 7 people, 2 agencies, 3 memberships, 1 agreement, 2 sites, 1 tariff, 2 trucks, 1 driver', async () => {
+  test('expected counts: 7 people, 2 agencies, 1 membership (dispatcher only), 1 agreement, 2 sites, 1 tariff, 2 trucks, 1 driver', async () => {
     const s = await snapshot()
     assert.equal(s.authUsers, 7)
     assert.equal(s.publicUsers, 7)
     assert.equal(s.agencies, 2)
-    assert.equal(s.memberships, 3)
+    assert.equal(s.memberships, 1)
     assert.equal(s.agreements, 1)
     assert.equal(s.sites, 2)
     assert.equal(s.tariffs, 1)

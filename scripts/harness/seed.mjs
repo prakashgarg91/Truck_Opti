@@ -4,7 +4,8 @@
  * seedJourney(pg) inserts, as superuser, everything the browser journey starts from:
  *   - 7 people (auth.users + public.users): admin, agency owner, dispatcher, finance, viewer,
  *     driver, and the owner of a second, unrelated agency (tenant isolation checks);
- *   - 2 approved agencies, 3 active staff memberships on the first one, 1 approved driver employed by it;
+ *   - 2 approved agencies, 1 active staff membership (the dispatcher) on the first one;
+ *     finance and viewer exist as auth users but are NOT members (the journey invites them), 1 approved driver employed by it;
  *   - platform_billing_settings: fake legal name, valid GSTIN and state code, enforcement on;
  *   - 1 client agreement with a pickup and a drop site, 1 tariff lane Pune -> Mumbai;
  *   - 2 trucks (payload 9000 kg and 16000 kg).
@@ -80,8 +81,9 @@ export async function seedJourney(pg) {
     [SEED_IDS.otherAgency, SEED_IDS.users.otherOwner]
   )
 
-  // staff of the first agency (the owner is not a membership row: the owner is transport_agencies.user_id)
-  for (const scope of ['dispatcher', 'finance', 'viewer']) {
+  // staff of the first agency (the owner is not a membership row: the owner is transport_agencies.user_id).
+  // Exactly one seat is used at the start (the trial plan allows 2); finance and viewer join through invitations.
+  for (const scope of ['dispatcher']) {
     await run(
       `INSERT INTO public.agency_memberships (id, agency_id, user_id, scope, status, revoked_at)
        VALUES ($1, $2, $3, $4, 'active', NULL) ON CONFLICT DO NOTHING`,

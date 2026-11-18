@@ -282,7 +282,7 @@ try {
   rmSync(EVIDENCE, { recursive: true, force: true })
   mkdirSync(EVIDENCE, { recursive: true })
   const { runJourney } = await import('./journey.browser.mjs')
-  log('running the journey (first half: sign in .. plan approval) ...')
+  log('running the journey (sign in .. renewal, then the 375px mobile pass) ...')
   results = await runJourney({ appUrl, shim, pg, seed, evidenceDir: EVIDENCE, newContext, harnessHost: HARNESS_HOST })
 
   // request audit -----------------------------------------------------------------------------------
@@ -314,7 +314,7 @@ try {
   const skipped = results.steps.filter((s) => s.status === 'skipped').length
   const ok = failedSteps.length === 0 && forbidden.length === 0 && rest501.length === 0
 
-  const report = { startedAt: new Date(started).toISOString(), seconds: Math.round((Date.now() - started) / 1000), appUrl, resolvedSupabaseUrl: resolvedUrl, summary: { passed, failed: failedSteps.length, hostedOnly: hosted, skipped }, steps: results.steps, notes: results.notes, audit }
+  const report = { startedAt: new Date(started).toISOString(), seconds: Math.round((Date.now() - started) / 1000), appUrl, resolvedSupabaseUrl: resolvedUrl, summary: { passed, failed: failedSteps.length, hostedOnly: hosted, skipped }, steps: results.steps, notes: results.notes, pageConsole: results.pageConsole, mobileFindings: results.mobileFindings, audit }
   writeFileSync(join(EVIDENCE, 'report.json'), JSON.stringify(report, null, 2))
 
   console.log('\n================ JOURNEY RESULT ================')
