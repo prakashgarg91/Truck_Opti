@@ -22,7 +22,7 @@ interface PlanLookupClient {
     from(table: 'subscription_plans'): {
         select(columns: string): {
             eq(column: 'id' | 'tier', value: string): {
-                maybeSingle(): Promise<PlanLookupResult>
+                maybeSingle(): PromiseLike<PlanLookupResult>
             }
         }
     }

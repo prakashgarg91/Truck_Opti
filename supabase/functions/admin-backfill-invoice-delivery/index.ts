@@ -8,8 +8,8 @@ const corsHeaders = {
 }
 
 type BackfillRequest = {
-    invoiceId?: string
-    invoiceNumber?: string
+    invoiceId?: string | null
+    invoiceNumber?: string | null
     customerEmail?: string | null
     customerPhone?: string | null
 }

@@ -246,7 +246,7 @@ async function sha256Hex(value: string) {
 async function hmacSha256(key: Uint8Array | string, value: string) {
     const cryptoKey = await crypto.subtle.importKey(
         'raw',
-        typeof key === 'string' ? textEncoder.encode(key) : key,
+        typeof key === 'string' ? textEncoder.encode(key) : (key as BufferSource),
         { name: 'HMAC', hash: 'SHA-256' },
         false,
         ['sign'],

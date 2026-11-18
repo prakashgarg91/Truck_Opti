@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient, type User as AuthUser } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient, type User as AuthUser } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -186,7 +186,7 @@ async function requireAdmin(
   return { caller, serviceClient }
 }
 
-async function listAllAuthUsers(serviceClient: ReturnType<typeof createClient>) {
+async function listAllAuthUsers(serviceClient: SupabaseClient) {
   const authUsers = new Map<string, AuthUser>()
   const perPage = 200
   let page = 1
@@ -215,7 +215,7 @@ async function listAllAuthUsers(serviceClient: ReturnType<typeof createClient>) 
   return authUsers
 }
 
-async function getTargetProfile(serviceClient: ReturnType<typeof createClient>, userId: string) {
+async function getTargetProfile(serviceClient: SupabaseClient, userId: string) {
   const { data, error } = await serviceClient
     .from('users')
     .select('id, email, role, created_at, updated_at, name, phone')

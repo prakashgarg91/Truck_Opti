@@ -107,7 +107,7 @@ function normalizeBillingCycle(value: unknown): 'monthly' | 'yearly' | null {
   return null
 }
 
-function generateChecksum(payload: string): string {
+function generateChecksum(payload: string): Promise<string> {
   const hash = crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload + PHONEPE_SALT_KEY))
     .then(buf => Array.from(new Uint8Array(buf))
       .map(b => b.toString(16).padStart(2, '0'))
@@ -183,7 +183,7 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey)
-    const planData = await resolveSubscriptionPlanByIdentifier(supabase, planId)
+    const planData = await resolveSubscriptionPlanByIdentifier(supabase as unknown as Parameters<typeof resolveSubscriptionPlanByIdentifier>[0], planId)
 
     if (!planData) {
       throw new Error('Subscription plan not found')

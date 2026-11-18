@@ -36,7 +36,7 @@ serve(async (req) => {
     const rawBody = await readCappedText(req.body, MAX_JSON_BODY_BYTES, req.headers.get('content-length'))
     try {
       const parsed: unknown = rawBody.ok ? JSON.parse(rawBody.text) : null
-      body = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+      body = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {}
     } catch {
       body = {}
     }
@@ -54,7 +54,7 @@ serve(async (req) => {
     }
 
     const { caller, serviceClient } = await requireUserContext(req.headers.get('Authorization'))
-    const owner = await resolveOwnerAgency(serviceClient, caller.id)
+    const owner = await resolveOwnerAgency(serviceClient as unknown as Parameters<typeof resolveOwnerAgency>[0], caller.id)
     if (!owner.ok) {
       if (owner.error.status >= 500) console.error('[verify-razorpay-payment]', owner.log)
       return fail(owner.error.status, 'support', owner.error.message, owner.error.status >= 500)

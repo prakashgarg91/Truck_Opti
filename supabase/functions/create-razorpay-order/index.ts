@@ -69,7 +69,8 @@ serve(async (req) => {
 
     // Authenticate and resolve the caller's own agency (owner). Approval is judged below, calmly.
     const { caller, serviceClient } = await requireUserContext(req.headers.get('Authorization'))
-    const owner = await resolveOwnerAgency(serviceClient, caller.id)
+    // The cast only avoids TS2589 (structural comparison of the full SupabaseClient is too deep for tsc); the shape is checked by the runtime lookup.
+    const owner = await resolveOwnerAgency(serviceClient as unknown as Parameters<typeof resolveOwnerAgency>[0], caller.id)
     if (!owner.ok) {
       if (owner.error.status >= 500) console.error('[create-razorpay-order]', owner.log)
       return refuse(owner.error)

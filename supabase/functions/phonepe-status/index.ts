@@ -22,7 +22,7 @@ function toRecord(value: unknown): Record<string, unknown> {
   return {}
 }
 
-function generateChecksum(payload: string): string {
+function generateChecksum(payload: string): Promise<string> {
   const hash = crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload + PHONEPE_SALT_KEY))
     .then(buf => Array.from(new Uint8Array(buf))
       .map(b => b.toString(16).padStart(2, '0'))
