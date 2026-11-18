@@ -25,6 +25,7 @@
     "test:live-admin": "node scripts/live-admin-proof.cjs",
     "test:prod-config": "node scripts/production_config_audit.mjs",
     "test:secrets": "node scripts/secrets_audit.mjs",
+    "release:gates": "node scripts/release_gates.mjs",
     "graph:update": "powershell -ExecutionPolicy Bypass -File scripts/graphify-refresh.ps1",
     "glue:check": "node tools/glue-check.mjs",
     "launch-check": "powershell -ExecutionPolicy Bypass -File scripts/launch-readiness.ps1",
