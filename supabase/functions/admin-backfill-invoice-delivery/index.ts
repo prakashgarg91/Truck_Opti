@@ -264,7 +264,7 @@ serve(async (req) => {
         console.error('admin-backfill-invoice-delivery failed', error)
         return jsonResponse({
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: 'Request failed.',
         }, 500)
     }
 })

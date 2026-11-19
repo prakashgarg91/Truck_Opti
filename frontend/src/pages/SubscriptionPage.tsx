@@ -224,7 +224,7 @@ export default function SubscriptionPage() {
                 {taxMode === 'registered'
                   ? 'Prices exclude GST (GST extra at 18%).'
                   : taxMode === 'unregistered'
-                    ? 'Prices exclude GST. No GST charged.'
+                    ? 'No GST charged.'
                     : 'Prices exclude tax. Taxes, if any, are shown at checkout.'}{' '}
                 Read our <Link to="/terms" className={`font-semibold text-indigo-700 underline dark:text-indigo-300 ${FOCUS_RING}`}>refund policy</Link>.
               </p>

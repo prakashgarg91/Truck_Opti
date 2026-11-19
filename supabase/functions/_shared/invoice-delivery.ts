@@ -706,7 +706,6 @@ async function sendInvoiceEmail(input: {
         <div style="padding: 28px;">
           <p style="margin: 0 0 16px; font-size: 15px;">Hi ${escapeHtml(input.customerName)},</p>
           <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.6;">Thanks for your payment. Your subscription invoice is ready at the hosted link below.</p>
-                    <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.6;">Thanks for your payment. Your subscription invoice is ready at the hosted link below.</p>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px;">
             <tr><td style="padding: 8px 0; color: #475569;">Invoice Number</td><td style="padding: 8px 0; font-weight: 600; text-align: right;">${escapeHtml(input.invoice.invoice_number)}</td></tr>
             <tr><td style="padding: 8px 0; color: #475569;">Plan</td><td style="padding: 8px 0; font-weight: 600; text-align: right;">${escapeHtml(input.planName)}</td></tr>

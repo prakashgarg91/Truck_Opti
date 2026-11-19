@@ -23,6 +23,7 @@ function aliasPlugin(unresolved) {
     setup(build) {
       build.onResolve({ filter: /^https:\/\/deno\.land\/std@0\.168\.0\/http\/server\.ts$/ }, () => ({ path: join(here, 'serve-stub.mjs') }))
       build.onResolve({ filter: /^https:\/\/esm\.sh\/@supabase\/supabase-js@/ }, () => ({ path: join(here, 'fake-supabase-module.mjs') }))
+      build.onResolve({ filter: /^https:\/\/esm\.sh\/pdf-lib@/ }, () => ({ path: join(here, 'pdf-lib-stub.mjs') }))
       build.onResolve({ filter: /^https?:\/\// }, (args) => {
         unresolved.push({ import: args.path, importer: args.importer })
         return { path: args.path, external: true }

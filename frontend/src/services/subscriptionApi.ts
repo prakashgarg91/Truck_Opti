@@ -174,6 +174,12 @@ export const subscriptionPlansApi = {
 
   // Get plan by ID
   async getById(id: string): Promise<SubscriptionPlan | null> {
+    // Plan ids are UUIDs. A tier name such as "starter" sent as an id makes the database
+    // answer 400 (invalid uuid), so look those up by tier without the failed round trip.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return await this.getByTier(id) || getFallbackPlan(id);
+    }
+
     const { data, error } = await supabase
       .from('subscription_plans')
       .select('*')

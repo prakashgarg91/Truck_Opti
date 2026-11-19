@@ -11,11 +11,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// PhonePe configuration (server-side secrets)
-const PHONEPE_MERCHANT_ID = Deno.env.get('PHONEPE_MERCHANT_ID') || ''
-const PHONEPE_SALT_KEY = Deno.env.get('PHONEPE_SALT_KEY') || ''
-const PHONEPE_SALT_INDEX = Deno.env.get('PHONEPE_SALT_INDEX') || '1'
-const PHONEPE_API_URL = Deno.env.get('PHONEPE_API_URL') || 'https://api-preprod.phonepe.com/apis/pg-sandbox'
+// PhonePe configuration (server-side secrets), read per request so a missing secret is refused, not signed with an empty key.
+function getPhonePeConfig() {
+  return {
+    merchantId: Deno.env.get('PHONEPE_MERCHANT_ID') || '',
+    saltKey: Deno.env.get('PHONEPE_SALT_KEY') || '',
+    saltIndex: Deno.env.get('PHONEPE_SALT_INDEX') || '1',
+    apiUrl: Deno.env.get('PHONEPE_API_URL') || 'https://api-preprod.phonepe.com/apis/pg-sandbox',
+  }
+}
 const DEFAULT_CALLBACK_ORIGIN = 'https://www.truckopti.in'
 const DEFAULT_ALLOWED_CALLBACK_ORIGINS = [
   DEFAULT_CALLBACK_ORIGIN,
@@ -107,12 +111,12 @@ function normalizeBillingCycle(value: unknown): 'monthly' | 'yearly' | null {
   return null
 }
 
-function generateChecksum(payload: string): Promise<string> {
-  const hash = crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload + PHONEPE_SALT_KEY))
+function generateChecksum(payload: string, saltKey: string, saltIndex: string): Promise<string> {
+  const hash = crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload + saltKey))
     .then(buf => Array.from(new Uint8Array(buf))
       .map(b => b.toString(16).padStart(2, '0'))
       .join(''))
-  return hash.then(h => h + '###' + PHONEPE_SALT_INDEX)
+  return hash.then(h => h + '###' + saltIndex)
 }
 
 serve(async (req) => {
@@ -148,6 +152,15 @@ serve(async (req) => {
 
     if (userError || !user) {
       throw userError || new Error('Unable to resolve authenticated user')
+    }
+
+    const phonepe = getPhonePeConfig()
+    if (!phonepe.merchantId || !phonepe.saltKey) {
+      console.error('[phonepe-checkout] PhonePe is not configured')
+      return new Response(JSON.stringify({ error: 'billing_unavailable', message: 'Payments are not available right now. Please try again later.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 503
+      })
     }
 
     const {
@@ -203,7 +216,7 @@ serve(async (req) => {
     const redirectTarget = buildRedirectTarget(req, merchantTransactionId)
 
     const payload = {
-      merchantId: PHONEPE_MERCHANT_ID,
+      merchantId: phonepe.merchantId,
       merchantTransactionId: merchantTransactionId,
       merchantUserId: user.id,
       amount: amount,
@@ -216,9 +229,9 @@ serve(async (req) => {
     }
 
     const base64Payload = btoa(JSON.stringify(payload))
-    const checksum = await generateChecksum(base64Payload)
+    const checksum = await generateChecksum(base64Payload, phonepe.saltKey, phonepe.saltIndex)
 
-    const response = await fetch(`${PHONEPE_API_URL}/v1/pay`, {
+    const response = await fetch(`${phonepe.apiUrl}/v1/pay`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

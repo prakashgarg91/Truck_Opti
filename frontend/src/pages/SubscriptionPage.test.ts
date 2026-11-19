@@ -226,7 +226,7 @@ describe('SubscriptionPage GST copy follows the seller GST flag', () => {
         h.gst = { status: 'ready', registered: false }
         h.list.mockResolvedValue([UNREGISTERED_INVOICE])
         await render()
-        expect(container.textContent).toContain('Prices exclude GST. No GST charged.')
+        expect(container.textContent).toContain('No GST charged.')
         expect(container.textContent).not.toMatch(/GST extra|18%|incl\. GST/)
         expect(container.textContent).toContain('No GST charged')
         const headers = Array.from(container.querySelectorAll('th')).map((th) => th.textContent)
