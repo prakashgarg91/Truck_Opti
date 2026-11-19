@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
     limit: vi.fn(),
+    range: vi.fn(),
     order: vi.fn(),
     select: vi.fn(),
     from: vi.fn(),
@@ -78,5 +79,18 @@ describe('adminBillingOpsApi.getSweepRuns', () => {
         const failure = adminBillingOpsApi.getSweepRuns()
         await expect(failure).rejects.toThrow('Unable to load sweep runs right now. Please try again.')
         await expect(adminBillingOpsApi.getSweepRuns()).rejects.toBeInstanceOf(UserFacingError)
+    })
+
+    it('pages with a range when an offset is given, keeping the same flat select and order', async () => {
+        h.range.mockResolvedValue({ data: [ROW], error: null })
+        h.order.mockReturnValue({ limit: h.limit, range: h.range })
+        const runs = await adminBillingOpsApi.getSweepRuns(20, 40)
+        expect(h.range).toHaveBeenCalledWith(40, 59)
+        expect(h.limit).not.toHaveBeenCalled()
+        expect(h.select).toHaveBeenCalledWith(
+            'id, as_of, started_at, finished_at, trials_expired, grace_started, grace_expired, reminders_created',
+        )
+        expect(runs).toHaveLength(1)
+        expect(runs[0].id).toBe('run-1')
     })
 })

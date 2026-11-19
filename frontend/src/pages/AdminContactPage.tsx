@@ -6,6 +6,7 @@ import { adminSupabaseApi, type ContactInquiry as Inquiry } from '../services/ad
 import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
 import AdminLoadError from './AdminLoadError'
+import ListCapNotice from '../components/admin/ListCapNotice'
 
 export default function AdminContactPage() {
   const navigate = useNavigate()
@@ -170,6 +171,7 @@ export default function AdminContactPage() {
           ))}
         </div>
       )}
+      {!loading && !loadError && <ListCapNotice rowCount={inquiries.length} testId="contact-cap-notice" />}
     </div>
   )
 }

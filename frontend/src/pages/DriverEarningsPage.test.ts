@@ -12,14 +12,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // (noProfile branch), the withdrawal "Amount (₹)" label linked to its input
 // via htmlFor/id, and the "pr-4" padding class on the amount input.
 //
-// Open findings. These are NOT asserted as correct; each is reported with
-// file:line in the worker report:
-// - Overlapping period fetches are unguarded: a slower earlier response can
-//   overwrite the selected period's trip list (page lines 123-152).
-// - Advances and deductions rows render "-₹0.00" when the amount is zero
-//   (page lines 403-404).
-// - With no signed-in user, fetchDriverId() ends loading with neither an error
-//   nor a "no profile" state, so the page shows zeroed values (page lines 78-81).
+// Fixed 2026-11-19 and pinned by the tests in the last describe block:
+// - Overlapping period fetches: only the latest request writes the trip list.
+// - Zero advances and deductions print "₹0.00", never "-₹0.00".
+// - Signed out: a sign-in prompt with a link to /login, never zeroed earnings.
 
 const h = vi.hoisted(() => ({
     useAuthStore: vi.fn(),
@@ -744,6 +740,77 @@ describe('DriverEarningsPage: pay statements, periods and edge states', () => {
         expect(text()).toContain('Pune → Nashik')
         expect(text()).not.toContain('Mumbai → Pune')
         expect(text()).toContain('Trips Completed')
+    })
+})
+
+describe('DriverEarningsPage: race, zero amounts and signed-out state', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.useFakeTimers({ toFake: ['Date'] })
+        vi.setSystemTime(PINNED_NOW)
+        h.useAuthStore.mockReturnValue({ user: { id: 'user-1' }, isLoading: false })
+        h.getDriverIdByUserId.mockResolvedValue('driver-1')
+        h.getBalanceSnapshot.mockResolvedValue(SNAPSHOT)
+        h.getDeliveredTrips.mockResolvedValue([TRIP_A, TRIP_B, TRIP_C])
+        h.requestPayout.mockResolvedValue(undefined)
+        h.listMyLines.mockResolvedValue([])
+    })
+
+    it('a slow earlier period response never overwrites the period the driver selected', async () => {
+        let resolveWeek!: (rows: unknown[]) => void
+        h.getDeliveredTrips
+            .mockImplementationOnce(() => new Promise((resolve) => { resolveWeek = resolve }))
+            .mockResolvedValue([TRIP_C])
+        await mountPage()
+        await click(buttons(/All Time/)[0])
+        expect(text()).toContain('Pune → Nashik')
+        await act(async () => {
+            resolveWeek([TRIP_A, TRIP_B])
+            await flush()
+        })
+        expect(text()).toContain('Pune → Nashik')
+        expect(text()).not.toContain('Mumbai → Pune')
+        expect(buttons(/All Time/)[0].getAttribute('aria-pressed')).toBe('true')
+    })
+
+    it('a zero advance or deduction prints as ₹0.00 with no minus sign', async () => {
+        h.listMyLines.mockResolvedValue([{
+            periodId: 'p4',
+            periodStart: '2026-07-01',
+            periodEnd: '2026-07-31',
+            basePaise: 100000,
+            tripsPaise: 200000,
+            advancesPaise: 0,
+            deductionsPaise: 0,
+            netPaise: 300000,
+            shortfallPaise: 0,
+            carriedInPaise: 0,
+            tripCount: 1,
+        }])
+        await mountPage()
+        expect(text()).not.toContain('-₹0.00')
+        const amounts = Array.from(container!.querySelectorAll('dd')).map((dd) => dd.textContent)
+        expect(amounts.filter((a) => a === '₹0.00')).toHaveLength(2) // advances and deductions
+    })
+
+    it('signed out: shows a sign-in prompt with a link to /login and no zeroed earnings', async () => {
+        h.useAuthStore.mockReturnValue({ user: null, isLoading: false })
+        await mountPage()
+        expect(h.getDriverIdByUserId).not.toHaveBeenCalled()
+        expect(h.getDeliveredTrips).not.toHaveBeenCalled()
+        expect(q('.animate-spin')).toBeNull()
+        expect(text()).toContain('Sign in to see your earnings')
+        expect((q('a[href="/login"]') as HTMLAnchorElement | null)?.textContent).toContain('Sign in')
+        expect(text()).not.toContain('Available to withdraw')
+        expect(text()).not.toContain('Trips Completed')
+    })
+
+    it('while the session is still resolving, the page keeps its spinner and does not claim signed out', async () => {
+        h.useAuthStore.mockReturnValue({ user: null, isLoading: true })
+        await mountPage()
+        expect(q('.animate-spin')).toBeTruthy()
+        expect(text()).not.toContain('Sign in to see your earnings')
+        expect(h.getDriverIdByUserId).not.toHaveBeenCalled()
     })
 })
 

@@ -10,6 +10,7 @@ import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import AdminLoadError from './AdminLoadError'
+import ListCapNotice from '../components/admin/ListCapNotice'
 
 type Tab = 'pending' | 'approved' | 'rejected' | 'suspended'
 
@@ -358,6 +359,7 @@ export default function AdminAgenciesPage() {
             </div>
           ))
         )}
+        {!loading && !loadError && <ListCapNotice rowCount={agencies.length} testId="agencies-cap-notice" />}
       </div>
     </div>
   )

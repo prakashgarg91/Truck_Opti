@@ -200,7 +200,18 @@ export function buildRazorpayOrderBody(quote: Quote, nowMs: number): Record<stri
 }
 
 export type CreateOrderOutcome =
-  | { ok: true; response: { id: string; amount: number; currency: 'INR'; quote_hash: string } }
+  | {
+      ok: true
+      response: {
+        id: string
+        amount: number
+        currency: 'INR'
+        quote_hash: string
+        /** Passed through unchanged from the database quote; absent only if the database omitted it. */
+        gst_registered?: boolean
+        gst_rate_pct?: number
+      }
+    }
   | { ok: false; error: UserFacingError; log: string }
 
 /**
@@ -230,7 +241,15 @@ export function finalizeCreateOrder(
   if (!quoteHash) {
     return { ok: false, error: GENERIC_ORDER_ERROR, log: 'create_order_without_quote_hash' }
   }
-  return { ok: true, response: { id: razorpayOrderId, amount: sentPaise, currency: 'INR', quote_hash: quoteHash } }
+  const response: Extract<CreateOrderOutcome, { ok: true }>['response'] = {
+    id: razorpayOrderId,
+    amount: sentPaise,
+    currency: 'INR',
+    quote_hash: quoteHash,
+  }
+  if (typeof created.gst_registered === 'boolean') response.gst_registered = created.gst_registered
+  if (typeof created.gst_rate_pct === 'number') response.gst_rate_pct = created.gst_rate_pct
+  return { ok: true, response }
 }
 
 // ---------------------------------------------------------------------------

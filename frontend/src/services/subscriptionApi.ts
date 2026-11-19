@@ -92,6 +92,8 @@ export interface SubscriptionInvoice {
   supplier_legal_name?: string | null;
   supplier_address?: string | null;
   supplier_gstin?: string | null;
+  /** 18 for a GST invoice, 0 when the seller was not registered under GST at the time of sale. */
+  gst_rate_pct?: number | null;
   credit_notes: SubscriptionCreditNote[];
 }
 
@@ -368,6 +370,9 @@ export interface CheckoutOrder {
   id: string;
   amount: number;
   currency: string;
+  /** Server quote tax facts, when the function returns them. Absent means unknown. */
+  gst_registered?: boolean;
+  gst_rate_pct?: number;
 }
 
 // Reads the user-facing `message` from the Response that supabase-js keeps on a non-2xx
@@ -402,7 +407,10 @@ export const checkoutApi = {
       const refusal = await readRefusalMessage(error);
       throw new Error(refusal ?? 'Unable to start payment right now. Please try again.');
     }
-    return { id: data.id, amount: Number(data.amount ?? 0), currency: data.currency || 'INR' };
+    const order: CheckoutOrder = { id: data.id, amount: Number(data.amount ?? 0), currency: data.currency || 'INR' };
+    if (typeof data.gst_registered === 'boolean') order.gst_registered = data.gst_registered;
+    if (typeof data.gst_rate_pct === 'number') order.gst_rate_pct = data.gst_rate_pct;
+    return order;
   },
 
   // Asks the server to verify the signature. The result is never treated as

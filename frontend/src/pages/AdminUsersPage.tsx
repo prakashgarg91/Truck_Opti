@@ -19,6 +19,7 @@ import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import AdminLoadError from './AdminLoadError'
+import ListCapNotice from '../components/admin/ListCapNotice'
 
 type UserAction = 'disable' | 'enable' | 'delete'
 
@@ -314,6 +315,7 @@ export default function AdminUsersPage() {
           ))}
         </div>
       )}
+      {!loading && !loadError && <ListCapNotice rowCount={users.length} testId="users-cap-notice" />}
 
       {selectedAction && modalCopy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">

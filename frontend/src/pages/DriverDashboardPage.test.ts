@@ -875,12 +875,9 @@ describe('DriverDashboardPage trips, today figures, offers and online switch', (
         expect(statValue(view, 'Delivered')).toBe('1')
     })
 
-    // BUG: "Today" is computed from the UTC calendar date (DriverDashboardPage.tsx:247
-    // `new Date().toISOString().split('T')[0]` and :250 `delivered_at?.startsWith(today)`).
-    // The app is India-only (en-IN, INR, +91), so for the first 5.5 hours of each IST day
-    // the figures use the wrong calendar day: a delivery at 00:30 IST on 19 Nov is dropped
-    // from Today on 19 Nov. This assertion states the expected IST behaviour and fails today.
-    it.fails('BUG: a delivery made after IST midnight counts toward Today', async () => {
+    // Fixed: "Today" used the UTC calendar date (toISOString), so a delivery at 00:30 IST
+    // on 19 Nov was dropped from Today. It now uses the Asia/Kolkata calendar day.
+    it('a delivery made after IST midnight counts toward Today', async () => {
         vi.useFakeTimers({ toFake: ['Date'] })
         vi.setSystemTime(new Date('2026-11-19T01:00:00Z')) // 06:30 IST, 19 Nov
         h.getTripHistory.mockResolvedValue([
@@ -890,6 +887,17 @@ describe('DriverDashboardPage trips, today figures, offers and online switch', (
         await waitFor(() => (view.textContent || '').includes('Recent Trips'), 'recent trips')
         expect(statValue(view, 'Today')).toBe('₹900')
         expect(statValue(view, 'Delivered')).toBe('1')
+    })
+
+    it('a delivery from the previous IST day does not count toward Today', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        vi.setSystemTime(new Date('2026-11-19T01:00:00Z')) // 06:30 IST, 19 Nov
+        h.getTripHistory.mockResolvedValue([
+            makeTrip('t-prev-1', 'delivered', '2026-11-18T17:00:00Z', 'Pune Depot', 700), // 22:30 IST, 18 Nov
+        ] as never)
+        const view = await mountWithRoutes()
+        await waitFor(() => (view.textContent || '').includes('Recent Trips'), 'recent trips')
+        expect(statValue(view, 'Today')).toBe('₹0')
     })
 
     it('the offer card shows pickup, drop, weight and the estimated fare marked as an estimate', async () => {

@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- PACKING JOBS TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.packing_jobs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     truck_id UUID REFERENCES public.trucks(id) ON DELETE SET NULL,
     status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
@@ -49,7 +49,7 @@ CREATE POLICY "Users can delete own packing jobs"
 -- PACKING ITEMS TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.packing_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     job_id UUID NOT NULL REFERENCES public.packing_jobs(id) ON DELETE CASCADE,
     name VARCHAR(200) NOT NULL,
     length DECIMAL(10,2) NOT NULL,
@@ -117,7 +117,7 @@ CREATE POLICY "Users can delete packing items for their jobs"
 -- SALE ORDERS TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.sale_orders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     order_number VARCHAR(100) NOT NULL UNIQUE,
     customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
@@ -164,7 +164,7 @@ CREATE POLICY "Users can delete own sale orders"
 -- SALE ORDER ITEMS TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.sale_order_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES public.sale_orders(id) ON DELETE CASCADE,
     product_code VARCHAR(100) NOT NULL,
     product_name VARCHAR(200) NOT NULL,
@@ -231,7 +231,7 @@ CREATE POLICY "Users can delete sale order items for their orders"
 -- NOTIFICATIONS TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     title VARCHAR(200) NOT NULL,
     message TEXT NOT NULL,
@@ -270,7 +270,7 @@ CREATE POLICY "Users can delete own notifications"
 -- ANALYTICS EVENTS TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.analytics_events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     event_type VARCHAR(100) NOT NULL,
     event_data JSONB DEFAULT '{}'::jsonb,

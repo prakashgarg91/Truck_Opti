@@ -8,6 +8,16 @@ import { useAuthStore } from '../stores/authStore'
 import { useSubscription } from '../hooks/useSubscription'
 import { FALLBACK_PLAN_PRICES_PAISE, GST_NOTE, TWO_MONTHS_FREE } from '../lib/billingState'
 import { FOCUS_RING } from '../components/billing/styles'
+import { taxModeOf, useSellerGstRegistered, type TaxMode } from '../hooks/useSellerGstRegistered'
+
+// Tax copy for a price: GST only when the seller is registered; never a guessed figure while unknown.
+const taxNoteFor = (mode: TaxMode) =>
+  mode === 'registered' ? GST_NOTE : mode === 'unregistered' ? 'No GST charged' : 'Taxes, if any, are shown at checkout'
+const priceRowLabelFor = (yearly: boolean, mode: TaxMode) => {
+  const base = yearly ? 'Price/year' : 'Price/month'
+  if (mode === 'registered') return `${base} (excl. GST)`
+  return mode === 'unregistered' ? base : `${base} (before tax)`
+}
 
 const normalizePlanFeatures = (features: unknown): string[] => {
   if (Array.isArray(features)) {
@@ -129,8 +139,9 @@ interface CardProps {
   isDowngrade: boolean
   className?: string
   onCta: () => void
+  taxMode: TaxMode
 }
-function PricingCard({ tier, isYearly, L, isCurrent, isUpgrade, isDowngrade, className = '', onCta }: CardProps) {
+function PricingCard({ tier, isYearly, L, isCurrent, isUpgrade, isDowngrade, className = '', onCta, taxMode }: CardProps) {
   const cfg = TIER_CFG[tier.id] || TIER_CFG.starter
   const Icon = cfg.icon
   const isPopular = tier.id === 'growth'
@@ -199,7 +210,7 @@ function PricingCard({ tier, isYearly, L, isCurrent, isUpgrade, isDowngrade, cla
             <span className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${cfg.txt}`}>{fmtINR(price)}</span>
             <span className="text-sm text-slate-500 mb-1">{isYearly ? L.perYear : L.perMonth}</span>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{GST_NOTE}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{taxNoteFor(taxMode)}</p>
           {isYearly && tier.monthlyPrice > 0 && (
             <p className="text-xs text-green-700 dark:text-green-400 mt-1 font-medium">
               {TWO_MONTHS_FREE}
@@ -264,6 +275,8 @@ export default function PricingPage() {
   const [activeIdx, setActiveIdx] = useState(1)
   const scrollRef = useRef<HTMLDivElement>(null)
   const L = LABELS
+  const sellerGst = useSellerGstRegistered()
+  const taxMode = taxModeOf(sellerGst)
 
   useEffect(() => { document.title = 'Pricing — TruckOpti' }, [])
 
@@ -468,6 +481,7 @@ export default function PricingPage() {
                     isCurrent={currentPlan?.tier === tier.id}
                     isUpgrade={isUpgrade}
                     isDowngrade={isDowngrade}
+                    taxMode={taxMode}
                     className="snap-center shrink-0 w-[88vw] max-w-sm sm:w-[55vw]"
                     onCta={() => {
                       if (tier.id === 'enterprise') {
@@ -505,6 +519,7 @@ export default function PricingPage() {
                     isCurrent={currentPlan?.tier === tier.id}
                     isUpgrade={isUpgrade}
                     isDowngrade={isDowngrade}
+                    taxMode={taxMode}
                     onCta={() => {
                       if (tier.id === 'enterprise') {
                         navigate('/contact')
@@ -564,7 +579,7 @@ export default function PricingPage() {
                   ))}
                   {/* Price row */}
                   <tr className="border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/60 dark:bg-slate-800/40">
-                    <td className="py-3 px-5 text-slate-600 dark:text-slate-400 font-medium">{isYearly ? 'Price/year (excl. GST)' : 'Price/month (excl. GST)'}</td>
+                    <td className="py-3 px-5 text-slate-600 dark:text-slate-400 font-medium">{priceRowLabelFor(isYearly, taxMode)}</td>
                     {tiers.map((tier) => (
                       <td key={tier.id} className="py-3 px-3 text-center font-bold text-slate-900 dark:text-white">
                         {fmtINR(isYearly ? tier.yearlyPrice : tier.monthlyPrice)}

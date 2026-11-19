@@ -4,8 +4,9 @@ import {
   User, Truck, CreditCard, CheckCircle2,
   ChevronRight, ChevronLeft, FileText, ArrowLeft, Upload, X
 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
 import { driverSupabaseApi } from '../services/supabaseApi'
+import { uploadDocument } from '../services/driverKycApi'
+import { validateUploadFile, type KycDocKind } from '../services/driverKycDocuments'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
 import { logger } from '../utils/logger'
@@ -32,9 +33,6 @@ interface FormData {
   vehicle_type: string
   rc_number: string
   license_number: string
-  // Documents
-  dl_url: string
-  rc_url: string
   // Step 3
   bank_account: string
   ifsc_code: string
@@ -51,8 +49,16 @@ const STEPS = [
 const INITIAL: FormData = {
   full_name: '', phone: '', aadhaar_last4: '', pan_number: '', home_city: '',
   vehicle_type: '', rc_number: '', license_number: '',
-  dl_url: '', rc_url: '', bank_account: '', ifsc_code: '', upi_id: '',
+  bank_account: '', ifsc_code: '', upi_id: '',
 }
+
+// Sign-up collects two documents. They map to the driver-kyc document kinds
+// (supabase/functions/driver-kyc/index.ts KYC_KINDS); aadhaar and truck_photo
+// are not collected here and are added later from the Documents & KYC page.
+type DocField = 'licence' | 'rc'
+const DOC_ORDER: DocField[] = ['licence', 'rc']
+const DOC_KIND: Record<DocField, KycDocKind> = { licence: 'driving_license', rc: 'rc_book' }
+const DOC_LABEL: Record<DocField, string> = { licence: 'Driving Licence', rc: 'Vehicle RC' }
 
 export default function DriverRegisterPage() {
   useEffect(() => {
@@ -64,43 +70,23 @@ export default function DriverRegisterPage() {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
   const [submitting, setSubmitting] = useState(false)
-  const [uploading, setUploading] = useState<{ licence?: boolean; rc?: boolean }>({})
+  // Files are only held locally until the driver row exists; they upload on submit.
+  const [selectedDocs, setSelectedDocs] = useState<Record<DocField, File | null>>({ licence: null, rc: null })
+  const [docResult, setDocResult] = useState<{ uploaded: DocField[]; failed: DocField[] }>({ uploaded: [], failed: [] })
   const licenceInputRef = useRef<HTMLInputElement>(null)
   const rcInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileUpload = async (field: 'dl_url' | 'rc_url', file: File) => {
-    const isLicence = field === 'dl_url'
-    setUploading(prev => ({ ...prev, [isLicence ? 'licence' : 'rc']: true }))
-
-    try {
-      if (!user?.id) {
-        toast.error('Please login to upload documents')
-        return
-      }
-
-      const ext = file.name.split('.').pop() ?? 'jpg'
-      const path = `${user.id}/${isLicence ? 'licence' : 'rc'}.${ext}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('driver-docs')
-        .upload(path, file, { upsert: true })
-
-      if (uploadError) throw uploadError
-
-      // driver-docs is a private bucket (20261003000000_private_kyc_documents.sql), so a public URL
-      // would be dead. Store the storage path; the photo is not previewed from a link.
-      setForm(prev => ({ ...prev, [field]: path }))
-      toast.success(isLicence ? 'Driving licence uploaded' : 'RC uploaded')
-    } catch (err) {
-      logger.error('Upload error:', err)
-      toast.error('Failed to upload document')
-    } finally {
-      setUploading(prev => ({ ...prev, [isLicence ? 'licence' : 'rc']: false }))
+  const handleFileSelect = (doc: DocField, file: File) => {
+    const problem = validateUploadFile(file)
+    if (problem) {
+      toast.error(problem)
+      return
     }
+    setSelectedDocs(prev => ({ ...prev, [doc]: file }))
   }
 
-  const removeFile = (field: 'dl_url' | 'rc_url') => {
-    setForm(prev => ({ ...prev, [field]: '' }))
+  const removeFile = (doc: DocField) => {
+    setSelectedDocs(prev => ({ ...prev, [doc]: null }))
   }
 
   const set = (field: keyof FormData) =>
@@ -142,6 +128,7 @@ export default function DriverRegisterPage() {
 
     setSubmitting(true)
     try {
+      // dl_url/rc_url stay null: documents are stored as KYC records by driver-kyc, not as drivers columns.
       await driverSupabaseApi.register({
         user_id: user.id,
         full_name: form.full_name.trim(),
@@ -155,18 +142,39 @@ export default function DriverRegisterPage() {
         bank_account: form.bank_account.trim(),
         ifsc_code: form.ifsc_code.toUpperCase().trim(),
         upi_id: form.upi_id.trim() || null,
-        dl_url: form.dl_url.trim() || null,
-        rc_url: form.rc_url.trim() || null,
+        dl_url: null,
+        rc_url: null,
         status: 'pending',
       })
-      updateUser({ role: 'driver' })
-      setStep(4)
     } catch (err: unknown) {
       logger.error('[DriverRegisterPage]', err)
       toast.error('Submission failed. Please try again.')
-    } finally {
       setSubmitting(false)
+      return
     }
+
+    // The driver row now exists, which driver-kyc requires before it accepts a document.
+    // A failed document never undoes the registration; it is reported on the confirmation screen.
+    updateUser({ role: 'driver' })
+    const uploaded: DocField[] = []
+    const failed: DocField[] = []
+    for (const doc of DOC_ORDER) {
+      const file = selectedDocs[doc]
+      if (!file) continue
+      try {
+        await uploadDocument(DOC_KIND[doc], file)
+        uploaded.push(doc)
+      } catch (err: unknown) {
+        logger.error(`[DriverRegisterPage] ${DOC_KIND[doc]} upload failed`, err)
+        failed.push(doc)
+      }
+    }
+    setDocResult({ uploaded, failed })
+    if (failed.length > 0) {
+      toast.error('Some documents did not upload. You can add them from your profile.')
+    }
+    setSubmitting(false)
+    setStep(4)
   }
 
   if (!user?.id) {
@@ -206,13 +214,30 @@ export default function DriverRegisterPage() {
             Thank you, <strong>{form.full_name}</strong>! Your driver application is under review.
           </p>
           <p className="text-sm text-slate-400 mb-8">
-            Our team will verify your details within 24–48 hours. You'll receive an SMS on <strong>{form.phone}</strong> once approved.
+            Our team reviews your details and documents. Sign in with this account to check your application status. Your registered mobile number is <strong>{form.phone}</strong>.
           </p>
+          <div className="text-left mb-4 space-y-2 text-sm">
+            {docResult.uploaded.length > 0 && (
+              <p className="text-emerald-700 dark:text-emerald-400">
+                Documents received: {docResult.uploaded.map(doc => DOC_LABEL[doc]).join(', ')}.
+              </p>
+            )}
+            {docResult.failed.length > 0 && (
+              <p className="text-red-700 dark:text-red-400">
+                These documents did not upload: {docResult.failed.map(doc => DOC_LABEL[doc]).join(', ')}. Your application was saved without them. Add them from your profile (Documents &amp; KYC).
+              </p>
+            )}
+            {docResult.uploaded.length === 0 && docResult.failed.length === 0 && (
+              <p className="text-slate-600 dark:text-slate-400">
+                No documents were attached at sign-up. Add them from your profile (Documents &amp; KYC).
+              </p>
+            )}
+          </div>
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-6 text-left">
             <p className="text-sm font-semibold text-amber-800 dark:text-amber-400 mb-2">What happens next?</p>
             <ol className="text-xs text-amber-700 dark:text-amber-500 space-y-1.5 list-decimal list-inside">
               <li>Admin reviews your details & documents</li>
-              <li>Account activated via SMS</li>
+              <li>Sign in with this account to check whether your application is approved</li>
               <li>Start receiving job offers on this app</li>
             </ol>
           </div>
@@ -346,40 +371,35 @@ export default function DriverRegisterPage() {
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Driving Licence Photo
                     </label>
-                    {form.dl_url ? (
+                    {selectedDocs.licence ? (
                       <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
                         <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" aria-hidden="true" />
-                        <span className="text-xs text-green-700 dark:text-green-400 flex-1">Uploaded</span>
-                        <button aria-label="Remove driving licence photo" type="button" onClick={() => removeFile('dl_url')} className="p-1 text-red-500">
+                        <span className="text-xs text-green-700 dark:text-green-400 flex-1 truncate">Selected: {selectedDocs.licence.name}</span>
+                        <button aria-label="Remove driving licence photo" type="button" onClick={() => removeFile('licence')} className="p-1 text-red-500">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
-                      <input
-                        type="file"
-                        accept="image/*"
-                        ref={licenceInputRef}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) handleFileUpload('dl_url', file)
-                        }}
-                        className="hidden"
-                      />
-                    )}
-                    {!form.dl_url && (
-                      <button
-                        type="button"
-                        onClick={() => licenceInputRef.current?.click()}
-                        disabled={uploading.licence}
-                        className="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-sm text-slate-500 hover:border-primary-500 hover:text-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        {uploading.licence ? (
-                          <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                        ) : (
+                      <>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          ref={licenceInputRef}
+                          onChange={(e) => {
+                            const picked = e.target.files?.[0]
+                            if (picked) handleFileSelect('licence', picked)
+                          }}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => licenceInputRef.current?.click()}
+                          className="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-sm text-slate-500 hover:border-primary-500 hover:text-primary-600 transition-colors flex items-center justify-center gap-2"
+                        >
                           <Upload className="w-4 h-4" />
-                        )}
-                        {uploading.licence ? 'Uploading...' : 'Upload Driving Licence'}
-                      </button>
+                          Upload Driving Licence
+                        </button>
+                      </>
                     )}
                   </div>
 
@@ -387,40 +407,35 @@ export default function DriverRegisterPage() {
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Vehicle RC Photo
                     </label>
-                    {form.rc_url ? (
+                    {selectedDocs.rc ? (
                       <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
                         <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" aria-hidden="true" />
-                        <span className="text-xs text-green-700 dark:text-green-400 flex-1">Uploaded</span>
-                        <button aria-label="Remove RC photo" type="button" onClick={() => removeFile('rc_url')} className="p-1 text-red-500">
+                        <span className="text-xs text-green-700 dark:text-green-400 flex-1 truncate">Selected: {selectedDocs.rc.name}</span>
+                        <button aria-label="Remove RC photo" type="button" onClick={() => removeFile('rc')} className="p-1 text-red-500">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
-                      <input
-                        type="file"
-                        accept="image/*"
-                        ref={rcInputRef}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) handleFileUpload('rc_url', file)
-                        }}
-                        className="hidden"
-                      />
-                    )}
-                    {!form.rc_url && (
-                      <button
-                        type="button"
-                        onClick={() => rcInputRef.current?.click()}
-                        disabled={uploading.rc}
-                        className="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-sm text-slate-500 hover:border-primary-500 hover:text-primary-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        {uploading.rc ? (
-                          <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                        ) : (
+                      <>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          ref={rcInputRef}
+                          onChange={(e) => {
+                            const picked = e.target.files?.[0]
+                            if (picked) handleFileSelect('rc', picked)
+                          }}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => rcInputRef.current?.click()}
+                          className="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-sm text-slate-500 hover:border-primary-500 hover:text-primary-600 transition-colors flex items-center justify-center gap-2"
+                        >
                           <Upload className="w-4 h-4" />
-                        )}
-                        {uploading.rc ? 'Uploading...' : 'Upload Vehicle RC'}
-                      </button>
+                          Upload Vehicle RC
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

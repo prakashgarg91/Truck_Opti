@@ -10,6 +10,7 @@ import { SUPPORT_EMAIL } from '../config/support'
 import { useAuthStore } from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '../utils/formatters'
+import { indiaCalendarDate } from '../lib/indiaDate'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import toast from 'react-hot-toast'
 
@@ -243,11 +244,12 @@ export default function DriverDashboardPage() {
 
       setTripHistory(rawData)
 
-      // Count today's delivered trips (delivered_at only — not offered/responded dates)
-      const today = new Date().toISOString().split('T')[0]
+      // Count today's delivered trips (delivered_at only — not offered/responded dates).
+      // "Today" is the India calendar day, the same day the driver sees on their clock.
+      const today = indiaCalendarDate(new Date())
       const delivered = rawData.filter((j: TripHistory) => j.status === 'delivered')
       const todayDelivered = delivered.filter(
-        (j: TripHistory) => j.delivered_at?.startsWith(today)
+        (j: TripHistory) => !!j.delivered_at && indiaCalendarDate(j.delivered_at) === today
       )
       setTodayTrips(todayDelivered.length)
       setTodayEarnings(todayDelivered.reduce((sum: number, j: TripHistory) => sum + j.estimated_fare, 0))

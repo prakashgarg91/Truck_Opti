@@ -19,7 +19,8 @@ import { BTN_PRIMARY, BTN_SECONDARY, FOCUS_RING } from '../components/billing/st
 import { useEntitlement } from '../components/billing/useEntitlement'
 import { gstInvoicesApi, type SubscriptionInvoice } from '../services/subscriptionApi'
 import { formatInr } from '../lib/invoiceMoney'
-import { buildInvoiceCopyRows } from '../lib/subscriptionInvoiceCopy'
+import { buildInvoiceCopyRows, invoiceTitle, isUnregisteredInvoice } from '../lib/subscriptionInvoiceCopy'
+import { taxModeOf, useSellerGstRegistered } from '../hooks/useSellerGstRegistered'
 import { useAuthStore } from '../stores/authStore'
 import { useAgencyAccess } from '../hooks/useAgencyAccess'
 import { logger } from '../utils/logger'
@@ -59,7 +60,7 @@ function downloadInvoice(invoice: SubscriptionInvoice, options: { customerName: 
 
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(18)
-  pdf.text('TruckOpti Subscription Tax Invoice', 14, cursorY)
+  pdf.text(`TruckOpti Subscription ${invoiceTitle(invoice)}`, 14, cursorY)
   cursorY += 10
 
   pdf.setFontSize(11)
@@ -93,6 +94,7 @@ export default function SubscriptionPage() {
   // Staff see the entitlement read-only; only the agency owner can start a trial, pick a plan or pay.
   const staffReadOnly = access.isStaff
   const { entitlement, view, isLoading, isError, refetch } = useEntitlement()
+  const taxMode = taxModeOf(useSellerGstRegistered())
 
   const {
     data: invoices = [],
@@ -219,7 +221,12 @@ export default function SubscriptionPage() {
               </dl>
 
               <p className="mt-6 text-sm text-slate-600 dark:text-slate-300">
-                Prices exclude GST (GST extra at 18%). Read our <Link to="/terms" className={`font-semibold text-indigo-700 underline dark:text-indigo-300 ${FOCUS_RING}`}>refund policy</Link>.
+                {taxMode === 'registered'
+                  ? 'Prices exclude GST (GST extra at 18%).'
+                  : taxMode === 'unregistered'
+                    ? 'Prices exclude GST. No GST charged.'
+                    : 'Prices exclude tax. Taxes, if any, are shown at checkout.'}{' '}
+                Read our <Link to="/terms" className={`font-semibold text-indigo-700 underline dark:text-indigo-300 ${FOCUS_RING}`}>refund policy</Link>.
               </p>
             </section>
 
@@ -289,7 +296,7 @@ export default function SubscriptionPage() {
                   <tr className="text-left text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
                     <th scope="col" className="pb-3 pr-4 font-semibold">Invoice</th>
                     <th scope="col" className="pb-3 pr-4 font-semibold">Issued</th>
-                    <th scope="col" className="pb-3 pr-4 font-semibold">Amount (incl. GST)</th>
+                    <th scope="col" className="pb-3 pr-4 font-semibold">{taxMode === 'registered' ? 'Amount (incl. GST)' : 'Amount'}</th>
                     <th scope="col" className="pb-3 font-semibold">Action</th>
                   </tr>
                 </thead>
@@ -304,6 +311,9 @@ export default function SubscriptionPage() {
                       </td>
                       <td className="py-3 pr-4 text-sm font-medium text-slate-900 dark:text-white">
                         {formatInr(invoice.total_paise)}
+                        {isUnregisteredInvoice(invoice) && (
+                          <span className="ml-2 text-xs font-normal text-slate-600 dark:text-slate-300">No GST charged</span>
+                        )}
                         {invoice.credit_notes.length > 0 && (
                           <span className="ml-2 text-xs font-normal text-slate-600 dark:text-slate-300">
                             {invoice.credit_notes.length} credit {invoice.credit_notes.length === 1 ? 'note' : 'notes'}

@@ -215,7 +215,7 @@ export default function DriverTripPage() {
     }
 
     setGpsStatus('active')
-    setGpsMessage('Live location is being shared with the customer and agency.')
+    setGpsMessage('Live location is being shared with the customer, your agency and platform admins.')
     setLastLocationUpdateAt(payload.updated_at)
   }, [driver?.id])
 
@@ -653,7 +653,8 @@ export default function DriverTripPage() {
                   Share live location with your agency
                 </h2>
                 <p id="share-location-help" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Shares your position and speed, only during this trip, and only your agency can see it.
+                  Shares your position and speed with your agency, only during this trip.
+                  Separately, your live position is shared with the customer, your agency and platform admins while a journey is in progress, whether or not this is on.
                   It stops when the trip ends or you close this page. Nothing is stored on your phone.
                 </p>
               </div>
@@ -865,7 +866,7 @@ export default function DriverTripPage() {
               </div>
               <h3 className="text-lg font-bold text-green-800 dark:text-green-300 mb-1">Journey in Progress</h3>
               <p className="text-sm text-green-700 dark:text-green-400">
-                Your location is shared with the customer while the journey is in progress.
+                Your location is shared with the customer, your agency and platform admins while the journey is in progress.
               </p>
             </div>
             <div className={`rounded-2xl border p-4 ${gpsStatus === 'error'

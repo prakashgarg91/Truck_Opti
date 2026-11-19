@@ -314,3 +314,88 @@ describe('AdminBillingOpsPage: the admin read sections (live)', () => {
         expect(text()).toContain('ADMIN-HOME')
     })
 })
+
+function makeRuns(count: number, prefix: string) {
+    return Array.from({ length: count }, (_, i) => ({
+        id: `${prefix}-${i}`,
+        asOf: '2026-11-18T10:00:00Z',
+        startedAt: '2026-11-18T10:00:02Z',
+        finishedAt: null,
+        trialsExpired: 0,
+        graceStarted: 0,
+        graceExpired: 0,
+        remindersCreated: 0,
+    }))
+}
+
+const sweepLoadMore = () => q('[data-testid="sweep-load-more"]') as HTMLButtonElement | null
+
+describe('AdminBillingOpsPage: sweep runs paging', () => {
+    it('fewer than 20 runs: no Load more button', async () => {
+        h.getSweepRuns.mockResolvedValue(makeRuns(19, 'short'))
+        await mountPage()
+        expect(qa('[data-testid="sweep-table"] tbody tr')).toHaveLength(19)
+        expect(sweepLoadMore()).toBeNull()
+    })
+
+    it('exactly 20 runs: Load more is offered', async () => {
+        h.getSweepRuns.mockResolvedValue(makeRuns(20, 'full'))
+        await mountPage()
+        expect(qa('[data-testid="sweep-table"] tbody tr')).toHaveLength(20)
+        expect(sweepLoadMore()).not.toBeNull()
+        expect(sweepLoadMore()!.textContent).toContain('Load more sweep runs')
+    })
+
+    it('Load more appends the next page after the rows already shown, then hides when the last page is short', async () => {
+        h.getSweepRuns.mockImplementation(async (_limit: number, offset: number) =>
+            offset ? makeRuns(3, 'page2') : makeRuns(20, 'page1'),
+        )
+        await mountPage()
+        expect(h.getSweepRuns).toHaveBeenNthCalledWith(1, 20)
+        await click(sweepLoadMore() as HTMLElement)
+        expect(h.getSweepRuns).toHaveBeenNthCalledWith(2, 20, 20)
+        const rows = qa('[data-testid="sweep-table"] tbody tr')
+        expect(rows).toHaveLength(23)
+        expect(rows[0].textContent).toContain('page1-0')
+        expect(rows[22].textContent).toContain('page2-2')
+        expect(sweepLoadMore()).toBeNull()
+    })
+
+    it('a failed Load more keeps the loaded rows, shows an error and Retry fetches the same page', async () => {
+        h.getSweepRuns
+            .mockResolvedValueOnce(makeRuns(20, 'page1'))
+            .mockRejectedValueOnce(new Error('pg: statement timeout leaked'))
+            .mockResolvedValueOnce(makeRuns(2, 'page2'))
+        await mountPage()
+        await click(sweepLoadMore() as HTMLElement)
+        expect(qa('[data-testid="sweep-table"] tbody tr')).toHaveLength(20)
+        expect(q('[data-testid="sweep-more-error"]')?.textContent).toContain('Unable to load more sweep runs right now. Please try again.')
+        expect(text()).not.toContain('leaked')
+        expect(q('[data-testid="admin-load-error"]')).toBeNull()
+        await click(button(/^Retry$/) as HTMLElement)
+        expect(h.getSweepRuns).toHaveBeenLastCalledWith(20, 20)
+        expect(qa('[data-testid="sweep-table"] tbody tr')).toHaveLength(22)
+        expect(q('[data-testid="sweep-more-error"]')).toBeNull()
+    })
+})
+
+describe('AdminBillingOpsPage: webhook list notices', () => {
+    it('fewer than 100 events: no cap notice', async () => {
+        await mountPage()
+        expect(q('[data-testid="events-cap-notice"]')).toBeNull()
+    })
+
+    it('exactly 100 events: the notice says older events are not shown', async () => {
+        h.getEvents.mockResolvedValue(
+            Array.from({ length: 100 }, (_, i) => ({ receivedAt: '2026-11-18T10:00:00Z', eventId: `evt_${i}`, eventType: 'ping', result: 'ignored', orderId: null, paymentId: null })),
+        )
+        await mountPage()
+        expect(q('[data-testid="events-cap-notice"]')?.textContent).toContain('Showing the first 100 webhook events.')
+    })
+
+    it('exactly 100 retry attempts: the notice is shown; fewer is not', async () => {
+        h.getAttempts.mockResolvedValue(Array.from({ length: 100 }, (_, i) => ({ eventId: `evt_${i}`, attemptNo: 1, sqlstateOrCode: '23505', at: '2026-11-18T10:00:00Z' })))
+        await mountPage()
+        expect(q('[data-testid="attempts-cap-notice"]')?.textContent).toContain('Showing the first 100 retry attempts.')
+    })
+})

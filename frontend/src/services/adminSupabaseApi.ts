@@ -282,16 +282,20 @@ export interface PlatformBillingSettings {
     address: string | null
     stateCode: string | null
     sacCode: string
+    /** false: the seller is not registered under GST, so no GST is charged and no GSTIN is stored. */
+    gstRegistered: boolean
     enforcementEnabled: boolean
     updatedAt: string | null
 }
 
 export interface PlatformBillingSettingsInput {
     legalName: string
+    /** Not sent to the server when gstRegistered is false (sent as null). */
     gstin: string
     address: string
     stateCode: string
     sacCode: string
+    gstRegistered: boolean
 }
 
 export const BILLING_SETTINGS_ERROR_MESSAGES: Readonly<Record<string, string>> = Object.freeze({
@@ -303,6 +307,9 @@ export const BILLING_SETTINGS_ERROR_MESSAGES: Readonly<Record<string, string>> =
     gstin_state_mismatch: 'The state code must match the first two digits of the GSTIN.',
     invalid_sac_code: 'The SAC must be 6 to 8 digits.',
     invalid_enforcement_enabled: 'The enforcement setting could not be read. Reload the page and try again.',
+    invalid_gst_registered: 'Choose whether the seller is registered under GST, then try again.',
+    gstin_not_allowed_when_unregistered:
+        'A GSTIN cannot be saved while the seller is not registered under GST. Remove the GSTIN or switch on "Registered under GST".',
 })
 const BILLING_SETTINGS_UNKNOWN = 'Billing settings could not be saved. Please try again.'
 
@@ -318,7 +325,7 @@ function billingSettingsErrorMessage(error: unknown): string {
 async function readBillingSettings(): Promise<PlatformBillingSettings | null> {
     const { data, error } = await supabase
         .from('platform_billing_settings')
-        .select('legal_name, gstin, address, state_code, sac_code, enforcement_enabled, updated_at')
+        .select('legal_name, gstin, address, state_code, sac_code, gst_registered, enforcement_enabled, updated_at')
         .limit(1)
         .maybeSingle()
     if (error) {
@@ -332,6 +339,7 @@ async function readBillingSettings(): Promise<PlatformBillingSettings | null> {
         address: data.address ?? null,
         stateCode: data.state_code ?? null,
         sacCode: data.sac_code ?? '997331',
+        gstRegistered: data.gst_registered !== false,
         enforcementEnabled: data.enforcement_enabled === true,
         updatedAt: data.updated_at ?? null,
     }
@@ -346,11 +354,12 @@ export const adminBillingSettingsApi = {
         if (!current) throw new UserFacingError('Unable to load billing settings right now. Please try again.')
         const { error } = await supabase.rpc('platform_billing_settings_update', {
             p_legal_name: input.legalName,
-            p_gstin: input.gstin,
+            p_gstin: input.gstRegistered ? input.gstin : null,
             p_address: input.address,
             p_state_code: input.stateCode,
             p_sac_code: input.sacCode,
             p_enforcement_enabled: current.enforcementEnabled,
+            p_gst_registered: input.gstRegistered,
         })
         if (error) {
             reportFunctionFailure('platform_billing_settings_update', error)
@@ -497,13 +506,16 @@ export const adminBillingOpsApi = {
         }))
     },
 
-    /** Latest sweep runs, newest first. Flat select; no payload or result column is read. */
-    async getSweepRuns(limit = 20): Promise<AdminSweepRun[]> {
-        const { data, error } = await supabase
+    /**
+     * Sweep runs, newest first. `offset` pages forward (page N starts at offset N * limit); the first page is a plain limit.
+     * Flat select; no payload or result column is read.
+     */
+    async getSweepRuns(limit = 20, offset = 0): Promise<AdminSweepRun[]> {
+        const ordered = supabase
             .from('subscription_sweep_runs')
             .select('id, as_of, started_at, finished_at, trials_expired, grace_started, grace_expired, reminders_created')
             .order('started_at', { ascending: false })
-            .limit(limit)
+        const { data, error } = offset > 0 ? await ordered.range(offset, offset + limit - 1) : await ordered.limit(limit)
         if (error) {
             reportFunctionFailure('subscription_sweep_runs', error)
             throw new UserFacingError('Unable to load sweep runs right now. Please try again.')

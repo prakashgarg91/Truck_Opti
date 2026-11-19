@@ -10,6 +10,7 @@ import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
+import ListCapNotice from '../components/admin/ListCapNotice'
 
 const STATUS_FILTERS = ['all', 'trial', 'active', 'past_due', 'grace', 'expired', 'cancelled'] as const
 type StatusFilter = (typeof STATUS_FILTERS)[number]
@@ -284,6 +285,7 @@ export default function AdminSubscriptionsPage() {
                 </ul>
               </div>
             )}
+            <ListCapNotice rowCount={refusedPayments.length} testId="refused-payments-cap-notice" />
             {refundExceptions.length > 0 && (
               <div>
                 <h3 className="text-xs font-semibold text-slate-500 mb-1">{'Refunds that could not be credit-noted'}</h3>
@@ -299,6 +301,7 @@ export default function AdminSubscriptionsPage() {
                     </li>
                   ))}
                 </ul>
+                <ListCapNotice rowCount={refundExceptions.length} testId="refund-exceptions-cap-notice" />
               </div>
             )}
           </>

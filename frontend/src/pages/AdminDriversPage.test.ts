@@ -544,3 +544,52 @@ describe('AdminDriversPage', () => {
         expect(h.toastError).not.toHaveBeenCalled()
     })
 })
+
+const driverRows = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ ...PENDING_RAM, id: `drv-cap-${i}`, full_name: `Driver ${i}` }))
+
+describe('AdminDriversPage list cap notice', () => {
+    beforeEach(() => {
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        vi.setSystemTime(PINNED_NOW)
+        vi.clearAllMocks()
+        h.approveDriver.mockResolvedValue({})
+    })
+
+    it('shows no cap notice when fewer than 200 drivers came back', async () => {
+        h.getDriversByStatus.mockResolvedValue(driverRows(199))
+        await mountPage()
+        expect(text()).toContain('Driver 198')
+        expect(q('[data-testid="drivers-cap-notice"]')).toBeNull()
+    })
+
+    it('shows the status notice with the real cap when exactly 200 drivers came back', async () => {
+        h.getDriversByStatus.mockResolvedValue(driverRows(200))
+        await mountPage()
+        const notice = q('[data-testid="drivers-cap-notice"]')
+        expect(notice?.getAttribute('role')).toBe('status')
+        expect(notice?.textContent).toBe('Showing the first 200 only.')
+    })
+
+    it('keeps the notice after an approve removes a row, because rows beyond the cap are still hidden', async () => {
+        h.getDriversByStatus.mockResolvedValue(driverRows(200))
+        await mountPage()
+        const approve = exact('Approve')[0] as HTMLButtonElement
+        await click(approve)
+        expect(h.approveDriver).toHaveBeenCalledTimes(1)
+        expect(q('[data-testid="drivers-cap-notice"]')?.textContent).toBe('Showing the first 200 only.')
+    })
+
+    it('shows no cap notice while loading', async () => {
+        h.getDriversByStatus.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        expect(q('[data-testid="drivers-cap-notice"]')).toBeNull()
+    })
+
+    it('shows no cap notice in the error state', async () => {
+        h.getDriversByStatus.mockRejectedValue(new Error('network down'))
+        await mountPage()
+        expect(q('[data-testid="admin-load-error"]')).toBeTruthy()
+        expect(q('[data-testid="drivers-cap-notice"]')).toBeNull()
+    })
+})

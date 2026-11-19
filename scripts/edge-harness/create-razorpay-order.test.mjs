@@ -109,6 +109,24 @@ test('happy path returns exactly {id, amount, currency, quote_hash}', async () =
   assert.ok(!JSON.stringify(body).includes('rzp_test_secret'))
 })
 
+test('registered quote: gst_registered true and gst_rate_pct 18 pass through unchanged next to the amounts', async () => {
+  script({ created: { ok: true, total_paise: 99900, quote_hash: 'hash_abc', gst_registered: true, gst_rate_pct: 18 } })
+  const res = await post({ plan_tier: 'pro', billing_cycle: 'monthly' })
+  assert.equal(res.status, 200)
+  assert.deepEqual(await res.json(), { id: ORDER_ID, amount: 99900, currency: 'INR', quote_hash: 'hash_abc', gst_registered: true, gst_rate_pct: 18 })
+})
+
+test('unregistered quote: gst_registered false and gst_rate_pct 0 pass through; Razorpay is sent the total with no tax', async () => {
+  script({
+    quote: { ...QUOTE, total_paise: 84746 },
+    created: { ok: true, total_paise: 84746, quote_hash: 'hash_def', gst_registered: false, gst_rate_pct: 0 },
+  })
+  const res = await post({ plan_tier: 'pro', billing_cycle: 'monthly' })
+  assert.equal(res.status, 200)
+  assert.deepEqual(await res.json(), { id: ORDER_ID, amount: 84746, currency: 'INR', quote_hash: 'hash_def', gst_registered: false, gst_rate_pct: 0 })
+  assert.equal(JSON.parse(h.fetchCalls[0].init.body).amount, 84746)
+})
+
 test('non-owner (staff / no owned agency) is refused with owner_required and no Razorpay call', async () => {
   script({ agencyRows: [] })
   const res = await post({ plan_tier: 'pro', billing_cycle: 'monthly' })

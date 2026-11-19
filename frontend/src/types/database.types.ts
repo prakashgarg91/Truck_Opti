@@ -1616,19 +1616,6 @@ isOneToOne: false
       referencedColumns: ["id", "agency_id"]
     }
                   ]
-                },"platform_billing_settings": {
-                  Row: {
-                    "address": string | null,"enforcement_enabled": boolean,"gstin": string | null,"legal_name": string | null,"sac_code": string,"state_code": string | null,"updated_at": string,"updated_by": string | null
-                  }
-                  Insert: {
-                    "address"?: string | null,"enforcement_enabled"?: boolean,"gstin"?: string | null,"legal_name"?: string | null,"sac_code"?: string,"state_code"?: string | null,"updated_at"?: string,"updated_by"?: string | null
-                  }
-                  Update: {
-                    "address"?: string | null,"enforcement_enabled"?: boolean,"gstin"?: string | null,"legal_name"?: string | null,"sac_code"?: string,"state_code"?: string | null,"updated_at"?: string,"updated_by"?: string | null
-                  }
-                  Relationships: [
-                    
-                  ]
                 },"subscription_backfill_conflicts": {
                   Row: {
                     "candidate_agency_ids": string[],"chosen_agency_id": string | null,"details": Json,"id": string,"logged_at": string,"reason": string,"subscription_id": string,"user_id": string | null
@@ -1673,25 +1660,6 @@ isOneToOne: false
                   }
                   Relationships: [
                     
-                  ]
-                },"subscription_invoices": {
-                  Row: {
-                    "agency_id": string,"cgst_paise": number,"fy": string,"gst_rate_pct": number,"id": string,"igst_paise": number,"invoice_number": string,"issued_at": string,"place_of_supply_state_code": string,"recipient_address": string | null,"recipient_gstin": string | null,"recipient_name": string | null,"sac_code": string,"series": string,"sgst_paise": number,"supplier_address": string | null,"supplier_gstin": string,"supplier_legal_name": string | null,"supplier_state_code": string,"taxable_paise": number,"total_paise": number
-                  }
-                  Insert: {
-                    "agency_id": string,"cgst_paise"?: number,"fy": string,"gst_rate_pct"?: number,"id"?: string,"igst_paise"?: number,"invoice_number": string,"issued_at"?: string,"place_of_supply_state_code": string,"recipient_address"?: string | null,"recipient_gstin"?: string | null,"recipient_name"?: string | null,"sac_code": string,"series"?: string,"sgst_paise"?: number,"supplier_address"?: string | null,"supplier_gstin": string,"supplier_legal_name"?: string | null,"supplier_state_code": string,"taxable_paise": number,"total_paise": number
-                  }
-                  Update: {
-                    "agency_id"?: string,"cgst_paise"?: number,"fy"?: string,"gst_rate_pct"?: number,"id"?: string,"igst_paise"?: number,"invoice_number"?: string,"issued_at"?: string,"place_of_supply_state_code"?: string,"recipient_address"?: string | null,"recipient_gstin"?: string | null,"recipient_name"?: string | null,"sac_code"?: string,"series"?: string,"sgst_paise"?: number,"supplier_address"?: string | null,"supplier_gstin"?: string,"supplier_legal_name"?: string | null,"supplier_state_code"?: string,"taxable_paise"?: number,"total_paise"?: number
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "subscription_invoices_agency_id_fkey"
-      columns: ["agency_id"]
-isOneToOne: false
-      referencedRelation: "transport_agencies"
-      referencedColumns: ["id"]
-    }
                   ]
                 },"subscription_trial_claims": {
                   Row: {
@@ -1838,6 +1806,38 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"platform_billing_settings": {
+                  Row: {
+                    "address": string | null,"enforcement_enabled": boolean,"gst_registered": boolean,"gstin": string | null,"legal_name": string | null,"sac_code": string,"state_code": string | null,"updated_at": string,"updated_by": string | null
+                  }
+                  Insert: {
+                    "address"?: string | null,"enforcement_enabled"?: boolean,"gst_registered"?: boolean,"gstin"?: string | null,"legal_name"?: string | null,"sac_code"?: string,"state_code"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "address"?: string | null,"enforcement_enabled"?: boolean,"gst_registered"?: boolean,"gstin"?: string | null,"legal_name"?: string | null,"sac_code"?: string,"state_code"?: string | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"subscription_invoices": {
+                  Row: {
+                    "agency_id": string,"cgst_paise": number,"fy": string,"gst_rate_pct": number,"id": string,"igst_paise": number,"invoice_number": string,"issued_at": string,"place_of_supply_state_code": string,"recipient_address": string | null,"recipient_gstin": string | null,"recipient_name": string | null,"sac_code": string,"series": string,"sgst_paise": number,"supplier_address": string | null,"supplier_gstin": string | null,"supplier_legal_name": string | null,"supplier_state_code": string,"taxable_paise": number,"total_paise": number
+                  }
+                  Insert: {
+                    "agency_id": string,"cgst_paise"?: number,"fy": string,"gst_rate_pct"?: number,"id"?: string,"igst_paise"?: number,"invoice_number": string,"issued_at"?: string,"place_of_supply_state_code": string,"recipient_address"?: string | null,"recipient_gstin"?: string | null,"recipient_name"?: string | null,"sac_code": string,"series"?: string,"sgst_paise"?: number,"supplier_address"?: string | null,"supplier_gstin"?: string | null,"supplier_legal_name"?: string | null,"supplier_state_code": string,"taxable_paise": number,"total_paise": number
+                  }
+                  Update: {
+                    "agency_id"?: string,"cgst_paise"?: number,"fy"?: string,"gst_rate_pct"?: number,"id"?: string,"igst_paise"?: number,"invoice_number"?: string,"issued_at"?: string,"place_of_supply_state_code"?: string,"recipient_address"?: string | null,"recipient_gstin"?: string | null,"recipient_name"?: string | null,"sac_code"?: string,"series"?: string,"sgst_paise"?: number,"supplier_address"?: string | null,"supplier_gstin"?: string | null,"supplier_legal_name"?: string | null,"supplier_state_code"?: string,"taxable_paise"?: number,"total_paise"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "subscription_invoices_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    }
                   ]
                 }
           }
@@ -2119,9 +2119,6 @@ isOneToOne: false
 "agency_subscription_state":
 { Args: { "p_agency_id": string }; Returns: Json
                            },
-"platform_billing_settings_update":
-{ Args: { "p_address": string,"p_enforcement_enabled": boolean,"p_gstin": string,"p_legal_name": string,"p_sac_code": string,"p_state_code": string }; Returns: Json
-                           },
 "subscription_entitlement_snapshot":
 { Args: { "p_agency_id": string }; Returns: Json
                            },
@@ -2231,6 +2228,12 @@ isOneToOne: false
                            },
 "admin_webhook_events":
 { Args: { "p_limit"?: number }; Returns: Json
+                           },
+"platform_billing_settings_update":
+{ Args: { "p_address": string,"p_enforcement_enabled": boolean,"p_gst_registered": boolean,"p_gstin": string,"p_legal_name": string,"p_sac_code": string,"p_state_code": string }; Returns: Json
+                           },
+"platform_gst_registered":
+{ Args: Record<PropertyKey, never>; Returns: boolean
                            }
           }
           Enums: {

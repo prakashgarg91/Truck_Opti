@@ -30,6 +30,8 @@ interface FormState {
   address: string
   stateCode: string
   sacCode: string
+  /** false: the seller is not registered under GST. The GSTIN is hidden and not validated, but kept while the page is open. */
+  gstRegistered: boolean
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -41,19 +43,22 @@ function toForm(settings: PlatformBillingSettings | null): FormState {
     address: settings?.address ?? '',
     stateCode: settings?.stateCode ?? '',
     sacCode: settings?.sacCode ?? DEFAULT_SAC,
+    gstRegistered: settings?.gstRegistered ?? true,
   }
 }
 
 export function validateBillingForm(form: FormState): FieldErrors {
   const errors: FieldErrors = {}
   if (!form.legalName.trim()) errors.legalName = 'Enter the legal name of the business that issues the invoices.'
-  if (!form.gstin) errors.gstin = 'Enter the 15-character GSTIN.'
-  else if (!GSTIN_PATTERN.test(form.gstin)) {
-    errors.gstin = `This is not a valid GSTIN (${form.gstin.length} of 15 characters). Example: 27AAAAA0000A1Z5.`
+  if (form.gstRegistered) {
+    if (!form.gstin) errors.gstin = 'Enter the 15-character GSTIN.'
+    else if (!GSTIN_PATTERN.test(form.gstin)) {
+      errors.gstin = `This is not a valid GSTIN (${form.gstin.length} of 15 characters). Example: 27AAAAA0000A1Z5.`
+    }
   }
   if (!form.address.trim()) errors.address = 'Enter the registered address that appears on the invoices.'
   if (!STATE_PATTERN.test(form.stateCode)) errors.stateCode = 'Enter a two-digit GST state code between 01 and 38.'
-  else if (GSTIN_PATTERN.test(form.gstin) && form.gstin.slice(0, 2) !== form.stateCode) {
+  else if (form.gstRegistered && GSTIN_PATTERN.test(form.gstin) && form.gstin.slice(0, 2) !== form.stateCode) {
     errors.stateCode = 'The state code must match the first two digits of the GSTIN.'
   }
   if (!SAC_PATTERN.test(form.sacCode)) errors.sacCode = 'The SAC must be 6 to 8 digits.'
@@ -122,9 +127,10 @@ export default function AdminBillingSettingsPage() {
   }
 
   const errors = validateBillingForm(form)
-  const gstinHint = form.gstin.length >= 2 && STATE_PATTERN.test(form.gstin.slice(0, 2)) ? form.gstin.slice(0, 2) : null
+  const gstinHint =
+    form.gstRegistered && form.gstin.length >= 2 && STATE_PATTERN.test(form.gstin.slice(0, 2)) ? form.gstin.slice(0, 2) : null
   // A live message appears as soon as the GSTIN is long enough to judge, or after a save attempt.
-  const gstinLiveError = form.gstin.length === 15 || showErrors ? errors.gstin : undefined
+  const gstinLiveError = form.gstRegistered && (form.gstin.length === 15 || showErrors) ? errors.gstin : undefined
   const fieldError = (name: keyof FormState) => (name === 'gstin' ? gstinLiveError : showErrors ? errors[name] : undefined)
 
   const onSubmit = async (event: FormEvent) => {
@@ -137,10 +143,12 @@ export default function AdminBillingSettingsPage() {
     try {
       await adminBillingSettingsApi.updateSettings({
         legalName: form.legalName.trim(),
-        gstin: form.gstin,
+        // A GSTIN typed earlier is kept on screen but never sent while the seller is unregistered.
+        gstin: form.gstRegistered ? form.gstin : '',
         address: form.address.trim(),
         stateCode: form.stateCode,
         sacCode: form.sacCode,
+        gstRegistered: form.gstRegistered,
       })
       setSaved(true)
       toast.success('Billing settings saved.')
@@ -157,7 +165,9 @@ export default function AdminBillingSettingsPage() {
     }
   }
 
-  const configured = Boolean(settings?.legalName && settings?.gstin && settings?.address && settings?.stateCode)
+  const configured = Boolean(
+    settings?.legalName && settings?.address && settings?.stateCode && (!settings.gstRegistered || settings.gstin),
+  )
 
   return (
     <div className="p-4 md:p-8 space-y-4 max-w-3xl mx-auto pb-8 md:pb-10">
@@ -192,7 +202,7 @@ export default function AdminBillingSettingsPage() {
         <>
           {!configured && (
             <div role="status" data-testid="billing-empty" className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-sm text-amber-900 dark:text-amber-100">
-              Billing details are not set yet. No plan can be quoted to an agency until the legal name, GSTIN, address and state code are saved.
+              Billing details are not set yet. No plan can be quoted to an agency until the legal name, address and state code are saved, and the GSTIN too while the seller is registered under GST.
             </div>
           )}
 
@@ -214,6 +224,29 @@ export default function AdminBillingSettingsPage() {
             </div>
 
             <div>
+              <label
+                htmlFor="billing-gst-registered"
+                className="flex items-center gap-3 min-h-[44px] cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
+                <input
+                  id="billing-gst-registered"
+                  type="checkbox"
+                  role="switch"
+                  checked={form.gstRegistered}
+                  onChange={(e) => update({ gstRegistered: e.target.checked })}
+                  className="h-5 w-9 accent-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                />
+                Registered under GST
+              </label>
+              {!form.gstRegistered && (
+                <p role="status" data-testid="billing-gst-off-note" className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                  No GST will be charged. Invoices will say the seller is not registered under GST.
+                </p>
+              )}
+            </div>
+
+            {form.gstRegistered && (
+            <div>
               <label htmlFor="billing-gstin" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">GSTIN</label>
               <input
                 id="billing-gstin"
@@ -232,6 +265,7 @@ export default function AdminBillingSettingsPage() {
                 <p id="billing-gstin-help" className="mt-1 text-xs text-slate-500 dark:text-slate-400">{`${form.gstin.length} of 15 characters`}</p>
               )}
             </div>
+            )}
 
             <div>
               <label htmlFor="billing-address" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Registered address</label>
@@ -270,7 +304,9 @@ export default function AdminBillingSettingsPage() {
                   <p id="billing-state-help" data-testid="billing-state-hint" className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {gstinHint
                       ? `From the GSTIN: ${gstinHint}${GST_STATES[gstinHint] ? ` (${GST_STATES[gstinHint]})` : ''}`
-                      : 'The first two digits of the GSTIN.'}
+                      : form.gstRegistered
+                        ? 'The first two digits of the GSTIN.'
+                        : 'The two-digit state code of the seller address.'}
                   </p>
                 )}
               </div>

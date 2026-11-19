@@ -471,3 +471,42 @@ describe('AdminAgenciesPage', () => {
         expect(h.suspend).not.toHaveBeenCalled()
     })
 })
+
+const agencyRows = (count: number): Agency[] =>
+    Array.from({ length: count }, (_, i) => ({ ...KAVERI, id: `agn-cap-${i}`, company_name: `Agency ${i}` }))
+
+describe('AdminAgenciesPage list cap notice', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        vi.setSystemTime(new Date('2026-11-07T10:00:00Z'))
+        h.currentUser = { ...CURRENT_ADMIN }
+    })
+
+    it('shows no cap notice when fewer than 200 agencies came back', async () => {
+        h.getSnapshot.mockResolvedValue({ agencies: agencyRows(199), counts: COUNTS })
+        await mountPage()
+        expect(text()).toContain('Agency 198')
+        expect(q('[data-testid="agencies-cap-notice"]')).toBeNull()
+    })
+
+    it('shows the status notice with the real cap when exactly 200 agencies came back', async () => {
+        h.getSnapshot.mockResolvedValue({ agencies: agencyRows(200), counts: COUNTS })
+        await mountPage()
+        const notice = q('[data-testid="agencies-cap-notice"]')
+        expect(notice?.getAttribute('role')).toBe('status')
+        expect(notice?.textContent).toBe('Showing the first 200 only.')
+    })
+
+    it('shows no cap notice while loading', async () => {
+        h.getSnapshot.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        expect(q('[data-testid="agencies-cap-notice"]')).toBeNull()
+    })
+
+    it('shows no cap notice in the error state', async () => {
+        h.getSnapshot.mockRejectedValue(new Error('network down'))
+        await mountPage()
+        expect(q('[data-testid="agencies-cap-notice"]')).toBeNull()
+    })
+})

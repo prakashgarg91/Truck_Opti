@@ -20,9 +20,10 @@ import { UserFacingError } from '../utils/userFacingError'
 
 const ROW = {
     legal_name: 'Acme', gstin: '27AAAAA0000A1Z5', address: 'Pune', state_code: '27',
-    sac_code: '997331', enforcement_enabled: true, updated_at: '2026-11-10T00:00:00Z',
+    sac_code: '997331', gst_registered: true, enforcement_enabled: true, updated_at: '2026-11-10T00:00:00Z',
 }
-const INPUT = { legalName: 'Acme', gstin: '27AAAAA0000A1Z5', address: 'Pune', stateCode: '27', sacCode: '997331' }
+const INPUT = { legalName: 'Acme', gstin: '27AAAAA0000A1Z5', address: 'Pune', stateCode: '27', sacCode: '997331', gstRegistered: true }
+const UNREGISTERED_INPUT = { ...INPUT, gstin: '27AAAAA0000A1Z5', gstRegistered: false }
 
 describe('adminBillingSettingsApi', () => {
     beforeEach(() => {
@@ -34,8 +35,20 @@ describe('adminBillingSettingsApi', () => {
     it('maps the stored row to camelCase settings', async () => {
         expect(await adminBillingSettingsApi.getSettings()).toEqual({
             legalName: 'Acme', gstin: '27AAAAA0000A1Z5', address: 'Pune', stateCode: '27',
-            sacCode: '997331', enforcementEnabled: true, updatedAt: '2026-11-10T00:00:00Z',
+            sacCode: '997331', gstRegistered: true, enforcementEnabled: true, updatedAt: '2026-11-10T00:00:00Z',
         })
+    })
+
+    it('reads gst_registered = false as an unregistered seller', async () => {
+        h.maybeSingle.mockResolvedValue({ data: { ...ROW, gst_registered: false, gstin: null }, error: null })
+        const settings = await adminBillingSettingsApi.getSettings()
+        expect(settings?.gstRegistered).toBe(false)
+        expect(settings?.gstin).toBeNull()
+    })
+
+    it('treats a missing gst_registered value as registered (the column default)', async () => {
+        h.maybeSingle.mockResolvedValue({ data: { ...ROW, gst_registered: undefined }, error: null })
+        expect((await adminBillingSettingsApi.getSettings())?.gstRegistered).toBe(true)
     })
 
     it('returns null when the row is missing', async () => {
@@ -53,11 +66,31 @@ describe('adminBillingSettingsApi', () => {
         await adminBillingSettingsApi.updateSettings(INPUT)
         expect(h.rpc).toHaveBeenCalledWith('platform_billing_settings_update', {
             p_legal_name: 'Acme', p_gstin: '27AAAAA0000A1Z5', p_address: 'Pune', p_state_code: '27',
-            p_sac_code: '997331', p_enforcement_enabled: true,
+            p_sac_code: '997331', p_enforcement_enabled: true, p_gst_registered: true,
         })
         h.maybeSingle.mockResolvedValue({ data: { ...ROW, enforcement_enabled: false }, error: null })
         await adminBillingSettingsApi.updateSettings(INPUT)
         expect(h.rpc.mock.calls[1][1].p_enforcement_enabled).toBe(false)
+    })
+
+    it('registered mode sends the GSTIN and p_gst_registered = true', async () => {
+        await adminBillingSettingsApi.updateSettings(INPUT)
+        const args = h.rpc.mock.calls[0][1]
+        expect(args.p_gst_registered).toBe(true)
+        expect(args.p_gstin).toBe('27AAAAA0000A1Z5')
+    })
+
+    it('unregistered mode sends p_gst_registered = false and p_gstin null, even if a GSTIN was typed', async () => {
+        await adminBillingSettingsApi.updateSettings(UNREGISTERED_INPUT)
+        expect(h.rpc).toHaveBeenCalledWith('platform_billing_settings_update', {
+            p_legal_name: 'Acme', p_gstin: null, p_address: 'Pune', p_state_code: '27',
+            p_sac_code: '997331', p_enforcement_enabled: true, p_gst_registered: false,
+        })
+    })
+
+    it('unregistered mode with a blank GSTIN also sends null', async () => {
+        await adminBillingSettingsApi.updateSettings({ ...UNREGISTERED_INPUT, gstin: '' })
+        expect(h.rpc.mock.calls[0][1].p_gstin).toBeNull()
     })
 
     it('does not call the RPC when the row cannot be read', async () => {
@@ -69,6 +102,19 @@ describe('adminBillingSettingsApi', () => {
     it.each(Object.keys(BILLING_SETTINGS_ERROR_MESSAGES))('maps the server error %s to its typed message', async (code) => {
         h.rpc.mockResolvedValue({ data: null, error: { message: code } })
         await expect(adminBillingSettingsApi.updateSettings(INPUT)).rejects.toThrow(BILLING_SETTINGS_ERROR_MESSAGES[code])
+    })
+
+    it('maps invalid_gst_registered to a plain message', async () => {
+        h.rpc.mockResolvedValue({ data: null, error: { message: 'invalid_gst_registered', code: '22023' } })
+        const err = await adminBillingSettingsApi.updateSettings(INPUT).catch((e) => e)
+        expect(err.message).toBe('Choose whether the seller is registered under GST, then try again.')
+    })
+
+    it('maps gstin_not_allowed_when_unregistered to a plain message', async () => {
+        h.rpc.mockResolvedValue({ data: null, error: { message: 'gstin_not_allowed_when_unregistered', code: '22023' } })
+        const err = await adminBillingSettingsApi.updateSettings(UNREGISTERED_INPUT).catch((e) => e)
+        expect(err.message).toContain('cannot be saved while the seller is not registered under GST')
+        expect(err.message).not.toContain('gstin_not_allowed')
     })
 
     it('maps SQLSTATE 42501 to the forbidden message', async () => {

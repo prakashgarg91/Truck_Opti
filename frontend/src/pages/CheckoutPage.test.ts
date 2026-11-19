@@ -9,6 +9,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
     getByTier: vi.fn(),
+    createOrder: vi.fn(),
+    gst: { status: 'ready', registered: true } as { status: 'loading' | 'ready' | 'error'; registered: boolean | null },
+}))
+
+// Registered is the default; the GST branch tests below switch the state.
+vi.mock('../hooks/useSellerGstRegistered', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../hooks/useSellerGstRegistered')>()),
+    useSellerGstRegistered: () => h.gst,
 }))
 
 vi.mock('../services/razorpayPayment', () => ({
@@ -17,7 +25,7 @@ vi.mock('../services/razorpayPayment', () => ({
 
 vi.mock('../services/subscriptionApi', () => ({
     subscriptionPlansApi: { getByTier: h.getByTier },
-    checkoutApi: { createOrder: vi.fn(), verifyPayment: vi.fn() },
+    checkoutApi: { createOrder: h.createOrder, verifyPayment: vi.fn() },
     entitlementApi: { get: vi.fn() },
 }))
 
@@ -55,11 +63,27 @@ async function render() {
     })
 }
 
+/** Fills a valid mobile number and presses Continue, so the order is created and the server quote is read. */
+async function payWithValidPhone() {
+    const phone = container.querySelector('#checkout-phone') as HTMLInputElement
+    await act(async () => {
+        const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+        setValue.call(phone, '9876543210')
+        phone.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const pay = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Continue to payment')!
+    await act(async () => {
+        pay.click()
+        await new Promise((r) => setTimeout(r, 0))
+    })
+}
+
 describe('CheckoutPage accessibility', () => {
     beforeEach(() => {
         ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
         vi.clearAllMocks()
         h.getByTier.mockResolvedValue(PLAN)
+        h.gst = { status: 'ready', registered: true }
         container = document.createElement('div')
         document.body.appendChild(container)
         root = createRoot(container)
@@ -94,5 +118,86 @@ describe('CheckoutPage accessibility', () => {
         expect(pay.className).toContain('min-h-[44px]')
         expect(pay.className).toContain('focus-visible:ring-2')
         expect(pay.disabled).toBe(true)
+    })
+})
+
+describe('CheckoutPage tax copy follows the seller GST flag and the server quote', () => {
+    beforeEach(() => {
+        ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+        vi.clearAllMocks()
+        h.getByTier.mockResolvedValue(PLAN)
+        h.gst = { status: 'ready', registered: true }
+        container = document.createElement('div')
+        document.body.appendChild(container)
+        root = createRoot(container)
+    })
+
+    afterEach(() => {
+        act(() => root.unmount())
+        container.remove()
+    })
+
+    it('registered: keeps the GST copy and the excl. GST label', async () => {
+        h.gst = { status: 'ready', registered: true }
+        await render()
+        expect(container.textContent).toContain('GST extra at 18%')
+        expect(container.textContent).toContain('excl. GST')
+        expect(container.textContent).toContain('including GST and any coupon')
+        expect(container.textContent).not.toContain('No GST charged')
+    })
+
+    it('unregistered: says No GST charged and never shows the 18% copy', async () => {
+        h.gst = { status: 'ready', registered: false }
+        await render()
+        expect(container.textContent).toContain('No GST charged')
+        expect(container.textContent).not.toMatch(/GST extra|18%|excl\. GST|including GST/)
+    })
+
+    it('loading: shows the price before tax and says taxes are shown at checkout', async () => {
+        h.gst = { status: 'loading', registered: null }
+        await render()
+        expect(container.textContent).toContain('Before tax')
+        expect(container.textContent).toContain('Taxes, if any, are shown at checkout')
+        expect(container.textContent).not.toMatch(/GST extra|18%|No GST charged/)
+    })
+
+    it('error: shows the price before tax and says taxes are shown at checkout', async () => {
+        h.gst = { status: 'error', registered: null }
+        await render()
+        expect(container.textContent).toContain('Taxes, if any, are shown at checkout')
+        expect(container.textContent).not.toMatch(/GST extra|18%|No GST charged/)
+    })
+
+    it('server registered wins over a platform flag that says unregistered', async () => {
+        h.gst = { status: 'ready', registered: false }
+        h.createOrder.mockResolvedValue({ id: 'order_2', amount: 49900, currency: 'INR', gst_registered: true, gst_rate_pct: 18 })
+        await render()
+        expect(container.textContent).toContain('No GST charged')
+        await payWithValidPhone()
+        expect(h.createOrder).toHaveBeenCalledTimes(1)
+        expect(container.textContent).toContain('GST extra at 18%')
+        expect(container.textContent).toContain('excl. GST')
+        expect(container.textContent).not.toContain('No GST charged')
+    })
+
+    it('the server quote overrides the platform flag once the order is created', async () => {
+        h.gst = { status: 'ready', registered: true }
+        h.createOrder.mockResolvedValue({ id: 'order_1', amount: 49900, currency: 'INR', gst_registered: false, gst_rate_pct: 0 })
+        await render()
+        expect(container.textContent).toContain('GST extra at 18%')
+        const phone = container.querySelector('#checkout-phone') as HTMLInputElement
+        await act(async () => {
+            const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+            setValue.call(phone, '9876543210')
+            phone.dispatchEvent(new Event('input', { bubbles: true }))
+        })
+        const pay = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Continue to payment')!
+        await act(async () => {
+            pay.click()
+            await new Promise((r) => setTimeout(r, 0))
+        })
+        expect(h.createOrder).toHaveBeenCalledTimes(1)
+        expect(container.textContent).toContain('No GST charged')
+        expect(container.textContent).not.toContain('GST extra at 18%')
     })
 })

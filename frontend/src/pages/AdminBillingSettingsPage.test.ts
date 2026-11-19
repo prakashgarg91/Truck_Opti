@@ -24,13 +24,14 @@ vi.mock('../services/adminSupabaseApi', () => ({
 import AdminBillingSettingsPage, { validateBillingForm } from './AdminBillingSettingsPage'
 import { UserFacingError } from '../utils/userFacingError'
 
-const EMPTY = { legalName: null, gstin: null, address: null, stateCode: null, sacCode: '997331', enforcementEnabled: false, updatedAt: null }
+const EMPTY = { legalName: null, gstin: null, address: null, stateCode: null, sacCode: '997331', gstRegistered: true, enforcementEnabled: false, updatedAt: null }
 const FILLED = {
     legalName: 'TruckOpti Technologies Pvt Ltd',
     gstin: '27AAAAA0000A1Z5',
     address: '1 MG Road, Pune',
     stateCode: '27',
     sacCode: '997331',
+    gstRegistered: true,
     enforcementEnabled: false,
     updatedAt: '2026-11-10T00:00:00Z',
 }
@@ -100,7 +101,7 @@ afterEach(async () => {
 })
 
 describe('validateBillingForm', () => {
-    const ok = { legalName: 'A', gstin: '27AAAAA0000A1Z5', address: 'B', stateCode: '27', sacCode: '997331' }
+    const ok = { legalName: 'A', gstin: '27AAAAA0000A1Z5', address: 'B', stateCode: '27', sacCode: '997331', gstRegistered: true }
     it('accepts a complete valid form', () => expect(validateBillingForm(ok)).toEqual({}))
     it('rejects a short GSTIN with its length', () => expect(validateBillingForm({ ...ok, gstin: '27AAAA' }).gstin).toContain('6 of 15'))
     it('rejects a lowercase or malformed GSTIN', () => expect(validateBillingForm({ ...ok, gstin: '27aaaaa0000a1z5' }).gstin).toBeTruthy())
@@ -118,6 +119,21 @@ describe('validateBillingForm', () => {
         for (const s of ['12345', '123456789', 'abc123']) expect(validateBillingForm({ ...ok, sacCode: s }).sacCode).toBeTruthy()
         expect(validateBillingForm({ ...ok, sacCode: '99733100' }).sacCode).toBeUndefined()
     })
+    it('unregistered: ignores the GSTIN entirely, even when it is blank or malformed', () => {
+        const off = { ...ok, gstRegistered: false }
+        expect(validateBillingForm({ ...off, gstin: '' })).toEqual({})
+        expect(validateBillingForm({ ...off, gstin: '27AAAA' })).toEqual({})
+    })
+    it('unregistered: still requires legal name, address, state code and SAC', () => {
+        const off = { ...ok, gstRegistered: false, gstin: '' }
+        const e = validateBillingForm({ ...off, legalName: '', address: '', stateCode: '', sacCode: '1' })
+        expect(e.legalName).toBeTruthy()
+        expect(e.address).toBeTruthy()
+        expect(e.stateCode).toBeTruthy()
+        expect(e.sacCode).toBeTruthy()
+    })
+    it('unregistered: a state code does not have to match a GSTIN that is not sent', () =>
+        expect(validateBillingForm({ ...ok, gstRegistered: false, gstin: '27AAAAA0000A1Z5', stateCode: '29' }).stateCode).toBeUndefined())
 })
 
 describe('AdminBillingSettingsPage', () => {
@@ -207,6 +223,7 @@ describe('AdminBillingSettingsPage', () => {
             address: '1 MG Road, Pune',
             stateCode: '27',
             sacCode: '997331',
+            gstRegistered: true,
         })
         expect(h.toastSuccess).toHaveBeenCalledWith('Billing settings saved.')
         expect(q('[data-testid="billing-saved"]')).not.toBeNull()
@@ -275,6 +292,123 @@ describe('AdminBillingSettingsPage', () => {
         for (const id of ['billing-legal-name', 'billing-gstin', 'billing-address', 'billing-state', 'billing-sac']) {
             expect(q(`label[for="${id}"]`)).not.toBeNull()
         }
+    })
+
+    it('GST switch: is a labelled native checkbox with role switch, 44px target, and reflects the stored value', async () => {
+        await mountPage()
+        const sw = input('billing-gst-registered')
+        expect(sw.type).toBe('checkbox')
+        expect(sw.getAttribute('role')).toBe('switch')
+        expect(sw.checked).toBe(true)
+        expect(q('label[for="billing-gst-registered"]')?.textContent).toContain('Registered under GST')
+        expect(q('label[for="billing-gst-registered"]')?.className).toContain('min-h-[44px]')
+    })
+
+    it('GST switch off: hides the GSTIN field, shows the no-GST note and the seller-not-registered wording', async () => {
+        await mountPage()
+        await click(input('billing-gst-registered'))
+        expect(input('billing-gst-registered').checked).toBe(false)
+        expect(q('#billing-gstin')).toBeNull()
+        expect(q('[data-testid="billing-gst-off-note"]')?.textContent).toBe(
+            'No GST will be charged. Invoices will say the seller is not registered under GST.',
+        )
+        expect(q('#billing-state')).not.toBeNull()
+        expect(q('#billing-legal-name')).not.toBeNull()
+        expect(q('#billing-address')).not.toBeNull()
+        expect(q('#billing-sac')).not.toBeNull()
+    })
+
+    it('GST switch on again: shows the GSTIN field and restores the typed value without a reload', async () => {
+        h.getSettings.mockResolvedValue(EMPTY)
+        await mountPage()
+        await setValue(input('billing-gstin'), '27AAAAA0000A1Z5')
+        await click(input('billing-gst-registered'))
+        expect(q('#billing-gstin')).toBeNull()
+        await click(input('billing-gst-registered'))
+        expect(q('#billing-gstin')).not.toBeNull()
+        expect(input('billing-gstin').value).toBe('27AAAAA0000A1Z5')
+        expect(q('[data-testid="billing-gst-off-note"]')).toBeNull()
+    })
+
+    it('GST switch off: an invalid GSTIN is not validated and does not block saving', async () => {
+        await mountPage()
+        await setValue(input('billing-gstin'), '27AAAA')
+        await click(input('billing-gst-registered'))
+        expect(text()).not.toContain('not a valid GSTIN')
+        await submit()
+        expect(h.updateSettings).toHaveBeenCalledTimes(1)
+    })
+
+    it('GST switch off: saves with gstRegistered false and no GSTIN, even when one was typed', async () => {
+        await mountPage()
+        await click(input('billing-gst-registered'))
+        await submit()
+        expect(h.updateSettings).toHaveBeenCalledWith({
+            legalName: 'TruckOpti Technologies Pvt Ltd',
+            gstin: '',
+            address: '1 MG Road, Pune',
+            stateCode: '27',
+            sacCode: '997331',
+            gstRegistered: false,
+        })
+        expect(h.toastSuccess).toHaveBeenCalledWith('Billing settings saved.')
+        expect(q('[data-testid="billing-saved"]')).not.toBeNull()
+    })
+
+    it('GST switch on: saves with gstRegistered true and the GSTIN', async () => {
+        await mountPage()
+        await click(input('billing-gst-registered'))
+        await click(input('billing-gst-registered'))
+        await submit()
+        expect(h.updateSettings).toHaveBeenCalledWith(
+            expect.objectContaining({ gstin: '27AAAAA0000A1Z5', gstRegistered: true }),
+        )
+    })
+
+    it('GST switch off: still blocks saving when the legal name is blank, and never calls the service', async () => {
+        await mountPage()
+        await click(input('billing-gst-registered'))
+        await setValue(input('billing-legal-name'), '   ')
+        await submit()
+        expect(h.updateSettings).not.toHaveBeenCalled()
+        expect(text()).toContain('Enter the legal name')
+    })
+
+    it('GST switch off: shows the saving state while saving', async () => {
+        h.updateSettings.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        await click(input('billing-gst-registered'))
+        await submit()
+        expect(button(/Saving/).disabled).toBe(true)
+    })
+
+    it('GST switch off: a server error is shown inline with no saved status', async () => {
+        h.updateSettings.mockRejectedValue(new UserFacingError('A GSTIN cannot be saved while the seller is not registered under GST.'))
+        await mountPage()
+        await click(input('billing-gst-registered'))
+        await submit()
+        expect(q('[data-testid="billing-save-error"]')?.textContent).toContain('A GSTIN cannot be saved')
+        expect(q('[data-testid="billing-saved"]')).toBeNull()
+    })
+
+    it('GST switch is keyboard operable: it is a focusable native checkbox, so Space toggles it', async () => {
+        await mountPage()
+        const sw = input('billing-gst-registered')
+        expect(sw.tabIndex).toBeGreaterThanOrEqual(0)
+        await act(async () => sw.focus())
+        expect(document.activeElement).toBe(sw)
+        // A browser turns Space on a focused checkbox into a click; the test sends that click.
+        await click(sw)
+        expect(sw.checked).toBe(false)
+        expect(q('#billing-gstin')).toBeNull()
+    })
+
+    it('an unregistered row with no GSTIN is not flagged as unconfigured', async () => {
+        h.getSettings.mockResolvedValue({ ...FILLED, gstRegistered: false, gstin: null })
+        await mountPage()
+        expect(q('[data-testid="billing-empty"]')).toBeNull()
+        expect(input('billing-gst-registered').checked).toBe(false)
+        expect(q('[data-testid="billing-gst-off-note"]')).not.toBeNull()
     })
 
     it('the back button navigates to /admin', async () => {

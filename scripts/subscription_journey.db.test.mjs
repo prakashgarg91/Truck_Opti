@@ -1444,7 +1444,7 @@ async function main() {
     expect((await liveSubOf(A.id)).status === 'active', 'status moved')
   })
   await jc('J9', 'a tenant cannot flip the enforcement switch (platform_billing_settings_update is admin only)', async () => {
-    const r = await call(A.owner, `SELECT public.platform_billing_settings_update('x', '27ABCDE1234F1Z5', 'a', '27', '997331', false) AS r`)
+    const r = await call(A.owner, `SELECT public.platform_billing_settings_update('x', '27ABCDE1234F1Z5', 'a', '27', '997331', false, true) AS r`)
     expect(r.raised && /forbidden/i.test(r.message), describe(r))
     expect((await suOne(`SELECT enforcement_enabled FROM public.platform_billing_settings`)).enforcement_enabled === true, 'enforcement changed')
   })

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import { Wallet, TrendingUp, Calendar, CheckCircle2, RefreshCw, IndianRupee, X, AlertCircle, AlertTriangle, Download } from 'lucide-react'
 import { driverEarningsApi, driverTripsApi } from '../services/supabaseApi'
 import { useAuthStore } from '../stores/authStore'
@@ -43,6 +43,11 @@ function calculateAvailableBalance(totalEarned: number, payouts: { amount: numbe
   return Math.max(0, totalEarned - reservedAmount)
 }
 
+/** A deduction is shown with a leading minus only when it is actually non-zero: "-₹0.00" is never printed. */
+function formatDeduction(paise: number): string {
+  return paise > 0 ? `-${formatPaise(paise)}` : formatPaise(0)
+}
+
 function formatPeriodDate(value: string): string {
   const d = new Date(`${value}T00:00:00`)
   return Number.isNaN(d.getTime())
@@ -54,7 +59,7 @@ export default function DriverEarningsPage() {
   useEffect(() => {
     document.title = 'Driver Earnings - TruckOpti'
   }, [])
-  const { user } = useAuthStore()
+  const { user, isLoading: authLoading } = useAuthStore()
   const [driverId, setDriverId] = useState<string | null>(null)
   const [availableBalance, setAvailableBalance] = useState<number>(0)
   const [payoutPaid, setPayoutPaid] = useState<number>(0)
@@ -69,16 +74,25 @@ export default function DriverEarningsPage() {
   // Error / empty paths so the page can never spin forever.
   const [profileError, setProfileError] = useState(false)
   const [noProfile, setNoProfile] = useState(false)
+  // Signed out: say so and offer sign-in, never show zeroed earnings.
+  const [signedOut, setSignedOut] = useState(false)
   const [jobsError, setJobsError] = useState(false)
+  // Each trip-list request gets an id; only the latest request may write state,
+  // so a slow earlier period never overwrites the period the driver selected.
+  const jobsRequestSeq = useRef(0)
   // "My pay": closed payroll lines from agency_payroll_my_lines().
   const [payLines, setPayLines] = useState<DriverPayLine[]>([])
   const [payState, setPayState] = useState<'loading' | 'ready' | 'error'>('loading')
 
   const fetchDriverId = useCallback(async () => {
     if (!user?.id) {
+      // Session still resolving: keep the spinner. Otherwise the driver is signed out.
+      if (authLoading) return
+      setSignedOut(true)
       setLoading(false)
       return
     }
+    setSignedOut(false)
     setProfileError(false)
     setNoProfile(false)
     try {
@@ -94,7 +108,7 @@ export default function DriverEarningsPage() {
       setProfileError(true)
       setLoading(false)
     }
-  }, [user?.id])
+  }, [user?.id, authLoading])
 
   const loadPayLines = useCallback(async () => {
     setPayState('loading')
@@ -121,10 +135,13 @@ export default function DriverEarningsPage() {
   }, [])
 
   const fetchJobs = useCallback(async (drId: string) => {
+    const requestId = ++jobsRequestSeq.current
+    const isLatest = () => requestId === jobsRequestSeq.current
     setLoading(true)
     setJobsError(false)
     try {
       const data = await driverTripsApi.getDeliveredTrips(drId, period)
+      if (!isLatest()) return
       setJobs(((data ?? []) as Record<string, unknown>[]).map((job) => {
         const shipment = Array.isArray(job.shipments) ? job.shipments[0] : job.shipments
         return {
@@ -142,10 +159,11 @@ export default function DriverEarningsPage() {
         }
       }))
     } catch (_error) {
+      if (!isLatest()) return
       toast.error('Failed to load earnings')
       setJobsError(true)
     }
-    setLoading(false)
+    if (isLatest()) setLoading(false)
   }, [period])
 
   useEffect(() => { fetchDriverId() }, [fetchDriverId])
@@ -291,6 +309,16 @@ export default function DriverEarningsPage() {
               Retry
             </button>
           </div>
+        ) : signedOut ? (
+          <div role="status" className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
+            <Wallet size={36} className="text-slate-300 dark:text-slate-600 mx-auto mb-2" aria-hidden="true" />
+            <p className="text-slate-700 dark:text-slate-200 text-sm font-medium">Sign in to see your earnings</p>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Your delivered trips and withdrawals show here after you sign in.</p>
+            {/* Plain link: this page is also mounted outside a router. */}
+            <a href="/login" className="mt-4 inline-flex min-h-[44px] items-center px-6 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+              Sign in
+            </a>
+          </div>
         ) : noProfile ? (
           <div role="status" className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center shadow-sm">
             <Wallet size={36} className="text-slate-300 dark:text-slate-600 mx-auto mb-2" aria-hidden="true" />
@@ -400,8 +428,8 @@ export default function DriverEarningsPage() {
                       <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                         <dt>Base pay</dt><dd className="text-right">{formatPaise(line.basePaise)}</dd>
                         <dt>Trip pay</dt><dd className="text-right">{formatPaise(line.tripsPaise)}</dd>
-                        <dt>Advances</dt><dd className="text-right">-{formatPaise(line.advancesPaise)}</dd>
-                        <dt>Deductions</dt><dd className="text-right">-{formatPaise(line.deductionsPaise)}</dd>
+                        <dt>Advances</dt><dd className="text-right">{formatDeduction(line.advancesPaise)}</dd>
+                        <dt>Deductions</dt><dd className="text-right">{formatDeduction(line.deductionsPaise)}</dd>
                         {line.carriedInPaise > 0 && (<><dt>Carried in</dt><dd className="text-right">{formatPaise(line.carriedInPaise)}</dd></>)}
                         {line.shortfallPaise > 0 && (<><dt>Carried forward</dt><dd className="text-right">{formatPaise(line.shortfallPaise)}</dd></>)}
                       </dl>

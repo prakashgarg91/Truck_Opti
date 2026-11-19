@@ -10,6 +10,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
     getAll: vi.fn(),
+    gst: { status: 'ready', registered: true } as { status: 'loading' | 'ready' | 'error'; registered: boolean | null },
+}))
+
+// Registered is the default; the GST branch tests below switch the state.
+vi.mock('../hooks/useSellerGstRegistered', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../hooks/useSellerGstRegistered')>()),
+    useSellerGstRegistered: () => h.gst,
 }))
 
 vi.mock('../services/subscriptionApi', () => ({
@@ -105,6 +112,7 @@ async function click(button: HTMLButtonElement) {
 describe('PricingPage plan rendering', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        h.gst = { status: 'ready', registered: true }
     })
 
     it('shows human feature labels, never raw slugs, when the database loads', async () => {
@@ -179,5 +187,46 @@ describe('PricingPage plan rendering', () => {
         h.getAll.mockResolvedValue(DB_PLANS)
         await mountPage()
         expect(document.title).toBe('Pricing — TruckOpti')
+    })
+})
+
+describe('PricingPage tax copy follows the seller GST flag', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.getAll.mockResolvedValue(DB_PLANS)
+    })
+
+    it('registered: keeps the GST copy and the excl. GST price label', async () => {
+        h.gst = { status: 'ready', registered: true }
+        await mountPage()
+        expect(text()).toContain('GST extra at 18%')
+        expect(text()).toContain('Price/month (excl. GST)')
+        expect(text()).not.toContain('No GST charged')
+    })
+
+    it('unregistered: says No GST charged and never shows the 18% copy', async () => {
+        h.gst = { status: 'ready', registered: false }
+        await mountPage()
+        expect(text()).toContain('No GST charged')
+        expect(text()).not.toMatch(/GST extra|18% GST|excl\. GST/)
+        expect(text()).toContain('Price/month')
+        expect(text()).toContain('₹499')
+    })
+
+    it('loading: shows the price before tax and says taxes are shown at checkout', async () => {
+        h.gst = { status: 'loading', registered: null }
+        await mountPage()
+        expect(text()).toContain('Taxes, if any, are shown at checkout')
+        expect(text()).toContain('Price/month (before tax)')
+        expect(text()).toContain('₹499')
+        expect(text()).not.toMatch(/GST extra|No GST charged/)
+    })
+
+    it('error: shows the price before tax and says taxes are shown at checkout', async () => {
+        h.gst = { status: 'error', registered: null }
+        await mountPage()
+        expect(text()).toContain('Taxes, if any, are shown at checkout')
+        expect(text()).toContain('₹1,999')
+        expect(text()).not.toMatch(/GST extra|No GST charged/)
     })
 })

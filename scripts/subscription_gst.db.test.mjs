@@ -367,7 +367,7 @@ const HARD = [
 // SQL texts and fixtures
 // ---------------------------------------------------------------------------
 const GSTIN_OK = '27ABCDE1234F1Z5'
-const SETTINGS_SQL = 'SELECT public.platform_billing_settings_update($1, $2, $3, $4, $5, $6) AS r'
+const SETTINGS_SQL = 'SELECT public.platform_billing_settings_update($1, $2, $3, $4, $5, $6, true) AS r'
 const NEXT_SQL = 'SELECT public.subscription_next_invoice_number($1::text, $2::timestamptz) AS n'
 const POS_SQL = 'SELECT public.subscription_place_of_supply($1::text, $2::text) AS p'
 
@@ -1270,7 +1270,7 @@ async function main() {
   })
 
   await testCase('G89. settings UPDATE carries WHERE TRUE, and GSTIN/state mismatch is refused (function and table)', async () => {
-    const def = (await su(`SELECT pg_get_functiondef('public.platform_billing_settings_update(text,text,text,text,text,boolean)'::regprocedure) AS d`)).rows[0].d
+    const def = (await su(`SELECT pg_get_functiondef('public.platform_billing_settings_update(text,text,text,text,text,boolean,boolean)'::regprocedure) AS d`)).rows[0].d
     expect(/WHERE\s+(TRUE|true)/.test(def), 'no WHERE TRUE in platform_billing_settings_update')
     const before = await settingsRow()
     const viaFn = await asUser(adminUser, SETTINGS_SQL, settingsArgs({ gstin: GSTIN_OK, state: '07' }))

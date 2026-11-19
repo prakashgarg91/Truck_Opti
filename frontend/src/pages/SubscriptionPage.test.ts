@@ -11,6 +11,13 @@ const h = vi.hoisted(() => ({
     list: vi.fn(),
     save: vi.fn(),
     text: vi.fn(),
+    gst: { status: 'ready', registered: true } as { status: 'loading' | 'ready' | 'error'; registered: boolean | null },
+}))
+
+// Registered is the default; the GST branch tests below switch the state.
+vi.mock('../hooks/useSellerGstRegistered', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../hooks/useSellerGstRegistered')>()),
+    useSellerGstRegistered: () => h.gst,
 }))
 
 vi.mock('jspdf', () => ({
@@ -30,9 +37,22 @@ vi.mock('../services/subscriptionApi', () => ({
     gstInvoicesApi: { list: h.list },
 }))
 
-vi.mock('../components/billing/useEntitlement', () => ({
-    useEntitlement: () => ({ entitlement: undefined, view: null, isLoading: false, isError: false, refetch: vi.fn() }),
+// An active plan, so the plan card (and its GST price note) renders.
+const billing = vi.hoisted(() => ({
+    entitlement: {
+        status: 'active', planTier: 'growth', periodEnd: '2027-01-01T00:00:00Z', trialEnd: null, graceEnd: null,
+    },
+    view: {
+        banner: null, daysLeft: null, canCreate: true, canSettle: true, dispatchLocked: false,
+        needsPlan: false, statusLabel: 'Active',
+    },
 }))
+
+vi.mock('../components/billing/useEntitlement', () => ({
+    useEntitlement: () => ({ entitlement: billing.entitlement, view: billing.view, isLoading: false, isError: false, refetch: vi.fn() }),
+}))
+
+vi.mock('../components/billing/UsageBars', () => ({ default: () => null }))
 
 vi.mock('../stores/authStore', () => ({
     useAuthStore: () => ({ user: { id: 'u1', email: 'owner@example.com', name: 'Owner', role: 'agency' } }),
@@ -73,6 +93,7 @@ describe('SubscriptionPage invoice history', () => {
     beforeEach(() => {
         ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
         vi.clearAllMocks()
+        h.gst = { status: 'ready', registered: true }
         container = document.createElement('div')
         document.body.appendChild(container)
         root = createRoot(container)
@@ -143,5 +164,104 @@ describe('SubscriptionPage accessibility', () => {
         const download = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Download')!
         expect(download.className).toContain('min-h-[44px]')
         expect(download.className).toContain('focus-visible:ring-2')
+    })
+})
+
+const REGISTERED_INVOICE = {
+    ...INVOICE,
+    gst_rate_pct: 18,
+    supplier_gstin: '27ABCDE1234F1Z5',
+}
+
+const UNREGISTERED_INVOICE = {
+    ...INVOICE,
+    id: 'inv-2',
+    invoice_number: 'TO/26-27/000002',
+    gst_rate_pct: 0,
+    supplier_gstin: null,
+    taxable_paise: 49900,
+    cgst_paise: 0,
+    sgst_paise: 0,
+    igst_paise: 0,
+    total_paise: 49900,
+    credit_notes: [],
+}
+
+describe('SubscriptionPage GST copy follows the seller GST flag', () => {
+    beforeEach(() => {
+        ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+        vi.clearAllMocks()
+        h.gst = { status: 'ready', registered: true }
+        container = document.createElement('div')
+        document.body.appendChild(container)
+        root = createRoot(container)
+    })
+    afterEach(() => {
+        act(() => root.unmount())
+        container.remove()
+    })
+
+    it('registered: keeps the GST price note and the incl. GST column header', async () => {
+        h.list.mockResolvedValue([REGISTERED_INVOICE])
+        await render()
+        expect(container.textContent).toContain('Prices exclude GST (GST extra at 18%).')
+        expect(container.textContent).toContain('Amount (incl. GST)')
+        expect(container.textContent).not.toContain('No GST charged')
+    })
+
+    it('registered: the download is titled Tax Invoice', async () => {
+        h.list.mockResolvedValue([REGISTERED_INVOICE])
+        await render()
+        const button = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Download')!
+        await act(async () => {
+            button.click()
+        })
+        const written = h.text.mock.calls.map((c) => String(c[0])).join(' | ')
+        expect(written).toContain('TruckOpti Subscription Tax Invoice')
+        expect(written).toContain('Supplier GSTIN')
+        expect(written).toContain('CGST (9%)')
+    })
+
+    it('unregistered: says No GST charged, drops the incl. GST header and marks the invoice', async () => {
+        h.gst = { status: 'ready', registered: false }
+        h.list.mockResolvedValue([UNREGISTERED_INVOICE])
+        await render()
+        expect(container.textContent).toContain('Prices exclude GST. No GST charged.')
+        expect(container.textContent).not.toMatch(/GST extra|18%|incl\. GST/)
+        expect(container.textContent).toContain('No GST charged')
+        const headers = Array.from(container.querySelectorAll('th')).map((th) => th.textContent)
+        expect(headers).toContain('Amount')
+    })
+
+    it('unregistered: the download is titled Invoice with no seller GSTIN or tax rows', async () => {
+        h.gst = { status: 'ready', registered: false }
+        h.list.mockResolvedValue([UNREGISTERED_INVOICE])
+        await render()
+        const button = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Download')!
+        await act(async () => {
+            button.click()
+        })
+        const written = h.text.mock.calls.map((c) => String(c[0])).join(' | ')
+        expect(written).toContain('TruckOpti Subscription Invoice')
+        expect(written).not.toContain('Tax Invoice')
+        expect(written).toContain('Seller not registered under GST. No GST charged.')
+        expect(written).not.toContain('CGST')
+        expect(written).not.toContain('Supplier GSTIN')
+    })
+
+    it('loading: shows the price before tax and says taxes are shown at checkout', async () => {
+        h.gst = { status: 'loading', registered: null }
+        h.list.mockResolvedValue([REGISTERED_INVOICE])
+        await render()
+        expect(container.textContent).toContain('Prices exclude tax. Taxes, if any, are shown at checkout.')
+        expect(container.textContent).not.toMatch(/GST extra|18%|No GST charged/)
+    })
+
+    it('error: shows the price before tax and says taxes are shown at checkout', async () => {
+        h.gst = { status: 'error', registered: null }
+        h.list.mockResolvedValue([REGISTERED_INVOICE])
+        await render()
+        expect(container.textContent).toContain('Taxes, if any, are shown at checkout')
+        expect(container.textContent).not.toMatch(/GST extra|18%|incl\. GST/)
     })
 })

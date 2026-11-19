@@ -2,10 +2,13 @@
  * Regression suite for DriverRegisterPage — the driver onboarding wizard.
  *
  * The page is exercised through react-dom (no Testing Library in this repo):
- * auth comes from a mocked useAuthStore, supabase storage and
+ * auth comes from a mocked useAuthStore, driverKycApi.uploadDocument and
  * driverSupabaseApi.register are vi.hoisted mocks, so no network or real
  * Supabase client is ever touched. Every case pins the CURRENT behaviour of
  * the page so later changes cannot break it silently.
+ *
+ * Documents are selected locally and sent through driverKycApi.uploadDocument
+ * only AFTER the drivers row is created (driver-kyc requires that row).
  */
 // FINDING (a11y, not fixed here): the visible <label> elements have no
 // htmlFor/id association and the text/select inputs carry no aria-label, so
@@ -30,9 +33,7 @@ const h = vi.hoisted(() => ({
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
     loggerError: vi.fn(),
-    storageFrom: vi.fn(),
-    upload: vi.fn(),
-    getPublicUrl: vi.fn(),
+    uploadDocument: vi.fn(),
 }))
 
 const auth = vi.hoisted(() => ({
@@ -45,8 +46,8 @@ vi.mock('../services/supabaseApi', () => ({
     driverSupabaseApi: { register: h.register },
 }))
 
-vi.mock('../lib/supabase', () => ({
-    supabase: { storage: { from: h.storageFrom } },
+vi.mock('../services/driverKycApi', () => ({
+    uploadDocument: h.uploadDocument,
 }))
 
 vi.mock('../stores/authStore', () => ({
@@ -171,9 +172,7 @@ describe('DriverRegisterPage', () => {
     beforeEach(() => {
         auth.user = { id: USER_ID, email: 'driver@example.com', role: 'user' }
         h.register.mockResolvedValue(undefined)
-        h.storageFrom.mockImplementation(() => ({ upload: h.upload, getPublicUrl: h.getPublicUrl }))
-        h.upload.mockResolvedValue({ error: null })
-        h.getPublicUrl.mockImplementation((path: string) => ({ data: { publicUrl: `https://cdn.test/${path}` } }))
+        h.uploadDocument.mockResolvedValue({})
         locations.length = 0
         sessionStorage.clear()
     })
@@ -185,7 +184,7 @@ describe('DriverRegisterPage', () => {
         expect(text()).toContain('Continue To Driver Login')
         expect(f.name()).toBeNull()
         expect(h.register).not.toHaveBeenCalled()
-        expect(h.upload).not.toHaveBeenCalled()
+        expect(h.uploadDocument).not.toHaveBeenCalled()
     })
 
     it('logged out: the gate button stores the return-to path and navigates to driver login', async () => {
@@ -300,54 +299,50 @@ describe('DriverRegisterPage', () => {
         expect(h.register).not.toHaveBeenCalled()
     })
 
-    it('licence upload stores under <user>/licence.<ext> with upsert and shows an Uploaded state, never a public link', async () => {
+    async function completeWizard(docs: { licence?: File; rc?: File } = {}) {
+        await mountPage()
+        await type(f.name(), 'Ravi Kumar')
+        await type(f.phone(), '9876543210')
+        await type(f.aadhaar(), '1234')
+        await type(f.pan(), 'ABCDE1234F')
+        await type(f.city(), 'Mumbai')
+        await click(nextButton())
+        await type(vehicleSelect(), 'tata_407')
+        await type(f.rc(), 'MH01AB1234')
+        await type(f.license(), 'MH0120220001234')
+        // RC first: picking the licence removes its input, which would shift the indexes.
+        if (docs.rc) await pickFile(fileInputs()[1], docs.rc)
+        if (docs.licence) await pickFile(fileInputs()[0], docs.licence)
+        await click(nextButton())
+        await type(f.bank(), '123456789012')
+        await type(f.ifsc(), 'SBIN0001234')
+        await click(nextButton())
+    }
+
+    it('selecting a licence holds the file locally: no upload happens until submit', async () => {
         await gotoStep2()
-        const file = new File(['dl-bytes'], 'licence.png', { type: 'image/png' })
-        await pickFile(fileInputs()[0], file)
-        expect(h.storageFrom).toHaveBeenCalledWith('driver-docs')
-        expect(h.upload).toHaveBeenCalledTimes(1)
-        expect(h.upload).toHaveBeenCalledWith(`${USER_ID}/licence.png`, file, { upsert: true })
-        expect(h.getPublicUrl).not.toHaveBeenCalled()
-        expect(h.toastSuccess).toHaveBeenCalledWith('Driving licence uploaded')
-        expect(q('img[alt="Licence"]')).toBeNull()
+        await pickFile(fileInputs()[0], new File(['dl-bytes'], 'licence.png', { type: 'image/png' }))
+        expect(h.uploadDocument).not.toHaveBeenCalled()
+        expect(text()).toContain('Selected: licence.png')
         expect(q('button[aria-label="Remove driving licence photo"]')).not.toBeNull()
-        expect(text()).toContain('Uploaded')
+        expect(buttons(/Upload Driving Licence/)).toHaveLength(0)
     })
 
-    it('RC upload stores under <user>/rc.<ext> and toasts its own message', async () => {
+    it('selecting an RC holds the file locally and shows its Selected state', async () => {
         await gotoStep2()
-        const file = new File(['rc-bytes'], 'rc.jpg', { type: 'image/jpeg' })
-        await pickFile(fileInputs()[1], file)
-        expect(h.upload).toHaveBeenCalledWith(`${USER_ID}/rc.jpg`, file, { upsert: true })
-        expect(h.toastSuccess).toHaveBeenCalledWith('RC uploaded')
-        expect(q('img[alt="RC"]')).toBeNull()
+        await pickFile(fileInputs()[1], new File(['rc-bytes'], 'rc.jpg', { type: 'image/jpeg' }))
+        expect(h.uploadDocument).not.toHaveBeenCalled()
+        expect(text()).toContain('Selected: rc.jpg')
         expect(q('button[aria-label="Remove RC photo"]')).not.toBeNull()
     })
 
-    it('a failed upload toasts, logs, and keeps the upload button', async () => {
-        h.upload.mockRejectedValueOnce(new Error('storage down'))
+    it('a file the KYC validator rejects is not selected and its reason is toasted', async () => {
         await gotoStep2()
-        await pickFile(fileInputs()[0], new File(['x'], 'licence.png', { type: 'image/png' }))
-        expect(h.toastError).toHaveBeenCalledWith('Failed to upload document')
-        expect(h.loggerError).toHaveBeenCalled()
+        await pickFile(fileInputs()[0], new File(['gif'], 'licence.gif', { type: 'image/gif' }))
+        expect(h.toastError).toHaveBeenCalledWith('Unsupported file type. Use JPG, PNG, WEBP or PDF.')
         expect(q('button[aria-label="Remove driving licence photo"]')).toBeNull()
         expect(buttons(/Upload Driving Licence/)).toHaveLength(1)
-    })
-
-    it('the licence button is disabled and reads "Uploading..." while the upload is in flight', async () => {
-        let settle!: (value: { error: null }) => void
-        h.upload.mockImplementation(() => new Promise((res) => { settle = res }))
-        await gotoStep2()
-        await pickFile(fileInputs()[0], new File(['x'], 'licence.png', { type: 'image/png' }))
-        const uploading = buttons(/^Uploading\.\.\.$/)[0] as HTMLButtonElement
-        expect(uploading).toBeTruthy()
-        expect(uploading.disabled).toBe(true)
-        expect((buttons(/Upload Vehicle RC/)[0] as HTMLButtonElement).disabled).toBe(false)
-        await act(async () => {
-            settle({ error: null })
-            await new Promise((r) => setTimeout(r, 0))
-        })
-        expect(q('button[aria-label="Remove driving licence photo"]')).not.toBeNull()
+        expect(h.uploadDocument).not.toHaveBeenCalled()
     })
 
     it('removing an uploaded licence restores the upload button', async () => {
@@ -359,25 +354,116 @@ describe('DriverRegisterPage', () => {
         expect(buttons(/Upload Driving Licence/)).toHaveLength(1)
     })
 
-    it('submission sends the licence storage path, not a public URL, in dl_url', async () => {
-        await mountPage()
-        await type(f.name(), 'Ravi Kumar')
-        await type(f.phone(), '9876543210')
-        await type(f.aadhaar(), '1234')
-        await type(f.pan(), 'ABCDE1234F')
-        await type(f.city(), 'Mumbai')
-        await click(nextButton())
-        await type(vehicleSelect(), 'tata_407')
-        await type(f.rc(), 'MH01AB1234')
-        await type(f.license(), 'MH0120220001234')
+    it('submission creates the driver row first, then uploads the licence as driving_license and the RC as rc_book', async () => {
+        const licence = new File(['dl-bytes'], 'licence.png', { type: 'image/png' })
+        const rc = new File(['rc-bytes'], 'rc.jpg', { type: 'image/jpeg' })
+        await completeWizard({ licence, rc })
+
+        expect(h.register).toHaveBeenCalledTimes(1)
+        expect(h.register.mock.calls[0][0].dl_url).toBeNull()
+        expect(h.register.mock.calls[0][0].rc_url).toBeNull()
+        expect(h.uploadDocument.mock.calls).toEqual([
+            ['driving_license', licence],
+            ['rc_book', rc],
+        ])
+        expect(h.register.mock.invocationCallOrder[0]).toBeLessThan(h.uploadDocument.mock.invocationCallOrder[0])
+    })
+
+    it('all uploads ok: the confirmation lists both documents as received and reports no failure', async () => {
+        await completeWizard({
+            licence: new File(['dl-bytes'], 'licence.png', { type: 'image/png' }),
+            rc: new File(['rc-bytes'], 'rc.jpg', { type: 'image/jpeg' }),
+        })
+        expect(text()).toContain('Application Submitted!')
+        expect(text()).toContain('Documents received: Driving Licence, Vehicle RC.')
+        expect(text()).not.toContain('did not upload')
+        expect(h.toastError).not.toHaveBeenCalled()
+        expect(h.updateUser).toHaveBeenCalledWith({ role: 'driver' })
+    })
+
+    it('one upload fails (licence): registration completes, the licence is named as not uploaded, and the RC is still sent', async () => {
+        h.uploadDocument.mockRejectedValueOnce(new Error('bad bytes')).mockResolvedValueOnce({})
+        await completeWizard({
+            licence: new File(['dl-bytes'], 'licence.png', { type: 'image/png' }),
+            rc: new File(['rc-bytes'], 'rc.jpg', { type: 'image/jpeg' }),
+        })
+        expect(h.uploadDocument).toHaveBeenCalledTimes(2)
+        expect(h.updateUser).toHaveBeenCalledWith({ role: 'driver' })
+        expect(text()).toContain('Application Submitted!')
+        expect(text()).toContain('Documents received: Vehicle RC.')
+        expect(text()).toContain('These documents did not upload: Driving Licence.')
+        expect(text()).toContain('Add them from your profile (Documents & KYC).')
+        expect(text()).not.toContain('Documents received: Driving Licence')
+        expect(h.toastError).toHaveBeenCalledWith('Some documents did not upload. You can add them from your profile.')
+        expect(h.loggerError).toHaveBeenCalled()
+    })
+
+    it('one upload fails (RC): the licence is reported as received and only the RC as not uploaded', async () => {
+        h.uploadDocument.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('bad bytes'))
+        await completeWizard({
+            licence: new File(['dl-bytes'], 'licence.png', { type: 'image/png' }),
+            rc: new File(['rc-bytes'], 'rc.jpg', { type: 'image/jpeg' }),
+        })
+        expect(h.uploadDocument).toHaveBeenCalledTimes(2)
+        expect(text()).toContain('Application Submitted!')
+        expect(text()).toContain('Documents received: Driving Licence.')
+        expect(text()).toContain('These documents did not upload: Vehicle RC.')
+        expect(text()).not.toContain('Documents received: Vehicle RC')
+    })
+
+    it('all uploads fail: nothing is reported as received, both documents are named, and registration still completes', async () => {
+        h.uploadDocument.mockRejectedValue(new Error('storage down'))
+        await completeWizard({
+            licence: new File(['dl-bytes'], 'licence.png', { type: 'image/png' }),
+            rc: new File(['rc-bytes'], 'rc.jpg', { type: 'image/jpeg' }),
+        })
+        expect(h.uploadDocument).toHaveBeenCalledTimes(2)
+        expect(h.register).toHaveBeenCalledTimes(1)
+        expect(h.updateUser).toHaveBeenCalledWith({ role: 'driver' })
+        expect(text()).toContain('Application Submitted!')
+        expect(text()).toContain('These documents did not upload: Driving Licence, Vehicle RC.')
+        expect(text()).not.toContain('Documents received')
+    })
+
+    it('no documents selected: no upload is attempted and the confirmation says none were attached', async () => {
+        await completeWizard({})
+        expect(h.uploadDocument).not.toHaveBeenCalled()
+        expect(text()).toContain('Application Submitted!')
+        expect(text()).toContain('No documents were attached at sign-up. Add them from your profile (Documents & KYC).')
+    })
+
+    it('driver row insert fails: no document upload is attempted', async () => {
+        h.register.mockRejectedValueOnce(new Error('insert failed'))
+        await completeWizard({
+            licence: new File(['dl-bytes'], 'licence.png', { type: 'image/png' }),
+            rc: new File(['rc-bytes'], 'rc.jpg', { type: 'image/jpeg' }),
+        })
+        expect(h.register).toHaveBeenCalledTimes(1)
+        expect(h.uploadDocument).not.toHaveBeenCalled()
+        expect(h.toastError).toHaveBeenCalledWith('Submission failed. Please try again.')
+        expect(text()).toContain('Payment Details')
+        expect(text()).not.toContain('Application Submitted!')
+    })
+
+    it('the submit button stays disabled while documents upload after the driver row is created', async () => {
+        let settle!: () => void
+        h.uploadDocument.mockImplementation(() => new Promise<void>((res) => { settle = res }))
+        await gotoStep2()
         await pickFile(fileInputs()[0], new File(['dl-bytes'], 'licence.png', { type: 'image/png' }))
+        await type(vehicleSelect(), 'tata_407')
         await click(nextButton())
         await type(f.bank(), '123456789012')
         await type(f.ifsc(), 'SBIN0001234')
-        await click(nextButton())
-
+        const submit = nextButton()
+        await click(submit)
+        expect(submit.disabled).toBe(true)
         expect(h.register).toHaveBeenCalledTimes(1)
-        expect(h.register.mock.calls[0][0].dl_url).toBe(`${USER_ID}/licence.png`)
+        expect(h.uploadDocument).toHaveBeenCalledTimes(1)
+        await act(async () => {
+            settle()
+            await new Promise((r) => setTimeout(r, 0))
+        })
+        expect(text()).toContain('Application Submitted!')
     })
 
     it('step 3 requires a bank account number', async () => {
@@ -437,6 +523,20 @@ describe('DriverRegisterPage', () => {
         expect(text()).toContain('Application Submitted!')
         expect(text()).toContain('Ravi Kumar')
         expect(text()).toContain('9876543210')
+    })
+
+    it('the confirmation makes no SMS promise and states the real next step (review, then sign in to check status)', async () => {
+        await gotoStep3()
+        await type(f.bank(), '123456789012')
+        await type(f.ifsc(), 'SBIN0001234')
+        await click(nextButton())
+        const body = text()
+        expect(body).toContain('Application Submitted!')
+        expect(body).toContain('Our team reviews your details and documents.')
+        expect(body).toContain('Sign in with this account to check your application status.')
+        expect(body).not.toMatch(/SMS/i)
+        expect(body).not.toContain('24')
+        expect(body).not.toContain('Account activated via SMS')
     })
 
     it('the confirmation screen navigates to the driver portal', async () => {

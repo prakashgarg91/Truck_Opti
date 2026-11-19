@@ -229,3 +229,41 @@ describe('AdminContactPage', () => {
         expect(text()).toContain('admin-home-marker')
     })
 })
+
+const inquiryRows = (count: number): ContactInquiry[] =>
+    Array.from({ length: count }, (_, i) => ({ ...OPEN, id: `inq-cap-${i}`, name: `Inquiry ${i}` }))
+
+describe('AdminContactPage list cap notice', () => {
+    beforeEach(() => {
+        vi.resetAllMocks()
+        h.resolveContactInquiry.mockResolvedValue(undefined)
+    })
+
+    it('shows no cap notice when fewer than 200 inquiries came back', async () => {
+        h.getContactInquiries.mockResolvedValue(inquiryRows(199))
+        await mountPage()
+        expect(text()).toContain('Inquiry 198')
+        expect(q('[data-testid="contact-cap-notice"]')).toBeNull()
+    })
+
+    it('shows the status notice with the real cap when exactly 200 inquiries came back', async () => {
+        h.getContactInquiries.mockResolvedValue(inquiryRows(200))
+        await mountPage()
+        const notice = q('[data-testid="contact-cap-notice"]')
+        expect(notice?.getAttribute('role')).toBe('status')
+        expect(notice?.textContent).toBe('Showing the first 200 only.')
+    })
+
+    it('shows no cap notice while loading', async () => {
+        h.getContactInquiries.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        expect(q('[data-testid="contact-cap-notice"]')).toBeNull()
+    })
+
+    it('shows no cap notice in the error state', async () => {
+        h.getContactInquiries.mockRejectedValueOnce(new Error('network down'))
+        await mountPage()
+        expect(q('[data-testid="admin-load-error"]')).toBeTruthy()
+        expect(q('[data-testid="contact-cap-notice"]')).toBeNull()
+    })
+})

@@ -20,6 +20,7 @@ import { BTN_PRIMARY, BTN_SECONDARY, FOCUS_RING } from '../components/billing/st
 import { useEntitlement } from '../components/billing/useEntitlement'
 import { logger } from '../utils/logger'
 import { useAuthStore } from '../stores/authStore'
+import { taxModeOf, useSellerGstRegistered } from '../hooks/useSellerGstRegistered'
 
 type PlanTier = 'starter' | 'growth' | 'professional'
 type Phase = 'form' | 'opening' | 'activating' | 'active' | 'timeout'
@@ -41,6 +42,12 @@ const CheckoutPage: React.FC = () => {
   const [searchParams] = useSearchParams()
   const { user } = useAuthStore()
   const { entitlement: current, refetch: refetchEntitlement } = useEntitlement()
+  const sellerGst = useSellerGstRegistered()
+  // The server quote, once an order exists, is the authority; before that, the platform flag.
+  const [quoteGstRegistered, setQuoteGstRegistered] = useState<boolean | null>(null)
+  const taxMode = quoteGstRegistered === null
+    ? taxModeOf(sellerGst)
+    : quoteGstRegistered ? 'registered' : 'unregistered'
 
   const tierParam = searchParams.get('plan')
   const billingCycle: 'monthly' | 'yearly' = searchParams.get('billing') === 'yearly' ? 'yearly' : 'monthly'
@@ -119,6 +126,7 @@ const CheckoutPage: React.FC = () => {
         billing_cycle: billingCycle,
         coupon_code: coupon,
       })
+      if (typeof order.gst_registered === 'boolean') setQuoteGstRegistered(order.gst_registered)
 
       const outcome = await openRazorpayCheckout({
         keyId: razorpayConfig.keyId,
@@ -266,7 +274,9 @@ const CheckoutPage: React.FC = () => {
               </div>
               <span className="font-semibold text-slate-900 dark:text-white">
                 {formatPlanPrice(listPrice)}
-                <span className="block text-right text-xs font-normal text-slate-600 dark:text-slate-300">excl. GST</span>
+                <span className="block text-right text-xs font-normal text-slate-600 dark:text-slate-300">
+                  {taxMode === 'registered' ? 'excl. GST' : taxMode === 'unregistered' ? 'No GST charged' : 'Before tax'}
+                </span>
               </span>
             </div>
 
@@ -280,7 +290,11 @@ const CheckoutPage: React.FC = () => {
             </ul>
 
             <p className="border-t border-slate-200 pt-4 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-200">
-              {GST_NOTE}. The final amount, including GST and any coupon, is calculated securely and shown in the payment window before you pay.
+              {taxMode === 'registered'
+                ? `${GST_NOTE}. The final amount, including GST and any coupon, is calculated securely and shown in the payment window before you pay.`
+                : taxMode === 'unregistered'
+                  ? 'No GST charged. The final amount, including any coupon, is calculated securely and shown in the payment window before you pay.'
+                  : 'Taxes, if any, are shown at checkout. The final amount, including any coupon, is calculated securely and shown in the payment window before you pay.'}
             </p>
             <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
               See our <Link to="/terms" className={`font-semibold text-indigo-700 underline dark:text-indigo-300 ${FOCUS_RING}`}>refund policy</Link>.

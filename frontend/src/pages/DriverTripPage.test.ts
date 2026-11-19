@@ -288,6 +288,16 @@ describe('DriverTripPage refresh states and a11y', () => {
         expect(view.textContent || '').toContain('Attention needed')
     })
 
+    it('in-transit names the customer, agency and platform admins as the live-location audience', async () => {
+        h.getTripByIdForDriver.mockResolvedValue(jobRow('in_transit'))
+        const view = await mountPage()
+
+        await waitFor(() => (view.textContent || '').includes('Journey in Progress'), 'in transit step')
+        const text = view.textContent || ''
+        expect(text).toContain('Your location is shared with the customer, your agency and platform admins while the journey is in progress.')
+        expect(text).not.toContain('Your location is shared with the customer while the journey is in progress.')
+    })
+
     it('the delivery OTP step labels its own 4-digit input', async () => {
         h.getTripByIdForDriver.mockResolvedValue(jobRow('delivery_arrived'))
         const view = await mountPage()
@@ -529,7 +539,9 @@ describe('DriverTripPage agency location sharing', () => {
         const text = view.textContent || ''
         expect(text).toContain('position and speed')
         expect(text).toContain('only during this trip')
-        expect(text).toContain('only your agency can see it')
+        expect(text).toContain('Shares your position and speed with your agency')
+        expect(text).toContain('Separately, your live position is shared with the customer, your agency and platform admins')
+        expect(text).not.toContain('only your agency can see it')
         expect(text).not.toContain('Sharing location')
         expect(watchPosition).not.toHaveBeenCalled()
         expect(h.resolveAgencyJobId).not.toHaveBeenCalled()

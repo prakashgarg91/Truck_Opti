@@ -63,7 +63,7 @@ const AUTHENTICATED_RPC = [
   'agency_subscription_entitlement', 'agency_subscription_invoices', 'agency_subscription_start_trial',
   'agency_tariff_version_publish', 'agency_trip_live', 'agency_truck_assign_driver',
   'agency_truck_unassign_driver', 'agency_vehicle_create', 'agency_vehicle_update', 'release_fleet_assignment',
-  'reserve_fleet_assignment', 'tracking_ping_record', 'platform_billing_settings_update', 'driver_trip_agency_job',
+  'reserve_fleet_assignment', 'tracking_ping_record', 'platform_billing_settings_update', 'platform_gst_registered', 'driver_trip_agency_job',
   // caller-bound usage / plan RPCs (each raises 42501 unless p_user_id = auth.uid())
   'check_usage_limit', 'get_user_plan', 'has_active_subscription', 'increment_usage', 'subscription_usage_visible',
   // RLS and caller-resolution helpers (policies evaluate them as the caller)
@@ -105,7 +105,7 @@ const TRIGGER_FN = [
 const INTERNAL_NO_GRANT_FN = ['subscription_note_refund_exception', 'subscription_note_refusal']
 
 /** The ONLY roles allowed to hold EXECUTE on a candidate function: none for anon/PUBLIC (see PM03). */
-const ANON_OR_PUBLIC_EXECUTE_ALLOWED = []
+const ANON_OR_PUBLIC_EXECUTE_ALLOWED = ['platform_gst_registered']
 
 /** Tables that are counters, sequences, ledgers or service-internal: RLS may be off here, but authenticated must
  *  hold no INSERT/UPDATE/DELETE on them. */
@@ -156,7 +156,7 @@ const WALK = [
   ['agency_driver_payout_request', `SELECT public.agency_driver_payout_request(${U}::uuid, 1, 'probe', 'probe')`],
   ['agency_trip_live', `SELECT public.agency_trip_live(${U}::uuid)`],
   ['tracking_ping_record', `SELECT public.tracking_ping_record(${U}::uuid, 1, 1, 1, now())`],
-  ['platform_billing_settings_update', `SELECT public.platform_billing_settings_update('probe', 'probe', 'probe', 'probe', 'probe', false)`],
+  ['platform_billing_settings_update', `SELECT public.platform_billing_settings_update('probe', 'probe', 'probe', 'probe', 'probe', false, true)`],
 ]
 
 // ---------------------------------------------------------------------------

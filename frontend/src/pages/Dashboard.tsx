@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
 import { packingJobsSupabaseApi, analyticsSupabaseApi, saleOrdersSupabaseApi, customerDashboardApi, type PackingJob, type SaleOrder } from '../services/supabaseApi'
 import { calculateShipmentCost, formatCost } from '../utils/costEngine'
+import { formatRelativeTime } from '../lib/relativeTime'
 
 // Skeleton loader for stats cards
 const StatsSkeleton = memo(() => (
@@ -74,6 +75,14 @@ const TRUCK_TYPES = [
   'BharatBenz 32ft'
 ]
 
+// Status wording for packing jobs in the activity list. Only a completed job may read as completed.
+const PACKING_JOB_LABELS: Record<PackingJob['status'], string> = {
+  pending: 'pending',
+  processing: 'in progress',
+  completed: 'completed',
+  failed: 'failed',
+}
+
 const fetchDashboardData = async (): Promise<DashboardData> => {
   const stats = await customerDashboardApi.getDashboardStats()
   const pendingOptimizations = await customerDashboardApi.getPendingOptimizationsCount()
@@ -91,9 +100,9 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
   const activities = recentJobs.map((job: PackingJob) => ({
     id: job.id || '',
     type: 'packing',
-    message: `Packing job completed - ${job.volume_utilization}% volume utilized`,
-    time: getRelativeTime(new Date(job.created_at || Date.now())),
-    status: job.status === 'completed' ? 'success' : 'info'
+    message: `Packing job ${PACKING_JOB_LABELS[job.status] ?? job.status} - ${job.volume_utilization}% volume utilized`,
+    time: formatRelativeTime(new Date(job.created_at || Date.now())),
+    status: job.status === 'completed' ? 'success' : job.status === 'failed' ? 'warning' : 'info'
   }))
 
   // Add default activities if no packing jobs
@@ -117,18 +126,6 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
   }
 }
 
-const getRelativeTime = (date: Date): string => {
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMins / 60)
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins} min ago`
-  if (diffHours < 24) return `${diffHours} hour ago`
-  return `${diffDays} day ago`
-}
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -208,14 +205,16 @@ export default function Dashboard() {
     { icon: Truck, label: 'Book Truck', path: '/booking/new', color: 'bg-indigo-500', description: 'New booking' },
   ]
 
-  const updateCostEstimate = () => {
+  // Recalculates from the values passed in (or the current state), so a change never uses a stale truck type.
+  const updateCostEstimate = (changes: Partial<Pick<typeof costEstimate, 'distance' | 'truckType' | 'weight'>> = {}) => {
+    const next = { ...costEstimate, ...changes }
     const result = calculateShipmentCost({
-      distanceKm: costEstimate.distance,
-      truckType: costEstimate.truckType,
-      weightKg: costEstimate.weight,
-      volumeM3: costEstimate.weight / 100
+      distanceKm: next.distance,
+      truckType: next.truckType,
+      weightKg: next.weight,
+      volumeM3: next.weight / 100
     })
-    setCostEstimate(prev => ({ ...prev, result }))
+    setCostEstimate(prev => ({ ...prev, ...changes, result }))
   }
 
   if (loading && !loadError) {
@@ -397,7 +396,7 @@ export default function Dashboard() {
                   const val = parseInt(e.target.value) || 0
                   setCostEstimate(prev => ({ ...prev, distance: val }))
                 }}
-                onBlur={updateCostEstimate}
+                onBlur={() => updateCostEstimate()}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg text-sm"
               />
             </div>
@@ -406,8 +405,7 @@ export default function Dashboard() {
               <select
                 value={costEstimate.truckType}
                 onChange={(e) => {
-                  setCostEstimate(prev => ({ ...prev, truckType: e.target.value }))
-                  setTimeout(updateCostEstimate, 0)
+                  updateCostEstimate({ truckType: e.target.value })
                 }}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg text-sm"
               >
@@ -423,7 +421,7 @@ export default function Dashboard() {
                   const val = parseInt(e.target.value) || 0
                   setCostEstimate(prev => ({ ...prev, weight: val }))
                 }}
-                onBlur={updateCostEstimate}
+                onBlur={() => updateCostEstimate()}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 rounded-lg text-sm"
               />
             </div>

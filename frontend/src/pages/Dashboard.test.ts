@@ -426,10 +426,10 @@ describe('Dashboard quick cost estimate', () => {
     expect(totalEstimateText()).toBe(expectedTotal(1200, 'Eicher 14ft', 1000))
   })
 
-  // Dashboard.tsx:218-222. The select onChange calls setTimeout(updateCostEstimate, 0), but
-  // updateCostEstimate is the closure from the render before the state change, so it still reads
-  // the previous truckType. The total therefore keeps the old truck's fuel and cost rates.
-  it.fails('recalculates the total for the newly selected truck type (defect: stale truck type)', async () => {
+  // Dashboard.tsx updateCostEstimate. Previously a truck change ran the pre-change closure via
+  // setTimeout, so the quote used the previous truck type. Fixed: the new truck type is passed in
+  // directly and the quote is recalculated from it.
+  it('recalculates the total for the newly selected truck type', async () => {
     await mount()
     await waitFor(() => text().includes('Quick Cost Estimate'))
 
@@ -438,6 +438,24 @@ describe('Dashboard quick cost estimate', () => {
     await flush(10)
 
     expect(totalEstimateText()).toBe(expectedTotal(500, 'BharatBenz 32ft', 1000))
+    expect(totalEstimateText()).not.toBe(expectedTotal(500, 'Eicher 14ft', 1000))
+  })
+
+  it('uses the newly selected truck type for a later weight change', async () => {
+    await mount()
+    await waitFor(() => text().includes('Quick Cost Estimate'))
+
+    const select = document.querySelector('select') as HTMLSelectElement
+    setInputValue(select, 'Tata Ace')
+    await flush(10)
+    const weight = document.querySelectorAll('input[type="number"]')[1] as HTMLInputElement
+    setInputValue(weight, '2500')
+    act(() => {
+      weight.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    await flush()
+
+    expect(totalEstimateText()).toBe(expectedTotal(500, 'Tata Ace', 2500))
   })
 })
 
@@ -496,8 +514,20 @@ describe('Dashboard missing optional data', () => {
     await mount()
     await waitFor(() => text().includes('40% volume utilized'))
 
-    expect(text()).toContain('Packing job completed - 40% volume utilized')
+    expect(text()).toContain('Packing job pending - 40% volume utilized')
+    expect(text()).not.toContain('Packing job completed')
     expect(text()).toContain('Just now')
+  })
+
+  it('labels processing packing jobs as in progress rather than completed', async () => {
+    api.getUserJobs.mockResolvedValue([
+      { id: 'j5', status: 'processing', volume_utilization: 55, created_at: new Date().toISOString() },
+    ])
+    await mount()
+    await waitFor(() => text().includes('55% volume utilized'))
+
+    expect(text()).toContain('Packing job in progress - 55% volume utilized')
+    expect(text()).not.toContain('Packing job completed')
   })
 
   it('renders sale orders with an unknown status using the fallback badge colour', async () => {
@@ -521,20 +551,23 @@ describe('Dashboard missing optional data', () => {
     expect(bars).toHaveLength(7)
   })
 
-  // Dashboard.tsx:94 always says "Packing job completed" whatever the job status. The
-  // PackingJob status union includes 'pending', 'processing' and 'failed'.
-  it.fails('does not claim a job is completed unless its status is completed (defect: misleading copy)', async () => {
+  // Dashboard.tsx activity mapping. Previously every job said "Packing job completed". Fixed: the
+  // label follows the job status, and a failed job is shown as failed with warning styling.
+  it('reports a failed packing job as failed, not completed', async () => {
     api.getUserJobs.mockResolvedValue([
       { id: 'j3', status: 'failed', volume_utilization: 0, created_at: new Date().toISOString() },
     ])
     await mount()
     await waitFor(() => text().includes('volume utilized'))
 
+    expect(text()).toContain('Packing job failed - 0% volume utilized')
     expect(text()).not.toContain('Packing job completed')
+    const icon = document.querySelector('.bg-orange-100')
+    expect(icon).not.toBeNull()
   })
 
-  // Dashboard.tsx:129-130. Hour and day counts are not pluralised ("3 hour ago").
-  it.fails('pluralises relative time in hours (defect: "3 hour ago")', async () => {
+  // Dashboard.tsx relative time now uses lib/relativeTime.ts. Hour counts are pluralised.
+  it('pluralises relative time in hours ("3 hours ago")', async () => {
     api.getUserJobs.mockResolvedValue([
       {
         id: 'j4',

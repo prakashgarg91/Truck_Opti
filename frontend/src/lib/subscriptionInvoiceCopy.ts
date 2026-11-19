@@ -23,6 +23,21 @@ function present(value: string | null | undefined): string | null {
   return text ? text : null
 }
 
+export const UNREGISTERED_SELLER_NOTICE = 'Seller not registered under GST. No GST charged.'
+
+/**
+ * True when the invoice was issued with no GST: gst_rate_pct 0, or no supplier GSTIN on the snapshot.
+ * Decided per invoice from the stored snapshot, never from the current settings.
+ */
+export function isUnregisteredInvoice(invoice: SubscriptionInvoice): boolean {
+  return invoice.gst_rate_pct === 0 || !present(invoice.supplier_gstin)
+}
+
+/** Document title: "Tax Invoice" for GST invoices, "Invoice" when no GST was charged. */
+export function invoiceTitle(invoice: SubscriptionInvoice): 'Tax Invoice' | 'Invoice' {
+  return isUnregisteredInvoice(invoice) ? 'Invoice' : 'Tax Invoice'
+}
+
 export function buildInvoiceCopyRows(invoice: SubscriptionInvoice, options: InvoiceCopyOptions): InvoiceCopyRow[] {
   const rows: InvoiceCopyRow[] = []
   const detail = (label: string, value: string | null) => {
@@ -33,7 +48,8 @@ export function buildInvoiceCopyRows(invoice: SubscriptionInvoice, options: Invo
   }
 
   detail('Supplier', present(invoice.supplier_legal_name))
-  detail('Supplier GSTIN', present(invoice.supplier_gstin))
+  const unregistered = isUnregisteredInvoice(invoice)
+  if (!unregistered) detail('Supplier GSTIN', present(invoice.supplier_gstin))
   detail('Supplier address', present(invoice.supplier_address))
   detail('Invoice Number', present(invoice.invoice_number))
   detail('Issued On', options.formatDate(invoice.issued_at))
@@ -43,14 +59,17 @@ export function buildInvoiceCopyRows(invoice: SubscriptionInvoice, options: Invo
   detail('Recipient address', present(invoice.recipient_address))
   detail('Place of Supply', present(invoice.place_of_supply_state_code))
   detail('SAC', present(invoice.sac_code))
+  if (unregistered) detail('GST status', UNREGISTERED_SELLER_NOTICE)
 
   // Amounts are the stored integer-paise figures; nothing is recomputed here.
   amount('Taxable value', formatInr(invoice.taxable_paise))
-  if (invoice.igst_paise > 0) {
-    amount('IGST (18%)', formatInr(invoice.igst_paise))
-  } else {
-    amount('CGST (9%)', formatInr(invoice.cgst_paise))
-    amount('SGST (9%)', formatInr(invoice.sgst_paise))
+  if (!unregistered) {
+    if (invoice.igst_paise > 0) {
+      amount('IGST (18%)', formatInr(invoice.igst_paise))
+    } else {
+      amount('CGST (9%)', formatInr(invoice.cgst_paise))
+      amount('SGST (9%)', formatInr(invoice.sgst_paise))
+    }
   }
   amount('Total', formatInr(invoice.total_paise))
   amount('Total in words', paiseToWords(invoice.total_paise))

@@ -79,6 +79,76 @@ function useLoaded<T>(label: string, fallback: string, fetcher: () => Promise<T[
   return { loading, error, rows, reload: () => void load() }
 }
 
+interface PagedSweeps {
+  loading: boolean
+  error: string | null
+  rows: AdminSweepRun[]
+  hasMore: boolean
+  loadingMore: boolean
+  moreError: string | null
+  reload: () => void
+  loadMore: () => void
+}
+
+// Sweep runs page forward with an offset, so older rows are reachable. A page shorter than SWEEP_LIMIT is the last one.
+// A failed "Load more" keeps the rows already shown and offers a retry.
+function usePagedSweeps(): PagedSweeps {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [rows, setRows] = useState<AdminSweepRun[]>([])
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [moreError, setMoreError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    setMoreError(null)
+    try {
+      const page = await adminBillingOpsApi.getSweepRuns(SWEEP_LIMIT)
+      setRows(page)
+      setHasMore(page.length === SWEEP_LIMIT)
+    } catch (e) {
+      logger.error('[AdminBillingOps] sweep runs:', e)
+      setRows([])
+      setHasMore(false)
+      setError(toUserFacingErrorMessage(e, 'Unable to load sweep runs right now. Please try again.'))
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true)
+    setMoreError(null)
+    try {
+      const page = await adminBillingOpsApi.getSweepRuns(SWEEP_LIMIT, rows.length)
+      setRows((prev) => [...prev, ...page])
+      setHasMore(page.length === SWEEP_LIMIT)
+    } catch (e) {
+      logger.error('[AdminBillingOps] sweep runs (more):', e)
+      setMoreError(toUserFacingErrorMessage(e, 'Unable to load more sweep runs right now. Please try again.'))
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [rows.length])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  return { loading, error, rows, hasMore, loadingMore, moreError, reload: () => void load(), loadMore: () => void loadMore() }
+}
+
+// Shown under a list when the server returned exactly as many rows as were asked for: more rows may exist.
+function CapNotice({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <p role="note" data-testid={id} className="text-sm text-slate-600 dark:text-slate-300 pt-3">
+      {children}
+    </p>
+  )
+}
+
 function Block<T>({ id, what, empty, state, children }: { id: string; what: string; empty: string; state: Loaded<T>; children: (rows: T[]) => ReactNode }) {
   if (state.loading) {
     return (
@@ -103,7 +173,6 @@ const loadAgencies = () => adminBillingOpsApi.getAgenciesWithoutSubscription()
 const loadEvents = () => adminBillingOpsApi.getWebhookEvents(WEBHOOK_LIMIT)
 const loadAttempts = () => adminBillingOpsApi.getWebhookAttempts(WEBHOOK_LIMIT)
 const loadCoupons = () => adminBillingOpsApi.getCoupons()
-const loadSweepRuns = () => adminBillingOpsApi.getSweepRuns(SWEEP_LIMIT)
 
 export default function AdminBillingOpsPage() {
   const navigate = useNavigate()
@@ -111,7 +180,7 @@ export default function AdminBillingOpsPage() {
   const events = useLoaded<AdminWebhookEvent>('webhook events', 'Unable to load webhook events right now. Please try again.', loadEvents)
   const attempts = useLoaded<AdminWebhookAttempt>('webhook attempts', 'Unable to load webhook retry attempts right now. Please try again.', loadAttempts)
   const coupons = useLoaded<AdminCoupon>('coupons', 'Unable to load coupons right now. Please try again.', loadCoupons)
-  const sweeps = useLoaded<AdminSweepRun>('sweep runs', 'Unable to load sweep runs right now. Please try again.', loadSweepRuns)
+  const sweeps = usePagedSweeps()
   const [query, setQuery] = useState('')
 
   const runs = sweeps.rows
@@ -168,6 +237,7 @@ export default function AdminBillingOpsPage() {
         <h3 className={H3}>{`Webhook events (latest ${WEBHOOK_LIMIT})`}</h3>
         <Block id="events" what="webhook events" empty="No webhook events have been received yet." state={events}>
           {(rows) => (
+            <>
             <table className="min-w-full text-sm" data-testid="events-table">
               <thead>
                 <tr className="text-left text-slate-500 dark:text-slate-400">
@@ -192,11 +262,16 @@ export default function AdminBillingOpsPage() {
                 ))}
               </tbody>
             </table>
+            {rows.length >= WEBHOOK_LIMIT ? (
+              <CapNotice id="events-cap-notice">{`Showing the first ${WEBHOOK_LIMIT} webhook events. Older events are not shown: this list has no paging yet.`}</CapNotice>
+            ) : null}
+            </>
           )}
         </Block>
         <h3 className={H3}>Retry attempts</h3>
         <Block id="attempts" what="webhook retry attempts" empty="No failed or retried webhook attempts." state={attempts}>
           {(rows) => (
+            <>
             <table className="min-w-full text-sm" data-testid="attempts-table">
               <thead>
                 <tr className="text-left text-slate-500 dark:text-slate-400">
@@ -217,6 +292,10 @@ export default function AdminBillingOpsPage() {
                 ))}
               </tbody>
             </table>
+            {rows.length >= WEBHOOK_LIMIT ? (
+              <CapNotice id="attempts-cap-notice">{`Showing the first ${WEBHOOK_LIMIT} retry attempts. Older attempts are not shown: this list has no paging yet.`}</CapNotice>
+            ) : null}
+            </>
           )}
         </Block>
       </Section>
@@ -283,6 +362,29 @@ export default function AdminBillingOpsPage() {
                 </table>
               </div>
             )}
+            {sweeps.moreError ? (
+              <div role="alert" data-testid="sweep-more-error" className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 text-sm text-red-700 dark:text-red-300">
+                <span>{sweeps.moreError}</span>
+                <button type="button" onClick={sweeps.loadMore} className={`${BUTTON} bg-indigo-600 text-white`}>
+                  <RefreshCw size={16} aria-hidden="true" />
+                  Retry
+                </button>
+              </div>
+            ) : null}
+            {sweeps.hasMore ? (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={sweeps.loadMore}
+                  disabled={sweeps.loadingMore}
+                  data-testid="sweep-load-more"
+                  className={`${BUTTON} bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 disabled:opacity-60`}
+                >
+                  {sweeps.loadingMore ? <RefreshCw className="animate-spin" size={16} aria-hidden="true" /> : null}
+                  {sweeps.loadingMore ? 'Loading more sweep runs' : 'Load more sweep runs'}
+                </button>
+              </div>
+            ) : null}
           </>
         )}
       </Section>

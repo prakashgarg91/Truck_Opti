@@ -262,12 +262,42 @@ test('storage signing failure is a generic 500 with no raw storage detail', asyn
   assertNoLeak(text)
 })
 
-// Known gap, reported not fixed: driver-kyc/index.ts serve() (line 329) does not check req.method, so any method
-// with a valid JSON body and session is processed. Authorization still applies, so this is a contract gap, not a
-// bypass. Marked todo so the suite stays green and the gap stays visible.
-test('unsupported method with a valid driver session is refused with 405', { todo: 'driver-kyc has no method guard (index.ts:329)' }, async () => {
+test('unsupported methods with a valid driver session are refused with 405, Allow header, and no side effects', async () => {
+  for (const method of ['PUT', 'PATCH', 'DELETE', 'GET']) {
+    seed({ caller: DRIVER_B_USER, role: 'driver' })
+    const res = await h.call(URL_, { method, headers: { authorization: 'Bearer tok' } })
+    assert.equal(res.status, 405, method)
+    assert.equal(res.headers.get('allow'), 'POST, OPTIONS', method)
+    assert.equal(res.headers.get('content-type'), 'application/json', method)
+    assert.deepEqual(await res.json(), { error: 'Unsupported method.' }, method)
+    assert.equal(h.fake.calls.length, 0, `${method} must not touch the database or auth`)
+    assertNoStorage()
+  }
+})
+
+test('unsupported method with a JSON body is refused before the body is parsed', async () => {
   seed({ caller: DRIVER_B_USER, role: 'driver' })
   const res = await post({ action: 'access', kind: 'rc_book' }, { method: 'PUT' })
   assert.equal(res.status, 405)
+  assert.equal((await res.json()).error, 'Unsupported method.')
+  assert.equal(h.fake.calls.length, 0)
   assertNoStorage()
+})
+
+test('OPTIONS answers the CORS preflight with 200 and no database or storage work', async () => {
+  seed({ caller: DRIVER_B_USER, role: 'driver' })
+  const res = await h.call(URL_, { method: 'OPTIONS' })
+  assert.equal(res.status, 200)
+  assert.equal(await res.text(), 'ok')
+  assert.equal(res.headers.get('access-control-allow-origin'), '*')
+  assert.equal(h.fake.calls.length, 0)
+  assertNoStorage()
+})
+
+test('POST remains the allowed method for every action and still reaches the handler', async () => {
+  seed({ caller: DRIVER_B_USER, role: 'driver' })
+  const res = await post({ action: 'access', kind: 'rc_book' })
+  assert.equal(res.status, 200)
+  assert.equal(signCalls().length, 1)
+  assert.equal(res.headers.get('allow'), null)
 })

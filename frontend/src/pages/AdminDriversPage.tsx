@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import AdminLoadError from './AdminLoadError'
+import ListCapNotice from '../components/admin/ListCapNotice'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 
 interface Driver {
@@ -73,12 +74,15 @@ export default function AdminDriversPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [loadError, setLoadError] = useState(false)
+  // Rows the last fetch returned. Approve/reject/suspend remove rows locally, but rows beyond the cap stay hidden, so the notice keys off the fetch.
+  const [fetchedCount, setFetchedCount] = useState(0)
 
   const fetchDrivers = useCallback(async () => {
     setLoading(true)
     try {
       const driverData = await adminSupabaseApi.getDriversByStatus(tab)
       setDrivers(driverData as Driver[])
+      setFetchedCount(driverData.length)
       setLoadError(false)
     } catch (err: unknown) {
       logger.error('[AdminDriversPage]', err)
@@ -330,6 +334,7 @@ export default function AdminDriversPage() {
           ))}
         </div>
       )}
+      {!loading && !loadError && <ListCapNotice rowCount={fetchedCount} testId="drivers-cap-notice" />}
 
       {/* Reject Modal */}
       {rejectModal && (

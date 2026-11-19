@@ -302,6 +302,33 @@ describe('subscriptionApi', () => {
         })
     })
 
+    describe('checkoutApi.createOrder tax facts', () => {
+        it('keeps the server gst_registered and gst_rate_pct for an unregistered quote', async () => {
+            functionsInvokeMock.mockResolvedValue({ data: { id: 'order_2', amount: 84746, currency: 'INR', gst_registered: false, gst_rate_pct: 0 }, error: null })
+
+            const order = await subscriptionApi.checkout.createOrder({ plan_tier: 'growth', billing_cycle: 'monthly' })
+
+            expect(order).toEqual({ id: 'order_2', amount: 84746, currency: 'INR', gst_registered: false, gst_rate_pct: 0 })
+        })
+
+        it('keeps gst_registered true and rate 18 for a registered quote', async () => {
+            functionsInvokeMock.mockResolvedValue({ data: { id: 'order_3', amount: 99900, currency: 'INR', gst_registered: true, gst_rate_pct: 18 }, error: null })
+
+            const order = await subscriptionApi.checkout.createOrder({ plan_tier: 'growth', billing_cycle: 'monthly' })
+
+            expect(order).toMatchObject({ gst_registered: true, gst_rate_pct: 18 })
+        })
+
+        it('leaves the tax facts out when the server does not send them', async () => {
+            functionsInvokeMock.mockResolvedValue({ data: { id: 'order_4', amount: 58882, currency: 'INR' }, error: null })
+
+            const order = await subscriptionApi.checkout.createOrder({ plan_tier: 'growth', billing_cycle: 'monthly' })
+
+            expect(order).not.toHaveProperty('gst_registered')
+            expect(order).not.toHaveProperty('gst_rate_pct')
+        })
+    })
+
     describe('checkoutApi.createOrder refusals', () => {
         it('shows the server message from error.context, not the generic text', async () => {
             const context = new Response(JSON.stringify({ error: 'coupon_invalid', message: 'This coupon is not valid.' }), { status: 422 })

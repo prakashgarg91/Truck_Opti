@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildInvoiceCopyRows } from './subscriptionInvoiceCopy'
+import { buildInvoiceCopyRows, invoiceTitle, isUnregisteredInvoice, UNREGISTERED_SELLER_NOTICE } from './subscriptionInvoiceCopy'
 import type { SubscriptionInvoice } from '../services/subscriptionApi'
 
 const BASE: SubscriptionInvoice = {
@@ -67,5 +67,69 @@ describe('buildInvoiceCopyRows', () => {
       OPTIONS,
     )
     expect(get(rows, 'Credit note CN/26-27/000001')).toBe('-₹23.60 on D(2026-08-01T00:00:00Z)')
+  })
+})
+
+// Unregistered seller: the invoice was issued with gst_rate_pct 0, no supplier GSTIN and zero tax.
+const UNREGISTERED: SubscriptionInvoice = {
+  ...BASE,
+  gst_rate_pct: 0,
+  supplier_gstin: null,
+  cgst_paise: 0,
+  sgst_paise: 0,
+  igst_paise: 0,
+  total_paise: 49900,
+}
+
+describe('invoice copy for a GST invoice (registered seller)', () => {
+  it('is titled Tax Invoice and keeps the supplier GSTIN and tax rows', () => {
+    expect(isUnregisteredInvoice(BASE)).toBe(false)
+    expect(invoiceTitle(BASE)).toBe('Tax Invoice')
+    const rows = buildInvoiceCopyRows({ ...BASE, gst_rate_pct: 18 }, OPTIONS)
+    expect(get(rows, 'Supplier GSTIN')).toBe('27ABCDE1234F1Z5')
+    expect(get(rows, 'CGST (9%)')).toBe('₹44.91')
+    expect(get(rows, 'GST status')).toBeUndefined()
+  })
+
+  it('treats a missing gst_rate_pct with a supplier GSTIN as registered (older snapshots)', () => {
+    expect(isUnregisteredInvoice({ ...BASE, gst_rate_pct: undefined })).toBe(false)
+  })
+})
+
+describe('invoice copy for an invoice with no GST (unregistered seller)', () => {
+  it('is titled Invoice when gst_rate_pct is 0', () => {
+    expect(isUnregisteredInvoice(UNREGISTERED)).toBe(true)
+    expect(invoiceTitle(UNREGISTERED)).toBe('Invoice')
+  })
+
+  it('is titled Invoice when the supplier GSTIN is missing, even if the rate is 18', () => {
+    const invoice = { ...BASE, gst_rate_pct: 18, supplier_gstin: null }
+    expect(isUnregisteredInvoice(invoice)).toBe(true)
+    expect(invoiceTitle(invoice)).toBe('Invoice')
+  })
+
+  it('prints no seller GSTIN line and no CGST, SGST or IGST rows', () => {
+    const rows = buildInvoiceCopyRows(UNREGISTERED, OPTIONS)
+    const labels = rows.map((r) => r.label)
+    expect(labels).not.toContain('Supplier GSTIN')
+    expect(labels).not.toContain('CGST (9%)')
+    expect(labels).not.toContain('SGST (9%)')
+    expect(labels).not.toContain('IGST (18%)')
+  })
+
+  it('prints the no-GST line and keeps the other seller and recipient fields', () => {
+    const rows = buildInvoiceCopyRows(UNREGISTERED, OPTIONS)
+    expect(get(rows, 'GST status')).toBe(UNREGISTERED_SELLER_NOTICE)
+    expect(UNREGISTERED_SELLER_NOTICE).toBe('Seller not registered under GST. No GST charged.')
+    expect(get(rows, 'Supplier')).toBe('TruckOpti Technologies Pvt Ltd')
+    expect(get(rows, 'Recipient GSTIN')).toBe('27AAAPL1234C1ZV')
+    expect(get(rows, 'Taxable value')).toBe('₹499.00')
+  })
+
+  it('totals equal the taxable amount', () => {
+    const rows = buildInvoiceCopyRows(UNREGISTERED, OPTIONS)
+    expect(get(rows, 'Taxable value')).toBe('₹499.00')
+    expect(get(rows, 'Total')).toBe('₹499.00')
+    expect(get(rows, 'Total in words')).toBe('Indian Rupees Four Hundred Ninety Nine Only')
   })
 })

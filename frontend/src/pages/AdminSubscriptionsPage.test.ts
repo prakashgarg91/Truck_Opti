@@ -452,3 +452,65 @@ describe('AdminSubscriptionsPage', () => {
         expect((container as HTMLElement).querySelectorAll('thead th[scope="col"]').length).toBe(9)
     })
 })
+
+// The main subscriptions list is not capped by admin-portal-subscriptions (no limit on that query), so
+// the notice belongs only to the two ops-attention lists, which the function caps at 200 rows each.
+const refusedRows = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ ...REFUSED, id: `ref-cap-${i}` }))
+const refundRows = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ ...REFUND_EXC, id: `rfx-cap-${i}`, refund_id: `rfnd_cap_${i}` }))
+
+describe('AdminSubscriptionsPage ops attention cap notice', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.currentUser = { ...CURRENT_ADMIN }
+    })
+
+    it('shows no cap notice when both ops lists are under 200 rows', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap(SUBS, refusedRows(199), refundRows(199)))
+        await mountPage()
+        expect(q('[data-testid="ops-attention"]')).not.toBeNull()
+        expect(q('[data-testid="refused-payments-cap-notice"]')).toBeNull()
+        expect(q('[data-testid="refund-exceptions-cap-notice"]')).toBeNull()
+    })
+
+    it('shows the status notice under the refused payments list when it reaches 200 rows', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap(SUBS, refusedRows(200), []))
+        await mountPage()
+        const notice = q('[data-testid="refused-payments-cap-notice"]')
+        expect(notice?.getAttribute('role')).toBe('status')
+        expect(notice?.textContent).toBe('Showing the first 200 only.')
+        expect(q('[data-testid="refund-exceptions-cap-notice"]')).toBeNull()
+    })
+
+    it('shows the status notice under the refund exceptions list when it reaches 200 rows', async () => {
+        h.getAdminSubscriptions.mockResolvedValue(snap(SUBS, [], refundRows(200)))
+        await mountPage()
+        const notice = q('[data-testid="refund-exceptions-cap-notice"]')
+        expect(notice?.getAttribute('role')).toBe('status')
+        expect(notice?.textContent).toBe('Showing the first 200 only.')
+        expect(q('[data-testid="refused-payments-cap-notice"]')).toBeNull()
+    })
+
+    it('shows no cap notice for the main subscriptions list, even with many subscriptions', async () => {
+        const many = Array.from({ length: 200 }, (_, i) => ({ ...CANCELLED, id: `sub-many-${i}` }))
+        h.getAdminSubscriptions.mockResolvedValue(snap(many))
+        await mountPage()
+        expect(q('[data-testid="refused-payments-cap-notice"]')).toBeNull()
+        expect(q('[data-testid="refund-exceptions-cap-notice"]')).toBeNull()
+        expect(q('[role="status"][data-testid$="cap-notice"]')).toBeNull()
+    })
+
+    it('shows no cap notice while loading', async () => {
+        h.getAdminSubscriptions.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        expect(q('[data-testid="refused-payments-cap-notice"]')).toBeNull()
+    })
+
+    it('shows no cap notice in the error state', async () => {
+        h.getAdminSubscriptions.mockRejectedValue(new UserFacingError('Unable to load subscriptions right now. Please try again.'))
+        await mountPage()
+        expect(q('[data-testid="subscriptions-load-error"]')).not.toBeNull()
+        expect(q('[data-testid="refused-payments-cap-notice"]')).toBeNull()
+    })
+})

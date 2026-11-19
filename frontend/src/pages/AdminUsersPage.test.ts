@@ -467,3 +467,41 @@ describe('AdminUsersPage', () => {
         expect(q('button[aria-label="Close action dialog"]')).not.toBeNull()
     })
 })
+
+const userRows = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ ...CUSTOMER_ROW, id: `usr-cap-${i}`, email: `user${i}@truckopti.test`, name: `Member ${i}` }))
+
+describe('AdminUsersPage list cap notice', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        h.currentUser = { ...CURRENT_ADMIN }
+    })
+
+    it('shows no cap notice when fewer than 200 users came back', async () => {
+        h.getAdminUsers.mockResolvedValue(userRows(199))
+        await mountPage()
+        expect(text()).toContain('Member 198')
+        expect(q('[data-testid="users-cap-notice"]')).toBeNull()
+    })
+
+    it('shows the status notice with the real cap when exactly 200 users came back', async () => {
+        h.getAdminUsers.mockResolvedValue(userRows(200))
+        await mountPage()
+        const notice = q('[data-testid="users-cap-notice"]')
+        expect(notice?.getAttribute('role')).toBe('status')
+        expect(notice?.textContent).toBe('Showing the first 200 only.')
+    })
+
+    it('shows no cap notice while loading', async () => {
+        h.getAdminUsers.mockReturnValue(new Promise(() => {}))
+        await mountPage()
+        expect(q('[data-testid="users-cap-notice"]')).toBeNull()
+    })
+
+    it('shows no cap notice in the error state', async () => {
+        h.getAdminUsers.mockRejectedValue(new UserFacingError('Unable to load users right now. Please try again.'))
+        await mountPage()
+        expect(q('[data-testid="admin-load-error"]')).not.toBeNull()
+        expect(q('[data-testid="users-cap-notice"]')).toBeNull()
+    })
+})
