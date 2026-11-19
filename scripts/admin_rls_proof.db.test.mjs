@@ -559,14 +559,20 @@ async function main() {
     `table_select=${otpPrivileges.table_select} otp_select=${otpPrivileges.otp_select} delivery_otp_select=${otpPrivileges.otp2_select} status_select=${otpPrivileges.status_select}`
   )
 
-  const buckets = await rows(
+  // 'avatars' (20261045000000) is the one deliberately public bucket (profile pictures read by getPublicUrl); it is
+  // image-only and 2 MB, with writes limited to the owner's own folder. The document buckets stay private.
+  const allBuckets = await rows(
     `SELECT id, public, file_size_limit, COALESCE(array_to_string(allowed_mime_types, ','), '') AS mime
      FROM storage.buckets ORDER BY id`
   )
+  const avatarsBucket = allBuckets.find((b) => b.id === 'avatars')
+  const buckets = allBuckets.filter((b) => b.id !== 'avatars')
   inventory.buckets = buckets
   record(
     'A7. storage bucket configuration matches the migrated privacy contract (all document buckets private)',
     buckets.length === 3 &&
+      avatarsBucket?.public === true &&
+      avatarsBucket?.file_size_limit === 2097152 &&
       buckets.find((b) => b.id === 'driver-docs')?.public === false &&
       buckets.find((b) => b.id === 'trip-photos')?.public === false &&
       buckets.find((b) => b.id === 'billing-documents')?.public === false,

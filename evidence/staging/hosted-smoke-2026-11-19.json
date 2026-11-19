@@ -1,0 +1,830 @@
+{
+  "project_ref": "ydkhgclfjdksicpwqzmw",
+  "run_tag": "52027",
+  "ran_at": "2026-11-19T03:12:56.921Z",
+  "summary": {
+    "pass": 135,
+    "fail": 0,
+    "skip": 0,
+    "total": 135
+  },
+  "edge_5xx": [
+    {
+      "fn": "razorpay-webhook",
+      "status": 500,
+      "body": "{\"error\":\"not_configured\"}"
+    }
+  ],
+  "checks": [
+    {
+      "id": "auth-owner",
+      "status": "PASS",
+      "description": "sign in smoke-owner@truckopti.test (password grant)",
+      "detail": "200"
+    },
+    {
+      "id": "auth-staff",
+      "status": "PASS",
+      "description": "sign in smoke-staff@truckopti.test (password grant)",
+      "detail": "200"
+    },
+    {
+      "id": "auth-driver",
+      "status": "PASS",
+      "description": "sign in smoke-driver@truckopti.test (password grant)",
+      "detail": "200"
+    },
+    {
+      "id": "auth-admin",
+      "status": "PASS",
+      "description": "sign in smoke-admin@truckopti.test (password grant)",
+      "detail": "200"
+    },
+    {
+      "id": "auth-owner2",
+      "status": "PASS",
+      "description": "sign in smoke-owner2@truckopti.test (password grant)",
+      "detail": "200"
+    },
+    {
+      "id": "anon-gst",
+      "status": "PASS",
+      "description": "anon platform_gst_registered() returns false (unregistered seller seeded)",
+      "detail": "200 / false"
+    },
+    {
+      "id": "anon-billing-settings",
+      "status": "PASS",
+      "description": "anon cannot read platform_billing_settings",
+      "detail": "401 / 42501 / permission denied for table platform_billing_settings"
+    },
+    {
+      "id": "owner-billing-settings",
+      "status": "PASS",
+      "description": "non-admin owner cannot read platform_billing_settings",
+      "detail": "200 / rows=0"
+    },
+    {
+      "id": "admin-billing-settings-read",
+      "status": "PASS",
+      "description": "admin can read platform_billing_settings (unregistered, no GSTIN)",
+      "detail": "200 / rows=1"
+    },
+    {
+      "id": "admin-billing-settings-rpc",
+      "status": "PASS",
+      "description": "admin platform_billing_settings_update (7 args) re-asserts the seeded values",
+      "detail": "200"
+    },
+    {
+      "id": "owner-billing-settings-rpc",
+      "status": "PASS",
+      "description": "non-admin owner platform_billing_settings_update is refused",
+      "detail": "403 / 42501 / forbidden"
+    },
+    {
+      "id": "anon-agency-rows",
+      "status": "PASS",
+      "description": "anon cannot read agency_trucks / agency_invoices rows",
+      "detail": ""
+    },
+    {
+      "id": "sub-entitlement-before",
+      "status": "PASS",
+      "description": "owner agency_subscription_entitlement (before trial)",
+      "detail": "200"
+    },
+    {
+      "id": "sub-trial-owner",
+      "status": "PASS",
+      "description": "owner agency_subscription_start_trial",
+      "detail": "200 / ok=false error=trial_already_claimed (already started by an earlier run)"
+    },
+    {
+      "id": "sub-trial-owner2",
+      "status": "PASS",
+      "description": "owner2 agency_subscription_start_trial",
+      "detail": "200 / ok=false error=trial_already_claimed (already started by an earlier run)"
+    },
+    {
+      "id": "sub-entitlement-after",
+      "status": "PASS",
+      "description": "owner entitlement after trial shows a live trial",
+      "detail": "{\"ok\":true,\"usage\":{\"staff\":1,\"trucks\":1,\"drivers\":1,\"orders_month\":1},\"limits\":{\"staff\":2,\"trucks\":3,\"drivers"
+    },
+    {
+      "id": "sub-has-active",
+      "status": "PASS",
+      "description": "owner has_active_subscription(owner id) is true",
+      "detail": ""
+    },
+    {
+      "id": "fleet-truck-create",
+      "status": "PASS",
+      "description": "owner agency_vehicle_create (add truck)",
+      "detail": "200"
+    },
+    {
+      "id": "fleet-truck-staff-refused",
+      "status": "PASS",
+      "description": "staff (viewer) agency_vehicle_create is refused",
+      "detail": "400 / P0001 / Your access scope does not allow this action."
+    },
+    {
+      "id": "staff-invite",
+      "status": "PASS",
+      "description": "owner agency_member_invite (viewer scope)",
+      "detail": "200"
+    },
+    {
+      "id": "staff-accept",
+      "status": "PASS",
+      "description": "staff agency_member_accept the invitation",
+      "detail": "200"
+    },
+    {
+      "id": "staff-scope-row",
+      "status": "PASS",
+      "description": "staff membership row has scope viewer",
+      "detail": ""
+    },
+    {
+      "id": "staff-entitlement",
+      "status": "PASS",
+      "description": "staff agency_subscription_entitlement (any scope can read)",
+      "detail": "200"
+    },
+    {
+      "id": "driver-invite",
+      "status": "PASS",
+      "description": "owner agency_driver_invitation_create (driver phone)",
+      "detail": "200"
+    },
+    {
+      "id": "driver-accept",
+      "status": "PASS",
+      "description": "driver agency_driver_invitation_accept",
+      "detail": "200"
+    },
+    {
+      "id": "driver-employment-read",
+      "status": "PASS",
+      "description": "owner reads the driver employment row",
+      "detail": ""
+    },
+    {
+      "id": "job-fixture-read",
+      "status": "PASS",
+      "description": "owner can read the seeded job fixture",
+      "detail": "200 / rows=1"
+    },
+    {
+      "id": "job-assign-driver",
+      "status": "PASS",
+      "description": "owner agency_job_assign_driver (job -> driver)",
+      "detail": "already assigned"
+    },
+    {
+      "id": "tracking-ping",
+      "status": "PASS",
+      "description": "driver tracking_ping_record (real ping on the assigned job)",
+      "detail": "200"
+    },
+    {
+      "id": "tracking-ping-owner-read",
+      "status": "PASS",
+      "description": "owner reads agency_tracking_pings",
+      "detail": "200 / rows=2"
+    },
+    {
+      "id": "tracking-ping-staff-refused",
+      "status": "PASS",
+      "description": "staff (not the assigned driver) tracking_ping_record is refused",
+      "detail": "200 / ok=false error=not_assigned"
+    },
+    {
+      "id": "tracking-incident",
+      "status": "PASS",
+      "description": "owner agency_incident_open on the job",
+      "detail": "200"
+    },
+    {
+      "id": "client-agreement",
+      "status": "PASS",
+      "description": "owner agency_client_agreement_create",
+      "detail": "200"
+    },
+    {
+      "id": "client-site-bill",
+      "status": "PASS",
+      "description": "owner agency_client_site_create (bill_to: bill)",
+      "detail": "200"
+    },
+    {
+      "id": "client-site-pick",
+      "status": "PASS",
+      "description": "owner agency_client_site_create (ship_to: pick)",
+      "detail": "200"
+    },
+    {
+      "id": "client-site-drop",
+      "status": "PASS",
+      "description": "owner agency_client_site_create (ship_to: drop)",
+      "detail": "200"
+    },
+    {
+      "id": "client-tariff",
+      "status": "PASS",
+      "description": "owner agency_tariff_version_publish (Pune -> Mumbai)",
+      "detail": "200"
+    },
+    {
+      "id": "order-import",
+      "status": "PASS",
+      "description": "owner agency_order_import (2 lines, one order)",
+      "detail": "200"
+    },
+    {
+      "id": "plan-save",
+      "status": "PASS",
+      "description": "owner agency_load_plan_save (both lines on the 16t truck)",
+      "detail": "200"
+    },
+    {
+      "id": "plan-approve",
+      "status": "PASS",
+      "description": "owner agency_load_plan_approve",
+      "detail": "200"
+    },
+    {
+      "id": "plan-staff-approve-refused",
+      "status": "PASS",
+      "description": "staff (viewer) agency_load_plan_approve is refused",
+      "detail": "200 / ok=false error=forbidden_scope"
+    },
+    {
+      "id": "consignment-create",
+      "status": "PASS",
+      "description": "owner agency_consignment_create (GR for the order)",
+      "detail": "200 AGY/2026-27/000002"
+    },
+    {
+      "id": "consignment-staff-refused",
+      "status": "PASS",
+      "description": "staff (viewer) agency_consignment_create is refused (forbidden_scope)",
+      "detail": "200 / ok=false error=forbidden_scope"
+    },
+    {
+      "id": "consignment-pickup_scanned",
+      "status": "PASS",
+      "description": "owner agency_consignment_event pickup_scanned",
+      "detail": "200"
+    },
+    {
+      "id": "consignment-transit_started",
+      "status": "PASS",
+      "description": "owner agency_consignment_event transit_started",
+      "detail": "200"
+    },
+    {
+      "id": "consignment-delivery_scanned",
+      "status": "PASS",
+      "description": "owner agency_consignment_event delivery_scanned",
+      "detail": "200"
+    },
+    {
+      "id": "invoice-issue",
+      "status": "PASS",
+      "description": "owner agency_invoice_issue (1 line Rs 10,000, GST 18%, linked to the consignment)",
+      "detail": "200 INV/2026-27/000002"
+    },
+    {
+      "id": "invoice-payment",
+      "status": "PASS",
+      "description": "owner agency_invoice_record_payment (partial, UPI)",
+      "detail": "200"
+    },
+    {
+      "id": "invoice-staff-refused",
+      "status": "PASS",
+      "description": "staff (viewer) agency_invoice_record_payment is refused",
+      "detail": "400 / P0001 / Your access scope does not allow this action."
+    },
+    {
+      "id": "expense-record",
+      "status": "PASS",
+      "description": "owner agency_expense_record (fuel)",
+      "detail": "200"
+    },
+    {
+      "id": "payroll-open",
+      "status": "PASS",
+      "description": "owner agency_payroll_open_period 2026-10-01..2026-10-31",
+      "detail": "200 / ok=false error=already_closed (closed by an earlier run)"
+    },
+    {
+      "id": "payroll-close",
+      "status": "PASS",
+      "description": "owner agency_payroll_close_period",
+      "detail": "200 / ok=false error=already_closed (closed by an earlier run)"
+    },
+    {
+      "id": "xtenant-positive-control",
+      "status": "PASS",
+      "description": "owner (agency 1) CAN read its own truck, order and invoice",
+      "detail": ""
+    },
+    {
+      "id": "xtenant-table-reads",
+      "status": "PASS",
+      "description": "owner2 (agency 2) cannot read agency 1 rows (trucks, orders, lines, plans, consignments, invoices, jobs, memberships)",
+      "detail": "10 tables probed, all empty"
+    },
+    {
+      "id": "xtenant-rpc-plan",
+      "status": "PASS",
+      "description": "owner2 agency_load_plan_approve on agency 1 plan is refused",
+      "detail": "200 / ok=false error=not_found"
+    },
+    {
+      "id": "xtenant-rpc-consignment",
+      "status": "PASS",
+      "description": "owner2 agency_consignment_create on agency 1 order is refused",
+      "detail": "200 / ok=false error=order_not_found"
+    },
+    {
+      "id": "xtenant-rpc-payment",
+      "status": "PASS",
+      "description": "owner2 agency_invoice_record_payment on agency 1 invoice is refused",
+      "detail": "200 / ok=false error=not_found"
+    },
+    {
+      "id": "xtenant-rpc-assign",
+      "status": "PASS",
+      "description": "owner2 agency_job_assign_driver on agency 1 job is refused",
+      "detail": "400 / P0001 / Job not found or access denied."
+    },
+    {
+      "id": "edge-agency-portal-dashboard-owner",
+      "status": "PASS",
+      "description": "agency-portal-dashboard as owner -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-agency-portal-dashboard-staff",
+      "status": "PASS",
+      "description": "agency-portal-dashboard as viewer staff -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-agency-portal-dashboard-driver",
+      "status": "PASS",
+      "description": "agency-portal-dashboard as driver (no agency) -> refused",
+      "detail": "403 / Agency access is required."
+    },
+    {
+      "id": "edge-agency-portal-dashboard-notoken",
+      "status": "PASS",
+      "description": "agency-portal-dashboard with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-agency-portal-jobs-owner",
+      "status": "PASS",
+      "description": "agency-portal-jobs as owner -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-agency-portal-jobs-staff",
+      "status": "PASS",
+      "description": "agency-portal-jobs as viewer staff -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-agency-portal-jobs-driver",
+      "status": "PASS",
+      "description": "agency-portal-jobs as driver (no agency) -> refused",
+      "detail": "403 / Agency access is required."
+    },
+    {
+      "id": "edge-agency-portal-jobs-notoken",
+      "status": "PASS",
+      "description": "agency-portal-jobs with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-agency-portal-billing-owner",
+      "status": "PASS",
+      "description": "agency-portal-billing as owner -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-agency-portal-billing-staff",
+      "status": "PASS",
+      "description": "agency-portal-billing as viewer staff -> refused 403",
+      "detail": "403 / Your access scope does not allow this action."
+    },
+    {
+      "id": "edge-agency-portal-billing-driver",
+      "status": "PASS",
+      "description": "agency-portal-billing as driver (no agency) -> refused",
+      "detail": "403 / Agency access is required."
+    },
+    {
+      "id": "edge-agency-portal-billing-notoken",
+      "status": "PASS",
+      "description": "agency-portal-billing with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-agency-portal-rates-owner",
+      "status": "PASS",
+      "description": "agency-portal-rates as owner -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-agency-portal-rates-staff",
+      "status": "PASS",
+      "description": "agency-portal-rates as viewer staff -> refused 403",
+      "detail": "403 / Your access scope does not allow this action."
+    },
+    {
+      "id": "edge-agency-portal-rates-driver",
+      "status": "PASS",
+      "description": "agency-portal-rates as driver (no agency) -> refused",
+      "detail": "403 / Agency access is required."
+    },
+    {
+      "id": "edge-agency-portal-rates-notoken",
+      "status": "PASS",
+      "description": "agency-portal-rates with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-agency-portal-drivers-owner",
+      "status": "PASS",
+      "description": "agency-portal-drivers as owner -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-agency-portal-drivers-staff",
+      "status": "PASS",
+      "description": "agency-portal-drivers as viewer staff -> refused 403",
+      "detail": "403 / Your access scope does not allow this action."
+    },
+    {
+      "id": "edge-agency-portal-drivers-driver",
+      "status": "PASS",
+      "description": "agency-portal-drivers as driver (no agency) -> refused",
+      "detail": "403 / Agency access is required."
+    },
+    {
+      "id": "edge-agency-portal-drivers-notoken",
+      "status": "PASS",
+      "description": "agency-portal-drivers with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-agency-portal-fleet-owner",
+      "status": "PASS",
+      "description": "agency-portal-fleet as owner -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-agency-portal-fleet-staff",
+      "status": "PASS",
+      "description": "agency-portal-fleet as viewer staff -> refused 403",
+      "detail": "403 / Your access scope does not allow this action."
+    },
+    {
+      "id": "edge-agency-portal-fleet-driver",
+      "status": "PASS",
+      "description": "agency-portal-fleet as driver (no agency) -> refused",
+      "detail": "403 / Agency access is required."
+    },
+    {
+      "id": "edge-agency-portal-fleet-notoken",
+      "status": "PASS",
+      "description": "agency-portal-fleet with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-gateway-bare",
+      "status": "PASS",
+      "description": "agency-portal-dashboard with no Authorization at all -> 401 (gateway)",
+      "detail": "401 / UNAUTHORIZED_NO_AUTH_HEADER / Missing authorization header"
+    },
+    {
+      "id": "edge-jobs-xtenant",
+      "status": "PASS",
+      "description": "agency-portal-jobs as owner2 does not list agency 1's job",
+      "detail": "200"
+    },
+    {
+      "id": "edge-jobs-owner-sees-job",
+      "status": "PASS",
+      "description": "agency-portal-jobs as owner lists the seeded job",
+      "detail": "200"
+    },
+    {
+      "id": "edge-rates-write-staff",
+      "status": "PASS",
+      "description": "agency-portal-rates add-rate as viewer staff is refused",
+      "detail": "403 / Your access scope does not allow this action."
+    },
+    {
+      "id": "edge-admin-portal-agencies-admin",
+      "status": "PASS",
+      "description": "admin-portal-agencies as admin -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-admin-portal-agencies-owner",
+      "status": "PASS",
+      "description": "admin-portal-agencies as agency owner -> 403",
+      "detail": "403 / Admin access is required."
+    },
+    {
+      "id": "edge-admin-portal-agencies-notoken",
+      "status": "PASS",
+      "description": "admin-portal-agencies with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-admin-portal-users-admin",
+      "status": "PASS",
+      "description": "admin-portal-users as admin -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-admin-portal-users-owner",
+      "status": "PASS",
+      "description": "admin-portal-users as agency owner -> 403",
+      "detail": "403 / Admin access is required."
+    },
+    {
+      "id": "edge-admin-portal-users-notoken",
+      "status": "PASS",
+      "description": "admin-portal-users with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-admin-portal-drivers-admin",
+      "status": "PASS",
+      "description": "admin-portal-drivers as admin -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-admin-portal-drivers-owner",
+      "status": "PASS",
+      "description": "admin-portal-drivers as agency owner -> 403",
+      "detail": "403 / Admin access is required."
+    },
+    {
+      "id": "edge-admin-portal-drivers-notoken",
+      "status": "PASS",
+      "description": "admin-portal-drivers with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-admin-portal-subscriptions-admin",
+      "status": "PASS",
+      "description": "admin-portal-subscriptions as admin -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-admin-portal-subscriptions-owner",
+      "status": "PASS",
+      "description": "admin-portal-subscriptions as agency owner -> 403",
+      "detail": "403 / Admin access is required."
+    },
+    {
+      "id": "edge-admin-portal-subscriptions-notoken",
+      "status": "PASS",
+      "description": "admin-portal-subscriptions with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-admin-portal-payouts-admin",
+      "status": "PASS",
+      "description": "admin-portal-payouts as admin -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-admin-portal-payouts-owner",
+      "status": "PASS",
+      "description": "admin-portal-payouts as agency owner -> 403",
+      "detail": "403 / Admin access is required."
+    },
+    {
+      "id": "edge-admin-portal-payouts-notoken",
+      "status": "PASS",
+      "description": "admin-portal-payouts with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-admin-portal-dashboard-admin",
+      "status": "PASS",
+      "description": "admin-portal-dashboard as admin -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-admin-portal-dashboard-owner",
+      "status": "PASS",
+      "description": "admin-portal-dashboard as agency owner -> 403",
+      "detail": "403 / Admin access is required."
+    },
+    {
+      "id": "edge-admin-portal-dashboard-notoken",
+      "status": "PASS",
+      "description": "admin-portal-dashboard with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-admin-portal-contact-admin",
+      "status": "PASS",
+      "description": "admin-portal-contact as admin -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-admin-portal-contact-owner",
+      "status": "PASS",
+      "description": "admin-portal-contact as agency owner -> 403",
+      "detail": "403 / Admin access is required."
+    },
+    {
+      "id": "edge-admin-portal-contact-notoken",
+      "status": "PASS",
+      "description": "admin-portal-contact with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-admin-agencies-lists-smoke",
+      "status": "PASS",
+      "description": "admin-portal-agencies list includes the smoke agency",
+      "detail": "200"
+    },
+    {
+      "id": "edge-admin-backfill-admin",
+      "status": "PASS",
+      "description": "admin-backfill-invoice-delivery as admin, unknown invoice -> 404",
+      "detail": "404 / Invoice not found."
+    },
+    {
+      "id": "edge-admin-backfill-owner",
+      "status": "PASS",
+      "description": "admin-backfill-invoice-delivery as agency owner -> 403",
+      "detail": "403 / Admin access is required."
+    },
+    {
+      "id": "edge-admin-backfill-notoken",
+      "status": "PASS",
+      "description": "admin-backfill-invoice-delivery with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-driver-kyc-driver",
+      "status": "PASS",
+      "description": "driver-kyc state as the driver -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-driver-kyc-admin",
+      "status": "PASS",
+      "description": "driver-kyc state (driverId) as admin -> 200",
+      "detail": "200"
+    },
+    {
+      "id": "edge-driver-kyc-owner",
+      "status": "PASS",
+      "description": "driver-kyc state as agency owner (not a driver) -> refused",
+      "detail": "403 / A driver profile is required."
+    },
+    {
+      "id": "edge-driver-kyc-notoken",
+      "status": "PASS",
+      "description": "driver-kyc state with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-driver-kyc-method",
+      "status": "PASS",
+      "description": "driver-kyc GET -> 405",
+      "detail": "405 / Unsupported method."
+    },
+    {
+      "id": "edge-invoice-view-unknown",
+      "status": "PASS",
+      "description": "invoice-view as owner, unknown invoice id -> 404",
+      "detail": "404 / Invoice not found."
+    },
+    {
+      "id": "edge-invoice-view-missing",
+      "status": "PASS",
+      "description": "invoice-view as owner, no invoiceId -> 400",
+      "detail": "400 / invoiceId is required."
+    },
+    {
+      "id": "edge-invoice-view-notoken",
+      "status": "PASS",
+      "description": "invoice-view with only the anon key -> 401",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-create-razorpay-order",
+      "status": "PASS",
+      "description": "create-razorpay-order as owner: clean configured / not-configured answer (no Razorpay call)",
+      "detail": "200"
+    },
+    {
+      "id": "edge-create-razorpay-order-bad",
+      "status": "PASS",
+      "description": "create-razorpay-order with an invalid plan -> clean 4xx (or 503 not configured)",
+      "detail": "400 / Please choose a plan."
+    },
+    {
+      "id": "edge-create-razorpay-order-notoken",
+      "status": "PASS",
+      "description": "create-razorpay-order with only the anon key -> 401 (or 503 not configured)",
+      "detail": "401 / Authentication is required."
+    },
+    {
+      "id": "edge-verify-razorpay-payment",
+      "status": "PASS",
+      "description": "verify-razorpay-payment bad input -> clean 4xx (or 503 not configured)",
+      "detail": "400 / We could not read the payment details. Please contact support if money was deducted."
+    },
+    {
+      "id": "edge-verify-razorpay-payment-empty",
+      "status": "PASS",
+      "description": "verify-razorpay-payment empty body -> clean 4xx (or 503 not configured)",
+      "detail": "400 / We could not read the payment details. Please contact support if money was deducted."
+    },
+    {
+      "id": "edge-verify-payment",
+      "status": "PASS",
+      "description": "verify-payment (retired) -> 410",
+      "detail": "410 / This payment endpoint moved to verify-razorpay-payment. Start checkout from the Subscripti"
+    },
+    {
+      "id": "edge-razorpay-webhook",
+      "status": "PASS",
+      "description": "razorpay-webhook without a signature: 4xx or 500 not_configured, never 2xx",
+      "detail": "500 / not_configured (expected: webhook secret not configured)"
+    },
+    {
+      "id": "edge-razorpay-webhook-get",
+      "status": "PASS",
+      "description": "razorpay-webhook GET -> 405",
+      "detail": "405 / method_not_allowed"
+    },
+    {
+      "id": "edge-erp-ingest-bare",
+      "status": "PASS",
+      "description": "erp-ingest bare body -> 400 invalid_connection_id",
+      "detail": "400 / invalid_connection_id"
+    },
+    {
+      "id": "edge-erp-ingest-fake-connection",
+      "status": "PASS",
+      "description": "erp-ingest unknown connection id + secret -> 4xx (uniform bad credentials)",
+      "detail": "401 / bad_credentials"
+    },
+    {
+      "id": "edge-erp-ingest-method",
+      "status": "PASS",
+      "description": "erp-ingest GET -> 405",
+      "detail": "405 / method_not_allowed"
+    },
+    {
+      "id": "edge-phonepe-checkout-notoken",
+      "status": "PASS",
+      "description": "phonepe-checkout with only the anon key -> 4xx",
+      "detail": "400 / Unable to initiate PhonePe payment right now."
+    },
+    {
+      "id": "edge-phonepe-checkout-empty",
+      "status": "PASS",
+      "description": "phonepe-checkout as owner, empty body -> 4xx (no PhonePe call)",
+      "detail": "400 / Amount must be at least ₹1 (100 paise)"
+    },
+    {
+      "id": "edge-phonepe-status-notoken",
+      "status": "PASS",
+      "description": "phonepe-status with only the anon key -> 401",
+      "detail": "401 / Unable to resolve authenticated user"
+    },
+    {
+      "id": "edge-phonepe-status-empty",
+      "status": "PASS",
+      "description": "phonepe-status as owner, empty body -> 4xx (no PhonePe call)",
+      "detail": "400 / Unable to check PhonePe payment status right now."
+    },
+    {
+      "id": "edge-cors-preflight",
+      "status": "PASS",
+      "description": "OPTIONS preflight on agency-portal-dashboard answers 2xx",
+      "detail": "200 / ok"
+    }
+  ]
+}

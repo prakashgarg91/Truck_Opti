@@ -1839,6 +1839,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"agency_rate_cards": {
+                  Row: {
+                    "agency_id": string,"created_at": string,"dest_city": string,"flat_rate": number | null,"id": string,"is_active": boolean,"max_weight_kg": number | null,"min_weight_kg": number | null,"notes": string | null,"origin_city": string,"rate_per_km": number | null,"updated_at": string,"valid_from": string | null,"valid_until": string | null,"vehicle_type": string
+                  }
+                  Insert: {
+                    "agency_id": string,"created_at"?: string,"dest_city": string,"flat_rate"?: number | null,"id"?: string,"is_active"?: boolean,"max_weight_kg"?: number | null,"min_weight_kg"?: number | null,"notes"?: string | null,"origin_city": string,"rate_per_km"?: number | null,"updated_at"?: string,"valid_from"?: string | null,"valid_until"?: string | null,"vehicle_type": string
+                  }
+                  Update: {
+                    "agency_id"?: string,"created_at"?: string,"dest_city"?: string,"flat_rate"?: number | null,"id"?: string,"is_active"?: boolean,"max_weight_kg"?: number | null,"min_weight_kg"?: number | null,"notes"?: string | null,"origin_city"?: string,"rate_per_km"?: number | null,"updated_at"?: string,"valid_from"?: string | null,"valid_until"?: string | null,"vehicle_type"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agency_rate_cards_agency_id_fkey"
+      columns: ["agency_id"]
+isOneToOne: false
+      referencedRelation: "transport_agencies"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
