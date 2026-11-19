@@ -1768,19 +1768,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"subscription_sweep_runs": {
-                  Row: {
-                    "as_of": string,"finished_at": string | null,"grace_expired": number,"grace_started": number,"id": string,"reminders_created": number,"result": Json | null,"started_at": string,"trials_expired": number
-                  }
-                  Insert: {
-                    "as_of": string,"finished_at"?: string | null,"grace_expired"?: number,"grace_started"?: number,"id"?: string,"reminders_created"?: number,"result"?: Json | null,"started_at"?: string,"trials_expired"?: number
-                  }
-                  Update: {
-                    "as_of"?: string,"finished_at"?: string | null,"grace_expired"?: number,"grace_started"?: number,"id"?: string,"reminders_created"?: number,"result"?: Json | null,"started_at"?: string,"trials_expired"?: number
-                  }
-                  Relationships: [
-                    
-                  ]
                 },"razorpay_webhook_attempts": {
                   Row: {
                     "at": string,"attempt_no": number,"event_id": string,"sqlstate_or_code": string
@@ -1857,6 +1844,19 @@ isOneToOne: false
       referencedRelation: "transport_agencies"
       referencedColumns: ["id"]
     }
+                  ]
+                },"subscription_sweep_runs": {
+                  Row: {
+                    "as_of": string,"failed": number,"failures": Json,"finished_at": string | null,"grace_expired": number,"grace_started": number,"id": string,"reminders_created": number,"result": Json | null,"started_at": string,"trials_expired": number
+                  }
+                  Insert: {
+                    "as_of": string,"failed"?: number,"failures"?: Json,"finished_at"?: string | null,"grace_expired"?: number,"grace_started"?: number,"id"?: string,"reminders_created"?: number,"result"?: Json | null,"started_at"?: string,"trials_expired"?: number
+                  }
+                  Update: {
+                    "as_of"?: string,"failed"?: number,"failures"?: Json,"finished_at"?: string | null,"grace_expired"?: number,"grace_started"?: number,"id"?: string,"reminders_created"?: number,"result"?: Json | null,"started_at"?: string,"trials_expired"?: number
+                  }
+                  Relationships: [
+                    
                   ]
                 }
           }

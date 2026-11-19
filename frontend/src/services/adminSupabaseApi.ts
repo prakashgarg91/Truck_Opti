@@ -204,17 +204,25 @@ async function invokeAdminFunction<T>(functionName: string, body: Record<string,
     }
 }
 
+async function readAdminUsersPage(offset: number): Promise<{ users: AdminUser[]; hasMore: boolean }> {
+    const data = await invokeAdminFunction<{ users: AdminUser[]; has_more?: boolean }>('admin-portal-users', { action: 'list', offset }, 'Unable to load users right now. Please try again.')
+    return { users: data?.users ?? [], hasMore: data?.has_more === true }
+}
+
 // ============= AGENCIES API =============
 export const adminAgenciesApi = {
-    async getSnapshot(status: 'pending' | 'approved' | 'rejected' | 'suspended'): Promise<{ agencies: Agency[]; counts: Record<'pending' | 'approved' | 'rejected' | 'suspended', number> }> {
+    /** One page of agencies for a status. `offset` is the number of rows already loaded (default 0). */
+    async getSnapshot(status: 'pending' | 'approved' | 'rejected' | 'suspended', offset = 0): Promise<{ agencies: Agency[]; counts: Record<'pending' | 'approved' | 'rejected' | 'suspended', number>; hasMore: boolean }> {
         const data = await invokeAdminFunction<{
             agencies: Agency[]
             counts: Record<'pending' | 'approved' | 'rejected' | 'suspended', number>
-        }>('admin-portal-agencies', { action: 'list', status }, 'Failed to load agencies')
+            has_more?: boolean
+        }>('admin-portal-agencies', { action: 'list', status, offset }, 'Failed to load agencies')
 
         return {
             agencies: data?.agencies ?? [],
             counts: data?.counts ?? { pending: 0, approved: 0, rejected: 0, suspended: 0 },
+            hasMore: data?.has_more === true,
         }
     },
 
@@ -387,6 +395,13 @@ export const adminBillingSettingsApi = {
 // (20261031000000_subscription_sweeps.sql). Every other ops table is readable by the server-side service account only,
 // so those reads go through four admin-only SECURITY DEFINER functions (20261041000000_admin_billing_ops_read.sql).
 // A failed or refused call throws: the page shows an error with Retry, never an empty list.
+export interface AdminSweepFailure {
+    subscriptionId: string
+    transition: string
+    sqlstate: string
+    message: string
+}
+
 export interface AdminSweepRun {
     id: string
     asOf: string
@@ -396,6 +411,27 @@ export interface AdminSweepRun {
     graceStarted: number
     graceExpired: number
     remindersCreated: number
+    /** Subscriptions the run could not move (it continued past them). */
+    failed: number
+    /** Up to 50 recorded failures; always an array, empty when absent or malformed. */
+    failures: AdminSweepFailure[]
+}
+
+// failures is jsonb written by run_subscription_sweeps: { subscription_id, transition, sqlstate, message }.
+function parseSweepFailures(value: unknown): AdminSweepFailure[] {
+    if (!Array.isArray(value)) return []
+    const out: AdminSweepFailure[] = []
+    for (const item of value) {
+        if (!item || typeof item !== 'object') continue
+        const f = item as Record<string, unknown>
+        out.push({
+            subscriptionId: opsStr(f.subscription_id),
+            transition: opsStr(f.transition),
+            sqlstate: opsStr(f.sqlstate),
+            message: opsStr(f.message),
+        })
+    }
+    return out
 }
 
 export interface AdminAgencyWithoutSubscription {
@@ -513,7 +549,7 @@ export const adminBillingOpsApi = {
     async getSweepRuns(limit = 20, offset = 0): Promise<AdminSweepRun[]> {
         const ordered = supabase
             .from('subscription_sweep_runs')
-            .select('id, as_of, started_at, finished_at, trials_expired, grace_started, grace_expired, reminders_created')
+            .select('id, as_of, started_at, finished_at, trials_expired, grace_started, grace_expired, reminders_created, failed, failures')
             .order('started_at', { ascending: false })
         const { data, error } = offset > 0 ? await ordered.range(offset, offset + limit - 1) : await ordered.limit(limit)
         if (error) {
@@ -529,6 +565,8 @@ export const adminBillingOpsApi = {
             graceStarted: row.grace_started ?? 0,
             graceExpired: row.grace_expired ?? 0,
             remindersCreated: row.reminders_created ?? 0,
+            failed: opsNum(row.failed),
+            failures: parseSweepFailures(row.failures),
         }))
     },
 }
@@ -541,8 +579,13 @@ export const adminSupabaseApi = {
     },
 
     async getAdminUsers(): Promise<AdminUser[]> {
-        const data = await invokeAdminFunction<{ users: AdminUser[] }>('admin-portal-users', { action: 'list' }, 'Unable to load users right now. Please try again.')
-        return data?.users ?? []
+        const page = await readAdminUsersPage(0)
+        return page.users
+    },
+
+    /** One page of portal users. `offset` is the number of rows already loaded. */
+    async getAdminUsersPage(offset = 0): Promise<{ users: AdminUser[]; hasMore: boolean }> {
+        return readAdminUsersPage(offset)
     },
 
     async getAdminAgencies(status: 'pending' | 'approved' | 'rejected' | 'suspended'): Promise<Agency[]> {
@@ -586,6 +629,12 @@ export const adminSupabaseApi = {
         await invokeAdminFunction('admin-portal-users', { action: 'set-disabled', userId, disabled: false }, 'Failed to re-enable the user account')
     },
 
+    /** One page of contact inquiries, newest first. `hasMore` is true when a later offset holds more rows. */
+    async getContactInquiriesPage(offset: number): Promise<{ inquiries: ContactInquiry[]; hasMore: boolean }> {
+        const data = await invokeAdminFunction<{ inquiries: ContactInquiry[]; has_more?: boolean }>('admin-portal-contact', { action: 'list', offset }, 'Unable to load contact inquiries right now. Please try again.')
+        return { inquiries: data?.inquiries ?? [], hasMore: data?.has_more === true }
+    },
+
     async getContactInquiries(): Promise<ContactInquiry[]> {
         const data = await invokeAdminFunction<{ inquiries: ContactInquiry[] }>('admin-portal-contact', { action: 'list' }, 'Unable to load contact inquiries right now. Please try again.')
         return data?.inquiries ?? []
@@ -598,6 +647,12 @@ export const adminSupabaseApi = {
     async getDriversByStatus(status: 'pending' | 'approved' | 'rejected' | 'suspended'): Promise<AdminDriverProfile[]> {
         const data = await invokeAdminFunction<{ drivers: AdminDriverProfile[] }>('admin-portal-drivers', { action: 'list', status }, 'Unable to load drivers right now. Please try again.')
         return data?.drivers ?? []
+    },
+
+    /** One page of drivers for a status, newest first. `hasMore` is true when a later offset holds more rows. */
+    async getDriversPage(status: 'pending' | 'approved' | 'rejected' | 'suspended', offset: number): Promise<{ drivers: AdminDriverProfile[]; hasMore: boolean }> {
+        const data = await invokeAdminFunction<{ drivers: AdminDriverProfile[]; has_more?: boolean }>('admin-portal-drivers', { action: 'list', status, offset }, 'Unable to load drivers right now. Please try again.')
+        return { drivers: data?.drivers ?? [], hasMore: data?.has_more === true }
     },
 
     async getDriverById(driverId: string): Promise<AdminDriverProfile | null> {

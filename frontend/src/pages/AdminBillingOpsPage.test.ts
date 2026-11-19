@@ -399,3 +399,95 @@ describe('AdminBillingOpsPage: webhook list notices', () => {
         expect(q('[data-testid="attempts-cap-notice"]')?.textContent).toContain('Showing the first 100 retry attempts.')
     })
 })
+
+describe('AdminBillingOpsPage: sweep failures', () => {
+    const FAILURE_A = { subscriptionId: '9f1c2d3e-0000-4000-8000-000000000001', transition: 'trial>expired', sqlstate: '23505', message: 'duplicate key value' }
+    const FAILURE_B = { subscriptionId: 'bbbbcccc-0000-4000-8000-000000000002', transition: 'grace>expired', sqlstate: 'P0001', message: 'row locked' }
+
+    const failedRun = (overrides: Record<string, unknown>) => ({ ...RUNS[0], ...overrides })
+
+    it('zero failures: no banner, the Failed column shows 0 and there is no expand control', async () => {
+        h.getSweepRuns.mockResolvedValue([
+            failedRun({ failed: 0, failures: [] }),
+            { ...RUNS[1], failed: 0, failures: [] },
+        ])
+        await mountPage()
+        expect(q('[data-testid="sweep-failed-banner"]')).toBeNull()
+        const cells = qa('[data-testid="sweep-table"] tbody tr').map((tr) => tr.lastElementChild?.textContent)
+        expect(cells).toEqual(['0', '0'])
+        expect(qa('[data-testid="sweep-table"] button[aria-expanded]')).toHaveLength(0)
+    })
+
+    it('newest run with failures: the banner gives the count, and the row can expand to list each failure', async () => {
+        h.getSweepRuns.mockResolvedValue([
+            failedRun({ failed: 2, failures: [FAILURE_A, FAILURE_B] }),
+            { ...RUNS[1], failed: 0, failures: [] },
+        ])
+        await mountPage()
+        const banner = q('[data-testid="sweep-failed-banner"]')
+        expect(banner?.textContent).toContain('The last sweep could not update 2 subscription(s). They need a manual check.')
+
+        const toggle = qa('[data-testid="sweep-table"] button[aria-expanded]')[0] as HTMLButtonElement
+        expect(toggle).toBeDefined()
+        expect(toggle.getAttribute('aria-expanded')).toBe('false')
+        expect(toggle.getAttribute('aria-controls')).toBe(`sweep-failures-${RUNS[0].id}`)
+        expect(q('#' + toggle.getAttribute('aria-controls')!)).toBeNull()
+
+        await click(toggle)
+        expect(toggle.getAttribute('aria-expanded')).toBe('true')
+        const detail = q(`#sweep-failures-${RUNS[0].id}`)
+        expect(detail).not.toBeNull()
+        const items = Array.from(detail!.querySelectorAll('li')).map((li) => li.textContent || '')
+        expect(items).toHaveLength(2)
+        expect(items[0]).toContain('Subscription 9f1c2d3e')
+        expect(items[0]).toContain('trial to expired')
+        expect(items[0]).toContain('duplicate key value')
+        expect(items[1]).toContain('Subscription bbbbcccc')
+        expect(items[1]).toContain('grace to expired')
+        expect(items[1]).toContain('row locked')
+
+        await click(toggle)
+        expect(toggle.getAttribute('aria-expanded')).toBe('false')
+        expect(q(`#sweep-failures-${RUNS[0].id}`)).toBeNull()
+    })
+
+    it('the banner reflects only the most recent run, not older failed runs', async () => {
+        h.getSweepRuns.mockResolvedValue([
+            { ...RUNS[0], failed: 0, failures: [] },
+            { ...RUNS[1], failed: 3, failures: [FAILURE_A] },
+        ])
+        await mountPage()
+        expect(q('[data-testid="sweep-failed-banner"]')).toBeNull()
+        expect(qa('[data-testid="sweep-table"] button[aria-expanded]')).toHaveLength(1)
+    })
+
+    it('a count above the recorded failures says how many were recorded', async () => {
+        h.getSweepRuns.mockResolvedValue([failedRun({ failed: 60, failures: [FAILURE_A] })])
+        await mountPage()
+        const toggle = qa('[data-testid="sweep-table"] button[aria-expanded]')[0] as HTMLButtonElement
+        await click(toggle)
+        expect(text()).toContain('Showing 1 of 60 failures. The rest were not recorded.')
+    })
+
+    it('malformed or absent failures do not crash the page; the count still shows and expanding explains', async () => {
+        h.getSweepRuns.mockResolvedValue([
+            failedRun({ failed: 1, failures: undefined }),
+            { ...RUNS[1], failed: 1, failures: [null, 5, 'oops'] },
+        ])
+        await mountPage()
+        expect(q('[data-testid="sweep-failed-banner"]')?.textContent).toContain('could not update 1 subscription(s)')
+        const toggles = qa('[data-testid="sweep-table"] button[aria-expanded]') as HTMLButtonElement[]
+        expect(toggles).toHaveLength(2)
+        await click(toggles[0])
+        expect(text()).toContain('No failure details were recorded.')
+        await click(toggles[1])
+        expect(text()).toContain('No failure details were recorded.')
+    })
+
+    it('missing failed field on an old row is treated as zero', async () => {
+        h.getSweepRuns.mockResolvedValue([{ ...RUNS[0], failed: undefined, failures: undefined }])
+        await mountPage()
+        expect(q('[data-testid="sweep-failed-banner"]')).toBeNull()
+        expect(qa('[data-testid="sweep-table"] button[aria-expanded]')).toHaveLength(0)
+    })
+})

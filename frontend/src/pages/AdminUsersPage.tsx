@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Users,
   Search,
@@ -19,7 +19,6 @@ import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 import AdminLoadError from './AdminLoadError'
-import ListCapNotice from '../components/admin/ListCapNotice'
 
 type UserAction = 'disable' | 'enable' | 'delete'
 
@@ -83,6 +82,12 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [selectedAction, setSelectedAction] = useState<{ user: UserRecord; action: UserAction } | null>(null)
   const [submittingAction, setSubmittingAction] = useState<UserAction | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState(false)
+  // Bumped by every first-page fetch (mount, refresh, enable/disable). A page response from an
+  // older generation is dropped so it cannot land on top of a newer list.
+  const listGeneration = useRef(0)
 
   const closeActionModal = () => {
     if (submittingAction) {
@@ -93,18 +98,43 @@ export default function AdminUsersPage() {
   }
 
   const fetchUsers = useCallback(async () => {
+    const generation = ++listGeneration.current
     setLoading(true)
+    setLoadingMore(false)
+    setLoadMoreError(false)
     try {
-      const nextUsers = await adminSupabaseApi.getAdminUsers()
-      setUsers(nextUsers)
+      const page = await adminSupabaseApi.getAdminUsersPage(0)
+      if (generation !== listGeneration.current) return
+      setUsers(page.users)
+      setHasMore(page.hasMore === true)
       setLoadError(false)
     } catch (error) {
+      if (generation !== listGeneration.current) return
       toast.error(toUserFacingErrorMessage(error, 'Failed to load users'))
       setLoadError(true)
     } finally {
-      setLoading(false)
+      if (generation === listGeneration.current) setLoading(false)
     }
   }, [])
+
+  // Appends the next page after the rows already shown. Loaded rows stay on screen if this fails.
+  const loadMore = useCallback(async () => {
+    const generation = listGeneration.current
+    const offset = users.length
+    setLoadingMore(true)
+    setLoadMoreError(false)
+    try {
+      const page = await adminSupabaseApi.getAdminUsersPage(offset)
+      if (generation !== listGeneration.current) return
+      setUsers(current => [...current, ...page.users])
+      setHasMore(page.hasMore === true)
+    } catch {
+      if (generation !== listGeneration.current) return
+      setLoadMoreError(true)
+    } finally {
+      if (generation === listGeneration.current) setLoadingMore(false)
+    }
+  }, [users.length])
 
   useEffect(() => {
     if (currentUser?.role === 'admin') {
@@ -315,7 +345,31 @@ export default function AdminUsersPage() {
           ))}
         </div>
       )}
-      {!loading && !loadError && <ListCapNotice rowCount={users.length} testId="users-cap-notice" />}
+      {!loading && !loadError && hasMore && (
+        <div className="flex flex-col items-center gap-2 pt-4">
+          {loadMoreError ? (
+            <>
+              <p role="alert" className="text-sm text-red-600 dark:text-red-400">Could not load more users.</p>
+              <button
+                type="button"
+                onClick={loadMore}
+                className="min-h-[44px] px-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-200"
+              >
+                Retry
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="min-h-[44px] px-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-200 disabled:opacity-60"
+            >
+              {loadingMore ? 'Loading more...' : 'Load more'}
+            </button>
+          )}
+        </div>
+      )}
 
       {selectedAction && modalCopy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">

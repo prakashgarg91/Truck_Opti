@@ -38,6 +38,7 @@ vi.mock('../lib/supabase', () => ({
 
 import { supabase } from '../lib/supabase'
 import {
+    checkoutApi,
     isAgencyMember,
     subscriptionApi,
     subscriptionHelpers,
@@ -623,6 +624,53 @@ describe('subscriptionApi', () => {
 
             expect(result).toBeNull()
         })
+    })
+})
+
+describe('checkoutApi.verifyPayment', () => {
+    const PAYLOAD = { razorpay_order_id: 'order_1', razorpay_payment_id: 'pay_ABC123', razorpay_signature: 'sig_1' }
+
+    beforeEach(() => {
+        functionsInvokeMock.mockReset()
+    })
+
+    it('answers support with the server message when verify returns state support', async () => {
+        const context = new Response(JSON.stringify({ success: false, state: 'support', message: 'Server says contact support.' }), { status: 409 })
+        functionsInvokeMock.mockResolvedValue({ data: null, error: { message: 'non-2xx', context } })
+
+        await expect(checkoutApi.verifyPayment(PAYLOAD)).resolves.toEqual({ kind: 'support', message: 'Server says contact support.' })
+        expect(functionsInvokeMock).toHaveBeenCalledWith('verify-razorpay-payment', { body: PAYLOAD })
+    })
+
+    it('answers support with a null message when the body has no message', async () => {
+        const context = new Response(JSON.stringify({ state: 'support' }), { status: 409 })
+        functionsInvokeMock.mockResolvedValue({ data: null, error: { message: 'non-2xx', context } })
+
+        await expect(checkoutApi.verifyPayment(PAYLOAD)).resolves.toEqual({ kind: 'support', message: null })
+    })
+
+    it('answers unconfirmed for retry, not_found and review states so the caller keeps polling', async () => {
+        for (const state of ['retry', 'not_found', 'review']) {
+            const context = new Response(JSON.stringify({ success: false, state, message: 'x' }), { status: 503 })
+            functionsInvokeMock.mockResolvedValueOnce({ data: null, error: { message: 'non-2xx', context } })
+            await expect(checkoutApi.verifyPayment(PAYLOAD)).resolves.toEqual({ kind: 'unconfirmed' })
+        }
+    })
+
+    it('answers unconfirmed on a network error, an unreadable body, or a thrown error', async () => {
+        functionsInvokeMock.mockResolvedValueOnce({ data: null, error: { message: 'Failed to fetch' } })
+        await expect(checkoutApi.verifyPayment(PAYLOAD)).resolves.toEqual({ kind: 'unconfirmed' })
+
+        functionsInvokeMock.mockResolvedValueOnce({ data: null, error: { message: 'x', context: new Response('<html>', { status: 502 }) } })
+        await expect(checkoutApi.verifyPayment(PAYLOAD)).resolves.toEqual({ kind: 'unconfirmed' })
+
+        functionsInvokeMock.mockRejectedValueOnce(new Error('boom'))
+        await expect(checkoutApi.verifyPayment(PAYLOAD)).resolves.toEqual({ kind: 'unconfirmed' })
+    })
+
+    it('answers unconfirmed on success, so activation is still decided by the entitlement poll', async () => {
+        functionsInvokeMock.mockResolvedValue({ data: { success: true, state: 'active' }, error: null })
+        await expect(checkoutApi.verifyPayment(PAYLOAD)).resolves.toEqual({ kind: 'unconfirmed' })
     })
 })
 

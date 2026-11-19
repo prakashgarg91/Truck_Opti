@@ -16,6 +16,7 @@ import {
   type Entitlement,
 } from '../lib/billingState'
 import { openRazorpayCheckout } from '../components/billing/razorpayCheckout'
+import { PaymentSupportNotice } from '../components/billing/PaymentSupportNotice'
 import { BTN_PRIMARY, BTN_SECONDARY, FOCUS_RING } from '../components/billing/styles'
 import { useEntitlement } from '../components/billing/useEntitlement'
 import { logger } from '../utils/logger'
@@ -23,7 +24,7 @@ import { useAuthStore } from '../stores/authStore'
 import { taxModeOf, useSellerGstRegistered } from '../hooks/useSellerGstRegistered'
 
 type PlanTier = 'starter' | 'growth' | 'professional'
-type Phase = 'form' | 'opening' | 'activating' | 'active' | 'timeout'
+type Phase = 'form' | 'opening' | 'activating' | 'active' | 'timeout' | 'support'
 
 const PAYABLE_TIERS: readonly PlanTier[] = ['starter', 'growth', 'professional']
 const TIER_ORDER: Record<string, number> = { starter: 1, growth: 2, professional: 3, enterprise: 4 }
@@ -59,6 +60,11 @@ const CheckoutPage: React.FC = () => {
   const [email, setEmail] = useState(user?.email || '')
   const [coupon, setCoupon] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  // Set only when verify answers state "support": payment captured, not applied.
+  const [supportNotice, setSupportNotice] = useState<{ message: string | null; paymentId: string | null }>({
+    message: null,
+    paymentId: null,
+  })
   const cancelled = useRef(false)
 
   const razorpayConfig = getRazorpayConfig()
@@ -150,7 +156,13 @@ const CheckoutPage: React.FC = () => {
       // The callback is not activation. Ask the server to verify, then watch
       // the entitlement until it says active.
       setPhase('activating')
-      await checkoutApi.verifyPayment(outcome.payload)
+      const verdict = await checkoutApi.verifyPayment(outcome.payload)
+      if (verdict.kind === 'support') {
+        // Not applied on the server: polling would only end in the "taking longer" screen.
+        setSupportNotice({ message: verdict.message, paymentId: outcome.payload.razorpay_payment_id })
+        setPhase('support')
+        return
+      }
       const result = await pollForActivation({
         fetchEntitlement: () => entitlementApi.get(),
         before,
@@ -215,6 +227,10 @@ const CheckoutPage: React.FC = () => {
         </div>
       </div>
     )
+  }
+
+  if (phase === 'support') {
+    return <PaymentSupportNotice message={supportNotice.message} paymentId={supportNotice.paymentId} />
   }
 
   if (phase === 'timeout') {

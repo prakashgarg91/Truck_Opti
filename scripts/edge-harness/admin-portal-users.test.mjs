@@ -80,8 +80,95 @@ test('admin list returns users with account status, profile query capped at 200 
   assert.equal(user.id, TARGET)
   assert.equal(user.account_status, 'active')
   const ops = profileCalls()[0].ops
-  assert.ok(ops.some(([op, n]) => op === 'limit' && n === 200))
+  assert.ok(ops.some(([op, from, to]) => op === 'range' && from === 0 && to === 200), 'first page is range 0..200 (201 rows fetched)')
   assert.ok(ops.some(([op, col, opts]) => op === 'order' && col === 'created_at' && opts?.ascending === false))
+  assert.ok(ops.some(([op, col, opts]) => op === 'order' && col === 'id' && opts?.ascending === false), 'id must be the final tiebreaker')
+})
+
+/**
+ * Seeds `total` portal profiles and applies .range(from, to) the way PostgREST does. The caller is an admin,
+ * and the target lookup (maybeSingle) still resolves to the scripted target.
+ */
+function seedPagedUsers(total) {
+  setup({})
+  const rows = Array.from({ length: total }, (_, i) => ({
+    id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+    email: `user${i}@example.com`,
+    role: 'customer',
+    created_at: new Date(Date.UTC(2026, 0, 1) + Math.floor(i / 2) * 1000).toISOString(),
+    updated_at: 'u',
+    name: null,
+    phone: null,
+  })).sort((a, b) => (b.created_at === a.created_at ? b.id.localeCompare(a.id) : b.created_at.localeCompare(a.created_at)))
+  h.fake.onFrom('users', (rec) => {
+    if (rec.ops.some(([op]) => op === 'maybeSingle')) {
+      const cols = rec.ops.find(([op]) => op === 'select')[1]
+      return cols === 'id, role' ? { data: { id: ADMIN, role: 'admin' }, error: null } : { data: null, error: null }
+    }
+    const range = rec.ops.find(([op]) => op === 'range')
+    return { data: range ? rows.slice(range[1], range[2] + 1) : [], error: null }
+  })
+  return rows
+}
+
+test('list offset defaults to 0 and a first page holds 200 users with has_more true when 450 exist', async () => {
+  seedPagedUsers(450)
+  const res = await post({ action: 'list' })
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.users.length, 200)
+  assert.equal(body.has_more, true)
+  assert.ok(profileCalls()[0].ops.some(([op, from, to]) => op === 'range' && from === 0 && to === 200))
+})
+
+test('list offset=200 returns the next users with no overlap, and paging through 450 covers each once', async () => {
+  seedPagedUsers(450)
+  const pages = [
+    await (await post({ action: 'list', offset: 0 })).json(),
+    await (await post({ action: 'list', offset: 200 })).json(),
+    await (await post({ action: 'list', offset: 400 })).json(),
+  ]
+  assert.equal(pages[1].users.length, 200)
+  assert.equal(pages[1].has_more, true)
+  assert.equal(pages[2].users.length, 50)
+  assert.equal(pages[2].has_more, false)
+  const ids = pages.flatMap((p) => p.users.map((u) => u.id))
+  assert.equal(new Set(ids).size, 450, 'no user is skipped or repeated across pages')
+})
+
+test('list has_more is false at exactly 200 users and true at 201', async () => {
+  seedPagedUsers(200)
+  assert.equal((await (await post({ action: 'list' })).json()).has_more, false)
+  seedPagedUsers(201)
+  const body = await (await post({ action: 'list' })).json()
+  assert.equal(body.users.length, 200)
+  assert.equal(body.has_more, true)
+})
+
+test('list offset 400 over 400 users is a final page with has_more false', async () => {
+  seedPagedUsers(400)
+  const body = await (await post({ action: 'list', offset: 200 })).json()
+  assert.equal(body.users.length, 200)
+  assert.equal(body.has_more, false)
+})
+
+test('invalid list offsets are 400 with the calm message before any auth or profile read', async () => {
+  seedPagedUsers(10)
+  for (const offset of [-5, 2.5, 100001, '200', null]) {
+    const res = await post({ action: 'list', offset })
+    assert.equal(res.status, 400, `offset ${String(offset)}`)
+    assert.equal((await res.json()).error, 'A valid offset is required.')
+  }
+  assert.equal(profileCalls().length, 0)
+  assert.equal(authCalls.length, 0)
+})
+
+test('a non-admin caller asking for a page is still refused with 403', async () => {
+  seedPagedUsers(10)
+  setup({ role: 'agency' })
+  const res = await post({ action: 'list', offset: 200 })
+  assert.equal(res.status, 403)
+  assert.equal(profileCalls().length, 0)
 })
 
 test('admin disables then re-enables a non-admin user', async () => {

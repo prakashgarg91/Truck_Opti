@@ -490,12 +490,12 @@ describe('AdminAgenciesPage list cap notice', () => {
         expect(q('[data-testid="agencies-cap-notice"]')).toBeNull()
     })
 
-    it('shows the status notice with the real cap when exactly 200 agencies came back', async () => {
-        h.getSnapshot.mockResolvedValue({ agencies: agencyRows(200), counts: COUNTS })
+    it('hides the 200-row notice when paging is available: Load more replaces it', async () => {
+        h.getSnapshot.mockResolvedValue({ agencies: agencyRows(200), counts: COUNTS, hasMore: true })
         await mountPage()
-        const notice = q('[data-testid="agencies-cap-notice"]')
-        expect(notice?.getAttribute('role')).toBe('status')
-        expect(notice?.textContent).toBe('Showing the first 200 only.')
+        expect(q('[data-testid="agencies-cap-notice"]')).toBeNull()
+        expect(text()).not.toContain('Showing the first 200 only.')
+        expect(buttons(/^Load more$/)).toHaveLength(1)
     })
 
     it('shows no cap notice while loading', async () => {
@@ -508,5 +508,88 @@ describe('AdminAgenciesPage list cap notice', () => {
         h.getSnapshot.mockRejectedValue(new Error('network down'))
         await mountPage()
         expect(q('[data-testid="agencies-cap-notice"]')).toBeNull()
+    })
+})
+
+describe('AdminAgenciesPage paging', () => {
+    const ALL = agencyRows(250)
+    const settle = () => act(async () => { await new Promise((r) => setTimeout(r, 0)) })
+    const loadMoreButton = () => buttons(/^Load more$|^Loading more\.\.\.$/)[0]
+    const retryButton = () => buttons(/^Retry$/)[0]
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        vi.setSystemTime(new Date('2026-11-07T10:00:00Z'))
+        h.currentUser = { ...CURRENT_ADMIN }
+        // Serves pages of 200 from ALL the way the Edge function does; other tabs have one short page.
+        h.getSnapshot.mockImplementation(async (tab: string, offset = 0) => {
+            if (tab !== 'pending') return { agencies: [APPROVED], counts: COUNTS, hasMore: false }
+            return { agencies: ALL.slice(offset, offset + 200), counts: COUNTS, hasMore: offset + 200 < ALL.length }
+        })
+    })
+
+    it('shows no Load more button when the page reports has_more false', async () => {
+        h.getSnapshot.mockResolvedValue({ agencies: [KAVERI, GANGA], counts: COUNTS, hasMore: false })
+        await mountPage()
+        expect(loadMoreButton()).toBeUndefined()
+        expect(retryButton()).toBeUndefined()
+    })
+
+    it('Load more appends the next page by offset and keeps the rows already shown', async () => {
+        await mountPage()
+        expect(text()).toContain('Agency 0')
+        expect(text()).not.toContain('Agency 249')
+        expect(h.getSnapshot).toHaveBeenLastCalledWith('pending')
+
+        await click(loadMoreButton())
+        await settle()
+
+        expect(h.getSnapshot).toHaveBeenLastCalledWith('pending', 200)
+        expect(text()).toContain('Agency 0')
+        expect(text()).toContain('Agency 249')
+        expect(loadMoreButton()).toBeUndefined()
+    })
+
+    it('shows a disabled loading label while the next page is in flight', async () => {
+        await mountPage()
+        h.getSnapshot.mockReturnValueOnce(new Promise(() => {}))
+        await click(loadMoreButton())
+        const busy = buttons(/^Loading more\.\.\.$/)[0]
+        expect(busy).toBeDefined()
+        expect(busy.disabled).toBe(true)
+    })
+
+    it('a failed next page keeps the loaded rows, shows an inline error and Retry loads the page', async () => {
+        await mountPage()
+        h.getSnapshot.mockRejectedValueOnce(new Error('network down'))
+        await click(loadMoreButton())
+        await settle()
+
+        expect(q('[role="alert"]')?.textContent).toBe('Could not load more agencies.')
+        expect(text()).toContain('Agency 0')
+        expect(text()).not.toContain('Agency 249')
+
+        await click(retryButton())
+        await settle()
+
+        expect(h.getSnapshot).toHaveBeenLastCalledWith('pending', 200)
+        expect(text()).toContain('Agency 249')
+        expect(q('[role="alert"]')).toBeNull()
+    })
+
+    it('changing the tab resets to the first page of the new tab', async () => {
+        await mountPage()
+        await click(loadMoreButton())
+        await settle()
+        expect(text()).toContain('Agency 249')
+
+        await click(tabButton('approved'))
+        await settle()
+
+        expect(h.getSnapshot).toHaveBeenLastCalledWith('approved')
+        expect(text()).toContain('Deccan Cargo')
+        expect(text()).not.toContain('Agency 249')
+        expect(loadMoreButton()).toBeUndefined()
     })
 })

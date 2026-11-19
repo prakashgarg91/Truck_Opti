@@ -220,6 +220,96 @@ describe('initiateRazorpayPayment', () => {
         })
     })
 
+    function razorpayThatPays() {
+        class RazorpayMock {
+            constructor(private options: { handler: (response: Record<string, string>) => Promise<void> }) { }
+
+            on() {
+                return undefined
+            }
+
+            open() {
+                void this.options.handler({
+                    razorpay_payment_id: 'pay_1',
+                    razorpay_order_id: 'order_1',
+                    razorpay_signature: 'sig_1',
+                })
+            }
+        }
+        ; (window as Window & { Razorpay?: unknown }).Razorpay = RazorpayMock
+    }
+
+    it('verify answers state support: returns status support with the server message and the payment ids', async () => {
+        const serverMessage = 'We received your payment but could not apply it automatically. Please contact support and we will fix it.'
+        invokeMock
+            .mockResolvedValueOnce({ data: { id: 'order_1' }, error: null })
+            .mockResolvedValueOnce({
+                data: null,
+                error: {
+                    message: 'Edge Function returned a non-2xx status code',
+                    context: new Response(JSON.stringify({ success: false, state: 'support', message: serverMessage }), {
+                        status: 409,
+                        headers: { 'Content-Type': 'application/json' },
+                    }),
+                },
+            })
+        razorpayThatPays()
+
+        const { initiateRazorpayPayment } = await importRazorpayModule('rzp_live_12345')
+        const result = await initiateRazorpayPayment(request)
+
+        expect(loggerWarnMock).toHaveBeenCalledOnce()
+        expect(result).toEqual({
+            success: false,
+            status: 'support',
+            paymentId: 'pay_1',
+            orderId: 'order_1',
+            signature: 'sig_1',
+            error: serverMessage,
+        })
+    })
+
+    it('verify answers state support without a message: returns the fallback text, not the pending text', async () => {
+        invokeMock
+            .mockResolvedValueOnce({ data: { id: 'order_1' }, error: null })
+            .mockResolvedValueOnce({
+                data: null,
+                error: {
+                    message: 'Edge Function returned a non-2xx status code',
+                    context: new Response(JSON.stringify({ state: 'support' }), { status: 409 }),
+                },
+            })
+        razorpayThatPays()
+
+        const { initiateRazorpayPayment } = await importRazorpayModule('rzp_live_12345')
+        const result = await initiateRazorpayPayment(request)
+
+        expect(result).toMatchObject({
+            success: false,
+            status: 'support',
+            paymentId: 'pay_1',
+            error: 'We could not apply it automatically. Please contact support and we will fix it.',
+        })
+    })
+
+    it('verify answers state retry: stays pending, as before', async () => {
+        invokeMock
+            .mockResolvedValueOnce({ data: { id: 'order_1' }, error: null })
+            .mockResolvedValueOnce({
+                data: null,
+                error: {
+                    message: 'Edge Function returned a non-2xx status code',
+                    context: new Response(JSON.stringify({ success: false, state: 'retry', retryable: true, message: 'Check again.' }), { status: 503 }),
+                },
+            })
+        razorpayThatPays()
+
+        const { initiateRazorpayPayment } = await importRazorpayModule('rzp_live_12345')
+        const result = await initiateRazorpayPayment(request)
+
+        expect(result).toMatchObject({ success: false, status: 'pending', error: 'Payment completed, but subscription verification is still pending.' })
+    })
+
     it('sanitizes create-order failures before returning them to the UI', async () => {
         invokeMock.mockResolvedValueOnce({
             data: null,

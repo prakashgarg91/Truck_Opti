@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MessageSquare, ChevronLeft, RefreshCw, CheckCircle2, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -6,7 +6,6 @@ import { adminSupabaseApi, type ContactInquiry as Inquiry } from '../services/ad
 import { useLanguageStore } from '../stores/languageStore'
 import { logger } from '../utils/logger'
 import AdminLoadError from './AdminLoadError'
-import ListCapNotice from '../components/admin/ListCapNotice'
 
 export default function AdminContactPage() {
   const navigate = useNavigate()
@@ -16,23 +15,56 @@ export default function AdminContactPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved'>('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState(false)
+  // Rows requested so far. Resolving an inquiry only changes its status, so the row stays in the list and the offset is unchanged.
+  const nextOffsetRef = useRef(0)
+  // Bumped on every first-page load so a response from an older request is dropped.
+  const requestRef = useRef(0)
 
   useEffect(() => {
     document.title = 'Contact Inquiries - Admin'
   }, [language])
 
   const fetchInquiries = useCallback(async () => {
+    const requestId = ++requestRef.current
     setLoading(true)
+    setLoadingMore(false)
+    setLoadMoreError(false)
     try {
-      const inquiryData = await adminSupabaseApi.getContactInquiries()
-      setInquiries(inquiryData)
+      const page = await adminSupabaseApi.getContactInquiriesPage(0)
+      if (requestId !== requestRef.current) return
+      setInquiries(page.inquiries)
+      setHasMore(page.hasMore)
+      nextOffsetRef.current = page.inquiries.length
       setLoadError(false)
     } catch (error) {
+      if (requestId !== requestRef.current) return
       logger.error('[AdminContactPage] fetchInquiries', error)
       toast.error('Failed to load contact inquiries.')
       setLoadError(true)
     } finally {
-      setLoading(false)
+      if (requestId === requestRef.current) setLoading(false)
+    }
+  }, [])
+
+  const loadMore = useCallback(async () => {
+    const requestId = requestRef.current
+    setLoadingMore(true)
+    setLoadMoreError(false)
+    try {
+      const page = await adminSupabaseApi.getContactInquiriesPage(nextOffsetRef.current)
+      if (requestId !== requestRef.current) return
+      setInquiries(prev => [...prev, ...page.inquiries])
+      setHasMore(page.hasMore)
+      nextOffsetRef.current += page.inquiries.length
+    } catch (error) {
+      if (requestId !== requestRef.current) return
+      logger.error('[AdminContactPage] loadMore', error)
+      setLoadMoreError(true)
+    } finally {
+      if (requestId === requestRef.current) setLoadingMore(false)
     }
   }, [])
 
@@ -111,7 +143,7 @@ export default function AdminContactPage() {
         <AdminLoadError what="contact inquiries" onRetry={fetchInquiries} />
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-          {'No inquiries found'}
+          {hasMore ? 'No loaded inquiries match this filter. Load more to see more.' : 'No inquiries found'}
         </div>
       ) : (
         <div className="space-y-3">
@@ -171,7 +203,25 @@ export default function AdminContactPage() {
           ))}
         </div>
       )}
-      {!loading && !loadError && <ListCapNotice rowCount={inquiries.length} testId="contact-cap-notice" />}
+      {!loading && !loadError && hasMore && (
+        <div className="pt-2 text-center">
+          {loadMoreError ? (
+            <div role="alert" className="space-y-2">
+              <p className="text-sm text-red-600 dark:text-red-400">Could not load more inquiries. The rows above are still here.</p>
+              <button type="button" onClick={loadMore} disabled={loadingMore}
+                className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60 transition-colors">
+                <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                {'Retry'}
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={loadMore} disabled={loadingMore}
+              className="w-full min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-60 transition-colors">
+              {loadingMore ? 'Loading more...' : 'Load more'}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

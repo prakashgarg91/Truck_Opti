@@ -1,0 +1,1904 @@
+{
+  "generated": "2026-11-19T03:44:08.622Z",
+  "postgres": "18.6",
+  "cutoff": "20260501120000",
+  "last_legacy_migration": "20260501120000_enforce_unique_invoice_provider_payment_per_subscription.sql",
+  "mode": {
+    "continue_after_failure": true,
+    "remediate": true,
+    "drift": true
+  },
+  "legacy_files": [
+    "20260107000000_base_schema.sql",
+    "20260108000000_subscriptions.sql",
+    "20260209000000_extended_schema.sql",
+    "20260212000000_production_setup.sql",
+    "20260305000000_phase1_drivers.sql",
+    "20260305010000_create_agency_trucks.sql",
+    "20260305011000_create_agency_jobs.sql",
+    "20260306000000_driver_docs_bucket.sql",
+    "20260307000000_fix_rls_ownership.sql",
+    "20260308000000_driver_payouts.sql",
+    "20260309000000_contact_inquiries.sql",
+    "20260311000000_add_photo_columns_to_agency_jobs.sql",
+    "20260311000001_driver_payouts_agency_columns.sql",
+    "20260311000002_eway_bill_column.sql",
+    "20260416000000_sync_trip_offer_tracking.sql",
+    "20260416010000_graphify_gap_contract_fixes.sql",
+    "20260418000000_secure_user_roles_and_customer_tracking.sql",
+    "20260418001000_launch_portal_schema_backfill.sql",
+    "20260418002000_trip_photos_bucket.sql",
+    "20260418003000_harden_role_claims_and_add_login_ids.sql",
+    "20260418004000_enforce_pan_contracts.sql",
+    "20260418005000_restore_driver_payouts_contract.sql",
+    "20260501101500_lock_client_subscription_mutations.sql",
+    "20260501113000_enforce_unique_subscriptions_user_id.sql",
+    "20260501120000_enforce_unique_invoice_provider_payment_per_subscription.sql"
+  ],
+  "pending_files": [
+    "20260517010000_billing_documents_bucket.sql",
+    "20260531110000_enforce_agency_status_writes.sql",
+    "20260601223849_fix_job_offer_otp_length_4digit.sql",
+    "20260606110000_fix_agency_driver_security_guards.sql",
+    "20260730110000_enforce_job_offer_otp_verification.sql",
+    "20261003000000_private_kyc_documents.sql",
+    "20261003010000_atomic_job_offer_response.sql",
+    "20261003020000_driver_offer_read_visibility.sql",
+    "20261004000000_trip_transition_integrity.sql",
+    "20261005000000_trip_photo_url_correction.sql",
+    "20261005010000_restore_billing_documents_admin_authority.sql",
+    "20261006120000_tenant_authority_repair.sql",
+    "20261006130000_dispatch_producer_and_trip_propagation.sql",
+    "20261006140000_revoke_setup_status_view_reads.sql",
+    "20261007120000_consent_writer_and_job_command.sql",
+    "20261008000000_agency_fleet_foundation.sql",
+    "20261010000000_fleet_assignment_reservations.sql",
+    "20261011000000_agency_members_clients_tariffs.sql",
+    "20261012000000_staff_scope_enforcement.sql",
+    "20261013000000_driver_model_authority.sql",
+    "20261014000000_agency_job_terminal_cutoff.sql",
+    "20261015000000_agency_job_truck_commands.sql",
+    "20261016000000_expiry_sweeps.sql",
+    "20261017000000_agency_driver_payouts.sql",
+    "20261018000000_agency_orders.sql",
+    "20261019000000_agency_consignments.sql",
+    "20261020000000_agency_tracking.sql",
+    "20261021000000_agency_invoices.sql",
+    "20261022000000_agency_expenses.sql",
+    "20261023000000_agency_payroll.sql",
+    "20261024000000_agency_erp_connector.sql",
+    "20261025000000_agency_load_plans.sql",
+    "20261026000000_agency_subscriptions.sql",
+    "20261027000000_subscription_limits.sql",
+    "20261028000000_subscription_gst.sql",
+    "20261029000000_subscription_activation.sql",
+    "20261030000000_razorpay_webhook_events.sql",
+    "20261031000000_subscription_sweeps.sql",
+    "20261032000000_agency_driver_names.sql",
+    "20261033000000_subscription_invoice_read.sql",
+    "20261034000000_contract_audit_followups.sql",
+    "20261035000000_subscription_write_guards.sql",
+    "20261036000000_least_privilege_hardening.sql",
+    "20261038000000_agency_identity_update.sql",
+    "20261039000000_driver_trip_job.sql",
+    "20261040000000_agency_row_guard.sql",
+    "20261041000000_admin_billing_ops_read.sql",
+    "20261042000000_invoice_consignment_link.sql",
+    "20261043000000_unregistered_seller_mode.sql",
+    "20261044000000_hosted_hardening.sql",
+    "20261045000000_rate_cards_and_avatars.sql"
+  ],
+  "files_2026_05_to_07": [
+    "20260501101500_lock_client_subscription_mutations.sql",
+    "20260501113000_enforce_unique_subscriptions_user_id.sql",
+    "20260501120000_enforce_unique_invoice_provider_payment_per_subscription.sql",
+    "20260517010000_billing_documents_bucket.sql",
+    "20260531110000_enforce_agency_status_writes.sql",
+    "20260601223849_fix_job_offer_otp_length_4digit.sql",
+    "20260606110000_fix_agency_driver_security_guards.sql",
+    "20260730110000_enforce_job_offer_otp_verification.sql"
+  ],
+  "seed_warnings": [
+    "--drift: removed subscriptions_status_check, seeded status \"trialing\", added an unmapped catalog truck"
+  ],
+  "migrations": [
+    {
+      "file": "20260517010000_billing_documents_bucket.sql",
+      "version": "20260517010000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20260531110000_enforce_agency_status_writes.sql",
+      "version": "20260531110000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20260601223849_fix_job_offer_otp_length_4digit.sql",
+      "version": "20260601223849",
+      "ms": 5,
+      "result": "ok"
+    },
+    {
+      "file": "20260606110000_fix_agency_driver_security_guards.sql",
+      "version": "20260606110000",
+      "ms": 3,
+      "result": "ok"
+    },
+    {
+      "file": "20260730110000_enforce_job_offer_otp_verification.sql",
+      "version": "20260730110000",
+      "ms": 7,
+      "result": "ok"
+    },
+    {
+      "file": "20261003000000_private_kyc_documents.sql",
+      "version": "20261003000000",
+      "ms": 19,
+      "result": "ok"
+    },
+    {
+      "file": "20261003010000_atomic_job_offer_response.sql",
+      "version": "20261003010000",
+      "ms": 5,
+      "result": "ok"
+    },
+    {
+      "file": "20261003020000_driver_offer_read_visibility.sql",
+      "version": "20261003020000",
+      "ms": 3,
+      "result": "ok"
+    },
+    {
+      "file": "20261004000000_trip_transition_integrity.sql",
+      "version": "20261004000000",
+      "ms": 9,
+      "result": "ok"
+    },
+    {
+      "file": "20261005000000_trip_photo_url_correction.sql",
+      "version": "20261005000000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261005010000_restore_billing_documents_admin_authority.sql",
+      "version": "20261005010000",
+      "ms": 1,
+      "result": "ok"
+    },
+    {
+      "file": "20261006120000_tenant_authority_repair.sql",
+      "version": "20261006120000",
+      "ms": 19,
+      "result": "ok"
+    },
+    {
+      "file": "20261006130000_dispatch_producer_and_trip_propagation.sql",
+      "version": "20261006130000",
+      "ms": 3,
+      "result": "ok"
+    },
+    {
+      "file": "20261006140000_revoke_setup_status_view_reads.sql",
+      "version": "20261006140000",
+      "ms": 0,
+      "result": "ok"
+    },
+    {
+      "file": "20261007120000_consent_writer_and_job_command.sql",
+      "version": "20261007120000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261008000000_agency_fleet_foundation.sql",
+      "version": "20261008000000",
+      "ms": 6,
+      "result": "needs_data_fix",
+      "sqlstate": "P0001",
+      "message": "agency_fleet_foundation: trucks catalog rows without a stable code mapping; refusing to enforce NOT NULL (hosted catalog drift must be resolved, never invented)",
+      "detail": null,
+      "where": "PL/pgSQL function inline_code_block line 3 at RAISE",
+      "failing_statement": "DO $$ BEGIN IF EXISTS (SELECT 1 FROM public.trucks WHERE code IS NULL) THEN RAISE EXCEPTION 'agency_fleet_foundation: trucks catalog rows without a stable code mapping; refusing to enforce NOT NULL (h",
+      "cascade": false,
+      "remediation_sql": "-- Make duplicate (agency_id, rc_number) rows unique by suffixing the newer duplicate (the owner decides the real RC).\n    WITH d AS (SELECT id, row_number() OVER (PARTITION BY agency_id, rc_number ORDER BY created_at, id) rn FROM public.agency_trucks)\n    UPDATE public.agency_trucks t SET rc_number = t.rc_number || '-DUP-' || left(t.id::text, 4) FROM d WHERE d.id = t.id AND d.rn > 1;\n    -- drift only: give a hand-added catalog truck a stable code (the migration refuses to invent one)\n    ALTER TABLE public.trucks ADD COLUMN IF NOT EXISTS code TEXT;\n    UPDATE public.trucks SET code = 'custom_' || left(id::text, 6) WHERE name = 'Mahindra Bolero Pickup';",
+      "note": "applies only after the owner data fix in remediation_sql"
+    },
+    {
+      "file": "20261010000000_fleet_assignment_reservations.sql",
+      "version": "20261010000000",
+      "ms": 22,
+      "result": "ok"
+    },
+    {
+      "file": "20261011000000_agency_members_clients_tariffs.sql",
+      "version": "20261011000000",
+      "ms": 117,
+      "result": "ok"
+    },
+    {
+      "file": "20261012000000_staff_scope_enforcement.sql",
+      "version": "20261012000000",
+      "ms": 17,
+      "result": "ok"
+    },
+    {
+      "file": "20261013000000_driver_model_authority.sql",
+      "version": "20261013000000",
+      "ms": 8,
+      "result": "ok"
+    },
+    {
+      "file": "20261014000000_agency_job_terminal_cutoff.sql",
+      "version": "20261014000000",
+      "ms": 4,
+      "result": "ok"
+    },
+    {
+      "file": "20261015000000_agency_job_truck_commands.sql",
+      "version": "20261015000000",
+      "ms": 2,
+      "result": "needs_data_fix",
+      "sqlstate": "P0001",
+      "message": "Duplicate driver truck links block the unique index: a4000004-0000-4000-8000-000000000001",
+      "detail": null,
+      "where": "PL/pgSQL function inline_code_block line 15 at RAISE",
+      "failing_statement": "IF v_dupes IS NOT NULL THEN RAISE EXCEPTION 'Duplicate driver truck links block the unique index: %', v_dupes; END IF; END $idx$; CREATE UNIQUE INDEX IF NOT EXISTS agency_trucks_one_truck_per_driver O",
+      "cascade": false,
+      "remediation_sql": "WITH d AS (SELECT id, row_number() OVER (PARTITION BY driver_id ORDER BY created_at, id) rn FROM public.agency_trucks WHERE driver_id IS NOT NULL)\n    UPDATE public.agency_trucks t SET driver_id = NULL FROM d WHERE d.id = t.id AND d.rn > 1;",
+      "note": "applies only after the owner data fix in remediation_sql"
+    },
+    {
+      "file": "20261016000000_expiry_sweeps.sql",
+      "version": "20261016000000",
+      "ms": 17,
+      "result": "ok"
+    },
+    {
+      "file": "20261017000000_agency_driver_payouts.sql",
+      "version": "20261017000000",
+      "ms": 10,
+      "result": "ok"
+    },
+    {
+      "file": "20261018000000_agency_orders.sql",
+      "version": "20261018000000",
+      "ms": 62,
+      "result": "ok"
+    },
+    {
+      "file": "20261019000000_agency_consignments.sql",
+      "version": "20261019000000",
+      "ms": 25,
+      "result": "ok"
+    },
+    {
+      "file": "20261020000000_agency_tracking.sql",
+      "version": "20261020000000",
+      "ms": 17,
+      "result": "ok"
+    },
+    {
+      "file": "20261021000000_agency_invoices.sql",
+      "version": "20261021000000",
+      "ms": 20,
+      "result": "ok"
+    },
+    {
+      "file": "20261022000000_agency_expenses.sql",
+      "version": "20261022000000",
+      "ms": 63,
+      "result": "ok"
+    },
+    {
+      "file": "20261023000000_agency_payroll.sql",
+      "version": "20261023000000",
+      "ms": 40,
+      "result": "ok"
+    },
+    {
+      "file": "20261024000000_agency_erp_connector.sql",
+      "version": "20261024000000",
+      "ms": 19,
+      "result": "ok"
+    },
+    {
+      "file": "20261025000000_agency_load_plans.sql",
+      "version": "20261025000000",
+      "ms": 52,
+      "result": "ok"
+    },
+    {
+      "file": "20261026000000_agency_subscriptions.sql",
+      "version": "20261026000000",
+      "ms": 10,
+      "result": "needs_data_fix",
+      "sqlstate": "23514",
+      "message": "check constraint \"subscriptions_status_check\" of relation \"subscriptions\" is violated by some row",
+      "detail": null,
+      "where": null,
+      "failing_statement": "DO $$ DECLARE r record; BEGIN FOR r IN SELECT conname FROM pg_constraint WHERE conrelid = 'public.subscriptions'::regclass AND contype = 'c' AND pg_get_constraintdef(oid) ILIKE '%status%' LOOP EXECUTE",
+      "cascade": false,
+      "remediation_sql": "-- drift only: map the unknown status the new CHECK rejects\n    UPDATE public.subscriptions SET status = 'trial' WHERE status = 'trialing';",
+      "note": "applies only after the owner data fix in remediation_sql"
+    },
+    {
+      "file": "20261027000000_subscription_limits.sql",
+      "version": "20261027000000",
+      "ms": 9,
+      "result": "ok"
+    },
+    {
+      "file": "20261028000000_subscription_gst.sql",
+      "version": "20261028000000",
+      "ms": 38,
+      "result": "ok"
+    },
+    {
+      "file": "20261029000000_subscription_activation.sql",
+      "version": "20261029000000",
+      "ms": 31,
+      "result": "ok"
+    },
+    {
+      "file": "20261030000000_razorpay_webhook_events.sql",
+      "version": "20261030000000",
+      "ms": 25,
+      "result": "ok"
+    },
+    {
+      "file": "20261031000000_subscription_sweeps.sql",
+      "version": "20261031000000",
+      "ms": 19,
+      "result": "ok"
+    },
+    {
+      "file": "20261032000000_agency_driver_names.sql",
+      "version": "20261032000000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261033000000_subscription_invoice_read.sql",
+      "version": "20261033000000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261034000000_contract_audit_followups.sql",
+      "version": "20261034000000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261035000000_subscription_write_guards.sql",
+      "version": "20261035000000",
+      "ms": 14,
+      "result": "ok"
+    },
+    {
+      "file": "20261036000000_least_privilege_hardening.sql",
+      "version": "20261036000000",
+      "ms": 9,
+      "result": "ok"
+    },
+    {
+      "file": "20261038000000_agency_identity_update.sql",
+      "version": "20261038000000",
+      "ms": 3,
+      "result": "ok"
+    },
+    {
+      "file": "20261039000000_driver_trip_job.sql",
+      "version": "20261039000000",
+      "ms": 1,
+      "result": "ok"
+    },
+    {
+      "file": "20261040000000_agency_row_guard.sql",
+      "version": "20261040000000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261041000000_admin_billing_ops_read.sql",
+      "version": "20261041000000",
+      "ms": 3,
+      "result": "ok"
+    },
+    {
+      "file": "20261042000000_invoice_consignment_link.sql",
+      "version": "20261042000000",
+      "ms": 11,
+      "result": "ok"
+    },
+    {
+      "file": "20261043000000_unregistered_seller_mode.sql",
+      "version": "20261043000000",
+      "ms": 10,
+      "result": "ok"
+    },
+    {
+      "file": "20261044000000_hosted_hardening.sql",
+      "version": "20261044000000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261045000000_rate_cards_and_avatars.sql",
+      "version": "20261045000000",
+      "ms": 8,
+      "result": "ok"
+    }
+  ],
+  "legacy_tables": [
+    "addon_purchases",
+    "agency_jobs",
+    "agency_trucks",
+    "analytics_events",
+    "cartons",
+    "contact_inquiries",
+    "customers",
+    "driver_locations",
+    "driver_payouts",
+    "drivers",
+    "invoices",
+    "job_offers",
+    "notifications",
+    "packing_items",
+    "packing_jobs",
+    "packing_results",
+    "payment_history",
+    "routes",
+    "sale_order_items",
+    "sale_orders",
+    "shipments",
+    "subscription_plans",
+    "subscriptions",
+    "transport_agencies",
+    "trucks",
+    "usage_tracking",
+    "users"
+  ],
+  "seed": {
+    "rows_inserted": {
+      "users": 18,
+      "customers": 2,
+      "transport_agencies": 9,
+      "drivers": 6,
+      "agency_trucks": 5,
+      "shipments": 7,
+      "agency_jobs": 7,
+      "job_offers": 7,
+      "subscriptions": 11,
+      "invoices": 5,
+      "payment_history": 6,
+      "addon_purchases": 1,
+      "driver_payouts": 5,
+      "notifications": 6,
+      "contact_inquiries": 2,
+      "routes": 1,
+      "packing_jobs": 1,
+      "sale_orders": 1,
+      "analytics_events": 1,
+      "driver_locations": 1,
+      "trucks": 1
+    },
+    "uniqueUserSubscriptionAtCutoff": true
+  },
+  "before": {
+    "counts": {
+      "addon_purchases": 1,
+      "agency_jobs": 7,
+      "agency_trucks": 5,
+      "analytics_events": 1,
+      "cartons": 5,
+      "contact_inquiries": 2,
+      "customers": 5,
+      "driver_locations": 1,
+      "driver_payouts": 5,
+      "drivers": 6,
+      "invoices": 5,
+      "job_offers": 7,
+      "notifications": 6,
+      "packing_items": 0,
+      "packing_jobs": 1,
+      "packing_results": 0,
+      "payment_history": 6,
+      "routes": 1,
+      "sale_order_items": 0,
+      "sale_orders": 1,
+      "shipments": 7,
+      "subscription_plans": 4,
+      "subscriptions": 11,
+      "transport_agencies": 9,
+      "trucks": 9,
+      "usage_tracking": 11,
+      "users": 18
+    },
+    "plans": [
+      {
+        "name": "Starter",
+        "tier": "starter",
+        "price_monthly": 49900,
+        "price_yearly": 499900,
+        "trucks_limit": 3
+      },
+      {
+        "name": "Growth",
+        "tier": "growth",
+        "price_monthly": 199900,
+        "price_yearly": 1999900,
+        "trucks_limit": 20
+      },
+      {
+        "name": "Professional",
+        "tier": "professional",
+        "price_monthly": 499900,
+        "price_yearly": 4999900,
+        "trucks_limit": 50
+      },
+      {
+        "name": "Enterprise",
+        "tier": "enterprise",
+        "price_monthly": 1499900,
+        "price_yearly": 14999900,
+        "trucks_limit": -1
+      }
+    ],
+    "subscriptions": [
+      {
+        "id": "a9000009-0000-4000-8000-000000000001",
+        "status": "active",
+        "billing_cycle": "yearly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-08-11T03:44:08.904Z",
+        "current_period_end": "2027-08-11T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000004",
+        "user_email": "sanjay.own@transgo.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000007",
+        "status": "expired",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-05-03T03:44:08.904Z",
+        "current_period_end": "2026-06-02T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000010",
+        "user_email": "kavita.own@oldtimer.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000003",
+        "status": "cancelled",
+        "billing_cycle": "monthly",
+        "plan": "Professional",
+        "tier": "professional",
+        "current_period_start": "2026-09-20T03:44:08.904Z",
+        "current_period_end": "2026-10-20T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": true,
+        "user_id": "a1000001-0000-4000-8000-000000000006",
+        "user_email": "arjun.own@kaveri.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000004",
+        "status": "paused",
+        "billing_cycle": "monthly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-10-05T03:44:08.904Z",
+        "current_period_end": "2026-11-04T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000007",
+        "user_email": "farah.own@kaveri2.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000005",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-09-30T03:44:08.904Z",
+        "current_period_end": "2026-10-30T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000008",
+        "user_email": "dinesh.own@lonestar.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000008",
+        "status": "active",
+        "billing_cycle": "yearly",
+        "plan": "Enterprise",
+        "tier": "enterprise",
+        "current_period_start": "2026-10-20T03:44:08.904Z",
+        "current_period_end": "2027-10-20T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000003",
+        "user_email": "mohan.cust@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000002",
+        "status": "trial",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-10-30T03:44:08.904Z",
+        "current_period_end": "2026-11-13T03:44:08.904Z",
+        "trial_end": "2026-11-13T03:44:08.904Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000005",
+        "user_email": "meena.own@speedline.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000006",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-11-09T03:44:08.904Z",
+        "current_period_end": "2026-11-09T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000009",
+        "user_email": "ishaan.own@bluebay.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000010",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Professional",
+        "tier": "professional",
+        "current_period_start": "2026-11-14T03:44:08.904Z",
+        "current_period_end": "2026-12-14T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000011",
+        "user_email": "driver.ramesh@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000012",
+        "status": "trialing",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-11-16T03:44:08.904Z",
+        "current_period_end": "2026-11-30T03:44:08.904Z",
+        "trial_end": "2026-11-30T03:44:08.904Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000018",
+        "user_email": "razorpay.migrated@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000009",
+        "status": "trial",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-11-17T03:44:08.904Z",
+        "current_period_end": "2026-12-01T03:44:08.904Z",
+        "trial_end": "2026-12-01T03:44:08.904Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000002",
+        "user_email": "riya.cust@example.com"
+      }
+    ],
+    "storage_buckets": 2
+  },
+  "summary": {
+    "applied_ok": 48,
+    "failed": [],
+    "needs_data_fix": [
+      "20261008000000_agency_fleet_foundation.sql",
+      "20261015000000_agency_job_truck_commands.sql",
+      "20261026000000_agency_subscriptions.sql"
+    ],
+    "not_applied": 0
+  },
+  "after": {
+    "counts": {
+      "addon_purchases": 1,
+      "agency_jobs": 7,
+      "agency_trucks": 5,
+      "analytics_events": 1,
+      "cartons": 5,
+      "contact_inquiries": 2,
+      "customers": 5,
+      "driver_locations": 1,
+      "driver_payouts": 5,
+      "drivers": 6,
+      "invoices": 5,
+      "job_offers": 7,
+      "notifications": 6,
+      "packing_items": 0,
+      "packing_jobs": 1,
+      "packing_results": 0,
+      "payment_history": 6,
+      "routes": 1,
+      "sale_order_items": 0,
+      "sale_orders": 1,
+      "shipments": 7,
+      "subscription_plans": 4,
+      "subscriptions": 11,
+      "transport_agencies": 9,
+      "trucks": 9,
+      "usage_tracking": 11,
+      "users": 18
+    },
+    "subscriptions": [
+      {
+        "id": "a9000009-0000-4000-8000-000000000001",
+        "status": "active",
+        "billing_cycle": "yearly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-08-11T03:44:08.904Z",
+        "current_period_end": "2027-08-11T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000004",
+        "user_email": "sanjay.own@transgo.example",
+        "agency_id": "a3000003-0000-4000-8000-000000000001",
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": "TransGo Logistics Pvt Ltd"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000007",
+        "status": "expired",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-05-03T03:44:08.904Z",
+        "current_period_end": "2026-06-02T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000010",
+        "user_email": "kavita.own@oldtimer.example",
+        "agency_id": "a3000003-0000-4000-8000-000000000008",
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": "Old Timer Transport"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000003",
+        "status": "cancelled",
+        "billing_cycle": "monthly",
+        "plan": "Professional",
+        "tier": "professional",
+        "current_period_start": "2026-09-20T03:44:08.904Z",
+        "current_period_end": "2026-10-20T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": true,
+        "user_id": "a1000001-0000-4000-8000-000000000006",
+        "user_email": "arjun.own@kaveri.example",
+        "agency_id": "a3000003-0000-4000-8000-000000000004",
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": "Kaveri Freight"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000004",
+        "status": "cancelled",
+        "billing_cycle": "monthly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-10-05T03:44:08.904Z",
+        "current_period_end": "2026-11-04T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000007",
+        "user_email": "farah.own@kaveri2.example",
+        "agency_id": "a3000003-0000-4000-8000-000000000005",
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": "Kaveri Freight Services"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000005",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-09-30T03:44:08.904Z",
+        "current_period_end": "2026-10-30T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000008",
+        "user_email": "dinesh.own@lonestar.example",
+        "agency_id": "a3000003-0000-4000-8000-000000000006",
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": "Lone Star Haulage"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000008",
+        "status": "active",
+        "billing_cycle": "yearly",
+        "plan": "Enterprise",
+        "tier": "enterprise",
+        "current_period_start": "2026-10-20T03:44:08.904Z",
+        "current_period_end": "2027-10-20T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000003",
+        "user_email": "mohan.cust@example.com",
+        "agency_id": null,
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": null
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000002",
+        "status": "trial",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-10-30T03:44:08.904Z",
+        "current_period_end": "2026-11-13T03:44:08.904Z",
+        "trial_end": "2026-11-13T03:44:08.904Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000005",
+        "user_email": "meena.own@speedline.example",
+        "agency_id": "a3000003-0000-4000-8000-000000000003",
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": "Speedline Carriers"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000006",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-11-09T03:44:08.904Z",
+        "current_period_end": "2026-11-09T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000009",
+        "user_email": "ishaan.own@bluebay.example",
+        "agency_id": "a3000003-0000-4000-8000-000000000007",
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": "Blue Bay Movers"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000010",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Professional",
+        "tier": "professional",
+        "current_period_start": "2026-11-14T03:44:08.904Z",
+        "current_period_end": "2026-12-14T03:44:08.904Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000011",
+        "user_email": "driver.ramesh@example.com",
+        "agency_id": null,
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": null
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000012",
+        "status": "trial",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-11-16T03:44:08.904Z",
+        "current_period_end": "2026-11-30T03:44:08.904Z",
+        "trial_end": "2026-11-30T03:44:08.904Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000018",
+        "user_email": "razorpay.migrated@example.com",
+        "agency_id": null,
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": null
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000009",
+        "status": "trial",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-11-17T03:44:08.904Z",
+        "current_period_end": "2026-12-01T03:44:08.904Z",
+        "trial_end": "2026-12-01T03:44:08.904Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000002",
+        "user_email": "riya.cust@example.com",
+        "agency_id": null,
+        "grace_end": null,
+        "first_paid_at": null,
+        "agency_name": null
+      }
+    ],
+    "plans": [
+      {
+        "name": "Starter",
+        "tier": "starter",
+        "price_monthly": 49900,
+        "price_yearly": 499000,
+        "trucks_limit": 3,
+        "drivers_limit": 6
+      },
+      {
+        "name": "Growth",
+        "tier": "growth",
+        "price_monthly": 199900,
+        "price_yearly": 1999000,
+        "trucks_limit": 20,
+        "drivers_limit": 40
+      },
+      {
+        "name": "Professional",
+        "tier": "professional",
+        "price_monthly": 499900,
+        "price_yearly": 4999000,
+        "trucks_limit": 50,
+        "drivers_limit": 100
+      },
+      {
+        "name": "Enterprise",
+        "tier": "enterprise",
+        "price_monthly": 1499900,
+        "price_yearly": 14999000,
+        "trucks_limit": -1,
+        "drivers_limit": -1
+      }
+    ]
+  },
+  "row_counts": [
+    {
+      "table": "addon_purchases",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "agency_jobs",
+      "before": 7,
+      "after": 7,
+      "lost": 0
+    },
+    {
+      "table": "agency_trucks",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "analytics_events",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "cartons",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "contact_inquiries",
+      "before": 2,
+      "after": 2,
+      "lost": 0
+    },
+    {
+      "table": "customers",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "driver_locations",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "driver_payouts",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "drivers",
+      "before": 6,
+      "after": 6,
+      "lost": 0
+    },
+    {
+      "table": "invoices",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "job_offers",
+      "before": 7,
+      "after": 7,
+      "lost": 0
+    },
+    {
+      "table": "notifications",
+      "before": 6,
+      "after": 6,
+      "lost": 0
+    },
+    {
+      "table": "packing_items",
+      "before": 0,
+      "after": 0,
+      "lost": 0
+    },
+    {
+      "table": "packing_jobs",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "packing_results",
+      "before": 0,
+      "after": 0,
+      "lost": 0
+    },
+    {
+      "table": "payment_history",
+      "before": 6,
+      "after": 6,
+      "lost": 0
+    },
+    {
+      "table": "routes",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "sale_order_items",
+      "before": 0,
+      "after": 0,
+      "lost": 0
+    },
+    {
+      "table": "sale_orders",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "shipments",
+      "before": 7,
+      "after": 7,
+      "lost": 0
+    },
+    {
+      "table": "subscription_plans",
+      "before": 4,
+      "after": 4,
+      "lost": 0
+    },
+    {
+      "table": "subscriptions",
+      "before": 11,
+      "after": 11,
+      "lost": 0
+    },
+    {
+      "table": "transport_agencies",
+      "before": 9,
+      "after": 9,
+      "lost": 0
+    },
+    {
+      "table": "trucks",
+      "before": 9,
+      "after": 9,
+      "lost": 0
+    },
+    {
+      "table": "usage_tracking",
+      "before": 11,
+      "after": 11,
+      "lost": 0
+    },
+    {
+      "table": "users",
+      "before": 18,
+      "after": 18,
+      "lost": 0
+    }
+  ],
+  "rows_lost": [],
+  "new_table_counts": {
+    "agency_driver_employment": 3,
+    "platform_billing_settings": 1,
+    "subscription_backfill_conflicts": 5,
+    "subscription_coupons": 1,
+    "subscription_trial_claims": 6
+  },
+  "silent_changes": {
+    "agency_trucks": {
+      "rows_changed": 1,
+      "rows_deleted": 0,
+      "columns": {
+        "driver_id": {
+          "rows": 1,
+          "sample": [
+            {
+              "key": "a5000005-0000-4000-8000-000000000002",
+              "before": "a4000004-0000-4000-8000-000000000001",
+              "after": null
+            }
+          ]
+        },
+        "rc_number": {
+          "rows": 1,
+          "sample": [
+            {
+              "key": "a5000005-0000-4000-8000-000000000002",
+              "before": "MH12AB1234",
+              "after": "MH12AB1234-DUP-a500"
+            }
+          ]
+        }
+      }
+    },
+    "drivers": {
+      "rows_changed": 2,
+      "rows_deleted": 0,
+      "columns": {
+        "dl_url": {
+          "rows": 2,
+          "sample": [
+            {
+              "key": "a4000004-0000-4000-8000-000000000001",
+              "before": "https://old.supabase.co/storage/v1/object/public/driver-docs/11/dl.jpg",
+              "after": null
+            },
+            {
+              "key": "a4000004-0000-4000-8000-000000000002",
+              "before": "https://old.supabase.co/storage/v1/object/public/driver-docs/12/dl.jpg",
+              "after": null
+            }
+          ]
+        },
+        "rc_url": {
+          "rows": 1,
+          "sample": [
+            {
+              "key": "a4000004-0000-4000-8000-000000000001",
+              "before": "https://old.supabase.co/storage/v1/object/public/driver-docs/11/rc.jpg",
+              "after": null
+            }
+          ]
+        },
+        "selfie_url": {
+          "rows": 1,
+          "sample": [
+            {
+              "key": "a4000004-0000-4000-8000-000000000001",
+              "before": "https://old.supabase.co/storage/v1/object/public/driver-docs/11/selfie.jpg",
+              "after": null
+            }
+          ]
+        }
+      }
+    },
+    "job_offers": {
+      "rows_changed": 7,
+      "rows_deleted": 0,
+      "columns": {
+        "pickup_otp": {
+          "rows": 6,
+          "sample": [
+            {
+              "key": "a8000008-0000-4000-8000-000000000001",
+              "before": "123456",
+              "after": "8696"
+            },
+            {
+              "key": "a8000008-0000-4000-8000-000000000003",
+              "before": "",
+              "after": "1187"
+            },
+            {
+              "key": "a8000008-0000-4000-8000-000000000004",
+              "before": "99999",
+              "after": "6587"
+            }
+          ]
+        },
+        "delivery_otp": {
+          "rows": 7,
+          "sample": [
+            {
+              "key": "a8000008-0000-4000-8000-000000000001",
+              "before": "654321",
+              "after": "0407"
+            },
+            {
+              "key": "a8000008-0000-4000-8000-000000000002",
+              "before": "77",
+              "after": "6260"
+            },
+            {
+              "key": "a8000008-0000-4000-8000-000000000003",
+              "before": null,
+              "after": "0945"
+            }
+          ]
+        }
+      }
+    },
+    "subscription_plans": {
+      "rows_changed": 4,
+      "rows_deleted": 0,
+      "columns": {
+        "price_yearly": {
+          "rows": 4,
+          "sample": [
+            {
+              "key": "7eca2590-8790-48b3-a9e9-2049c857af6b",
+              "before": 499900,
+              "after": 499000
+            },
+            {
+              "key": "fa37a036-9ee6-47ff-b03a-0230d2f0f234",
+              "before": 1999900,
+              "after": 1999000
+            },
+            {
+              "key": "2ea76268-e02f-4659-acb9-dfa617b11a39",
+              "before": 4999900,
+              "after": 4999000
+            }
+          ]
+        }
+      }
+    },
+    "subscriptions": {
+      "rows_changed": 2,
+      "rows_deleted": 0,
+      "columns": {
+        "status": {
+          "rows": 2,
+          "sample": [
+            {
+              "key": "a9000009-0000-4000-8000-000000000004",
+              "before": "paused",
+              "after": "cancelled"
+            },
+            {
+              "key": "a9000009-0000-4000-8000-000000000012",
+              "before": "trialing",
+              "after": "trial"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "subscription_changes": [
+    {
+      "id": "a9000009-0000-4000-8000-000000000001",
+      "user": "sanjay.own@transgo.example",
+      "before": {
+        "status": "active",
+        "plan": "Growth",
+        "billing_cycle": "yearly",
+        "period_end": "2027-08-11T03:44:08.904Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": "a3000003-0000-4000-8000-000000000001",
+        "agency": "TransGo Logistics Pvt Ltd",
+        "plan": "Growth",
+        "billing_cycle": "yearly",
+        "period_end": "2027-08-11T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": true
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000007",
+      "user": "kavita.own@oldtimer.example",
+      "before": {
+        "status": "expired",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-06-02T03:44:08.904Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "expired",
+        "agency_id": "a3000003-0000-4000-8000-000000000008",
+        "agency": "Old Timer Transport",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-06-02T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": true
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000003",
+      "user": "arjun.own@kaveri.example",
+      "before": {
+        "status": "cancelled",
+        "plan": "Professional",
+        "billing_cycle": "monthly",
+        "period_end": "2026-10-20T03:44:08.904Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "cancelled",
+        "agency_id": "a3000003-0000-4000-8000-000000000004",
+        "agency": "Kaveri Freight",
+        "plan": "Professional",
+        "billing_cycle": "monthly",
+        "period_end": "2026-10-20T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": true
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000004",
+      "user": "farah.own@kaveri2.example",
+      "before": {
+        "status": "paused",
+        "plan": "Growth",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-04T03:44:08.904Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "cancelled",
+        "agency_id": "a3000003-0000-4000-8000-000000000005",
+        "agency": "Kaveri Freight Services",
+        "plan": "Growth",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-04T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": true
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000005",
+      "user": "dinesh.own@lonestar.example",
+      "before": {
+        "status": "active",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-10-30T03:44:08.904Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": "a3000003-0000-4000-8000-000000000006",
+        "agency": "Lone Star Haulage",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-10-30T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": true
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000008",
+      "user": "mohan.cust@example.com",
+      "before": {
+        "status": "active",
+        "plan": "Enterprise",
+        "billing_cycle": "yearly",
+        "period_end": "2027-10-20T03:44:08.904Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Enterprise",
+        "billing_cycle": "yearly",
+        "period_end": "2027-10-20T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000002",
+      "user": "meena.own@speedline.example",
+      "before": {
+        "status": "trial",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-13T03:44:08.904Z",
+        "trial_end": "2026-11-13T03:44:08.904Z"
+      },
+      "after": {
+        "status": "trial",
+        "agency_id": "a3000003-0000-4000-8000-000000000003",
+        "agency": "Speedline Carriers",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-13T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": true
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000006",
+      "user": "ishaan.own@bluebay.example",
+      "before": {
+        "status": "active",
+        "plan": "Growth",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-09T03:44:08.904Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": "a3000003-0000-4000-8000-000000000007",
+        "agency": "Blue Bay Movers",
+        "plan": "Growth",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-09T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": true
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000010",
+      "user": "driver.ramesh@example.com",
+      "before": {
+        "status": "active",
+        "plan": "Professional",
+        "billing_cycle": "monthly",
+        "period_end": "2026-12-14T03:44:08.904Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Professional",
+        "billing_cycle": "monthly",
+        "period_end": "2026-12-14T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000012",
+      "user": "razorpay.migrated@example.com",
+      "before": {
+        "status": "trialing",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-30T03:44:08.904Z",
+        "trial_end": "2026-11-30T03:44:08.904Z"
+      },
+      "after": {
+        "status": "trial",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-30T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": true
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000009",
+      "user": "riya.cust@example.com",
+      "before": {
+        "status": "trial",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-12-01T03:44:08.904Z",
+        "trial_end": "2026-12-01T03:44:08.904Z"
+      },
+      "after": {
+        "status": "trial",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-12-01T03:44:08.904Z",
+        "grace_end": null
+      },
+      "changed": false
+    }
+  ],
+  "plan_price_changes": [
+    {
+      "plan": "Starter",
+      "monthly_before": 49900,
+      "monthly_after": 49900,
+      "yearly_before": 499900,
+      "yearly_after": 499000,
+      "yearly_delta_paise": -900
+    },
+    {
+      "plan": "Growth",
+      "monthly_before": 199900,
+      "monthly_after": 199900,
+      "yearly_before": 1999900,
+      "yearly_after": 1999000,
+      "yearly_delta_paise": -900
+    },
+    {
+      "plan": "Professional",
+      "monthly_before": 499900,
+      "monthly_after": 499900,
+      "yearly_before": 4999900,
+      "yearly_after": 4999000,
+      "yearly_delta_paise": -900
+    },
+    {
+      "plan": "Enterprise",
+      "monthly_before": 1499900,
+      "monthly_after": 1499900,
+      "yearly_before": 14999900,
+      "yearly_after": 14999000,
+      "yearly_delta_paise": -900
+    }
+  ],
+  "backfill_conflicts": [
+    {
+      "reason": "no_agency",
+      "subscription_id": "a9000009-0000-4000-8000-000000000012",
+      "user_id": "a1000001-0000-4000-8000-000000000018",
+      "candidate_agency_ids": [],
+      "chosen_agency_id": null,
+      "details": {
+        "policy": "oldest approved agency, else oldest agency",
+        "status": "trial",
+        "reasons": [
+          "no_agency"
+        ]
+      }
+    },
+    {
+      "reason": "no_agency",
+      "subscription_id": "a9000009-0000-4000-8000-000000000009",
+      "user_id": "a1000001-0000-4000-8000-000000000002",
+      "candidate_agency_ids": [],
+      "chosen_agency_id": null,
+      "details": {
+        "policy": "oldest approved agency, else oldest agency",
+        "status": "trial",
+        "reasons": [
+          "no_agency"
+        ]
+      }
+    },
+    {
+      "reason": "multiple_agencies",
+      "subscription_id": "a9000009-0000-4000-8000-000000000001",
+      "user_id": "a1000001-0000-4000-8000-000000000004",
+      "candidate_agency_ids": [
+        "a3000003-0000-4000-8000-000000000002",
+        "a3000003-0000-4000-8000-000000000001"
+      ],
+      "chosen_agency_id": "a3000003-0000-4000-8000-000000000001",
+      "details": {
+        "policy": "oldest approved agency, else oldest agency",
+        "status": "active",
+        "reasons": [
+          "multiple_agencies"
+        ]
+      }
+    },
+    {
+      "reason": "no_agency",
+      "subscription_id": "a9000009-0000-4000-8000-000000000008",
+      "user_id": "a1000001-0000-4000-8000-000000000003",
+      "candidate_agency_ids": [],
+      "chosen_agency_id": null,
+      "details": {
+        "policy": "oldest approved agency, else oldest agency",
+        "status": "active",
+        "reasons": [
+          "no_agency"
+        ]
+      }
+    },
+    {
+      "reason": "no_agency",
+      "subscription_id": "a9000009-0000-4000-8000-000000000010",
+      "user_id": "a1000001-0000-4000-8000-000000000011",
+      "candidate_agency_ids": [],
+      "chosen_agency_id": null,
+      "details": {
+        "policy": "oldest approved agency, else oldest agency",
+        "status": "active",
+        "reasons": [
+          "no_agency"
+        ]
+      }
+    }
+  ],
+  "trial_claims": [
+    {
+      "agency_id": "a3000003-0000-4000-8000-000000000008",
+      "company_name": "Old Timer Transport",
+      "gstin_norm": "24AAACO1111Q1Z1",
+      "phone_norm": null,
+      "subscription_id": "a9000009-0000-4000-8000-000000000007"
+    },
+    {
+      "agency_id": "a3000003-0000-4000-8000-000000000001",
+      "company_name": "TransGo Logistics Pvt Ltd",
+      "gstin_norm": "27AABCT9999F1ZQ",
+      "phone_norm": "9822222201",
+      "subscription_id": "a9000009-0000-4000-8000-000000000001"
+    },
+    {
+      "agency_id": "a3000003-0000-4000-8000-000000000004",
+      "company_name": "Kaveri Freight",
+      "gstin_norm": "33AAACK7777M1Z8",
+      "phone_norm": "9876543210",
+      "subscription_id": "a9000009-0000-4000-8000-000000000003"
+    },
+    {
+      "agency_id": "a3000003-0000-4000-8000-000000000006",
+      "company_name": "Lone Star Haulage",
+      "gstin_norm": "07AAACL5555P1ZV",
+      "phone_norm": "9822222205",
+      "subscription_id": "a9000009-0000-4000-8000-000000000005"
+    },
+    {
+      "agency_id": "a3000003-0000-4000-8000-000000000007",
+      "company_name": "Blue Bay Movers",
+      "gstin_norm": null,
+      "phone_norm": null,
+      "subscription_id": "a9000009-0000-4000-8000-000000000006"
+    },
+    {
+      "agency_id": "a3000003-0000-4000-8000-000000000003",
+      "company_name": "Speedline Carriers",
+      "gstin_norm": "29AADCS4321H1Z2",
+      "phone_norm": "9822222202",
+      "subscription_id": "a9000009-0000-4000-8000-000000000002"
+    }
+  ],
+  "agencies_attached_without_claim": [
+    {
+      "id": "a3000003-0000-4000-8000-000000000005",
+      "company_name": "Kaveri Freight Services",
+      "gstin": " 33aaack7777m1z8 ",
+      "contact_phone": "09876543210"
+    }
+  ],
+  "unvalidated_constraints": [
+    {
+      "table": "agency_trucks",
+      "constraint": "agency_trucks_vehicle_type_catalog_fkey",
+      "definition": "FOREIGN KEY (vehicle_type) REFERENCES trucks(code) NOT VALID",
+      "legacy_rows_violate": true,
+      "validate_error": "insert or update on table \"agency_trucks\" violates foreign key constraint \"agency_trucks_vehicle_type_catalog_fkey\""
+    },
+    {
+      "table": "driver_payouts",
+      "constraint": "driver_payouts_amount_positive",
+      "definition": "CHECK ((amount > (0)::numeric)) NOT VALID",
+      "legacy_rows_violate": true,
+      "validate_error": "check constraint \"driver_payouts_amount_positive\" of relation \"driver_payouts\" is violated by some row"
+    },
+    {
+      "table": "subscriptions",
+      "constraint": "subscriptions_period_order_check",
+      "definition": "CHECK ((current_period_end > current_period_start)) NOT VALID",
+      "legacy_rows_violate": true,
+      "validate_error": "check constraint \"subscriptions_period_order_check\" of relation \"subscriptions\" is violated by some row"
+    }
+  ],
+  "legacy_values_outside_new_rules": {
+    "agency_trucks_vehicle_type_not_a_catalog_code": [
+      {
+        "id": "a5000005-0000-4000-8000-000000000003",
+        "agency_id": "a3000003-0000-4000-8000-000000000001",
+        "vehicle_type": "Mini truck (custom)",
+        "rc_number": "mh12cd9999"
+      },
+      {
+        "id": "a5000005-0000-4000-8000-000000000004",
+        "agency_id": "a3000003-0000-4000-8000-000000000004",
+        "vehicle_type": "Tata Ace",
+        "rc_number": "TN01XY0001"
+      },
+      {
+        "id": "a5000005-0000-4000-8000-000000000005",
+        "agency_id": "a3000003-0000-4000-8000-000000000006",
+        "vehicle_type": "BharatBenz 24ft",
+        "rc_number": "DL01ZZ4444"
+      },
+      {
+        "id": "a5000005-0000-4000-8000-000000000002",
+        "agency_id": "a3000003-0000-4000-8000-000000000001",
+        "vehicle_type": "Eicher 14ft",
+        "rc_number": "MH12AB1234-DUP-a500"
+      },
+      {
+        "id": "a5000005-0000-4000-8000-000000000001",
+        "agency_id": "a3000003-0000-4000-8000-000000000001",
+        "vehicle_type": "Tata 407",
+        "rc_number": "MH12AB1234"
+      }
+    ],
+    "driver_payouts_amount_not_positive": [
+      {
+        "id": "ac00000c-0000-4000-8000-000000000003",
+        "amount": "0.00",
+        "status": "pending"
+      },
+      {
+        "id": "ac00000c-0000-4000-8000-000000000005",
+        "amount": "-250.00",
+        "status": "rejected"
+      }
+    ],
+    "job_offers_otp_not_4_digit_now": [],
+    "legacy_payment_history_not_linked_to_agency": [
+      {
+        "rows": 6,
+        "successful": 3
+      }
+    ],
+    "legacy_invoices_table_rows_not_in_subscription_invoices": [
+      {
+        "rows": 5,
+        "total_paise": "20944410"
+      }
+    ],
+    "subscriptions_without_agency": [
+      {
+        "id": "a9000009-0000-4000-8000-000000000008",
+        "status": "active",
+        "email": "mohan.cust@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000009",
+        "status": "trial",
+        "email": "riya.cust@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000010",
+        "status": "active",
+        "email": "driver.ramesh@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000012",
+        "status": "trial",
+        "email": "razorpay.migrated@example.com"
+      }
+    ],
+    "agencies_without_any_subscription": [
+      {
+        "id": "a3000003-0000-4000-8000-000000000002",
+        "company_name": "TransGo Logistics (old entity)",
+        "status": "rejected"
+      },
+      {
+        "id": "a3000003-0000-4000-8000-000000000009",
+        "company_name": "Nina Roadways",
+        "status": "approved"
+      }
+    ]
+  },
+  "sweep_dry_run": {
+    "as_is": {
+      "error": "23514: new row for relation \"subscriptions\" violates check constraint \"subscriptions_period_order_check\""
+    },
+    "meaning": "the sweep raises on the first row the NOT VALID period CHECK rejects, so EVERY run of the hourly cron fails and nothing is expired or reminded until those rows are repaired",
+    "blocking_rows": [
+      {
+        "id": "a9000009-0000-4000-8000-000000000006",
+        "email": "ishaan.own@bluebay.example",
+        "status": "active",
+        "current_period_start": "2026-11-09T03:44:08.904Z",
+        "current_period_end": "2026-11-09T03:44:08.904Z"
+      }
+    ],
+    "if_blocking_check_were_absent": {
+      "function_result": {
+        "ok": true,
+        "run_id": "67e5ad3d-7dfa-4662-933f-0fd8f0a00ff1",
+        "more_pending": false,
+        "grace_expired": 0,
+        "grace_started": 2,
+        "trials_expired": 1,
+        "reminders_created": 0
+      },
+      "transitions": [
+        {
+          "id": "a9000009-0000-4000-8000-000000000005",
+          "user": "dinesh.own@lonestar.example",
+          "agency": "Lone Star Haulage",
+          "was": "active",
+          "would_become": "grace",
+          "period_end": "2026-10-30T03:44:08.904Z",
+          "trial_end": null
+        },
+        {
+          "id": "a9000009-0000-4000-8000-000000000002",
+          "user": "meena.own@speedline.example",
+          "agency": "Speedline Carriers",
+          "was": "trial",
+          "would_become": "expired",
+          "period_end": "2026-11-13T03:44:08.904Z",
+          "trial_end": "2026-11-13T03:44:08.904Z"
+        },
+        {
+          "id": "a9000009-0000-4000-8000-000000000006",
+          "user": "ishaan.own@bluebay.example",
+          "agency": "Blue Bay Movers",
+          "was": "active",
+          "would_become": "grace",
+          "period_end": "2026-11-09T03:44:08.904Z",
+          "trial_end": null
+        }
+      ],
+      "unchanged_live": [
+        {
+          "user": "sanjay.own@transgo.example",
+          "status": "active"
+        },
+        {
+          "user": "dinesh.own@lonestar.example",
+          "status": "grace"
+        },
+        {
+          "user": "mohan.cust@example.com",
+          "status": "active"
+        },
+        {
+          "user": "ishaan.own@bluebay.example",
+          "status": "grace"
+        },
+        {
+          "user": "driver.ramesh@example.com",
+          "status": "active"
+        },
+        {
+          "user": "razorpay.migrated@example.com",
+          "status": "trial"
+        },
+        {
+          "user": "riya.cust@example.com",
+          "status": "trial"
+        }
+      ],
+      "reminders_that_would_be_written": [],
+      "rolled_back": true
+    }
+  },
+  "recommendation_inputs": {
+    "failed_files": [],
+    "rows_lost": 0,
+    "silent_change_tables": [
+      "agency_trucks",
+      "drivers",
+      "job_offers",
+      "subscription_plans",
+      "subscriptions"
+    ]
+  }
+}

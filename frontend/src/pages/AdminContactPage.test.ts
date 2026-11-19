@@ -13,6 +13,7 @@ import type { ContactInquiry } from '../services/adminSupabaseApi'
 
 const h = vi.hoisted(() => ({
     getContactInquiries: vi.fn(),
+    getContactInquiriesPage: vi.fn(),
     resolveContactInquiry: vi.fn(),
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock('react-hot-toast', () => ({ default: { error: h.toastError, success: h.t
 vi.mock('../services/adminSupabaseApi', () => ({
     adminSupabaseApi: {
         getContactInquiries: h.getContactInquiries,
+        getContactInquiriesPage: h.getContactInquiriesPage,
         resolveContactInquiry: h.resolveContactInquiry,
     },
 }))
@@ -126,6 +128,7 @@ describe('AdminContactPage', () => {
     beforeEach(() => {
         vi.resetAllMocks()
         h.getContactInquiries.mockResolvedValue([OPEN, RESOLVED])
+        h.getContactInquiriesPage.mockImplementation(servePage)
         h.resolveContactInquiry.mockResolvedValue(undefined)
     })
 
@@ -230,40 +233,91 @@ describe('AdminContactPage', () => {
     })
 })
 
+// The page loads through getContactInquiriesPage(offset). This stands in for the server: it serves the rows a test set on
+// getContactInquiries, at most 200 per page, and reports whether rows remain past the page.
+async function servePage(offset: number) {
+    const rows = (await h.getContactInquiries()) as ContactInquiry[]
+    return { inquiries: rows.slice(offset, offset + 200), hasMore: rows.length > offset + 200 }
+}
+
 const inquiryRows = (count: number): ContactInquiry[] =>
     Array.from({ length: count }, (_, i) => ({ ...OPEN, id: `inq-cap-${i}`, name: `Inquiry ${i}` }))
 
-describe('AdminContactPage list cap notice', () => {
+const loadMoreButton = () => buttonByText(/Load more|Loading more/)
+const countOf = (needle: string) => text().split(needle).length - 1
+
+describe('AdminContactPage Load more', () => {
     beforeEach(() => {
         vi.resetAllMocks()
         h.resolveContactInquiry.mockResolvedValue(undefined)
+        h.getContactInquiriesPage.mockImplementation(servePage)
     })
 
-    it('shows no cap notice when fewer than 200 inquiries came back', async () => {
+    it('shows no Load more and no 200-row notice when the server reports no further page', async () => {
         h.getContactInquiries.mockResolvedValue(inquiryRows(199))
         await mountPage()
         expect(text()).toContain('Inquiry 198')
-        expect(q('[data-testid="contact-cap-notice"]')).toBeNull()
+        expect(loadMoreButton()).toBeUndefined()
+        expect(text()).not.toContain('Showing the first 200 only.')
     })
 
-    it('shows the status notice with the real cap when exactly 200 inquiries came back', async () => {
-        h.getContactInquiries.mockResolvedValue(inquiryRows(200))
+    it('shows Load more while rows remain, hides the 200-row notice, and appends each page by offset', async () => {
+        h.getContactInquiries.mockResolvedValue(inquiryRows(450))
         await mountPage()
-        const notice = q('[data-testid="contact-cap-notice"]')
-        expect(notice?.getAttribute('role')).toBe('status')
-        expect(notice?.textContent).toBe('Showing the first 200 only.')
+        expect(h.getContactInquiriesPage).toHaveBeenLastCalledWith(0)
+        expect(text()).toContain('Inquiry 199')
+        expect(text()).not.toContain('Inquiry 200')
+        expect(text()).not.toContain('Showing the first 200 only.')
+
+        await click(loadMoreButton()!)
+        expect(h.getContactInquiriesPage).toHaveBeenLastCalledWith(200)
+        expect(text()).toContain('Inquiry 200')
+        expect(text()).toContain('Inquiry 199')
+        expect(loadMoreButton()).toBeTruthy()
+
+        await click(loadMoreButton()!)
+        expect(h.getContactInquiriesPage).toHaveBeenLastCalledWith(400)
+        expect(countOf('Inquiry 449')).toBe(1)
+        expect(loadMoreButton()).toBeUndefined()
     })
 
-    it('shows no cap notice while loading', async () => {
-        h.getContactInquiries.mockReturnValue(new Promise(() => {}))
+    it('Load more is disabled and labelled while the next page loads', async () => {
+        h.getContactInquiries.mockResolvedValueOnce(inquiryRows(450)).mockReturnValue(new Promise(() => {}))
         await mountPage()
-        expect(q('[data-testid="contact-cap-notice"]')).toBeNull()
+        await click(loadMoreButton()!)
+        const busy = loadMoreButton()!
+        expect(busy.disabled).toBe(true)
+        expect(busy.textContent).toBe('Loading more...')
+        expect(text()).toContain('Inquiry 199')
     })
 
-    it('shows no cap notice in the error state', async () => {
-        h.getContactInquiries.mockRejectedValueOnce(new Error('network down'))
+    it('a Load more failure keeps the loaded rows, shows an inline error, and Retry appends the page', async () => {
+        h.getContactInquiries
+            .mockResolvedValueOnce(inquiryRows(450))
+            .mockRejectedValueOnce(new Error('network down'))
+            .mockResolvedValue(inquiryRows(450))
         await mountPage()
-        expect(q('[data-testid="admin-load-error"]')).toBeTruthy()
-        expect(q('[data-testid="contact-cap-notice"]')).toBeNull()
+        await click(loadMoreButton()!)
+        expect(q('[role="alert"]')?.textContent).toContain('Could not load more inquiries')
+        expect(text()).toContain('Inquiry 199')
+        expect(text()).not.toContain('Inquiry 200')
+        expect(h.loggerError).toHaveBeenCalledTimes(1)
+
+        await click(buttonByText(/^Retry$/)!)
+        expect(h.getContactInquiriesPage).toHaveBeenLastCalledWith(200)
+        expect(text()).toContain('Inquiry 200')
+        expect(q('[role="alert"]')).toBeNull()
+    })
+
+    it('the Open and Resolved filter works on the loaded rows without refetching, and Load more stays under it', async () => {
+        h.getContactInquiries.mockResolvedValue(inquiryRows(450))
+        await mountPage()
+        await click(loadMoreButton()!)
+        expect(h.getContactInquiriesPage).toHaveBeenCalledTimes(2)
+
+        await click(buttonByText(/^Resolved$/)!)
+        expect(h.getContactInquiriesPage).toHaveBeenCalledTimes(2)
+        expect(text()).toContain('No loaded inquiries match this filter. Load more to see more.')
+        expect(loadMoreButton()).toBeTruthy()
     })
 })

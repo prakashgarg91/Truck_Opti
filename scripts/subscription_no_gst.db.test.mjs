@@ -906,6 +906,32 @@ async function main() {
   })
 
   // =========================================================================
+  // 8. Follow-ups (20261046): invoice rule both ways, create-order replay rate
+  // =========================================================================
+  await testCase('N43. invoice with gst_rate_pct 0 and a supplier GSTIN is rejected by a check constraint', async () => {
+    const o = await insertInvoiceOut({ rate: 0, supplier: SELLER_GSTIN })
+    expectRefusedMatch(o, /check constraint/i, 'rate 0 with supplier GSTIN: ')
+  })
+
+  await testCase('N44. create_order replay returns gst_rate_pct like the first answer (unregistered 0, registered 18)', async () => {
+    for (const [registered, want] of [[false, 0], [true, 18]]) {
+      await setSeller({ registered, gstin: registered ? SELLER_GSTIN : null })
+      const agency = await createAgency({ stateName: 'Maharashtra', gstin: gstinFor('27') })
+      const orderId = nx('order')
+      const first = await orderOut(agency.id, orderId)
+      expectAccepted(first, 'first create_order: ')
+      const again = await orderOut(agency.id, orderId)
+      expectAccepted(again, 'replay create_order: ')
+      const a = bodyOf(first)
+      const b = bodyOf(again)
+      expect(b.replay === true, `replay flag ${JSON.stringify(b.replay)}`)
+      expect(Number(a.gst_rate_pct) === want, `first gst_rate_pct ${JSON.stringify(a.gst_rate_pct)}, want ${want}`)
+      expect(Number(b.gst_rate_pct) === want, `replay gst_rate_pct ${JSON.stringify(b.gst_rate_pct)}, want ${want}`)
+      expect(b.gst_registered === registered, `replay gst_registered ${JSON.stringify(b.gst_registered)}`)
+    }
+  })
+
+  // =========================================================================
   // Summary
   // =========================================================================
   const passed = results.filter((r) => r.pass).length

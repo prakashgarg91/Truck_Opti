@@ -26,6 +26,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
     getAdminUsers: vi.fn(),
+    getAdminUsersPage: vi.fn(),
     deleteUser: vi.fn(),
     banUser: vi.fn(),
     unbanUser: vi.fn(),
@@ -39,6 +40,7 @@ vi.mock('react-hot-toast', () => ({ default: { error: h.toastError, success: h.t
 vi.mock('../services/adminSupabaseApi', () => ({
     adminSupabaseApi: {
         getAdminUsers: h.getAdminUsers,
+        getAdminUsersPage: h.getAdminUsersPage,
         deleteUser: h.deleteUser,
         banUser: h.banUser,
         unbanUser: h.unbanUser,
@@ -109,6 +111,12 @@ const CURRENT_ADMIN = { id: 'me-admin', email: 'boss@truckopti.test', name: 'Bos
 // expectation through the same call keeps the assertion deterministic in any
 // host timezone while still pinning the format wiring.
 const JOINED_AGENCY = new Date(AGENCY_ROW.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+
+// Routes the paged service call to h.getAdminUsers (single page, has_more false) so the
+// first-page tests keep scripting the list through getAdminUsers.
+function delegateToLegacyList() {
+    h.getAdminUsersPage.mockImplementation(async (offset = 0) => ({ users: await h.getAdminUsers(offset), hasMore: false }))
+}
 
 let root: Root | null = null
 let container: HTMLElement | null = null
@@ -181,6 +189,7 @@ describe('AdminUsersPage', () => {
         vi.setSystemTime(new Date('2026-11-07T10:00:00Z'))
         h.currentUser = { ...CURRENT_ADMIN }
         h.getAdminUsers.mockResolvedValue(USERS)
+        delegateToLegacyList()
     })
 
     it('never fetches users for a non-admin session (permission gate)', async () => {
@@ -475,6 +484,7 @@ describe('AdminUsersPage list cap notice', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         h.currentUser = { ...CURRENT_ADMIN }
+        delegateToLegacyList()
     })
 
     it('shows no cap notice when fewer than 200 users came back', async () => {
@@ -484,12 +494,12 @@ describe('AdminUsersPage list cap notice', () => {
         expect(q('[data-testid="users-cap-notice"]')).toBeNull()
     })
 
-    it('shows the status notice with the real cap when exactly 200 users came back', async () => {
-        h.getAdminUsers.mockResolvedValue(userRows(200))
+    it('hides the 200-row notice when paging is available: Load more replaces it', async () => {
+        h.getAdminUsersPage.mockResolvedValue({ users: userRows(200), hasMore: true })
         await mountPage()
-        const notice = q('[data-testid="users-cap-notice"]')
-        expect(notice?.getAttribute('role')).toBe('status')
-        expect(notice?.textContent).toBe('Showing the first 200 only.')
+        expect(q('[data-testid="users-cap-notice"]')).toBeNull()
+        expect(text()).not.toContain('Showing the first 200 only.')
+        expect(buttons(/^Load more$/)).toHaveLength(1)
     })
 
     it('shows no cap notice while loading', async () => {
@@ -503,5 +513,87 @@ describe('AdminUsersPage list cap notice', () => {
         await mountPage()
         expect(q('[data-testid="admin-load-error"]')).not.toBeNull()
         expect(q('[data-testid="users-cap-notice"]')).toBeNull()
+    })
+})
+
+describe('AdminUsersPage paging', () => {
+    const ALL = userRows(250)
+    const settle = () => act(async () => { await new Promise((r) => setTimeout(r, 0)) })
+    const loadMoreButton = () => buttons(/^Load more$|^Loading more\.\.\.$/)[0]
+    const retryButton = () => buttons(/^Retry$/)[0]
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        vi.setSystemTime(new Date('2026-11-07T10:00:00Z'))
+        h.currentUser = { ...CURRENT_ADMIN }
+        // Serves pages of 200 from ALL the way the Edge function does.
+        h.getAdminUsersPage.mockImplementation(async (offset = 0) => ({
+            users: ALL.slice(offset, offset + 200),
+            hasMore: offset + 200 < ALL.length,
+        }))
+    })
+
+    it('shows no Load more button when has_more is false', async () => {
+        h.getAdminUsersPage.mockResolvedValue({ users: USERS, hasMore: false })
+        await mountPage()
+        expect(loadMoreButton()).toBeUndefined()
+        expect(retryButton()).toBeUndefined()
+    })
+
+    it('Load more appends the next page by offset and keeps the rows already shown', async () => {
+        await mountPage()
+        expect(h.getAdminUsersPage).toHaveBeenLastCalledWith(0)
+        expect(text()).toContain('Member 0')
+        expect(text()).not.toContain('Member 249')
+
+        await click(loadMoreButton())
+        await settle()
+
+        expect(h.getAdminUsersPage).toHaveBeenLastCalledWith(200)
+        expect(text()).toContain('Member 0')
+        expect(text()).toContain('Member 249')
+        expect(loadMoreButton()).toBeUndefined()
+    })
+
+    it('shows a disabled loading label while the next page is in flight', async () => {
+        await mountPage()
+        h.getAdminUsersPage.mockReturnValueOnce(new Promise(() => {}))
+        await click(loadMoreButton())
+        const busy = buttons(/^Loading more\.\.\.$/)[0]
+        expect(busy).toBeDefined()
+        expect(busy.disabled).toBe(true)
+    })
+
+    it('a failed next page keeps the loaded rows, shows an inline error and Retry loads the page', async () => {
+        await mountPage()
+        h.getAdminUsersPage.mockRejectedValueOnce(new Error('network down'))
+        await click(loadMoreButton())
+        await settle()
+
+        expect(q('[role="alert"]')?.textContent).toBe('Could not load more users.')
+        expect(text()).toContain('Member 0')
+        expect(text()).not.toContain('Member 249')
+
+        await click(retryButton())
+        await settle()
+
+        expect(h.getAdminUsersPage).toHaveBeenLastCalledWith(200)
+        expect(text()).toContain('Member 249')
+        expect(q('[role="alert"]')).toBeNull()
+    })
+
+    it('Refresh reloads the first page, so previously loaded extra pages are dropped', async () => {
+        await mountPage()
+        await click(loadMoreButton())
+        await settle()
+        expect(text()).toContain('Member 249')
+
+        await click(refreshButton())
+        await settle()
+
+        expect(h.getAdminUsersPage).toHaveBeenLastCalledWith(0)
+        expect(text()).not.toContain('Member 249')
+        expect(loadMoreButton()).toBeDefined()
     })
 })

@@ -37,3 +37,10 @@ See TASKS.md evening checkpoint: landed work, gates, the known-defect list for t
 - Uncommitted worker output in the tree: no-GST DB + screens, dashboard/driver page defect fixes, driver-kyc method guard, admin paging, driver sign-up KYC, hosted hardening migration 20261044 (in progress), hosted smoke script scripts/staging/ (in progress; seed SQL at D:/tmp/staging_seed.sql to be applied via the Supabase connector).
 - Public staging values in git-ignored .env.staging. Razorpay secrets NOT set on staging yet (owner runs: npx supabase secrets set --env-file .env.proof).
 - ZCode works again (read-only job to-edge-audit under D:/tmp/zcode-jobs). Claude API key still not workspace-scoped.
+
+## 2026-11-19 close
+Read the 2026-11-19 checkpoint and addendum in TASKS.md first. Everything is committed on main; staging (ydkhgclfjdksicpwqzmw) matches main through migration 20261047 and all Edge functions. Status: READY FOR A PRODUCTION REHEARSAL, not for a production deploy or a first sale.
+- Hosted tools: scripts/staging/hosted_smoke.mjs (135 checks), test_payment.browser.mjs, webhook_proof.mjs, failed_and_flip_proof.mjs; evidence under evidence/staging/. Local app against staging: launch entry "truckopti-staging" in the ignored .claude/launch.json (port 5198). Test users in ignored .env.staging.users; Razorpay TEST keys and webhook secret in ignored .env.proof (also set as staging function secrets).
+- Production: do not push blindly. Run scripts/prod/preflight_inventory.sql on the old project, read evidence/prod-rehearsal/README.md, then decide repair-and-push versus fresh project plus import. Never promote staging.
+- Next work the AI can do: register nothing at Razorpay (owner); build the data-repair script once preflight results are in; hosted browser journey automation; glossary relabel (57 labels); LR sequence fix; admin reopen flow for refunded agencies if the owner wants self-service.
+- Routes: ZCode works again (used for two read-only reviews); Claude API key still refused as not workspace-scoped.

@@ -10,7 +10,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({
     getByTier: vi.fn(),
     createOrder: vi.fn(),
+    verifyPayment: vi.fn(),
+    openRazorpay: vi.fn(),
+    pollForActivation: vi.fn(),
     gst: { status: 'ready', registered: true } as { status: 'loading' | 'ready' | 'error'; registered: boolean | null },
+}))
+
+// The outcome tests control the poll result; every other export keeps its real behaviour.
+vi.mock('../lib/billingState', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../lib/billingState')>()),
+    pollForActivation: h.pollForActivation,
 }))
 
 // Registered is the default; the GST branch tests below switch the state.
@@ -25,7 +34,7 @@ vi.mock('../services/razorpayPayment', () => ({
 
 vi.mock('../services/subscriptionApi', () => ({
     subscriptionPlansApi: { getByTier: h.getByTier },
-    checkoutApi: { createOrder: h.createOrder, verifyPayment: vi.fn() },
+    checkoutApi: { createOrder: h.createOrder, verifyPayment: h.verifyPayment },
     entitlementApi: { get: vi.fn() },
 }))
 
@@ -34,7 +43,7 @@ vi.mock('../components/billing/useEntitlement', () => ({
 }))
 
 vi.mock('../components/billing/razorpayCheckout', () => ({
-    openRazorpayCheckout: vi.fn(),
+    openRazorpayCheckout: h.openRazorpay,
 }))
 
 vi.mock('../stores/authStore', () => ({
@@ -42,6 +51,7 @@ vi.mock('../stores/authStore', () => ({
 }))
 
 import CheckoutPage from './CheckoutPage'
+import { SUPPORT_EMAIL } from '../config/support'
 
 const PLAN = {
     tier: 'starter',
@@ -199,5 +209,94 @@ describe('CheckoutPage tax copy follows the seller GST flag and the server quote
         expect(h.createOrder).toHaveBeenCalledTimes(1)
         expect(container.textContent).toContain('No GST charged')
         expect(container.textContent).not.toContain('GST extra at 18%')
+    })
+})
+
+describe('CheckoutPage outcome after the Razorpay popup', () => {
+    const PAID = {
+        kind: 'paid',
+        payload: { razorpay_order_id: 'order_1', razorpay_payment_id: 'pay_ABC123', razorpay_signature: 'sig_1' },
+    }
+    const SERVER_SUPPORT_MESSAGE = 'We received your payment but could not apply it automatically. Please contact support and we will fix it.'
+
+    beforeEach(() => {
+        ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+        vi.clearAllMocks()
+        h.getByTier.mockResolvedValue(PLAN)
+        h.gst = { status: 'ready', registered: true }
+        h.createOrder.mockResolvedValue({ id: 'order_1', amount: 49900, currency: 'INR' })
+        h.openRazorpay.mockResolvedValue(PAID)
+        container = document.createElement('div')
+        document.body.appendChild(container)
+        root = createRoot(container)
+    })
+
+    afterEach(() => {
+        act(() => root.unmount())
+        container.remove()
+    })
+
+    it('verify answers state support with a message: shows that message, the support mailto and the payment reference', async () => {
+        h.verifyPayment.mockResolvedValue({ kind: 'support', message: SERVER_SUPPORT_MESSAGE })
+        await render()
+        await payWithValidPhone()
+
+        expect(h.verifyPayment).toHaveBeenCalledWith(PAID.payload)
+        const status = container.querySelector('[role="status"]')
+        expect(status).not.toBeNull()
+        expect(status?.querySelector('h1')?.textContent).toBe('We received your payment')
+        expect(container.textContent).toContain(SERVER_SUPPORT_MESSAGE)
+        expect(container.textContent).toContain('You do not need to pay again.')
+        expect(container.textContent).toContain('Quote this payment reference: pay_ABC123')
+        const mailto = container.querySelector(`a[href="mailto:${SUPPORT_EMAIL}"]`)
+        expect(mailto?.textContent).toBe(SUPPORT_EMAIL)
+        expect(container.querySelector('a[href="/subscription"]')?.textContent).toContain('Back to subscription')
+    })
+
+    it('support never promises an email or activation and never shows the waiting screen', async () => {
+        h.verifyPayment.mockResolvedValue({ kind: 'support', message: SERVER_SUPPORT_MESSAGE })
+        await render()
+        await payWithValidPhone()
+
+        expect(container.textContent).not.toContain('taking longer than usual')
+        expect(container.textContent).not.toContain('We will email you')
+        expect(container.textContent).not.toContain('We have your payment')
+        expect(h.pollForActivation).not.toHaveBeenCalled()
+    })
+
+    it('support without a message: shows the fallback text', async () => {
+        h.verifyPayment.mockResolvedValue({ kind: 'support', message: null })
+        await render()
+        await payWithValidPhone()
+
+        expect(container.textContent).toContain('We could not apply it automatically. Please contact support and we will fix it.')
+        expect(container.textContent).toContain('Quote this payment reference: pay_ABC123')
+        expect(container.textContent).not.toContain('taking longer than usual')
+    })
+
+    it('pending: verify unconfirmed and activation timing out keeps the waiting screen unchanged', async () => {
+        h.verifyPayment.mockResolvedValue({ kind: 'unconfirmed' })
+        h.pollForActivation.mockResolvedValue('timeout')
+        await render()
+        await payWithValidPhone()
+
+        expect(h.pollForActivation).toHaveBeenCalledTimes(1)
+        expect(container.querySelector('h1')?.textContent).toBe('We have your payment')
+        expect(container.textContent).toContain('Activation is taking longer than usual. You do not need to pay again.')
+        expect(container.textContent).toContain('We will email you as soon as your plan is active.')
+        expect(container.textContent).not.toContain('We received your payment')
+        expect(container.querySelector(`a[href="mailto:${SUPPORT_EMAIL}"]`)).toBeNull()
+    })
+
+    it('active: verify unconfirmed then activation keeps the success screen unchanged', async () => {
+        h.verifyPayment.mockResolvedValue({ kind: 'unconfirmed' })
+        h.pollForActivation.mockResolvedValue('activated')
+        await render()
+        await payWithValidPhone()
+
+        expect(container.querySelector('h1')?.textContent).toBe('Your Starter plan is active')
+        expect(container.textContent).toContain('Go to subscription')
+        expect(container.textContent).not.toContain('We received your payment')
+        expect(container.textContent).not.toContain('taking longer than usual')
     })
 })

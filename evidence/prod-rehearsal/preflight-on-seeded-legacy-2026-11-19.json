@@ -1,0 +1,1035 @@
+{
+  "generated": "2026-11-19T03:43:32.758Z",
+  "note": "preflight_inventory.sql executed (READ ONLY transactions) against the SEEDED legacy rehearsal database, not production. supabase_migrations.schema_migrations is a stub filled from the legacy files.",
+  "blocks": 34,
+  "problems": 0,
+  "results": [
+    {
+      "id": "Q01",
+      "plain_select": true,
+      "rows": 25,
+      "sample": [
+        {
+          "version": "20260107000000",
+          "name": "base_schema"
+        },
+        {
+          "version": "20260108000000",
+          "name": "subscriptions"
+        },
+        {
+          "version": "20260209000000",
+          "name": "extended_schema"
+        },
+        {
+          "version": "20260212000000",
+          "name": "production_setup"
+        },
+        {
+          "version": "20260305000000",
+          "name": "phase1_drivers"
+        },
+        {
+          "version": "20260305010000",
+          "name": "create_agency_trucks"
+        },
+        {
+          "version": "20260305011000",
+          "name": "create_agency_jobs"
+        },
+        {
+          "version": "20260306000000",
+          "name": "driver_docs_bucket"
+        },
+        {
+          "version": "20260307000000",
+          "name": "fix_rls_ownership"
+        },
+        {
+          "version": "20260308000000",
+          "name": "driver_payouts"
+        },
+        {
+          "version": "20260309000000",
+          "name": "contact_inquiries"
+        },
+        {
+          "version": "20260311000000",
+          "name": "add_photo_columns_to_agency_jobs"
+        }
+      ]
+    },
+    {
+      "id": "Q02",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "last_applied_version": "20260501120000",
+          "applied_count": "25"
+        }
+      ]
+    },
+    {
+      "id": "Q03",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "postgres_version": "PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35228, 64-bit",
+          "server_version": "18.6",
+          "time_zone": "Asia/Calcutta"
+        }
+      ]
+    },
+    {
+      "id": "Q04",
+      "plain_select": true,
+      "rows": 2,
+      "sample": [
+        {
+          "extname": "plpgsql",
+          "extversion": "1.0"
+        },
+        {
+          "extname": "uuid-ossp",
+          "extversion": "1.1"
+        }
+      ]
+    },
+    {
+      "id": "Q05",
+      "plain_select": true,
+      "rows": 2,
+      "sample": [
+        {
+          "name": "pgcrypto",
+          "default_version": "1.4",
+          "installed_version": null
+        },
+        {
+          "name": "uuid-ossp",
+          "default_version": "1.1",
+          "installed_version": "1.1"
+        }
+      ]
+    },
+    {
+      "id": "Q06",
+      "plain_select": true,
+      "rows": 27,
+      "sample": [
+        {
+          "table_name": "addon_purchases",
+          "row_count": "1"
+        },
+        {
+          "table_name": "agency_jobs",
+          "row_count": "7"
+        },
+        {
+          "table_name": "agency_trucks",
+          "row_count": "5"
+        },
+        {
+          "table_name": "analytics_events",
+          "row_count": "1"
+        },
+        {
+          "table_name": "cartons",
+          "row_count": "5"
+        },
+        {
+          "table_name": "contact_inquiries",
+          "row_count": "2"
+        },
+        {
+          "table_name": "customers",
+          "row_count": "5"
+        },
+        {
+          "table_name": "driver_locations",
+          "row_count": "1"
+        },
+        {
+          "table_name": "driver_payouts",
+          "row_count": "5"
+        },
+        {
+          "table_name": "drivers",
+          "row_count": "6"
+        },
+        {
+          "table_name": "invoices",
+          "row_count": "5"
+        },
+        {
+          "table_name": "job_offers",
+          "row_count": "7"
+        }
+      ]
+    },
+    {
+      "id": "Q07",
+      "plain_select": true,
+      "rows": 0,
+      "sample": []
+    },
+    {
+      "id": "Q08",
+      "plain_select": true,
+      "rows": 0,
+      "sample": []
+    },
+    {
+      "id": "Q09",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "agency_rate_cards_table": null,
+          "avatars_bucket_exists": "0"
+        }
+      ]
+    },
+    {
+      "id": "Q10",
+      "plain_select": true,
+      "rows": 2,
+      "sample": [
+        {
+          "id": "driver-docs",
+          "name": "driver-docs",
+          "public": true,
+          "file_size_limit": "5242880",
+          "allowed_mime_types": [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+          ]
+        },
+        {
+          "id": "trip-photos",
+          "name": "trip-photos",
+          "public": true,
+          "file_size_limit": "5242880",
+          "allowed_mime_types": [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q11",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "cron_jobs": "pg_cron is not installed"
+        }
+      ]
+    },
+    {
+      "id": "Q20",
+      "plain_select": true,
+      "rows": 13,
+      "sample": [
+        {
+          "name": "subscriptions_billing_cycle_check",
+          "kind": "c",
+          "definition": "CHECK ((billing_cycle = ANY (ARRAY['monthly'::text, 'yearly'::text])))"
+        },
+        {
+          "name": "subscriptions_status_check",
+          "kind": "c",
+          "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'paused'::text, 'cancelled'::text, 'expired'::text, 'trial'::text])))"
+        },
+        {
+          "name": "subscriptions_plan_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (plan_id) REFERENCES subscription_plans(id)"
+        },
+        {
+          "name": "subscriptions_user_id_fkey",
+          "kind": "f",
+          "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "subscriptions_billing_cycle_not_null",
+          "kind": "n",
+          "definition": "NOT NULL billing_cycle"
+        },
+        {
+          "name": "subscriptions_current_period_end_not_null",
+          "kind": "n",
+          "definition": "NOT NULL current_period_end"
+        },
+        {
+          "name": "subscriptions_current_period_start_not_null",
+          "kind": "n",
+          "definition": "NOT NULL current_period_start"
+        },
+        {
+          "name": "subscriptions_id_not_null",
+          "kind": "n",
+          "definition": "NOT NULL id"
+        },
+        {
+          "name": "subscriptions_plan_id_not_null",
+          "kind": "n",
+          "definition": "NOT NULL plan_id"
+        },
+        {
+          "name": "subscriptions_status_not_null",
+          "kind": "n",
+          "definition": "NOT NULL status"
+        },
+        {
+          "name": "subscriptions_user_id_not_null",
+          "kind": "n",
+          "definition": "NOT NULL user_id"
+        },
+        {
+          "name": "subscriptions_pkey",
+          "kind": "p",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "id": "Q21",
+      "plain_select": true,
+      "rows": 5,
+      "sample": [
+        {
+          "status": "active",
+          "subscriptions": "5"
+        },
+        {
+          "status": "trial",
+          "subscriptions": "2"
+        },
+        {
+          "status": "cancelled",
+          "subscriptions": "1"
+        },
+        {
+          "status": "expired",
+          "subscriptions": "1"
+        },
+        {
+          "status": "paused",
+          "subscriptions": "1"
+        }
+      ]
+    },
+    {
+      "id": "Q22",
+      "plain_select": true,
+      "rows": 9,
+      "sample": [
+        {
+          "tier": "enterprise",
+          "plan": "Enterprise",
+          "billing_cycle": "yearly",
+          "status": "active",
+          "subscriptions": "1"
+        },
+        {
+          "tier": "growth",
+          "plan": "Growth",
+          "billing_cycle": "monthly",
+          "status": "active",
+          "subscriptions": "1"
+        },
+        {
+          "tier": "growth",
+          "plan": "Growth",
+          "billing_cycle": "monthly",
+          "status": "paused",
+          "subscriptions": "1"
+        },
+        {
+          "tier": "growth",
+          "plan": "Growth",
+          "billing_cycle": "yearly",
+          "status": "active",
+          "subscriptions": "1"
+        },
+        {
+          "tier": "professional",
+          "plan": "Professional",
+          "billing_cycle": "monthly",
+          "status": "active",
+          "subscriptions": "1"
+        },
+        {
+          "tier": "professional",
+          "plan": "Professional",
+          "billing_cycle": "monthly",
+          "status": "cancelled",
+          "subscriptions": "1"
+        },
+        {
+          "tier": "starter",
+          "plan": "Starter",
+          "billing_cycle": "monthly",
+          "status": "active",
+          "subscriptions": "1"
+        },
+        {
+          "tier": "starter",
+          "plan": "Starter",
+          "billing_cycle": "monthly",
+          "status": "expired",
+          "subscriptions": "1"
+        },
+        {
+          "tier": "starter",
+          "plan": "Starter",
+          "billing_cycle": "monthly",
+          "status": "trial",
+          "subscriptions": "2"
+        }
+      ]
+    },
+    {
+      "id": "Q23",
+      "plain_select": true,
+      "rows": 4,
+      "sample": [
+        {
+          "name": "Starter",
+          "tier": "starter",
+          "price_monthly": 49900,
+          "price_yearly": 499900,
+          "yearly_after_migration": 499000,
+          "yearly_change_paise": -900,
+          "trucks_limit": 3,
+          "is_active": true
+        },
+        {
+          "name": "Growth",
+          "tier": "growth",
+          "price_monthly": 199900,
+          "price_yearly": 1999900,
+          "yearly_after_migration": 1999000,
+          "yearly_change_paise": -900,
+          "trucks_limit": 20,
+          "is_active": true
+        },
+        {
+          "name": "Professional",
+          "tier": "professional",
+          "price_monthly": 499900,
+          "price_yearly": 4999900,
+          "yearly_after_migration": 4999000,
+          "yearly_change_paise": -900,
+          "trucks_limit": 50,
+          "is_active": true
+        },
+        {
+          "name": "Enterprise",
+          "tier": "enterprise",
+          "price_monthly": 1499900,
+          "price_yearly": 14999900,
+          "yearly_after_migration": 14999000,
+          "yearly_change_paise": -900,
+          "trucks_limit": -1,
+          "is_active": true
+        }
+      ]
+    },
+    {
+      "id": "Q24",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "user_id": "a1000001-0000-4000-8000-000000000004",
+          "email": "sanjay.own@transgo.example",
+          "agencies": "2",
+          "agencies_detail": "TransGo Logistics (old entity) [rejected, created 2026-01-15] | TransGo Logistics Pvt Ltd [approved, created 2026-02-01]"
+        }
+      ]
+    },
+    {
+      "id": "Q25",
+      "plain_select": true,
+      "rows": 3,
+      "sample": [
+        {
+          "subscription_id": "a9000009-0000-4000-8000-000000000008",
+          "status": "active",
+          "tier": "enterprise",
+          "billing_cycle": "yearly",
+          "current_period_end": "2027-10-20T03:43:32.635Z",
+          "email": "mohan.cust@example.com",
+          "role": "user"
+        },
+        {
+          "subscription_id": "a9000009-0000-4000-8000-000000000010",
+          "status": "active",
+          "tier": "professional",
+          "billing_cycle": "monthly",
+          "current_period_end": "2026-12-14T03:43:32.635Z",
+          "email": "driver.ramesh@example.com",
+          "role": "driver"
+        },
+        {
+          "subscription_id": "a9000009-0000-4000-8000-000000000009",
+          "status": "trial",
+          "tier": "starter",
+          "billing_cycle": "monthly",
+          "current_period_end": "2026-12-01T03:43:32.635Z",
+          "email": "riya.cust@example.com",
+          "role": "user"
+        }
+      ]
+    },
+    {
+      "id": "Q26",
+      "plain_select": true,
+      "rows": 3,
+      "sample": [
+        {
+          "shared_on": "gstin",
+          "value": "33AAACK7777M1Z8",
+          "agencies": "2",
+          "names": "Kaveri Freight | Kaveri Freight Services"
+        },
+        {
+          "shared_on": "phone",
+          "value": "9822222201",
+          "agencies": "2",
+          "names": "TransGo Logistics (old entity) | TransGo Logistics Pvt Ltd"
+        },
+        {
+          "shared_on": "phone",
+          "value": "9876543210",
+          "agencies": "2",
+          "names": "Kaveri Freight | Kaveri Freight Services"
+        }
+      ]
+    },
+    {
+      "id": "Q27",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "id": "a9000009-0000-4000-8000-000000000006",
+          "status": "active",
+          "current_period_start": "2026-11-09T03:43:32.635Z",
+          "current_period_end": "2026-11-09T03:43:32.635Z",
+          "email": "ishaan.own@bluebay.example"
+        }
+      ]
+    },
+    {
+      "id": "Q28",
+      "plain_select": true,
+      "rows": 3,
+      "sample": [
+        {
+          "id": "a9000009-0000-4000-8000-000000000005",
+          "status": "active",
+          "trial_end": null,
+          "current_period_end": "2026-10-30T03:43:32.635Z",
+          "email": "dinesh.own@lonestar.example",
+          "first_sweep_outcome": "active -> grace"
+        },
+        {
+          "id": "a9000009-0000-4000-8000-000000000006",
+          "status": "active",
+          "trial_end": null,
+          "current_period_end": "2026-11-09T03:43:32.635Z",
+          "email": "ishaan.own@bluebay.example",
+          "first_sweep_outcome": "active -> grace"
+        },
+        {
+          "id": "a9000009-0000-4000-8000-000000000002",
+          "status": "trial",
+          "trial_end": "2026-11-13T03:43:32.635Z",
+          "current_period_end": "2026-11-13T03:43:32.635Z",
+          "email": "meena.own@speedline.example",
+          "first_sweep_outcome": "trial -> expired"
+        }
+      ]
+    },
+    {
+      "id": "Q29",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "legacy_invoices": "5",
+          "legacy_payment_history": "6",
+          "successful_payments": "3",
+          "paid_invoice_total_paise": "20649646",
+          "addon_purchases": "1"
+        }
+      ]
+    },
+    {
+      "id": "Q30",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "with_razorpay_subscription": "6",
+          "with_razorpay_customer": "3",
+          "total": "10"
+        }
+      ]
+    },
+    {
+      "id": "Q40",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "agency_id": "a3000003-0000-4000-8000-000000000001",
+          "rc_number": "MH12AB1234",
+          "trucks": "2",
+          "truck_ids": [
+            "a5000005-0000-4000-8000-000000000001",
+            "a5000005-0000-4000-8000-000000000002"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q41",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "driver_id": "a4000004-0000-4000-8000-000000000001",
+          "trucks": "2",
+          "truck_ids": [
+            "a5000005-0000-4000-8000-000000000001",
+            "a5000005-0000-4000-8000-000000000002"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q42",
+      "plain_select": true,
+      "rows": 8,
+      "sample": [
+        {
+          "id": "5186549b-fba4-4b28-b91e-8c7a7e1949ab",
+          "name": "Ashok Leyland 19ft",
+          "has_code_mapping": true
+        },
+        {
+          "id": "1f52024a-0334-4ff4-ad6b-c85d2c12a1f7",
+          "name": "BharatBenz 24ft",
+          "has_code_mapping": true
+        },
+        {
+          "id": "c1e536eb-1b65-4f72-89ce-d2f56f525d2f",
+          "name": "BharatBenz 32ft",
+          "has_code_mapping": true
+        },
+        {
+          "id": "199cb598-9007-4ee9-81a8-fc9d1741ca19",
+          "name": "Eicher 14ft",
+          "has_code_mapping": true
+        },
+        {
+          "id": "875059c8-3062-4b61-93b9-4cc65ed6ee40",
+          "name": "Eicher 17ft",
+          "has_code_mapping": true
+        },
+        {
+          "id": "fdb4468c-ec23-419b-b583-586d44aa67e5",
+          "name": "Tata 407",
+          "has_code_mapping": true
+        },
+        {
+          "id": "5d0e7a1e-07f2-4a0d-805a-aca5ef8355e2",
+          "name": "Tata Ace",
+          "has_code_mapping": true
+        },
+        {
+          "id": "f8b9feb6-1ad8-472c-a88b-771dbae9ab52",
+          "name": "Volvo 40ft Container",
+          "has_code_mapping": true
+        }
+      ]
+    },
+    {
+      "id": "Q43",
+      "plain_select": true,
+      "rows": 5,
+      "sample": [
+        {
+          "vehicle_type": "Tata Ace",
+          "trucks": "1"
+        },
+        {
+          "vehicle_type": "Tata 407",
+          "trucks": "1"
+        },
+        {
+          "vehicle_type": "Eicher 14ft",
+          "trucks": "1"
+        },
+        {
+          "vehicle_type": "BharatBenz 24ft",
+          "trucks": "1"
+        },
+        {
+          "vehicle_type": "Mini truck (custom)",
+          "trucks": "1"
+        }
+      ]
+    },
+    {
+      "id": "Q44",
+      "plain_select": true,
+      "rows": 7,
+      "sample": [
+        {
+          "status": "accepted",
+          "pickup_otp_will_change": "1",
+          "delivery_otp_will_change": "1",
+          "offers": "1"
+        },
+        {
+          "status": "cancelled",
+          "pickup_otp_will_change": "1",
+          "delivery_otp_will_change": "1",
+          "offers": "1"
+        },
+        {
+          "status": "declined",
+          "pickup_otp_will_change": "1",
+          "delivery_otp_will_change": "1",
+          "offers": "1"
+        },
+        {
+          "status": "delivered",
+          "pickup_otp_will_change": "1",
+          "delivery_otp_will_change": "1",
+          "offers": "1"
+        },
+        {
+          "status": "expired",
+          "pickup_otp_will_change": "1",
+          "delivery_otp_will_change": "1",
+          "offers": "1"
+        },
+        {
+          "status": "in_transit",
+          "pickup_otp_will_change": "0",
+          "delivery_otp_will_change": "1",
+          "offers": "1"
+        },
+        {
+          "status": "pending",
+          "pickup_otp_will_change": "1",
+          "delivery_otp_will_change": "1",
+          "offers": "1"
+        }
+      ]
+    },
+    {
+      "id": "Q45",
+      "plain_select": true,
+      "rows": 1,
+      "sample": [
+        {
+          "dl_url_nulled": "2",
+          "rc_url_nulled": "1",
+          "insurance_url_nulled": "0",
+          "selfie_url_nulled": "1",
+          "drivers": "6"
+        }
+      ]
+    },
+    {
+      "id": "Q46",
+      "plain_select": true,
+      "rows": 2,
+      "sample": [
+        {
+          "id": "ac00000c-0000-4000-8000-000000000003",
+          "driver_id": "a4000004-0000-4000-8000-000000000002",
+          "amount": "0.00",
+          "status": "pending",
+          "type": "agency_pay"
+        },
+        {
+          "id": "ac00000c-0000-4000-8000-000000000005",
+          "driver_id": "a4000004-0000-4000-8000-000000000003",
+          "amount": "-250.00",
+          "status": "rejected",
+          "type": "withdrawal"
+        }
+      ]
+    },
+    {
+      "id": "Q47",
+      "plain_select": true,
+      "rows": 3,
+      "sample": [
+        {
+          "tbl": "customers",
+          "without_valid_pan": "3",
+          "total": "5"
+        },
+        {
+          "tbl": "drivers",
+          "without_valid_pan": "0",
+          "total": "6"
+        },
+        {
+          "tbl": "transport_agencies",
+          "without_valid_pan": "0",
+          "total": "9"
+        }
+      ]
+    },
+    {
+      "id": "Q48",
+      "plain_select": true,
+      "rows": 7,
+      "sample": [
+        {
+          "kind": "agency",
+          "status": "approved",
+          "count": "7"
+        },
+        {
+          "kind": "agency",
+          "status": "pending",
+          "count": "1"
+        },
+        {
+          "kind": "agency",
+          "status": "rejected",
+          "count": "1"
+        },
+        {
+          "kind": "driver",
+          "status": "approved",
+          "count": "3"
+        },
+        {
+          "kind": "driver",
+          "status": "pending",
+          "count": "1"
+        },
+        {
+          "kind": "driver",
+          "status": "rejected",
+          "count": "1"
+        },
+        {
+          "kind": "driver",
+          "status": "suspended",
+          "count": "1"
+        }
+      ]
+    },
+    {
+      "id": "Q49",
+      "plain_select": true,
+      "rows": 4,
+      "sample": [
+        {
+          "role": "admin",
+          "users": "1"
+        },
+        {
+          "role": "driver",
+          "users": "5"
+        },
+        {
+          "role": "manager",
+          "users": "1"
+        },
+        {
+          "role": "user",
+          "users": "10"
+        }
+      ]
+    },
+    {
+      "id": "Q50",
+      "plain_select": true,
+      "rows": 24,
+      "sample": [
+        {
+          "tbl": "addon_purchases",
+          "conname": "addon_purchases_addon_type_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK ((addon_type = ANY (ARRAY['sms_pack'::text, 'storage'::text, 'api_calls'::text, 'priority_support'::text])))"
+        },
+        {
+          "tbl": "addon_purchases",
+          "conname": "addon_purchases_status_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'consumed'::text, 'expired'::text])))"
+        },
+        {
+          "tbl": "agency_jobs",
+          "conname": "agency_jobs_status_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'in_transit'::text, 'delivered'::text, 'cancelled'::text])))"
+        },
+        {
+          "tbl": "contact_inquiries",
+          "conname": "contact_inquiries_status_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK ((status = ANY (ARRAY['open'::text, 'resolved'::text])))"
+        },
+        {
+          "tbl": "driver_payouts",
+          "conname": "driver_payouts_status_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'paid'::text, 'rejected'::text])))"
+        },
+        {
+          "tbl": "driver_payouts",
+          "conname": "driver_payouts_type_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK ((type = ANY (ARRAY['withdrawal'::text, 'agency_pay'::text])))"
+        },
+        {
+          "tbl": "drivers",
+          "conname": "drivers_status_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'suspended'::text])))"
+        },
+        {
+          "tbl": "invoices",
+          "conname": "invoices_status_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'failed'::text, 'refunded'::text])))"
+        },
+        {
+          "tbl": "job_offers",
+          "conname": "job_offers_status_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'declined'::text, 'expired'::text, 'cancelled'::text, 'pickup_arrived'::text, 'in_transit'::text, 'delivery_arrived'::text, 'delivered'::text])))"
+        },
+        {
+          "tbl": "notifications",
+          "conname": "notifications_type_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK (((type)::text = ANY ((ARRAY['info'::character varying, 'success'::character varying, 'warning'::character varying, 'error'::character varying])::text[])))"
+        },
+        {
+          "tbl": "packing_jobs",
+          "conname": "packing_jobs_optimization_goal_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK (((optimization_goal)::text = ANY ((ARRAY['space'::character varying, 'cost'::character varying, 'balanced'::character varying])::text[])))"
+        },
+        {
+          "tbl": "packing_jobs",
+          "conname": "packing_jobs_status_check",
+          "contype": "c",
+          "convalidated": true,
+          "definition": "CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'processing'::character varying, 'completed'::character varying, 'failed'::character varying])::text[])))"
+        }
+      ]
+    },
+    {
+      "id": "Q51",
+      "plain_select": true,
+      "rows": 28,
+      "sample": [
+        {
+          "proname": "check_usage_limit",
+          "owner": "postgres",
+          "security_definer": true,
+          "body_md5": "c39864217bc65fe04bd7f471c4690ecb"
+        },
+        {
+          "proname": "create_usage_tracking",
+          "owner": "postgres",
+          "security_definer": false,
+          "body_md5": "3246340f5e9d84538a14fb0e749aedaf"
+        },
+        {
+          "proname": "ensure_shipment_document_numbers",
+          "owner": "postgres",
+          "security_definer": true,
+          "body_md5": "8d94cd1240dfaef80f6a6e2f6d2faf6b"
+        },
+        {
+          "proname": "generate_invoice_number",
+          "owner": "postgres",
+          "security_definer": false,
+          "body_md5": "2bbdaaa7997d514681b878e8c96f77e9"
+        },
+        {
+          "proname": "generate_lr_number",
+          "owner": "postgres",
+          "security_definer": false,
+          "body_md5": "ccce10d5b5cd13f0d9b565eef10c0953"
+        },
+        {
+          "proname": "get_user_plan",
+          "owner": "postgres",
+          "security_definer": true,
+          "body_md5": "b04cb89997e6f420aa68a8a11c2ca30a"
+        },
+        {
+          "proname": "guard_user_role_mutations",
+          "owner": "postgres",
+          "security_definer": false,
+          "body_md5": "8c3324d4a26cc58255d73d79be3690e5"
+        },
+        {
+          "proname": "has_active_subscription",
+          "owner": "postgres",
+          "security_definer": true,
+          "body_md5": "8df1fb41b267d33d019a307b32d91116"
+        },
+        {
+          "proname": "increment_usage",
+          "owner": "postgres",
+          "security_definer": true,
+          "body_md5": "4cdea9e08f2df80f97542fc2375c49a1"
+        },
+        {
+          "proname": "is_admin_user",
+          "owner": "postgres",
+          "security_definer": true,
+          "body_md5": "42fe9b5b9dcd4c7c70b1db3962b2ea32"
+        },
+        {
+          "proname": "normalize_and_validate_pan_number",
+          "owner": "postgres",
+          "security_definer": false,
+          "body_md5": "c2317db9588fc236fad7613460a71b30"
+        },
+        {
+          "proname": "normalize_user_login_id",
+          "owner": "postgres",
+          "security_definer": false,
+          "body_md5": "634a24cef18f557e29be398e9d533702"
+        }
+      ]
+    }
+  ]
+}

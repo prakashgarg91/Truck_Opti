@@ -11,15 +11,18 @@ import {
 type AgencyStatus = 'pending' | 'approved' | 'rejected' | 'suspended'
 
 type AgenciesRequest =
-  | { action: 'list'; status: AgencyStatus }
+  | { action: 'list'; status: AgencyStatus; offset: number }
   | { action: 'approve'; agencyId: string }
   | { action: 'reject'; agencyId: string; rejectionReason: string }
   | { action: 'suspend'; agencyId: string }
 
 const agencyStatuses: AgencyStatus[] = ['pending', 'approved', 'rejected', 'suspended']
 
-/** Upper bound on rows returned by a list action. Newest first. */
+/** Rows returned per list page. Newest first. The query fetches one extra row to learn whether another page exists. */
 const LIST_ROW_CAP = 200
+
+/** Largest accepted list offset. Keeps a client from forcing a deep, expensive scan. */
+const MAX_LIST_OFFSET = 100000
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -37,6 +40,18 @@ async function readJsonBody(req: Request): Promise<unknown> {
   } catch {
     throw new RequestError('A valid admin action is required.')
   }
+}
+
+function parseListOffset(value: unknown): number {
+  if (value === undefined) {
+    return 0
+  }
+
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > MAX_LIST_OFFSET) {
+    throw new RequestError('A valid offset is required.')
+  }
+
+  return value
 }
 
 function parseAgencyId(value: unknown): string {
@@ -58,7 +73,7 @@ function parseRequestBody(body: unknown): AgenciesRequest {
         throw new RequestError('A valid agency status is required.')
       }
 
-      return { action: 'list', status: body.status }
+      return { action: 'list', status: body.status, offset: parseListOffset(body.offset) }
     case 'approve':
       return { action: 'approve', agencyId: parseAgencyId(body.agencyId) }
     case 'reject': {
@@ -166,7 +181,9 @@ serve(async (req) => {
           .select('*')
           .eq('status', body.status)
           .order('created_at', { ascending: false })
-          .limit(LIST_ROW_CAP),
+          // id is the primary key, so this tiebreaker keeps page boundaries stable when created_at ties.
+          .order('id', { ascending: false })
+          .range(body.offset, body.offset + LIST_ROW_CAP),
         loadCounts(serviceClient),
       ])
 
@@ -175,7 +192,13 @@ serve(async (req) => {
         throw new RequestError('Unable to load agencies.', 500, false)
       }
 
-      return jsonResponse({ agencies: agenciesRes.data ?? [], counts })
+      const fetched = agenciesRes.data ?? []
+
+      return jsonResponse({
+        agencies: fetched.slice(0, LIST_ROW_CAP),
+        counts,
+        has_more: fetched.length > LIST_ROW_CAP,
+      })
     }
 
     if (body.action === 'approve') {

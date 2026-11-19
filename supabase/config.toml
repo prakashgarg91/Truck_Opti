@@ -323,6 +323,11 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+# WARNING (review 2026-11-19): this block is for LOCAL development only. NEVER run `supabase config push`
+# against a hosted project with it as written: the client_id below is a placeholder and redirect_uri
+# points at the old production project, so a push would break Google sign-in on the target and send its
+# sign-ins to another project. The [auth] site_url and redirect list above are also localhost-only.
+# Read `supabase config diff` first; hosted auth settings are managed in the Supabase dashboard.
 [auth.external.google]
 enabled = true
 client_id = "your-google-client-id.apps.googleusercontent.com"

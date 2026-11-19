@@ -1,10 +1,10 @@
 {
-  "run_id": "mwn03ipx3525",
-  "finished_at": "2026-11-19T03:38:56.821Z",
+  "run_id": "mwn03x2hbdb0",
+  "finished_at": "2026-11-19T03:40:56.161Z",
   "mode": "razorpay_test",
   "supabase_ref": "ydkhgclfjdksicpwqzmw",
   "razorpay_key": "rzp_test_…Fw9C",
-  "orders_created": 0,
+  "orders_created": 1,
   "failed": 1,
   "crashed": null,
   "results": [
@@ -27,10 +27,244 @@
       "detail": "status 409, amount undefined, gst_registered undefined, rate undefined, order none body={\"error\":\"subscription_cancelled\",\"message\":\"This subscription was cancelled after a refund. Please contact support to restart it.\"} alerts=[\"This subscription was cancelled after a refund. Please contact support to restart it.\"]"
     },
     {
+      "id": "A-skipped",
+      "status": "NOTE",
+      "description": "Proof A could not start: the app refuses a new order for the cancelled/refunded agency (finding); Proof B continues independently",
+      "detail": "{\"error\":\"subscription_cancelled\",\"message\":\"This subscription was cancelled after a refund. Please contact support to restart it.\"}"
+    },
+    {
+      "id": "B1",
+      "status": "PASS",
+      "description": "owner1 (active Growth) renewal order created while seller unregistered (Growth monthly 199900)",
+      "detail": "status 200, amount 199900, gst_registered false, order …Z9Ec"
+    },
+    {
+      "id": "B1b",
+      "status": "NOTE",
+      "description": "stopped at the Razorpay window: order created, NOT paid",
+      "detail": "drive=open"
+    },
+    {
+      "id": "B2",
+      "status": "PASS",
+      "description": "admin flipped billing settings to GST-registered (test GSTIN, other fields unchanged); anon platform_gst_registered now true",
+      "detail": "gst_registered=true, state 27, anon flag=true"
+    },
+    {
+      "id": "B3a",
+      "status": "PASS",
+      "description": "simulator SUCCESS clicked on the pending order",
+      "detail": "drive=clicked"
+    },
+    {
+      "id": "B3b",
+      "status": "PASS",
+      "description": "verify-razorpay-payment gives a clean 4xx refusal (not 5xx, not active)",
+      "detail": "409 {\"success\":false,\"state\":\"support\",\"message\":\"We received your payment but could not apply it automatically. Please contact support and we will fix it.\"}"
+    },
+    {
+      "id": "B3c",
+      "status": "NOTE",
+      "description": "does the refusal body itself name billing_settings_changed?",
+      "detail": "NO: the function maps it to the generic state \"support\"; the code appears only in admin data"
+    },
+    {
+      "id": "B3d",
+      "status": "PASS",
+      "description": "app does not show \"active\"; shows an honest payment-received-but-not-applied screen",
+      "detail": "screen text: We have your payment Activation is taking longer than usual. You do not need to pay again. We will email you as soon as your plan is active. If you do not hear from us, contact support. Check subscription Contact support; alerts: []",
+      "customer_refusal_text": "We have your payment Activation is taking longer than usual. You do not need to pay again. We will email you as soon as your plan is active. If you do not hear from us, contact support. Check subscription Contact support",
+      "correction": "Run printed FAIL because the check regex matched the phrase \"as soon as your plan is active\" in the timeout copy; the screen did NOT show the active state. Script regex fixed afterwards; evidence amended by hand, not re-run."
+    },
+    {
+      "id": "B3e",
+      "status": "PASS",
+      "description": "owner1 subscription unchanged, no new invoice",
+      "detail": "active, growth, 1 invoice(s) [TO/26-27/000001 199900/tax 0], period end 2026-12-19T03:27:47.751654+00:00"
+    },
+    {
+      "id": "B3f",
+      "status": "PASS",
+      "description": "Razorpay shows the money CAPTURED for the unapplied payment (test money)",
+      "detail": "…Z5Zk captured 199900"
+    },
+    {
+      "id": "B4a",
+      "status": "NOTE",
+      "description": "admin_webhook_events rows for the pending order (Billing ops > Webhook events)",
+      "detail": "0 row(s): none; list ok=true"
+    },
+    {
+      "id": "B4b",
+      "status": "NOTE",
+      "description": "admin_webhook_attempts (retry log) rows right now",
+      "detail": "0 row(s) in the latest 50; for these events: 0"
+    },
+    {
+      "id": "B4c",
+      "status": "PASS",
+      "description": "admin-portal-subscriptions ops_attention.refused_payments lists the order with refusal billing_settings_changed (Admin > Subscriptions \"needs attention\")",
+      "detail": "refusal=billing_settings_changed, amount=199900, payment=…Z5Zk, error=ACTIVATION_REFUSED: billing_settings_changed, at=2026-11-19T03:39:44.84279+00:00"
+    },
+    {
+      "id": "B4d",
+      "status": "NOTE",
+      "description": "refund_exceptions list (only refunds Razorpay already processed)",
+      "detail": "0 row(s); a captured-but-unapplied payment does NOT appear here"
+    },
+    {
+      "id": "B5a",
+      "status": "PASS",
+      "description": "settings flipped back to exactly the original unregistered values",
+      "detail": "gst_registered=false, gstin=null"
+    },
+    {
+      "id": "B5b",
+      "status": "PASS",
+      "description": "replayed signed payment.captured webhook is acknowledged 2xx",
+      "detail": "200 {\"ok\":true,\"result\":\"activated\"}"
+    },
+    {
+      "id": "B5c",
+      "status": "NOTE",
+      "description": "after flipping back, replay of the captured payment ACTIVATES",
+      "detail": "active, growth, 2 invoice(s) [TO/26-27/000003 199900/tax 0; TO/26-27/000001 199900/tax 0], period end 2027-01-19T03:27:47.751654+00:00; new invoice TO/26-27/000003 total 199900 taxable 199900 tax 0; period end moved 31.0 days",
+      "owner1_after_replay": {
+        "status": "active",
+        "planTier": "growth",
+        "periodEnd": "2027-01-19T03:27:47.751654+00:00",
+        "canWrite": true,
+        "invoices": [
+          {
+            "number": "TO/26-27/000003",
+            "total": 199900,
+            "taxable": 199900,
+            "cgst": 0,
+            "sgst": 0,
+            "igst": 0,
+            "credit_notes": []
+          },
+          {
+            "number": "TO/26-27/000001",
+            "total": 199900,
+            "taxable": 199900,
+            "cgst": 0,
+            "sgst": 0,
+            "igst": 0,
+            "credit_notes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "B5d",
+      "status": "NOTE",
+      "description": "admin refused-payments list for that order after the replay",
+      "detail": "0 row(s): none (entry cleared or never listed)"
+    },
+    {
       "id": "RESTORE",
       "status": "PASS",
       "description": "billing settings restored to the original; anon platform_gst_registered is false",
-      "detail": "no flip was pending; anon platform_gst_registered=false"
+      "detail": "restored from the saved original and verified; anon platform_gst_registered=false"
     }
-  ]
+  ],
+  "proof_a_owner1": {
+    "run_id": "mwn07ct57374",
+    "finished_at": "2026-11-19T03:42:16.349Z",
+    "orders_created": 1,
+    "failed": 1,
+    "crashed": null,
+    "results": [
+      {
+        "id": "PA0",
+        "status": "PASS",
+        "description": "start: owner1 active with 2 invoices",
+        "detail": "active, growth, 2 invoice(s) [TO/26-27/000003 199900/tax 0; TO/26-27/000001 199900/tax 0], period end 2027-01-19T03:27:47.751654+00:00"
+      },
+      {
+        "id": "PA1",
+        "status": "PASS",
+        "description": "renewal order created (Growth monthly 199900, unregistered)",
+        "detail": "status 200, order …jHQL"
+      },
+      {
+        "id": "PA2",
+        "status": "NOTE",
+        "description": "Razorpay window",
+        "detail": "drive=open"
+      },
+      {
+        "id": "PA3",
+        "status": "PASS",
+        "description": "simulator FAILURE clicked",
+        "detail": "drive=clicked"
+      },
+      {
+        "id": "PA4",
+        "status": "PASS",
+        "description": "app shows a failure message and a retry path (Continue to payment), never active",
+        "detail": "alert=[\"Your payment didn't go through as it was declined by the bank. Try another payment method or contact your bank.\"]; retry button visible=true",
+        "customer_failure_text": [
+          "Your payment didn't go through as it was declined by the bank. Try another payment method or contact your bank."
+        ]
+      },
+      {
+        "id": "PA5",
+        "status": "PASS",
+        "description": "verify-razorpay-payment not called (or clean 4xx)",
+        "detail": "not called"
+      },
+      {
+        "id": "PA6",
+        "status": "PASS",
+        "description": "owner1 unchanged after the failed payment",
+        "detail": "active, growth, 2 invoice(s) [TO/26-27/000003 199900/tax 0; TO/26-27/000001 199900/tax 0], period end 2027-01-19T03:27:47.751654+00:00"
+      },
+      {
+        "id": "PA7",
+        "status": "NOTE",
+        "description": "Razorpay-side attempts on the order",
+        "detail": "…pDbA failed BAD_REQUEST_ERROR"
+      },
+      {
+        "id": "PA8",
+        "status": "PASS",
+        "description": "signed payment.failed webhook acknowledged 2xx",
+        "detail": "200 result=past_due {\"ok\":true,\"result\":\"past_due\"}"
+      },
+      {
+        "id": "PA9",
+        "status": "FAIL",
+        "description": "after the webhook owner1 is unchanged (active, same period end, 2 invoices)",
+        "detail": "past_due, growth, 2 invoice(s) [TO/26-27/000003 199900/tax 0; TO/26-27/000001 199900/tax 0], period end 2027-01-19T03:27:47.751654+00:00",
+        "owner1_after_webhook": {
+          "status": "past_due",
+          "planTier": "growth",
+          "periodEnd": "2027-01-19T03:27:47.751654+00:00",
+          "canWrite": true,
+          "invoices": [
+            {
+              "number": "TO/26-27/000003",
+              "total": 199900,
+              "taxable": 199900,
+              "cgst": 0,
+              "sgst": 0,
+              "igst": 0,
+              "credit_notes": []
+            },
+            {
+              "number": "TO/26-27/000001",
+              "total": 199900,
+              "taxable": 199900,
+              "cgst": 0,
+              "sgst": 0,
+              "igst": 0,
+              "credit_notes": []
+            }
+          ]
+        }
+      }
+    ]
+  }
 }

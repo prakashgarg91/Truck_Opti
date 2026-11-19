@@ -44,12 +44,44 @@ export interface RazorpayPaymentRequest {
 
 export interface RazorpayPaymentResult {
   success: boolean;
-  status?: 'success' | 'pending' | 'failed';
+  /** 'support': Razorpay captured the payment but the server refused to apply it. Contact support. */
+  status?: 'success' | 'pending' | 'failed' | 'support';
   paymentId?: string;
   orderId?: string;
   signature?: string;
   error?: string;
 }
+
+export interface VerifyRefusal {
+  /** The `state` field of the verify function's JSON body, or null when the body is unreadable. */
+  state: string | null;
+  /** The server's user-facing `message`, trimmed, or null. */
+  message: string | null;
+}
+
+/**
+ * Reads `state` and `message` from the JSON body of a non-2xx answer from verify-razorpay-payment.
+ * supabase-js puts that Response on error.context. Never throws.
+ */
+export async function readVerifyRefusal(error: unknown): Promise<VerifyRefusal> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (!context || typeof (context as { json?: unknown }).json !== 'function') {
+    return { state: null, message: null };
+  }
+  try {
+    const body = (await (context as { json: () => Promise<unknown> }).json()) as
+      | { state?: unknown; message?: unknown }
+      | null;
+    return {
+      state: typeof body?.state === 'string' ? body.state : null,
+      message: typeof body?.message === 'string' && body.message.trim() ? body.message.trim() : null,
+    };
+  } catch {
+    return { state: null, message: null };
+  }
+}
+
+const RAZORPAY_SUPPORT_MESSAGE = 'We could not apply it automatically. Please contact support and we will fix it.';
 
 // Load Razorpay script dynamically
 function loadRazorpayScript(): Promise<boolean> {
@@ -199,6 +231,22 @@ export async function initiateRazorpayPayment(
               customer_email: request.customerEmail,
             },
           });
+
+          if (verifyError) {
+            const refusal = await readVerifyRefusal(verifyError);
+            if (refusal.state === 'support') {
+              logger.warn('Payment captured but not applied; support needed:', refusal.state);
+              resolve({
+                success: false,
+                status: 'support',
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                signature: response.razorpay_signature,
+                error: refusal.message ?? RAZORPAY_SUPPORT_MESSAGE,
+              });
+              return;
+            }
+          }
 
           if (verifyError || !verificationResult?.success) {
             logger.warn('Could not verify payment server-side:', verifyError || verificationResult);

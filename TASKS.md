@@ -210,3 +210,29 @@ Owner decisions open: driver consent for the automatic in-transit location write
 Billing routes: Pro plan used all day. Claude API key is set at user level but is not workspace-scoped (API refused: needs a workspace-scoped key or the workspace id). ZCode GLM-5.3-Flash: insufficient balance.
 
 Still never run: hosted Supabase, real Deno, Razorpay. Status unchanged: READY FOR STAGING, NOT READY FOR CUSTOMERS.
+
+## 2026-11-19 checkpoint (first hosted run, selling without GST, payment proofs)
+
+Status: READY FOR A PRODUCTION REHEARSAL. Not yet ready for a production deploy or a first paid customer (owner gates below).
+
+What is now proven on real infrastructure (staging project truckopti-staging, ref ydkhgclfjdksicpwqzmw; old production untouched):
+- All migrations through 20261045 apply to hosted Postgres; all 23 Edge functions run on real Deno; cron sweeps registered; row security on every table.
+- Hosted smoke: 135/135 (scripts/staging/hosted_smoke.mjs; evidence/staging/hosted-smoke-2026-11-19.json). All 17 agency, 9 admin and 9 driver/public screens load in a real browser against staging with no failed requests.
+- Razorpay TEST mode through the real checkout (scripts/staging/test_payment.browser.mjs): order, payment, verify, activation, invoices TO/26-27/000001-3 at zero GST.
+- Webhook (scripts/staging/webhook_proof.mjs): bad and missing signature refused, replay, duplicate, wrong amount, unknown order, refund with credit note CN/26-27/000001.
+- Failed payment and GST switch moved mid-payment (scripts/staging/failed_and_flip_proof.mjs): failure shows a clear retry; a payment after the switch moved is captured but not applied, listed for admins as billing_settings_changed, and activates after switching back and replaying.
+- Race suites on real Postgres after 20261043-45: 8/8, 8/8, 9/9.
+
+Built on 2026-11-19: selling without GST (20261043, docs/FABLE-RULINGS-2026-11-18-C.md); hosted hardening (20261044); rate cards table and avatars bucket that no migration created (20261045); webhook receivers exempt from gateway JWT (supabase/config.toml); all known page defects from the 2026-11-18 list; driver sign-up documents through driver-kyc; honest list caps then real paging on admin lists; support-needed screen after a refused payment; email-only support; approved refund wording.
+
+Hosted-only bugs found today (none were visible to local tests): uuid_generate_v4 in an old migration; gateway blocking razorpay-webhook and erp-ingest; missing agency_rate_cards and avatars; pricing sent a tier name as a plan id; admins and drivers called the agency entitlement function; Razorpay rejects the dummy phone 9876543210.
+
+Old production database (evidence/prod-rehearsal/README.md, scripts/prod/legacy_replay.mjs, scripts/prod/preflight_inventory.sql): the chain stops on legacy data in two places (duplicate truck RC numbers per agency in 20261008; a driver linked to two trucks in 20261015); silent changes include paused -> cancelled, yearly price recalculated, job-offer OTPs regenerated, public KYC links cleared; subscriptions without an agency stop entitling; one bad legacy row made every hourly sweep fail (fixed by 20261046 if landed). Run the preflight queries on production before deciding between repairing data and a fresh project plus import.
+
+Design points for the owner: a refunded agency cannot buy again until an admin reopens it; a failed early-renewal attempt marks a paid-up agency past due (banner only, access kept); switching GST registration needs the procedure in docs/DEPLOYMENT-RUNBOOK.md.
+
+Owner-only before the first sale: choose and create the production project (paid tier, backups) or approve repairing the old one; Razorpay KYC, live keys and a webhook registered in the Razorpay dashboard; legal name, address and state in Admin > Billing settings; policy blanks, lawyer read, licence; support mailbox; frontend hosting; one live payment and refund; accountant confirmation on GST; workspace-scoped Claude API key.
+
+Addendum (same day, later): 20261046 (sweeps continue past a row they cannot move and record it; rate-0 invoices must have no seller GSTIN; order replay returns the GST rate) and 20261047 (avatars bucket settings converge) are applied to staging; admin lists for agencies, users, drivers and contact now page with Load more (Edge offset + has_more); Billing ops shows sweep failures; checkout shows a contact-support screen with the payment reference when a captured payment is not applied. Final gates on this tree: 45 database suites, drift, edge guard 23/23, edge harness 264/264, secrets audit PASS, tsc and eslint clean, frontend 3035 tests (141 files), production build OK, browser journey 46/0/3 hosted-only, race 8/8 + 8/8 + 9/9, hosted smoke on staging 135/135.
+Known and accepted for now: a signed-out caller can advance the LR number sequence through generate_lr_number (gaps only, no data access; proper fix noted in 20261047); search and CSV on paged admin lists cover loaded rows only; after a row action the agencies and users lists return to page one; supabase/config.toml must never be pushed to a hosted project as written.
+Staging test data left in place: two smoke agencies (one active then past due after a failed renewal test, one cancelled after a refund test), invoices TO/26-27/000001-3, credit note CN/26-27/000001. Remove with D:/tmp/staging_cleanup.sql or recreate the project before any real use.

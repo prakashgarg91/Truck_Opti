@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Building2, CheckCircle2, XCircle, Clock, Search,
@@ -10,7 +10,6 @@ import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import AdminLoadError from './AdminLoadError'
-import ListCapNotice from '../components/admin/ListCapNotice'
 
 type Tab = 'pending' | 'approved' | 'rejected' | 'suspended'
 
@@ -47,22 +46,55 @@ export default function AdminAgenciesPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [counts, setCounts] = useState<Record<Tab, number>>({ pending: 0, approved: 0, rejected: 0, suspended: 0 })
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState(false)
+  // Bumped by every first-page fetch (tab change, refresh, row action). A page response that
+  // belongs to an older generation is dropped, so a late "Load more" cannot append to another tab.
+  const listGeneration = useRef(0)
 
   const fetchSnapshot = useCallback(async () => {
+    const generation = ++listGeneration.current
     setLoading(true)
+    setLoadingMore(false)
+    setLoadMoreError(false)
     try {
       const snapshot = await adminAgenciesApi.getSnapshot(tab)
+      if (generation !== listGeneration.current) return
       setAgencies(snapshot.agencies)
       setCounts(snapshot.counts)
+      setHasMore(snapshot.hasMore === true)
       setLoadError(false)
     } catch (error) {
+      if (generation !== listGeneration.current) return
       logger.error('[AdminAgencies] Load error:', error)
       toast.error('Failed to load agencies')
       setLoadError(true)
     } finally {
-      setLoading(false)
+      if (generation === listGeneration.current) setLoading(false)
     }
   }, [tab])
+
+  // Appends the next page after the rows already shown. Loaded rows stay on screen if this fails.
+  const loadMore = useCallback(async () => {
+    const generation = listGeneration.current
+    const offset = agencies.length
+    setLoadingMore(true)
+    setLoadMoreError(false)
+    try {
+      const page = await adminAgenciesApi.getSnapshot(tab, offset)
+      if (generation !== listGeneration.current) return
+      setAgencies(current => [...current, ...page.agencies])
+      setCounts(page.counts)
+      setHasMore(page.hasMore === true)
+    } catch (error) {
+      if (generation !== listGeneration.current) return
+      logger.error('[AdminAgencies] Load more error:', error)
+      setLoadMoreError(true)
+    } finally {
+      if (generation === listGeneration.current) setLoadingMore(false)
+    }
+  }, [tab, agencies.length])
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -359,7 +391,31 @@ export default function AdminAgenciesPage() {
             </div>
           ))
         )}
-        {!loading && !loadError && <ListCapNotice rowCount={agencies.length} testId="agencies-cap-notice" />}
+        {!loading && !loadError && hasMore && (
+          <div className="flex flex-col items-center gap-2 pt-2">
+            {loadMoreError ? (
+              <>
+                <p role="alert" className="text-sm text-red-600 dark:text-red-400">Could not load more agencies.</p>
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  className="min-h-[44px] px-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200"
+                >
+                  Retry
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="min-h-[44px] px-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 disabled:opacity-60"
+              >
+                {loadingMore ? 'Loading more...' : 'Load more'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

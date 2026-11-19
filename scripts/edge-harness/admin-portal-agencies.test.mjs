@@ -58,10 +58,104 @@ test('admin list returns agencies and counts', async () => {
   assert.deepEqual(Object.keys(body.counts).sort(), ['approved', 'pending', 'rejected', 'suspended'])
 })
 
-test('list is capped at 200 rows, newest first', async () => {
+test('list is a 200-row page (range 0..200 fetches 201 to detect more), newest first with id tiebreaker', async () => {
   await post({ action: 'list', status: 'pending' })
   const listCall = h.fake.fromCalls('transport_agencies').find((c) => c.ops.some(([op]) => op === 'order'))
-  assert.ok(listCall.ops.some(([op, n]) => op === 'limit' && n === 200), 'list must set limit 200')
+  assert.ok(listCall.ops.some(([op, from, to]) => op === 'range' && from === 0 && to === 200), 'list must range 0..200')
+  assert.ok(listCall.ops.some(([op, col, opts]) => op === 'order' && col === 'created_at' && opts?.ascending === false))
+  assert.ok(listCall.ops.some(([op, col, opts]) => op === 'order' && col === 'id' && opts?.ascending === false), 'id must be the final tiebreaker')
+})
+
+/**
+ * Seeds `total` pending agencies in the fake table and applies .range(from, to) the way PostgREST does.
+ * created_at ties in pairs, so the id tiebreaker is what keeps page boundaries stable.
+ */
+function seedPaged(total, role = 'admin') {
+  setup({ role })
+  const rows = Array.from({ length: total }, (_, i) => ({
+    id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+    status: 'pending',
+    created_at: new Date(Date.UTC(2026, 0, 1) + Math.floor(i / 2) * 1000).toISOString(),
+  })).sort((a, b) => (b.created_at === a.created_at ? b.id.localeCompare(a.id) : b.created_at.localeCompare(a.created_at)))
+  h.fake.onFrom('transport_agencies', (rec) => {
+    if (rec.ops.some(([op, , opts]) => op === 'select' && opts?.head)) return { count: 0, data: null, error: null }
+    const range = rec.ops.find(([op]) => op === 'range')
+    if (range) return { data: rows.slice(range[1], range[2] + 1), error: null }
+    return { data: [], error: null }
+  })
+  return rows
+}
+
+const idsOf = (body) => body.agencies.map((a) => a.id)
+
+test('offset defaults to 0 and a first page holds 200 rows with has_more true when 450 exist', async () => {
+  seedPaged(450)
+  const res = await post({ action: 'list', status: 'pending' })
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.agencies.length, 200)
+  assert.equal(body.has_more, true)
+  assert.equal(idsOf(body)[0], '00000000-0000-4000-8000-000000000449', 'newest row first')
+})
+
+test('offset=200 returns the next rows with no overlap, and paging through 450 rows covers each once', async () => {
+  seedPaged(450)
+  const first = await (await post({ action: 'list', status: 'pending' })).json()
+  const second = await (await post({ action: 'list', status: 'pending', offset: 200 })).json()
+  const third = await (await post({ action: 'list', status: 'pending', offset: 400 })).json()
+
+  assert.equal(second.agencies.length, 200)
+  assert.equal(second.has_more, true)
+  assert.equal(third.agencies.length, 50)
+  assert.equal(third.has_more, false)
+
+  const all = [...idsOf(first), ...idsOf(second), ...idsOf(third)]
+  assert.equal(new Set(all).size, 450, 'no row is skipped or repeated across pages')
+})
+
+test('has_more is false at exactly 200 rows, true at 201, and false on a final partial page of 400', async () => {
+  seedPaged(200)
+  assert.equal((await (await post({ action: 'list', status: 'pending' })).json()).has_more, false)
+
+  seedPaged(201)
+  const at201 = await (await post({ action: 'list', status: 'pending' })).json()
+  assert.equal(at201.agencies.length, 200)
+  assert.equal(at201.has_more, true)
+
+  seedPaged(400)
+  const last = await (await post({ action: 'list', status: 'pending', offset: 200 })).json()
+  assert.equal(last.agencies.length, 200)
+  assert.equal(last.has_more, false)
+})
+
+test('offset past the end returns an empty page with has_more false', async () => {
+  seedPaged(10)
+  const body = await (await post({ action: 'list', status: 'pending', offset: 200 })).json()
+  assert.deepEqual(body.agencies, [])
+  assert.equal(body.has_more, false)
+})
+
+test('offset boundary values 0 and 100000 are accepted', async () => {
+  seedPaged(3)
+  assert.equal((await post({ action: 'list', status: 'pending', offset: 0 })).status, 200)
+  assert.equal((await post({ action: 'list', status: 'pending', offset: 100000 })).status, 200)
+})
+
+test('invalid offsets are 400 with the calm message and no agency read', async () => {
+  seedPaged(10)
+  for (const offset of [-1, 1.5, 100001, '200', null, NaN, true]) {
+    const res = await post({ action: 'list', status: 'pending', offset })
+    assert.equal(res.status, 400, `offset ${String(offset)}`)
+    assert.equal((await res.json()).error, 'A valid offset is required.')
+  }
+  assert.equal(h.fake.fromCalls('transport_agencies').length, 0)
+})
+
+test('a non-admin caller asking for a page is still refused with 403 and reads no agencies', async () => {
+  seedPaged(10, 'agency')
+  const res = await post({ action: 'list', status: 'pending', offset: 200 })
+  assert.equal(res.status, 403)
+  assert.equal(h.fake.fromCalls('transport_agencies').length, 0)
 })
 
 test('bad list status and bad agency id are 400 before any database read', async () => {

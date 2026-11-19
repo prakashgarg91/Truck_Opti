@@ -1,0 +1,1389 @@
+{
+  "generated": "2026-11-19T03:43:49.099Z",
+  "postgres": "18.6",
+  "cutoff": "20260501120000",
+  "last_legacy_migration": "20260501120000_enforce_unique_invoice_provider_payment_per_subscription.sql",
+  "mode": {
+    "continue_after_failure": false,
+    "remediate": false,
+    "drift": false
+  },
+  "legacy_files": [
+    "20260107000000_base_schema.sql",
+    "20260108000000_subscriptions.sql",
+    "20260209000000_extended_schema.sql",
+    "20260212000000_production_setup.sql",
+    "20260305000000_phase1_drivers.sql",
+    "20260305010000_create_agency_trucks.sql",
+    "20260305011000_create_agency_jobs.sql",
+    "20260306000000_driver_docs_bucket.sql",
+    "20260307000000_fix_rls_ownership.sql",
+    "20260308000000_driver_payouts.sql",
+    "20260309000000_contact_inquiries.sql",
+    "20260311000000_add_photo_columns_to_agency_jobs.sql",
+    "20260311000001_driver_payouts_agency_columns.sql",
+    "20260311000002_eway_bill_column.sql",
+    "20260416000000_sync_trip_offer_tracking.sql",
+    "20260416010000_graphify_gap_contract_fixes.sql",
+    "20260418000000_secure_user_roles_and_customer_tracking.sql",
+    "20260418001000_launch_portal_schema_backfill.sql",
+    "20260418002000_trip_photos_bucket.sql",
+    "20260418003000_harden_role_claims_and_add_login_ids.sql",
+    "20260418004000_enforce_pan_contracts.sql",
+    "20260418005000_restore_driver_payouts_contract.sql",
+    "20260501101500_lock_client_subscription_mutations.sql",
+    "20260501113000_enforce_unique_subscriptions_user_id.sql",
+    "20260501120000_enforce_unique_invoice_provider_payment_per_subscription.sql"
+  ],
+  "pending_files": [
+    "20260517010000_billing_documents_bucket.sql",
+    "20260531110000_enforce_agency_status_writes.sql",
+    "20260601223849_fix_job_offer_otp_length_4digit.sql",
+    "20260606110000_fix_agency_driver_security_guards.sql",
+    "20260730110000_enforce_job_offer_otp_verification.sql",
+    "20261003000000_private_kyc_documents.sql",
+    "20261003010000_atomic_job_offer_response.sql",
+    "20261003020000_driver_offer_read_visibility.sql",
+    "20261004000000_trip_transition_integrity.sql",
+    "20261005000000_trip_photo_url_correction.sql",
+    "20261005010000_restore_billing_documents_admin_authority.sql",
+    "20261006120000_tenant_authority_repair.sql",
+    "20261006130000_dispatch_producer_and_trip_propagation.sql",
+    "20261006140000_revoke_setup_status_view_reads.sql",
+    "20261007120000_consent_writer_and_job_command.sql",
+    "20261008000000_agency_fleet_foundation.sql",
+    "20261010000000_fleet_assignment_reservations.sql",
+    "20261011000000_agency_members_clients_tariffs.sql",
+    "20261012000000_staff_scope_enforcement.sql",
+    "20261013000000_driver_model_authority.sql",
+    "20261014000000_agency_job_terminal_cutoff.sql",
+    "20261015000000_agency_job_truck_commands.sql",
+    "20261016000000_expiry_sweeps.sql",
+    "20261017000000_agency_driver_payouts.sql",
+    "20261018000000_agency_orders.sql",
+    "20261019000000_agency_consignments.sql",
+    "20261020000000_agency_tracking.sql",
+    "20261021000000_agency_invoices.sql",
+    "20261022000000_agency_expenses.sql",
+    "20261023000000_agency_payroll.sql",
+    "20261024000000_agency_erp_connector.sql",
+    "20261025000000_agency_load_plans.sql",
+    "20261026000000_agency_subscriptions.sql",
+    "20261027000000_subscription_limits.sql",
+    "20261028000000_subscription_gst.sql",
+    "20261029000000_subscription_activation.sql",
+    "20261030000000_razorpay_webhook_events.sql",
+    "20261031000000_subscription_sweeps.sql",
+    "20261032000000_agency_driver_names.sql",
+    "20261033000000_subscription_invoice_read.sql",
+    "20261034000000_contract_audit_followups.sql",
+    "20261035000000_subscription_write_guards.sql",
+    "20261036000000_least_privilege_hardening.sql",
+    "20261038000000_agency_identity_update.sql",
+    "20261039000000_driver_trip_job.sql",
+    "20261040000000_agency_row_guard.sql",
+    "20261041000000_admin_billing_ops_read.sql",
+    "20261042000000_invoice_consignment_link.sql",
+    "20261043000000_unregistered_seller_mode.sql",
+    "20261044000000_hosted_hardening.sql",
+    "20261045000000_rate_cards_and_avatars.sql"
+  ],
+  "files_2026_05_to_07": [
+    "20260501101500_lock_client_subscription_mutations.sql",
+    "20260501113000_enforce_unique_subscriptions_user_id.sql",
+    "20260501120000_enforce_unique_invoice_provider_payment_per_subscription.sql",
+    "20260517010000_billing_documents_bucket.sql",
+    "20260531110000_enforce_agency_status_writes.sql",
+    "20260601223849_fix_job_offer_otp_length_4digit.sql",
+    "20260606110000_fix_agency_driver_security_guards.sql",
+    "20260730110000_enforce_job_offer_otp_verification.sql"
+  ],
+  "seed_warnings": [],
+  "migrations": [
+    {
+      "file": "20260517010000_billing_documents_bucket.sql",
+      "version": "20260517010000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20260531110000_enforce_agency_status_writes.sql",
+      "version": "20260531110000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20260601223849_fix_job_offer_otp_length_4digit.sql",
+      "version": "20260601223849",
+      "ms": 8,
+      "result": "ok"
+    },
+    {
+      "file": "20260606110000_fix_agency_driver_security_guards.sql",
+      "version": "20260606110000",
+      "ms": 5,
+      "result": "ok"
+    },
+    {
+      "file": "20260730110000_enforce_job_offer_otp_verification.sql",
+      "version": "20260730110000",
+      "ms": 7,
+      "result": "ok"
+    },
+    {
+      "file": "20261003000000_private_kyc_documents.sql",
+      "version": "20261003000000",
+      "ms": 15,
+      "result": "ok"
+    },
+    {
+      "file": "20261003010000_atomic_job_offer_response.sql",
+      "version": "20261003010000",
+      "ms": 4,
+      "result": "ok"
+    },
+    {
+      "file": "20261003020000_driver_offer_read_visibility.sql",
+      "version": "20261003020000",
+      "ms": 3,
+      "result": "ok"
+    },
+    {
+      "file": "20261004000000_trip_transition_integrity.sql",
+      "version": "20261004000000",
+      "ms": 11,
+      "result": "ok"
+    },
+    {
+      "file": "20261005000000_trip_photo_url_correction.sql",
+      "version": "20261005000000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261005010000_restore_billing_documents_admin_authority.sql",
+      "version": "20261005010000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261006120000_tenant_authority_repair.sql",
+      "version": "20261006120000",
+      "ms": 20,
+      "result": "ok"
+    },
+    {
+      "file": "20261006130000_dispatch_producer_and_trip_propagation.sql",
+      "version": "20261006130000",
+      "ms": 3,
+      "result": "ok"
+    },
+    {
+      "file": "20261006140000_revoke_setup_status_view_reads.sql",
+      "version": "20261006140000",
+      "ms": 2,
+      "result": "ok"
+    },
+    {
+      "file": "20261007120000_consent_writer_and_job_command.sql",
+      "version": "20261007120000",
+      "ms": 4,
+      "result": "ok"
+    },
+    {
+      "file": "20261008000000_agency_fleet_foundation.sql",
+      "version": "20261008000000",
+      "ms": 15,
+      "result": "FAILED",
+      "sqlstate": "23505",
+      "message": "could not create unique index \"agency_trucks_agency_id_rc_number_key\"",
+      "detail": "Key (agency_id, rc_number)=(a3000003-0000-4000-8000-000000000001, MH12AB1234) is duplicated.",
+      "where": "SQL statement \"ALTER TABLE public.agency_trucks",
+      "failing_statement": "DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_constraint WHERE conname = 'agency_trucks_agency_id_rc_number_key' AND conrelid = 'public.agency_trucks'::regclass ) THEN ALTER TABLE public.agency_trucks ",
+      "cascade": false
+    },
+    {
+      "file": "20261010000000_fleet_assignment_reservations.sql",
+      "version": "20261010000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261011000000_agency_members_clients_tariffs.sql",
+      "version": "20261011000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261012000000_staff_scope_enforcement.sql",
+      "version": "20261012000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261013000000_driver_model_authority.sql",
+      "version": "20261013000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261014000000_agency_job_terminal_cutoff.sql",
+      "version": "20261014000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261015000000_agency_job_truck_commands.sql",
+      "version": "20261015000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261016000000_expiry_sweeps.sql",
+      "version": "20261016000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261017000000_agency_driver_payouts.sql",
+      "version": "20261017000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261018000000_agency_orders.sql",
+      "version": "20261018000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261019000000_agency_consignments.sql",
+      "version": "20261019000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261020000000_agency_tracking.sql",
+      "version": "20261020000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261021000000_agency_invoices.sql",
+      "version": "20261021000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261022000000_agency_expenses.sql",
+      "version": "20261022000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261023000000_agency_payroll.sql",
+      "version": "20261023000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261024000000_agency_erp_connector.sql",
+      "version": "20261024000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261025000000_agency_load_plans.sql",
+      "version": "20261025000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261026000000_agency_subscriptions.sql",
+      "version": "20261026000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261027000000_subscription_limits.sql",
+      "version": "20261027000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261028000000_subscription_gst.sql",
+      "version": "20261028000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261029000000_subscription_activation.sql",
+      "version": "20261029000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261030000000_razorpay_webhook_events.sql",
+      "version": "20261030000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261031000000_subscription_sweeps.sql",
+      "version": "20261031000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261032000000_agency_driver_names.sql",
+      "version": "20261032000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261033000000_subscription_invoice_read.sql",
+      "version": "20261033000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261034000000_contract_audit_followups.sql",
+      "version": "20261034000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261035000000_subscription_write_guards.sql",
+      "version": "20261035000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261036000000_least_privilege_hardening.sql",
+      "version": "20261036000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261038000000_agency_identity_update.sql",
+      "version": "20261038000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261039000000_driver_trip_job.sql",
+      "version": "20261039000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261040000000_agency_row_guard.sql",
+      "version": "20261040000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261041000000_admin_billing_ops_read.sql",
+      "version": "20261041000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261042000000_invoice_consignment_link.sql",
+      "version": "20261042000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261043000000_unregistered_seller_mode.sql",
+      "version": "20261043000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261044000000_hosted_hardening.sql",
+      "version": "20261044000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    },
+    {
+      "file": "20261045000000_rate_cards_and_avatars.sql",
+      "version": "20261045000000",
+      "result": "not_applied",
+      "note": "chain stopped at the first failure (default mode, same as db push)"
+    }
+  ],
+  "legacy_tables": [
+    "addon_purchases",
+    "agency_jobs",
+    "agency_trucks",
+    "analytics_events",
+    "cartons",
+    "contact_inquiries",
+    "customers",
+    "driver_locations",
+    "driver_payouts",
+    "drivers",
+    "invoices",
+    "job_offers",
+    "notifications",
+    "packing_items",
+    "packing_jobs",
+    "packing_results",
+    "payment_history",
+    "routes",
+    "sale_order_items",
+    "sale_orders",
+    "shipments",
+    "subscription_plans",
+    "subscriptions",
+    "transport_agencies",
+    "trucks",
+    "usage_tracking",
+    "users"
+  ],
+  "seed": {
+    "rows_inserted": {
+      "users": 17,
+      "customers": 2,
+      "transport_agencies": 9,
+      "drivers": 6,
+      "agency_trucks": 5,
+      "shipments": 7,
+      "agency_jobs": 7,
+      "job_offers": 7,
+      "subscriptions": 10,
+      "invoices": 5,
+      "payment_history": 6,
+      "addon_purchases": 1,
+      "driver_payouts": 5,
+      "notifications": 6,
+      "contact_inquiries": 2,
+      "routes": 1,
+      "packing_jobs": 1,
+      "sale_orders": 1,
+      "analytics_events": 1,
+      "driver_locations": 1
+    },
+    "uniqueUserSubscriptionAtCutoff": true
+  },
+  "before": {
+    "counts": {
+      "addon_purchases": 1,
+      "agency_jobs": 7,
+      "agency_trucks": 5,
+      "analytics_events": 1,
+      "cartons": 5,
+      "contact_inquiries": 2,
+      "customers": 5,
+      "driver_locations": 1,
+      "driver_payouts": 5,
+      "drivers": 6,
+      "invoices": 5,
+      "job_offers": 7,
+      "notifications": 6,
+      "packing_items": 0,
+      "packing_jobs": 1,
+      "packing_results": 0,
+      "payment_history": 6,
+      "routes": 1,
+      "sale_order_items": 0,
+      "sale_orders": 1,
+      "shipments": 7,
+      "subscription_plans": 4,
+      "subscriptions": 10,
+      "transport_agencies": 9,
+      "trucks": 8,
+      "usage_tracking": 10,
+      "users": 17
+    },
+    "plans": [
+      {
+        "name": "Starter",
+        "tier": "starter",
+        "price_monthly": 49900,
+        "price_yearly": 499900,
+        "trucks_limit": 3
+      },
+      {
+        "name": "Growth",
+        "tier": "growth",
+        "price_monthly": 199900,
+        "price_yearly": 1999900,
+        "trucks_limit": 20
+      },
+      {
+        "name": "Professional",
+        "tier": "professional",
+        "price_monthly": 499900,
+        "price_yearly": 4999900,
+        "trucks_limit": 50
+      },
+      {
+        "name": "Enterprise",
+        "tier": "enterprise",
+        "price_monthly": 1499900,
+        "price_yearly": 14999900,
+        "trucks_limit": -1
+      }
+    ],
+    "subscriptions": [
+      {
+        "id": "a9000009-0000-4000-8000-000000000001",
+        "status": "active",
+        "billing_cycle": "yearly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-08-11T03:43:49.645Z",
+        "current_period_end": "2027-08-11T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000004",
+        "user_email": "sanjay.own@transgo.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000007",
+        "status": "expired",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-05-03T03:43:49.645Z",
+        "current_period_end": "2026-06-02T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000010",
+        "user_email": "kavita.own@oldtimer.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000003",
+        "status": "cancelled",
+        "billing_cycle": "monthly",
+        "plan": "Professional",
+        "tier": "professional",
+        "current_period_start": "2026-09-20T03:43:49.645Z",
+        "current_period_end": "2026-10-20T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": true,
+        "user_id": "a1000001-0000-4000-8000-000000000006",
+        "user_email": "arjun.own@kaveri.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000004",
+        "status": "paused",
+        "billing_cycle": "monthly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-10-05T03:43:49.645Z",
+        "current_period_end": "2026-11-04T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000007",
+        "user_email": "farah.own@kaveri2.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000005",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-09-30T03:43:49.645Z",
+        "current_period_end": "2026-10-30T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000008",
+        "user_email": "dinesh.own@lonestar.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000008",
+        "status": "active",
+        "billing_cycle": "yearly",
+        "plan": "Enterprise",
+        "tier": "enterprise",
+        "current_period_start": "2026-10-20T03:43:49.645Z",
+        "current_period_end": "2027-10-20T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000003",
+        "user_email": "mohan.cust@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000002",
+        "status": "trial",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-10-30T03:43:49.645Z",
+        "current_period_end": "2026-11-13T03:43:49.645Z",
+        "trial_end": "2026-11-13T03:43:49.645Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000005",
+        "user_email": "meena.own@speedline.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000006",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-11-09T03:43:49.645Z",
+        "current_period_end": "2026-11-09T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000009",
+        "user_email": "ishaan.own@bluebay.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000010",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Professional",
+        "tier": "professional",
+        "current_period_start": "2026-11-14T03:43:49.645Z",
+        "current_period_end": "2026-12-14T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000011",
+        "user_email": "driver.ramesh@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000009",
+        "status": "trial",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-11-17T03:43:49.645Z",
+        "current_period_end": "2026-12-01T03:43:49.645Z",
+        "trial_end": "2026-12-01T03:43:49.645Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000002",
+        "user_email": "riya.cust@example.com"
+      }
+    ],
+    "storage_buckets": 2
+  },
+  "summary": {
+    "applied_ok": 15,
+    "failed": [
+      {
+        "file": "20261008000000_agency_fleet_foundation.sql",
+        "sqlstate": "23505",
+        "message": "could not create unique index \"agency_trucks_agency_id_rc_number_key\"",
+        "cascade": false
+      }
+    ],
+    "needs_data_fix": [],
+    "not_applied": 35
+  },
+  "after": {
+    "counts": {
+      "addon_purchases": 1,
+      "agency_jobs": 7,
+      "agency_trucks": 5,
+      "analytics_events": 1,
+      "cartons": 5,
+      "contact_inquiries": 2,
+      "customers": 5,
+      "driver_locations": 1,
+      "driver_payouts": 5,
+      "drivers": 6,
+      "invoices": 5,
+      "job_offers": 7,
+      "notifications": 6,
+      "packing_items": 0,
+      "packing_jobs": 1,
+      "packing_results": 0,
+      "payment_history": 6,
+      "routes": 1,
+      "sale_order_items": 0,
+      "sale_orders": 1,
+      "shipments": 7,
+      "subscription_plans": 4,
+      "subscriptions": 10,
+      "transport_agencies": 9,
+      "trucks": 8,
+      "usage_tracking": 10,
+      "users": 17
+    },
+    "subscriptions": [
+      {
+        "id": "a9000009-0000-4000-8000-000000000001",
+        "status": "active",
+        "billing_cycle": "yearly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-08-11T03:43:49.645Z",
+        "current_period_end": "2027-08-11T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000004",
+        "user_email": "sanjay.own@transgo.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000007",
+        "status": "expired",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-05-03T03:43:49.645Z",
+        "current_period_end": "2026-06-02T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000010",
+        "user_email": "kavita.own@oldtimer.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000003",
+        "status": "cancelled",
+        "billing_cycle": "monthly",
+        "plan": "Professional",
+        "tier": "professional",
+        "current_period_start": "2026-09-20T03:43:49.645Z",
+        "current_period_end": "2026-10-20T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": true,
+        "user_id": "a1000001-0000-4000-8000-000000000006",
+        "user_email": "arjun.own@kaveri.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000004",
+        "status": "paused",
+        "billing_cycle": "monthly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-10-05T03:43:49.645Z",
+        "current_period_end": "2026-11-04T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000007",
+        "user_email": "farah.own@kaveri2.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000005",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-09-30T03:43:49.645Z",
+        "current_period_end": "2026-10-30T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000008",
+        "user_email": "dinesh.own@lonestar.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000008",
+        "status": "active",
+        "billing_cycle": "yearly",
+        "plan": "Enterprise",
+        "tier": "enterprise",
+        "current_period_start": "2026-10-20T03:43:49.645Z",
+        "current_period_end": "2027-10-20T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000003",
+        "user_email": "mohan.cust@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000002",
+        "status": "trial",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-10-30T03:43:49.645Z",
+        "current_period_end": "2026-11-13T03:43:49.645Z",
+        "trial_end": "2026-11-13T03:43:49.645Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000005",
+        "user_email": "meena.own@speedline.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000006",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Growth",
+        "tier": "growth",
+        "current_period_start": "2026-11-09T03:43:49.645Z",
+        "current_period_end": "2026-11-09T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000009",
+        "user_email": "ishaan.own@bluebay.example"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000010",
+        "status": "active",
+        "billing_cycle": "monthly",
+        "plan": "Professional",
+        "tier": "professional",
+        "current_period_start": "2026-11-14T03:43:49.645Z",
+        "current_period_end": "2026-12-14T03:43:49.645Z",
+        "trial_end": null,
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000011",
+        "user_email": "driver.ramesh@example.com"
+      },
+      {
+        "id": "a9000009-0000-4000-8000-000000000009",
+        "status": "trial",
+        "billing_cycle": "monthly",
+        "plan": "Starter",
+        "tier": "starter",
+        "current_period_start": "2026-11-17T03:43:49.645Z",
+        "current_period_end": "2026-12-01T03:43:49.645Z",
+        "trial_end": "2026-12-01T03:43:49.645Z",
+        "cancel_at_period_end": false,
+        "user_id": "a1000001-0000-4000-8000-000000000002",
+        "user_email": "riya.cust@example.com"
+      }
+    ],
+    "plans": [
+      {
+        "name": "Starter",
+        "tier": "starter",
+        "price_monthly": 49900,
+        "price_yearly": 499900,
+        "trucks_limit": 3
+      },
+      {
+        "name": "Growth",
+        "tier": "growth",
+        "price_monthly": 199900,
+        "price_yearly": 1999900,
+        "trucks_limit": 20
+      },
+      {
+        "name": "Professional",
+        "tier": "professional",
+        "price_monthly": 499900,
+        "price_yearly": 4999900,
+        "trucks_limit": 50
+      },
+      {
+        "name": "Enterprise",
+        "tier": "enterprise",
+        "price_monthly": 1499900,
+        "price_yearly": 14999900,
+        "trucks_limit": -1
+      }
+    ]
+  },
+  "row_counts": [
+    {
+      "table": "addon_purchases",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "agency_jobs",
+      "before": 7,
+      "after": 7,
+      "lost": 0
+    },
+    {
+      "table": "agency_trucks",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "analytics_events",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "cartons",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "contact_inquiries",
+      "before": 2,
+      "after": 2,
+      "lost": 0
+    },
+    {
+      "table": "customers",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "driver_locations",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "driver_payouts",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "drivers",
+      "before": 6,
+      "after": 6,
+      "lost": 0
+    },
+    {
+      "table": "invoices",
+      "before": 5,
+      "after": 5,
+      "lost": 0
+    },
+    {
+      "table": "job_offers",
+      "before": 7,
+      "after": 7,
+      "lost": 0
+    },
+    {
+      "table": "notifications",
+      "before": 6,
+      "after": 6,
+      "lost": 0
+    },
+    {
+      "table": "packing_items",
+      "before": 0,
+      "after": 0,
+      "lost": 0
+    },
+    {
+      "table": "packing_jobs",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "packing_results",
+      "before": 0,
+      "after": 0,
+      "lost": 0
+    },
+    {
+      "table": "payment_history",
+      "before": 6,
+      "after": 6,
+      "lost": 0
+    },
+    {
+      "table": "routes",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "sale_order_items",
+      "before": 0,
+      "after": 0,
+      "lost": 0
+    },
+    {
+      "table": "sale_orders",
+      "before": 1,
+      "after": 1,
+      "lost": 0
+    },
+    {
+      "table": "shipments",
+      "before": 7,
+      "after": 7,
+      "lost": 0
+    },
+    {
+      "table": "subscription_plans",
+      "before": 4,
+      "after": 4,
+      "lost": 0
+    },
+    {
+      "table": "subscriptions",
+      "before": 10,
+      "after": 10,
+      "lost": 0
+    },
+    {
+      "table": "transport_agencies",
+      "before": 9,
+      "after": 9,
+      "lost": 0
+    },
+    {
+      "table": "trucks",
+      "before": 8,
+      "after": 8,
+      "lost": 0
+    },
+    {
+      "table": "usage_tracking",
+      "before": 10,
+      "after": 10,
+      "lost": 0
+    },
+    {
+      "table": "users",
+      "before": 17,
+      "after": 17,
+      "lost": 0
+    }
+  ],
+  "rows_lost": [],
+  "new_table_counts": {},
+  "silent_changes": {
+    "drivers": {
+      "rows_changed": 2,
+      "rows_deleted": 0,
+      "columns": {
+        "dl_url": {
+          "rows": 2,
+          "sample": [
+            {
+              "key": "a4000004-0000-4000-8000-000000000001",
+              "before": "https://old.supabase.co/storage/v1/object/public/driver-docs/11/dl.jpg",
+              "after": null
+            },
+            {
+              "key": "a4000004-0000-4000-8000-000000000002",
+              "before": "https://old.supabase.co/storage/v1/object/public/driver-docs/12/dl.jpg",
+              "after": null
+            }
+          ]
+        },
+        "rc_url": {
+          "rows": 1,
+          "sample": [
+            {
+              "key": "a4000004-0000-4000-8000-000000000001",
+              "before": "https://old.supabase.co/storage/v1/object/public/driver-docs/11/rc.jpg",
+              "after": null
+            }
+          ]
+        },
+        "selfie_url": {
+          "rows": 1,
+          "sample": [
+            {
+              "key": "a4000004-0000-4000-8000-000000000001",
+              "before": "https://old.supabase.co/storage/v1/object/public/driver-docs/11/selfie.jpg",
+              "after": null
+            }
+          ]
+        }
+      }
+    },
+    "job_offers": {
+      "rows_changed": 7,
+      "rows_deleted": 0,
+      "columns": {
+        "pickup_otp": {
+          "rows": 6,
+          "sample": [
+            {
+              "key": "a8000008-0000-4000-8000-000000000001",
+              "before": "123456",
+              "after": "5791"
+            },
+            {
+              "key": "a8000008-0000-4000-8000-000000000003",
+              "before": "",
+              "after": "2340"
+            },
+            {
+              "key": "a8000008-0000-4000-8000-000000000004",
+              "before": "99999",
+              "after": "6330"
+            }
+          ]
+        },
+        "delivery_otp": {
+          "rows": 7,
+          "sample": [
+            {
+              "key": "a8000008-0000-4000-8000-000000000001",
+              "before": "654321",
+              "after": "3104"
+            },
+            {
+              "key": "a8000008-0000-4000-8000-000000000002",
+              "before": "77",
+              "after": "2403"
+            },
+            {
+              "key": "a8000008-0000-4000-8000-000000000003",
+              "before": null,
+              "after": "4639"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "subscription_changes": [
+    {
+      "id": "a9000009-0000-4000-8000-000000000001",
+      "user": "sanjay.own@transgo.example",
+      "before": {
+        "status": "active",
+        "plan": "Growth",
+        "billing_cycle": "yearly",
+        "period_end": "2027-08-11T03:43:49.645Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Growth",
+        "billing_cycle": "yearly",
+        "period_end": "2027-08-11T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000007",
+      "user": "kavita.own@oldtimer.example",
+      "before": {
+        "status": "expired",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-06-02T03:43:49.645Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "expired",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-06-02T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000003",
+      "user": "arjun.own@kaveri.example",
+      "before": {
+        "status": "cancelled",
+        "plan": "Professional",
+        "billing_cycle": "monthly",
+        "period_end": "2026-10-20T03:43:49.645Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "cancelled",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Professional",
+        "billing_cycle": "monthly",
+        "period_end": "2026-10-20T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000004",
+      "user": "farah.own@kaveri2.example",
+      "before": {
+        "status": "paused",
+        "plan": "Growth",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-04T03:43:49.645Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "paused",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Growth",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-04T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000005",
+      "user": "dinesh.own@lonestar.example",
+      "before": {
+        "status": "active",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-10-30T03:43:49.645Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-10-30T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000008",
+      "user": "mohan.cust@example.com",
+      "before": {
+        "status": "active",
+        "plan": "Enterprise",
+        "billing_cycle": "yearly",
+        "period_end": "2027-10-20T03:43:49.645Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Enterprise",
+        "billing_cycle": "yearly",
+        "period_end": "2027-10-20T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000002",
+      "user": "meena.own@speedline.example",
+      "before": {
+        "status": "trial",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-13T03:43:49.645Z",
+        "trial_end": "2026-11-13T03:43:49.645Z"
+      },
+      "after": {
+        "status": "trial",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-13T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000006",
+      "user": "ishaan.own@bluebay.example",
+      "before": {
+        "status": "active",
+        "plan": "Growth",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-09T03:43:49.645Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Growth",
+        "billing_cycle": "monthly",
+        "period_end": "2026-11-09T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000010",
+      "user": "driver.ramesh@example.com",
+      "before": {
+        "status": "active",
+        "plan": "Professional",
+        "billing_cycle": "monthly",
+        "period_end": "2026-12-14T03:43:49.645Z",
+        "trial_end": null
+      },
+      "after": {
+        "status": "active",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Professional",
+        "billing_cycle": "monthly",
+        "period_end": "2026-12-14T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    },
+    {
+      "id": "a9000009-0000-4000-8000-000000000009",
+      "user": "riya.cust@example.com",
+      "before": {
+        "status": "trial",
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-12-01T03:43:49.645Z",
+        "trial_end": "2026-12-01T03:43:49.645Z"
+      },
+      "after": {
+        "status": "trial",
+        "agency_id": null,
+        "agency": null,
+        "plan": "Starter",
+        "billing_cycle": "monthly",
+        "period_end": "2026-12-01T03:43:49.645Z",
+        "grace_end": null
+      },
+      "changed": false
+    }
+  ],
+  "plan_price_changes": [
+    {
+      "plan": "Starter",
+      "monthly_before": 49900,
+      "monthly_after": 49900,
+      "yearly_before": 499900,
+      "yearly_after": 499900,
+      "yearly_delta_paise": 0
+    },
+    {
+      "plan": "Growth",
+      "monthly_before": 199900,
+      "monthly_after": 199900,
+      "yearly_before": 1999900,
+      "yearly_after": 1999900,
+      "yearly_delta_paise": 0
+    },
+    {
+      "plan": "Professional",
+      "monthly_before": 499900,
+      "monthly_after": 499900,
+      "yearly_before": 4999900,
+      "yearly_after": 4999900,
+      "yearly_delta_paise": 0
+    },
+    {
+      "plan": "Enterprise",
+      "monthly_before": 1499900,
+      "monthly_after": 1499900,
+      "yearly_before": 14999900,
+      "yearly_after": 14999900,
+      "yearly_delta_paise": 0
+    }
+  ],
+  "backfill_conflicts": null,
+  "trial_claims": null,
+  "agencies_attached_without_claim": null,
+  "unvalidated_constraints": [],
+  "legacy_values_outside_new_rules": null,
+  "sweep_dry_run": {
+    "skipped": "run_subscription_sweeps does not exist (20261031000000 was not applied)"
+  },
+  "recommendation_inputs": {
+    "failed_files": [
+      "20261008000000_agency_fleet_foundation.sql"
+    ],
+    "rows_lost": 0,
+    "silent_change_tables": [
+      "drivers",
+      "job_offers"
+    ]
+  }
+}

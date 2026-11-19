@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Users, CheckCircle2, XCircle, Clock, Search,
   Phone, Truck, Calendar, AlertTriangle, RefreshCw, ShieldCheck, Download
@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { logger } from '../utils/logger'
 import AdminLoadError from './AdminLoadError'
-import ListCapNotice from '../components/admin/ListCapNotice'
 import { toUserFacingErrorMessage } from '../utils/userFacingError'
 
 interface Driver {
@@ -74,33 +73,81 @@ export default function AdminDriversPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [loadError, setLoadError] = useState(false)
-  // Rows the last fetch returned. Approve/reject/suspend remove rows locally, but rows beyond the cap stay hidden, so the notice keys off the fetch.
-  const [fetchedCount, setFetchedCount] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState(false)
+  // Offset for the next page: rows fetched for this tab, minus rows an action has since moved out of it.
+  // Approve, reject and suspend move a row out of the tab, so the server has one row fewer before this offset.
+  const nextOffsetRef = useRef(0)
+  // Bumped on every first-page load (tab change or refresh). A response from an older first-page load is dropped.
+  const requestRef = useRef(0)
+  // Bumped on every first-page load and every row removal. A Load more response from before either is dropped.
+  const pageTokenRef = useRef(0)
 
   const fetchDrivers = useCallback(async () => {
+    const requestId = ++requestRef.current
+    pageTokenRef.current += 1
     setLoading(true)
+    setLoadingMore(false)
+    setLoadMoreError(false)
     try {
-      const driverData = await adminSupabaseApi.getDriversByStatus(tab)
-      setDrivers(driverData as Driver[])
-      setFetchedCount(driverData.length)
+      const page = await adminSupabaseApi.getDriversPage(tab, 0)
+      if (requestId !== requestRef.current) return
+      setDrivers(page.drivers as Driver[])
+      setHasMore(page.hasMore)
+      nextOffsetRef.current = page.drivers.length
       setLoadError(false)
     } catch (err: unknown) {
+      if (requestId !== requestRef.current) return
       logger.error('[AdminDriversPage]', err)
       toast.error('Failed to load drivers.')
       setLoadError(true)
     } finally {
-      setLoading(false)
+      if (requestId === requestRef.current) setLoading(false)
     }
   }, [tab])
+
+  const loadMore = useCallback(async () => {
+    const requestId = requestRef.current
+    const pageToken = pageTokenRef.current
+    setLoadingMore(true)
+    setLoadMoreError(false)
+    try {
+      const page = await adminSupabaseApi.getDriversPage(tab, nextOffsetRef.current)
+      if (requestId !== requestRef.current || pageToken !== pageTokenRef.current) return
+      setDrivers(prev => [...prev, ...(page.drivers as Driver[])])
+      setHasMore(page.hasMore)
+      nextOffsetRef.current += page.drivers.length
+    } catch (err: unknown) {
+      if (requestId !== requestRef.current || pageToken !== pageTokenRef.current) return
+      logger.error('[AdminDriversPage] loadMore', err)
+      setLoadMoreError(true)
+    } finally {
+      if (requestId === requestRef.current && pageToken === pageTokenRef.current) setLoadingMore(false)
+    }
+  }, [tab])
+
+  // Removes a row that an action moved out of the list it was loaded into. Loaded pages stay as they are and the
+  // offset moves back by one. If the tab or list was reloaded while the action ran, the row is not in the new list, so nothing changes.
+  // A Load more request still in flight is dropped, because its page was computed before the row left.
+  const dropLoadedRow = (listRequest: number, driverId: string) => {
+    if (listRequest !== requestRef.current) return
+    pageTokenRef.current += 1
+    setLoadingMore(false)
+    setLoadMoreError(false)
+    nextOffsetRef.current -= 1
+    setDrivers(prev => prev.filter(d => d.id !== driverId))
+  }
 
   useEffect(() => { fetchDrivers() }, [fetchDrivers])
 
   const handleApprove = async (driverId: string, driverName: string) => {
+    const listRequest = requestRef.current
     setActionLoading(driverId)
     try {
       await adminSupabaseApi.approveDriver(driverId)
       toast.success(`${driverName} approved!`)
-      setDrivers(prev => prev.filter(d => d.id !== driverId))
+      dropLoadedRow(listRequest, driverId)
     } catch (error: unknown) {
       toast.error(toUserFacingErrorMessage(error, 'Approval failed'))
     } finally {
@@ -116,11 +163,12 @@ export default function AdminDriversPage() {
 
     const rejectedDriverId = rejectModal.driverId
 
+    const listRequest = requestRef.current
     setActionLoading(rejectedDriverId)
     try {
       await adminSupabaseApi.rejectDriver(rejectedDriverId, trimmedReason)
       toast.success(`${rejectModal.name} rejected`)
-      setDrivers(prev => prev.filter(d => d.id !== rejectedDriverId))
+      dropLoadedRow(listRequest, rejectedDriverId)
       setRejectModal(null)
       setRejectReason('')
     } catch (error: unknown) {
@@ -131,11 +179,12 @@ export default function AdminDriversPage() {
   }
 
   const handleSuspend = async (driverId: string, driverName: string) => {
+    const listRequest = requestRef.current
     setActionLoading(driverId)
     try {
       await adminSupabaseApi.suspendDriver(driverId)
       toast.success(`${driverName} suspended`)
-      setDrivers(prev => prev.filter(d => d.id !== driverId))
+      dropLoadedRow(listRequest, driverId)
     } catch (error: unknown) {
       toast.error(toUserFacingErrorMessage(error, 'Failed to suspend'))
     } finally {
@@ -239,7 +288,7 @@ export default function AdminDriversPage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
           <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-medium">No {tab} drivers</p>
+          <p className="text-slate-500 font-medium">{hasMore ? `No loaded ${tab} drivers match this search` : `No ${tab} drivers`}</p>
           <p className="text-xs text-slate-400 mt-1">
             {tab === 'pending' ? 'New applications will appear here' : `No drivers with ${tab} status`}
           </p>
@@ -334,7 +383,25 @@ export default function AdminDriversPage() {
           ))}
         </div>
       )}
-      {!loading && !loadError && <ListCapNotice rowCount={fetchedCount} testId="drivers-cap-notice" />}
+      {!loading && !loadError && hasMore && (
+        <div className="pt-2 text-center">
+          {loadMoreError ? (
+            <div role="alert" className="space-y-2">
+              <p className="text-sm text-red-600 dark:text-red-400">Could not load more drivers. The rows above are still here.</p>
+              <button type="button" onClick={loadMore} disabled={loadingMore}
+                className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60 transition-colors">
+                <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                Retry
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={loadMore} disabled={loadingMore}
+              className="w-full min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-60 transition-colors">
+              {loadingMore ? 'Loading more...' : 'Load more'}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Reject Modal */}
       {rejectModal && (

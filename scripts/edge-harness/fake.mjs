@@ -1,5 +1,5 @@
 // Programmable fake Supabase client. Every call is recorded in fake.calls.
-const CHAIN_OPS = ['select', 'eq', 'neq', 'in', 'not', 'is', 'order', 'limit', 'insert', 'update', 'upsert', 'delete', 'maybeSingle', 'single', 'gte', 'lte']
+const CHAIN_OPS = ['select', 'eq', 'neq', 'in', 'not', 'is', 'order', 'limit', 'range', 'insert', 'update', 'upsert', 'delete', 'maybeSingle', 'single', 'gte', 'lte']
 
 export function createFake() {
   const rpcHandlers = new Map()

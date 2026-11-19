@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Activity, ChevronLeft, RefreshCw, Search } from 'lucide-react'
+import { Activity, AlertTriangle, ChevronLeft, RefreshCw, Search } from 'lucide-react'
 import {
   adminBillingOpsApi,
   type AdminAgencyWithoutSubscription,
   type AdminCoupon,
+  type AdminSweepFailure,
   type AdminSweepRun,
   type AdminWebhookAttempt,
   type AdminWebhookEvent,
@@ -35,6 +36,28 @@ function formatDateTime(value: string | null): string {
   if (!value) return '-'
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+// failed / failures come from subscription_sweep_runs; older or malformed rows must not crash the page.
+function failedOf(run: AdminSweepRun | undefined): number {
+  return run && typeof run.failed === 'number' && run.failed > 0 ? run.failed : 0
+}
+
+function failuresOf(run: AdminSweepRun): AdminSweepFailure[] {
+  return Array.isArray(run.failures) ? run.failures.filter((f) => !!f && typeof f === 'object') : []
+}
+
+const TRANSITION_WORDS: Record<string, string> = {
+  'trial>expired': 'trial to expired',
+  'active>grace': 'active to grace',
+  'grace>expired': 'grace to expired',
+}
+
+function describeFailure(failure: AdminSweepFailure): string {
+  const id = failure.subscriptionId ? failure.subscriptionId.slice(0, 8) : 'unknown'
+  const attempted = TRANSITION_WORDS[failure.transition] ?? (failure.transition || 'an unknown change')
+  const message = failure.message || 'No message was recorded.'
+  return `Subscription ${id}: attempted ${attempted}. ${message}`
 }
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
@@ -182,8 +205,19 @@ export default function AdminBillingOpsPage() {
   const coupons = useLoaded<AdminCoupon>('coupons', 'Unable to load coupons right now. Please try again.', loadCoupons)
   const sweeps = usePagedSweeps()
   const [query, setQuery] = useState('')
+  const [openRuns, setOpenRuns] = useState<ReadonlySet<string>>(() => new Set())
+
+  const toggleRun = (id: string) =>
+    setOpenRuns((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
 
   const runs = sweeps.rows
+  // The newest run is first; the banner reports only its failures. Tolerates rows that lack the new fields.
+  const lastRunFailed = failedOf(runs[0])
   const needle = query.trim().toLowerCase()
   const visibleRuns = useMemo(() => {
     if (!needle) return runs
@@ -314,6 +348,16 @@ export default function AdminBillingOpsPage() {
           </p>
         ) : (
           <>
+            {lastRunFailed > 0 ? (
+              <div
+                role="status"
+                data-testid="sweep-failed-banner"
+                className="flex items-start gap-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-900 dark:text-amber-100"
+              >
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{`The last sweep could not update ${lastRunFailed} subscription(s). They need a manual check.`}</span>
+              </div>
+            ) : null}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
               <label htmlFor="sweep-search" className="sr-only">Search sweep runs</label>
@@ -343,21 +387,73 @@ export default function AdminBillingOpsPage() {
                       <th scope="col" className={TH}>Grace started</th>
                       <th scope="col" className={TH}>Grace expired</th>
                       <th scope="col" className={TH}>Reminders</th>
+                      <th scope="col" className={TH}>Failed</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {visibleRuns.map((run) => (
-                      <tr key={run.id} className={TR}>
-                        <td className={`${TD} ${MONO}`}>{run.id}</td>
-                        <td className={TD}>{formatDateTime(run.startedAt)}</td>
-                        <td className={TD}>{run.finishedAt ? formatDateTime(run.finishedAt) : 'Not finished'}</td>
-                        <td className={TD}>{formatDateTime(run.asOf)}</td>
-                        <td className={`${TD} tabular-nums`}>{run.trialsExpired}</td>
-                        <td className={`${TD} tabular-nums`}>{run.graceStarted}</td>
-                        <td className={`${TD} tabular-nums`}>{run.graceExpired}</td>
-                        <td className={`${TD} tabular-nums`}>{run.remindersCreated}</td>
-                      </tr>
-                    ))}
+                    {visibleRuns.map((run) => {
+                      const failed = failedOf(run)
+                      const failures = failuresOf(run)
+                      const open = openRuns.has(run.id)
+                      const detailId = `sweep-failures-${run.id}`
+                      return (
+                        <Fragment key={run.id}>
+                          <tr className={TR}>
+                            <td className={`${TD} ${MONO}`}>{run.id}</td>
+                            <td className={TD}>{formatDateTime(run.startedAt)}</td>
+                            <td className={TD}>{run.finishedAt ? formatDateTime(run.finishedAt) : 'Not finished'}</td>
+                            <td className={TD}>{formatDateTime(run.asOf)}</td>
+                            <td className={`${TD} tabular-nums`}>{run.trialsExpired}</td>
+                            <td className={`${TD} tabular-nums`}>{run.graceStarted}</td>
+                            <td className={`${TD} tabular-nums`}>{run.graceExpired}</td>
+                            <td className={`${TD} tabular-nums`}>{run.remindersCreated}</td>
+                            <td className={`${TD} tabular-nums`}>
+                              {failed > 0 ? (
+                                <div className="flex flex-col items-start gap-1">
+                                  <span className="inline-flex items-center gap-1 font-medium text-amber-800 dark:text-amber-200">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                    {failed}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleRun(run.id)}
+                                    aria-expanded={open}
+                                    aria-controls={detailId}
+                                    className={`${BUTTON} px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100`}
+                                  >
+                                    {open ? 'Hide failures' : 'Show failures'}
+                                  </button>
+                                </div>
+                              ) : (
+                                '0'
+                              )}
+                            </td>
+                          </tr>
+                          {failed > 0 && open ? (
+                            <tr id={detailId} className={TR}>
+                              <td colSpan={9} className="pb-3 pr-3">
+                                {failures.length === 0 ? (
+                                  <p className="text-sm text-slate-600 dark:text-slate-300">No failure details were recorded.</p>
+                                ) : (
+                                  <ul className="space-y-2 text-sm text-slate-800 dark:text-slate-100">
+                                    {failures.map((failure, index) => (
+                                      <li key={`${failure.subscriptionId}-${index}`} className="break-words">
+                                        {describeFailure(failure)}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                                {failed > failures.length ? (
+                                  <p className="pt-2 text-xs text-slate-500 dark:text-slate-400">
+                                    {`Showing ${failures.length} of ${failed} failures. The rest were not recorded.`}
+                                  </p>
+                                ) : null}
+                              </td>
+                            </tr>
+                          ) : null}
+                        </Fragment>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

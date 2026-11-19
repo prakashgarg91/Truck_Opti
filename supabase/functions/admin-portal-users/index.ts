@@ -8,8 +8,11 @@ const corsHeaders = {
 
 const DISABLE_DURATION = '876000h'
 
-/** Upper bound on profile rows returned by the list action. Newest first. */
+/** Profile rows returned per list page. Newest first. The query fetches one extra row to learn whether another page exists. */
 const LIST_ROW_CAP = 200
+
+/** Largest accepted list offset. Keeps a client from forcing a deep, expensive scan. */
+const MAX_LIST_OFFSET = 100000
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -24,7 +27,7 @@ type PortalUserRow = {
 }
 
 type AdminRequest =
-  | { action: 'list' }
+  | { action: 'list'; offset: number }
   | { action: 'set-disabled'; userId: string; disabled: boolean }
   | { action: 'delete'; userId: string }
 
@@ -118,6 +121,18 @@ async function readJsonBody(req: Request): Promise<unknown> {
   }
 }
 
+function parseListOffset(value: unknown): number {
+  if (value === undefined) {
+    return 0
+  }
+
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > MAX_LIST_OFFSET) {
+    throw new RequestError('A valid offset is required.')
+  }
+
+  return value
+}
+
 function parseRequestBody(body: unknown): AdminRequest {
   if (!isRecord(body) || typeof body.action !== 'string') {
     throw new RequestError('A valid admin action is required.')
@@ -125,7 +140,7 @@ function parseRequestBody(body: unknown): AdminRequest {
 
   switch (body.action) {
     case 'list':
-      return { action: 'list' }
+      return { action: 'list', offset: parseListOffset(body.offset) }
     case 'set-disabled':
       if (!isUuid(body.userId) || typeof body.disabled !== 'boolean') {
         throw new RequestError('A valid user action payload is required.')
@@ -284,7 +299,9 @@ serve(async (req) => {
           .from('users')
           .select('id, email, role, created_at, updated_at, name, phone')
           .order('created_at', { ascending: false })
-          .limit(LIST_ROW_CAP),
+          // id is the primary key, so this tiebreaker keeps page boundaries stable when created_at ties.
+          .order('id', { ascending: false })
+          .range(body.offset, body.offset + LIST_ROW_CAP),
       ])
 
       if (profileError) {
@@ -292,11 +309,12 @@ serve(async (req) => {
         throw new RequestError('Unable to load portal users.', 500, false)
       }
 
-      const users = (profiles ?? []).map((profile) =>
-        serializePortalUser(profile as PortalUserRow, authUsersById.get(profile.id)),
-      )
+      const fetched = profiles ?? []
+      const users = fetched
+        .slice(0, LIST_ROW_CAP)
+        .map((profile) => serializePortalUser(profile as PortalUserRow, authUsersById.get(profile.id)))
 
-      return jsonResponse({ users })
+      return jsonResponse({ users, has_more: fetched.length > LIST_ROW_CAP })
     }
 
     if (body.userId === caller.id) {

@@ -860,3 +860,31 @@ describe('adminSupabaseApi', () => {
         })
     })
 })
+describe('admin list paging (agencies and users)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('agency snapshot sends offset (default 0) and maps has_more to hasMore', async () => {
+        invokeMock.mockResolvedValue({ data: { agencies: [], counts: { pending: 0, approved: 0, rejected: 0, suspended: 0 }, has_more: true }, error: null })
+        const first = await adminAgenciesApi.getSnapshot('pending')
+        expect(invokeMock).toHaveBeenLastCalledWith('admin-portal-agencies', { body: { action: 'list', status: 'pending', offset: 0 } })
+        expect(first.hasMore).toBe(true)
+
+        invokeMock.mockResolvedValue({ data: { agencies: [], counts: { pending: 0, approved: 0, rejected: 0, suspended: 0 } }, error: null })
+        const next = await adminAgenciesApi.getSnapshot('pending', 200)
+        expect(invokeMock).toHaveBeenLastCalledWith('admin-portal-agencies', { body: { action: 'list', status: 'pending', offset: 200 } })
+        expect(next.hasMore).toBe(false)
+    })
+
+    it('user page sends offset and maps has_more; getAdminUsers still returns only the rows', async () => {
+        invokeMock.mockResolvedValue({ data: { users: [], has_more: true }, error: null })
+        const page = await adminSupabaseApi.getAdminUsersPage(200)
+        expect(invokeMock).toHaveBeenLastCalledWith('admin-portal-users', { body: { action: 'list', offset: 200 } })
+        expect(page).toEqual({ users: [], hasMore: true })
+
+        invokeMock.mockResolvedValue({ data: { users: [] }, error: null })
+        expect(await adminSupabaseApi.getAdminUsers()).toEqual([])
+        expect(invokeMock).toHaveBeenLastCalledWith('admin-portal-users', { body: { action: 'list', offset: 0 } })
+    })
+})

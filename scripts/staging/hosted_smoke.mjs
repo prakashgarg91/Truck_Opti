@@ -473,9 +473,10 @@ async function run() {
     must(/trial|active/.test(txt), `no trial/active status in ${trunc(txt, 120)}`)
     return trunc(txt, 110)
   })
-  await check('sub-has-active', 'owner has_active_subscription(owner id) is true', async () => {
+  await check('sub-has-active', 'owner has_active_subscription(owner id) answers a boolean (true only while trial/active; a past_due owner answers false)', async () => {
     const r = await rpc(tok('OWNER'), 'has_active_subscription', { p_user_id: id('OWNER') })
-    must(r.status === 200 && r.json === true, describe(r) + ' ' + trunc(r.text, 30))
+    must(r.status === 200 && typeof r.json === 'boolean', describe(r) + ' ' + trunc(r.text, 30))
+    return String(r.json)
   })
 
   // ---- fleet ---------------------------------------------------------------------------------------------------
@@ -941,9 +942,9 @@ async function run() {
 
   // PhonePe (legacy): no external call is possible without a valid merchantTransactionId; expect refusals only.
   await edgeCheck('edge-phonepe-checkout-notoken', 'phonepe-checkout with only the anon key -> 4xx', 'phonepe-checkout', undefined, {}, [400, 401, 403])
-  await edgeCheck('edge-phonepe-checkout-empty', 'phonepe-checkout as owner, empty body -> 4xx (no PhonePe call)', 'phonepe-checkout', T.OWNER, {}, [400, 401, 403])
+  await edgeCheck('edge-phonepe-checkout-empty', 'phonepe-checkout as owner, empty body -> 4xx, or 503 billing_unavailable while PhonePe is not configured (no PhonePe call)', 'phonepe-checkout', T.OWNER, {}, [400, 401, 403], { clean5xx: clean503 })
   await edgeCheck('edge-phonepe-status-notoken', 'phonepe-status with only the anon key -> 401', 'phonepe-status', undefined, {}, [401, 403])
-  await edgeCheck('edge-phonepe-status-empty', 'phonepe-status as owner, empty body -> 4xx (no PhonePe call)', 'phonepe-status', T.OWNER, {}, [400, 401, 403, 404])
+  await edgeCheck('edge-phonepe-status-empty', 'phonepe-status as owner, empty body -> 4xx, or 503 billing_unavailable while PhonePe is not configured (no PhonePe call)', 'phonepe-status', T.OWNER, {}, [400, 401, 403, 404], { clean5xx: clean503 })
 
   // CORS preflight on a gateway-protected function must not crash
   await check('edge-cors-preflight', 'OPTIONS preflight on agency-portal-dashboard answers 2xx', async () => {

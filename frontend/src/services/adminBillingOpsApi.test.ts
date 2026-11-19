@@ -41,7 +41,7 @@ describe('adminBillingOpsApi.getSweepRuns', () => {
         await adminBillingOpsApi.getSweepRuns(20)
         expect(h.from).toHaveBeenCalledWith('subscription_sweep_runs')
         expect(h.select).toHaveBeenCalledWith(
-            'id, as_of, started_at, finished_at, trials_expired, grace_started, grace_expired, reminders_created',
+            'id, as_of, started_at, finished_at, trials_expired, grace_started, grace_expired, reminders_created, failed, failures',
         )
         expect(h.order).toHaveBeenCalledWith('started_at', { ascending: false })
         expect(h.limit).toHaveBeenCalledWith(20)
@@ -65,6 +65,8 @@ describe('adminBillingOpsApi.getSweepRuns', () => {
             graceStarted: 1,
             graceExpired: 0,
             remindersCreated: 4,
+            failed: 0,
+            failures: [],
         })
         expect(JSON.stringify(run)).not.toContain('must-not-be-read')
     })
@@ -88,7 +90,7 @@ describe('adminBillingOpsApi.getSweepRuns', () => {
         expect(h.range).toHaveBeenCalledWith(40, 59)
         expect(h.limit).not.toHaveBeenCalled()
         expect(h.select).toHaveBeenCalledWith(
-            'id, as_of, started_at, finished_at, trials_expired, grace_started, grace_expired, reminders_created',
+            'id, as_of, started_at, finished_at, trials_expired, grace_started, grace_expired, reminders_created, failed, failures',
         )
         expect(runs).toHaveLength(1)
         expect(runs[0].id).toBe('run-1')

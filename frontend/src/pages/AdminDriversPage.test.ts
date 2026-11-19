@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
     getDriversByStatus: vi.fn(),
+    getDriversPage: vi.fn(),
     approveDriver: vi.fn(),
     rejectDriver: vi.fn(),
     suspendDriver: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock('react-hot-toast', () => ({ default: { error: h.toastError, success: h.t
 vi.mock('../services/adminSupabaseApi', () => ({
     adminSupabaseApi: {
         getDriversByStatus: h.getDriversByStatus,
+        getDriversPage: h.getDriversPage,
         approveDriver: h.approveDriver,
         rejectDriver: h.rejectDriver,
         suspendDriver: h.suspendDriver,
@@ -213,6 +215,7 @@ describe('AdminDriversPage', () => {
         vi.setSystemTime(PINNED_NOW)
         vi.clearAllMocks()
         h.getDriversByStatus.mockResolvedValue([PENDING_RAM, PENDING_SITA])
+        h.getDriversPage.mockImplementation(servePage)
         h.approveDriver.mockResolvedValue({})
         h.rejectDriver.mockResolvedValue({})
         h.suspendDriver.mockResolvedValue({})
@@ -545,51 +548,133 @@ describe('AdminDriversPage', () => {
     })
 })
 
+// The page loads through getDriversPage(status, offset). This stands in for the server: it serves the rows a test set on
+// getDriversByStatus, at most 200 per page, and reports whether rows remain past the page.
+async function servePage(status: string, offset: number) {
+    const rows = (await h.getDriversByStatus(status)) as Array<Record<string, unknown>>
+    return { drivers: rows.slice(offset, offset + 200), hasMore: rows.length > offset + 200 }
+}
+
 const driverRows = (count: number) =>
     Array.from({ length: count }, (_, i) => ({ ...PENDING_RAM, id: `drv-cap-${i}`, full_name: `Driver ${i}` }))
 
-describe('AdminDriversPage list cap notice', () => {
+const loadMoreButton = () => allButtons().find((b) => /Load more|Loading more/.test(b.textContent || '')) as HTMLButtonElement | undefined
+const countOf = (needle: string) => text().split(needle).length - 1
+
+describe('AdminDriversPage Load more', () => {
     beforeEach(() => {
         vi.useFakeTimers({ shouldAdvanceTime: true })
         vi.setSystemTime(PINNED_NOW)
         vi.clearAllMocks()
+        h.getDriversPage.mockImplementation(servePage)
         h.approveDriver.mockResolvedValue({})
     })
 
-    it('shows no cap notice when fewer than 200 drivers came back', async () => {
+    it('shows no Load more and no 200-row notice when the server reports no further page', async () => {
         h.getDriversByStatus.mockResolvedValue(driverRows(199))
         await mountPage()
         expect(text()).toContain('Driver 198')
-        expect(q('[data-testid="drivers-cap-notice"]')).toBeNull()
+        expect(loadMoreButton()).toBeUndefined()
+        expect(text()).not.toContain('Showing the first 200 only.')
     })
 
-    it('shows the status notice with the real cap when exactly 200 drivers came back', async () => {
-        h.getDriversByStatus.mockResolvedValue(driverRows(200))
+    it('shows Load more while rows remain, hides the 200-row notice, and appends each page by offset', async () => {
+        h.getDriversByStatus.mockResolvedValue(driverRows(450))
         await mountPage()
-        const notice = q('[data-testid="drivers-cap-notice"]')
-        expect(notice?.getAttribute('role')).toBe('status')
-        expect(notice?.textContent).toBe('Showing the first 200 only.')
+        expect(h.getDriversPage).toHaveBeenLastCalledWith('pending', 0)
+        expect(text()).toContain('Driver 199')
+        expect(text()).not.toContain('Driver 200')
+        expect(text()).not.toContain('Showing the first 200 only.')
+        expect(loadMoreButton()?.textContent).toBe('Load more')
+
+        await click(loadMoreButton()!)
+        expect(h.getDriversPage).toHaveBeenLastCalledWith('pending', 200)
+        expect(text()).toContain('Driver 200')
+        expect(text()).toContain('Driver 199')
+        expect(loadMoreButton()).toBeTruthy()
+
+        await click(loadMoreButton()!)
+        expect(h.getDriversPage).toHaveBeenLastCalledWith('pending', 400)
+        expect(text()).toContain('Driver 449')
+        expect(countOf('Driver 449')).toBe(1)
+        expect(loadMoreButton()).toBeUndefined()
     })
 
-    it('keeps the notice after an approve removes a row, because rows beyond the cap are still hidden', async () => {
-        h.getDriversByStatus.mockResolvedValue(driverRows(200))
+    it('Load more is disabled and labelled while the next page loads, and the loaded rows stay', async () => {
+        h.getDriversByStatus.mockResolvedValueOnce(driverRows(450)).mockReturnValue(new Promise(() => {}))
         await mountPage()
-        const approve = exact('Approve')[0] as HTMLButtonElement
-        await click(approve)
-        expect(h.approveDriver).toHaveBeenCalledTimes(1)
-        expect(q('[data-testid="drivers-cap-notice"]')?.textContent).toBe('Showing the first 200 only.')
+        await click(loadMoreButton()!)
+        const busy = loadMoreButton()!
+        expect(busy.disabled).toBe(true)
+        expect(busy.textContent).toBe('Loading more...')
+        expect(text()).toContain('Driver 199')
     })
 
-    it('shows no cap notice while loading', async () => {
-        h.getDriversByStatus.mockReturnValue(new Promise(() => {}))
+    it('a Load more failure keeps the loaded rows, shows an inline error, and Retry appends the page', async () => {
+        h.getDriversByStatus
+            .mockResolvedValueOnce(driverRows(450))
+            .mockRejectedValueOnce(new Error('network down'))
+            .mockResolvedValue(driverRows(450))
         await mountPage()
-        expect(q('[data-testid="drivers-cap-notice"]')).toBeNull()
+        await click(loadMoreButton()!)
+        expect(q('[role="alert"]')?.textContent).toContain('Could not load more drivers')
+        expect(text()).toContain('Driver 199')
+        expect(text()).not.toContain('Driver 200')
+        expect(h.loggerError).toHaveBeenCalledTimes(1)
+
+        await click(allButtons().find((b) => (b.textContent || '').trim() === 'Retry') as HTMLButtonElement)
+        expect(h.getDriversPage).toHaveBeenLastCalledWith('pending', 200)
+        expect(text()).toContain('Driver 200')
+        expect(q('[role="alert"]')).toBeNull()
     })
 
-    it('shows no cap notice in the error state', async () => {
-        h.getDriversByStatus.mockRejectedValue(new Error('network down'))
+    it('changing the tab resets to the first page and drops the appended pages', async () => {
+        h.getDriversByStatus.mockImplementation(async (status: string) => (status === 'pending' ? driverRows(450) : [APPROVED_VIK]))
         await mountPage()
-        expect(q('[data-testid="admin-load-error"]')).toBeTruthy()
-        expect(q('[data-testid="drivers-cap-notice"]')).toBeNull()
+        await click(loadMoreButton()!)
+        expect(text()).toContain('Driver 300')
+
+        await click(allButtons().find((b) => (b.textContent || '').trim() === 'Approved') as HTMLButtonElement)
+        expect(h.getDriversPage).toHaveBeenLastCalledWith('approved', 0)
+        expect(text()).not.toContain('Driver 300')
+        expect(text()).toContain(APPROVED_VIK.full_name)
+        expect(loadMoreButton()).toBeUndefined()
+    })
+
+    it('Refresh reloads the first page and drops the appended pages', async () => {
+        h.getDriversByStatus.mockResolvedValue(driverRows(450))
+        await mountPage()
+        await click(loadMoreButton()!)
+        expect(text()).toContain('Driver 300')
+
+        await click(refreshButton())
+        expect(h.getDriversPage).toHaveBeenLastCalledWith('pending', 0)
+        expect(text()).not.toContain('Driver 300')
+        expect(loadMoreButton()).toBeTruthy()
+    })
+
+    it('an approve on a row from a later page keeps the next offset right: no row is skipped or repeated', async () => {
+        let rows = driverRows(450)
+        h.getDriversByStatus.mockImplementation(async () => rows)
+        h.approveDriver.mockImplementation(async (id: string) => {
+            rows = rows.filter((r) => r.id !== id)
+            return {}
+        })
+        await mountPage()
+        await click(loadMoreButton()!)
+
+        const card = Array.from((container as HTMLElement).querySelectorAll('.rounded-2xl')).find((el) =>
+            (el.textContent || '').includes('Driver 350'),
+        ) as HTMLElement
+        await click(Array.from(card.querySelectorAll('button')).find((b) => (b.textContent || '').trim() === 'Approve') as HTMLButtonElement)
+        expect(h.approveDriver).toHaveBeenCalledWith('drv-cap-350')
+        expect(countOf('Driver 350')).toBe(0)
+
+        await click(loadMoreButton()!)
+        expect(h.getDriversPage).toHaveBeenLastCalledWith('pending', 399)
+        expect(countOf('Driver 399')).toBe(1)
+        expect(countOf('Driver 400')).toBe(1)
+        expect(text()).toContain('Driver 449')
+        expect(loadMoreButton()).toBeUndefined()
     })
 })

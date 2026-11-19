@@ -405,11 +405,11 @@ async function main() {
   pass('B3b', !!vB && vB.status >= 400 && vB.status < 500 && vB.body?.success === false && vB.body?.state !== 'active',
     'verify-razorpay-payment gives a clean 4xx refusal (not 5xx, not active)', vB ? `${vB.status} ${vbBody}` : 'no verify call seen')
   note('B3c', 'does the refusal body itself name billing_settings_changed?', `${/billing_settings_changed/.test(vbBody) ? 'yes' : 'NO: the function maps it to the generic state "support"; the code appears only in admin data'}`)
-  const refusalScreen = await waitFor(async () => { const t = await bodyText(s1); return /We have your payment|plan is active/.test(t) ? t : null }, 110000, 2000)
+  const refusalScreen = await waitFor(async () => { const t = await bodyText(s1); return /We have your payment|Your .+ plan is active/.test(t) ? t : null }, 110000, 2000)
   const refusalTextFull = flat(refusalScreen ?? await bodyText(s1))
   const refusalAlerts = await alerts(s1)
   await shot(s1, 'after-refusal')
-  pass('B3d', !!refusalScreen && !/plan is active/.test(refusalScreen), 'app does not show "active"; shows an honest payment-received-but-not-applied screen',
+  pass('B3d', !!refusalScreen && /We have your payment/.test(refusalScreen) && !/Your .+ plan is active/.test(refusalScreen), 'app does not show "active"; shows an honest payment-received-but-not-applied screen',
     `screen text: ${refusalTextFull.slice(0, 420)}; alerts: ${JSON.stringify(refusalAlerts)}`, { customer_refusal_text: refusalTextFull.slice(0, 600) })
   const midB = await snapshot(t1)
   pass('B3e', midB.status === 'active' && midB.invoices.length === preB.invoices.length && midB.periodEnd === preB.periodEnd && midB.planTier === preB.planTier,
@@ -457,6 +457,49 @@ async function main() {
   await s1.browser.close()
 }
 
+
+// ===================== Proof A on owner 1 (--proof=a): failed payment on a renewal, one order, no retry =====================
+async function mainProofA() {
+  console.log(`proof A (owner1 renewal, FAILURE) run ${runId}  target ${new URL(base).host}  razorpay key TEST ${last4(keyId)}`)
+  ;({ chromium } = await import('playwright'))
+  const t1 = await signIn(U.o1.email, U.o1.password)
+  const pre = await snapshot(t1)
+  pass('PA0', pre.status === 'active' && pre.invoices.length === 2, 'start: owner1 active with 2 invoices', brief(pre))
+  if (failed) return
+  const s1 = await openSession('o1')
+  const c = await startCheckout(s1, 'growth', 'monthly')
+  const co = c.created
+  pass('PA1', co?.status === 200 && co.body?.amount === 199900 && co.body?.gst_registered === false, 'renewal order created (Growth monthly 199900, unregistered)',
+    `status ${co?.status}, order ${co?.body?.id ? last4(co.body.id) : 'none'}${co?.status !== 200 ? ' ' + JSON.stringify(co?.body) : ''}`)
+  if (co?.status !== 200) return
+  const order = co.body.id
+  note('PA2', 'Razorpay window', `drive=${await drive(s1, 'stop')}`)
+  const d = await drive(s1, 'failure')
+  pass('PA3', d === 'clicked', 'simulator FAILURE clicked', `drive=${d}`)
+  const al = await waitFor(async () => { const a = await alerts(s1); return a.length ? a : null }, 25000)
+  await s1.page.waitForTimeout(3000)
+  const txt = await bodyText(s1)
+  await shot(s1, 'proofA-after-failure')
+  const retryBtn = /Continue to payment/.test(txt)
+  pass('PA4', !!al && !/Your .+ plan is active/.test(txt) && retryBtn, 'app shows a failure message and a retry path (Continue to payment), never active',
+    `alert=${JSON.stringify(al)}; retry button visible=${retryBtn}`, { customer_failure_text: al })
+  const v = s1.net.verifies
+  pass('PA5', v.length === 0 || v.every((x) => x.status >= 400 && x.status < 500), 'verify-razorpay-payment not called (or clean 4xx)',
+    v.length ? JSON.stringify(v.map((x) => ({ status: x.status, state: x.body?.state }))) : 'not called')
+  const mid = await snapshot(t1)
+  pass('PA6', mid.status === 'active' && mid.periodEnd === pre.periodEnd && mid.invoices.length === 2, 'owner1 unchanged after the failed payment', brief(mid))
+  const attempts = (await rzp(`/orders/${order}/payments`)).json?.items ?? []
+  const fp = attempts.find((p) => p.status === 'failed') ?? attempts[0]
+  note('PA7', 'Razorpay-side attempts on the order', attempts.map((p) => `${last4(p.id)} ${p.status} ${p.error_code ?? ''}`).join(' | ') || 'none')
+  const w = await webhook(paymentEvent('payment.failed', { id: fp?.id ?? `pay_ff${runId}`.slice(0, 24), amount: 199900, status: 'failed', order_id: order, error_code: 'BAD_REQUEST_ERROR', error_description: 'Payment failed (test)' }))
+  const post = await snapshot(t1)
+  pass('PA8', w.status >= 200 && w.status < 300, 'signed payment.failed webhook acknowledged 2xx', `${w.status} result=${w.json?.result} ${scrub(w.text).slice(0, 120)}`)
+  const same = post.status === 'active' && post.periodEnd === pre.periodEnd && post.invoices.length === 2
+  record('PA9', same ? 'PASS' : 'FAIL', 'after the webhook owner1 is unchanged (active, same period end, 2 invoices)', brief(post), { owner1_after_webhook: post })
+  await s1.browser.close()
+}
+
+const proofAOnly = process.argv.includes('--proof=a')
 let flipped = false
 let crashed = null
 try {
@@ -466,12 +509,22 @@ try {
     console.log(r ? (r.ok ? 'restored and verified' : 'RESTORE NOT VERIFIED') : 'no safety file; nothing to restore')
     process.exit(r && !r.ok ? 1 : 0)
   }
-  await main()
+  await (proofAOnly ? mainProofA() : main())
 } catch (e) {
   crashed = e instanceof Error ? e.message : 'unknown'
   failed += 1
   console.log(`FAIL crash  ${scrub(crashed)}`)
 } finally {
+  if (proofAOnly) {
+    for (const x of sessions) await x.browser.close().catch(() => {})
+    const f = join(OUT_DIR, `failed-and-flip-proof-${new Date().toISOString().slice(0, 10)}.json`)
+    const doc = existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : {}
+    doc.proof_a_owner1 = JSON.parse(scrub(JSON.stringify({ run_id: runId, finished_at: new Date().toISOString(), orders_created: ordersCreated, failed, crashed, results })))
+    writeFileSync(f, JSON.stringify(doc, null, 2))
+    console.log(`orders created: ${ordersCreated}
+evidence (key proof_a_owner1): ${f}`)
+    process.exit(failed ? 1 : 0)
+  }
   // ALWAYS restore the seller settings and assert the public flag.
   let restoreDetail = ''
   let restoreOk = false

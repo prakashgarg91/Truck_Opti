@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
 import { PRICING_TIERS, type PricingTier } from '../config/pricing';
 import { FALLBACK_PLAN_PRICES_PAISE, parseEntitlement, parseTrialError, type Entitlement } from '../lib/billingState';
+import { readVerifyRefusal } from './razorpayPayment';
 
 // ============= SUBSCRIPTION PLAN TYPES =============
 export interface SubscriptionPlan {
@@ -438,6 +439,11 @@ async function readRefusalMessage(error: unknown): Promise<string | null> {
   }
 }
 
+/** `support`: captured by Razorpay, not applied; `unconfirmed`: anything else (poll the entitlement). */
+export type PaymentVerifyOutcome =
+  | { kind: 'support'; message: string | null }
+  | { kind: 'unconfirmed' };
+
 export const checkoutApi = {
   async createOrder(request: CheckoutOrderRequest): Promise<CheckoutOrder> {
     const coupon = request.coupon_code?.trim();
@@ -463,17 +469,31 @@ export const checkoutApi = {
     return order;
   },
 
-  // Asks the server to verify the signature. The result is never treated as
-  // activation: callers refetch the entitlement instead.
+  // Asks the server to verify the signature. Only `support` is read from the answer: the payment
+  // was captured but not applied, so the buyer must contact support. Every other answer is
+  // `unconfirmed`, and callers keep polling the entitlement; it is never treated as activation.
   async verifyPayment(payload: {
     razorpay_order_id: string;
     razorpay_payment_id: string;
     razorpay_signature: string;
-  }): Promise<void> {
+  }): Promise<PaymentVerifyOutcome> {
     try {
-      await supabase.functions.invoke('verify-razorpay-payment', { body: payload });
+      const { data, error } = await supabase.functions.invoke<{ state?: unknown; message?: unknown }>(
+        'verify-razorpay-payment',
+        { body: payload },
+      );
+      if (error) {
+        const refusal = await readVerifyRefusal(error);
+        return refusal.state === 'support' ? { kind: 'support', message: refusal.message } : { kind: 'unconfirmed' };
+      }
+      if (data?.state === 'support') {
+        const message = typeof data.message === 'string' && data.message.trim() ? data.message.trim() : null;
+        return { kind: 'support', message };
+      }
+      return { kind: 'unconfirmed' };
     } catch {
       // The webhook is the backstop; polling decides what the buyer sees.
+      return { kind: 'unconfirmed' };
     }
   },
 };
