@@ -3,8 +3,10 @@
 Audience: the owner and the operating engineer on release day. Steps marked **[OWNER]** may only be
 performed by the owner. Steps marked **[AGENT]** are local or read-only and may be run by an engineer.
 
-Status as of 2026-11-18: built and tested locally; ready for staging once gates 1-6 pass; not yet run on
-any hosted Supabase project.
+Status as of 2026-11-19: built and tested locally. A staging Supabase project (`truckopti-staging`, ref
+`ydkhgclfjdksicpwqzmw`, region ap-south-1) exists and has the migrations through `20261045000000`, all 23 Edge
+functions deployed, and hosted checks run in Razorpay TEST mode (section 11 and `docs/STAGING-SMOKE-CHECKLIST.md`).
+Production is not deployed. The old production project (`jbxncejtcbpcronndqlx`) is paused and was not touched.
 
 No secret value appears in this file. Names only. Values live in the owner's password manager or are typed
 at the owner's own prompt.
@@ -36,7 +38,10 @@ buildpack (`Procfile`, where `npm start` runs `node server.js`) or container (`h
 **Edge Function secrets (server side only; set in the Supabase dashboard or with `supabase secrets set NAME=...`).**
 
 - Payments: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`. The webhook secret is separate
-  from the API secret. The key id must match the mode (`rzp_test_` on staging).
+  from the API secret. The key id must match the mode (`rzp_test_` on staging). These three are set on staging
+  (TEST mode) with `npx supabase secrets set --env-file .env.proof`; the file is git-ignored. Never print its values.
+- Not needed for the Razorpay path: the PhonePe names (their functions answer 503 when unconfigured) and the
+  AWS/SES and billing email names (only the invoice email functions read them).
 - PhonePe, only if in scope: `PHONEPE_MERCHANT_ID`, `PHONEPE_SALT_KEY`, `PHONEPE_SALT_INDEX`, `PHONEPE_API_URL`,
   `PHONEPE_CALLBACK_ORIGIN`, `PHONEPE_ALLOWED_CALLBACK_ORIGINS`.
 - Billing and email, owner values, optional: `BILLING_EMAIL_FROM`, `BILLING_SUPPORT_EMAIL`, `BILLING_APP_URL`,
@@ -97,21 +102,28 @@ Gate 11 is an owner sign-off. Enforcement stays off until it is recorded.
 
 ### 4a. Staging (all of it before production)
 
-1. **[AGENT]** Gates 1-6 green (section 3), and the working tree committed. At the last status check the
-   migrations `20261041000000_admin_billing_ops_read.sql` and `20261042000000_invoice_consignment_link.sql` were
-   untracked; they must be committed before any push.
-2. **[OWNER]** Create the staging project. Record its ref and keys in the password manager.
-3. **[OWNER]** Take a backup of the staging database (the restore point for gate 10).
-4. **[AGENT]** `supabase link --project-ref <staging ref>`; confirm the linked ref, then `supabase db push`.
-   Verify the chain with checklist A5-A6.
+1. **[AGENT]** Gates 1-6 green (section 3), and the working tree committed. Migrations `20261041000000` and
+   `20261042000000` are committed (commit `e5912693`), so they are no longer untracked.
+2. **[OWNER]** Create the staging project. Record its ref and keys in the password manager. Done 2026-11-19.
+3. **[OWNER]** Take a backup of the staging database (the restore point for gate 10). Not confirmed in the repo.
+4. **[AGENT]** `npx supabase link --project-ref <staging ref>`; then check `supabase/.temp/project-ref` equals
+   the staging ref before any push. Then the migrations go up with `npx supabase db push --remote`. Done 2026-11-19
+   through `20261045000000`. Verify the chain with checklist A5-A6.
 5. **[OWNER]** Set the function secrets (section 2) by name.
-6. **[AGENT]** Deploy the functions with the flags in section 5.
+6. **[AGENT]** Deploy the functions with `npx supabase functions deploy --use-api` (flags in section 5). Done
+   2026-11-19 for all 23 functions.
 7. **[OWNER]** Fill the platform billing settings on staging (checklist C1) and create the test agency (D1).
 8. **[AGENT]** Build the frontend against staging `VITE_*` values and run the hosted journey (E1, F1).
 9. Gates 8-11 (Razorpay test mode, cron, rollback rehearsal, enforcement switch) per section 3.
 10. Record the sign-off with the release commit hash, names and dates. Keep proof output outside git.
 
 ### 4b. Production (only after 4a is signed off and the owner gives a go)
+
+Architect review recommendation (2026-11-19, not yet decided by the owner): do NOT promote staging to production,
+because the staging invoice ledger already holds test invoices. Prefer a fresh paid-tier production project with
+backups, then a later data import, over pushing the migration chain onto the old production database. A legacy
+rehearsal script (`scripts/prod/legacy_replay.mjs`) and a read-only inventory (`scripts/prod/preflight_inventory.sql`)
+were planned; see if present before relying on them.
 
 1. **[OWNER]** Confirm PITR is enabled on the production project and take a dump.
 2. **[OWNER]** Run the read-only inventory queries on production (duplicate agency users, catalog drift, stale
@@ -131,8 +143,14 @@ Gate 11 is an owner sign-off. Enforcement stays off until it is recorded.
 
 ## 5. Edge Functions and JWT settings
 
-There are 23 functions under `supabase/functions/`, plus the `_shared` library. `supabase/config.toml` has no
-per-function `verify_jwt` entry, so the deploy flag decides. Do not override it by hand.
+There are 23 functions under `supabase/functions/`, plus the `_shared` library. `supabase/config.toml` sets
+`verify_jwt = false` for exactly two functions, `razorpay-webhook` and `erp-ingest` (lines 426-430). All others use
+the default (JWT checked). The deploy flags below match that file. Do not override it by hand.
+
+Why the two were changed: the Supabase gateway blocked both until `verify_jwt = false` was set on hosted staging.
+Before any `supabase config push`, read `supabase config diff` first. `config.toml` line 332 (Google sign-in
+`redirect_uri`) still points at the old production ref `jbxncejtcbpcronndqlx`; review it before any push. Never run
+`config push` against production without reading the diff.
 
 | Function | JWT verification | Deploy command |
 |---|---|---|
@@ -166,6 +184,24 @@ Rollback levers, in the order to try them:
 6. **Money is never rolled back by SQL.** A wrongly taken payment is refunded in the Razorpay dashboard and arrives
    as `refund.processed`. Never edit `payment_history`, invoices, credit notes or subscription rows by hand.
    Support steps are in `docs/TO-152-runbook.md` section 8.
+
+### 6a. Switching GST registration on or off
+
+The switch is "Registered under GST" on Admin > Billing settings (migration `20261043000000`). Off means the plan
+price with no tax, and invoices say the seller is not registered.
+
+Risk: an order created under one setting and paid after the switch is refused as `billing_settings_changed`. The
+customer's money is captured, the subscription is not activated, and it needs manual support.
+
+Procedure (architect guidance, NOT YET REHEARSED; `evidence/staging/failed-and-flip-proof-*.json` does not exist):
+
+1. Pick a quiet time.
+2. Stop new checkouts first. The runbook lever is disabling `create-razorpay-order` (section 6, lever 2), which
+   is also not rehearsed. If that is not done, announce a short maintenance window.
+3. Wait about 15 minutes, until no payment is in progress.
+4. Change the switch and save.
+5. Check Admin > Billing ops for any payment refused in the window. Handle each one: switch back and ask support to
+   replay it, or refund it in Razorpay. Support steps: `docs/TO-152-runbook.md` section 8.
 
 ## 7. Post-deploy checks
 
@@ -206,7 +242,16 @@ Only the owner can do these. Agents do not invent or guess the values.
 - Credential rotation after any suspected leak.
 - Sign-off of each gate (names and dates recorded outside git).
 
-## 10. Sources
+## 10. Not done yet (as of 2026-11-19)
+
+- Production frontend deploy, and any production Supabase push.
+- Live Razorpay keys. A webhook registered in the Razorpay dashboard, URL
+  `https://<project-ref>.supabase.co/functions/v1/razorpay-webhook`, for events `payment.captured`, `order.paid`,
+  `payment.failed` and `refund.processed` (the events the handler SQL reads, in `20261030000000`). Owner action.
+- Backup and restore rehearsal (gate 10), and the failed-payment proof (gate 8).
+- Enforcement switch stays off (`enforcement_enabled = false`).
+
+## 11. Sources
 
 `package.json` (scripts), `scripts/release_gates.mjs`, `docs/FABLE-RULINGS-2026-11-17-B.md` (section 3),
 `docs/STAGING-SMOKE-CHECKLIST.md`, `docs/TO-152-runbook.md`, `docs/TO-152-rulings.md`, `docs/ENV-CHECKLIST.md`,

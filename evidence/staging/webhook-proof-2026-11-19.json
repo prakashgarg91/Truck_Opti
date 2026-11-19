@@ -1,0 +1,182 @@
+{
+  "run_id": "mwmzu1ka1153",
+  "finished_at": "2026-11-19T03:31:31.630Z",
+  "mode": "razorpay_test",
+  "supabase_ref": "ydkhgclfjdksicpwqzmw",
+  "razorpay_key": "rzp_test_...Fw9C",
+  "failed": 0,
+  "crashed": null,
+  "results": [
+    {
+      "id": "0",
+      "status": "PASS",
+      "description": "fetched >=2 captured 199900 INR TEST payments",
+      "detail": "200; pay ...vGtC order ...Vwpi netbanking captured | pay ...phOw order ...Bq9d netbanking captured"
+    },
+    {
+      "id": "0b",
+      "status": "PASS",
+      "description": "both owners active with exactly 1 invoice before the run",
+      "detail": "owner1 active/TO/26-27/000001, owner2 active/TO/26-27/000002",
+      "owner1_before": {
+        "agencyId": "b9446e39-e974-4bd3-8df0-f0ebc72eb2f3",
+        "status": "active",
+        "periodEnd": "2026-12-19T03:27:47.751654+00:00",
+        "planTier": "growth",
+        "canWrite": true,
+        "issuedAt": "2026-11-19T03:27:47.786079+00:00",
+        "invoices": [
+          {
+            "number": "TO/26-27/000001",
+            "total": 199900,
+            "taxable": 199900,
+            "cgst": 0,
+            "sgst": 0,
+            "igst": 0,
+            "credit_notes": []
+          }
+        ]
+      },
+      "owner2_before": {
+        "agencyId": "5b390a89-0a67-4f0f-af83-7a6a13dfbd6b",
+        "status": "active",
+        "periodEnd": "2026-12-19T03:28:42.386538+00:00",
+        "planTier": "growth",
+        "canWrite": true,
+        "issuedAt": "2026-11-19T03:28:42.394319+00:00",
+        "invoices": [
+          {
+            "number": "TO/26-27/000002",
+            "total": 199900,
+            "taxable": 199900,
+            "cgst": 0,
+            "sgst": 0,
+            "igst": 0,
+            "credit_notes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "1",
+      "status": "PASS",
+      "description": "wrong signature rejected",
+      "detail": "400 {\"error\":\"invalid_signature\"}"
+    },
+    {
+      "id": "2",
+      "status": "PASS",
+      "description": "missing signature header rejected",
+      "detail": "400 {\"error\":\"invalid_signature\"}"
+    },
+    {
+      "id": "3a",
+      "status": "PASS",
+      "description": "signed payment.captured for already-activated payment -> replay",
+      "detail": "200 {\"ok\":true,\"result\":\"replay\"}"
+    },
+    {
+      "id": "3b",
+      "status": "PASS",
+      "description": "identical body + event id again -> duplicate",
+      "detail": "200 {\"ok\":true,\"result\":\"duplicate\"}"
+    },
+    {
+      "id": "3c",
+      "status": "PASS",
+      "description": "owner1 still 1 invoice, same period end, active",
+      "detail": "1 invoice(s), period end unchanged, active"
+    },
+    {
+      "id": "4",
+      "status": "PASS",
+      "description": "wrong amount (100 paise, new payment id) -> failed_recorded, owner1 unchanged",
+      "detail": "200 {\"ok\":true,\"result\":\"failed_recorded\"}; invoices 1, period end unchanged"
+    },
+    {
+      "id": "5",
+      "status": "PASS",
+      "description": "unknown order -> acknowledged (orphan), nothing changed",
+      "detail": "200 {\"ok\":true,\"result\":\"orphan\"}; invoices 1/1"
+    },
+    {
+      "id": "6a",
+      "status": "PASS",
+      "description": "signed refund.processed (full amount) for owner2 payment -> refunded",
+      "detail": "200 {\"ok\":true,\"result\":\"refunded\"}"
+    },
+    {
+      "id": "6b",
+      "status": "PASS",
+      "description": "owner2 subscription no longer active",
+      "detail": "status cancelled, can_write false",
+      "owner2_after_refund": {
+        "agencyId": "5b390a89-0a67-4f0f-af83-7a6a13dfbd6b",
+        "status": "cancelled",
+        "periodEnd": "2026-12-19T03:28:42.386538+00:00",
+        "planTier": "growth",
+        "canWrite": false,
+        "issuedAt": "2026-11-19T03:28:42.394319+00:00",
+        "invoices": [
+          {
+            "number": "TO/26-27/000002",
+            "total": 199900,
+            "taxable": 199900,
+            "cgst": 0,
+            "sgst": 0,
+            "igst": 0,
+            "credit_notes": [
+              {
+                "number": "CN/26-27/000001",
+                "total": 199900,
+                "keys": [
+                  "id",
+                  "issued_at",
+                  "total_paise",
+                  "credit_note_number"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "6c",
+      "status": "PASS",
+      "description": "owner2 invoices RPC shows 1 credit note CN/yy-yy/nnnnnn, total = refund",
+      "detail": "credit notes: CN/26-27/000001 199900"
+    },
+    {
+      "id": "6d",
+      "status": "PASS",
+      "description": "identical refund event again -> duplicate, still 1 credit note",
+      "detail": "200 {\"ok\":true,\"result\":\"duplicate\"}; credit notes 1"
+    },
+    {
+      "id": "6e",
+      "status": "PASS",
+      "description": "owner1 untouched by the whole run (active, 1 invoice, no credit note)",
+      "detail": "active, 1 invoice(s)",
+      "owner1_after": {
+        "agencyId": "b9446e39-e974-4bd3-8df0-f0ebc72eb2f3",
+        "status": "active",
+        "periodEnd": "2026-12-19T03:27:47.751654+00:00",
+        "planTier": "growth",
+        "canWrite": true,
+        "issuedAt": "2026-11-19T03:27:47.786079+00:00",
+        "invoices": [
+          {
+            "number": "TO/26-27/000001",
+            "total": 199900,
+            "taxable": 199900,
+            "cgst": 0,
+            "sgst": 0,
+            "igst": 0,
+            "credit_notes": []
+          }
+        ]
+      }
+    }
+  ]
+}

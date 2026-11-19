@@ -18,6 +18,11 @@ Key to the columns:
   time, so they are public. Script values come from the shell or a local
   `.env.proof` file (not committed; see `.env.proof.example`).
 
+Staging state (2026-11-19): the function secrets set on the staging project are `RAZORPAY_KEY_ID`,
+`RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`, in TEST mode, with `npx supabase secrets set --env-file .env.proof`.
+For the Razorpay path, the PhonePe names and the AWS/SES and billing email names are not needed. The PhonePe
+functions answer 503 when unconfigured.
+
 Totals: 70 unique names (21 frontend, 24 Edge functions, 25 scripts and tooling only).
 Three names (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are used by
 both Edge functions and scripts; they have a row in each section and count once in the total.

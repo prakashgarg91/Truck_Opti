@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../stores/authStore';
 import { PRICING_TIERS, type PricingTier } from '../config/pricing';
 import { FALLBACK_PLAN_PRICES_PAISE, parseEntitlement, parseTrialError, type Entitlement } from '../lib/billingState';
 
@@ -213,6 +214,46 @@ export class TrialError extends Error {
   }
 }
 
+/** Access fields the entitlement needs, read from the auth store. */
+export interface AgencyAccessInput {
+  role: string | null | undefined;
+  isAgencyOwner: boolean;
+  agencyScopes: string[];
+}
+
+/**
+ * True only for an agency OWNER or an active staff member with a scope. Admin, driver,
+ * customer and signed-out identities are false (authStore keeps isAgencyOwner true for
+ * non-agency identities, so the role must be checked too).
+ */
+export function isAgencyMember(access: AgencyAccessInput): boolean {
+  return access.role === 'agency' && (access.isAgencyOwner || access.agencyScopes.length > 0);
+}
+
+/**
+ * Resolves with the agency flag once the auth store has finished resolving access.
+ * Waits while `isLoading` is true so no entitlement request is fired before the role is known.
+ */
+export function whenAgencyAccessResolved(): Promise<boolean> {
+  const toAccess = (state: ReturnType<typeof useAuthStore.getState>): AgencyAccessInput => ({
+    role: state.user?.role,
+    isAgencyOwner: state.isAgencyOwner,
+    agencyScopes: state.agencyScopes,
+  });
+  return new Promise((resolve) => {
+    const current = useAuthStore.getState();
+    if (!current.isLoading) {
+      resolve(isAgencyMember(toAccess(current)));
+      return;
+    }
+    const unsubscribe = useAuthStore.subscribe((state) => {
+      if (state.isLoading) return;
+      unsubscribe();
+      resolve(isAgencyMember(toAccess(state)));
+    });
+  });
+}
+
 export const entitlementApi = {
   async get(): Promise<Entitlement> {
     const { data, error } = await supabase.rpc('agency_subscription_entitlement');
@@ -271,6 +312,8 @@ function entitlementToLegacySubscription(ent: Entitlement): Subscription | null 
 export const subscriptionsApi = {
   // Get the agency's live subscription (legacy shape, read through the RPC)
   async getCurrent(): Promise<Subscription | null> {
+    // Non-agency identities (admin, driver, customer) have no agency: skip the RPC entirely.
+    if (!(await whenAgencyAccessResolved())) return null;
     try {
       return entitlementToLegacySubscription(await entitlementApi.get());
     } catch {
@@ -317,6 +360,7 @@ export const subscriptionsApi = {
 export const usageApi = {
   // Current usage, read from the entitlement RPC (no usage_tracking read)
   async getCurrent(): Promise<UsageTracking | null> {
+    if (!(await whenAgencyAccessResolved())) return null;
     try {
       const ent = await entitlementApi.get();
       if (!entitlementToLegacySubscription(ent)) return null;

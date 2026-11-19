@@ -17,7 +17,25 @@ Rules for this run:
 - Use the staging project ref everywhere. It must differ from the production ref.
 - Keep each report (proof JSON, screenshots, query output) outside git, and attach it to the sign-off.
 - Migration chain: `20261008000000` through the latest file in `supabase/migrations/`
-  (at the time of writing that is `20261036000000_least_privilege_hardening.sql`).
+  (at the 2026-11-19 run that is `20261045000000_rate_cards_and_avatars.sql`).
+- Staging project: `truckopti-staging`, ref `ydkhgclfjdksicpwqzmw`, region ap-south-1. Check
+  `supabase/.temp/project-ref` before any push. The old production project (`jbxncejtcbpcronndqlx`) is paused and
+  must not be linked or pushed to.
+
+## Run status (2026-11-19)
+
+| Gate | Status | Evidence |
+|---|---|---|
+| 7. Staging push, functions, hosted journey | Done by API smoke and screens loaded in a browser. The full hosted browser journey is not automated. | `evidence/staging/hosted-smoke-2026-11-19.json` (135 checks, 135 pass, 0 fail). Browser run: `evidence/staging/payment/` |
+| 8. Razorpay TEST mode | Done for success, replay, duplicate, wrong amount, and refund. Failed-payment case: in progress. | `evidence/staging/payment/test-payment-2026-11-19.json`, `evidence/staging/webhook-proof-2026-11-19.json` (14 checks, 0 failed) |
+| 9. Cron job and sweep runs | Done: `truckopti-subscription-sweeps` is registered (sweep runs not yet recorded here). | Checklist A6 |
+| 10. Backup and rollback rehearsal | Not done. | None |
+| 11. Enforcement switch | Not applicable until enforcement is switched on. Enforcement stays off. | None |
+
+Gate 8 detail: invoices `TO/26-27/000001` and `000002` at zero GST (seller not GST-registered); credit note
+`CN/26-27/000001`. The failed-and-flip rehearsal (`evidence/staging/failed-and-flip-proof-*.json`) does not exist yet.
+
+Razorpay rejects the phone number 9876543210 in test checkout. Use 9000090000.
 
 Set once in the owner's shell (names only, values never written down here):
 

@@ -38,10 +38,21 @@ vi.mock('../lib/supabase', () => ({
 
 import { supabase } from '../lib/supabase'
 import {
+    isAgencyMember,
     subscriptionApi,
     subscriptionHelpers,
     type Subscription,
 } from './subscriptionApi'
+import { useAuthStore } from '../stores/authStore'
+
+/** Signed-in agency owner with the auth store settled (the legacy readers wait for this). */
+const setAgencyOwnerAccess = () =>
+    useAuthStore.setState({
+        user: { id: 'owner_1', role: 'agency' } as never,
+        isAgencyOwner: true,
+        agencyScopes: [],
+        isLoading: false,
+    })
 
 describe('subscriptionApi', () => {
     beforeEach(() => {
@@ -163,6 +174,8 @@ describe('subscriptionApi', () => {
     })
 
     describe('subscriptionsApi.getCurrent (entitlement RPC, no table read)', () => {
+        beforeEach(() => setAgencyOwnerAccess())
+
         const entitlement = (over: Record<string, unknown> = {}) => ({
             ok: true,
             agency_id: 'ag_1',
@@ -227,6 +240,8 @@ describe('subscriptionApi', () => {
     })
 
     describe('usageApi.getCurrent (entitlement RPC)', () => {
+        beforeEach(() => setAgencyOwnerAccess())
+
         it('maps orders_month to shipments_used without reading usage_tracking', async () => {
             rpcMock.mockResolvedValue({
                 data: {
@@ -248,6 +263,67 @@ describe('subscriptionApi', () => {
 
             expect(await subscriptionApi.usage.getCurrent()).toBeNull()
             expect(await subscriptionApi.usage.getHistory()).toEqual([])
+        })
+    })
+
+    describe('agency access gate for the legacy subscription and usage readers', () => {
+        const liveEntitlement = {
+            ok: true, agency_id: 'ag_1', status: 'active', plan_tier: 'starter',
+            period_end: '2027-01-01T00:00:00Z', can_write: true, can_dispatch: true,
+            limits: {}, usage: { trucks: 0, staff: 0, drivers: 0, orders_month: 5 },
+        }
+
+        it('does not call the RPC for an admin (no agency) and returns null', async () => {
+            useAuthStore.setState({ user: { id: 'admin_1', role: 'admin' } as never, isAgencyOwner: true, agencyScopes: [], isLoading: false })
+
+            expect(await subscriptionApi.subscriptions.getCurrent()).toBeNull()
+            expect(await subscriptionApi.usage.getCurrent()).toBeNull()
+            expect(rpcMock).not.toHaveBeenCalled()
+        })
+
+        it('does not call the RPC for a driver or a plain customer', async () => {
+            for (const role of ['driver', 'user']) {
+                useAuthStore.setState({ user: { id: 'x', role } as never, isAgencyOwner: true, agencyScopes: [], isLoading: false })
+                expect(await subscriptionApi.subscriptions.getCurrent()).toBeNull()
+                expect(await subscriptionApi.usage.getCurrent()).toBeNull()
+            }
+            expect(rpcMock).not.toHaveBeenCalled()
+        })
+
+        it('calls the RPC for an agency staff member with a scope', async () => {
+            rpcMock.mockResolvedValue({ data: liveEntitlement, error: null })
+            useAuthStore.setState({ user: { id: 's1', role: 'agency' } as never, isAgencyOwner: false, agencyScopes: ['dispatcher'], isLoading: false })
+
+            expect(await subscriptionApi.usage.getCurrent()).toMatchObject({ shipments_used: 5 })
+            expect(rpcMock).toHaveBeenCalledTimes(1)
+        })
+
+        it('waits while access is resolving and does not call the RPC early', async () => {
+            rpcMock.mockResolvedValue({ data: liveEntitlement, error: null })
+            useAuthStore.setState({ user: { id: 'owner_1', role: 'agency' } as never, isAgencyOwner: true, agencyScopes: [], isLoading: true })
+
+            const pending = subscriptionApi.subscriptions.getCurrent()
+            await new Promise((resolve) => setTimeout(resolve, 0))
+            expect(rpcMock).not.toHaveBeenCalled()
+
+            useAuthStore.setState({ isLoading: false })
+            expect(await pending).toMatchObject({ status: 'active' })
+            expect(rpcMock).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('isAgencyMember', () => {
+        it('is true for an agency owner and for a staff member with a scope', () => {
+            expect(isAgencyMember({ role: 'agency', isAgencyOwner: true, agencyScopes: [] })).toBe(true)
+            expect(isAgencyMember({ role: 'agency', isAgencyOwner: false, agencyScopes: ['finance'] })).toBe(true)
+        })
+
+        it('is false for admin, driver, customer and staff with no scope, even though isAgencyOwner defaults to true', () => {
+            expect(isAgencyMember({ role: 'admin', isAgencyOwner: true, agencyScopes: [] })).toBe(false)
+            expect(isAgencyMember({ role: 'driver', isAgencyOwner: true, agencyScopes: [] })).toBe(false)
+            expect(isAgencyMember({ role: 'user', isAgencyOwner: true, agencyScopes: [] })).toBe(false)
+            expect(isAgencyMember({ role: 'agency', isAgencyOwner: false, agencyScopes: [] })).toBe(false)
+            expect(isAgencyMember({ role: undefined, isAgencyOwner: true, agencyScopes: [] })).toBe(false)
         })
     })
 

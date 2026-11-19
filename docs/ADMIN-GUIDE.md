@@ -2,7 +2,9 @@
 
 This guide describes the admin area as it is built on 2026-11-18. Routes are under `/admin`. Only users with the
 admin role can open these pages. Items marked **[hosted]** depend on the hosted Supabase project, Razorpay or
-scheduled jobs. They have not been run on a hosted environment yet (see `TASKS.md`, 2026-11-18 checkpoint).
+scheduled jobs. On 2026-11-19 the staging project ran the payment path in Razorpay TEST mode (order, capture, webhook
+replay and duplicate, wrong amount, refund). Production has not been run. Staging evidence is in
+`docs/STAGING-SMOKE-CHECKLIST.md` (run status). The failed-payment case is still in progress.
 
 ## 1. Approving agencies (`/admin/agencies`)
 
@@ -69,6 +71,24 @@ Until these are saved, a captured payment is refused with `BILLING_NOT_CONFIGURE
 
 The **Danger** panel shows whether enforcement is on and how many approved agencies have no live subscription.
 It has no switch. Saving the form keeps the current enforcement value.
+
+**Registered under GST** is a switch on this page. Off means the seller is not GST-registered: the plan price is
+charged with no tax, and invoices say so. The seller is not GST-registered today. Before changing it, read
+"Switching GST registration on or off" below.
+
+### Switching GST registration on or off
+
+An order created under one setting and paid after the switch is refused (`billing_settings_changed`). The
+customer's money is captured but the subscription is not activated, and support must handle it by hand.
+
+Procedure (architect guidance, not yet rehearsed):
+
+1. Pick a quiet time.
+2. Stop new checkouts first. If you cannot, announce a short maintenance window.
+3. Wait about 15 minutes, until no payment is in progress.
+4. Change the switch and save.
+5. Open Billing ops (section 6). Handle each payment refused in the window: switch the setting back and ask
+   support to replay it, or refund it in Razorpay. Support steps: `docs/TO-152-runbook.md` section 8.
 
 ### What enforcement does
 

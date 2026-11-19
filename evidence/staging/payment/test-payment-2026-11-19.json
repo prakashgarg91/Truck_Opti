@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-19",
+  "owner": "owner2",
+  "steps": [
+    {
+      "status": "PASS",
+      "step": "login",
+      "detail": "landed on /auth/callback"
+    },
+    {
+      "status": "PASS",
+      "step": "checkout-page",
+      "detail": "{\"banner\":true,\"plan\":true,\"price\":true,\"nogst\":true}"
+    },
+    {
+      "status": "PASS",
+      "step": "create-order",
+      "detail": "{\"status\":200,\"amount\":199900,\"currency\":\"INR\",\"id\":\"…Bq9d\",\"gst_registered\":false,\"gst_rate_pct\":0,\"other_fields\":{\"amount\":199900,\"gst_registered\":false,\"gst_rate_pct\":0}}"
+    },
+    {
+      "status": "PASS",
+      "step": "razorpay-iframe",
+      "detail": "keys seen: rzp_test_"
+    },
+    {
+      "status": "PASS",
+      "step": "verify-payment",
+      "detail": "{\"status\":200,\"body\":{\"success\":true,\"state\":\"active\",\"message\":\"Payment received. Your subscription is active.\",\"subscription_id\":\"…057b\",\"status\":\"active\",\"current_period_end\":\"2026-12-19T03:28:42.386538+00:00\"}}"
+    },
+    {
+      "status": "PASS",
+      "step": "app-after-payment",
+      "detail": "Your Growth plan is active Thank you. Your invoice will be available under Subscription. Go to subscription"
+    },
+    {
+      "status": "PASS",
+      "step": "subscription-page",
+      "detail": "{\"text\":\"Subscription | Your agency plan, usage and billing history. | Current plan | Growth | Active | Change plan | Billing help | CURRENT PERIOD ENDS | 19 Dec 2026 | INVOICES | 1 | No GST charged. Read our refund policy. | Usage against your plan | Trucks | 0 of 20 | Staff seats | 0 of 10 | Drivers | 0 of 40 | Orders this month | 0 of 500 | Invoice history | Refresh status | INVOICE ISSUED AMOUNT ACTION | TO/26-27/000002 |  19 Nov 2026 ₹1,999.00No GST charged  | Download\",\"invoiceRows\":1,\"firstInvoice\":\"TO/26-27/000002 19 Nov 2026 ₹1,999.00No GST charged Download\"}"
+    }
+  ],
+  "orderInfo": {
+    "status": 200,
+    "amount": 199900,
+    "currency": "INR",
+    "id": "…Bq9d",
+    "gst_registered": false,
+    "gst_rate_pct": 0,
+    "other_fields": {
+      "amount": 199900,
+      "gst_registered": false,
+      "gst_rate_pct": 0
+    }
+  },
+  "verifyInfo": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "state": "active",
+      "message": "Payment received. Your subscription is active.",
+      "subscription_id": "…057b",
+      "status": "active",
+      "current_period_end": "2026-12-19T03:28:42.386538+00:00"
+    }
+  },
+  "subInfo": {
+    "text": "Subscription | Your agency plan, usage and billing history. | Current plan | Growth | Active | Change plan | Billing help | CURRENT PERIOD ENDS | 19 Dec 2026 | INVOICES | 1 | No GST charged. Read our refund policy. | Usage against your plan | Trucks | 0 of 20 | Staff seats | 0 of 10 | Drivers | 0 of 40 | Orders this month | 0 of 500 | Invoice history | Refresh status | INVOICE ISSUED AMOUNT ACTION | TO/26-27/000002 |  19 Nov 2026 ₹1,999.00No GST charged  | Download",
+    "invoiceRows": 1,
+    "firstInvoice": "TO/26-27/000002 19 Nov 2026 ₹1,999.00No GST charged Download"
+  },
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Refused to get unsafe header \"x-rtb-fingerprint-id\"",
+    "Refused to get unsafe header \"request-id\"",
+    "Permissions policy violation: accelerometer is not allowed in this document.",
+    "Permissions policy violation: accelerometer is not allowed in this document.",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Refused to get unsafe header \"x-rtb-fingerprint-id\"",
+    "Refused to get unsafe header \"request-id\"",
+    "Permissions policy violation: accelerometer is not allowed in this document.",
+    "Permissions policy violation: accelerometer is not allowed in this document.",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Refused to get unsafe header \"x-rtb-fingerprint-id\"",
+    "Refused to get unsafe header \"request-id\"",
+    "Permissions policy violation: accelerometer is not allowed in this document.",
+    "Permissions policy violation: accelerometer is not allowed in this document.",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Refused to get unsafe header \"x-rtb-fingerprint-id\"",
+    "Refused to get unsafe header \"request-id\"",
+    "Permissions policy violation: accelerometer is not allowed in this document.",
+    "Permissions policy violation: accelerometer is not allowed in this document.",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+  ]
+}

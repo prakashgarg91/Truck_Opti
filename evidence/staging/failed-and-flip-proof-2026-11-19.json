@@ -1,0 +1,36 @@
+{
+  "run_id": "mwn03ipx3525",
+  "finished_at": "2026-11-19T03:38:56.821Z",
+  "mode": "razorpay_test",
+  "supabase_ref": "ydkhgclfjdksicpwqzmw",
+  "razorpay_key": "rzp_test_…Fw9C",
+  "orders_created": 0,
+  "failed": 1,
+  "crashed": null,
+  "results": [
+    {
+      "id": "0",
+      "status": "PASS",
+      "description": "start state: owner1 active 1 invoice, owner2 cancelled 1 invoice, seller NOT GST-registered",
+      "detail": "owner1 active, growth, 1 invoice(s) [TO/26-27/000001 199900/tax 0], period end 2026-12-19T03:27:47.751654+00:00 | owner2 cancelled, growth, 1 invoice(s) [TO/26-27/000002 199900/tax 0], period end 2026-12-19T03:28:42.386538+00:00 | gst_registered=false"
+    },
+    {
+      "id": "A1",
+      "status": "PASS",
+      "description": "owner2 checkout shows Starter, Rs 499, \"No GST charged\", test-mode banner",
+      "detail": "info={\"banner\":true,\"nogst\":true}, price shown=true"
+    },
+    {
+      "id": "A2",
+      "status": "FAIL",
+      "description": "create-razorpay-order: 49900 paise, gst_registered=false, rate 0",
+      "detail": "status 409, amount undefined, gst_registered undefined, rate undefined, order none body={\"error\":\"subscription_cancelled\",\"message\":\"This subscription was cancelled after a refund. Please contact support to restart it.\"} alerts=[\"This subscription was cancelled after a refund. Please contact support to restart it.\"]"
+    },
+    {
+      "id": "RESTORE",
+      "status": "PASS",
+      "description": "billing settings restored to the original; anon platform_gst_registered is false",
+      "detail": "no flip was pending; anon platform_gst_registered=false"
+    }
+  ]
+}

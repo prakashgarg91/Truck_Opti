@@ -10,7 +10,7 @@ const BASE_ENV = {
   SUPABASE_ANON_KEY: 'anon-key',
   SUPABASE_SERVICE_ROLE_KEY: 'service-key',
   PHONEPE_MERCHANT_ID: 'MERCHANT_TEST',
-  PHONEPE_SALT_KEY: 'salt-test',
+  PHONEPE_SALT_KEY: 'dummy',
   PHONEPE_SALT_INDEX: '1',
 }
 const WITHOUT = {

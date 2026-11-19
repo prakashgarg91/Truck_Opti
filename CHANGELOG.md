@@ -6,7 +6,23 @@ This file follows the [Keep a Changelog](https://keepachangelog.com/) style. The
 
 Scope note (facts only): the database work in the 2026-09 to 2026-11 entries was proven on the local PGlite tier only. Hosted rollout, `supabase db push`, real-money payment execution and production deploy remain owner-gated, as recorded in `TASKS.md` under "Known owner gates".
 
-## 2026-11-18
+## 2026-11-19
+
+### Added
+
+- Staging Supabase project `truckopti-staging` (ref `ydkhgclfjdksicpwqzmw`, ap-south-1). Migrations through `20261045000000` applied; 23 Edge functions deployed; cron jobs `truckopti-expiry-sweeps` and `truckopti-subscription-sweeps` registered. The old production project was not touched.
+- Hosted checks: API smoke 135 of 135 pass; Razorpay TEST-mode payment through the app; webhook proof 14 of 14 checks (signatures, replay, duplicate, wrong amount, refund to credit note `CN/26-27/000001`). Evidence in `evidence/staging/`.
+- Admin > Billing settings: "Registered under GST" switch, with an operating procedure in the admin guide and runbook (not yet rehearsed).
+
+### Fixed (found on hosted staging)
+
+- An old migration used `uuid_generate_v4()`; now `gen_random_uuid()`. `agency_rate_cards` and the `avatars` bucket were never created by a migration (added in `20261045`).
+- `verify_jwt = false` set for `razorpay-webhook` and `erp-ingest` in `supabase/config.toml`; the gateway blocked both without it.
+- 20 functions had no fixed search path, and two were callable signed-out without need (`20261044`). `[inbucket]` renamed to `[local_smtp]`.
+
+### Not done
+
+- Production deploy; live Razorpay keys and dashboard webhook; backup and restore rehearsal; failed-payment proof; enforcement stays off.
 
 ### Added
 
