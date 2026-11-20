@@ -150,11 +150,11 @@ describe('AgencyConsignmentsPage', () => {
             .mockRejectedValueOnce(new UserFacingError('Failed to create GR'))
             .mockResolvedValueOnce({ ok: true, replay: false, consignmentId: 'c-1', grNumber: 'AGY/2026-27/000001', status: 'created', version: 1 })
         await mountPage()
-        await click(button(/Create GR for SO-1/)!)
+        await click(button(/Create consignment note for SO-1/)!)
         expect(h.toastError).toHaveBeenCalledWith('Failed to create GR')
         expect(h.listOrders).toHaveBeenCalledTimes(1)
 
-        await click(button(/Create GR for SO-1/)!)
+        await click(button(/Create consignment note for SO-1/)!)
         expect(h.createConsignment.mock.calls[1][1]).toBe(h.createConsignment.mock.calls[0][1])
         expect(h.createConsignment.mock.calls[0][0]).toBe('o-1')
         expect(h.toastSuccess).toHaveBeenCalledWith('GR AGY/2026-27/000001 created')
@@ -162,10 +162,17 @@ describe('AgencyConsignmentsPage', () => {
         expect(h.listConsignments).toHaveBeenCalledTimes(2)
     })
 
+    it('falls back to a consignment note message when the create error is not user-facing', async () => {
+        h.createConsignment.mockRejectedValueOnce(new Error('socket hang up'))
+        await mountPage()
+        await click(button(/Create consignment note for SO-1/)!)
+        expect(h.toastError).toHaveBeenCalledWith('Failed to create consignment note')
+    })
+
     it('shows a typed refusal in plain language', async () => {
         h.createConsignment.mockResolvedValue({ ok: false, error: 'forbidden_scope', message: 'Your role does not allow this action.' })
         await mountPage()
-        await click(button(/Create GR for SO-1/)!)
+        await click(button(/Create consignment note for SO-1/)!)
         expect(q('[data-testid="consignments-order-o-1"] [role="alert"]')?.textContent).toContain('Your role does not allow')
     })
 
@@ -236,7 +243,7 @@ describe('AgencyConsignmentsPage', () => {
         const history = q('[data-testid="consignment-history-c-1"]')!.textContent!
         expect(history).toContain('Picked up')
         expect(history).toContain('Note: At gate')
-        expect(history).toContain('GR created')
+        expect(history).toContain('Consignment note created')
     })
 
     it('shows the QR payload with a copy action and the later note', async () => {
@@ -266,9 +273,9 @@ describe('AgencyConsignmentsPage', () => {
         let release: (v: unknown) => void = () => {}
         h.createConsignment.mockReturnValue(new Promise((r) => { release = r }))
         await mountPage()
-        await click(button(/Create GR for SO-1/)!)
+        await click(button(/Create consignment note for SO-1/)!)
         expect(text()).toContain('Creating…')
-        expect(button(/Create GR for SO-2/)!.disabled).toBe(true)
+        expect(button(/Create consignment note for SO-2/)!.disabled).toBe(true)
         await act(async () => {
             release({ ok: true, replay: false, consignmentId: 'c-1', grNumber: 'G', status: 'created', version: 1 })
             await new Promise((r) => setTimeout(r, 0))
@@ -280,7 +287,7 @@ describe('AgencyConsignmentsPage subscription guard', () => {
     it('shows the read-only prompt (not a generic failure) when create is refused with SB002', async () => {
         h.createConsignment.mockRejectedValue(sbError(SB002_ERROR))
         await mountPage()
-        await click(button(/Create GR for SO-1/)!)
+        await click(button(/Create consignment note for SO-1/)!)
         expect(q('[role="alert"]')?.textContent).toContain('read-only')
         expect(h.toastError).not.toHaveBeenCalled()
     })
@@ -288,18 +295,18 @@ describe('AgencyConsignmentsPage subscription guard', () => {
     it('disables Create GR with the explanation when writes are locked, but not when active or unknown', async () => {
         for (const status of ['grace', 'expired', 'cancelled'] as const) {
             await mountPage(gateFor(status))
-            const b = button(/Create GR for SO-1/)!
+            const b = button(/Create consignment note for SO-1/)!
             expect(b.disabled).toBe(true)
             expect(b.title).toContain('read-only')
             await act(async () => root!.unmount())
         container?.remove()
         }
         await mountPage(gateFor('active'))
-        expect(button(/Create GR for SO-1/)!.disabled).toBe(false)
+        expect(button(/Create consignment note for SO-1/)!.disabled).toBe(false)
         await act(async () => root!.unmount())
         container?.remove()
         await mountPage(gateFor('none'))
-        expect(button(/Create GR for SO-1/)!.disabled).toBe(false)
+        expect(button(/Create consignment note for SO-1/)!.disabled).toBe(false)
     })
 
     it('keeps event and QR actions open when writes are locked', async () => {
@@ -351,7 +358,7 @@ describe('AgencyConsignmentsPage client, route and order link', () => {
         const link = q('[data-testid="consignment-order-link-c-1"]') as HTMLAnchorElement | null
         expect(link?.getAttribute('href')).toBe('/agency/orders/import')
         expect(link?.textContent).toBe('SO-1')
-        expect(button(/Create GR for SO-2/)).toBeTruthy()
+        expect(button(/Create consignment note for SO-2/)).toBeTruthy()
     })
 })
 
@@ -365,7 +372,7 @@ describe('AgencyConsignmentsPage accessibility', () => {
         h.listOrders.mockResolvedValue([order('o-2', 'SO-2')])
         h.listConsignments.mockResolvedValue([consignment('c-1', 'o-1', 'in_transit')])
         await mountPage()
-        expect(nameOf(q('[data-testid="consignments-orders"] ul'))).toContain('Orders waiting for a GR')
+        expect(nameOf(q('[data-testid="consignments-orders"] ul'))).toContain('Orders waiting for a consignment note')
         expect(nameOf(q('[data-testid="consignments-list"] ul'))).toContain('Consignments')
     })
 

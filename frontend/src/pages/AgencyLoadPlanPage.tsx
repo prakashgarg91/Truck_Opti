@@ -496,7 +496,7 @@ export default function AgencyLoadPlanPage() {
       </section>
 
       <section aria-labelledby="lp-trucks" className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3" data-testid="loadplan-trucks">
-        <h2 id="lp-trucks" className="text-base font-bold text-slate-900">2. Trucks to use</h2>
+        <h2 id="lp-trucks" className="text-base font-bold text-slate-900">2. Vehicles to use</h2>
         {trucks.length === 0 ? (
           <p data-testid="loadplan-no-trucks" className="text-sm text-slate-700">
             There are no trucks yet. Add trucks to your fleet first.

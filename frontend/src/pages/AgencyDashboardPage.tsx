@@ -181,7 +181,7 @@ export default function AgencyDashboardPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <Truck size={16} className="text-blue-500" />
-              <span className="text-xs text-slate-500 dark:text-slate-400">Trucks</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Vehicles</span>
             </div>
             <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{localWorkspace.truckCount}</p>
           </div>
@@ -202,7 +202,7 @@ export default function AgencyDashboardPage() {
               className="flex items-center gap-2 py-3 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium"
             >
               <Truck size={16} />
-              Manage Trucks
+              Manage fleet
             </button>
             <button
               onClick={() => navigate('/management/cartons')}
@@ -384,14 +384,14 @@ export default function AgencyDashboardPage() {
             className="flex items-center gap-2 py-3 px-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl text-sm font-medium"
           >
             <BarChart3 size={16} />
-            Billing
+            Earnings
           </button>
           <button
             onClick={() => navigate('/agency/rates')}
             className="flex items-center gap-2 py-3 px-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-xl text-sm font-medium"
           >
             <TrendingUp size={16} />
-            Rate Cards
+            Rate card
           </button>
         </div>
       </div>

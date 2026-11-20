@@ -90,7 +90,7 @@ describe('TrucksPage accessibility', () => {
             'Edit Tata Ace 7.5ft',
             'Delete Tata Ace 7.5ft',
         ]))
-        expect(document.title).toBe('Truck Types - TruckOpti')
+        expect(document.title).toBe('Vehicle types - TruckOpti')
     })
 
     async function renderPage() {

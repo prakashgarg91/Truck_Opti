@@ -713,7 +713,7 @@ function FuelSection({
       <section aria-labelledby="fuel-form-heading" className={CARD}>
         <h2 id="fuel-form-heading" className="text-base font-bold text-slate-900">Add fuel fill</h2>
         {trucks.length === 0 ? (
-          <Empty testId="fuel-no-trucks">No trucks yet. Add a truck on the Trucks page before recording fuel.</Empty>
+          <Empty testId="fuel-no-trucks">No vehicles yet. Add a vehicle on the Fleet page before recording fuel.</Empty>
         ) : (
           <form onSubmit={handleSubmit} noValidate className="space-y-3" data-testid="fuel-form">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -972,7 +972,7 @@ function MaintenanceSection({
       <section aria-labelledby="maint-form-heading" className={CARD}>
         <h2 id="maint-form-heading" className="text-base font-bold text-slate-900">Add maintenance item</h2>
         {trucks.length === 0 ? (
-          <Empty testId="maint-no-trucks">No trucks yet. Add a truck on the Trucks page before scheduling maintenance.</Empty>
+          <Empty testId="maint-no-trucks">No vehicles yet. Add a vehicle on the Fleet page before scheduling maintenance.</Empty>
         ) : (
           <form onSubmit={handleAdd} noValidate className="space-y-3" data-testid="maint-form">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

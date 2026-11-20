@@ -132,7 +132,7 @@ export default function AgencyFleetPage() {
       if (result.ok && result.state === 'idempotent_replay') {
         toast.success('This vehicle is already in your fleet')
       } else if (result.ok) {
-        toast.success('Truck added to fleet')
+        toast.success('Vehicle added to fleet')
       }
       setShowAdd(false)
       setAddForm({ vehicle_type: 'eicher_14ft', rc_number: '', insurance_expiry: '', fitness_expiry: '', permit_expiry: '', puc_expiry: '' })
@@ -208,7 +208,7 @@ export default function AgencyFleetPage() {
           className={`flex items-center gap-2 min-h-[44px] bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
         >
           <Plus size={16} aria-hidden="true" />
-          Add Truck
+          Add vehicle
         </button>
       </div>
 
@@ -322,7 +322,7 @@ export default function AgencyFleetPage() {
               onClick={handleAddTruck}
               className={`flex-1 min-h-[44px] py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold disabled:opacity-60 ${FOCUS_RING}`}
             >
-              {saving ? 'Adding...' : 'Add Truck'}
+              {saving ? 'Adding...' : 'Add vehicle'}
             </button>
           </div>
         </div>

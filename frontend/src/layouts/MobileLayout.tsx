@@ -39,8 +39,8 @@ import { logger } from '../utils/logger'
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Home', labelHi: 'होम' },
-  { path: '/sale-orders', icon: FileText, label: 'Orders', labelHi: 'ऑर्डर्स' },
-  { path: '/packing', icon: Package, label: 'Pack', labelHi: 'पैकिंग' },
+  { path: '/sale-orders', icon: FileText, label: 'Sale orders', labelHi: 'ऑर्डर्स' },
+  { path: '/packing', icon: Package, label: 'Packing', labelHi: 'पैकिंग' },
   { path: '/routes', icon: Route, label: 'Routes', labelHi: 'रूट' },
   { path: '/tracking', icon: MapPin, label: 'Track', labelHi: 'ट्रैक' },
   { path: '/history', icon: History, label: 'History', labelHi: 'इतिहास' },

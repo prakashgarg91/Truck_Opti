@@ -170,7 +170,7 @@ export default function AgencyProfilePage() {
             </div>
           </div>
           <div className="grid gap-4 px-6 py-6 md:grid-cols-4 md:px-8">
-            <MetricCard title="Fleet Size" value={String(agency.fleet_size ?? 0)} subtitle="Registered trucks under this agency" icon={Truck} />
+            <MetricCard title="Fleet Size" value={String(agency.fleet_size ?? 0)} subtitle="Registered vehicles under this agency" icon={Truck} />
             <MetricCard title="Active Jobs" value={String(summary.active)} subtitle="Loads currently in motion" icon={Users} />
             <MetricCard title="Pending Jobs" value={String(summary.pending)} subtitle="Loads awaiting agency response" icon={BadgePercent} />
             <MetricCard title="30 Day Revenue" value={formatCurrency(summary.thirtyDayRevenue)} subtitle={`${summary.thirtyDayJobs} delivered jobs`} icon={CircleDollarSign} />
@@ -203,7 +203,7 @@ export default function AgencyProfilePage() {
                   onClick={() => navigate('/agency/billing')}
                   className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left hover:border-primary-300 hover:bg-primary-50/40 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-primary-500/40"
                 >
-                  <p className="font-semibold text-slate-900 dark:text-white">Billing</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">Earnings</p>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Collections, invoices and earnings visibility</p>
                   <ChevronRight className="mt-4 h-4 w-4 text-slate-400" />
                 </button>
@@ -211,7 +211,7 @@ export default function AgencyProfilePage() {
                   onClick={() => navigate('/agency/rates')}
                   className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left hover:border-primary-300 hover:bg-primary-50/40 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-primary-500/40"
                 >
-                  <p className="font-semibold text-slate-900 dark:text-white">Rates</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">Rate card</p>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Route pricing owned by this agency</p>
                   <ChevronRight className="mt-4 h-4 w-4 text-slate-400" />
                 </button>

@@ -177,13 +177,13 @@ describe('AgencyRatesPage', () => {
         await mountPage()
 
         expect(q('.animate-spin')).not.toBeNull()
-        expect(text()).not.toContain('Rate Cards')
+        expect(text()).not.toContain('Rate card')
         expect(q('button')).toBeNull()
     })
 
     it('sets the document title on mount', async () => {
         await mountPage()
-        expect(document.title).toBe('Rate Cards - TruckOpti')
+        expect(document.title).toBe('Rate card - TruckOpti')
     })
 
     it('renders the empty state when no rate cards exist', async () => {
@@ -205,7 +205,7 @@ describe('AgencyRatesPage', () => {
         expect(h.toastError).toHaveBeenCalledWith('Failed to load rate cards')
         expect(h.loggerError).toHaveBeenCalledTimes(1)
         expect(h.loggerError.mock.calls[0][0]).toBe('[AgencyRatesPage]')
-        expect(text()).toContain('Rate Cards')
+        expect(text()).toContain('Rate card')
         expect(q('[data-testid="rates-error"]')).not.toBeNull()
         expect(text()).toContain("We couldn't load your rate cards.")
         expect(text()).not.toContain('No rate cards yet')

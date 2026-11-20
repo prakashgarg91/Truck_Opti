@@ -200,6 +200,12 @@ async function fillPublishForm(overrides?: { amount?: string }) {
 }
 
 describe('AgencyTariffsPage', () => {
+    it('is titled and headed Client tariffs', async () => {
+        await mountPage()
+        expect(document.title).toBe('Client tariffs - TruckOpti')
+        expect(document.querySelector('h1')?.textContent).toBe('Client tariffs')
+    })
+
     it('loading renders a busy status region', async () => {
         h.list.mockReturnValue(new Promise(() => {}))
         await mountPage()

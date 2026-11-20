@@ -154,6 +154,14 @@ describe('AgencyTeamPage', () => {
         expect(q('[data-testid="team-members"]')?.textContent || '').toContain('Dispatcher')
     })
 
+    it('uses team wording for the members heading, the active count and the role note', async () => {
+        await mountPage()
+        expect(q('#members-heading')?.textContent).toBe('Team members')
+        expect(text()).toContain('Active team members')
+        expect(text()).toContain('Team members see only what their role allows. You remain the owner.')
+        expect(text()).not.toContain('Staff see only')
+    })
+
     it('a member without an invitation email is named "Team member" and never shows a user id fragment', async () => {
         h.listMembers.mockResolvedValue([{ ...MEMBER, id: 'mem-7', user_id: 'a1b2c3d4-user', invitation_id: null }])
         await mountPage()

@@ -99,6 +99,7 @@ const TRIGGER_FN = [
   'release_fleet_reservations_on_offer_transition', 'subscription_append_only_guard', 'subscription_credit_note_guard',
   'subscription_invoice_counters_guard', 'subscription_ledger_append_only', 'subscription_ledger_number_guard',
   'subscriptions_guard_update', 'tracking_pings_immutable', 'guard_transport_agency_rows',
+  'set_shipment_document_numbers',
 ]
 
 /** Internal, no grant to any API role at all. */

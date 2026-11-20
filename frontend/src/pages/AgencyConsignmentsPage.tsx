@@ -33,7 +33,7 @@ const DENIAL_MESSAGES = new Set([
 ])
 
 const STATUS_STYLE: Record<ProofState, { label: string; tone: string }> = {
-  created: { label: 'GR created', tone: 'bg-slate-100 text-slate-800 border-slate-300' },
+  created: { label: 'Consignment note created', tone: 'bg-slate-100 text-slate-800 border-slate-300' },
   picked_up: { label: 'Picked up', tone: 'bg-sky-50 text-sky-900 border-sky-200' },
   in_transit: { label: 'In transit', tone: 'bg-indigo-50 text-indigo-900 border-indigo-200' },
   delivered: { label: 'Delivered', tone: 'bg-amber-50 text-amber-900 border-amber-300' },
@@ -52,7 +52,7 @@ const EVENT_LABELS: Record<ProofEvent, string> = {
 }
 
 const EVENT_HISTORY_LABELS: Record<string, string> = {
-  created: 'GR created',
+  created: 'Consignment note created',
   pickup_scanned: 'Picked up',
   transit_started: 'Transit started',
   delivery_scanned: 'Delivered',
@@ -214,7 +214,7 @@ export default function AgencyConsignmentsPage() {
         setLimitInfo(limit)
         return
       }
-      const message = toUserFacingErrorMessage(e, 'Failed to create GR')
+      const message = toUserFacingErrorMessage(e, 'Failed to create consignment note')
       setFormMessage({ id: order.id, text: message })
       toast.error(message)
     } finally {
@@ -314,7 +314,7 @@ export default function AgencyConsignmentsPage() {
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-2xl md:max-w-5xl mx-auto">
       <div>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Consignments (GR/LR)</h1>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Consignments</h1>
         <p className="text-sm text-slate-600 dark:text-slate-300">
           Create a GR for an order, then record each step of the delivery until the receipt is confirmed.
         </p>
@@ -338,7 +338,7 @@ export default function AgencyConsignmentsPage() {
       )}
 
       <section aria-labelledby="gr-orders" className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3" data-testid="consignments-orders">
-        <h2 id="gr-orders" className="text-base font-bold text-slate-900">Orders waiting for a GR</h2>
+        <h2 id="gr-orders" className="text-base font-bold text-slate-900">Orders waiting for a consignment note</h2>
         {orderless.length === 0 ? (
           <p data-testid="consignments-no-orders" className="text-sm text-slate-700">
             No draft or planned orders are waiting. Import orders first, or all of them already have a GR.
@@ -363,11 +363,11 @@ export default function AgencyConsignmentsPage() {
                     onClick={() => handleCreate(o)}
                     disabled={busy !== null || !gate.canWrite}
                     title={gate.writeTitle}
-                    aria-label={`Create GR for ${o.client_order_ref}`}
+                    aria-label={`Create consignment note for ${o.client_order_ref}`}
                     className={`flex min-h-[44px] w-full items-center justify-center gap-1 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white disabled:opacity-60 sm:w-auto ${FOCUS_RING}`}
                   >
                     <FilePlus2 size={16} aria-hidden="true" />
-                    {busy === intent ? 'Creating…' : 'Create GR'}
+                    {busy === intent ? 'Creating…' : 'Create consignment note'}
                   </button>
                 </li>
               )
@@ -384,7 +384,7 @@ export default function AgencyConsignmentsPage() {
           <>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
               <div className="flex-1">
-                <label htmlFor="gr-search" className="block text-xs font-medium text-slate-700">Search by GR or order reference</label>
+                <label htmlFor="gr-search" className="block text-xs font-medium text-slate-700">Search by consignment note or order reference</label>
                 <input
                   id="gr-search"
                   type="search"

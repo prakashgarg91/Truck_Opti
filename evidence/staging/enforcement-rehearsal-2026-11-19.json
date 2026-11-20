@@ -1,0 +1,257 @@
+{
+  "finished_at": "2026-11-19T04:16:08.309Z",
+  "supabase_ref": "ydkhgclfjdksicpwqzmw",
+  "failed": 0,
+  "crashed": null,
+  "results": [
+    {
+      "id": "0.start",
+      "status": "PASS",
+      "description": "start state: enforcement OFF, seller NOT GST-registered",
+      "detail": "enforcement_enabled=false, gst_registered=false"
+    },
+    {
+      "id": "1.entitlement",
+      "status": "PASS",
+      "description": "baseline entitlement: owner1 past_due, owner2 cancelled, enforcement flag false",
+      "detail": "owner1 status=past_due tier=growth can_write=true can_dispatch=true enforcement=false period_end=2027-01-19T03:27:47.751654+00:00 | owner2 status=cancelled tier=growth can_write=false can_dispatch=false enforcement=false period_end=2026-12-19T03:28:42.386538+00:00"
+    },
+    {
+      "id": "1.owner2-record_add-off",
+      "status": "PASS",
+      "description": "enforcement OFF: owner2 (cancelled) record_add is NOT refused by the subscription guard",
+      "detail": "200 / ok=false / error=invalid_category"
+    },
+    {
+      "id": "1.owner2-dispatch-off",
+      "status": "PASS",
+      "description": "enforcement OFF: owner2 dispatch-type command (load_plan_approve) is NOT refused by the guard",
+      "detail": "200 / ok=false / error=not_found"
+    },
+    {
+      "id": "1.owner1-record_add-off",
+      "status": "PASS",
+      "description": "enforcement OFF: owner1 record_add not refused by the guard",
+      "detail": "200 / ok=false / error=invalid_category"
+    },
+    {
+      "id": "1.staff-baseline",
+      "status": "NOTE",
+      "description": "staff baseline (before enforcement)",
+      "detail": "record_add 200 / ok=false / error=forbidden_scope | entitlement 200 / ok=true"
+    },
+    {
+      "id": "2.switch-on",
+      "status": "PASS",
+      "description": "admin turned enforcement ON; every other field exactly as read; seller still unregistered, gstin null",
+      "detail": "enforcement_enabled=true, gst_registered=false, gstin=null"
+    },
+    {
+      "id": "3.owner2-record_add",
+      "status": "PASS",
+      "description": "ON: owner2 (cancelled) record_add refused with SB002",
+      "detail": "400 / sqlstate SB002 / SB002 SUBSCRIPTION_READ_ONLY"
+    },
+    {
+      "id": "3.owner2-dispatch",
+      "status": "PASS",
+      "description": "ON: owner2 (cancelled) dispatch-type command (agency_load_plan_approve, random plan id; guard fires before lookup) refused with SB003",
+      "detail": "400 / sqlstate SB003 / SB003 SUBSCRIPTION_DISPATCH_LOCKED"
+    },
+    {
+      "id": "3.owner2-never-guarded",
+      "status": "PASS",
+      "description": "ON: owner2 agency_invoice_record_payment (never guarded, unknown invoice) answers without SB code",
+      "detail": "200 / ok=false / error=not_found"
+    },
+    {
+      "id": "3.owner2-entitlement",
+      "status": "PASS",
+      "description": "ON: owner2 entitlement is read-only (can_write false, can_dispatch false, enforcement true)",
+      "detail": "status=cancelled tier=growth can_write=false can_dispatch=false enforcement=true period_end=2026-12-19T03:28:42.386538+00:00"
+    },
+    {
+      "id": "3.owner1-record_add",
+      "status": "PASS",
+      "description": "ON: owner1 (past_due) record_add still allowed (no SB code)",
+      "detail": "200 / ok=false / error=invalid_category"
+    },
+    {
+      "id": "3.owner1-dispatch",
+      "status": "PASS",
+      "description": "ON: owner1 (past_due) dispatch-type command passes the guard (no SB code)",
+      "detail": "200 / ok=false / error=not_found"
+    },
+    {
+      "id": "3.owner1-entitlement",
+      "status": "PASS",
+      "description": "ON: owner1 entitlement can_write true, can_dispatch true",
+      "detail": "status=past_due tier=growth can_write=true can_dispatch=true enforcement=true period_end=2027-01-19T03:27:47.751654+00:00"
+    },
+    {
+      "id": "3.staff-in-scope",
+      "status": "PASS",
+      "description": "ON: staff (owner1 agency) in-scope calls (entitlement read, trucks read) behave as before",
+      "detail": "entitlement 200 / ok=true can_write=true | trucks read 200"
+    },
+    {
+      "id": "3.staff-out-of-scope",
+      "status": "PASS",
+      "description": "ON: staff record_add (outside scope) refused for scope reasons, not SB codes, same answer as baseline",
+      "detail": "ON 200 / ok=false / error=forbidden_scope | baseline 200 / ok=false / error=forbidden_scope"
+    },
+    {
+      "id": "3.edge-agency-portal-dashboard",
+      "status": "PASS",
+      "description": "ON: agency-portal-dashboard as owner2 (cancelled) still answers 200 (read)",
+      "detail": "200"
+    },
+    {
+      "id": "3.edge-agency-portal-jobs",
+      "status": "PASS",
+      "description": "ON: agency-portal-jobs as owner2 (cancelled) still answers 200 (read)",
+      "detail": "200"
+    },
+    {
+      "id": "3.edge-agency-portal-billing",
+      "status": "PASS",
+      "description": "ON: agency-portal-billing as owner2 (cancelled) still answers 200 (read)",
+      "detail": "200"
+    },
+    {
+      "id": "3.admin-without-subscription",
+      "status": "PASS",
+      "description": "ON: admin_agencies_without_subscription lists owner2 agency (and not owner1)",
+      "detail": "200, 1 agencies, owner2 listed=true, owner1 listed=false"
+    },
+    {
+      "id": "3.cleanup",
+      "status": "PASS",
+      "description": "cleanup: every probe was refused or missed before writing, nothing to cancel or delete",
+      "detail": "rows created: 0 (all probes use an invalid category or a random id)"
+    },
+    {
+      "id": "4.switch-off",
+      "status": "PASS",
+      "description": "enforcement OFF again with the original values; gst_registered false",
+      "detail": "enforcement_enabled=false, gst_registered=false, other fields equal original=true"
+    },
+    {
+      "id": "4.owner2-as-baseline",
+      "status": "PASS",
+      "description": "OFF: owner2 record_add and dispatch behave as in step 1; entitlement enforcement flag false",
+      "detail": "record_add 200 / ok=false / error=invalid_category | dispatch 200 / ok=false / error=not_found | status=cancelled tier=growth can_write=false can_dispatch=false enforcement=false period_end=2026-12-19T03:28:42.386538+00:00"
+    },
+    {
+      "id": "4.identical-to-baseline",
+      "status": "PASS",
+      "description": "OFF: answers identical to the baseline answers",
+      "detail": "baseline 200 / ok=false / error=invalid_category | now 200 / ok=false / error=invalid_category"
+    }
+  ],
+  "evidence": {
+    "baseline": {
+      "entitlement": {
+        "owner1": {
+          "status": "past_due",
+          "plan_tier": "growth",
+          "can_write": true,
+          "can_dispatch": true,
+          "enforcement_enabled": false,
+          "period_end": "2027-01-19T03:27:47.751654+00:00",
+          "grace_end": null,
+          "features": {
+            "erp": true
+          }
+        },
+        "owner2": {
+          "status": "cancelled",
+          "plan_tier": "growth",
+          "can_write": false,
+          "can_dispatch": false,
+          "enforcement_enabled": false,
+          "period_end": "2026-12-19T03:28:42.386538+00:00",
+          "grace_end": null,
+          "features": {
+            "erp": true
+          }
+        }
+      },
+      "owner2_record_add": "200 / ok=false / error=invalid_category",
+      "owner2_dispatch": "200 / ok=false / error=not_found",
+      "owner1_record_add": "200 / ok=false / error=invalid_category",
+      "staff": {
+        "record_add": "200 / ok=false / error=forbidden_scope",
+        "entitlement": "200 / ok=true"
+      }
+    },
+    "enforced": {
+      "owner2_record_add": "400 / sqlstate SB002 / SB002 SUBSCRIPTION_READ_ONLY",
+      "owner2_dispatch": "400 / sqlstate SB003 / SB003 SUBSCRIPTION_DISPATCH_LOCKED",
+      "owner2_record_payment": "200 / ok=false / error=not_found",
+      "owner2_entitlement": {
+        "status": "cancelled",
+        "plan_tier": "growth",
+        "can_write": false,
+        "can_dispatch": false,
+        "enforcement_enabled": true,
+        "period_end": "2026-12-19T03:28:42.386538+00:00",
+        "grace_end": null,
+        "features": {
+          "erp": true
+        }
+      },
+      "owner1_record_add": "200 / ok=false / error=invalid_category",
+      "owner1_dispatch": "200 / ok=false / error=not_found",
+      "owner1_entitlement": {
+        "status": "past_due",
+        "plan_tier": "growth",
+        "can_write": true,
+        "can_dispatch": true,
+        "enforcement_enabled": true,
+        "period_end": "2027-01-19T03:27:47.751654+00:00",
+        "grace_end": null,
+        "features": {
+          "erp": true
+        }
+      },
+      "staff": {
+        "record_add": "200 / ok=false / error=forbidden_scope",
+        "entitlement": "200 / ok=true",
+        "trucks_read": "200"
+      },
+      "edge_agency-portal-dashboard": 200,
+      "edge_agency-portal-jobs": 200,
+      "edge_agency-portal-billing": 200,
+      "admin_without_subscription": {
+        "status": 200,
+        "count": 1,
+        "owner2_listed": true,
+        "owner1_listed": false
+      }
+    },
+    "restored": {
+      "settings": {
+        "enforcement_enabled": false,
+        "gst_registered": false,
+        "gstin": null
+      },
+      "owner2": {
+        "record_add": "200 / ok=false / error=invalid_category",
+        "dispatch": "200 / ok=false / error=not_found",
+        "entitlement": {
+          "status": "cancelled",
+          "plan_tier": "growth",
+          "can_write": false,
+          "can_dispatch": false,
+          "enforcement_enabled": false,
+          "period_end": "2026-12-19T03:28:42.386538+00:00",
+          "grace_end": null,
+          "features": {
+            "erp": true
+          }
+        }
+      }
+    }
+  }
+}

@@ -32,7 +32,7 @@ const SCOPE_LABEL: Record<string, string> = Object.fromEntries(SCOPES.map((s) =>
 /** One-line capability summary per staff scope, worded after the scope sets in lib/agencyAccess.ts. */
 const SCOPE_HELP: Record<MembershipScope, string> = {
   dispatcher: 'Jobs, order import and cancel, load plans, consignments and ERP.',
-  fleet_manager: 'Trucks, driver employment and invitations, expenses and maintenance.',
+  fleet_manager: 'Vehicles, driver employment and invitations, expenses and maintenance.',
   finance: 'Clients, tariffs, invoices, expenses, payroll, driver rates and payouts.',
   viewer: 'Read-only access to operations pages. Cannot make changes.',
 }
@@ -263,7 +263,7 @@ export default function AgencyTeamPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Team &amp; Access</h1>
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Staff see only what their scope allows. You remain the owner.
+            Team members see only what their role allows. You remain the owner.
           </p>
         </div>
         <button
@@ -312,7 +312,7 @@ export default function AgencyTeamPage() {
 
       <div className="grid grid-cols-3 gap-3 text-center">
         {[
-          ['Active members', activeMembers.length],
+          ['Active team members', activeMembers.length],
           ['Pending invitations', pending.length],
           ['Expiring within 48h', expiringSoon.length],
         ].map(([label, value]) => (
@@ -324,7 +324,7 @@ export default function AgencyTeamPage() {
       </div>
 
       <section aria-labelledby="members-heading" data-testid="team-members" className="rounded-2xl border border-slate-200 bg-white">
-        <h2 id="members-heading" className="px-4 pt-4 text-base font-bold text-slate-900">Members</h2>
+        <h2 id="members-heading" className="px-4 pt-4 text-base font-bold text-slate-900">Team members</h2>
         <ul className="divide-y divide-slate-100 p-2" aria-labelledby="members-heading">
           <li className="flex flex-wrap items-center justify-between gap-2 px-2 py-3">
             <span className="font-medium text-slate-900">Owner <span className="text-slate-600">(you)</span></span>

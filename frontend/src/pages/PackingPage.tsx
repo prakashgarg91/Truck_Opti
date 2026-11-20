@@ -22,8 +22,8 @@ import { generateShipmentId } from '../utils/shipmentId'
 
 // ============= LABELS =============
 const text = {
-  title: '3D Bin Packing',
-  subtitle: 'Smart Truck Recommendation System',
+  title: 'Packing',
+  subtitle: 'Smart vehicle recommendation system',
   smartMode: 'Smart',
   manualMode: 'Manual',
   saleOrderItems: 'Sale Order Items',
@@ -32,7 +32,7 @@ const text = {
   selectTruck: 'Select Truck',
   findBestTruck: 'Find Best Truck',
   optimizePacking: 'Optimize Packing',
-  recommendedTrucks: 'Recommended Trucks',
+  recommendedTrucks: 'Recommended vehicles',
   packingDetails: 'Packing Details',
   itemsPacked: 'Items Packed',
   volumeUsed: 'Volume Used',
@@ -255,7 +255,7 @@ export default function PackingPage() {
   }, [terminate])
 
   useEffect(() => {
-    document.title = '3D Packing - TruckOpti'
+    document.title = 'Packing - TruckOpti'
   }, [])
 
   // Pre-populate items if navigated from SaleOrdersPage — validate each item before accepting
@@ -674,7 +674,7 @@ export default function PackingPage() {
       // Create booking notification
       try {
         await notificationsSupabaseApi.create({
-          title: 'Truck Booked',
+          title: 'Vehicle booked',
           message: `${selectedRecommendation.truck.name} booked for ${bookForm.origin} → ${bookForm.destination}`,
           type: 'success',
           action_url: '/tracking',

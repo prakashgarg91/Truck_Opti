@@ -247,7 +247,7 @@ export default function AdminDashboardPage() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Calendar className="w-4 h-4 text-orange-500" />
-            <span className="text-xs font-medium text-slate-500">Direct App Bookings</span>
+            <span className="text-xs font-medium text-slate-500">Direct app shipments</span>
           </div>
           <p className="text-xl font-bold text-slate-900 dark:text-white">{analytics.directAppBookingCount}</p>
           <p className="text-xs text-slate-400 mt-1">Est. value {formatCurrency(analytics.directAppBookingValue)}</p>

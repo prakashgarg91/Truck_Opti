@@ -399,7 +399,7 @@ describe('AgencyLoadPlanPage accessibility', () => {
         expect(q('ul[aria-labelledby="lp-orders"]')).not.toBeNull()
         expect(q('ul[aria-labelledby="lp-trucks"]')).not.toBeNull()
         expect(document.getElementById('lp-orders')?.textContent).toContain('Draft orders to plan')
-        expect(document.getElementById('lp-trucks')?.textContent).toContain('Trucks to use')
+        expect(document.getElementById('lp-trucks')?.textContent).toContain('Vehicles to use')
     })
 
     it('the plan name field is labelled and its hint is linked', async () => {

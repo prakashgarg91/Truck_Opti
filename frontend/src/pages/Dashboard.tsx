@@ -176,7 +176,7 @@ export default function Dashboard() {
       change: '+0'
     },
     {
-      label: 'Trucks Available',
+      label: 'Vehicles available',
       value: stats.trucksCount.toString(),
       icon: Truck,
       color: 'from-green-500 to-green-600',
@@ -199,7 +199,7 @@ export default function Dashboard() {
   ]
 
   const quickActions = [
-    { icon: Package, label: '3D Pack', path: '/packing', color: 'bg-blue-500', description: 'Optimize loading' },
+    { icon: Package, label: 'Packing', path: '/packing', color: 'bg-blue-500', description: 'Optimize loading' },
     { icon: Route, label: 'Routes', path: '/routes', color: 'bg-green-500', description: 'Plan delivery' },
     { icon: MapPin, label: 'Track', path: '/tracking', color: 'bg-orange-500', description: 'Live GPS' },
     { icon: Truck, label: 'Book Truck', path: '/booking/new', color: 'bg-indigo-500', description: 'New booking' },

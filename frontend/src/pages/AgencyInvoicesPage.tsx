@@ -749,7 +749,7 @@ export default function AgencyInvoicesPage() {
 
       {grs.length > 0 && (
         <section aria-labelledby="gr-ready-title" className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3" data-testid="invoice-from-gr">
-          <h2 id="gr-ready-title" className="text-base font-bold text-slate-900">Delivered GRs ready to invoice</h2>
+          <h2 id="gr-ready-title" className="text-base font-bold text-slate-900">Delivered consignments ready to invoice</h2>
           <p className="text-xs text-slate-600">
             Opens the New invoice form with the client and a Freight line for the GR. You type the rate; nothing is priced for you.
           </p>

@@ -222,7 +222,7 @@ describe('AgencyFleetPage fleet foundation states and wiring', () => {
         const view = await mountPage()
 
         await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'fleet loaded')
-        await clickButton(findButtons(/Add Truck/)[0])
+        await clickButton(findButtons(/Add vehicle/)[0])
 
         await waitFor(() => queryOne('#fleet-rc-number') !== null, 'create form open')
         for (const id of ['fleet-vehicle-type', 'fleet-rc-number', 'fleet-insurance', 'fleet-fitness', 'fleet-permit', 'fleet-puc']) {
@@ -236,12 +236,12 @@ describe('AgencyFleetPage fleet foundation states and wiring', () => {
             setInputValue(queryOne('#fleet-rc-number') as HTMLInputElement, 'KA05EK1111')
             await new Promise((resolve) => setTimeout(resolve, 0))
         })
-        // The submit button is the second "Add Truck" (the first opens the form).
-        await clickButton(findButtons(/Add Truck/)[1])
+        // The submit button is the second "Add vehicle" (the first opens the form).
+        await clickButton(findButtons(/Add vehicle/)[1])
 
         await waitFor(() => h.createVehicle.mock.calls.length === 1, 'createVehicle called')
         expect(h.createVehicle.mock.calls[0][0]).toMatchObject({ rc_number: 'KA05EK1111', vehicle_type: 'eicher_14ft' })
-        await waitFor(() => h.toastSuccess.mock.calls.some((c) => c[0] === 'Truck added to fleet'), 'success toast')
+        await waitFor(() => h.toastSuccess.mock.calls.some((c) => c[0] === 'Vehicle added to fleet'), 'success toast')
         await waitFor(() => queryOne('#fleet-rc-number') === null, 'form closed after save')
         expect(h.listVehicles).toHaveBeenCalledTimes(2)
     })
@@ -251,13 +251,13 @@ describe('AgencyFleetPage fleet foundation states and wiring', () => {
         await mountPage()
 
         await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'fleet loaded')
-        await clickButton(findButtons(/Add Truck/)[0])
+        await clickButton(findButtons(/Add vehicle/)[0])
         await waitFor(() => queryOne('#fleet-rc-number') !== null, 'create form open')
         await act(async () => {
             setInputValue(queryOne('#fleet-rc-number') as HTMLInputElement, 'MH12AB1234')
             await new Promise((resolve) => setTimeout(resolve, 0))
         })
-        await clickButton(findButtons(/Add Truck/)[1])
+        await clickButton(findButtons(/Add vehicle/)[1])
 
         await waitFor(() => h.toastSuccess.mock.calls.some((c) => c[0] === 'This vehicle is already in your fleet'), 'replay copy')
     })
@@ -302,25 +302,25 @@ describe('AgencyFleetPage subscription guard', () => {
         h.listVehicles.mockResolvedValue([VEHICLE])
     })
 
-    it('SB001 on Add Truck shows the limit prompt and no generic toast', async () => {
+    it('SB001 on Add vehicle shows the limit prompt and no generic toast', async () => {
         h.createVehicle.mockRejectedValue(sbError(SB001_ERROR))
         await mountPage()
         await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'fleet loaded')
-        await clickButton(findButtons(/Add Truck/)[0])
+        await clickButton(findButtons(/Add vehicle/)[0])
         await waitFor(() => queryOne('#fleet-rc-number') !== null, 'create form open')
         await act(async () => {
             setInputValue(queryOne('#fleet-rc-number') as HTMLInputElement, 'KA05EK2222')
             await new Promise((resolve) => setTimeout(resolve, 0))
         })
-        await clickButton(findButtons(/Add Truck/)[1])
+        await clickButton(findButtons(/Add vehicle/)[1])
         await waitFor(() => (container as HTMLElement).textContent!.includes('Plan limit reached'), 'limit prompt')
         expect(h.toastError).not.toHaveBeenCalled()
     })
 
-    it('disables Add Truck with an explanation while read-only', async () => {
+    it('disables Add vehicle with an explanation while read-only', async () => {
         await mountPage(gateFor('grace'))
         await waitFor(() => queryOne('[data-testid="fleet-vehicle-card"]') !== null, 'fleet loaded')
-        const add = findButtons(/Add Truck/)[0]
+        const add = findButtons(/Add vehicle/)[0]
         expect(add.disabled).toBe(true)
         expect(add.title).toContain('read-only')
     })
@@ -367,7 +367,7 @@ describe('AgencyFleetPage subscription guard', () => {
                 .map((b) => b.getAttribute('aria-label') || '')
             expect(mark.some((label) => label.includes('Volvo 40ft Container (25T) (KA05EK1111)'))).toBe(true)
 
-            await clickButton(findButtons(/^Add Truck$/)[0])
+            await clickButton(findButtons(/^Add vehicle$/)[0])
             const optionTexts = Array.from(queryOne('#fleet-vehicle-type')?.querySelectorAll('option') ?? [])
                 .map((o) => o.textContent || '')
             expect(optionTexts).toContain('Tata Ace (mini truck)')

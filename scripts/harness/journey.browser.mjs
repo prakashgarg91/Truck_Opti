@@ -162,9 +162,9 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
   await step('4 read-only before any plan: Add Truck is refused (SB002) with the renew prompt', owner, async () => {
     await go(op, '/agency/fleet')
     await see(op.getByRole('heading', { name: 'Fleet Management' }), TIMEOUT)
-    await op.getByRole('button', { name: 'Add Truck' }).first().click()
+    await op.getByRole('button', { name: 'Add vehicle' }).first().click()
     await op.locator('#fleet-rc-number').fill('MH12JRNY0003')
-    await op.getByRole('button', { name: 'Add Truck' }).last().click()
+    await op.getByRole('button', { name: 'Add vehicle' }).last().click()
     await see(op.getByRole('alert').filter({ hasText: 'Your account is read-only' }))
     const n = await scalar('SELECT count(*)::int AS n FROM public.agency_trucks WHERE agency_id = $1', [seed.agencyId])
     if (n.n !== 2) throw new Error(`read-only refusal must not create a truck; trucks now ${n.n}`)
@@ -191,9 +191,9 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
   })
 
   await step('7 add a truck on the Fleet page', owner, async () => {
-    await op.getByRole('button', { name: 'Add Truck' }).first().click()
+    await op.getByRole('button', { name: 'Add vehicle' }).first().click()
     await op.locator('#fleet-rc-number').fill('MH12JRNY0003')
-    await op.getByRole('button', { name: 'Add Truck' }).last().click()
+    await op.getByRole('button', { name: 'Add vehicle' }).last().click()
     await see(op.getByTestId('fleet-vehicle-card').filter({ hasText: 'MH12JRNY0003' }))
     const n = await scalar('SELECT count(*)::int AS n FROM public.agency_trucks WHERE agency_id = $1', [seed.agencyId])
     if (n.n !== 3) throw new Error(`expected 3 trucks in the database, found ${n.n}`)
@@ -383,10 +383,10 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
     await go(dp, '/agency/consignments')
     const waiting = dp.locator('[data-testid^="consignments-order-"]').filter({ hasText: 'SO-J-001' })
     await see(waiting, TIMEOUT)
-    await dp.getByRole('button', { name: 'Create GR for SO-J-001' }).click()
-    await see(grLi(dp).getByText('GR created', { exact: true }), TIMEOUT)
+    await dp.getByRole('button', { name: 'Create consignment note for SO-J-001' }).click()
+    await see(grLi(dp).getByText('Consignment note created', { exact: true }), TIMEOUT)
     const gr = (await grLi(dp).locator('p.font-semibold').first().innerText()).trim()
-    return `GR ${gr} created, chip "GR created"`
+    return `GR ${gr} created, chip "Consignment note created"`
   })
   for (const [label, button, chip, status] of [
     ['13b', 'Mark picked up', 'Picked up', 'pickup_scanned'],
@@ -618,7 +618,7 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
     if (await approve.isEnabled()) throw new Error('Approve is enabled although dispatch is locked')
     await go(op, '/agency/fleet')
     await see(op.getByRole('heading', { name: 'Fleet Management' }), TIMEOUT)
-    if (await op.getByRole('button', { name: 'Add Truck' }).first().isEnabled()) throw new Error('Add Truck is enabled while expired')
+    if (await op.getByRole('button', { name: 'Add vehicle' }).first().isEnabled()) throw new Error('Add Truck is enabled while expired')
     return 'expired banner; Approve and Add Truck disabled with the lock title'
   })
   await step('20 expired: a payment still records on an invoice (finance)', finance, async () => {
@@ -682,9 +682,9 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
     await go(op, '/agency/fleet')
     await see(op.getByRole('heading', { name: 'Fleet Management' }), TIMEOUT)
     if (await banner(op).count()) throw new Error(`a billing banner is still shown: "${(await banner(op).innerText()).slice(0, 120)}"`)
-    await op.getByRole('button', { name: 'Add Truck' }).first().click()
+    await op.getByRole('button', { name: 'Add vehicle' }).first().click()
     await op.locator('#fleet-rc-number').fill('MH12JRNY0004')
-    await op.getByRole('button', { name: 'Add Truck' }).last().click()
+    await op.getByRole('button', { name: 'Add vehicle' }).last().click()
     await see(op.getByTestId('fleet-vehicle-card').filter({ hasText: 'MH12JRNY0004' }), TIMEOUT)
     await go(op, '/agency/orders/plan')
     const approve = op.getByRole('button', { name: /^Approve Journey plan B version \d+$/ })
@@ -709,14 +709,14 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
   // grace ------------------------------------------------------------------------------------------------------
   await go(op, '/agency/fleet')
   await see(op.getByTestId('fleet-vehicle-card').first(), TIMEOUT)
-  await op.getByRole('button', { name: 'Add Truck' }).first().click()
+  await op.getByRole('button', { name: 'Add vehicle' }).first().click()
   await op.locator('#fleet-rc-number').fill('MH12JRNY0005')
   await step('22 state change: paid period ends (sweep): status grace; the stale Add Truck form is refused with SB002', owner, async () => {
     const before = await sub()
     const r = await sweep(new Date(new Date(before.current_period_end).getTime() + 3600_000).toISOString())
     const after = await sub()
     if (after.status !== 'grace') throw new Error(`expected grace, got ${after.status} (${JSON.stringify(r)})`)
-    await op.getByRole('button', { name: 'Add Truck' }).last().click()
+    await op.getByRole('button', { name: 'Add vehicle' }).last().click()
     await see(op.getByRole('alert').filter({ hasText: 'Your account is read-only' }), TIMEOUT)
     const n = await scalar('SELECT count(*)::int AS n FROM public.agency_trucks WHERE agency_id = $1', [seed.agencyId])
     if (n.n !== 4) throw new Error(`refused truck was created anyway: ${n.n} trucks`)
@@ -727,9 +727,9 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
     await see(banner(op), TIMEOUT)
     const t = (await banner(op).innerText()).replace(/\s+/g, ' ')
     if (!/Read-only grace period/.test(t)) throw new Error(`grace banner missing: "${t}"`)
-    if (await op.getByRole('button', { name: 'Add Truck' }).first().isEnabled()) throw new Error('Add Truck enabled in grace')
+    if (await op.getByRole('button', { name: 'Add vehicle' }).first().isEnabled()) throw new Error('Add Truck enabled in grace')
     await go(op, '/agency/consignments')
-    const create = op.getByRole('button', { name: 'Create GR for SO-J-002' })
+    const create = op.getByRole('button', { name: 'Create consignment note for SO-J-002' })
     await see(create, TIMEOUT)
     if (await create.isEnabled()) throw new Error('Create GR enabled in grace')
     await importCsv(op, [orderRow('SO-J-003', 1, 'SKU-PIPE', 'Pipe', 500)])
@@ -758,9 +758,9 @@ export async function runJourney({ appUrl, shim, pg, seed, evidenceDir, newConte
     await go(op, '/agency/fleet')
     await see(op.getByRole('heading', { name: 'Fleet Management' }), TIMEOUT)
     if (await banner(op).count()) throw new Error(`banner still shown: "${(await banner(op).innerText()).slice(0, 120)}"`)
-    await op.getByRole('button', { name: 'Add Truck' }).first().click()
+    await op.getByRole('button', { name: 'Add vehicle' }).first().click()
     await op.locator('#fleet-rc-number').fill('MH12JRNY0005')
-    await op.getByRole('button', { name: 'Add Truck' }).last().click()
+    await op.getByRole('button', { name: 'Add vehicle' }).last().click()
     await see(op.getByTestId('fleet-vehicle-card').filter({ hasText: 'MH12JRNY0005' }), TIMEOUT)
     return 'status active; no banner; truck MH12JRNY0005 added'
   })

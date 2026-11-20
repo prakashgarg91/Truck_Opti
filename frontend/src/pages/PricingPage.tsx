@@ -81,7 +81,7 @@ const fetchPricingPlans = async (): Promise<PricingTier[]> => {
 
 // ── i18n ────────────────────────────────────────────────────────────────────
 const LABELS = {
-  eyebrow: 'Plans & Billing',
+  eyebrow: 'Plans & subscription',
   title: 'Choose Your Plan', subtitle: 'Smart logistics optimization for every business size',
   planNote: 'Transport agencies can start a 14-day free trial. Switch billing cadence when you need to, and talk to us for enterprise fleets.',
   businessModelEyebrow: 'Business Model',
@@ -98,7 +98,7 @@ const LABELS = {
   getStarted: 'Get Started', contactSales: 'Contact Sales', startFree: 'Start your free agency trial →',
   mostPopular: 'Most Popular', currentPlan: 'Your Plan',
   upgrade: 'Upgrade', downgrade: 'Downgrade',
-  users: 'Users', trucks: 'Trucks', shipments: 'Shipments/mo',
+  users: 'Users', trucks: 'Vehicles', shipments: 'Shipments/mo',
   routes: 'Route Opts',
   storage: 'Storage', apiCalls: 'API Calls/mo', sms: 'SMS OTP/mo',
   support: 'Support', unlimited: 'Unlimited', moreFeatures: 'more',

@@ -26,7 +26,7 @@ const NAV = [
 const MORE_NAV = [
   { to: '/agency/team', icon: UserCog, label: 'Team' },
   { to: '/agency/clients', icon: Handshake, label: 'Clients' },
-  { to: '/agency/orders/import', icon: PackagePlus, label: 'Orders' },
+  { to: '/agency/orders/import', icon: PackagePlus, label: 'Order import' },
   { to: '/agency/orders/plan', icon: ClipboardList, label: 'Load plan' },
   { to: '/agency/consignments', icon: FileText, label: 'Consignments' },
   { to: '/agency/invoices', icon: Receipt, label: 'Invoices' },

@@ -148,6 +148,15 @@ describe('rupees helpers', () => {
 })
 
 describe('AgencyExpensesPage', () => {
+    it('asks for a vehicle on the Fleet page when no vehicles exist for fuel or maintenance', async () => {
+        h.listTrucks.mockResolvedValue([])
+        await mountPage()
+        await openTab(/Fuel/)
+        expect(q('[data-testid="fuel-no-trucks"]')?.textContent).toBe('No vehicles yet. Add a vehicle on the Fleet page before recording fuel.')
+        await openTab(/Maintenance/)
+        expect(q('[data-testid="maint-no-trucks"]')?.textContent).toBe('No vehicles yet. Add a vehicle on the Fleet page before scheduling maintenance.')
+    })
+
     it('shows a busy loading state first', async () => {
         h.listTrucks.mockReturnValue(new Promise(() => {}))
         await mountPage()

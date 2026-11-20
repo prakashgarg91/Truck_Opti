@@ -14,7 +14,7 @@ import { logger } from '../utils/logger'
 import { useSubscription } from '../hooks/useSubscription'
 
 const text = {
-  title: 'Sale Orders',
+  title: 'Sale orders',
   subtitle: 'Import orders from CSV/Excel and optimize packing',
   uploadCsv: 'Upload CSV/Excel',
   dragDrop: 'Drag and drop or click to browse',
@@ -39,7 +39,7 @@ const text = {
   actions: 'Actions',
   view: 'View',
   delete: 'Delete',
-  noOrders: 'No orders yet. Import your first sale order!',
+  noOrders: 'No sale orders yet. Import your first sale order.',
   importing: 'Importing...',
   importSuccess: 'Order imported successfully!',
   importError: 'Failed to import order',

@@ -30,7 +30,7 @@ interface FormData {
 
 export default function NewShipmentPage() {
   useEffect(() => {
-    document.title = 'New Booking - TruckOpti'
+    document.title = 'Book shipment - TruckOpti'
   }, [])
 
   const navigate = useNavigate()
@@ -378,7 +378,7 @@ export default function NewShipmentPage() {
                 {'Book a Truck'}
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {'New Shipment'}
+                {'Book shipment'}
               </p>
             </div>
           </div>
@@ -423,7 +423,7 @@ export default function NewShipmentPage() {
           <div>
             <label htmlFor="ship-truck-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <Truck className="w-4 h-4 inline mr-1" />
-              {'Truck Type *'}
+              {'Vehicle type *'}
             </label>
             <select id="ship-truck-type"
               value={formData.vehicle_type}
@@ -514,7 +514,7 @@ export default function NewShipmentPage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                {'Creating Booking...'}
+                {'Booking shipment...'}
               </>
             ) : (
               <>

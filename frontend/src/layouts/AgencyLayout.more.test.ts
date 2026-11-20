@@ -22,7 +22,7 @@ let container: HTMLDivElement
 let root: Root
 
 // Every MORE_NAV page, in sheet order.
-const ALL_MORE = ['Team', 'Clients', 'Orders', 'Load plan', 'Consignments', 'Invoices', 'Expenses', 'Tracking', 'Payroll', 'ERP', 'Subscription']
+const ALL_MORE = ['Team', 'Clients', 'Order import', 'Load plan', 'Consignments', 'Invoices', 'Expenses', 'Tracking', 'Payroll', 'ERP', 'Subscription']
 
 function setAuth(role: string, isAgencyOwner: boolean, agencyScopes: string[]) {
   useAuthStore.setState({
@@ -98,7 +98,7 @@ describe('AgencyLayout More sheet', () => {
     await renderAt('/agency/fleet')
     await openSheet()
     const labels = sheetLabels()
-    expect(labels).toEqual(['Clients', 'Orders', 'Load plan', 'Consignments', 'Invoices', 'Expenses', 'Tracking', 'ERP', 'Subscription'])
+    expect(labels).toEqual(['Clients', 'Order import', 'Load plan', 'Consignments', 'Invoices', 'Expenses', 'Tracking', 'ERP', 'Subscription'])
     for (const hidden of ['Team', 'Payroll']) expect(labels).not.toContain(hidden)
   })
 
@@ -115,7 +115,7 @@ describe('AgencyLayout More sheet', () => {
     setAuth('agency', false, ['viewer'])
     await renderAt('/agency/fleet')
     await openSheet()
-    expect(sheetLabels()).toEqual(['Clients', 'Orders', 'Load plan', 'Consignments', 'Invoices', 'Expenses', 'Tracking', 'Subscription'])
+    expect(sheetLabels()).toEqual(['Clients', 'Order import', 'Load plan', 'Consignments', 'Invoices', 'Expenses', 'Tracking', 'Subscription'])
   })
 
   it('exposes dialog semantics, aria-expanded and aria-controls', async () => {

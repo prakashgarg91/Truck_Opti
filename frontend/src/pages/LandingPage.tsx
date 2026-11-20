@@ -71,7 +71,7 @@ export default function LandingPage() {
     },
     {
       value: '3D',
-      label: 'Load planning',
+      label: 'Load plan',
     },
     {
       value: 'Live',

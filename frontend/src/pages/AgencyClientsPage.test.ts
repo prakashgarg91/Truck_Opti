@@ -259,6 +259,7 @@ describe('AgencyClientsPage', () => {
         expect(detail).toContain('Head office')
         expect(detail).toContain('Plant gate')
         expect(detail).toContain('411001')
+        expect(q('a[href="/agency/clients/ag-1/tariffs"]')?.textContent).toContain('Client tariffs')
         expect(q('a[href="/agency/clients/ag-1/tariffs"]')).not.toBeNull()
 
         await click(buttons(/Contacts/)[0])

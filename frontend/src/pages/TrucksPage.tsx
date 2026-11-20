@@ -117,7 +117,7 @@ export default function TrucksPage() {
   })
 
   useEffect(() => {
-    document.title = 'Truck Types - TruckOpti'
+    document.title = 'Vehicle types - TruckOpti'
   }, [])
 
   // React Query: Fetch trucks data
@@ -136,7 +136,7 @@ export default function TrucksPage() {
     mutationFn: trucksLocalApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trucks'] })
-      toast.success('Truck added successfully')
+      toast.success('Vehicle type added successfully')
       setIsModalOpen(false)
       resetForm()
     },
@@ -152,7 +152,7 @@ export default function TrucksPage() {
       trucksLocalApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trucks'] })
-      toast.success('Truck updated successfully')
+      toast.success('Vehicle type updated successfully')
       setIsModalOpen(false)
       resetForm()
     },
@@ -167,7 +167,7 @@ export default function TrucksPage() {
     mutationFn: trucksLocalApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trucks'] })
-      toast.success('Truck deleted successfully')
+      toast.success('Vehicle type deleted successfully')
     },
     onError: (error: Error) => {
       logger.error('Failed to delete truck:', error)
@@ -327,7 +327,7 @@ export default function TrucksPage() {
           <ChevronLeft className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          {'Truck Types'}
+          {'Vehicle types'}
         </h1>
       </div>
 
@@ -336,7 +336,7 @@ export default function TrucksPage() {
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 text-center">
           <Database className="w-12 h-12 text-blue-500 mx-auto mb-3" />
           <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-            {'No Trucks Found'}
+            {'No vehicle types found'}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
             Seed common Indian truck types to get started.
@@ -354,7 +354,7 @@ export default function TrucksPage() {
             ) : (
               <>
                 <Database className="w-4 h-4" />
-                {'Seed Default Trucks'}
+                {'Add default vehicle types'}
               </>
             )}
           </button>

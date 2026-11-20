@@ -760,7 +760,7 @@ export default function AgencyClientsPage() {
                   to={`/agency/clients/${selected.id}/tariffs`}
                   className={`ml-auto flex items-center gap-1 min-h-[44px] rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 ${FOCUS_RING}`}
                 >
-                  <FileText size={16} aria-hidden="true" /> Tariffs
+                  <FileText size={16} aria-hidden="true" /> Client tariffs
                 </Link>
               </div>
 

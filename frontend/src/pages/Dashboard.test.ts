@@ -196,7 +196,7 @@ describe('Dashboard empty first-run state', () => {
     const cards = Array.from(document.querySelectorAll('[role="status"]'))
     expect(cards.map((c) => c.getAttribute('aria-label'))).toEqual([
       'Active Shipments',
-      'Trucks Available',
+      'Vehicles available',
       'Routes Today',
       'Deliveries Done',
     ])
@@ -353,7 +353,7 @@ describe('Dashboard navigation targets', () => {
     ['Book a Truck', '/booking/new'],
     ['New Packing', '/packing'],
     ['Plan Route', '/routes'],
-    ['3D Pack', '/packing'],
+    ['Packing', '/packing'],
     ['Routes', '/routes'],
     ['Track', '/tracking'],
     ['Book Truck', '/booking/new'],

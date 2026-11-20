@@ -51,7 +51,7 @@ export default function ManagementPage() {
 
   const managementCards = [
     {
-      title: 'Truck Fleet',
+      title: 'Vehicle types',
       description: 'Manage your vehicle types, dimensions, and capacities.',
       icon: Truck,
       path: '/management/trucks',

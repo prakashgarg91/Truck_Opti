@@ -1,7 +1,7 @@
 {
   "project_ref": "ydkhgclfjdksicpwqzmw",
-  "run_tag": "29991",
-  "ran_at": "2026-11-19T04:12:21.739Z",
+  "run_tag": "20873",
+  "ran_at": "2026-11-19T04:23:41.815Z",
   "summary": {
     "pass": 135,
     "fail": 0,
@@ -115,7 +115,7 @@
       "id": "sub-entitlement-after",
       "status": "PASS",
       "description": "owner entitlement after trial shows a live trial",
-      "detail": "{\"ok\":true,\"usage\":{\"staff\":1,\"trucks\":4,\"drivers\":1,\"orders_month\":4},\"limits\":{\"staff\":10,\"trucks\":20,\"drive"
+      "detail": "{\"ok\":true,\"usage\":{\"staff\":1,\"trucks\":5,\"drivers\":1,\"orders_month\":5},\"limits\":{\"staff\":10,\"trucks\":20,\"drive"
     },
     {
       "id": "sub-has-active",
@@ -271,7 +271,7 @@
       "id": "consignment-create",
       "status": "PASS",
       "description": "owner agency_consignment_create (GR for the order)",
-      "detail": "200 AGY/2026-27/000005"
+      "detail": "200 AGY/2026-27/000006"
     },
     {
       "id": "consignment-staff-refused",
@@ -301,7 +301,7 @@
       "id": "invoice-issue",
       "status": "PASS",
       "description": "owner agency_invoice_issue (1 line Rs 10,000, GST 18%, linked to the consignment)",
-      "detail": "200 INV/2026-27/000005"
+      "detail": "200 INV/2026-27/000006"
     },
     {
       "id": "invoice-payment",

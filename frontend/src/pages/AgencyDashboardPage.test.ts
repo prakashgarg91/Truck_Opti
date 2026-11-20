@@ -102,7 +102,9 @@ describe('AgencyDashboardPage device-local branch (TO-139)', () => {
 
     expect(text).toContain('Sharma Transport')
     expect(text).toContain('On this device')
-    expect(text).toContain('Manage Trucks')
+    expect(text).toContain('Manage fleet')
+    expect(text).toContain('Vehicles')
+    expect(text).not.toContain('Rate Cards')
     expect(text).not.toContain('No Agency Profile Found')
     expect(text).not.toContain('Register your transport agency')
     expect(getSnapshotMock).not.toHaveBeenCalled()

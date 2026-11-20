@@ -48,7 +48,7 @@ const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visibl
 
 export default function AgencyRatesPage() {
   useEffect(() => {
-    document.title = 'Rate Cards - TruckOpti'
+    document.title = 'Rate card - TruckOpti'
   }, [])
 
   const [rates, setRates] = useState<RateCard[]>([])
@@ -144,7 +144,7 @@ export default function AgencyRatesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Rate Cards</h1>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Rate card</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {rates.filter(r => r.is_active).length} active rates
           </p>

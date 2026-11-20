@@ -108,7 +108,7 @@ export default function AgencyTariffsPage() {
   const { agreementId } = useParams<{ agreementId: string }>()
 
   useEffect(() => {
-    document.title = 'Tariffs - TruckOpti'
+    document.title = 'Client tariffs - TruckOpti'
   }, [])
 
   const [rows, setRows] = useState<TariffRow[]>([])
@@ -314,7 +314,7 @@ export default function AgencyTariffsPage() {
     <div className="p-4 md:p-8 space-y-6 max-w-2xl md:max-w-7xl mx-auto">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Tariffs</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Client tariffs</h1>
           <p className="text-sm text-slate-600 dark:text-slate-300">
             Rate versions for {clientName}. Older versions lock automatically when a newer one takes effect.
           </p>

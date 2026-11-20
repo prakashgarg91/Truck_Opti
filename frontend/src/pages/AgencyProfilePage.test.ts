@@ -158,7 +158,7 @@ describe('AgencyProfilePage', () => {
     it('metric cards show fleet size and the snapshot summary with Indian currency', async () => {
         await mountPage()
         expect(metricValues()).toEqual(['12', '7', '3', '₹4,50,000'])
-        expect(text()).toContain('Registered trucks under this agency')
+        expect(text()).toContain('Registered vehicles under this agency')
         expect(text()).toContain('Loads currently in motion')
         expect(text()).toContain('Loads awaiting agency response')
         expect(text()).toContain('22 delivered jobs')
@@ -268,15 +268,15 @@ describe('AgencyProfilePage', () => {
         expect(lastPath).toBe('/agency/fleet')
     })
 
-    it('quick action: Billing navigates to /agency/billing', async () => {
+    it('quick action: Earnings navigates to /agency/billing', async () => {
         await mountPage()
-        await click(buttons(/Billing/)[0])
+        await click(buttons(/Earnings/)[0])
         expect(lastPath).toBe('/agency/billing')
     })
 
-    it('quick action: Rates navigates to /agency/rates', async () => {
+    it('quick action: Rate card navigates to /agency/rates', async () => {
         await mountPage()
-        await click(buttons(/Rates/)[0])
+        await click(buttons(/Rate card/)[0])
         expect(lastPath).toBe('/agency/rates')
     })
 
