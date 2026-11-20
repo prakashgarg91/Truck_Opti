@@ -11,6 +11,8 @@ Production is not deployed. The old production project (`jbxncejtcbpcronndqlx`) 
 No secret value appears in this file. Names only. Values live in the owner's password manager or are typed
 at the owner's own prompt.
 
+Production cutover (fresh Supabase project, ordered steps with owners): `docs/PRODUCTION-CUTOVER.md`.
+
 ## 1. Environments
 
 | Environment | What it is | Evidence |

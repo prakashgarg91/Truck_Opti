@@ -29,6 +29,7 @@ fi
 require_env VITE_SUPABASE_URL
 require_env VITE_SUPABASE_ANON_KEY
 require_env VITE_APP_URL
+require_env VITE_RAZORPAY_KEY_ID
 
 if ! command -v heroku >/dev/null 2>&1; then
   echo "Heroku CLI is required. Install and authenticate it before deployment." >&2
